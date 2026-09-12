@@ -1,0 +1,5 @@
+{
+  "passed": 9,
+  "scope": "Node VM memory subsystem, real source; injected storage adapter",
+  "browserIntegration": "separate suite"
+}

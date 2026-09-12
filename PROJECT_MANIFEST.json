@@ -1,0 +1,13 @@
+{
+  "baseline_sha256": "21fc6c7f42474cf5ef292ab33597d232d2608bc775c4ecd3ef3c3bfe82976429",
+  "candidate_sha256": "6114cdc2675b893206213ef84a4d9fb0ae5890ad5618d2dbf5f6afb34fe8c67f",
+  "candidate": "seven_ai-final.html",
+  "release_status": "INCONCLUSIVE_BROWSER_INTEGRATION",
+  "memory_tests_passed": 9,
+  "runtime_hardening": "T155-T162",
+  "provider_calls": 0,
+  "apk_tested": false,
+  "version": "T161-final",
+  "local_gate": "PASS",
+  "browser_gate": "INCONCLUSIVE_CHROMIUM_UNAVAILABLE"
+}
