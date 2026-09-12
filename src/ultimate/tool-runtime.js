@@ -1,0 +1,28 @@
+(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.SevenUltimateToolRuntime=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
+'use strict';
+const clone=v=>v==null?v:JSON.parse(JSON.stringify(v));const check=(v,m)=>{if(!v)throw new Error(m)};
+const stable=v=>Array.isArray(v)?'['+v.map(stable).join(',')+']':v&&typeof v==='object'?'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+stable(v[k])).join(',')+'}':JSON.stringify(v);
+const hash=s=>{let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return(h>>>0).toString(16)};
+function validateResult(schema={},value){if(!schema||!Object.keys(schema).length)return true;const type=schema.type;if(type==='object')check(value&&typeof value==='object'&&!Array.isArray(value),'TOOL_RESULT_TYPE');if(type==='array')check(Array.isArray(value),'TOOL_RESULT_TYPE');if(type==='string')check(typeof value==='string','TOOL_RESULT_TYPE');if(type==='number')check(typeof value==='number'&&!Number.isNaN(value),'TOOL_RESULT_TYPE');for(const key of schema.required||[])check(value&&Object.prototype.hasOwnProperty.call(value,key),`TOOL_RESULT_REQUIRED:${key}`);return true;}
+class ToolExecutorRegistry{
+ constructor(){this.executors=new Map();}
+ register(toolId,fn,meta={}){check(toolId&&typeof fn==='function','TOOL_EXECUTOR_REQUIRED');check(!this.executors.has(toolId),'TOOL_EXECUTOR_EXISTS');this.executors.set(toolId,{fn,resultSchema:clone(meta.resultSchema||{}),idempotent:meta.idempotent!==false,sideEffects:meta.sideEffects||'none',retryable:meta.retryable!==false});return toolId;}
+ get(toolId){const x=this.executors.get(toolId);check(x,'TOOL_EXECUTOR_NOT_FOUND');return x;}
+}
+class IdempotencyLedger{
+ constructor(){this.rows=new Map();}
+ key(input={}){return input.key||hash(stable({toolId:input.toolId,args:input.args,scope:input.scope||'*'}));}
+ get(input){return this.rows.get(this.key(input))||null;}
+ begin(input){const key=this.key(input),existing=this.rows.get(key);if(existing)return{key,existing:clone(existing),duplicate:true};const row={key,status:'running',startedAt:Date.now(),result:null,error:null};this.rows.set(key,row);return{key,duplicate:false,row:clone(row)};}
+ complete(key,result){const r=this.rows.get(key);check(r,'IDEMPOTENCY_NOT_FOUND');r.status='success';r.result=clone(result);r.completedAt=Date.now();return clone(r);}
+ fail(key,error,{uncertain=false}={}){const r=this.rows.get(key);check(r,'IDEMPOTENCY_NOT_FOUND');r.status=uncertain?'uncertain':'failed';r.error=String(error&&error.message||error);r.completedAt=Date.now();return clone(r);}
+}
+class ToolExecutionRuntime{
+ constructor(opts={}){check(opts.fabric&&opts.permissions,'TOOL_RUNTIME_DEPS_REQUIRED');this.fabric=opts.fabric;this.permissions=opts.permissions;this.executors=opts.executors||new ToolExecutorRegistry();this.idempotency=opts.idempotency||new IdempotencyLedger();this.activity=opts.activity||null;this.maxRetries=opts.maxRetries??1;}
+ async execute(input={}){const tool=this.fabric.resolve(input.toolId);this.fabric.validateArgs(tool.id,input.args||{});const executor=this.executors.get(tool.id);const actionClass=input.actionClass||tool.actionClass||'read',scope=input.scope||'*';if(actionClass!=='read'){const auth=this.permissions.authorize({scope,toolId:tool.id,actionClass});check(auth.allowed,'TOOL_PERMISSION_REQUIRED');}
+ const idInput={key:input.idempotencyKey,toolId:tool.id,args:input.args||{},scope};let idem=null;if(executor.idempotent){idem=this.idempotency.begin(idInput);if(idem.duplicate){if(idem.existing.status==='success')return{toolId:tool.id,state:'success',reused:true,result:clone(idem.existing.result),idempotencyKey:idem.key};if(['running','uncertain'].includes(idem.existing.status))throw new Error('TOOL_DUPLICATE_UNCERTAIN');}}
+ const activityId=input.activityId||`tool:${tool.id}:${Date.now()}`;if(this.activity)this.activity.start({id:activityId,title:tool.name,kind:'tool',details:{toolId:tool.id}});let attempt=0,lastError=null;while(attempt<=this.maxRetries){attempt++;try{if(input.signal?.aborted)throw input.signal.reason||new Error('ABORTED');const result=await executor.fn(clone(input.args||{}),{signal:input.signal,scope,tool:clone(tool),attempt});validateResult(executor.resultSchema,result);if(idem)this.idempotency.complete(idem.key,result);if(this.activity)this.activity.update(activityId,{state:'success',summary:`${tool.name} completed`,details:{attempt}});return{toolId:tool.id,state:'success',attempt,reused:false,result:clone(result),idempotencyKey:idem?.key||null,sideEffects:executor.sideEffects};}catch(error){lastError=error;const aborted=input.signal?.aborted||String(error&&error.name)==='AbortError';const uncertain=executor.sideEffects!=='none'&&(!executor.idempotent||input.sideEffectConfirmed!==true);if(aborted){if(idem)this.idempotency.fail(idem.key,error,{uncertain});if(this.activity)this.activity.update(activityId,{state:'cancelled',summary:'Cancelled'});return{toolId:tool.id,state:'cancelled',attempt,error:String(error&&error.message||error),sideEffectUncertainty:uncertain};}if(!executor.retryable||attempt>this.maxRetries||uncertain)break;}}
+ const uncertain=this.executors.get(tool.id).sideEffects!=='none'&&input.sideEffectConfirmed!==true;if(idem)this.idempotency.fail(idem.key,lastError,{uncertain});if(this.activity)this.activity.update(activityId,{state:'failure',summary:String(lastError&&lastError.message||lastError)});return{toolId:tool.id,state:uncertain?'inconclusive':'error',attempt,error:String(lastError&&lastError.message||lastError),sideEffectUncertainty:uncertain};}
+}
+return{validateResult,ToolExecutorRegistry,IdempotencyLedger,ToolExecutionRuntime};
+});
