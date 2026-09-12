@@ -2,11 +2,16 @@ name: Seven AI tests
 
 on:
   push:
+  pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -18,8 +23,4 @@ jobs:
 
       - run: npx playwright install --with-deps --only-shell chromium
 
-      - run: node tests/memory.cjs
-
-      - run: node tests/runtime-smoke.cjs
-
-      - run: node tests/verify.cjs
+      - run: node all.cjs

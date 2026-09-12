@@ -1,7 +1,8 @@
-const {execFileSync}=require('child_process');
+const {spawnSync}=require('child_process');
 const path=require('path');
-const root=__dirname;
-for(const file of ['memory.cjs','runtime-smoke.cjs']) execFileSync(process.execPath,[path.join(root,file)],{stdio:'inherit'});
-try{execFileSync(process.execPath,[path.join(root,'verify.cjs')],{stdio:'ignore'});}
-catch(e){console.log('browser regression: INCONCLUSIVE (Chromium unavailable)');}
-console.log('local release gate: PASS');
+for(const file of ['memory.cjs','runtime-smoke.cjs','verify.cjs']) {
+ const result=spawnSync(process.execPath,[path.join(__dirname,file)],{stdio:'inherit',timeout:120000});
+ if(result.error) console.error(result.error);
+ if(result.error || result.status!==0) process.exit(result.status || 1);
+}
+console.log('all test suites: PASS');

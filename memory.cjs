@@ -1,5 +1,5 @@
 const vm=require('vm'),fs=require('fs'),assert=require('assert/strict'),path=require('path');
-const html=fs.readFileSync(path.join(__dirname,'../seven_ai-t152.html'),'utf8');
+const html=fs.readFileSync(path.join(__dirname,'seven_ai-final.html'),'utf8');
 const source=html.slice(html.indexOf('        // ---------- Memory Fabric Architecture Contract'),html.indexOf('        // ---------- Init ----------'));
 const data=new Map();let fail=false;const context=vm.createContext({console,localStorage:{getItem:k=>data.has(k)?data.get(k):null,setItem:(k,v)=>{if(fail)throw Error('QUOTA');data.set(k,v)},removeItem:k=>data.delete(k)}});
 vm.runInContext(source,context);

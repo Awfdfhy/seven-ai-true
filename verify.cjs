@@ -1,6 +1,6 @@
-const {chromium}=require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES+'/playwright');
+const {chromium}=require('playwright');
 const fs=require('fs'), http=require('http'), assert=require('assert/strict');
-const html=fs.readFileSync(require('path').join(__dirname,'../seven_ai-t152.html'),'utf8');
+const html=fs.readFileSync(require('path').join(__dirname,'seven_ai-final.html'),'utf8');
 const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/html');res.end(html)});
 (async()=>{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));

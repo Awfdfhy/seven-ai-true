@@ -1,5 +1,5 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
-const html=fs.readFileSync(__dirname+'/../seven_ai-t161.html','utf8');
+const html=fs.readFileSync(__dirname+'/seven_ai-final.html','utf8');
 const start=html.indexOf('window.SevenRuntime =');const end=html.indexOf('\n    </script>',start);const js=html.slice(start,end);
 const store=new Map();const ctx={window:{addEventListener:()=>{}},localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>{store.set(k,String(v))},removeItem:k=>store.delete(k)},console};vm.createContext(ctx);vm.runInContext(js,ctx);const r=ctx.window.SevenRuntime;
 assert(r&&r.version===4);const m=r.createMemory('keep exact 42','fact');assert(r.commitMemory(m));assert(r.readMemory().objects[0].content.includes('42'));
@@ -9,4 +9,4 @@ let w=r.createWorkspace([{id:'a',content:'alpha 123'}]);w=r.contextAction(w,'PIN
 assert(Math.abs(r.cosine(r.embed('same'),r.embed('same'))-1)<1e-9);assert(r.classify('latest source').needsEvidence==='high');
 const tr=r.registerTools([{id:'x',name:'search',capability:'web.search',schema:{}},{id:'y',name:'search2',capability:'web.search',schema:{}}]);assert(tr.capabilities.length===2);assert(!r.gateTool({id:'danger',schema:{},risk:'high'},{}).allowed);
 assert(r.runLedger([{id:'run-1'}]));assert(r.readRuns().objects.length===1);assert(r.research([{url:'https://example.com',title:'x'}]).citationLock.length===1);assert(r.codingMap([{path:'src/a.js',content:'x'}]).files[0].fingerprint);assert(r.modelOutcome({task:'x',model:'free',success:true}));
-console.log('runtime smoke: PASS (12 assertions)');
+console.log('runtime smoke: PASS');
