@@ -1,4 +1,4 @@
-(function(root,factory){const deps=(typeof module==='object'&&module.exports)?{Control:require('./model-control-plane.js'),Resilience:require('./inference-resilience.js'),Agents:require('./agent-fabric-v2.js'),Evolution:require('./model-evolution-lab.js'),Optimizer:require('./intelligence-optimizer.js'),Intelligence:require('./intelligence-orchestrator.js'),FrontierInference:require('./frontier-inference-runtime.js'),FrontierChat:require('./frontier-chat-fabric.js'),ProviderFeatures:require('./provider-feature-runtime.js'),RawIntelligence:require('./raw-intelligence-v2.js'),FrontierEvals:require('./frontier-evals.js'),UI:require('./model-agent-ui.js')}:{Control:root.SevenUltimateModelControl,Resilience:root.SevenUltimateInferenceResilience,Agents:root.SevenUltimateAgentFabricV2,Evolution:root.SevenUltimateModelEvolution,Optimizer:root.SevenUltimateIntelligenceOptimizer,Intelligence:root.SevenUltimateIntelligence,FrontierInference:root.SevenUltimateFrontierInference,FrontierChat:root.SevenUltimateFrontierChat,ProviderFeatures:root.SevenUltimateProviderFeatures,RawIntelligence:root.SevenUltimateRawIntelligenceV2,FrontierEvals:root.SevenUltimateFrontierEvals,UI:root.SevenUltimateModelAgentUI};const api=factory(deps);if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.SevenUltimateModelAgentExtension=api;})(typeof globalThis!=='undefined'?globalThis:this,function(D){
+(function(root,factory){const deps=(typeof module==='object'&&module.exports)?{Control:require('./model-control-plane.js'),Resilience:require('./inference-resilience.js'),Agents:require('./agent-fabric-v2.js'),Evolution:require('./model-evolution-lab.js'),Optimizer:require('./intelligence-optimizer.js'),Intelligence:require('./intelligence-orchestrator.js'),FrontierInference:require('./frontier-inference-runtime.js'),FrontierTools:require('./frontier-tool-loop.js'),FrontierChat:require('./frontier-chat-fabric.js'),ProviderFeatures:require('./provider-feature-runtime.js'),RawIntelligence:require('./raw-intelligence-v2.js'),FrontierEvals:require('./frontier-evals.js'),UI:require('./model-agent-ui.js')}:{Control:root.SevenUltimateModelControl,Resilience:root.SevenUltimateInferenceResilience,Agents:root.SevenUltimateAgentFabricV2,Evolution:root.SevenUltimateModelEvolution,Optimizer:root.SevenUltimateIntelligenceOptimizer,Intelligence:root.SevenUltimateIntelligence,FrontierInference:root.SevenUltimateFrontierInference,FrontierTools:root.SevenUltimateFrontierToolLoop,FrontierChat:root.SevenUltimateFrontierChat,ProviderFeatures:root.SevenUltimateProviderFeatures,RawIntelligence:root.SevenUltimateRawIntelligenceV2,FrontierEvals:root.SevenUltimateFrontierEvals,UI:root.SevenUltimateModelAgentUI};const api=factory(deps);if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.SevenUltimateModelAgentExtension=api;})(typeof globalThis!=='undefined'?globalThis:this,function(D){
 'use strict';
 const check=(v,m)=>{if(!v)throw new Error(m)};
 function attachModelAgentV2(os,opts={}){
@@ -9,6 +9,7 @@ function attachModelAgentV2(os,opts={}){
  os.baseModelExecutor=opts.baseModelExecutor||new D.Control.ResilientModelExecutor({control:os.modelControl,providers:os.providers,requests:os.requests});
  os.modelExecutor=opts.modelExecutor||new D.Resilience.AdvancedModelExecutor({base:os.baseModelExecutor,control:os.modelControl,resilience:os.inferenceResilience,cache:os.inferenceCache});
  os.frontierInference=opts.frontierInference||new D.FrontierInference.FrontierInferenceExecutor({control:os.modelControl,baseExecutor:os.modelExecutor,Orchestrator:D.Intelligence.IntelligenceOrchestrator,verification:opts.verificationStack});
+ os.frontierToolLoop=opts.frontierToolLoop||(os.toolRuntime&&os.tools?new D.FrontierTools.AgenticToolLoop({fabric:os.tools,runtime:os.toolRuntime,providers:os.providers}):null);
  os.providerFeatures=opts.providerFeatures||D.ProviderFeatures.registerReferenceProfiles(new D.ProviderFeatures.ProviderFeatureRegistry());
  os.providerRequestCompiler=opts.providerRequestCompiler||new D.ProviderFeatures.CanonicalRequestCompiler({features:os.providerFeatures});
  os.frontierChat=opts.frontierChat||new D.FrontierChat.FrontierChatFabric({sessionId:opts.sessionId||'seven-general-chat',contextOptions:opts.chatContextOptions||{defaultBudget:16000}});
@@ -17,6 +18,7 @@ function attachModelAgentV2(os,opts={}){
  os.controller.modelControl=os.modelControl;
  os.controller.modelExecutor=os.modelExecutor;
  os.controller.frontierInferenceExecutor=os.frontierInference;
+ os.controller.frontierToolLoop=os.frontierToolLoop;
  os.controller.frontierChat=os.frontierChat;
  os.controller.providerRequestCompiler=os.providerRequestCompiler;
  os.agentFabricV2=opts.agentFabric||new D.Agents.AgentFabricV2();
@@ -27,7 +29,7 @@ function attachModelAgentV2(os,opts={}){
  os.frontierEvals={gate:opts.frontierGate||new D.FrontierEvals.FrontierGate(),protocols:opts.protocolEvaluator||new D.FrontierEvals.ProtocolMatchedEvaluator(),benchmarkPlanner:opts.frontierBenchmarkPlanner||new D.FrontierEvals.FrontierBenchmarkPlan()};
  os.modelAgentUI=opts.presentation||new D.UI.ModelAgentPresentation();
  os.createIntelligenceOrchestrator=input=>new D.Intelligence.IntelligenceOrchestrator(input);
- return{modelControl:os.modelControl,modelExecutor:os.modelExecutor,frontierInference:os.frontierInference,resilience:os.inferenceResilience,cache:os.inferenceCache,providerFeatures:os.providerFeatures,frontierChat:os.frontierChat,agentFabric:os.agentFabricV2,evolution:os.modelEvolution,rawIntelligence:os.rawIntelligence,frontierEvals:os.frontierEvals,presentation:os.modelAgentUI};
+ return{modelControl:os.modelControl,modelExecutor:os.modelExecutor,frontierInference:os.frontierInference,frontierToolLoop:os.frontierToolLoop,resilience:os.inferenceResilience,cache:os.inferenceCache,providerFeatures:os.providerFeatures,frontierChat:os.frontierChat,agentFabric:os.agentFabricV2,evolution:os.modelEvolution,rawIntelligence:os.rawIntelligence,frontierEvals:os.frontierEvals,presentation:os.modelAgentUI};
 }
 return{attachModelAgentV2};
 });
