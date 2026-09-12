@@ -15,7 +15,9 @@ rt.createTimeline('game_valen','camp_main',{id:'tl_main',name:'Main Timeline'});
 rt.registerEntity('game_valen',{id:'ali',name:'Ali',tier:'core',identityCore:{role:'player'}});
 rt.registerEntity('game_valen',{id:'aria',name:'Aria',tier:'core',identityCore:{values:['autonomy','loyalty']}});
 
-const e1=rt.appendEvent('game_valen','camp_main','tl_main',{id:'e1',type:'meeting',actorIds:['aria'],witnessIds:['ali'],payload:{text:'Aria meets Ali'}});
+const e1=rt.appendEvent('game_valen','camp_main','tl_main',{id:'e1',type:'meeting',actorIds:['aria'],witnessIds:['ali'],payload:{text:'Aria meets Ali',nested:{stable:true}}});
+assert.equal(Object.isFrozen(e1),true,'canonical event envelope must be immutable');
+assert.equal(Object.isFrozen(e1.payload)&&Object.isFrozen(e1.payload.nested),true,'canonical event payload must be deeply immutable');
 rt.remember('game_valen','camp_main','tl_main','ali',{id:'m1',sourceEventRef:e1.ref,interpretation:{summary:'First meeting'},emotionalWeight:4});
 assert.equal(rt.memories('game_valen','camp_main','tl_main','ali').length,1,'character memory should retain experienced events');
 assert.equal(rt.memories('game_valen','camp_main','tl_main','aria').length,0,'knowledge must not leak to characters without a recorded memory');
@@ -63,4 +65,4 @@ assert.equal(summary.timelines,2);
 assert.equal(summary.flashbacks,2);
 assert.equal(summary.events,2);
 
-console.log('ultimate core: 20 assertions PASS');
+console.log('ultimate core: 22 assertions PASS');
