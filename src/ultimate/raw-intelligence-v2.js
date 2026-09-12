@@ -25,7 +25,13 @@ class SkillAdapterBank{
 }
 
 class VerifierCurriculumBuilder{
- build(experiences=[],input={}){const rows=experiences.filter(x=>x.verified===true),hard=rows.filter(x=>x.success===false||Number(x.reward??1)<Number(input.rewardThreshold??.75)||x.metadata?.uncertain),positive=rows.filter(x=>x.success!==false&&Number(x.reward??1)>=.9),max=Math.max(1,Number(input.maxExamples||1000)),mixed=[];for(let i=0;i<max&&i<hard.length+positive.length;i++){const source=i%3===2?positive[Math.floor(i/3)%Math.max(1,positive.length)]:hard[Math.floor(i*2/3)%Math.max(1,hard.length)];if(source)mixed.push({id:`verifier:${source.id}`,input:clone(source.input),candidate:clone(source.output),label:source.success!==false&&Number(source.reward??1)>=.8?1:0,feedback:clone(source.feedback||null),evidenceRefs:[...(source.evidenceRefs||[])],groupId:source.groupId,sourceExperienceId:source.id});}return{examples:mixed,count:mixed.length,hardCount:hard.length,positiveCount:positive.length,authority:'derived_verifier_curriculum'};}
+ _example(source){return{id:`verifier:${source.id}`,input:clone(source.input),candidate:clone(source.output),label:source.success!==false&&Number(source.reward??1)>=.8?1:0,feedback:clone(source.feedback||null),evidenceRefs:[...(source.evidenceRefs||[])],groupId:source.groupId,sourceExperienceId:source.id};}
+ build(experiences=[],input={}){const rows=experiences.filter(x=>x.verified===true),hard=rows.filter(x=>x.success===false||Number(x.reward??1)<Number(input.rewardThreshold??.75)||x.metadata?.uncertain),positive=rows.filter(x=>x.success!==false&&Number(x.reward??1)>=.9),max=Math.max(1,Number(input.maxExamples||1000)),mixed=[],seen=new Set();const push=source=>{if(!source||mixed.length>=max||seen.has(source.id))return;seen.add(source.id);mixed.push(this._example(source));};
+  // Preserve both error-detection and acceptance calibration whenever both pools exist.
+  let hi=0,pi=0;while(mixed.length<max&&(hi<hard.length||pi<positive.length)){if(hi<hard.length)push(hard[hi++]);if(pi<positive.length)push(positive[pi++]);if(hi<hard.length)push(hard[hi++]);}
+  // Fill any remaining capacity from other verified examples without duplicating rows.
+  for(const row of rows)push(row);
+  return{examples:mixed,count:mixed.length,hardCount:hard.length,positiveCount:positive.length,classBalance:{negative:mixed.filter(x=>x.label===0).length,positive:mixed.filter(x=>x.label===1).length},authority:'derived_verifier_curriculum'};}
 }
 
 class TeacherCouncilDistillationPlanner{
