@@ -1,0 +1,18 @@
+const assert=require('assert');
+const {SevenUltimateOS}=require('./src/ultimate/runtime.js');
+const {ModelObservatory}=require('./src/ultimate/model-observatory.js');
+const {identityFor,nextSwitch,LauncherIdentityController}=require('./src/ultimate/launcher-identity.js');
+const {LocalIntelligencePlane}=require('./src/ultimate/local-intelligence.js');
+
+(async()=>{
+ const os=new SevenUltimateOS();os.createRpg({gameId:'g',campaignId:'c',timelineId:'t',name:'Valen'});os.core.registerEntity('g',{id:'ali',name:'Ali',tier:'core'});os.core.registerEntity('g',{id:'aria',name:'Aria',tier:'major'});os.characters.createProfile('g','ali',{values:['freedom'],voice:{humor:'high'}});os.characters.createProfile('g','aria',{values:['autonomy','duty'],voice:{formality:'high'}});os.visuals.registerCharacter('g','aria',{identity:{face:'canon'}});os.visuals.addReference('g','aria',{id:'portrait',kind:'main_portrait',uri:'ref://aria'});os.story.defineSeries('t',{title:'Valen'});os.story.createSeason('t',{id:'s1',title:'Season I'});os.story.createArc('t',{id:'a1',seasonId:'s1',title:'Crown'});os.story.scheduleEpisode('t',{id:'ep1',seasonId:'s1',title:'Beginning',beats:[{label:'meet',arcIds:['a1']}]});os.core.createTrack('g','c','t',{id:'main',kind:'mainline'});os.core.addEpisode('g','c','t','main',{id:'ep1',number:1,title:'Beginning',status:'active'});const ev=os.commitBeat({id:'e1',episodeId:'ep1',arcIds:['a1'],actorEntityId:'aria',playerEntityId:'ali',actionType:'dialogue',payload:{text:'Hello'},rememberBy:['ali']});assert.equal(ev.episodeId,'ep1');
+ const player=os.rpgUI.storyAtlas.build('g','c','t',{mode:'player'});const director=os.rpgUI.storyAtlas.build('g','c','t',{mode:'director'});assert.equal(player.episodes[0].canonical,true);assert.equal(player.episodes[0].beats,undefined);assert.ok(Array.isArray(director.episodes[0].beats));const cast=os.rpgUI.castAtlas.list('g','c','t',{mode:'player'});assert.equal(cast[0].id,'ali');assert.equal(os.rpgUI.agencyPrompt({required:true,characterName:'Ali'}).required,true);assert.equal(os.rpgUI.flashbackBanner({kind:'subjective_memory'}).label,'Memory');
+
+ const obs=new ModelObservatory();obs.discover({id:'m',family:'test',freeProof:'verified_free',modalities:['text','vision']});obs.addEvidence('m','context',{source:'official:docs',value:128000});obs.transition('m','quarantined');obs.transition('m','shadow',{pass:true});obs.transition('m','canary',{pass:true});assert.equal(obs.get('m').status,'canary');assert.equal(obs.claim('m','context').length,1);assert.equal(obs.eligible({modality:'vision'}).length,1);
+ os.observatory.discover({id:'local-x',freeProof:'local'});assert.equal(os.snapshot().modelCards,1);
+
+ const local=new LocalIntelligencePlane();assert.equal(local.classifyTask('fix this javascript bug').label,'coding');const rr=local.rerank('crown treaty',['weather today','crown treaty authority']);assert.equal(rr[0].item,'crown treaty authority');const packet=os.prepareRpgTurn({userInput:'continue the story episode',activeCharacters:['ali'],scene:{location:'palace'}});assert.equal(packet.taskClass.label,'rpg');
+
+ const day=new Date(2026,8,12,10,0),night=new Date(2026,8,12,22,0);assert.equal(identityFor(day).icon,'seven-day');assert.equal(identityFor(night).icon,'seven-night');assert.ok(nextSwitch(day)>day);const calls=[];const launcher=new LauncherIdentityController();await launcher.apply({enableAlias:async x=>calls.push(x)},day);await launcher.apply({enableAlias:async x=>calls.push(x)},night);assert.deepStrictEqual(calls,['SevenDay','SevenNight']);assert.equal(os.launcherIdentity(night).period,'night');
+ console.log('ultimate RPG UI/observatory/local/launcher: 27 assertions PASS');
+})().catch(err=>{console.error(err);process.exit(1)});
