@@ -7,9 +7,9 @@ const DEFAULT_A11Y=Object.freeze({minimumTarget:44,keyboard:true,visibleFocus:tr
 const SURFACES=Object.freeze([
 'home','chat','composer','halo','command_palette','toast','drawer','sheet','popover','menu','tooltip','empty_state','skeleton','offline','update',
 'deep_thinking','search','research','sources','source_viewer','evidence_graph','citation_audit',
-'coding','files','file_upload','editor','diff','terminal','tests','git','agent','artifact','checkpoint','permissions','errors','backup','restore','import',
+'coding','coding_activity_rail','coding_project_panel','coding_editor','coding_diff','coding_agent_dock','coding_bottom_dock','coding_review','coding_threads','coding_terminal_bubbles','files','file_upload','editor','diff','terminal','tests','git','agent','artifact','checkpoint','permissions','errors','backup','restore','import',
 'projects','project_overview','knowledge','memory','memory_timeline','context_workspace','tools','tool_activity','models','model_selector','providers','provider_health','evals','settings','notifications',
-'rpg_library','rpg_home','rpg_story','rpg_scene_capsule','rpg_character','rpg_cast_atlas','rpg_relationships','rpg_chronicle','rpg_story_atlas','rpg_plot_board','rpg_journal','rpg_world','rpg_rumors','rpg_knowledge','rpg_flashback','rpg_episode_end','rpg_side_story','rpg_interlude','rpg_timeline_branch','rpg_agency_gate','rpg_character_genesis','rpg_visual_canon',
+'rpg_library','rpg_home','rpg_story','rpg_scene_capsule','rpg_character','rpg_cast_atlas','rpg_relationships','rpg_chronicle','rpg_story_atlas','rpg_plot_board','rpg_journal','rpg_world','rpg_rumors','rpg_knowledge','rpg_flashback','rpg_episode_end','rpg_side_story','rpg_interlude','rpg_timeline_branch','rpg_agency_gate','rpg_character_genesis','rpg_visual_canon','rpg_canon_universe','rpg_canon_sources','rpg_continuity_branch','rpg_npc_life','rpg_npc_goals','rpg_npc_identity','rpg_npc_routine','rpg_npc_future',
 'media','image_viewer','pdf_viewer','voice'
 ]);
 const INTERACTIVE_TYPES=new Set(['tool','control','surface-control','menu-item']);
