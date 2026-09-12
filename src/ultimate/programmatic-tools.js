@@ -4,7 +4,8 @@ const clone=v=>v==null?v:JSON.parse(JSON.stringify(v));
 const check=(v,m)=>{if(!v)throw new Error(m)};
 const now=()=>Date.now();
 const get=(obj,path)=>String(path||'').split('.').filter(Boolean).reduce((a,k)=>a==null?undefined:a[k],obj);
-function resolveValue(v,ctx){if(typeof v==='string'){const exact=v.match(/^\$\{([^}]+)\}$/);if(exact)return clone(get(ctx,exact[1]));return v.replace(/\$\{([^}]+)\}/g,(_,p)=>{const x=get(ctx,p);return x==null?'':typeof x==='string'?x:JSON.stringify(x);});}if(Array.isArray(v))return v.map(x=>resolveValue(x,ctx));if(v&&typeof v==='object')return Object.fromEntries(Object.entries(v).map(([k,x])=>[k,resolveValue(x,ctx)]));return v;}
+const lookup=(ctx,path)=>{const direct=get(ctx,path);return direct===undefined?get(ctx?.steps,path):direct;};
+function resolveValue(v,ctx){if(typeof v==='string'){const exact=v.match(/^\$\{([^}]+)\}$/);if(exact)return clone(lookup(ctx,exact[1]));return v.replace(/\$\{([^}]+)\}/g,(_,p)=>{const x=lookup(ctx,p);return x==null?'':typeof x==='string'?x:JSON.stringify(x);});}if(Array.isArray(v))return v.map(x=>resolveValue(x,ctx));if(v&&typeof v==='object')return Object.fromEntries(Object.entries(v).map(([k,x])=>[k,resolveValue(x,ctx)]));return v;}
 
 class CognitiveBoundaryDetector{
  decide(input={}){if(input.forceModel===true)return{needsModel:true,reason:'FORCED'};if(input.recipe?.deterministic===true&&input.recipe?.verified===true)return{needsModel:false,reason:'VERIFIED_DETERMINISTIC_RECIPE'};if(input.intent?.kind==='lookup'&&input.knownCapability)return{needsModel:false,reason:'DIRECT_CAPABILITY'};if(input.ambiguity===0&&input.plan?.every?.(x=>x.deterministic))return{needsModel:false,reason:'DETERMINISTIC_PLAN'};return{needsModel:true,reason:'SEMANTIC_REASONING_REQUIRED'};}
