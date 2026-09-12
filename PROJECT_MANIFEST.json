@@ -2,7 +2,7 @@
   "baseline_sha256": "21fc6c7f42474cf5ef292ab33597d232d2608bc775c4ecd3ef3c3bfe82976429",
   "candidate_sha256": "2c02cd67e02ba3ce20af10ef811e98cc5998c569989be8e8c4501b24b7477f52",
   "candidate": "seven_ai-final.html",
-  "release_status": "PENDING_BROWSER_RECHECK",
+  "release_status": "INCONCLUSIVE_ANDROID_PROVIDER_INTEGRATION",
   "memory_tests_passed": 9,
   "runtime_hardening": "T155-T163",
   "runtime_tests_passed": 28,
@@ -10,5 +10,5 @@
   "apk_tested": false,
   "version": "T163-runtime-hardening",
   "local_gate": "PASS_DETERMINISTIC",
-  "browser_gate": "PENDING_GITHUB_ACTIONS"
+  "browser_gate": "PASS_GITHUB_ACTIONS_RUN_34697079913"
 }

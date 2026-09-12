@@ -82,4 +82,4 @@ Final gate: local deterministic checks and archive integrity PASS. Browser/Andro
 - Execution runs and model outcomes fail closed on malformed persistence; run events append instead of replacing history. The model outcome reader is exposed for deterministic inspection.
 - `runtime-smoke.cjs` now covers 28 assertions across memory, authorization, tool schemas, context actions, run ledger, outcomes, research, coding, and local intelligence.
 
-The candidate SHA-256 in `PROJECT_MANIFEST.json` is bound to the current `seven_ai-final.html`. Deterministic local checks pass; the browser gate is pending the GitHub Actions run for this commit.
+The candidate SHA-256 in `PROJECT_MANIFEST.json` is bound to the current `seven_ai-final.html`. Deterministic local checks pass, and GitHub Actions run `34697079913` passed the complete `node all.cjs` gate: 9 memory, 28 runtime, and 11 browser assertions. Android/APK and live-provider integration remain unverified.
