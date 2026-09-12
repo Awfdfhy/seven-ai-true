@@ -1,0 +1,51 @@
+const assert=require('assert');
+const {ParetoFrontier,ReflectivePromptProgramOptimizer,MarginalGainEscalationPolicy,CapabilityProbeLab,CapabilityDriftDetector}=require('./src/ultimate/intelligence-optimizer.js');
+
+const p=new ParetoFrontier();
+p.add({id:'a',quality:.9,latencyMs:800,tokens:900,cost:0});
+p.add({id:'b',quality:.8,latencyMs:1200,tokens:1200,cost:0});
+p.add({id:'c',quality:.92,latencyMs:1000,tokens:950,cost:0});
+const front=p.frontier();
+assert.ok(front.some(x=>x.id==='a'));
+assert.ok(front.some(x=>x.id==='c'));
+assert.ok(!front.some(x=>x.id==='b'),'dominated variant must leave Pareto frontier');
+
+const opt=new ReflectivePromptProgramOptimizer();
+opt.add({id:'base',program:{system:'be precise'},status:'baseline'});
+opt.add({id:'v1',parentIds:['base'],program:{system:'be precise and verify'}});
+assert.throws(()=>opt.evaluate('base',{verified:false,quality:.7}),/VERIFIED/);
+opt.evaluate('base',{verified:true,quality:.72,latencyMs:900,tokens:1000,failures:['missed evidence','format drift']});
+opt.evaluate('v1',{verified:true,quality:.9,latencyMs:1100,tokens:1050,failures:['format drift']});
+const lessons=opt.lessons();
+assert.equal(lessons[0].lesson,'format drift');
+const packet=opt.proposalPacket({count:3});
+assert.equal(packet.task,'propose_prompt_program_variants');
+assert.ok(packet.parents.length>=1);
+assert.ok(packet.lessons.length>=1);
+const created=opt.ingestProposals([{id:'v2',parentIds:['v1'],program:{system:'verify then answer'},lessons:['format drift']}],{generation:2});
+assert.equal(created.length,1);
+assert.equal(opt.best().id,'v1');
+
+const escalation=new MarginalGainEscalationPolicy();
+const low=escalation.decide({fastExpectedQuality:.8,strongExpectedQuality:.82,complexity:.1,risk:.1,latencyPriority:.95,budgetPressure:.7});
+assert.equal(low.tier,'fast');
+const high=escalation.decide({fastExpectedQuality:.45,strongExpectedQuality:.92,complexity:.95,risk:.8,latencyPriority:.1,budgetPressure:0});
+assert.ok(['deep','max'].includes(high.tier));
+assert.ok(high.maxOutputTokens>=3072);
+
+const lab=new CapabilityProbeLab();
+lab.define({id:'json',capability:'structured_output',threshold:.8,required:true});
+lab.define({id:'tools',capability:'tool_use',threshold:.7});
+assert.throws(()=>lab.record('m1','json',{verified:false,score:.9}),/VERIFIED/);
+lab.record('m1','json',{verified:true,score:.92,latencyMs:100,evidenceRefs:['eval:1']});
+lab.record('m1','tools',{verified:true,score:.78,latencyMs:120,evidenceRefs:['eval:2']});
+const profile=lab.profile('m1');
+assert.equal(profile.pass,true);
+assert.equal(profile.verifiedProbes,2);
+const previous=profile;
+lab.record('m2','json',{verified:true,score:.6,latencyMs:90,evidenceRefs:['eval:3']});
+lab.record('m2','tools',{verified:true,score:.8,latencyMs:100,evidenceRefs:['eval:4']});
+const drift=new CapabilityDriftDetector().compare(previous,lab.profile('m2'),{tolerance:.1});
+assert.equal(drift.pass,false);
+assert.ok(drift.issues.some(x=>x.capability==='structured_output'));
+console.log('ultimate intelligence optimizer: 20 assertions PASS');
