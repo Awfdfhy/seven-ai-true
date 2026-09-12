@@ -1,0 +1,35 @@
+(function(root,factory){
+ const deps=(typeof module==='object'&&module.exports)?{P:require('./persistence.js'),Tools:require('./tool-fabric.js')}:{P:root.SevenUltimatePersistence,Tools:root.SevenUltimateTools};const api=factory(deps);if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.SevenUltimateSystemPersistence=api;
+})(typeof globalThis!=='undefined'?globalThis:this,function(D){
+'use strict';
+const clone=v=>v==null?v:JSON.parse(JSON.stringify(v));const check=(v,m)=>{if(!v)throw new Error(m)};
+const stable=v=>Array.isArray(v)?'['+v.map(stable).join(',')+']':v&&typeof v==='object'?'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+stable(v[k])).join(',')+'}':JSON.stringify(v);
+const hash=v=>{const s=stable(v);let h=0x811c9dc5;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0;}return h.toString(16).padStart(8,'0')};
+const entries=m=>[...m.entries()].map(([k,v])=>[k,clone(v)]);
+const map=e=>new Map((e||[]).map(([k,v])=>[k,clone(v)]));
+function serializeStory(story){return [...story.timelines.entries()].map(([id,s])=>[id,{series:clone(s.series),seasons:entries(s.seasons),arcs:entries(s.arcs),episodes:clone(s.episodes)}]);}
+function serializeVisuals(v){return{characters:[...v.characters.entries()].map(([k,c])=>[k,{...clone(c),outfits:entries(c.outfits),accessories:entries(c.accessories)}]),images:entries(v.images)};}
+function serializeSystem(os,meta={}){
+ const customTools=[...os.tools.tools.values()].filter(t=>!D.Tools.BUILTIN_TOOL_IDS.includes(t.id)).map(clone);
+ const requestRuns=[...os.requests.ledger.runs.entries()].map(([id,r])=>[id,clone(r)]);
+ return{schema:'seven.ultimate.system-backup',schemaVersion:1,createdAt:meta.createdAt||new Date().toISOString(),core:D.P.createBackup(os.core,{createdAt:meta.createdAt}),active:clone(os.active),modules:{characters:entries(os.characters.profiles),story:serializeStory(os.story),providers:entries(os.models.providers),models:entries(os.models.models),outcomes:entries(os.models.outcomes),permissionGrants:entries(os.permissions.grants),customTools,research:{sources:entries(os.research.graph.sources),claims:entries(os.research.graph.claims),edges:clone(os.research.graph.edges),question:os.research.question||null,queries:clone(os.research.queries||[]),wave:os.research.wave||0},visuals:serializeVisuals(os.visuals),knowledge:entries(os.knowledge.rows),relationships:{edges:entries(os.relationships.edges),history:clone(os.relationships.history)},plots:entries(os.plots.rows),world:entries(os.world.timelines),requestRuns}};
+}
+function createSystemBackup(os,meta={}){const base=serializeSystem(os,meta);return{...base,integrity:{algorithm:'fnv1a32-stable-json',digest:hash(base)}};}
+function validateSystemBackup(b){check(b&&b.schema==='seven.ultimate.system-backup','SYSTEM_BACKUP_SCHEMA');check(b.schemaVersion===1,'SYSTEM_BACKUP_VERSION');check(b.integrity&&b.integrity.algorithm==='fnv1a32-stable-json','SYSTEM_BACKUP_INTEGRITY');const base=clone(b);delete base.integrity;check(hash(base)===b.integrity.digest,'SYSTEM_BACKUP_CORRUPT');D.P.validateBackup(b.core);check(b.modules&&Array.isArray(b.modules.characters)&&Array.isArray(b.modules.story),'SYSTEM_BACKUP_MODULES');return true;}
+function hydrateSystem(os,b){
+ validateSystemBackup(b);os.core=D.P.restoreBackup(b.core);os._initSubsystems();os.active=clone(b.active||{gameId:null,campaignId:null,timelineId:null});const m=b.modules;
+ os.characters.profiles=map(m.characters);
+ os.story.timelines=new Map((m.story||[]).map(([id,s])=>[id,{series:clone(s.series),seasons:map(s.seasons),arcs:map(s.arcs),episodes:clone(s.episodes||[])}]));
+ os.models.providers=map(m.providers);os.models.models=map(m.models);os.models.outcomes=map(m.outcomes);os.intelligence.models=os.models;
+ os.permissions.grants=map(m.permissionGrants);
+ for(const t of m.customTools||[])if(!os.tools.tools.has(t.id))os.tools.register(t);
+ os.research.graph.sources=map(m.research?.sources);os.research.graph.claims=map(m.research?.claims);os.research.graph.edges=clone(m.research?.edges||[]);os.research.question=m.research?.question||null;os.research.queries=clone(m.research?.queries||[]);os.research.wave=Number(m.research?.wave||0);
+ os.visuals.characters=new Map((m.visuals?.characters||[]).map(([k,c])=>[k,{...clone(c),outfits:map(c.outfits),accessories:map(c.accessories)}]));os.visuals.images=map(m.visuals?.images);
+ os.knowledge.rows=map(m.knowledge);os.relationships.edges=map(m.relationships?.edges);os.relationships.history=clone(m.relationships?.history||[]);os.plots.rows=map(m.plots);os.world.timelines=map(m.world);
+ os.requests.ledger.runs=new Map((m.requestRuns||[]).map(([id,r])=>{const x=clone(r);if(x.status==='queued'||x.status==='running'){x.status='cancelled';x.events=x.events||[];x.events.push({type:'recovered_cancelled',at:Date.now()});}return[id,x]}));
+ return os;
+}
+async function persistSystem(store,key,os,expectedRevision=null,meta={}){return store.save(key,createSystemBackup(os,meta),expectedRevision);}
+async function loadSystem(store,key,os){const row=await store.load(key);if(!row)return null;hydrateSystem(os,row.value);return{revision:row.revision,runtime:os};}
+return{serializeSystem,createSystemBackup,validateSystemBackup,hydrateSystem,persistSystem,loadSystem};
+});
