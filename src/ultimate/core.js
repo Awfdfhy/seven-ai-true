@@ -10,6 +10,7 @@
   const PLAYER_OWNED=new Set(['dialogue','decision','opinion','private_thought','intentional_action','irreversible_action']);
   const copy=v=>v==null?v:JSON.parse(JSON.stringify(v));
   const check=(v,m)=>{if(!v) throw new Error(m)};
+  const deepFreeze=v=>{if(v&&typeof v==='object'&&!Object.isFrozen(v)){Object.freeze(v);Object.keys(v).forEach(k=>deepFreeze(v[k]));}return v;};
   let serial=0;
   const uid=p=>`${p}_${Date.now().toString(36)}_${(++serial).toString(36)}`;
 
@@ -42,19 +43,19 @@
     }
     registerEntity(gameId,input={}){
       const g=this.game(gameId),id=input.id||uid(input.type||'entity');check(!g.entities.has(id),'ENTITY_EXISTS');
-      const entity=Object.freeze({id,type:input.type||'character',name:input.name||id,tier:input.tier||'background',identityCore:copy(input.identityCore||{}),visualCanon:copy(input.visualCanon||{})});
+      const entity=deepFreeze({id,type:input.type||'character',name:input.name||id,tier:input.tier||'background',identityCore:copy(input.identityCore||{}),visualCanon:copy(input.visualCanon||{})});
       g.entities.set(id,entity);return entity;
     }
     appendEvent(gameId,campaignId,timelineId,input={}){
       const g=this.game(gameId),t=this.timeline(gameId,campaignId,timelineId),id=input.id||uid('event'),ref=`${timelineId}:${id}`;check(!g.events.has(ref),'EVENT_EXISTS');
-      const event=Object.freeze({id,ref,seq:++g.eventSeq,gameId,campaignId,timelineId,type:input.type||'world_event',worldTime:input.worldTime||null,actorIds:[...(input.actorIds||[])],witnessIds:[...(input.witnessIds||[])],payload:copy(input.payload||{}),causeRefs:[...(input.causeRefs||[])],committedAt:this.clock()});
+      const event=deepFreeze({id,ref,seq:++g.eventSeq,gameId,campaignId,timelineId,type:input.type||'world_event',worldTime:input.worldTime||null,actorIds:[...(input.actorIds||[])],witnessIds:[...(input.witnessIds||[])],payload:copy(input.payload||{}),causeRefs:[...(input.causeRefs||[])],committedAt:this.clock()});
       g.events.set(ref,event);t.localEvents.push(ref);return event;
     }
     visibleEvents(gameId,campaignId,timelineId){const g=this.game(gameId),t=this.timeline(gameId,campaignId,timelineId);return [...t.inheritedEvents,...t.localEvents].map(ref=>g.events.get(ref)).filter(Boolean);}
     remember(gameId,campaignId,timelineId,entityId,input={}){
       const g=this.game(gameId),t=this.timeline(gameId,campaignId,timelineId);check(g.entities.has(entityId),'ENTITY_NOT_FOUND');check(input.sourceEventRef,'MEMORY_SOURCE_REQUIRED');
       check([...t.inheritedEvents,...t.localEvents].includes(input.sourceEventRef),'MEMORY_SOURCE_NOT_VISIBLE');
-      const record=Object.freeze({id:input.id||uid('memory'),entityId,sourceEventRef:input.sourceEventRef,interpretation:copy(input.interpretation||null),beliefBefore:copy(input.beliefBefore||null),beliefAfter:copy(input.beliefAfter||null),emotionalWeight:Number(input.emotionalWeight||0),learnedAt:this.clock()});
+      const record=deepFreeze({id:input.id||uid('memory'),entityId,sourceEventRef:input.sourceEventRef,interpretation:copy(input.interpretation||null),beliefBefore:copy(input.beliefBefore||null),beliefAfter:copy(input.beliefAfter||null),emotionalWeight:Number(input.emotionalWeight||0),learnedAt:this.clock()});
       const list=t.memories.get(entityId)||[];check(!list.some(x=>x.id===record.id),'MEMORY_EXISTS');list.push(record);t.memories.set(entityId,list);return record;
     }
     memories(gameId,campaignId,timelineId,entityId){const t=this.timeline(gameId,campaignId,timelineId);return [...(t.inheritedMemories.get(entityId)||[]),...(t.memories.get(entityId)||[])].map(copy);}
@@ -63,12 +64,12 @@
       const track={id,kind,title:input.title||kind,canonStatus:input.canonStatus||(kind==='what_if'||kind==='alternate_timeline'?'isolated':'canon'),status:input.status||'active',isolation:copy(input.isolation||{}),episodes:[]};t.tracks.set(id,track);return copy(track);
     }
     addEpisode(gameId,campaignId,timelineId,trackId,input={}){
-      const t=this.timeline(gameId,campaignId,timelineId),tr=t.tracks.get(trackId);check(tr,'TRACK_NOT_FOUND');const ep=Object.freeze({id:input.id||uid('episode'),number:input.number==null?tr.episodes.length+1:input.number,title:input.title||'Untitled Episode',role:input.role||null,status:input.status||'planned'});tr.episodes.push(ep);return ep;
+      const t=this.timeline(gameId,campaignId,timelineId),tr=t.tracks.get(trackId);check(tr,'TRACK_NOT_FOUND');const ep=deepFreeze({id:input.id||uid('episode'),number:input.number==null?tr.episodes.length+1:input.number,title:input.title||'Untitled Episode',role:input.role||null,status:input.status||'planned'});tr.episodes.push(ep);return ep;
     }
     createFlashback(gameId,campaignId,timelineId,input={}){
       const t=this.timeline(gameId,campaignId,timelineId),kind=input.kind||'canonical_recall';check(FLASHBACKS.has(kind),'INVALID_FLASHBACK_KIND');check(input.trackId&&t.tracks.has(input.trackId),'FLASHBACK_TRACK_REQUIRED');
       const refs=[...(input.sourceEventRefs||[])];if(kind==='canonical_recall'||kind==='subjective_memory'){check(refs.length,'FLASHBACK_SOURCE_REQUIRED');const visible=[...t.inheritedEvents,...t.localEvents];refs.forEach(r=>check(visible.includes(r),'FLASHBACK_SOURCE_NOT_VISIBLE'));}
-      const fb=Object.freeze({id:input.id||uid('flashback'),trackId:input.trackId,kind,perspectiveEntityId:input.perspectiveEntityId||null,sourceEventRefs:refs,scale:input.scale||'scene',historicalCommitAllowed:kind==='historical_gap'});t.flashbacks.push(fb);return fb;
+      const fb=deepFreeze({id:input.id||uid('flashback'),trackId:input.trackId,kind,perspectiveEntityId:input.perspectiveEntityId||null,sourceEventRefs:refs,scale:input.scale||'scene',historicalCommitAllowed:kind==='historical_gap'});t.flashbacks.push(fb);return fb;
     }
     requiresAgencyGate(input={}){return !!input.playerEntityId&&input.actorEntityId===input.playerEntityId&&(input.force===true||PLAYER_OWNED.has(input.actionType));}
     storyAtlas(gameId,campaignId,timelineId){const t=this.timeline(gameId,campaignId,timelineId);return {timelineId,parentTimelineId:t.parentTimelineId,tracks:[...t.tracks.values()].map(copy),flashbacks:t.flashbacks.map(copy)};}
