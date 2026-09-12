@@ -1,0 +1,25 @@
+(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.SevenUltimateModels=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
+'use strict';
+const clone=v=>v==null?v:JSON.parse(JSON.stringify(v));
+const check=(v,m)=>{if(!v)throw new Error(m)};
+const clamp=(n,a=0,b=1)=>Math.max(a,Math.min(b,Number(n)||0));
+class ModelFabric{
+ constructor(){this.providers=new Map();this.models=new Map();this.outcomes=new Map();}
+ registerProvider(input={}){check(input.id,'PROVIDER_ID_REQUIRED');check(!this.providers.has(input.id),'PROVIDER_EXISTS');const p={id:input.id,name:input.name||input.id,health:input.health||'healthy',freeProof:input.freeProof||'unknown',local:!!input.local,latencyMs:Number(input.latencyMs||250),quotaState:input.quotaState||'unknown',capabilities:[...(input.capabilities||[])]};this.providers.set(p.id,p);return clone(p);}
+ registerModel(input={}){check(input.id&&input.providerId,'MODEL_ID_PROVIDER_REQUIRED');check(this.providers.has(input.providerId),'PROVIDER_NOT_FOUND');check(!this.models.has(input.id),'MODEL_EXISTS');const m={id:input.id,providerId:input.providerId,roles:[...(input.roles||['general'])],capabilities:[...(input.capabilities||[])],quality:clamp(input.quality==null?.5:input.quality),speed:clamp(input.speed==null?.5:input.speed),context:Number(input.context||0),status:input.status||'specialist',costClass:input.costClass||'free'};this.models.set(m.id,m);return clone(m);}
+ setProviderHealth(id,health,latencyMs){const p=this.providers.get(id);check(p,'PROVIDER_NOT_FOUND');p.health=health;if(latencyMs!=null)p.latencyMs=Number(latencyMs);return clone(p);}
+ recordOutcome(modelId,input={}){check(this.models.has(modelId),'MODEL_NOT_FOUND');const key=`${modelId}|${input.taskType||'general'}`,r=this.outcomes.get(key)||{wins:0,total:0,latencyMs:0};r.total++;if(input.success)r.wins++;r.latencyMs=((r.latencyMs*(r.total-1))+Number(input.latencyMs||0))/r.total;this.outcomes.set(key,r);return clone(r);}
+ outcomeScore(modelId,taskType='general'){const r=this.outcomes.get(`${modelId}|${taskType}`);return r&&r.total?r.wins/r.total:.5;}
+ eligible(input={}){const role=input.role||'general',required=new Set(input.capabilities||[]),allowPaid=!!input.allowPaid;return [...this.models.values()].filter(m=>{const p=this.providers.get(m.providerId);if(!p||p.health==='down')return false;if(!m.roles.includes(role)&&!m.roles.includes('general'))return false;if([...required].some(x=>!m.capabilities.includes(x)&&!p.capabilities.includes(x)))return false;if(!allowPaid&&!(p.local||p.freeProof==='verified_free'||m.costClass==='free'))return false;if(input.maxLatencyMs&&p.latencyMs>input.maxLatencyMs)return false;return true;});}
+ route(input={}){const task=input.taskType||input.role||'general',candidates=this.eligible(input).map(m=>{const p=this.providers.get(m.providerId),out=this.outcomeScore(m.id,task),latency=1-Math.min(1,p.latencyMs/3000),switchPenalty=input.currentModelId&&input.currentModelId!==m.id?.04:0;const score=m.quality*.42+m.speed*.18+out*.25+latency*.15-switchPenalty;return {modelId:m.id,providerId:m.providerId,score:+score.toFixed(4),quality:m.quality,speed:m.speed,outcome:out,latencyMs:p.latencyMs};}).sort((a,b)=>b.score-a.score||a.modelId.localeCompare(b.modelId));check(candidates.length,'NO_ELIGIBLE_MODEL');return {selected:candidates[0],candidates};}
+ council(input={}){const mode=input.mode||'deep';if(!['deep','max'].includes(mode))return {enabled:false,members:[]};const ranked=this.route(input).candidates;const members=[];const providers=new Set();for(const x of ranked){if(members.length>=Math.min(3,input.maxMembers||3))break;if(!providers.has(x.providerId)||members.length<2){members.push(x);providers.add(x.providerId);}}return {enabled:members.length>1,members,pattern:members.length>1?'solver-critic-verifier':'single'};}
+}
+class AdaptiveCompute{
+ decide(input={}){const complexity=clamp((input.complexity??.3)),uncertainty=clamp((input.uncertainty??.2)),risk=clamp((input.risk??.2)),latencyPriority=clamp((input.latencyPriority??.5));const score=complexity*.4+uncertainty*.3+risk*.3-latencyPriority*.2;let mode='fast';if(score>.2)mode='think';if(score>.45)mode='deep';if(score>.72)mode='max';return {mode,score:+score.toFixed(3),candidateCount:mode==='fast'?1:mode==='think'?2:mode==='deep'?3:4,verification:mode!=='fast',counterexample:mode==='deep'||mode==='max',council:mode==='max'};}
+}
+class IntelligenceAmplifier{
+ constructor(modelFabric,compute=new AdaptiveCompute()){this.models=modelFabric;this.compute=compute;}
+ plan(input={}){const compute=this.compute.decide(input);const route=this.models.route({...input,role:input.role||'general'});const plan={compute,primary:route.selected,stages:['context','solve']};if(compute.mode!=='fast')plan.stages.push('critique');if(compute.counterexample)plan.stages.push('counterexample');if(compute.verification)plan.stages.push('verify');if(compute.mode==='max')plan.council=this.models.council({...input,mode:'max'});return plan;}
+}
+return {ModelFabric,AdaptiveCompute,IntelligenceAmplifier};
+});
