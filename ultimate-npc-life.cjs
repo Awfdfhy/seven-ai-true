@@ -1,0 +1,17 @@
+const assert=require('assert');
+const {NPCLife,NPCPopulation,GoalContinuityEngine}=require('./src/ultimate/npc-life.js');
+const goals=new GoalContinuityEngine();
+goals.add({id:'g1',text:'Take control of the council',priority:90,commitment:95,sourceEventRefs:['e0']});
+assert.equal(goals.get('g1').status,'active');
+goals.reconsider('g1',{sourceEventRef:'e1',identityShift:10,reasons:['setback']});
+assert.equal(goals.get('g1').status,'active','minor setback must not erase a persistent goal');
+goals.reconsider('g1',{sourceEventRef:'e2',worldImpossible:true});
+assert.equal(goals.get('g1').status,'blocked');
+goals.resume('g1',{sourceEventRef:'e3'});assert.equal(goals.get('g1').status,'active');
+const npc=new NPCLife({id:'aria',name:'Aria',stage:'young_adult',traits:{openness:80,conscientiousness:72,agreeableness:58,dominance:62,patience:75},values:[{name:'autonomy',weight:96},{name:'loyalty',weight:84},{name:'duty',weight:73}],worldview:['Authority must justify itself'],identity:{selfConcept:['I choose my own role'],contradictions:[{a:'autonomy',b:'duty'}]},goals:[{id:'protect_choice',text:'Protect political autonomy',priority:92,commitment:90,sourceEventRefs:['e0']}],relationships:[{entityId:'ali',trust:86,respect:93}],routine:{blocks:[{id:'council',start:9,end:12,activity:'council work',locationId:'palace',role:'princess'}]},lifeEvents:[{id:'l1',kind:'origin',stage:'childhood',summary:'Raised in Elaria',sourceEventRef:'e0'},{id:'l2',kind:'formative',stage:'adolescence',summary:'Learned diplomacy',sourceEventRef:'e1'}]});
+assert.ok(npc.auditDepth().score>=.7);
+const decision=npc.choose([{id:'submit',valueEffects:{autonomy:-1,duty:.4},goalEffects:{protect_choice:-1},certainty:90},{id:'negotiate',valueEffects:{autonomy:.8,duty:.5},goalEffects:{protect_choice:.8},certainty:75,longTerm:1}],{knownFacts:[]});
+assert.equal(decision.choice,'negotiate');
+npc.theoryOfMind.observe('ali',{goals:{freedom:.8},trust:88,certainty:70,sourceEventRef:'e2'});const mind=npc.activeMind({relevantPeople:['ali'],memories:[{id:'m1'}],hour:10});assert.equal(mind.theoryOfMind[0].entityId,'ali');assert.equal(mind.routine[0].activity,'council work');
+const pop=new NPCPopulation({hotLimit:2});pop.create({id:'a',worldview:['x'],values:['v1','v2','v3'],goals:[{id:'g',sourceEventRefs:['e']}],identity:{selfConcept:['a'],contradictions:[{}]},relationships:[{entityId:'b'}],routine:{blocks:[{start:0,end:24,activity:'live'}]},lifeEvents:[{id:'a1',kind:'origin'},{id:'a2',kind:'event'}]});pop.create({id:'b'});pop.setTier('a','hot');pop.setTier('b','cold');const rows=pop.tick({tick:1,hour:1,hours:1});assert.equal(rows.length,1);assert.equal(rows[0].id,'a');
+console.log('ultimate NPC life: 14 assertions PASS');

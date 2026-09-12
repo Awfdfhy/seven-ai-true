@@ -1,0 +1,123 @@
+/* Seven UI v7.1 — deep polish layer. Loaded by ultimate-shell.js. */
+:root{
+ --seven-space-1:4px;--seven-space-2:8px;--seven-space-3:12px;--seven-space-4:16px;--seven-space-5:20px;--seven-space-6:24px;--seven-space-8:32px;--seven-space-10:40px;--seven-space-12:48px;
+ --seven-control-min:44px;--seven-focus:0 0 0 3px color-mix(in srgb,var(--seven-blue) 28%,transparent);--seven-max-readable:74ch;
+ --seven-ease-standard:cubic-bezier(.2,.8,.2,1);--seven-ease-emphasized:cubic-bezier(.16,1,.3,1);--seven-ease-exit:cubic-bezier(.4,0,1,1);
+ --seven-border-strong:color-mix(in srgb,var(--seven-text) 15%,transparent);--seven-selection:color-mix(in srgb,var(--seven-blue) 18%,transparent)
+}
+::selection{background:var(--seven-selection)}
+html{scroll-behavior:smooth;text-size-adjust:100%;-webkit-text-size-adjust:100%}
+body{font-synthesis-weight:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
+button,input,textarea,select{font:inherit}
+button{touch-action:manipulation}
+a,button,[role="button"],input,textarea,select{outline:none}
+:where(a,button,[role="button"],input,textarea,select,[tabindex]):focus-visible{box-shadow:var(--seven-focus);outline:2px solid transparent;outline-offset:2px}
+.seven-skip-link{position:fixed;inset-block-start:8px;inset-inline-start:8px;z-index:1000;padding:10px 14px;border-radius:12px;background:var(--seven-text);color:var(--seven-bg);transform:translateY(-160%);transition:transform var(--seven-quick) var(--seven-ease-standard)}
+.seven-skip-link:focus{transform:translateY(0)}
+.seven-visually-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;white-space:nowrap!important;border:0!important}
+
+/* Surfaces: content stays calm; glass is reserved for navigation and transient controls. */
+.seven-sidebar,.seven-panel-side{background:color-mix(in srgb,var(--seven-surface) 96%,transparent)}
+.seven-topbar,.seven-composer,.seven-workbench{isolation:isolate}
+.seven-topbar{padding-inline:max(14px,env(safe-area-inset-left)) max(14px,env(safe-area-inset-right))}
+.seven-stage{background:
+ radial-gradient(900px 520px at 50% -240px,color-mix(in srgb,var(--seven-blue) 5%,transparent),transparent 70%),var(--seven-bg)}
+[data-theme="night"] .seven-stage{background:radial-gradient(900px 520px at 50% -240px,color-mix(in srgb,var(--seven-aurora) 5%,transparent),transparent 70%),var(--seven-bg)}
+.seven-content{width:min(100%,948px)}
+.seven-message-ai .seven-message-body,.seven-prose{max-width:var(--seven-max-readable)}
+.seven-card{position:relative;overflow:clip}
+.seven-card-interactive::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;opacity:0;background:linear-gradient(135deg,color-mix(in srgb,var(--seven-aurora) 8%,transparent),transparent 46%);transition:opacity var(--seven-quick)}
+.seven-card-interactive:hover::after{opacity:1}
+
+/* Clear state language and generous interaction targets. */
+.seven-nav-button,.seven-new{min-height:44px}
+.seven-icon-button,.seven-send{min-width:40px;min-height:40px}
+.seven-chip{min-height:36px}
+.seven-action{min-height:32px}
+.seven-nav-button[aria-current="page"]{font-weight:680;box-shadow:inset 3px 0 0 color-mix(in srgb,var(--seven-blue) 70%,transparent)}
+[dir="rtl"] .seven-nav-button[aria-current="page"]{box-shadow:inset -3px 0 0 color-mix(in srgb,var(--seven-blue) 70%,transparent)}
+.seven-nav-button[aria-current="false"]{aria-selected:false}
+.seven-message-actions{opacity:.72}
+@media (hover:hover) and (pointer:fine){.seven-message-actions{opacity:.42}.seven-message:hover .seven-message-actions,.seven-message:focus-within .seven-message-actions{opacity:1}}
+@media (hover:none),(pointer:coarse){.seven-icon-button,.seven-send,.seven-chip,.seven-action{min-width:44px;min-height:44px}.seven-message-actions{opacity:1}.seven-nav-button{min-height:48px}}
+
+/* Status and activity components. */
+.seven-activity{display:grid;grid-template-columns:18px minmax(0,1fr) auto;align-items:center;gap:8px;min-height:38px;padding:8px 10px;border:1px solid transparent;border-radius:12px;font-size:11px;color:var(--seven-muted);transition:background var(--seven-quick),border-color var(--seven-quick),transform var(--seven-quick)}
+.seven-activity::before{content:"";width:8px;height:8px;border:1.5px solid currentColor;border-radius:50%;justify-self:center}
+.seven-activity[data-state="running"]{color:var(--seven-text);background:color-mix(in srgb,var(--seven-blue) 5%,transparent);border-color:color-mix(in srgb,var(--seven-blue) 12%,transparent)}
+.seven-activity[data-state="running"]::before{border-color:var(--seven-blue);box-shadow:0 0 0 4px color-mix(in srgb,var(--seven-blue) 9%,transparent);animation:seven-polish-pulse 1.5s ease-in-out infinite}
+.seven-activity[data-state="success"]::before{background:var(--seven-success);border-color:var(--seven-success)}
+.seven-activity[data-state="error"],.seven-activity[data-state="failure"]{color:var(--seven-danger);background:color-mix(in srgb,var(--seven-danger) 6%,transparent)}
+.seven-activity[data-state="error"]::before,.seven-activity[data-state="failure"]::before{border-color:var(--seven-danger)}
+.seven-activity[data-state="waiting_permission"]{color:var(--seven-warn);background:color-mix(in srgb,var(--seven-warn) 6%,transparent)}
+.seven-activity[data-state="cancelled"]{opacity:.64}
+.seven-activity-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.seven-activity-meta{font-size:9px;color:var(--seven-muted);white-space:nowrap}
+.seven-progress-track{height:3px;background:var(--seven-border);border-radius:999px;overflow:hidden;margin-top:6px}.seven-progress-track>i{display:block;height:100%;background:linear-gradient(90deg,var(--seven-blue),var(--seven-aurora));border-radius:inherit;transform-origin:left center;transition:transform var(--seven-standard) var(--seven-ease-standard)}
+
+/* Command palette and transient feedback. */
+.seven-command-layer{position:fixed;inset:0;z-index:120;display:none;place-items:start center;padding:clamp(72px,12vh,130px) 16px 16px;background:rgba(4,9,17,.18);backdrop-filter:blur(4px)}
+.seven-command-layer[data-open="true"]{display:grid;animation:seven-polish-fade var(--seven-quick) ease-out}
+.seven-command{width:min(620px,100%);border:1px solid var(--seven-border-strong);border-radius:20px;background:color-mix(in srgb,var(--seven-surface) 96%,transparent);box-shadow:0 28px 80px rgba(0,0,0,.18);overflow:hidden;transform-origin:50% 20%;animation:seven-polish-pop var(--seven-standard) var(--seven-ease-emphasized)}
+.seven-command-search{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--seven-border)}
+.seven-command-search span{color:var(--seven-muted)}.seven-command-search input{width:100%;border:0;background:transparent;color:var(--seven-text);font-size:14px;outline:0}
+.seven-command-list{max-height:min(52vh,440px);overflow:auto;padding:8px}.seven-command-item{width:100%;min-height:44px;border:0;border-radius:12px;background:transparent;color:var(--seven-text);display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:8px;padding:7px 10px;text-align:start;cursor:pointer}.seven-command-item:hover,.seven-command-item[data-active="true"]{background:var(--seven-raised)}.seven-command-item small{color:var(--seven-muted)}
+.seven-toast-stack{position:fixed;z-index:140;inset-inline-end:max(14px,env(safe-area-inset-right));inset-block-end:max(18px,calc(env(safe-area-inset-bottom) + 14px));display:grid;gap:8px;pointer-events:none;width:min(360px,calc(100vw - 28px))}
+.seven-toast{pointer-events:auto;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:9px;padding:10px 12px;border:1px solid var(--seven-border);border-radius:14px;background:var(--seven-glass);backdrop-filter:blur(16px) saturate(130%);box-shadow:var(--seven-shadow);font-size:11px;animation:seven-toast-in var(--seven-standard) var(--seven-ease-emphasized)}
+.seven-toast[data-kind="success"]{border-color:color-mix(in srgb,var(--seven-success) 35%,var(--seven-border))}.seven-toast[data-kind="error"]{border-color:color-mix(in srgb,var(--seven-danger) 40%,var(--seven-border))}.seven-toast button{border:0;background:transparent;color:var(--seven-muted);min-width:32px;min-height:32px;border-radius:8px;cursor:pointer}
+
+/* Sheets and overlay respect spatial context. */
+.seven-overlay{transition:opacity var(--seven-standard) var(--seven-ease-standard)}
+.seven-sidebar,.seven-workbench{will-change:transform}
+.seven-workbench{box-shadow:-20px 0 60px rgba(0,0,0,.06)}
+[dir="rtl"] .seven-workbench{box-shadow:20px 0 60px rgba(0,0,0,.06)}
+
+/* RPG gets atmosphere without becoming a game HUD wall. */
+.seven-rpg{--seven-rpg-accent:var(--seven-violet)}
+.seven-rpg-story{position:relative}.seven-rpg-story::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(700px 260px at 50% 0,color-mix(in srgb,var(--seven-rpg-accent) 5%,transparent),transparent 72%)}
+.seven-agency-gate{position:relative;overflow:hidden;border:1px solid color-mix(in srgb,var(--seven-violet) 24%,var(--seven-border));background:color-mix(in srgb,var(--seven-violet) 5%,var(--seven-surface));box-shadow:0 10px 34px color-mix(in srgb,var(--seven-violet) 7%,transparent)}
+.seven-agency-gate::after{content:"";position:absolute;inset-inline-start:0;inset-block:0;width:2px;background:linear-gradient(var(--seven-aurora),var(--seven-violet))}
+.seven-timeline-item{transition:transform var(--seven-quick),background var(--seven-quick)}.seven-timeline-item:hover{transform:translateX(2px)}[dir="rtl"] .seven-timeline-item:hover{transform:translateX(-2px)}
+.seven-character-row{min-height:54px;border-radius:12px;transition:background var(--seven-quick),transform var(--seven-quick)}.seven-character-row:hover{background:var(--seven-raised);transform:translateY(-1px)}
+
+/* Loading, empty, offline and error states share one calm visual grammar. */
+.seven-state{min-height:180px;display:grid;place-items:center;text-align:center;padding:32px}.seven-state-inner{max-width:420px}.seven-state-icon{width:44px;height:44px;margin:0 auto 12px;display:grid;place-items:center;border-radius:14px;background:var(--seven-raised);color:var(--seven-blue)}.seven-state h3{margin:0;font-size:14px}.seven-state p{margin:6px 0 0;color:var(--seven-muted);font-size:11px;line-height:1.5}
+.seven-skeleton{position:relative;overflow:hidden;background:var(--seven-raised);border-radius:8px;min-height:12px}.seven-skeleton::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--seven-text) 5%,transparent),transparent);animation:seven-skeleton 1.8s ease-in-out infinite}
+
+/* Semantic feedback never relies on color alone. */
+[data-state="success"]{--seven-state-color:var(--seven-success)}[data-state="warning"]{--seven-state-color:var(--seven-warn)}[data-state="error"],[data-state="failure"]{--seven-state-color:var(--seven-danger)}
+
+/* Density and performance modes. */
+.seven-app[data-density="compact"] .seven-nav-button{min-height:36px}.seven-app[data-density="compact"] .seven-card{padding:12px}.seven-app[data-density="compact"] .seven-content{padding-top:24px}
+.seven-app[data-low-power="true"]{--seven-shadow:none;--seven-shadow-soft:none}.seven-app[data-low-power="true"] .seven-mark::after,.seven-app[data-low-power="true"] .seven-rpg-story::before{display:none}.seven-app[data-low-power="true"] :is(.seven-topbar,.seven-composer,.seven-toast){backdrop-filter:none}
+
+/* RTL is structural, not an afterthought. */
+[dir="rtl"] .seven-panel-side{border-inline-start:1px solid var(--seven-border);border-inline-end:0}[dir="rtl"] .seven-claim{border-radius:10px 0 0 10px}[dir="rtl"] .seven-code{direction:ltr;text-align:left}[dir="rtl"] textarea{direction:rtl;text-align:right}
+
+/* Zoom/reflow and small screens. */
+@media (max-width:1023px){.seven-content{padding-inline:20px}.seven-grid-3{grid-template-columns:repeat(2,minmax(0,1fr))}.seven-research-layout{grid-template-columns:minmax(0,1fr) 260px}}
+@media (max-width:760px){
+ :root{--seven-top:56px}.seven-content{padding:24px 16px 124px}.seven-grid-2,.seven-grid-3{grid-template-columns:1fr}.seven-section-head{align-items:flex-start;flex-direction:column}.seven-section-head .seven-chip{align-self:flex-start}
+ .seven-topbar{padding-inline:max(10px,env(safe-area-inset-left)) max(10px,env(safe-area-inset-right))}.seven-title{font-size:12px}.seven-breadcrumb{display:none}.seven-halo{max-width:148px}.seven-halo-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .seven-composer-wrap{padding-inline:10px;padding-bottom:max(10px,env(safe-area-inset-bottom))}.seven-composer{border-radius:18px;min-height:58px}.seven-composer textarea{font-size:16px}
+ .seven-research-layout,.seven-code-layout{display:block;height:auto}.seven-panel-main{padding:18px 16px 120px}.seven-panel-side{border:0;border-top:1px solid var(--seven-border);padding:14px 16px 120px}.seven-file-tree,.seven-agent{min-height:auto}.seven-code-layout .seven-file-tree,.seven-code-layout .seven-agent{display:none}.seven-code-layout[data-agent="open"] .seven-agent{display:block;position:absolute;inset:0;background:var(--seven-bg);z-index:15;padding:16px}
+ .seven-message-user .seven-message-body{max-width:88%}.seven-message-ai{grid-template-columns:24px minmax(0,1fr)}.seven-mini-mark{width:24px;height:24px}
+ .seven-command-layer{place-items:end center;padding:16px 10px max(10px,env(safe-area-inset-bottom));}.seven-command{border-radius:20px 20px 16px 16px}.seven-command-list{max-height:55vh}
+ .seven-toast-stack{inset-inline:10px;width:auto;inset-block-end:max(84px,calc(env(safe-area-inset-bottom) + 78px))}
+}
+@media (max-width:479px){.seven-quick-actions{max-width:330px}.seven-quick-actions .seven-chip{flex:1 1 calc(50% - 8px);justify-content:center}.seven-center{align-content:center}.seven-greeting{font-size:24px}.seven-stat{font-size:24px}}
+
+/* Accessibility and system preferences. */
+@media (prefers-contrast:more){:root{--seven-border:color-mix(in srgb,var(--seven-text) 24%,transparent);--seven-border-strong:color-mix(in srgb,var(--seven-text) 42%,transparent)}.seven-card,.seven-composer,.seven-halo{border-width:2px}}
+@media (forced-colors:active){.seven-mark,.seven-send{forced-color-adjust:auto;background:ButtonFace;color:ButtonText;border:1px solid ButtonText}.seven-halo-dot,.seven-progress-dot{forced-color-adjust:auto}.seven-card,.seven-composer,.seven-command,.seven-toast{border:1px solid CanvasText}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}.seven-sidebar,.seven-workbench{will-change:auto}}
+.seven-app[data-reduced-motion="true"] *, .seven-app[data-reduced-motion="true"] *::before,.seven-app[data-reduced-motion="true"] *::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+@media (prefers-reduced-transparency:reduce){.seven-topbar,.seven-composer,.seven-toast{backdrop-filter:none;background:var(--seven-surface)}}
+
+@keyframes seven-polish-fade{from{opacity:0}to{opacity:1}}
+@keyframes seven-polish-pop{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes seven-toast-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes seven-polish-pulse{0%,100%{transform:scale(.92);opacity:.7}50%{transform:scale(1);opacity:1}}
+@keyframes seven-skeleton{to{transform:translateX(100%)}}
+
+/* Rendering containment for long workspaces. */
+.seven-card,.seven-timeline-item,.seven-character-row,.seven-source{content-visibility:auto;contain-intrinsic-size:auto 72px}

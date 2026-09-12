@@ -1,0 +1,62 @@
+(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.SevenCapabilityIntelligence=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
+'use strict';
+const clone=v=>v==null?v:JSON.parse(JSON.stringify(v));
+const check=(v,m)=>{if(!v)throw new Error(m)};
+const clamp=(n,a=0,b=1)=>Math.max(a,Math.min(b,Number(n)||0));
+const words=s=>String(s||'').toLowerCase().split(/[^a-z0-9_.-]+/).filter(Boolean);
+const now=()=>Date.now();
+
+class InvertedCapabilityIndex{
+ constructor(){this.docs=new Map();this.postings=new Map();this.namespaces=new Map();this.protocols=new Map();this.actions=new Map();}
+ _bucket(map,key,id){if(!map.has(key))map.set(key,new Set());map.get(key).add(id);}
+ add(g){if(this.docs.has(g.id))this.remove(g.id);const text=[g.id,g.name,g.namespace,g.description,...(g.capabilities||[]),...(g.tags||[])].join(' '),tokens=[...new Set(words(text))],doc={id:g.id,tokens,namespace:g.namespace,protocol:g.protocol,network:g.network,actionClass:g.actionClass,trustZone:g.trustZone,reliability:g.reliability,latency:g.latency||{},contextCost:JSON.stringify(g.inputSchema||{}).length};this.docs.set(g.id,doc);for(const t of tokens)this._bucket(this.postings,t,g.id);this._bucket(this.namespaces,g.namespace,g.id);this._bucket(this.protocols,g.protocol,g.id);this._bucket(this.actions,g.actionClass,g.id);return this;}
+ remove(id){const d=this.docs.get(id);if(!d)return false;for(const t of d.tokens){const p=this.postings.get(t);if(p){p.delete(id);if(!p.size)this.postings.delete(t);}}for(const[map,key]of[[this.namespaces,d.namespace],[this.protocols,d.protocol],[this.actions,d.actionClass]]){const p=map.get(key);if(p){p.delete(id);if(!p.size)map.delete(key);}}this.docs.delete(id);return true;}
+ candidates(query,input={}){const q=[...new Set(words(query))],scores=new Map();for(const t of q){const exact=this.postings.get(t);for(const id of exact||[])scores.set(id,(scores.get(id)||0)+2);if(input.prefix!==false&&t.length>=3){let n=0;for(const[token,ids]of this.postings){if(token===t||(!token.startsWith(t)&&!t.startsWith(token)))continue;for(const id of ids)scores.set(id,(scores.get(id)||0)+.5);if(++n>=Number(input.maxPrefixTerms||32))break;}}}let ids=[...scores].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).map(x=>x[0]);const allow=id=>{const d=this.docs.get(id);if(!d)return false;if(input.namespace&&d.namespace!==input.namespace)return false;if(input.protocols?.length&&!input.protocols.includes(d.protocol))return false;if(input.actionClass&&d.actionClass!==input.actionClass)return false;if(input.allowNetwork===false&&d.network==='required')return false;return true;};ids=ids.filter(allow);if(input.includeAll&&ids.length<(input.limit||64)){const seen=new Set(ids),source=input.namespace?(this.namespaces.get(input.namespace)||[]):this.docs.keys();for(const id of source){if(seen.has(id)||!allow(id))continue;seen.add(id);ids.push(id);if(ids.length>=Number(input.limit||64))break;}}return ids.slice(0,Math.max(1,Number(input.limit||64)));}
+ stats(){return{documents:this.docs.size,terms:this.postings.size,namespaces:this.namespaces.size,protocols:this.protocols.size,actions:this.actions.size};}
+}
+
+class CapabilityQueryPlanner{
+ constructor(input={}){this.domainHints=input.domainHints||{code:['code','test','repo','file','project','debug','build','lint','patch'],research:['search','web','source','research','citation','evidence'],files:['file','folder','document','pdf','read'],rpg:['canon','character','world','story','timeline','lore'],memory:['memory','remember','context','recall'],verification:['verify','check','validate','judge','test']};this.namespaceMap={code:['code','coding'],research:['research','web'],files:['files','filesystem'],rpg:['rpg'],memory:['memory'],verification:['verification'],...(input.namespaceMap||{})};}
+ plan(query,input={}){const q=words(query),domains=[];for(const[d,terms]of Object.entries(this.domainHints)){let score=0;for(const t of q)if(terms.some(x=>t===x||t.includes(x)||x.includes(t)))score++;if(score)domains.push({domain:d,score});}domains.sort((a,b)=>b.score-a.score);return{query:String(query||''),tokens:q,domains:domains.map(x=>x.domain),namespaces:[...new Set(domains.flatMap(x=>this.namespaceMap[x.domain]||[x.domain]))],networkAllowed:input.allowNetwork!==false,actionClass:input.actionClass||null,privacy:input.privacy||null,workload:input.workload||domains[0]?.domain||'*',latencyPriority:clamp(input.latencyPriority??.5),qualityPriority:clamp(input.qualityPriority??.7),riskTolerance:clamp(input.riskTolerance??.3)};}
+}
+
+class MultiIndexDiscovery{
+ constructor(input={}){check(input.registry,'DISCOVERY_REGISTRY_REQUIRED');this.registry=input.registry;this.graph=input.graph||null;this.outcomes=input.outcomes||null;this.index=input.index||new InvertedCapabilityIndex();this.semanticIndex=input.semanticIndex||null;this.queryPlanner=input.queryPlanner||new CapabilityQueryPlanner();for(const g of this.registry.list())this.index.add(g);}
+ refresh(){this.index=new InvertedCapabilityIndex();for(const g of this.registry.list())this.index.add(g);return this;}
+ sync(){if(this.index.docs.size!==this.registry.list().length)this.refresh();return this;}
+ _semantic(query,limit){if(!this.semanticIndex?.search)return[];try{return this.semanticIndex.search(query,{limit})||[];}catch{return[];}}
+ search(query,input={}){this.sync();const plan=this.queryPlanner.plan(query,input),candidateLimit=Math.max(Number(input.limit||8),Number(input.candidateLimit||96)),lexical=this.index.candidates(query,{limit:candidateLimit,includeAll:input.includeAll,allowNetwork:plan.networkAllowed,protocols:input.protocols,actionClass:input.actionClass,prefix:input.prefix}),scoreHints=new Map(lexical.map((id,i)=>[id,{lexicalRank:i}]));for(const s of this._semantic(query,candidateLimit)){const id=typeof s==='string'?s:s.id;if(!id)continue;const x=scoreHints.get(id)||{};x.semantic=clamp(typeof s==='string'?.5:s.score??.5);scoreHints.set(id,x);}const candidateIds=[...scoreHints.keys()].slice(0,candidateLimit),qSet=new Set(plan.tokens),rows=[];for(const id of candidateIds){let g;try{g=this.registry.resolve(id);}catch{continue;}if(!plan.networkAllowed&&g.network==='required')continue;if(input.protocols?.length&&!input.protocols.includes(g.protocol))continue;if(input.actionClass&&g.actionClass!==input.actionClass)continue;const text=[g.id,g.name,g.namespace,g.description,...g.capabilities,...g.tags].join(' ').toLowerCase(),ts=new Set(words(text));let overlap=0;for(const t of qSet)if(ts.has(t))overlap++;const lexicalScore=qSet.size?overlap/qSet.size:0,semantic=scoreHints.get(id)?.semantic||0,domain=plan.namespaces.includes(g.namespace)||plan.domains.some(d=>g.tags?.includes(d))?1:0,h=this.outcomes?.stats(g.id,plan.workload)||{n:0,success:.5,latency:null},reliability=h.n?h.success:g.reliability,latency=Number(g.latency?.p95||h.latency||1000),latencyScore=1/(1+latency/250),trust=1-clamp(g.trustZone/5),risk={pure:0,read:.08,write:.42,external_action:.7,irreversible:1}[g.actionClass]??.5,contextCost=JSON.stringify(g.inputSchema||{}).length,contextScore=1/(1+contextCost/4000),availability=g.metadata?.available===false?0:1,graphBoost=this.graph&&input.relatedTo?(this.graph.outgoing(input.relatedTo).some(e=>e.to===g.id)?1:0):0,score=(.25*lexicalScore+.10*semantic+.11*domain+.18*reliability+.09*latencyScore+.10*trust+.08*(1-risk)+.05*contextScore+.02*availability+.02*graphBoost);rows.push({id:g.id,score,signals:{lexical:lexicalScore,semantic,domain,reliability,latencyScore,trust,risk,contextScore,availability,graphBoost},contextCost,genome:g});}rows.sort((a,b)=>b.score-a.score||a.contextCost-b.contextCost||a.id.localeCompare(b.id));return{plan,results:rows.slice(0,Math.max(1,Number(input.limit||8))),candidateCount:candidateIds.length,index:this.index.stats()};}
+}
+
+class ToolsetBudgeter{
+ constructor(input={}){this.maxTools=Math.max(1,Number(input.maxTools||12));this.maxSchemaBytes=Math.max(256,Number(input.maxSchemaBytes||24000));}
+ choose(rows=[],compiler,input={}){const maxTools=Math.max(1,Number(input.maxTools||this.maxTools)),maxSchemaBytes=Math.max(256,Number(input.maxSchemaBytes||this.maxSchemaBytes)),chosen=[],rejected=[];let bytes=0;for(const r of rows){if(chosen.length>=maxTools){rejected.push({id:r.id,reason:'TOOL_LIMIT'});continue;}const c=compiler.compile([r.id],{includeDependencies:false,disclosureLevel:input.disclosureLevel??3,maxTools:1})[0];if(!c){rejected.push({id:r.id,reason:'COMPILATION_FAILED'});continue;}const size=JSON.stringify(c).length;if(bytes+size>maxSchemaBytes){rejected.push({id:r.id,reason:'SCHEMA_BUDGET',bytes:size});continue;}chosen.push(c);bytes+=size;}return{tools:chosen,rejected,bytes,budget:{maxTools,maxSchemaBytes},utilization:{tools:chosen.length/maxTools,schemaBytes:bytes/maxSchemaBytes}};}
+}
+
+class CapabilityTransitionModel{
+ constructor(){this.counts=new Map();}
+ record(from,to,verified=true){if(!verified||!from||!to)return;const k=from+'>'+to;this.counts.set(k,(this.counts.get(k)||0)+1);}
+ next(from,limit=4){const rows=[];for(const[k,n]of this.counts){const i=k.indexOf('>'),a=k.slice(0,i),b=k.slice(i+1);if(a===from)rows.push({id:b,count:n});}return rows.sort((a,b)=>b.count-a.count||a.id.localeCompare(b.id)).slice(0,limit);}
+}
+
+class RecipeLibrary{
+ constructor(){this.recipes=new Map();}
+ register(r={}){check(r.id&&Array.isArray(r.steps),'RECIPE_FIELDS_REQUIRED');const x={id:r.id,version:String(r.version||'1'),steps:clone(r.steps),verifiedRuns:Number(r.verifiedRuns||0),successes:Number(r.successes||0),compiled:!!r.compiled,createdAt:now()};this.recipes.set(x.id,x);return clone(x);}
+ outcome(id,success,verified){if(!verified)return;const r=this.recipes.get(id);if(!r)return;r.verifiedRuns++;if(success)r.successes++;}
+ best(minRuns=3,minSuccess=.9){return[...this.recipes.values()].filter(r=>r.verifiedRuns>=minRuns&&r.successes/r.verifiedRuns>=minSuccess).sort((a,b)=>(b.successes/b.verifiedRuns)-(a.successes/a.verifiedRuns)||b.verifiedRuns-a.verifiedRuns).map(clone);}
+}
+
+class ErrorRecoveryPolicy{
+ decide(error={}){const code=String(error.code||error.reason||'BUG');if(['TRANSIENT_NETWORK','TIMEOUT'].includes(code))return{action:'retry_backoff',retry:true};if(code==='RATE_LIMIT')return{action:'alternate_or_backoff',retry:true};if(code==='SCHEMA_DRIFT')return{action:'quarantine_and_repair',retry:false};if(['AUTH_REQUIRED','PERMISSION_DENIED','LEASE_REQUIRED'].includes(code))return{action:'request_authorization',retry:false};if(['PROVIDER_DOWN','CIRCUIT_OPEN'].includes(code))return{action:'alternate_provider',retry:true};if(code==='CONFLICT')return{action:'refresh_and_rebase',retry:true};if(['PARTIAL_SIDE_EFFECT','SIDE_EFFECT_UNCERTAIN','UNCERTAIN'].includes(code))return{action:'reconcile',retry:false};if(['CANCELLED','LATE_RESULT'].includes(code))return{action:'stop',retry:false};if(code==='RESOURCE_EXHAUSTED')return{action:'reduce_parallelism_and_retry',retry:true};return{action:'diagnose',retry:false};}
+}
+
+class CapabilityIntelligencePlane{
+ constructor(input={}){check(input.os,'CAPABILITY_OS_REQUIRED');this.os=input.os;this.discovery=input.discovery||new MultiIndexDiscovery({registry:this.os.registry,graph:this.os.graph,outcomes:this.os.outcomes,semanticIndex:input.semanticIndex});this.budgeter=input.budgeter||new ToolsetBudgeter(input.toolsetBudget);this.transitions=input.transitions||new CapabilityTransitionModel();this.recipes=input.recipes||new RecipeLibrary();this.recovery=input.recovery||new ErrorRecoveryPolicy();}
+ discover(query,input={}){return this.discovery.search(query,input);}
+ compileForTask(query,input={}){const found=this.discover(query,{...input,limit:input.discoveryLimit||24});const selected=this.budgeter.choose(found.results,this.os.compiler,input);return{queryPlan:found.plan,ranked:found.results.map(r=>({id:r.id,score:r.score,signals:r.signals,contextCost:r.contextCost})),candidateCount:found.candidateCount,index:found.index,...selected};}
+ recordSequence(ids=[],verified=true){for(let i=1;i<ids.length;i++)this.transitions.record(ids[i-1],ids[i],verified);}
+ prewarmHints(lastCapabilityId){return this.transitions.next(lastCapabilityId);}
+}
+
+return{InvertedCapabilityIndex,CapabilityQueryPlanner,MultiIndexDiscovery,ToolsetBudgeter,CapabilityTransitionModel,RecipeLibrary,ErrorRecoveryPolicy,CapabilityIntelligencePlane};
+});

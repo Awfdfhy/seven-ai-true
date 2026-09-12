@@ -1,0 +1,28 @@
+(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.SevenUltimateWorkspace=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
+'use strict';
+const clone=v=>v==null?v:JSON.parse(JSON.stringify(v));const check=(v,m)=>{if(!v)throw new Error(m)};
+class ArtifactStore{
+ constructor(){this.artifacts=new Map();}
+ create(input={}){check(input.id&&!this.artifacts.has(input.id),'ARTIFACT_EXISTS');const a={id:input.id,projectId:input.projectId||null,name:input.name||input.id,type:input.type||'text',createdAt:input.createdAt||Date.now(),versions:[],head:null};this.artifacts.set(a.id,a);if(input.content!==undefined)this.commit(a.id,{content:input.content,sourceRefs:input.sourceRefs||[],message:'initial'});return clone(a);}
+ commit(id,input={}){const a=this.artifacts.get(id);check(a,'ARTIFACT_NOT_FOUND');const parent=a.head,v={id:input.versionId||`${id}:v${a.versions.length+1}`,parent,createdAt:input.createdAt||Date.now(),message:input.message||null,content:clone(input.content),sourceRefs:[...(input.sourceRefs||[])],metadata:clone(input.metadata||{})};a.versions.push(v);a.head=v.id;return clone(v);}
+ get(id,versionId=null){const a=this.artifacts.get(id);check(a,'ARTIFACT_NOT_FOUND');if(!versionId)return clone(a);const v=a.versions.find(x=>x.id===versionId);check(v,'ARTIFACT_VERSION_NOT_FOUND');return clone(v);}
+ compare(id,fromId,toId){const a=this.artifacts.get(id);check(a,'ARTIFACT_NOT_FOUND');const from=a.versions.find(x=>x.id===fromId),to=a.versions.find(x=>x.id===toId);check(from&&to,'ARTIFACT_VERSION_NOT_FOUND');const as=JSON.stringify(from.content),bs=JSON.stringify(to.content);return{artifactId:id,from:fromId,to:toId,changed:as!==bs,beforeLength:as.length,afterLength:bs.length};}
+ list(projectId){return[...this.artifacts.values()].filter(a=>projectId==null||a.projectId===projectId).map(a=>({id:a.id,projectId:a.projectId,name:a.name,type:a.type,head:a.head,versions:a.versions.length}));}
+}
+class ProjectWorkspace{
+ constructor(opts={}){this.clock=opts.clock||(()=>new Date().toISOString());this.projects=new Map();this.artifacts=opts.artifacts||new ArtifactStore();}
+ create(input={}){const id=input.id||`project_${this.projects.size+1}`;check(!this.projects.has(id),'PROJECT_EXISTS');const p={id,name:input.name||'Untitled Project',createdAt:this.clock(),updatedAt:this.clock(),instructions:input.instructions||'',chats:new Map(),files:new Map(),knowledge:new Map(),runs:new Map(),memoryRefs:new Set(),artifactIds:new Set(),metadata:clone(input.metadata||{})};this.projects.set(id,p);return this.summary(id);}
+ project(id){const p=this.projects.get(id);check(p,'PROJECT_NOT_FOUND');return p;}
+ addChat(projectId,input={}){const p=this.project(projectId),id=input.id||`chat_${p.chats.size+1}`;check(!p.chats.has(id),'CHAT_EXISTS');p.chats.set(id,{id,title:input.title||'New chat',roomId:input.roomId||null,createdAt:this.clock(),updatedAt:this.clock()});p.updatedAt=this.clock();return clone(p.chats.get(id));}
+ attachFile(projectId,input={}){const p=this.project(projectId);check(input.id,'FILE_ID_REQUIRED');check(!p.files.has(input.id),'FILE_EXISTS');const f={id:input.id,name:input.name||input.id,mime:input.mime||null,size:Number(input.size||0),sourceRef:input.sourceRef||null,hash:input.hash||null,originalRetained:input.originalRetained!==false,addedAt:this.clock()};p.files.set(f.id,f);p.updatedAt=this.clock();return clone(f);}
+ addKnowledge(projectId,input={}){const p=this.project(projectId);check(input.id,'KNOWLEDGE_ID_REQUIRED');const k={id:input.id,title:input.title||input.id,sourceRefs:[...(input.sourceRefs||[])],contentRef:input.contentRef||null,derived:input.derived!==false,lineage:clone(input.lineage||{})};p.knowledge.set(k.id,k);p.updatedAt=this.clock();return clone(k);}
+ linkMemory(projectId,ref){const p=this.project(projectId);check(ref,'MEMORY_REF_REQUIRED');p.memoryRefs.add(ref);return p.memoryRefs.size;}
+ addRun(projectId,input={}){const p=this.project(projectId);check(input.id,'RUN_ID_REQUIRED');p.runs.set(input.id,{id:input.id,type:input.type||'generic',status:input.status||'queued',sourceRefs:[...(input.sourceRefs||[])],createdAt:this.clock(),updatedAt:this.clock()});p.updatedAt=this.clock();return clone(p.runs.get(input.id));}
+ updateRun(projectId,runId,patch={}){const p=this.project(projectId),r=p.runs.get(runId);check(r,'RUN_NOT_FOUND');Object.assign(r,clone(patch),{updatedAt:this.clock()});return clone(r);}
+ createArtifact(projectId,input={}){const p=this.project(projectId);const a=this.artifacts.create({...input,projectId});p.artifactIds.add(a.id);p.updatedAt=this.clock();return a;}
+ summary(id){const p=this.project(id);return{id:p.id,name:p.name,createdAt:p.createdAt,updatedAt:p.updatedAt,chats:p.chats.size,files:p.files.size,knowledge:p.knowledge.size,runs:p.runs.size,memoryRefs:p.memoryRefs.size,artifacts:p.artifactIds.size};}
+ list(){return[...this.projects.keys()].map(id=>this.summary(id)).sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)));}
+ snapshot(id){const p=this.project(id);return{id:p.id,name:p.name,instructions:p.instructions,metadata:clone(p.metadata),chats:[...p.chats.values()].map(clone),files:[...p.files.values()].map(clone),knowledge:[...p.knowledge.values()].map(clone),runs:[...p.runs.values()].map(clone),memoryRefs:[...p.memoryRefs],artifactIds:[...p.artifactIds]};}
+}
+return{ArtifactStore,ProjectWorkspace};
+});

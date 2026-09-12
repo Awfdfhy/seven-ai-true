@@ -1,0 +1,21 @@
+const assert=require('assert');
+const C=require('./src/ultimate/capability-os.js');
+const P=require('./src/ultimate/capability-protocols.js');
+(async()=>{
+ const os=new C.CapabilityOS({governor:new C.ResourceGovernor({maxConcurrent:4,maxCalls:20})});
+ os.register({id:'filesystem.read',name:'Read file',namespace:'filesystem',description:'Read project file contents',capabilities:['filesystem.read','project.inspect'],actionClass:'read',deterministic:true,reliability:.99,latency:{p95:2},trustZone:1,inputSchema:{type:'object',properties:{path:{type:'string'}},required:['path'],additionalProperties:false},cache:{ttlMs:10000}},async a=>({path:a.path,text:'ok'}));
+ os.register({id:'code.test',name:'Run tests',namespace:'coding',description:'Run project tests and return diagnostics',capabilities:['code.test','verification'],actionClass:'read',reliability:.98,trustZone:1,inputSchema:{type:'object',properties:{target:{type:'string'}},additionalProperties:false}},async()=>({passed:true}));
+ os.graph.link('code.test','requires','filesystem.read');
+ let d=os.discover('read project file',{limit:3});assert.equal(d[0].id,'filesystem.read');
+ let compact=os.compile(['code.test'],{disclosureLevel:1});assert(compact.some(x=>x.id==='filesystem.read'));assert(!compact[0].inputSchema);
+ let full=os.compile(['filesystem.read'],{disclosureLevel:3});assert(full[0].inputSchema);
+ let blocked=await os.execute({capabilityId:'filesystem.read',args:{path:'a'},scope:'/project'});assert.equal(blocked.state,'blocked');
+ os.permissions.grant({capabilityId:'filesystem.read',scope:'/project',actionClasses:['read']});os.permissions.grant({capabilityId:'code.test',scope:'/project',actionClasses:['read']});
+ let r=await os.execute({capabilityId:'filesystem.read',args:{path:'a'},scope:'/project',verify:async p=>({ok:p.raw.text==='ok'})});assert.equal(r.state,'success');assert(r.packet.verified);assert(os.runtime.ledger.trace(r.callId).some(x=>x.state==='COMMITTED'));
+ let cached=await os.execute({capabilityId:'filesystem.read',args:{path:'a'},scope:'/project'});assert.equal(cached.cacheHit,true);
+ let graph=await os.executeGraph([{id:'read',capabilityId:'filesystem.read',args:{path:'a'},scope:'/project'},{id:'test',capabilityId:'code.test',dependsOn:['read'],scope:'/project'}],{});assert.equal(graph.state,'success');
+ const guard=new C.InformationFlowGuard();assert.equal(guard.canFlow(['untrusted'],{maxSensitivity:'private',actionClass:'write'}).ok,false);
+ const tasks=new P.DurableTaskLedger(),t=tasks.create({capabilityId:'x'});tasks.update(t.id,{status:'running'});let c=tasks.cancel(t.id);assert.equal(c.status,'cancelled');assert.equal(tasks.acceptResult(t.id,t.generation,{x:1}).accepted,false);
+ let requests=[];const mcp=new P.MCP20260728Adapter({transport:async req=>{requests.push(req);if(req.method==='tools/list')return{ttlMs:1000,cacheScope:'private',tools:[]};return{ok:true};}});await mcp.listTools();await mcp.listTools();assert.equal(requests.length,1);await mcp.call('search',{q:'x'});assert.equal(requests[1].headers['MCP-Protocol-Version'],'2026-07-28');assert.equal(requests[1].headers['Mcp-Name'],'search');
+ console.log('ultimate-capability-os: PASS');
+})().catch(e=>{console.error(e);process.exit(1);});

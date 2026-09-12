@@ -1,0 +1,24 @@
+(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.SevenUltimateParallelStory=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
+'use strict';
+const clone=v=>v==null?v:JSON.parse(JSON.stringify(v));const check=(v,m)=>{if(!v)throw new Error(m)};const clamp=(n,a=0,b=100)=>Math.max(a,Math.min(b,Number(n)||0));
+class IsolationContract{
+ constructor(input={}){this.storyScope=input.storyScope||'independent';this.canonScope=input.canonScope||'timeline';this.worldImpact=input.worldImpact||'low';this.characterImpact=input.characterImpact||'allowed';this.mainlineImpact=input.mainlineImpact||'minimal';this.allowedCrossovers=[...(input.allowedCrossovers||[])];this.permanentWorldDestruction=!!input.permanentWorldDestruction;this.newMainVillain=!!input.newMainVillain;}
+ validateImpact(input={}){const violations=[];if(input.permanentWorldDestruction&&!this.permanentWorldDestruction)violations.push('PERMANENT_WORLD_DESTRUCTION_BLOCKED');if(input.newMainVillain&&!this.newMainVillain)violations.push('MAIN_VILLAIN_REQUIRES_PROMOTION');if(input.mainlineImpact==='major'&&!['major','allowed'].includes(this.mainlineImpact))violations.push('MAINLINE_IMPACT_EXCEEDS_CONTRACT');return{pass:violations.length===0,violations,promotionSuggested:violations.some(x=>x.includes('MAINLINE')||x.includes('VILLAIN')||x.includes('WORLD_DESTRUCTION'))};}
+}
+class StoryletEngine{
+ constructor(){this.storylets=new Map();this.history=[];}
+ register(input={}){check(input.id&&!this.storylets.has(input.id),'STORYLET_EXISTS');const s={id:input.id,title:input.title||input.id,kind:input.kind||'side_story',conditions:clone(input.conditions||{}),baseSaliency:Number(input.baseSaliency||50),cooldown:Number(input.cooldown||0),tags:[...(input.tags||[])],status:'available'};this.storylets.set(s.id,s);return clone(s);}
+ eligible(state={}){const nowEpisode=Number(state.episode||0);return[...this.storylets.values()].filter(s=>s.status==='available').map(s=>{const c=s.conditions;let pass=true,score=s.baseSaliency;if(c.requiredFlags)for(const f of c.requiredFlags)if(!state.flags?.includes(f))pass=false;if(c.forbiddenFlags)for(const f of c.forbiddenFlags)if(state.flags?.includes(f))pass=false;if(c.requiredCharacters)for(const e of c.requiredCharacters)if(!state.characters?.includes(e))pass=false;if(c.minEpisode!=null&&nowEpisode<c.minEpisode)pass=false;const last=[...this.history].reverse().find(x=>x.storyletId===s.id);if(last&&nowEpisode-last.episode<s.cooldown)pass=false;if(c.relevanceTags)score+=c.relevanceTags.filter(t=>state.tags?.includes(t)).length*10;return{storylet:clone(s),pass,score}}).filter(x=>x.pass).sort((a,b)=>b.score-a.score);}
+ choose(state={}){return this.eligible(state)[0]||null;}
+ markPlayed(id,episode){const s=this.storylets.get(id);check(s,'STORYLET_NOT_FOUND');this.history.push({storyletId:id,episode:Number(episode||0),at:Date.now()});return clone(s);}
+}
+class ParallelStoryFabric{
+ constructor(runtime){this.runtime=runtime;this.contracts=new Map();this.storylets=new StoryletEngine();}
+ bindContract(gameId,campaignId,timelineId,trackId,input={}){const t=this.runtime.timeline(gameId,campaignId,timelineId);check(t.tracks.has(trackId),'TRACK_NOT_FOUND');const key=`${gameId}|${campaignId}|${timelineId}|${trackId}`;const c=new IsolationContract(input);this.contracts.set(key,c);t.tracks.get(trackId).isolation=clone(input);return clone(c);}
+ contract(gameId,campaignId,timelineId,trackId){return this.contracts.get(`${gameId}|${campaignId}|${timelineId}|${trackId}`)||new IsolationContract();}
+ validateEvent(gameId,campaignId,timelineId,trackId,impact={}){return this.contract(gameId,campaignId,timelineId,trackId).validateImpact(impact);}
+ promoteToMainlineBridge(gameId,campaignId,timelineId,trackId,input={}){const t=this.runtime.timeline(gameId,campaignId,timelineId),track=t.tracks.get(trackId);check(track,'TRACK_NOT_FOUND');check(input.sourceEventRef,'PROMOTION_SOURCE_REQUIRED');const visible=new Set(this.runtime.visibleEvents(gameId,campaignId,timelineId).map(e=>e.ref));check(visible.has(input.sourceEventRef),'PROMOTION_SOURCE_NOT_VISIBLE');track.canonStatus='canon';track.status='bridged';track.mainlineBridge={sourceEventRef:input.sourceEventRef,reason:input.reason||'major consequence',at:Date.now()};return clone(track);}
+ relevanceBudget(input={}){const main=clamp(input.mainPlot??55),characters=clamp(input.characterStories??20),side=clamp(input.sideStories??15),interlude=clamp(input.interludes??10);const total=main+characters+side+interlude||1;return{mainPlot:+(main/total).toFixed(3),characterStories:+(characters/total).toFixed(3),sideStories:+(side/total).toFixed(3),interludes:+(interlude/total).toFixed(3)};}
+}
+return{IsolationContract,StoryletEngine,ParallelStoryFabric};
+});

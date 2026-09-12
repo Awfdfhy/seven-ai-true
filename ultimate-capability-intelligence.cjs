@@ -1,0 +1,22 @@
+const assert=require('assert');
+const C=require('./src/ultimate/capability-os.js');
+const I=require('./src/ultimate/capability-intelligence.js');
+const T=require('./src/ultimate/capability-transactions.js');
+(async()=>{
+ const os=new C.CapabilityOS({governor:new C.ResourceGovernor({maxConcurrent:4,maxCalls:50})});
+ const mk=(id,extra={})=>os.register({id,name:id,namespace:id.split('.')[0],description:id.replace('.',' ')+' capability',capabilities:[id],actionClass:'read',reliability:.95,trustZone:1,inputSchema:{type:'object',properties:{q:{type:'string'}},additionalProperties:false},...extra},async a=>({ok:true,q:a.q||'',id}));
+ mk('web.search',{network:'required',tags:['research','search'],latency:{p95:80}});mk('code.search',{tags:['code','project'],latency:{p95:3}});mk('code.test',{tags:['code','test'],latency:{p95:15}});mk('filesystem.read',{namespace:'files',tags:['file','project'],latency:{p95:2}});
+ os.graph.link('code.test','requires','filesystem.read');
+ const plane=new I.CapabilityIntelligencePlane({os,toolsetBudget:{maxTools:3,maxSchemaBytes:4000}});
+ const d=plane.discover('search code project',{limit:4});assert.equal(d.results[0].id,'code.search');
+ const offline=plane.discover('web search research',{allowNetwork:false,limit:4});assert(!offline.results.some(x=>x.id==='web.search'));
+ const set=plane.compileForTask('search code project',{discoveryLimit:4,disclosureLevel:3});assert(set.tools.length<=3);assert(set.bytes<=4000);assert(set.tools[0].inputSchema);
+ plane.recordSequence(['code.search','filesystem.read','code.test'],true);assert.equal(plane.prewarmHints('code.search')[0].id,'filesystem.read');
+ plane.recipes.register({id:'repair',steps:['code.search','filesystem.read','code.test']});for(let i=0;i<4;i++)plane.recipes.outcome('repair',true,true);assert.equal(plane.recipes.best().length,1);
+ assert.equal(plane.recovery.decide({code:'PERMISSION_DENIED'}).retry,false);assert.equal(plane.recovery.decide({code:'TIMEOUT'}).retry,true);
+ os.permissions.grant({capabilityId:'filesystem.read',scope:'/project',actionClasses:['read']});
+ const tx=new T.TransactionCoordinator({runtime:os.runtime});const r=await tx.execute({capabilityId:'filesystem.read',args:{q:'x'},scope:'/project',idempotencyKey:'same',postcondition:async p=>({ok:p.raw.ok})});assert.equal(r.state,'success');assert(r.transactionCommitted);const dup=await tx.execute({capabilityId:'filesystem.read',args:{q:'x'},scope:'/project',idempotencyKey:'same'});assert.equal(dup.deduplicated,true);
+ const fence=new T.GenerationFence(),token=fence.issue('chat');assert(fence.accepts(token));fence.cancel('chat');assert(!fence.accepts(token));
+ const rec=new T.SideEffectReconciler({inspect:async()=>({applied:false})});assert.equal((await rec.reconcile({})).state,'not_applied');
+ console.log('ultimate-capability-intelligence: PASS');
+})().catch(e=>{console.error(e);process.exit(1);});

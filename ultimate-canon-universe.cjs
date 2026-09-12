@@ -1,0 +1,10 @@
+const assert=require('assert');
+const {CanonUniverseRegistry,CanonRPGAdapter}=require('./src/ultimate/canon-universe.js');
+const reg=new CanonUniverseRegistry();const u=reg.create({id:'show',title:'Example Show',medium:['tv'],policy:{factsOnly:true}});
+u.sources.add({id:'s1',title:'Primary episodes',kind:'primary',continuityId:'main'});u.sources.add({id:'s2',title:'Adaptation guide',kind:'adaptation',continuityId:'adapt'});u.continuities.add({id:'adapt',name:'Adaptation',parentId:'main',kind:'adaptation'});u.addCharacter({id:'hero',name:'Hero',roles:['lead'],sourceRefs:['s1']});
+u.facts.add({id:'f1',subjectId:'hero',predicate:'home',object:'Beach City',continuityId:'main',validFrom:1,spoilerRank:1,knownBy:['hero'],sourceRefs:['s1']});u.facts.add({id:'f2',subjectId:'hero',predicate:'rank',object:'rookie',continuityId:'main',validFrom:1,validTo:10,spoilerRank:2,sourceRefs:['s1']});u.facts.add({id:'f3',subjectId:'hero',predicate:'rank',object:'captain',continuityId:'main',validFrom:11,spoilerRank:8,sourceRefs:['s1']});
+u.setProgress({marker:5,spoilerRank:3,continuityId:'main'});let c=u.context({characterIds:['hero'],characterId:'hero'});assert.equal(c.facts.some(f=>f.id==='f1'),true);assert.equal(c.facts.some(f=>f.id==='f3'),false,'future spoiler must be gated');
+const fork=u.fork({id:'player_branch',marker:5,sourceEventRef:'evt:choice'});assert.equal(fork.parentId,'main');assert.equal(u.continuities.lineage('player_branch').length,2);
+const adapter=new CanonRPGAdapter(reg);const packet=adapter.prepare('show',{continuityId:'player_branch',marker:5,spoilerRank:3,characterIds:['hero']});assert.equal(packet.mode,'existing_work_rpg');assert.equal(packet.guardrails.preserveSourceCanon,true);assert.ok(packet.canon.lineage.continuities.includes('main'));
+assert.equal(u.audit().pass,true);
+console.log('ultimate canon universe: 12 assertions PASS');
