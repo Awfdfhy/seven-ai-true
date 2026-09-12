@@ -31,7 +31,6 @@ function hydrateSystem(os,b){
  if(m.projects){os.projects.projects=new Map((m.projects.projects||[]).map(([id,p])=>[id,{...clone(p),chats:map(p.chats),files:map(p.files),knowledge:map(p.knowledge),runs:map(p.runs),memoryRefs:new Set(p.memoryRefs||[]),artifactIds:new Set(p.artifactIds||[])}]));os.projects.artifacts.artifacts=map(m.projects.artifacts);}
  if(m.evals){os.evals.runner.history=clone(m.evals.history||[]);os.evals.promotion.entries=map(m.evals.promotion);os.evals.promptEvolution.variants=map(m.evals.promptVariants);}
  if(m.media?.enabled)os.media.enabled={...os.media.enabled,...clone(m.media.enabled)};
- os.rpgUI=new os.modules?.RPGUI?.RPGUIModel?.({core:os.core,story:os.story,characters:os.characters,relationships:os.relationships,visuals:os.visuals,plots:os.plots})||os.rpgUI;
  os.requests.ledger.runs=new Map((m.requestRuns||[]).map(([id,r])=>{const x=clone(r);if(x.status==='queued'||x.status==='running'){x.status='cancelled';x.events=x.events||[];x.events.push({type:'recovered_cancelled',at:Date.now()});}return[id,x]}));return os;
 }
 async function persistSystem(store,key,os,expectedRevision=null,meta={}){return store.save(key,createSystemBackup(os,meta),expectedRevision);}
