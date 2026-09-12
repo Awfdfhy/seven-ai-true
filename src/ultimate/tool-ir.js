@@ -43,7 +43,7 @@ class TypedResultBus{
 }
 
 class ArtifactRefStore{
- constructor(input={}){this.maxInlineBytes=Math.max(128,Number(input.maxInlineBytes||4096));this.artifacts=new Map();}
+ constructor(input={}){const configured=input.maxInlineBytes??4096;this.maxInlineBytes=Math.max(1,Number(configured)||4096);this.artifacts=new Map();}
  put(value,input={}){const serialized=typeof value==='string'?value:JSON.stringify(value),bytes=typeof TextEncoder!=='undefined'?new TextEncoder().encode(serialized).length:serialized.length,id=`artifact:${fastHash(serialized)}:${bytes}`;if(!this.artifacts.has(id))this.artifacts.set(id,{id,type:input.type||'Artifact',mediaType:input.mediaType||'application/json',bytes,value:clone(value),createdAt:now(),lineage:clone(input.lineage||[])});return{id,type:input.type||'Artifact',mediaType:input.mediaType||'application/json',bytes};}
  get(ref){const id=typeof ref==='string'?ref:ref?.id,x=this.artifacts.get(id);check(x,'ARTIFACT_NOT_FOUND');return clone(x);}
  maybeExternalize(value,input={}){const s=typeof value==='string'?value:JSON.stringify(value);return s.length>this.maxInlineBytes?{artifactRef:this.put(value,input),inline:false}:{value:clone(value),inline:true};}
