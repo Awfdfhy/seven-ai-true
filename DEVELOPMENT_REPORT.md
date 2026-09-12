@@ -73,3 +73,13 @@ The release keeps the existing T150–T154 UI and adds an isolated `window.Seven
 Evidence: `tests/memory.cjs` 9 PASS; `tests/runtime-smoke.cjs` 12 PASS; JavaScript extraction `node --check` PASS. Browser regression is INCONCLUSIVE because the managed Chromium executable is unavailable in this environment.
 
 Final gate: local deterministic checks and archive integrity PASS. Browser/Android integration remains an external-environment gate and is intentionally not represented as PASS.
+
+## T163 continuation — runtime integrity hardening
+
+- Runtime memory now rejects malformed or duplicate canonical records, records before/after snapshots for commits, and binds permission grants to the exact canonical record, scope, action class, and original grant event.
+- High-risk tool calls validate required arguments, types, enums, and unknown fields before the permission gate. Duplicate tool capabilities resolve aliases to one canonical registry entry.
+- Context compression retains the original source for expansion; reconstruction accepts an explicit replacement source and deduplication preserves pin state and lineage.
+- Execution runs and model outcomes fail closed on malformed persistence; run events append instead of replacing history. The model outcome reader is exposed for deterministic inspection.
+- `runtime-smoke.cjs` now covers 28 assertions across memory, authorization, tool schemas, context actions, run ledger, outcomes, research, coding, and local intelligence.
+
+The candidate SHA-256 in `PROJECT_MANIFEST.json` is bound to the current `seven_ai-final.html`. Deterministic local checks pass; the browser gate is pending the GitHub Actions run for this commit.
