@@ -4,7 +4,6 @@ const clone=v=>v==null?v:JSON.parse(JSON.stringify(v));
 const check=(v,m)=>{if(!v)throw new Error(m)};
 const now=()=>Date.now();
 const words=s=>String(s||'').toLowerCase().split(/[^a-z0-9_.-]+/).filter(Boolean);
-function compact(g={}){return{id:g.id,n:g.name||g.id,ns:g.namespace||String(g.id||'').split('.')[0]||'general,caps':undefined};}
 
 class CapabilitySummaryCodec{
  encode(g={}){return{id:String(g.id),n:String(g.name||g.id),ns:String(g.namespace||String(g.id).split('.')[0]||'general'),c:[...(g.capabilities||[g.id])],t:[...(g.tags||[])],p:String(g.protocol||'local'),net:String(g.network||'optional'),a:String(g.actionClass||'read'),tz:Number.isFinite(g.trustZone)?g.trustZone:4,r:Number(g.reliability??.8),v:String(g.version||'1'),sh:String(g.schemaHash||''),dh:String(g.definitionHash||''),l:Number(g.latency?.p95||0),d:String(g.description||'').slice(0,240)};}
@@ -23,7 +22,7 @@ class HotWarmColdCache{
 }
 
 class ShardedMetadataCatalog{
- constructor(input={}){this.codec=input.codec||new CapabilitySummaryCodec();this.shardSize=Math.max(128,Number(input.shardSize||4096));this.shards=new Map();this.location=new Map();this.namespaceShards=new Map();this.loader=input.loader||null;this.detailLoader=input.detailLoader||null;this.cache=input.cache||new HotWarmColdCache(input.cacheOptions);this.count=0;}
+ constructor(input={}){this.codec=input.codec||new CapabilitySummaryCodec();this.shardSize=Math.max(128,Number(input.shardSize||4096));this.shards=new Map();this.location=new Map();this.namespaceShards=new Map();this.detailLoader=input.detailLoader||null;this.cache=input.cache||new HotWarmColdCache(input.cacheOptions);this.count=0;}
  _shardKey(summary){const ns=summary.ns||'general';let keys=this.namespaceShards.get(ns);if(!keys){keys=[];this.namespaceShards.set(ns,keys);}let key=keys[keys.length-1],shard=key&&this.shards.get(key);if(!shard||shard.size>=this.shardSize){key=`${ns}:${keys.length}`;keys.push(key);shard=new Map();this.shards.set(key,shard);}return key;}
  add(g){const s=this.codec.encode(g);if(this.location.has(s.id))this.remove(s.id);const key=this._shardKey(s),shard=this.shards.get(key);shard.set(s.id,s);this.location.set(s.id,key);this.count++;return s;}
  remove(id){const key=this.location.get(id);if(!key)return false;this.shards.get(key)?.delete(id);this.location.delete(id);this.count=Math.max(0,this.count-1);return true;}
@@ -59,7 +58,7 @@ class CapabilityDemandHeatmap{
 class PredictivePrewarmer{
  constructor(input={}){this.heat=input.heat||new CapabilityDemandHeatmap();this.transition=input.transition||null;this.max=Math.max(1,Number(input.max||4));}
  hints(lastId){const trans=this.transition?.next?.(lastId,this.max)||[],hot=this.heat.hottest(this.max),seen=new Set(),out=[];for(const x of [...trans,...hot])if(x.id&&!seen.has(x.id)){seen.add(x.id);out.push(x.id);if(out.length>=this.max)break;}return out;}
- async prewarm(lastId,loader,input={}){const ids=this.hints(lastId),loaded=[];for(const id of ids){if(input.pressure>=.7)break;try{await loader(id);loaded.push(id);}catch{}}return loaded;}
+ async prewarm(lastId,loader,input={}){const ids=this.hints(lastId),loaded=[];for(const id of ids){if(Number(input.pressure||0)>=.7)break;try{await loader(id);loaded.push(id);}catch{}}return loaded;}
 }
 
 return{CapabilitySummaryCodec,HotWarmColdCache,ShardedMetadataCatalog,CompactCatalogIndex,LazyCatalogGateway,CapabilityDemandHeatmap,PredictivePrewarmer};
