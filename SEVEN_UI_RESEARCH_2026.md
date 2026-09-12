@@ -12,6 +12,8 @@ Primary guidance was taken from current platform and design-system documentation
 - Atlassian Design System: spacing, tokens, motion duration, clarity, accessibility and performance.
 - W3C WCAG 2.2: focus appearance, target size, animation from interactions, keyboard and pointer accessibility.
 - web.dev: high performance animation, main-thread responsiveness, transform and opacity, content visibility and virtualized long lists.
+- ink / inkle: interactive narrative flow, remembered choices, player agency, branching and reconvergence without interrupting reading flow.
+- Baldur's Gate 3 journal design documentation: journals should surface the next meaningful objective and key reactive facts rather than becoming encyclopedias of every world detail.
 
 ## Seven production rules
 
@@ -30,9 +32,12 @@ Primary guidance was taken from current platform and design-system documentation
 13. **Tool UI is schema-driven.** Every tool has queued, starting, permission, running, success, error and cancelled presentation states.
 14. **RPG remains story-first.** World state, character data, arcs and relationships are available on demand, not permanently stacked over prose.
 15. **Player agency interrupts narration.** Agency gates are visually distinct and pause the story before Seven invents player-owned decisions.
-16. **Day/night identity is consistent.** The same Seven silhouette is retained while material, illumination and contrast adapt to the local device time.
-17. **No decorative animation debt.** Offscreen infinite animation is forbidden. Most motion uses transform and opacity only.
-18. **State survives UI restarts.** Theme, density and low-power preferences are persisted separately from authoritative AI and RPG state.
+16. **RPG choices must not break reading flow.** Interaction appears at meaningful decision beats, not after every sentence, and the prose remains the dominant visual layer.
+17. **Journal and Chronicle are different.** Journal shows current goals and recent meaningful progress; Chronicle may hold complete history, provenance and deep continuity.
+18. **Side stories keep their own visual scope.** Mainline, side canon, interlude, flashback and alternate timelines are distinguishable without implying that one is less polished.
+19. **Day/night identity is consistent.** The same Seven silhouette is retained while material, illumination and contrast adapt to the local device time.
+20. **No decorative animation debt.** Offscreen infinite animation is forbidden. Most motion uses transform and opacity only.
+21. **State survives UI restarts.** Theme, density and low-power preferences are persisted separately from authoritative AI and RPG state.
 
 ## Motion classes
 
