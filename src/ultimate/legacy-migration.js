@@ -1,0 +1,23 @@
+(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.SevenUltimateMigration=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
+'use strict';
+const clone=v=>v==null?v:JSON.parse(JSON.stringify(v));const check=(v,m)=>{if(!v)throw new Error(m)};
+const LEGACY_KEYS=Object.freeze(['model','temperature','max_tokens','chat_rooms_v6','room_titles_v6','current_room_v6','theme','user_name','user-name','reasoning_effort']);
+const SECRET_KEYS=Object.freeze(['groq_api_key','openrouter_api_key','deepseek_api_key','api_key','token','password']);
+function parseMaybe(raw){if(raw==null)return null;try{return JSON.parse(raw)}catch{return raw;}}
+function collect(storage){check(storage&&typeof storage.getItem==='function','STORAGE_REQUIRED');const data={},secretsPresent=[];for(const key of LEGACY_KEYS){const raw=storage.getItem(key);if(raw!=null)data[key]=parseMaybe(raw);}for(const key of SECRET_KEYS)if(storage.getItem(key)!=null)secretsPresent.push(key);return{schema:'seven.legacy.snapshot',version:1,data,secretsPresent,secretValuesIncluded:false};}
+function validate(snapshot){check(snapshot&&snapshot.schema==='seven.legacy.snapshot','LEGACY_SNAPSHOT_SCHEMA');check(snapshot.version===1,'LEGACY_SNAPSHOT_VERSION');check(snapshot.secretValuesIncluded!==true,'LEGACY_SECRET_EXPORT_FORBIDDEN');return true;}
+function normalize(snapshot){validate(snapshot);const d=snapshot.data||{};const rooms=Array.isArray(d.chat_rooms_v6)?d.chat_rooms_v6:(d.chat_rooms_v6&&typeof d.chat_rooms_v6==='object'?Object.values(d.chat_rooms_v6):[]);const titles=d.room_titles_v6&&typeof d.room_titles_v6==='object'?clone(d.room_titles_v6):{};return{preferences:{model:d.model??null,temperature:d.temperature??null,maxTokens:d.max_tokens??null,theme:d.theme??null,userName:d.user_name??d['user-name']??null,reasoningEffort:d.reasoning_effort??null},chat:{rooms:clone(rooms),titles,currentRoom:d.current_room_v6??null},legacyKeys:Object.keys(d),secretsPresent:[...(snapshot.secretsPresent||[])]};}
+class MigrationPlan{
+ constructor(snapshot){this.snapshot=normalize(snapshot);this.steps=[];this.warnings=[];this.build();}
+ build(){const s=this.snapshot;if(s.chat.rooms.length)this.steps.push({id:'rooms',kind:'chat',count:s.chat.rooms.length,action:'copy'});if(Object.keys(s.chat.titles).length)this.steps.push({id:'titles',kind:'chat_metadata',count:Object.keys(s.chat.titles).length,action:'copy'});const prefs=Object.entries(s.preferences).filter(([,v])=>v!=null);if(prefs.length)this.steps.push({id:'preferences',kind:'preferences',count:prefs.length,action:'copy'});if(s.secretsPresent.length)this.warnings.push({type:'SECRETS_NOT_EXPORTED',keys:[...s.secretsPresent]});return this;}
+ summary(){return{steps:clone(this.steps),warnings:clone(this.warnings),rooms:this.snapshot.chat.rooms.length,preferences:Object.values(this.snapshot.preferences).filter(v=>v!=null).length};}
+}
+class LegacyBridge{
+ constructor(opts={}){this.clock=opts.clock||(()=>new Date().toISOString());}
+ export(storage){return collect(storage);}
+ plan(snapshot){return new MigrationPlan(snapshot);}
+ applyToWorkspace(snapshot,workspace,opts={}){const n=normalize(snapshot),projectId=opts.projectId||'legacy-seven';let project;if(workspace.projects.has(projectId))project=workspace.summary(projectId);else project=workspace.create({id:projectId,name:opts.projectName||'Imported Seven',metadata:{migratedAt:this.clock(),legacy:true}});for(let i=0;i<n.chat.rooms.length;i++){const room=n.chat.rooms[i]||{},id=String(room.id??room.roomId??`legacy_room_${i+1}`);if(!workspace.project(projectId).chats.has(id))workspace.addChat(projectId,{id,title:n.chat.titles[id]||room.title||`Legacy chat ${i+1}`,roomId:id});}workspace.project(projectId).metadata.legacyPreferences=clone(n.preferences);workspace.project(projectId).metadata.legacyCurrentRoom=n.chat.currentRoom;workspace.project(projectId).metadata.legacyKeys=[...n.legacyKeys];return{project:workspace.summary(projectId),warnings:n.secretsPresent.length?[{type:'SECRETS_REMAIN_LOCAL',keys:n.secretsPresent}]:[],preferences:clone(n.preferences)};}
+ restoreCompatibleKeys(snapshot,storage,opts={}){validate(snapshot);check(storage&&typeof storage.setItem==='function','STORAGE_REQUIRED');const written=[],skipped=[];for(const [key,value] of Object.entries(snapshot.data||{})){if(!LEGACY_KEYS.includes(key)){skipped.push(key);continue;}if(!opts.overwrite&&storage.getItem(key)!=null){skipped.push(key);continue;}storage.setItem(key,typeof value==='string'?value:JSON.stringify(value));written.push(key);}return{written,skipped};}
+}
+return{LEGACY_KEYS,SECRET_KEYS,collect,validate,normalize,MigrationPlan,LegacyBridge};
+});
