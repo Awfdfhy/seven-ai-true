@@ -56,17 +56,23 @@
 
   function upgradeComposer(){
     const area=document.querySelector('.input-area');const composer=area?.querySelector('.composer');if(!area||!composer||area.querySelector('.seven-composer-meta'))return;
-    const meta=document.createElement('div');meta.className='seven-composer-meta';meta.innerHTML='<span>Local state ready</span><span><b data-seven-mode-label>Core</b> · adaptive runtime</span>';composer.insertAdjacentElement('afterend',meta);
+    const meta=document.createElement('div');meta.className='seven-composer-meta';meta.innerHTML='<span><b data-seven-mode-label>Core</b> · adaptive runtime</span>';composer.insertAdjacentElement('afterend',meta);
   }
 
   function sectionizeSettings(){
     const modal=document.querySelector('#settingsModal .modal-content');if(!modal||modal.dataset.sevenSettings==='1')return;modal.dataset.sevenSettings='1';
     const originalTitle=modal.querySelector(':scope > h3');const actions=modal.querySelector(':scope > .modal-buttons');
     const head=document.createElement('div');head.className='seven-settings-head';head.append(mark('modal',false));const headText=document.createElement('div');headText.innerHTML='<h3>Seven Settings</h3><p>Models, memory, knowledge and local runtime controls</p>';head.append(headText);modal.insertBefore(head,modal.firstChild);
+    const nav=document.createElement('nav');nav.className='seven-settings-nav';nav.setAttribute('aria-label','Settings sections');modal.insertBefore(nav,originalTitle||head.nextSibling);
     const grid=document.createElement('div');grid.className='seven-settings-grid';if(originalTitle?.nextSibling)modal.insertBefore(grid,originalTitle.nextSibling);else modal.append(grid);
-    const definitions={intelligence:['Intelligence','Routing'],providers:['Providers','Free only'],generation:['Generation','Response'],memory:['Memory & Knowledge','Context'],data:['Data & Appearance','Local']};const sections={};
-    for(const [key,[title,badge]] of Object.entries(definitions)){const section=document.createElement('section');section.className='seven-settings-section';section.dataset.section=key;if(key==='memory'||key==='data')section.dataset.span='2';const heading=document.createElement('div');heading.className='seven-settings-section-title';heading.innerHTML=`<span>${title}</span><small>${badge}</small>`;section.append(heading);sections[key]=section;grid.append(section);}
-    const candidates=Array.from(modal.children).filter(node=>node!==head&&node!==grid&&node!==originalTitle&&node!==actions);let bucket='intelligence';
+    const definitions={intelligence:['Intelligence','Routing'],providers:['Providers','Free only'],generation:['Generation','Response'],memory:['Memory','Context'],data:['Data','Local']};const sections={};
+    for(const [key,[title,badge]] of Object.entries(definitions)){
+      const section=document.createElement('section');section.className='seven-settings-section';section.dataset.section=key;section.id='seven-settings-'+key;if(key==='memory'||key==='data')section.dataset.span='2';
+      const heading=document.createElement('div');heading.className='seven-settings-section-title';heading.innerHTML=`<span>${key==='memory'?'Memory & Knowledge':key==='data'?'Data & Appearance':title}</span><small>${badge}</small>`;section.append(heading);sections[key]=section;grid.append(section);
+      const jump=document.createElement('button');jump.type='button';jump.className='seven-settings-nav-button';jump.textContent=title;jump.dataset.target=section.id;
+      jump.addEventListener('click',()=>section.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'}));nav.append(jump);
+    }
+    const candidates=Array.from(modal.children).filter(node=>node!==head&&node!==nav&&node!==grid&&node!==originalTitle&&node!==actions);let bucket='intelligence';
     for(const node of candidates){const value=(node.textContent||'').trim().replace(/\s+/g,' ');if(value==='Free Providers')bucket='providers';else if(node.tagName==='LABEL'&&/^Temperature\b/i.test(value))bucket='generation';else if(node.tagName==='LABEL'&&/^Pinned Notes/i.test(value))bucket='memory';else if(node.classList?.contains('settings-row')&&/Export/i.test(value))bucket='data';sections[bucket].append(node);}
     if(actions)modal.append(actions);
   }
