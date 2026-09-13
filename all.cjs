@@ -2,7 +2,8 @@ const fs=require('fs'),{spawnSync}=require('child_process');
 const path=require('path');
 const evolutionDir=path.join(__dirname,'evolution');
 const evolutionTests=fs.readdirSync(evolutionDir).filter(name=>name.endsWith('.test.cjs')).sort().map(name=>path.join('evolution',name));
-const files=['memory.cjs','runtime-smoke.cjs','verify.cjs',...evolutionTests];
+const releaseTests=[path.join('release','contrast.test.cjs'),path.join('release','static-audit.cjs'),path.join('release','canon-simulator.test.cjs'),path.join('release','release-verify.cjs')];
+const files=['memory.cjs','runtime-smoke.cjs','verify.cjs',...releaseTests,...evolutionTests];
 for(const file of files){
  const result=spawnSync(process.execPath,[path.join(__dirname,file)],{stdio:'inherit',timeout:120000});
  if(result.error) console.error(result.error);
