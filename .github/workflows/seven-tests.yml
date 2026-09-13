@@ -11,7 +11,7 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -19,24 +19,23 @@ jobs:
         with:
           node-version: 24
 
-      - run: npm install --no-save playwright pdfjs-dist@4.10.38
+      - run: npm install
 
       - run: npx playwright install --with-deps --only-shell chromium
 
       - run: node all.cjs
 
-      - name: Upload verified release artifact
+      - name: Upload verified Ultimate release artifact
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: seven-ai-release
+          name: seven-ultimate-release
           path: |
-            dist/seven_ai-release.html
-            dist/release-manifest.json
-            dist/static-audit.json
-            dist/vendor/**
-            dist/visual-*.png
-            release/release-results.json
-            release/visual-results.json
+            dist/seven-ultimate-release.html
+            dist/ultimate-app.js
+            dist/ultimate-build.json
+            dist/ultimate-metafile.json
+            dist/ultimate-release-verify.json
+            dist/src/**
           if-no-files-found: error
           retention-days: 14
