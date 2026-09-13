@@ -1,6 +1,7 @@
 "use strict";
 
 const { createExperiment } = require("./experiment-lab.cjs");
+const { createEvalLock } = require("./eval-lock.cjs");
 const { runCodingCandidate, discardBestEffort, restoreIfStableChanged } = require("./coding-candidate.cjs");
 const { runDurableSystemEvolution } = require("./durable-engine.cjs");
 
@@ -61,6 +62,9 @@ async function runCodingEvolution({
 } = {}) {
   assertEvalsAdapter(evalsAdapter);
   const experiment = createExperiment(experimentConfig);
+  // Freeze before coding or evaluation begins. Any benchmark drift during the
+  // longer coding/eval phase will therefore fail promotion rather than inherit PASS.
+  const evaluationLock = createEvalLock({ experimentId: experiment.id, purpose: "coding-evolution" });
   const coding = await runCodingCandidate({
     experiment,
     baselineSha,
@@ -78,7 +82,8 @@ async function runCodingEvolution({
       baselineSha,
       candidateSha: coding.candidateSha,
       workspaceId: coding.workspaceId,
-      changedPaths: coding.changedPaths
+      changedPaths: coding.changedPaths,
+      evaluationIdentity: evaluationLock
     });
   } catch (error) {
     const discardError = await discardBestEffort(codingAgent, { experiment, workspaceId: coding.workspaceId }, "evals_error");
@@ -136,9 +141,11 @@ async function runCodingEvolution({
     manualApproved,
     baselineSha,
     candidateSha: coding.candidateSha,
+    evaluationLock,
     candidateMetadata: {
       workspaceId: coding.workspaceId,
       evalEvidenceId: String(evalBundle.evidenceId),
+      evalCorpusHash: evaluationLock.corpusHash,
       codingAttempts: coding.attempts,
       changedPaths: coding.changedPaths
     },
@@ -156,6 +163,7 @@ async function runCodingEvolution({
     experiment,
     coding,
     evalBundle,
+    evaluationIdentity: evolution.evaluationIdentity || evaluationLock,
     evolution,
     discardError
   };
