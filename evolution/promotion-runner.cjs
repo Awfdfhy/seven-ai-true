@@ -8,6 +8,7 @@ const {
   requireRollback,
   confirmRollback
 } = require("./update-transaction.cjs");
+const { assessHealth } = require("./health-monitor.cjs");
 
 function assertAdapter(adapter) {
   for (const method of ["getHeadSha", "applyCandidate", "verifyCandidate", "rollbackTo"]) {
@@ -95,4 +96,15 @@ async function executePromotion({ transaction: tx, experimentPass = false, adapt
   };
 }
 
-module.exports = { assertAdapter, rollbackSafely, executePromotion };
+async function enforcePostReleaseHealth({ transaction: tx, samples = [], policy, adapter } = {}) {
+  if (!tx || tx.state !== "COMMITTED") throw new Error("committed transaction required");
+  assertAdapter(adapter);
+  const health = assessHealth(samples, policy);
+  if (health.status !== "ROLLBACK_REQUIRED") {
+    return { outcome: health.status, transaction: tx, health };
+  }
+  const rollback = await rollbackSafely(tx, adapter, `post_release_health:${health.reason || "unknown"}`, { postRelease: true });
+  return { ...rollback, health };
+}
+
+module.exports = { assertAdapter, rollbackSafely, executePromotion, enforcePostReleaseHealth };

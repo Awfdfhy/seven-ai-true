@@ -86,11 +86,16 @@ function commitUpdate(tx) {
 function requireRollback(tx, reason = "manual", options = {}) {
   if (!tx) throw new Error("transaction required");
   const uncertainValidated = tx.state === "VALIDATED" && options.effectUncertain === true;
-  if (!uncertainValidated && !["APPLIED", "VERIFIED"].includes(tx.state)) {
-    throw new Error("rollback can only be requested after apply or uncertain apply");
+  const postRelease = tx.state === "COMMITTED" && options.postRelease === true;
+  if (!uncertainValidated && !postRelease && !["APPLIED", "VERIFIED"].includes(tx.state)) {
+    throw new Error("rollback can only be requested after apply, uncertain apply, or committed post-release regression");
   }
   tx.state = "ROLLBACK_REQUIRED";
-  event(tx, "ROLLBACK_REQUIRED", { reason: String(reason), effectUncertain: options.effectUncertain === true });
+  event(tx, "ROLLBACK_REQUIRED", {
+    reason: String(reason),
+    effectUncertain: options.effectUncertain === true,
+    postRelease: options.postRelease === true
+  });
   return tx;
 }
 
@@ -110,7 +115,8 @@ function inspectTransaction(tx) {
     id: tx && tx.id,
     state: tx && tx.state,
     ledger,
-    terminal: Boolean(tx && ["COMMITTED", "ROLLED_BACK"].includes(tx.state))
+    terminal: Boolean(tx && ["COMMITTED", "ROLLED_BACK"].includes(tx.state)),
+    rollbackEligible: Boolean(tx && tx.state === "COMMITTED")
   };
 }
 
