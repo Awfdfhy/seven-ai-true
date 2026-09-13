@@ -4,7 +4,7 @@
   else root.SevenBridge=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(root){
   'use strict';
-  const VERSION='1.0.1';
+  const VERSION='1.0.0';
   function clone(v){return v==null?v:JSON.parse(JSON.stringify(v));}
   function arr(v){return Array.isArray(v)?v:[];}
   function requireControl(){if(!root||!root.SevenControl)throw new Error('SevenControl runtime required');return root.SevenControl;}
@@ -85,7 +85,7 @@
       id:'world:'+String(contract.workId||'work')+':'+String(contract.beat&&contract.beat.id||contract.expectedBeatId||'scene'),
       text:'Scene contract is supported by the declared canon sources.',
       kind:covered?'FACT':'UNKNOWN',
-      sources:covered?normalized:normalized,
+      sources:normalized,
       lineage:{parents:[],transformation:'canon-scene-contract',transformer:'SevenWorld'},
       metadata:{workId:contract.workId||null,beatId:contract.beat&&contract.beat.id||contract.expectedBeatId||null,sourceRefs:refs,worldStatus:contract.status}
     });
