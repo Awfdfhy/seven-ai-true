@@ -1,6 +1,6 @@
 # Seven AI
 
-Current candidate: `seven_ai-final.html` (T163 runtime hardening). Architecture: `SEVEN_AI_ARCHITECTURE_V4.md`.
+Current candidate: `seven_ai-final.html` (T164 Motion OS 3.0). Architecture: `SEVEN_AI_ARCHITECTURE_V4.md`. Executable identity-motion contract: `SEVEN_MOTION_OS.md`.
 
 ## Tests
 

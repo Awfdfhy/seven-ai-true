@@ -83,3 +83,14 @@ Final gate: local deterministic checks and archive integrity PASS. Browser/Andro
 - `runtime-smoke.cjs` now covers 28 assertions across memory, authorization, tool schemas, context actions, run ledger, outcomes, research, coding, and local intelligence.
 
 The candidate SHA-256 in `PROJECT_MANIFEST.json` is bound to the current `seven_ai-final.html`. Deterministic local checks pass, and GitHub Actions run `34697079913` passed the complete `node all.cjs` gate: 9 memory, 28 runtime, and 11 browser assertions. Android/APK and live-provider integration remain unverified.
+
+## T164 continuation — Seven Motion OS 3.0
+
+- Replaced the small reveal/press helper with a governed motion runtime. Every request must declare one of eight shared families, one of four semantic purposes, and P0-P4 priority. Unknown, unexplained, idle, layout-heavy, and paint-heavy motion is rejected before execution.
+- Added independent `Ultra`, `Balanced`, `Lite`, `Reduced`, and internal `Off` effective profiles. Balanced is the automatic default; `prefers-reduced-motion`, hidden state, low battery where exposed, Seven Performance tier, and sustained frame pressure can only lower motion expression.
+- Added a user motion-quality control to Settings without expanding the source monolith markup. The preference is local, while accessibility and runtime caps remain authoritative.
+- Wired meaningful motion to sent messages, message reveal, natural streaming, Deep Think, execution stages, tool paths, completion, errors, retry, room deletion, modal spatial origin, sidebar, source topology, theme change, World entry, scene changes, and Canon divergence. Future menus, tabs, dragging, skeletons, undo, and coding diffs use the same public semantic contract.
+- Added the bounded signature set: Seven Wake, Celestial Shift, Deep Think Orbit, consequential Agent Completion, World Entry, and Canon Divergence. Signature layers are pointer-transparent, transient, absent in Reduced/Off, and simplified below Balanced.
+- Added `SEVEN_MOTION_OS.md` as the executable identity-motion contract and `release/motion-runtime.test.cjs` with 21 deterministic checks. The static audit passes with a 95,155-byte release layer and zero warnings, below the existing 100,000-byte cap.
+
+Local Chromium could not be downloaded because the Playwright CDN returned 502/timeouts, so no local browser result was inferred. GitHub Actions run `34751724151` subsequently passed Chromium installation, the complete `node all.cjs` gate, and verified-artifact upload for the exact Motion OS tree. The Android workflow is limited to `main`, `apk-finalization`, or manual dispatch and was not run by the PR; smoothness, battery, and thermal claims on the physical Tecno Pova 5 remain a separate real-device gate.
