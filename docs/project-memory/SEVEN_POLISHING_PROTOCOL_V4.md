@@ -1,51 +1,45 @@
 # Seven Polishing Protocol V4 — Exhaustive Evidence-Guided Saturation
 
-Status: CANONICAL POLISHING PROTOCOL CANDIDATE
+Status: SELF-POLISH ACTIVE — candidate after Round 01
 Scope: capability #22 onward, Tool Fabric families, cross-system polish, UI/UX/brand, whole-product saturation, and pre-release revalidation of earlier freezes.
 
-## Purpose
-V4 exists to reduce false saturation. A system is not considered saturated merely because two reviews fail to suggest changes. Before those reviews, V4 must demonstrate that the relevant problem surface, alternatives, tradeoffs, integrations, implementation reality, mobile constraints, regressions, and unknown-unknown search have been covered.
-
 ## Prime rule
-A freeze means: within a documented search surface and evidence set, no remaining material improvement has been demonstrated whose expected value exceeds its cost and risk.
-
-It never means globally perfect or permanently final.
+A freeze means only this: within a documented search surface, evidence set, quality-scenario set and resource envelope, no remaining material improvement has been demonstrated whose expected value exceeds its cost and risk. It never means globally perfect or permanently final.
 
 ## Evidence ladder
-Every claim must carry one of these states where applicable:
-1. IDEA
-2. RESEARCH_SUPPORTED
-3. ARCHITECTURE_ACCEPTED
-4. IMPLEMENTED
-5. TESTED
-6. DEVICE_VERIFIED
-7. RELEASE_PROVEN
+`IDEA → RESEARCH_SUPPORTED → ARCHITECTURE_ACCEPTED → IMPLEMENTED → TESTED → DEVICE_VERIFIED → RELEASE_PROVEN`
 
-A higher state may not be inferred from a lower state.
+No state may be inferred from a lower state.
 
-## Material improvement definition
-A change is MATERIAL_IMPROVEMENT only when it produces a meaningful improvement in at least one relevant quality axis without an unacceptable regression in another protected axis.
-
-Protected axes include:
-- capability and user value
-- correctness and truth
-- authority and security
-- reliability and recoverability
-- latency and responsiveness
-- RAM, CPU, battery, thermal, storage and network
-- maintainability and evolvability
-- observability and testability
-- UX and accessibility
-- Arabic/RTL where applicable
+## Protected quality axes
+Material improvement must improve at least one relevant axis without an unacceptable regression in another:
+- capability/user value
+- correctness/truth
+- authority/security/data integrity/user agency
+- reliability/recoverability
+- latency/responsiveness
+- RAM/CPU/battery/thermal/storage/network
+- maintainability/evolvability
+- observability/testability
+- UX/accessibility
+- Arabic/RTL when applicable
 - provider independence
 - implementation feasibility
 
-Feature count is not an axis by itself.
+Feature count alone is not improvement.
 
-## V4 artifacts
-Each campaign maintains:
+## Criticality classes
+- `C0`: authority, security, data integrity, irreversible side effects, user agency. Non-compensable.
+- `C1`: reliability, recovery, accessibility and other release-critical behavior.
+- `C2`: performance, resources and product-quality targets.
+- `C3`: optional enhancement/optimization.
+
+A C0 failure blocks saturation regardless of gains elsewhere.
+
+## Required campaign artifacts
 - GroundTruthSnapshot
 - CapabilitySurfaceMap
+- SearchSurfaceLedger
 - QualityAttributeUtilityTree
 - AssumptionRegister
 - ResearchEvidenceMap
@@ -55,211 +49,130 @@ Each campaign maintains:
 - CrossSystemContractMap
 - RealityFeasibilityRecord
 - MobileResourceEnvelope
+- RepresentativeDeviceMatrix
 - UXJourneyMatrix
+- TestDerivationMap
 - EvaluationContract
 - SaturationLedger
 - ReopenTriggers
 
 ## Phase 0 — Scope and ground truth
-Record what exists, what is implemented, what is architecture only, what is legacy, and what is unknown. Protect source and branch boundaries before design work.
+Record implemented, architecture-only, legacy, speculative and unknown state. Protect source/branch boundaries before design work.
 
 ## Phase 1 — Domain discovery
-Build a CapabilitySurfaceMap before optimization. Search for missing domains using:
-- first-principles decomposition
-- user journeys and lifecycle stages
-- research and production systems
-- adjacent industries and analogous systems
-- failure taxonomies
-- platform constraints
-- accessibility and localization
-- privacy/security/authority boundaries
-- operations, migration and recovery
-- content/data lifecycle
+Build CapabilitySurfaceMap before optimization using first principles, user journeys/lifecycles, research, production systems, adjacent industries, failure taxonomies, platform constraints, accessibility/localization, security/authority, operations/migration/recovery and data/content lifecycle.
 
-The purpose is to find missing questions before declaring answers complete.
+Maintain `SearchSurfaceLedger`: categories examined, lenses/sources, exclusions, unresolved gaps and date/version. Coverage claims are relative to this ledger.
 
-## Phase 2 — Quality-attribute utility tree
-Create scenario-based quality requirements rather than vague goals. For each important scenario define stimulus, environment, expected response and measurable bound where possible.
+## Phase 2 — Scenario utility tree
+For important quality scenarios record stimulus, environment, expected response and measurable bound where possible, plus provenance: user journey, invariant, prior failure, research evidence, platform constraint or release requirement. Assign C0-C3 criticality.
 
-Tradeoffs must be explicit. Improving one attribute cannot silently spend another.
+Tradeoffs must be explicit.
 
 ## Phase 3 — Research evidence sweep
-Search authoritative research, standards, production engineering, open source and relevant products. Record what each source changes in the design rather than collecting links.
-
-Research is evidence, not authority over Seven. Conflicting evidence remains visible.
+Use authoritative research, standards, production engineering, open source and relevant products. ResearchEvidenceMap records date/version, applicability to Seven, and whether evidence is direct, analogous or speculative. Conflicts remain visible.
 
 ## Phase 4 — First-principles rebuild
-Design the strongest minimal system from zero without inheriting current abstractions. Identify authoritative state, derived state, contracts, failure semantics and the minimum useful primitives.
+Design the strongest minimal system from zero. Identify authoritative/derived state, contracts, failure semantics and minimum useful primitives without incumbent bias.
 
 ## Phase 5 — Alternative architecture tournament
-Construct multiple genuinely different candidates where the problem permits. Compare them on the protected axes and scenario utility tree. Include a minimal candidate and at least one structurally different candidate when meaningful.
-
-No incumbent bonus is allowed.
+Construct genuinely different candidates where meaningful, including a minimal candidate and a structurally different candidate. Compare on scenarios and protected axes. No incumbent bonus.
 
 ## Phase 6 — Builder review
-Maximize useful capability while preserving invariants. Discover capability ceiling, adaptive intelligence opportunities and high-value integrations.
+Maximize useful capability while preserving invariants. Seek capability ceiling, adaptive intelligence and high-value integrations.
 
 ## Phase 7 — Failure review
-Exercise stale/corrupt state, malformed input, concurrency, cancellation, partial failure, offline/provider loss, migrations, retries, uncertainty, security boundaries, resource pressure and long-horizon degradation.
-
-Failures that reveal architecture defects return the candidate to redesign.
+Exercise stale/corrupt state, malformed input, concurrency, cancellation, partial failure, offline/provider loss, migrations, retries, uncertainty, security boundaries, resource pressure and long-horizon degradation. Architecture defects return to redesign.
 
 ## Phase 8 — Simplifier review
-Attempt to remove or merge primitives, services, state, indexes, models and policies. Every retained primitive pays a complexity tax and must justify ownership, persistence, migration, testing and runtime cost.
-
-A smaller design with equivalent protected behavior is an improvement.
+Attempt to remove/merge primitives, services, state, indexes, models and policies. Every canonical primitive pays permanent authority, persistence, migration, testing, documentation and cognitive costs. Equivalent protected behavior with less machinery is improvement.
 
 ## Phase 9 — Unknown-unknown hunt
-Run a dedicated search for omitted domains and questions. Methods include:
-- invert assumptions
-- inspect lifecycle edges: before creation, during mutation, after deletion, migration and recovery
-- combine unrelated failure modes
-- ask what the user can observe that the architecture does not represent
-- inspect adjacent capability boundaries
-- examine future provider/platform/version changes
-- seek counterexamples to the current mental model
+Dedicated omitted-domain search: invert assumptions; inspect creation/mutation/deletion/migration/recovery edges; combine failures; ask what users observe that architecture does not represent; inspect adjacent boundaries; examine future provider/platform/version changes; seek counterexamples.
 
-A newly discovered material domain reopens domain discovery and resets saturation progress.
+A material new domain returns to Domain Discovery and resets saturation.
 
 ## Phase 10 — Cross-system shadow test
-Evaluate the candidate against every materially adjacent Seven fabric. Check duplicated authority, circular dependencies, hidden global state, incompatible identifiers, cancellation propagation, permission flow, lineage, persistence, recovery, observability and performance coupling.
-
-Local optimization that harms Seven globally is rejected.
+Evaluate against materially adjacent Seven fabrics: authority ownership, identifiers, cancellation, permission flow, lineage, persistence, recovery, observability, hidden global state and performance coupling. Reject local optimization that harms Seven globally.
 
 ## Phase 11 — Reality gate
-Prove the architecture can be implemented with available platform primitives and realistic engineering effort. Mark dependencies that are experimental, provider-specific, unavailable or unverified.
-
-Architecture may define future interfaces, but cannot claim implementation feasibility without evidence.
+Demonstrate implementability with available platform primitives and realistic engineering effort. Experimental/provider-specific/unavailable dependencies remain explicit. Implementation evidence that disproves an accepted assumption emits `REALITY_REOPEN`.
 
 ## Phase 12 — Mobile physics gate
-Treat constrained Android as a first-class environment. Establish envelopes for startup, TTI, interaction latency, peak/steady RAM, CPU, battery, thermal behavior, storage, network, background work and media memory where relevant.
+Treat constrained Android as first-class. Define envelopes for cold/warm startup, TTI, interaction latency, peak/steady RAM, CPU, battery, thermal, storage, network, background work and media memory where relevant. Unused heavy capabilities should have near-zero ordinary-path cost where practical.
 
-Unused heavy capability should have near-zero ordinary-path cost wherever technically practical.
+Define RepresentativeDeviceMatrix by RAM/performance tier. Release claims require release-build and representative-device evidence; debug/emulator results cannot silently become device proof.
 
-Cold-start paths receive special scrutiny. Device-tier degradation must preserve truth and safety.
+## Phase 13 — UX/accessibility gate
+Map architecture to journeys and test discoverability, progressive disclosure, cancellation, recovery, permissions, uncertainty, errors, long-running work, touch ergonomics, screen readers, reduced motion, font scaling, Day/Night and Arabic/RTL.
 
-## Phase 13 — UX and accessibility gate
-Map architecture to real journeys. Test discoverability, progressive disclosure, cancellation, recovery, permissions, uncertainty, error states, long-running work, touch ergonomics, screen-reader semantics, reduced motion, font scaling, Day/Night and Arabic/RTL.
-
-Internal sophistication that cannot be presented coherently is a product defect.
-
-## Phase 14 — Long-horizon and composition gauntlet
-Test hundreds or thousands of relevant state transitions where meaningful. Compose failures rather than testing them only in isolation, for example low memory plus offline plus stale state plus cancellation.
-
-Use deterministic simulation, property-based testing, fuzzing or metamorphic checks when suitable.
+## Phase 14 — Long-horizon/composition gauntlet
+Exercise hundreds/thousands of relevant transitions where meaningful and compose failures, not only isolate them. Use deterministic simulation, property-based, fuzz, metamorphic, replay and migration testing where suitable.
 
 ## Phase 15 — Regression cemetery
-Every material failure ever discovered becomes a permanent regression case or invariant when testable. New candidates must defeat both new scenarios and the historical cemetery.
+Every material discovered failure becomes a permanent regression case or invariant when testable. New candidates must defeat both new scenarios and historical failures.
 
-A fixed bug that can silently return is not closed engineering knowledge.
-
-## Phase 16 — Pareto and tradeoff gate
-Compare surviving candidates across protected axes. Reject scalar magic scores for heterogeneous critical properties. Critical correctness/security/authority gates remain non-compensable.
-
-Prefer Pareto improvements. A tradeoff candidate requires an explicit accepted rationale and bounded regression.
+## Phase 16 — Pareto/tradeoff gate
+Compare survivors across protected axes. No scalar magic score may compensate for heterogeneous critical failures. Prefer Pareto improvements. Any accepted tradeoff needs explicit rationale and bounded regression.
 
 ## Phase 17 — Proof of improvement
-For every accepted material change record:
-- prior defect or limitation
-- proposed change
-- evidence
-- expected benefit
-- complexity/resource cost
-- new risks
-- verification/evaluation method
-- result
+For every accepted material change record prior limitation, change, evidence, expected benefit, complexity/resource cost, new risks, verification/evaluation method and result. Unverifiable benefit does not count toward saturation.
 
-If the benefit cannot be demonstrated or credibly evaluated, it does not count toward saturation.
+Performance and stochastic-model comparisons use repeated trials and variance/distribution awareness where meaningful; one lucky run is not proof.
 
-## Phase 18 — Reconciliation candidate
-Build one coherent candidate from only the changes that survived all preceding gates. Remove duplicated experimental structures and update contracts, budgets, evals and migrations together.
+## Phase 18 — Test derivation gate
+Map each important invariant/contract, where feasible, to deterministic tests, property-based tests, fuzzing, metamorphic checks, replay, migration, device/performance measurement or manual UX/accessibility inspection. Architecture without a plausible verification route is incomplete.
 
-## Phase 19 — Independent saturation review A
-A fresh review receives the reconciled candidate, evidence map, regression cemetery and quality scenarios. Its job is to discover a material redesign, missing domain or simplification.
+## Phase 19 — Reconciliation candidate
+Build one coherent candidate from surviving changes. Remove duplicate experimental structures and update contracts, budgets, evals and migrations together.
 
-If MATERIAL_IMPROVEMENT_FOUND: integrate it and reset saturation to 0/2.
-If NO_MATERIAL_IMPROVEMENT: counter becomes 1/2.
+## Phase 20 — Independent saturation review A
+A fresh review receives candidate, SearchSurfaceLedger, evidence map, regression cemetery and quality scenarios. It seeks material redesign, missing domain or simplification.
 
-## Phase 20 — Independent saturation review B
-Use a meaningfully different review lens from A. It must not merely repeat the same checklist.
+`MATERIAL_IMPROVEMENT_FOUND` → integrate and reset 0/2.
+`NO_MATERIAL_IMPROVEMENT` → 1/2, but record exactly what was examined. Clean review is bounded negative evidence, not proof of perfection.
 
-If MATERIAL_IMPROVEMENT_FOUND: integrate it and reset to 0/2.
-If NO_MATERIAL_IMPROVEMENT and A was also clean: counter becomes 2/2.
+## Phase 21 — Independent saturation review B
+B must differ from A in at least two dimensions: framing, evidence subset/order, scenario family, alternatives, failure composition, simplification strategy.
 
-## Phase 21 — Saturation freeze
-Freeze only when all mandatory gates are satisfied and the final counter is 2/2.
+Material improvement resets 0/2. A second valid clean review yields 2/2.
 
-Freeze record must include:
-- exact candidate/version
-- documented search surface
-- unresolved noncritical limitations
-- rejected alternatives
-- resource/quality budgets
-- evidence level
-- implementation status
-- regression suite identity
-- reopen triggers
+## Phase 22 — Saturation freeze
+Freeze only after every mandatory gate and 2/2. Record exact version, search surface, unresolved noncritical limitations, rejected alternatives, budgets, evidence level, implementation status, regression identity and reopen triggers.
+
+## Stop-cost guard
+After mandatory gates pass, optional search continues only while expected information gain is material relative to time/complexity cost. This prevents endless cosmetic churn without weakening reopen triggers.
 
 ## Reopen triggers
-A frozen system reopens when material new evidence appears, including:
-- newly discovered capability domain
-- critical or repeated regression
-- new platform constraint
-- materially stronger architecture or algorithm
-- provider/model/tool change invalidating assumptions
-- security or authority defect
-- resource budget violation
-- major UX/accessibility failure
-- new integration requirement
-- implementation evidence disproving architecture assumptions
+Reopen on material new domain/evidence, critical/repeated regression, platform constraint, stronger architecture/algorithm, provider/model/tool assumption change, security/authority defect, resource-budget violation, major UX/accessibility failure, new integration requirement, or implementation evidence disproving architecture assumptions.
 
-Reopening is success of the protocol, not failure of the prior freeze.
+Reopening is successful governance, not failure of the previous freeze.
 
-## Anti-bloat law
-Before creating a new canonical primitive, prove why it cannot be represented safely as an existing primitive subtype, policy, extension, derived view, index or contract.
+## Budget classes
+- correctness/authority invariants: cannot be spent
+- reliability budget
+- performance/resource budget
+- complexity budget
+- optional feature budget
 
-Canonical primitives carry permanent costs: authority semantics, persistence, migrations, testing, documentation and cognitive load.
+At implementation/release stage, exhausted reliability/resource budgets pause feature expansion where policy requires and redirect work toward restoring the gate. Budgets never justify C0 correctness/security regressions.
 
-## Reliability and change budgets
-For implemented/release-stage systems, V4 may define reliability/SLO budgets and resource budgets. When critical budgets are exhausted, feature expansion pauses and reliability/performance work takes priority until the gate is restored.
+## V4 eligibility equation
+Before final reviews:
+`GROUND_TRUTH + DOMAIN_COVERAGE + SEARCH_LEDGER + QUALITY_SCENARIOS + RESEARCH + ALTERNATIVES + BUILDER + FAILURE + SIMPLIFIER + UNKNOWN_UNKNOWN + CROSS_SYSTEM + REALITY + MOBILE + UX_ACCESSIBILITY + LONG_HORIZON_COMPOSITION + REGRESSION_CEMETERY + PARETO_TRADEOFF + PROOF_OF_IMPROVEMENT + TEST_DERIVATION + RECONCILIATION`
 
-## Android release evidence
-Architecture estimates are not device evidence. Release claims require measurements from representative release builds and device tiers. Track at least startup, ANR/crash behavior, memory, rendering responsiveness and relevant battery/background behavior.
+Then:
+`INDEPENDENT_REVIEW_A + INDEPENDENT_REVIEW_B = SATURATION_FREEZE`
 
-## V4 saturation equation
-A system is eligible for 2/2 reviews only after:
-DOMAIN_COVERAGE
-+ QUALITY_SCENARIOS
-+ RESEARCH
-+ ALTERNATIVES
-+ BUILDER
-+ FAILURE
-+ SIMPLIFIER
-+ UNKNOWN_UNKNOWN
-+ CROSS_SYSTEM
-+ REALITY
-+ MOBILE
-+ UX_ACCESSIBILITY
-+ LONG_HORIZON_COMPOSITION
-+ REGRESSION_CEMETERY
-+ PARETO_TRADEOFF
-+ PROOF_OF_IMPROVEMENT
-+ RECONCILIATION
-
-Then and only then:
-INDEPENDENT_REVIEW_A
-+ INDEPENDENT_REVIEW_B
-= SATURATION_FREEZE
-
-## Relationship to Protocol 2.1 and earlier freezes
-V4 supersedes Protocol 2.1 for new campaigns after adoption. Earlier saturated systems remain valid historical candidates, not automatically invalid. Before Seven 1.0 they receive a V4 revalidation pass focused on domain coverage, cross-system compatibility, regression cemetery, mobile reality and reopen triggers.
+## Relationship to Protocol 2.1
+V4 supersedes 2.1 for new campaigns after V4 itself saturates. Earlier freezes remain valid historical candidates. Before Seven 1.0 they receive V4 revalidation focused on domain/search coverage, cross-system compatibility, regression cemetery, mobile reality, test derivation and reopen triggers.
 
 ## Application order
-1. Self-polish V4 itself before final canonical adoption.
+1. Self-polish V4 until its own 2/2 saturation.
 2. Apply V4 to capability #22 onward.
-3. Apply V4 to Tool Fabric families.
-4. Apply V4 to UI/UX/Brand/Motion and release surfaces.
+3. Apply to Tool Fabric families.
+4. Apply to UI/UX/Brand/Motion/release surfaces.
 5. Run V4 cross-system campaign.
 6. Revalidate earlier freezes including RPG 4.2 and Titles 4.1.
 7. Run whole-Seven V4 saturation before architecture final freeze.
-8. Re-run relevant reality/device gates during implementation and release.
+8. Re-run reality/device gates during implementation and release.
