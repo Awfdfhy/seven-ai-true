@@ -32,7 +32,7 @@ Capabilities 01–15 retain their campaign architecture freezes and implementati
 
 ### Priority capabilities 16–21 — SPECIAL ACTIVE CAMPAIGN
 
-The previous #16–#21 freezes are preserved as **Baseline Freeze V1**, but these capabilities are intentionally reopened for deeper user-priority Hyper-Polish.
+The previous #16–#21 freezes are preserved as **Baseline Freeze V1**, but these capabilities were intentionally reopened for deeper user-priority Hyper-Polish.
 
 Special protocol:
 `docs/project-memory/SEVEN_PRIORITY_16_21_HYPER_POLISH_PROTOCOL.md`
@@ -49,7 +49,7 @@ Current status:
 | 18 | Vision | **Seven Vision Fabric 3.0 — Provenance-Bound Selective Perception Plane** | `HYPER_POLISH_REOPENED` |
 | 19 | RPG Engine | Baseline: **Seven RPG Engine 3.0 — Event-Sourced Causal World Simulation Kernel** | **`RPG_VISUAL_HYPER_POLISH_SATURATED_CANDIDATE` → Seven RPG 4.2 — Character-Centered Causal Living World Engine with governed Visual Identity** |
 | 20 | Real Works / Canon Simulation | **Seven Canon Simulation Engine 3.0 — Source-Locked Branch-Aware Living Canon Graph** | `HYPER_POLISH_REOPENED` |
-| 21 | Titles / World Linguistic Engine | **Seven World Linguistic Engine 3.0 — Evidence-Grounded Naming Grammar** | `HYPER_POLISH_REOPENED` |
+| 21 | Titles / World Linguistic Engine | Baseline: **Seven World Linguistic Engine 3.0 — Evidence-Grounded Naming Grammar** | **`TITLES_HYPER_POLISH_SATURATED_CANDIDATE` → Seven World Linguistic Engine 4.1 — Provenance-Governed Temporal Naming Graph** |
 
 ### RPG special sub-campaign
 
@@ -87,7 +87,7 @@ Major accepted visual capabilities:
 - versioned `CharacterVisualState`
 - stable identity vs mutable presentation vs transient condition vs form
 - branch/time-aware appearance history
-- dynamic in-world PresentationPolicy without magical unavailable wardrobe
+- dynamic in-world PresentationPolicy without unavailable wardrobe assumptions
 - observer-local recognition/misidentification/disguise through PerspectiveState
 - source/continuity/time-bound Real Works visual fidelity
 - conflict-aware ReferenceArtifact ingestion
@@ -104,9 +104,58 @@ Major accepted visual capabilities:
 
 This is **architecture saturation only**. RPG 4.2 implementation, media-provider wiring, consistency eval PASS, UI, and real-phone certification remain unfinished.
 
+### Titles / World Linguistic Engine special sub-campaign
+
+Capability 21 received a dedicated naming Hyper-Polish pass after RPG 4.2 exposed stronger social, temporal, branch, visual and canon naming requirements.
+
+Research/reopen record:
+`docs/project-memory/priority-hyper-polish/TITLES_HYPER_POLISH_REOPEN_AND_RESEARCH.md`
+
+Detailed rounds:
+- `TITLES_HYPER_POLISH_ROUNDS_01_03.md`
+- `TITLES_HYPER_POLISH_ROUNDS_04_06.md`
+- `TITLES_HYPER_POLISH_ROUND_07_CONTEXTUAL_NAME_RESOLUTION.md`
+- `TITLES_ROUND_08.md`
+
+Saturation target:
+`docs/project-memory/priority-hyper-polish/NAMING_ENGINE_4_1_TARGET.md`
+
+Freeze record:
+`docs/project-memory/priority-hyper-polish/NAMING_4_1_SATURATION_FREEZE_RECORD.md`
+
+Titles Hyper-Polish history:
+- Reopen/research + Rounds 01–08: `MATERIAL_IMPROVEMENT_FOUND`
+- Independent Review A: `NO MATERIAL IMPROVEMENT`
+- Independent Review B: `NO MATERIAL IMPROVEMENT`
+- current naming saturation counter: **2 / 2**
+
+### Titles 4.1 architecture summary
+
+World Linguistic Engine 4.1 adds:
+- language-independent `NamingIdentity`
+- language/register/script-specific `NameForm`
+- composable `NamingGrammarProfile`
+- reproducible `NamingManifest`
+- deterministic-first candidate generation
+- event-derived earned/social titles
+- adoption scoped by person/faction/region/institution/time/branch
+- perspective-aware contextual output name resolution
+- reverse mention-to-identity resolution
+- historical naming without rewriting old records
+- branch-created naming separated from source-canon naming
+- content hierarchy/series naming conventions
+- explicit localization strategies
+- Arabic/RTL/transliteration/diacritization structure
+- form/visual naming integration with RPG 4.2
+- Real Works source/continuity/CANON_GAP integration
+- ambiguity/collision/originality checks
+- Lite/mobile path without required model inference
+
+This is **architecture saturation only**. Titles 4.1 runtime implementation, wiring, eval PASS and device certification remain unfinished.
+
 ### Current overall priority campaign
 
-The larger #16–#21 campaign remains active because #16, #17, #18, #20 and #21 have not yet completed the same special saturation process.
+The larger #16–#21 campaign remains active because #16, #17, #18 and #20 have not yet completed the same special saturation process.
 
 Created cross-system Round 01 artifacts include:
 - `docs/project-memory/priority-16-21/ROUND_01_RESEARCH_SWEEP.md`
@@ -121,7 +170,7 @@ Do not resume numbered core-capability progression while the Priority 16–21 Hy
 
 ### Exit rule
 
-The overall priority campaign ends only after the Saturation Gate in `SEVEN_PRIORITY_16_21_HYPER_POLISH_PROTOCOL.md` passes. RPG #19 has independently satisfied its renewed 2/2 visual saturation gate; the surrounding priority capabilities remain open.
+The overall priority campaign ends only after the Saturation Gate in `SEVEN_PRIORITY_16_21_HYPER_POLISH_PROTOCOL.md` passes. RPG #19 and Titles #21 have independently satisfied their dedicated 2/2 gates; #16, #17, #18 and #20 remain open.
 
 ## Major cross-system laws already established
 
@@ -139,7 +188,10 @@ The overall priority campaign ends only after the Saturation Gate in `SEVEN_PRIO
 - RPG recognition is observer-local perspective, not automatic global identity truth.
 - Real Works canon is source/continuity bound; missing support becomes `CANON_GAP`; incompatible player choices branch honestly.
 - Real Works visual variants remain continuity/adaptation/time scoped.
-- Generated titles remain distinct from official canon names/localizations.
+- Naming identity is separate from every language/localization surface form.
+- Generated, socially adopted and official names remain distinct states.
+- Name resolution cannot bypass Perspective/Discovery reveal boundaries.
+- Historical/branch naming never silently rewrites source canon.
 - Expensive intelligence and media generation are selective/lazy; unused systems must not impose material startup cost.
 
 ## Implemented / Strongly Established Foundations
@@ -174,7 +226,7 @@ The overall priority campaign ends only after the Saturation Gate in `SEVEN_PRIO
 - **CharacterVisualState / anchor / visual contract implementation**
 - **image/storyboard/video provider wiring and visual consistency verification implementation**
 - source-ingestion Canon Graph / Real Works final architecture implementation
-- full World Linguistic Engine
+- **Titles / World Linguistic Engine 4.1 runtime implementation and multilingual naming eval suite**
 - final product UI and real-phone resource certification
 
 ## Release Safety
