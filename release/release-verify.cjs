@@ -39,12 +39,13 @@ const {build,OUTPUT,MARK,THEME_BOOT}=require('./build-release.cjs');
     });
     await test('workspace assets are lazy and loadable',async()=>{
       const page=await browser.newPage();
-      await page.addInitScript(()=>{localStorage.setItem('user_name','Seven Tester');localStorage.setItem('user-name','Seven Tester');});
+      await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');localStorage.setItem('user_name','Seven Tester');localStorage.setItem('user-name','Seven Tester');});
       const requested=[];page.on('request',r=>{if(r.url().includes('/workspaces/'))requested.push(r.url())});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
+      await page.waitForFunction(()=>window.SevenBetaUI?.state.ready&&document.querySelector('.seven-beta-status'));
       assert.equal(requested.length,0);
-      await page.evaluate(()=>window.SevenWorkspacesLoader&&window.SevenWorkspacesLoader.open?window.SevenWorkspacesLoader.open():document.querySelector('[data-seven-workspaces]')?.click());
-      await page.waitForFunction(()=>window.SevenWorkspaces||document.querySelector('.seven-ws-launcher'),null,{timeout:10000});
+      await page.click('.seven-beta-status');
+      await page.waitForFunction(()=>window.SevenWorkspaces&&document.querySelector('.seven-ws-launcher'),null,{timeout:10000});
       assert.ok(requested.length>0);
       await page.close();
     });
