@@ -63,6 +63,10 @@ const {
   assert.equal(resourceGovernor.selectTier({ deviceMemoryGb: 8, cores: 8, batteryLevel: .8 }), "full");
   const lite = resourceGovernor.createBudget({ tier: "lite", baseContextTokens: 10000 });
   assert.ok(lite.contextTokens < 10000);
+  const adaptedOnce = resourceGovernor.adaptBudget(lite, { deviceMemoryGb: 2, cores: 2 });
+  const adaptedTwice = resourceGovernor.adaptBudget(adaptedOnce, { deviceMemoryGb: 2, cores: 2 });
+  assert.equal(adaptedOnce.contextTokens, adaptedTwice.contextTokens);
+  assert.equal(adaptedTwice.baseContextTokens, 10000);
   assert.equal(resourceGovernor.capabilityDecision("parallel-agents", { tier: "lite" }).allowed, false);
 })();
 
