@@ -1,0 +1,86 @@
+name: Seven Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - apk-finalization
+      - main
+    paths:
+      - 'seven_ai-final.html'
+      - 'release/**'
+      - 'apk/**'
+      - 'package.json'
+      - 'capacitor.config.json'
+      - '.github/workflows/android-apk.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.1.0
+
+      - name: Node 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Java 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install JS build dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Install Chromium for release gate
+        run: npx playwright install --with-deps --only-shell chromium
+
+      - name: Re-run Seven pre-APK release gate
+        run: node all.cjs
+
+      - name: Generate native Android project
+        run: npm run android:generate
+
+      - name: Android lint, unit tests and APK build
+        working-directory: android
+        run: ./gradlew --no-daemon lintDebug testDebugUnitTest assembleDebug
+
+      - name: Verify packaged APK contents and size
+        run: npm run android:verify
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Android 16 WebView device smoke test
+        uses: reactivecircus/android-emulator-runner@v2.38.0
+        with:
+          api-level: 36
+          arch: x86_64
+          target: default
+          profile: pixel_6
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: cd android && ./gradlew --no-daemon :app:connectedDebugAndroidTest
+
+      - name: Verify APK again after device tests
+        run: npm run android:verify
+
+      - name: Upload installable Seven APK
+        uses: actions/upload-artifact@v7
+        with:
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          archive: false
+          if-no-files-found: error
+          retention-days: 14
