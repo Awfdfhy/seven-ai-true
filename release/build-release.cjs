@@ -38,6 +38,7 @@ function build(){
 
   const legacyCss=read('seven-final.css');
   const visualCss=read('visual-shell.css');
+  const visualPolishCss=read('visual-polish.css');
   const brandMark=read('seven-mark.svg').trim();
   const iconData='data:image/svg+xml;base64,'+Buffer.from(brandMark).toString('base64');
   html=html.replace(/<link\s+rel=["']icon["'][^>]*>/i,`<link rel="icon" type="image/svg+xml" href="${iconData}">`);
@@ -49,10 +50,11 @@ function build(){
   const visualShell=read('visual-shell.js')
     .replace('/*__SEVEN_MARK__*/',JSON.stringify(brandMark))
     .replace(/<\/script/gi,'<\\/script');
+  const visualPolish=read('visual-polish.js').replace(/<\/script/gi,'<\\/script');
 
-  const fingerprint=digest(legacyCss+visualCss+brandMark+canon+performance+pdfRuntime+motion+visualShell+pdf.version);
-  const head=`\n<!-- ${MARK}:${fingerprint} -->\n<meta name="theme-color" content="#080910">\n<meta name="color-scheme" content="dark light">\n<style id="seven-final-style">${legacyCss}</style>\n<style id="seven-visual-shell-style">${visualCss}</style>\n`;
-  const body=`\n<script id="seven-canon-runtime">${canon}</script>\n<script id="seven-performance-runtime">${performance}</script>\n<script id="seven-pdf-runtime">${pdfRuntime}</script>\n<script id="seven-motion-runtime">${motion}</script>\n<script id="seven-visual-shell-runtime">${visualShell}</script>\n<!-- /${MARK}:${fingerprint} -->\n`;
+  const fingerprint=digest(legacyCss+visualCss+visualPolishCss+brandMark+canon+performance+pdfRuntime+motion+visualShell+visualPolish+pdf.version);
+  const head=`\n<!-- ${MARK}:${fingerprint} -->\n<meta name="theme-color" content="#080910">\n<meta name="color-scheme" content="dark light">\n<style id="seven-final-style">${legacyCss}</style>\n<style id="seven-visual-shell-style">${visualCss}</style>\n<style id="seven-visual-polish-style">${visualPolishCss}</style>\n`;
+  const body=`\n<script id="seven-canon-runtime">${canon}</script>\n<script id="seven-performance-runtime">${performance}</script>\n<script id="seven-pdf-runtime">${pdfRuntime}</script>\n<script id="seven-motion-runtime">${motion}</script>\n<script id="seven-visual-shell-runtime">${visualShell}</script>\n<script id="seven-visual-polish-runtime">${visualPolish}</script>\n<!-- /${MARK}:${fingerprint} -->\n`;
 
   html=injectBeforeLast(html,'</head>',head);
   html=injectBeforeLast(html,'</body>',body);
@@ -63,7 +65,7 @@ function build(){
     bytes:Buffer.byteLength(html),
     sourceBytes:fs.statSync(SOURCE).size,
     fingerprint,
-    brand:{visualShell:'brand-os-v1',mark:'celestial-seven-v1'},
+    brand:{visualShell:'brand-os-v1',mark:'celestial-seven-v1',semanticPolish:'v1'},
     pdf,
     pdfLoadMode:'lazy-local'
   };
