@@ -7,14 +7,20 @@
   --seven-ease-enter:cubic-bezier(.2,.8,.2,1);
   --seven-ease-exit:cubic-bezier(.4,0,1,1);
   --seven-ease-move:cubic-bezier(.2,.7,.2,1);
+  --seven-on-accent:#fff;
+  --seven-on-danger:#fff;
   --seven-ring:0 0 0 3px color-mix(in srgb,var(--accent) 28%,transparent);
   --seven-surface-glow:0 10px 30px color-mix(in srgb,var(--accent) 10%,transparent);
 }
+body.light{--accent:#655bef;--accent-hover:#564fd8;--muted:#777391;--danger:#d13a40;--seven-on-accent:#fff;--seven-on-danger:#fff}
+body:not(.light){--accent:#8b85ff;--accent-hover:#a29cff;--muted:#a29dc2;--danger:#e5484d;--seven-on-accent:#121026;--seven-on-danger:#121026}
 html{scroll-behavior:auto;-webkit-text-size-adjust:100%;text-rendering:optimizeLegibility}
 body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 button,input,textarea,select{font:inherit}
 button,[role="button"],.room-item,.tool-btn{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 button:focus-visible,[role="button"]:focus-visible,.room-item:focus-visible,.tool-btn:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:none;box-shadow:var(--seven-ring)}
+.tool-btn.toggle.active,.input-area button.send{color:var(--seven-on-accent)}
+.input-area button.stop{color:var(--seven-on-danger)}
 #chat{overscroll-behavior:contain;scrollbar-gutter:stable;contain:layout style paint}
 .message{content-visibility:auto;contain-intrinsic-size:1px 110px;contain:layout style paint}
 .room-item,.knowledge-file-item,.composer,.modal-content,.bubble.markdown pre{contain:layout style paint}
