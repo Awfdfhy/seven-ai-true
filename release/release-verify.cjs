@@ -1,5 +1,6 @@
 const {chromium}=require('playwright');
 const fs=require('fs');
+const path=require('path');
 const http=require('http');
 const assert=require('assert/strict');
 const {build,OUTPUT,MARK}=require('./build-release.cjs');
@@ -7,10 +8,20 @@ const {build,OUTPUT,MARK}=require('./build-release.cjs');
 (async()=>{
   const built=build();
   const html=fs.readFileSync(OUTPUT,'utf8');
+  const dist=path.dirname(OUTPUT);
   assert.ok(html.includes(MARK));
   assert.ok(built.bytes-built.sourceBytes<100000,'release layer unexpectedly heavy');
 
-  const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/html; charset=utf-8');res.end(html)});
+  const server=http.createServer((req,res)=>{
+    const pathname=new URL(req.url,'http://127.0.0.1').pathname;
+    if(pathname.startsWith('/vendor/')){
+      const file=path.resolve(dist,'.'+pathname);
+      if(!file.startsWith(path.resolve(dist)+path.sep)||!fs.existsSync(file)){res.statusCode=404;res.end('not found');return;}
+      res.setHeader('Content-Type',file.endsWith('.mjs')?'text/javascript; charset=utf-8':'application/octet-stream');
+      fs.createReadStream(file).pipe(res);return;
+    }
+    res.setHeader('Content-Type','text/html; charset=utf-8');res.end(html);
+  });
   await new Promise(r=>server.listen(0,'127.0.0.1',r));
   const origin='http://127.0.0.1:'+server.address().port;
   const browser=await chromium.launch({headless:true});
@@ -26,10 +37,12 @@ const {build,OUTPUT,MARK}=require('./build-release.cjs');
     if(errors.length)throw new Error('release bootstrap pageerror: '+errors.join(' | '));
     await page.waitForFunction(()=>window.SevenPerformance&&window.SevenPerformance.state.ready&&window.SevenCanon&&window.SevenMotion&&window.SevenMotion.state.ready,null,{timeout:10000});
     await page.waitForFunction(()=>window.roomPersistence&&roomPersistence.status().ready,null,{timeout:10000});
+    await page.waitForFunction(()=>window.pdfjsLib&&typeof window.pdfjsLib.getDocument==='function',null,{timeout:10000});
 
     await test('release runtime boots without page errors',async()=>{assert.deepEqual(errors,[])});
     await test('adaptive performance tier is installed',async()=>{const r=await page.evaluate(()=>({tier:SevenPerformance.state.tier,attr:document.documentElement.dataset.sevenPerformance,ready:SevenPerformance.state.ready}));assert.ok(['lite','balanced','full'].includes(r.tier));assert.equal(r.attr,r.tier);assert.equal(r.ready,true)});
     await test('motion layer is event delegated and ready',async()=>{assert.equal(await page.evaluate(()=>document.documentElement.classList.contains('seven-motion-ready')),true)});
+    await test('localized PDF engine boots without CDN',async()=>{const r=await page.evaluate(()=>({pdf:typeof pdfjsLib.getDocument==='function',worker:pdfjsLib.GlobalWorkerOptions.workerSrc}));assert.equal(r.pdf,true);assert.equal(r.worker,'./vendor/pdfjs/pdf.worker.min.mjs')});
     await test('mobile layout has no document horizontal overflow',async()=>{const r=await page.evaluate(()=>({sw:document.documentElement.scrollWidth,w:document.documentElement.clientWidth,composer:!!document.querySelector('.composer')}));assert.equal(r.composer,true);assert.ok(r.sw<=r.w+2,JSON.stringify(r))});
     await test('offscreen message rendering optimization is active',async()=>{const v=await page.evaluate(()=>{const n=document.createElement('div');n.className='message';n.textContent='probe';document.getElementById('chat').appendChild(n);const s=getComputedStyle(n);const out={visibility:s.contentVisibility,contain:s.contain};n.remove();return out});assert.equal(v.visibility,'auto');assert.ok(v.contain.includes('layout'))});
     await test('canon runtime branches instead of forcing rigid canon',async()=>{const r=await page.evaluate(()=>{const e=SevenCanon.createEngine({id:'probe',sources:[{id:'s',authority:'A0'}],anchors:[{id:'a',strength:'rigid'}],facts:[],events:[],entities:[],invariants:[]});const s=e.createSession({position:1});return e.applySceneDelta(s,{invalidatesAnchors:['a']},{id:'x'}).session.branchOrigin.reason});assert.equal(r,'rigid-anchor-invalidated')});
@@ -45,6 +58,6 @@ const {build,OUTPUT,MARK}=require('./build-release.cjs');
   } finally {
     await browser.close();server.close();
   }
-  fs.writeFileSync(require('path').join(__dirname,'release-results.json'),JSON.stringify({results,build:built},null,2));
+  fs.writeFileSync(path.join(__dirname,'release-results.json'),JSON.stringify({results,build:built},null,2));
   console.log('release verification: PASS ('+results.length+' checks)');
 })().catch(e=>{console.error(e);process.exit(1)});
