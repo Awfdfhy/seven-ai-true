@@ -19,7 +19,7 @@ jobs:
         with:
           node-version: 24
 
-      - run: npm install --no-save playwright
+      - run: npm install --no-save playwright pdfjs-dist@4.10.38
 
       - run: npx playwright install --with-deps --only-shell chromium
 
@@ -34,6 +34,7 @@ jobs:
             dist/seven_ai-release.html
             dist/release-manifest.json
             dist/static-audit.json
+            dist/vendor/**
             release/release-results.json
           if-no-files-found: error
           retention-days: 14
