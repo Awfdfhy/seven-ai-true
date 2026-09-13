@@ -30,6 +30,11 @@ function approvalDecision({ riskAssessment = {}, policy = {}, manualApproved = f
     : { approved: false, mode: "RISK_TOO_HIGH", risk, maxRisk };
 }
 
+async function emitCheckpoint(onCheckpoint, phase, snapshot = {}) {
+  if (typeof onCheckpoint !== "function") return;
+  await onCheckpoint({ phase, ...snapshot });
+}
+
 async function runSystemEvolution({
   experimentConfig,
   changedPaths = [],
@@ -43,7 +48,8 @@ async function runSystemEvolution({
   manualApproved = false,
   baselineSha,
   candidateSha,
-  adapter
+  adapter,
+  onCheckpoint
 } = {}) {
   const experiment = createExperiment(experimentConfig);
   const candidate = createCandidate({
@@ -52,6 +58,7 @@ async function runSystemEvolution({
     source: "evolution-engine",
     metadata: { experimentId: experiment.id, subsystem: experiment.subsystem }
   });
+  await emitCheckpoint(onCheckpoint, "DISCOVERED", { experiment, candidate, transaction: null });
 
   const experimentGate = evaluateExperiment({
     experiment,
@@ -62,16 +69,21 @@ async function runSystemEvolution({
   });
   if (!experimentGate.pass) {
     transition(candidate, "REJECTED", { reason: "experiment_gate_failed", experimentGate });
+    await emitCheckpoint(onCheckpoint, "REJECTED", { experiment, candidate, transaction: null, experimentGate });
     return { outcome: "REJECTED", stage: "EVALUATION", experiment, candidate, experimentGate };
   }
 
   evaluateStage(candidate, { baseline: baselineMetrics, candidate: candidateMetrics, gates });
+  await emitCheckpoint(onCheckpoint, candidate.state, { experiment, candidate, transaction: null, experimentGate });
+
   shadowStage(candidate, { passed: shadowPassed, details: { experimentId: experiment.id } });
+  await emitCheckpoint(onCheckpoint, candidate.state, { experiment, candidate, transaction: null, experimentGate });
   if (candidate.state === "REJECTED") {
     return { outcome: "REJECTED", stage: "SHADOW", experiment, candidate, experimentGate };
   }
 
   canaryStage(candidate, { passed: canaryPassed, details: { experimentId: experiment.id } });
+  await emitCheckpoint(onCheckpoint, candidate.state, { experiment, candidate, transaction: null, experimentGate });
   if (candidate.state === "REJECTED") {
     return { outcome: "REJECTED", stage: "CANARY", experiment, candidate, experimentGate };
   }
@@ -81,12 +93,14 @@ async function runSystemEvolution({
     rollbackCheckpoint: true,
     details: { baselineSha }
   });
+  await emitCheckpoint(onCheckpoint, candidate.state, { experiment, candidate, transaction: null, experimentGate });
   if (candidate.state === "REJECTED") {
     return { outcome: "REJECTED", stage: "PROMOTION_GATE", experiment, candidate, experimentGate };
   }
 
   const approval = approvalDecision({ riskAssessment, policy: approvalPolicy, manualApproved });
   if (!approval.approved) {
+    await emitCheckpoint(onCheckpoint, "PENDING_APPROVAL", { experiment, candidate, transaction: null, experimentGate, approval });
     return { outcome: "PENDING_APPROVAL", stage: "APPROVAL", experiment, candidate, experimentGate, approval };
   }
 
@@ -98,11 +112,43 @@ async function runSystemEvolution({
     candidateSha
   });
 
+  try {
+    await emitCheckpoint(onCheckpoint, "PROMOTED_PREPARED", { experiment, candidate, transaction, experimentGate, approval });
+  } catch (checkpointError) {
+    rollback(candidate, `promotion_checkpoint_failed:${String(checkpointError && checkpointError.message || checkpointError)}`);
+    return {
+      outcome: "DEPLOYMENT_ABORTED",
+      stage: "CHECKPOINT",
+      experiment,
+      candidate,
+      transaction,
+      experimentGate,
+      approval,
+      error: String(checkpointError && checkpointError.message || checkpointError)
+    };
+  }
+
+  const transactionCheckpoint = async ({ phase }) => {
+    await emitCheckpoint(onCheckpoint, `TRANSACTION_${phase}`, {
+      experiment,
+      candidate,
+      transaction,
+      experimentGate,
+      approval
+    });
+  };
+
   let execution;
   try {
-    execution = await executePromotion({ transaction, experimentPass: true, adapter });
+    execution = await executePromotion({
+      transaction,
+      experimentPass: true,
+      adapter,
+      onCheckpoint: transactionCheckpoint
+    });
   } catch (error) {
     rollback(candidate, `deployment_aborted:${String(error && error.message || error)}`);
+    await emitCheckpoint(onCheckpoint, "DEPLOYMENT_ABORTED", { experiment, candidate, transaction, experimentGate, approval });
     return {
       outcome: "DEPLOYMENT_ABORTED",
       stage: "APPLY",
@@ -117,6 +163,11 @@ async function runSystemEvolution({
 
   if (execution.outcome === "ROLLED_BACK") {
     rollback(candidate, "update_transaction_rolled_back");
+    await emitCheckpoint(onCheckpoint, "ROLLED_BACK", { experiment, candidate, transaction, experimentGate, approval, execution });
+  } else if (execution.outcome === "COMMITTED") {
+    await emitCheckpoint(onCheckpoint, "COMPLETE", { experiment, candidate, transaction, experimentGate, approval, execution });
+  } else {
+    await emitCheckpoint(onCheckpoint, execution.outcome, { experiment, candidate, transaction, experimentGate, approval, execution });
   }
 
   return {
@@ -131,4 +182,4 @@ async function runSystemEvolution({
   };
 }
 
-module.exports = { RISK_ORDER, approvalDecision, runSystemEvolution };
+module.exports = { RISK_ORDER, approvalDecision, emitCheckpoint, runSystemEvolution };
