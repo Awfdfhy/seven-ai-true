@@ -48,6 +48,7 @@ async function runSystemEvolution({
   manualApproved = false,
   baselineSha,
   candidateSha,
+  candidateMetadata = {},
   adapter,
   onCheckpoint
 } = {}) {
@@ -56,7 +57,11 @@ async function runSystemEvolution({
     id: `system:${experiment.id}`,
     kind: "system",
     source: "evolution-engine",
-    metadata: { experimentId: experiment.id, subsystem: experiment.subsystem }
+    metadata: {
+      experimentId: experiment.id,
+      subsystem: experiment.subsystem,
+      ...candidateMetadata
+    }
   });
   await emitCheckpoint(onCheckpoint, "DISCOVERED", { experiment, candidate, transaction: null });
 
