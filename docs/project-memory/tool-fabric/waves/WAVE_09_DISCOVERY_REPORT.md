@@ -1,0 +1,682 @@
+# Seven Tool Fabric 2.0 — Wave 09 Discovery Report
+
+Date: 2026-09-13
+Status: DISCOVERY COMPLETE FOR WAVE 09. No candidate integrated/frozen.
+Governing command: `WAVE_09_MAXIMUM_EFFORT_COMMAND.md`
+
+## Executive result
+
+Seven should build a **Canon / Simulation Tool Plane** from small deterministic primitives around its existing authoritative world controller. It should **not** adopt a generic game engine, CRDT document as canon truth, or second graph database.
+
+Proposed layers:
+
+1. `WorldDiffEngine` — typed, preconditioned state-change proposals.
+2. `WorldValidator` — schema, authority, canon, temporal, knowledge, relationship and rule checks.
+3. `WorldCommitter` — atomic authoritative commit into SQLite-backed state/event ledger.
+4. `TimelineIndex` — interval/event queries plus ordering and overlap constraints.
+5. `CanonGraphView` — derived entity/relation/event/dependency graph over canonical tables.
+6. `RuleConstraintEngine` — small allowlisted deterministic predicate DSL, no arbitrary code.
+7. `DeterministicRng` — versioned seeded pseudo-random stream for replayable simulation.
+8. `ScenarioBranchManager` — explicit CANON / DIVERGENCE / WHAT_IF branches.
+9. `CheckpointReplay` — event/checkpoint reconstruction with versioned reducers/migrations.
+10. `CanonConflictDetector` — explicit contradiction/retcon/knowledge/timeline/rule conflict classes.
+11. `SourceAnchorResolver` — source → anchor → fact/event linkage.
+12. `CanonRetrieval` — SQLite FTS/entity/time/source filters first, optional graph/vector specialists later.
+
+Central law:
+
+`Narration proposes → WorldDiffEngine normalizes → WorldValidator proves constraints → WorldCommitter atomically commits → derived indexes/views rebuild → narration observes committed result.`
+
+LLM text never becomes authoritative world state merely because it sounds coherent.
+
+## Candidate registry
+
+| Candidate / standard | Kind | Preliminary class | Seven role | Decision |
+|---|---|---|---|---|
+| RFC 6902 JSON Patch | standard | CORE INTERCHANGE PRIMITIVE | ordered low-level diff operations | adopt concepts / wrap semantically |
+| RFC 6901 JSON Pointer | standard | CORE PATH PRIMITIVE | canonical JSON state paths | strong candidate |
+| RFC 7396 JSON Merge Patch | standard | SPECIALIST / REJECT FOR WORLDDIFF CORE | simple config/object patching | not canonical world diff |
+| SQLite transactions | data primitive | CORE EXISTING PLANE | atomic authoritative commit | preferred |
+| SQLite foreign keys / CHECK / UNIQUE | constraints | CORE EXISTING PLANE | structural/integrity invariants | preferred |
+| SQLite recursive CTEs | query primitive | CORE EXISTING PLANE | tree/graph reachability/dependencies | preferred first |
+| SQLite FTS5 | retrieval primitive | CORE-ALIGNED SPECIALIST | lexical canon/source/entity retrieval | preferred first |
+| SQLite JSON/JSONB functions | data primitive | CORE-ALIGNED | derived payload/query helpers | use carefully |
+| XState v5 | statechart/actor library | REFERENCE / SPECIALIST | complex UI/workflow state inspiration | reject as canon authority/core world store |
+| Graphology | JS graph library | SPECIALIST LAZY | advanced graph algorithms if eval proves need | benchmark later |
+| JsonLogic / json-logic-js | rule representation/library | REFERENCE / SPECIALIST | inspiration or constrained pure-rule backend | no unrestricted core adoption |
+| pure-rand | deterministic PRNG library | SPECIALIST CANDIDATE | versioned replayable random stream | Deep Polish candidate |
+| RDF/JS Data Model | interoperability interface | SPECIALIST EXPORT/RESEARCH | graph interchange/export | not canon runtime core |
+| W3C PROV | provenance model | REFERENCE | lineage vocabulary, already Wave 04 | reference only |
+| Automerge | CRDT/local-first document system | REJECT FOR CANON AUTHORITY | collaboration/merge technology | not canonical merge engine |
+| Ajv SchemaGuard | validator from Wave 01 | CORE REUSE | WorldDiff/world-event schema validation | reuse |
+| fast-check | verification tool from Wave 08 | DEV/CI REUSE | model/property tests for world invariants | reuse, not runtime |
+| OPA Wasm | policy engine from Wave 01 | REJECT FOR RPG CORE | powerful policy evaluation | too heavy/authority mismatch |
+
+## 1. WorldDiff format
+
+### RFC 6902 + RFC 6901
+
+JSON Patch defines an ordered list of `add`, `remove`, `replace`, `move`, `copy` and `test` operations applied sequentially to a JSON document. JSON Pointer provides a standardized path syntax. JSON Patch `test` is particularly useful as a low-level precondition primitive.
+
+Sources:
+- https://www.rfc-editor.org/rfc/rfc6902.html
+- https://www.rfc-editor.org/rfc/rfc6901.html
+
+Seven decision:
+- use JSON-Patch-like operations as a **wire/storage primitive**, not as the full semantic contract;
+- wrap every patch in a Seven-owned typed `WorldDiff` envelope;
+- validate paths against a world-state schema and permission/canon policy;
+- no arbitrary patch generated by a model is applied directly.
+
+Proposed `WorldDiff`:
+
+```text
+WorldDiff {
+  diffId
+  baseRevision
+  baseStateHash
+  branchId
+  mode: CANON | DIVERGENCE | WHAT_IF
+  actorId / initiatingEventId
+  sourceAnchors[]
+  causalParents[]
+  operations[]
+  semanticChanges[]
+  preconditions[]
+  requiredFacts[]
+  forbiddenChanges[]
+  knowledgeConstraints[]
+  timelineConstraints[]
+  ruleSetRevision
+  rngContext?
+  proposalLineage
+  validationEvidence?
+}
+```
+
+Each semantic change can annotate:
+- change type
+- target entity/event/relation
+- old/new semantic meaning
+- why the change is being proposed
+- source/canon authority tier
+- expected effects
+- reversible/irreversible class
+
+### Why RFC 7396 is not canonical WorldDiff
+
+JSON Merge Patch is attractive for small configuration objects but uses object shape and `null` deletion semantics and replaces arrays as whole values. It lacks operation-level intent/preconditions and cannot express the semantic meaning Seven needs for authoritative world commits.
+
+Decision:
+- allow only as a small specialist for config-like derived objects if useful;
+- do not use it for canonical RPG/Canon world transactions.
+
+Source:
+- https://www.rfc-editor.org/rfc/rfc7396.html
+
+## 2. Authoritative storage and atomic commits
+
+SQLite remains the strongest default local authority plane because Seven is already converging on it for durable state.
+
+Relevant properties:
+- transactions provide atomic commit semantics;
+- foreign keys enforce referential relationships when explicitly enabled;
+- `CHECK`, `UNIQUE`, primary keys and foreign keys enforce cheap invariants close to storage;
+- deferred foreign-key constraints can allow a multi-step transaction to become temporarily incomplete but require consistency by commit time.
+
+Seven `WorldCommitter` transaction:
+
+`BEGIN → verify base revision/hash → re-evaluate critical preconditions → apply typed operations → write event ledger → update authoritative tables → validate SQL constraints → write lineage/source links → COMMIT → derive indexes/views`
+
+If any authoritative validation fails, rollback the complete commit.
+
+Important implementation rule:
+- explicitly enable and verify SQLite foreign-key enforcement for every connection rather than relying on defaults.
+
+Sources:
+- https://www.sqlite.org/atomiccommit.html
+- https://www.sqlite.org/foreignkeys.html
+- https://sqlite.org/lang_createtable.html
+
+## 3. CanonGraphView without a graph database
+
+SQLite recursive CTEs can walk trees and graphs, including connected/reachable nodes. This is sufficient for many canon/RPG queries when entity/relation/event tables are indexed well.
+
+First-line graph tables/views:
+- entities
+- entity_aliases
+- relationships
+- events
+- event_participants
+- event_dependencies
+- causal_edges
+- locations
+- rules/powers
+- knowledge_events
+- source_anchors
+- branches
+
+Derived graph queries:
+- neighbors
+- ancestors/descendants
+- reachable events
+- dependency closure
+- causal chain
+- relationship path
+- quest/event prerequisites
+- impacted facts after source change
+
+Seven should implement a bounded graph-query contract over SQLite first. Recursive queries receive depth/result/time budgets to avoid accidental runaway traversal.
+
+Source:
+- https://sqlite.org/lang_with.html
+
+### Graphology
+
+Graphology provides a JS/TS graph data structure and a library ecosystem for traversal/components/shortest-path and other algorithms.
+
+Classification:
+- `SPECIALIST LAZY` only when an in-memory algorithm is demonstrably simpler/faster than SQLite CTEs;
+- input graph is a **derived snapshot**, never the authoritative store;
+- no startup import;
+- benchmark actual canon graph sizes first.
+
+Source:
+- https://graphology.github.io/
+
+## 4. CanonRetrieval
+
+SQLite FTS5 provides full-text search with phrase, prefix, boolean and proximity queries and supports Unicode-aware tokenization via `unicode61`.
+
+Seven retrieval order for canon text:
+
+`exact ids/anchors → structured entity/time/source filters → FTS lexical candidates → optional vector candidates → optional rerank → source evidence`
+
+This preserves the architecture law that vector results are derived retrieval hints, not canon truth.
+
+Arabic note:
+- FTS5 `unicode61` gives a useful Unicode baseline, but Seven must benchmark Arabic normalization, diacritics, clitics and aliases using its actual canon corpus before treating default tokenization as sufficient;
+- raw source text remains preserved; normalized/indexed text is derived.
+
+Source:
+- https://www.sqlite.org/fts5.html
+
+## 5. TimelineIndex
+
+Do not add a third-party timeline engine by default.
+
+Seven should model time explicitly using typed fields:
+- absolute/real timestamp when the work supplies one
+- work-local episode/chapter/scene anchor
+- sequence/order ordinal
+- interval start/end
+- uncertainty bounds
+- branch/mode
+- source anchor
+
+Core interval predicates are small and deterministic:
+- before / after
+- meets
+- overlaps
+- contains / during
+- starts / finishes
+- equal
+- unknown/partially ordered
+
+Important rule:
+- source stories frequently provide **partial order**, not precise clock time. Seven must not fabricate timestamps just to make the database convenient.
+
+Timeline validation checks:
+- impossible ordering
+- overlapping exclusive states/locations
+- character present in incompatible scenes
+- fact known before acquisition
+- object ownership duplication where uniqueness applies
+- death/destruction/revocation followed by impossible use without revival/restoration source
+- source-anchor order conflicts
+
+## 6. Character knowledge as first-class temporal state
+
+A Real Works simulation fails canon even when events are correct if characters know information too early.
+
+Canonical knowledge should be event-derived:
+
+`KnowledgeEvent(subject, proposition/factId, acquiredAtEvent, sourceMechanism, confidence, branch)`
+
+Queries:
+- `canon.knowledge_at_time(character, fact, anchor)`
+- `canon.who_knows(fact, anchor)`
+- `canon.knowledge_source(character, fact)`
+
+Narration validator blocks dialogue/actions that require unavailable knowledge unless:
+- the scene explicitly creates a new acquisition event, or
+- divergence mode authorizes it.
+
+Knowledge summaries remain derived caches.
+
+## 7. RuleConstraintEngine
+
+Seven does not need a heavyweight general policy engine for normal RPG/Canon rules.
+
+### JsonLogic
+
+JsonLogic represents data-driven rules as JSON and `json-logic-js` is self-contained/lightweight. It is attractive as an interchange/inspiration format for pure predicates.
+
+Risk:
+- custom operations can extend behavior, including stateful/unsafe actions if Seven permits arbitrary registration;
+- generic loose coercion/operation semantics may not match exact world/canon requirements;
+- a third-party rules language must not become a backdoor around authority controls.
+
+Seven decision:
+- build a small **Seven Rule DSL** with typed, allowlisted, pure predicates;
+- optionally use a JsonLogic-compatible subset/backend after Deep Polish tests;
+- no arbitrary custom operation registration from model/work/source data;
+- rule evaluation returns an explanation/evidence tree, not just boolean.
+
+Rule categories:
+- structural invariants
+- power/ability prerequisites
+- location/access constraints
+- inventory/resource requirements
+- relationship/status conditions
+- source/canon forbidden mutations
+- timeline/knowledge constraints
+- branch-specific divergence rules
+
+Canonical output:
+
+```text
+RuleResult {
+  ruleId
+  revision
+  outcome: PASS | FAIL | UNKNOWN | CONFLICT
+  inputsUsed[]
+  failedPredicates[]
+  evidence[]
+  explanation
+}
+```
+
+Sources:
+- https://jsonlogic.com/
+- https://github.com/jwadhams/json-logic-js
+
+## 8. XState assessment
+
+XState v5 provides state machines, statecharts, actors, persistence/restoration and deeply persisted actor state. These are strong capabilities for workflows/UI orchestration.
+
+However Seven already owns a Durable Run Kernel and needs canonical world state governed by event/source authority rather than a second actor runtime.
+
+Decision:
+- **REFERENCE / SPECIALIST**, not canonical world runtime;
+- useful as design inspiration and potentially for a bounded UI/workspace workflow if already justified elsewhere;
+- do not put RPG world entities into thousands of XState actors;
+- do not duplicate Durable Run Kernel transition authority;
+- no startup dependency unless a concrete eval proves value.
+
+Sources:
+- https://stately.ai/docs/quick-start
+- https://stately.ai/docs/persistence
+- https://stately.ai/docs/actors
+
+## 9. DeterministicRng
+
+Simulation randomness must be replayable.
+
+`pure-rand` is a maintained TypeScript PRNG candidate and exposes deterministic generators. It is suitable as a small implementation candidate behind a Seven-owned interface.
+
+Seven contract:
+
+```text
+RngContext {
+  algorithmId
+  implementationRevision
+  seed
+  streamId
+  drawIndex
+}
+```
+
+Rules:
+- never store only a seed while allowing the underlying algorithm to change invisibly;
+- persist algorithm id + implementation/version/config + draw progression needed for replay;
+- split named streams when useful (`combat`, `loot`, `world-event`, etc.) so unrelated random calls do not reorder every future result;
+- cryptographic/security randomness must **not** use the simulation PRNG;
+- Real Works CANON mode should normally avoid randomness when a canonical result is already sourced;
+- DIVERGENCE/WHAT_IF simulations may use seeded randomness explicitly.
+
+Classification:
+- `pure-rand`: SPECIALIST CANDIDATE, benchmark/bundle audit in Deep Polish;
+- fallback: tiny Seven-owned pinned PRNG implementation if it produces clearer long-term replay guarantees with less dependency surface.
+
+Source:
+- https://github.com/dubzzz/pure-rand
+
+Canonical tools:
+- `simulation.seed`
+- `simulation.random_int`
+- `simulation.random_choice`
+- `simulation.shuffle`
+- `simulation.snapshot_rng`
+- `simulation.replay`
+
+## 10. Scenario branches and checkpoints
+
+Branches are explicit world lines, not hidden mutation histories.
+
+`BranchRecord`:
+- branch id
+- parent branch/revision
+- fork event/revision
+- mode
+- purpose/title
+- divergence declaration
+- source/canon inheritance policy
+- current head revision/hash
+
+Modes:
+- `CANON`: source-preserving; unsourced conflicts fail or become `CANON_GAP`.
+- `DIVERGENCE`: starts from a canon anchor, records explicit divergence and downstream consequences.
+- `WHAT_IF`: sandbox branch with declared premise changes.
+
+Checkpoint:
+- authoritative revision/hash
+- schema version
+- reducer/rule versions
+- branch id
+- RNG contexts
+- source-ledger revision set
+- optional compact state snapshot
+
+Replay:
+`checkpoint → ordered authoritative events/diffs → versioned reducer → reconstructed state → hash comparison`
+
+Hash mismatch yields `REPLAY_DIVERGENCE`, never silent acceptance.
+
+## 11. CRDT / Automerge decision
+
+Automerge is strong technology for local-first collaboration, concurrent editing, history and branch/merge workflows. Its conflict semantics allow deterministic convergence and select a winner for concurrent same-property changes while retaining conflict information.
+
+That is **not** the same as canon-authority resolution.
+
+Seven decision:
+- reject Automerge/CRDT as canonical RPG/Real Works merge authority;
+- canon conflicts require source tier, branch mode, timeline, user decision and explicit validation, not merely convergence;
+- a future collaborative notes/draft editor could independently evaluate CRDT technology, but drafts must still pass WorldValidator before canonical commit.
+
+Sources:
+- https://automerge.org/docs/hello/
+- https://automerge.org/docs/reference/documents/conflicts/
+
+## 12. Branch merge semantics
+
+There is no automatic `merge canon branches` operation.
+
+Seven only creates a **merge proposal**:
+1. compute common ancestor
+2. diff both branches semantically
+3. classify changes
+4. detect same-field and semantic conflicts
+5. detect timeline/knowledge/relationship/source conflicts
+6. validate target branch mode
+7. require explicit resolution for authority-sensitive conflicts
+8. produce new WorldDiff
+9. validate and commit normally
+
+Canonical tools:
+- `world.branch.create`
+- `world.branch.compare`
+- `world.branch.merge_proposal`
+- `world.branch.discard`
+
+## 13. CanonConflictDetector
+
+Conflict classes:
+
+- `FACT_CONTRADICTION`
+- `IDENTITY_CONFLICT`
+- `TIMELINE_COLLISION`
+- `LOCATION_IMPOSSIBILITY`
+- `KNOWLEDGE_PREMATURE`
+- `RELATIONSHIP_CONFLICT`
+- `RULE_OR_POWER_CONFLICT`
+- `INVENTORY_OWNERSHIP_CONFLICT`
+- `SOURCE_HIERARCHY_CONFLICT`
+- `RETCON_CONFLICT`
+- `BRANCH_MODE_CONFLICT`
+- `UNSOURCED_CANON_CLAIM`
+- `CANON_GAP`
+
+Every conflict stores:
+- competing objects/claims
+- source anchors
+- source tiers
+- world revision/branch
+- conflict detector revision
+- whether deterministic resolution exists
+- chosen resolution + authority evidence, if resolved
+
+Never erase the losing/older source record; resolution is a new derived/authoritative decision with lineage.
+
+## 14. SourceAnchorResolver
+
+Reuse Wave 04 `SourceLedger`.
+
+Anchors are medium-specific typed identifiers, e.g.:
+- episode + timestamp/range
+- chapter + page/panel/paragraph
+- volume/book + chapter/section
+- official guide entry
+- game quest/scene/dialogue node
+
+`SourceAnchorResolver` responsibilities:
+- normalize equivalent references
+- map source snapshot revision → anchor
+- report unavailable/ambiguous anchors
+- retain source hash/version
+- map extracted claims/events to anchors
+
+A source anchor proves **where evidence came from**, not that the extracted interpretation is correct.
+
+## 15. RDF/JS decision
+
+RDF/JS defines interoperable terms/quads and storage-independent graph interfaces. This is useful for export/research interoperability but adds vocabulary/mapping complexity that Seven's runtime does not need for normal RPG execution.
+
+Classification:
+- `SPECIALIST EXPORT/RESEARCH`;
+- no RDF store in base runtime;
+- a host/export adapter may convert Seven entity/relation/provenance views to RDF when a real integration needs it;
+- Seven source/event authority remains canonical.
+
+Source:
+- https://rdf.js.org/data-model-spec/
+
+## 16. SQLite JSON / JSONB role
+
+Modern SQLite includes JSON functions by default and supports JSONB as an internal SQLite representation. JSONB is explicitly an SQLite-internal format and should be treated as opaque.
+
+Seven decision:
+- normalized high-value entities/events/relations remain relational rows with explicit columns and foreign keys;
+- JSON/JSONB can hold typed extension payloads, snapshots and derived metadata where flexible structure is useful;
+- do not turn the entire world into one giant JSON blob;
+- external/interchange hashes operate over a stable canonical representation, not opaque SQLite JSONB bytes.
+
+Source:
+- https://www.sqlite.org/json1.html
+
+## 17. Proposed canonical tools
+
+### World state
+- `world.state.get`
+- `world.state.at_revision`
+- `world.diff.propose`
+- `world.diff.validate`
+- `world.diff.commit`
+- `world.diff.reject`
+- `world.diff.explain`
+
+### Checkpoints / replay
+- `world.checkpoint.create`
+- `world.checkpoint.verify`
+- `world.replay`
+- `world.replay.verify`
+
+### Branches
+- `world.branch.create`
+- `world.branch.list`
+- `world.branch.compare`
+- `world.branch.merge_proposal`
+- `world.branch.discard`
+
+### Rules
+- `rules.evaluate`
+- `rules.explain`
+- `rules.list_applicable`
+
+### Timeline
+- `timeline.query`
+- `timeline.relations`
+- `timeline.validate`
+- `timeline.impacted_by`
+
+### Graph
+- `graph.neighbors`
+- `graph.reachable`
+- `graph.path`
+- `graph.dependencies`
+- `graph.causal_chain`
+
+### Canon
+- `canon.lookup`
+- `canon.anchor.resolve`
+- `canon.entity.query`
+- `canon.relationship.query`
+- `canon.knowledge_at_time`
+- `canon.conflicts`
+- `canon.coverage.audit`
+- `canon.scene.validate`
+
+### Simulation
+- `simulation.seed`
+- `simulation.random_int`
+- `simulation.random_choice`
+- `simulation.shuffle`
+- `simulation.snapshot_rng`
+- `simulation.replay`
+
+Model-facing tools should not expose raw SQL, arbitrary rule code or unchecked JSON Patch application.
+
+## 18. Validation pipeline
+
+A WorldDiff passes these layers in order:
+
+1. schema/type validation (Ajv/SchemaGuard)
+2. base revision/hash precondition
+3. branch/mode authority
+4. source/canon forbidden-change guards
+5. entity/path existence and referential integrity
+6. timeline constraints
+7. character knowledge constraints
+8. relationship/inventory/location constraints
+9. world rules/power system
+10. causal/dependency checks
+11. RNG/replay metadata if stochastic
+12. final SQL transaction constraints
+13. post-commit state hash + derived-index consistency
+
+Possible outcomes:
+- `VALID`
+- `INVALID`
+- `CONFLICT`
+- `CANON_GAP`
+- `NEEDS_USER_DECISION`
+
+## 19. Verification strategy
+
+Reuse Wave 08:
+- fast-check property/model tests for transition and authority invariants;
+- fixed canon fixture suites;
+- replay tests with stored seeds/revisions;
+- mutation tests only on critical validator logic;
+- source snapshots are immutable test fixtures by hash.
+
+Critical properties:
+- rejected diff leaves state byte/semantically unchanged;
+- committed diff produces expected revision/hash;
+- replay from checkpoint reaches identical state hash;
+- branch mutation never alters ancestor/canon branch;
+- unknown source coverage cannot become FACT by repetition;
+- character cannot use a fact before an acquisition event unless branch divergence authorizes it;
+- summary/vector/index deletion cannot delete authoritative event/source records;
+- random replay with same versioned RNG context is identical.
+
+## 20. Mobile/storage strategy
+
+Base runtime should reuse existing/light primitives:
+- SQLite
+- SchemaGuard
+- small deterministic validation code
+- FTS5 if included in selected SQLite build
+
+Lazy/specialist:
+- Graphology only when an advanced graph algorithm is requested and benchmarked useful
+- optional deterministic RNG library
+- RDF export on host/lazy path
+
+Rejected from base:
+- second graph database
+- generic game engine
+- XState as world entity runtime
+- OPA for ordinary RPG rules
+- CRDT document as authority layer
+
+Indexes are derived and rebuildable. Authoritative event/source/world records are not sacrificed to shrink an index.
+
+## 21. Rejected / limited approaches
+
+- LLM directly mutating world/canon state: rejected.
+- raw JSON Patch from model applied without typed semantic validation: rejected.
+- JSON Merge Patch as canonical world diff: rejected.
+- entire world stored as one mutable JSON blob: rejected.
+- graph database added merely because relationships form a graph: rejected.
+- RDF stack in base APK: rejected.
+- XState actors for every world entity: rejected.
+- unrestricted JsonLogic/custom operations from source/model content: rejected.
+- OPA Wasm for normal RPG rules: rejected unless a future measured policy use-case demands it.
+- CRDT automatic merge as canon conflict resolution: rejected.
+- unversioned random seed without algorithm/runtime identity: rejected.
+- exact timestamp fabrication when source only gives partial order: rejected.
+- embeddings/summaries becoming authoritative canon: rejected.
+- automatic branch merge that silently resolves authority-sensitive conflicts: rejected.
+
+## 22. Deep Polish queue
+
+Recommended order:
+
+`WorldDiff schema + RFC6902 wrapper → WorldValidator → SQLite authoritative schema/transaction → TimelineIndex + KnowledgeState → RuleConstraintEngine → CheckpointReplay → ScenarioBranchManager → DeterministicRng → CanonConflictDetector → CanonGraphView/recursive CTE → CanonRetrieval/FTS5 Arabic eval → SourceAnchorResolver → Graphology specialist benchmark → RDF export only if demanded`
+
+This order locks authority and determinism before convenience/advanced graph features.
+
+## 23. Open gaps
+
+- exact authoritative SQLite schema and migration plan;
+- byte/performance benchmark for chosen SQLite Android/Wasm implementation;
+- exact Seven Rule DSL grammar and numeric/string coercion rules;
+- whether JsonLogic subset is worth using versus a tiny custom evaluator;
+- deterministic PRNG algorithm/library choice and long-term compatibility fixture suite;
+- Arabic FTS tokenization/alias normalization benchmark;
+- efficient interval/partial-order indexing for very large works;
+- source-anchor parsers by medium;
+- retcon/source-tier policy per Real Work source ecosystem;
+- semantic branch-diff algorithm beyond low-level JSON Patch;
+- Graphology value threshold and bundle cost;
+- cross-version replay migration strategy when world schema/rules change;
+- canon eval corpus and adversarial insertion scenarios.
+
+## Coverage statement
+
+Wave 09 covers typed world diffs, atomic commits, graph/timeline/knowledge modeling, deterministic rules, replayable randomness, checkpoints, branches, merge semantics, conflict detection, source anchors, lexical canon retrieval, graph/RDF specialists and CRDT rejection for authority.
+
+This is practical saturation for general Canon/Simulation tool discovery. Individual pieces still require Deep Polish and real Seven evals before implementation/freeze.
+
+No production integration occurred in this wave. `seven_ai-final.html` was not modified, no files were deleted, and no protected branch was merged.
