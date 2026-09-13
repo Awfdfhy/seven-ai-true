@@ -1,0 +1,22 @@
+{
+  "format": "seven-eval-baseline",
+  "version": 1,
+  "baselineCommit": "6837a3afd94189ba2a2be14856105f28e4d3a8e3",
+  "taskCorpusVersion": 1,
+  "establishedAt": "2026-09-13T00:00:00Z",
+  "truth": {
+    "deterministicRuntimeGates": "CI_GATED",
+    "browserReleaseGate": "CI_GATED",
+    "androidDeviceGate": "CI_GATED_WHEN_WORKFLOW_RUNS",
+    "liveProviderQuality": "UNMEASURED",
+    "realPhoneBatteryRamThermal": "UNMEASURED",
+    "comparativeBigFiveScore": "UNMEASURED"
+  },
+  "rules": [
+    "Never convert UNMEASURED into PASS.",
+    "Use the same task corpus when comparing a candidate to this baseline.",
+    "Record model/provider identity and runtime version for provider-backed runs.",
+    "Separate model quality from Seven runtime quality.",
+    "A benchmark improvement cannot override a security, permission, persistence, or crash regression."
+  ]
+}
