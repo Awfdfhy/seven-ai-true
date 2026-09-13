@@ -10,6 +10,11 @@ const MARK='SEVEN_FINAL_RELEASE_LAYER_V1';
 
 function read(name){return fs.readFileSync(path.join(__dirname,name),'utf8');}
 function digest(value){return crypto.createHash('sha256').update(value).digest('hex').slice(0,16);}
+function injectBeforeLast(html,needle,payload){
+  const index=html.toLowerCase().lastIndexOf(needle.toLowerCase());
+  if(index<0)throw new Error('source HTML missing '+needle);
+  return html.slice(0,index)+payload+html.slice(index);
+}
 function build(){
   let html=fs.readFileSync(SOURCE,'utf8');
   if(html.includes(MARK))throw new Error('release layer already present in source; refuse double injection');
@@ -20,8 +25,8 @@ function build(){
   const fingerprint=digest(css+canon+performance+motion);
   const head=`\n<!-- ${MARK}:${fingerprint} -->\n<meta name="theme-color" content="#121026">\n<style id="seven-final-style">${css}</style>\n`;
   const body=`\n<script id="seven-canon-runtime">${canon}</script>\n<script id="seven-performance-runtime">${performance}</script>\n<script id="seven-motion-runtime">${motion}</script>\n<!-- /${MARK}:${fingerprint} -->\n`;
-  if(!html.includes('</head>')||!html.includes('</body>'))throw new Error('source HTML missing head/body terminators');
-  html=html.replace('</head>',head+'</head>').replace('</body>',body+'</body>');
+  html=injectBeforeLast(html,'</head>',head);
+  html=injectBeforeLast(html,'</body>',body);
   fs.mkdirSync(DIST_DIR,{recursive:true});
   fs.writeFileSync(OUTPUT,html);
   const result={output:OUTPUT,bytes:Buffer.byteLength(html),sourceBytes:fs.statSync(SOURCE).size,fingerprint};
@@ -30,4 +35,4 @@ function build(){
 }
 
 if(require.main===module){const r=build();console.log(`release build: PASS (${r.bytes} bytes, ${r.fingerprint})`);}
-module.exports={build,OUTPUT,MARK};
+module.exports={build,OUTPUT,MARK,injectBeforeLast};
