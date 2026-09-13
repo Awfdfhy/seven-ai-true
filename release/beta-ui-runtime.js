@@ -5,14 +5,15 @@
   const state={ready:false,version:'1.0.0-beta.1'};
 
   function ensureBadge(){
-    const title=doc.querySelector('.topbar .title');
-    if(!title||title.querySelector('.seven-beta-badge'))return;
+    const topbar=doc.querySelector('.topbar');
+    if(!topbar||topbar.querySelector('.seven-beta-badge'))return;
+    const host=topbar.querySelector('.title')||topbar;
     const badge=doc.createElement('span');
     badge.className='seven-beta-badge';
     badge.textContent='BETA';
     badge.setAttribute('aria-label','Seven beta interface');
     badge.dataset.sevenBetaBadge='1';
-    title.appendChild(badge);
+    host.appendChild(badge);
   }
 
   function decorate(){
