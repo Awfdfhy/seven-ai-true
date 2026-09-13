@@ -40,18 +40,19 @@ function build(){
   const performance=read('performance-runtime.js').replace(/<\/script/gi,'<\\/script');
   const control=read('control-runtime.js').replace(/<\/script/gi,'<\\/script');
   const bridge=read('control-bridge.js').replace(/<\/script/gi,'<\\/script');
+  const execution=read('execution-bridge.js').replace(/<\/script/gi,'<\\/script');
   const pdfRuntime=read('pdf-runtime.js').replace(/<\/script/gi,'<\\/script');
   const motion=read('motion-runtime.js').replace(/<\/script/gi,'<\\/script');
   const ui=read('ui-runtime.js').replace(/<\/script/gi,'<\\/script');
-  const fingerprint=digest(css+canon+world+research+performance+control+bridge+pdfRuntime+motion+ui+pdf.version);
+  const fingerprint=digest(css+canon+world+research+performance+control+bridge+execution+pdfRuntime+motion+ui+pdf.version);
   const head=`\n<!-- ${MARK}:${fingerprint} -->\n<meta name="theme-color" content="#121026">\n<style id="seven-final-style">${css}</style>\n`;
-  const body=`\n<script id="seven-canon-runtime">${canon}</script>\n<script id="seven-world-runtime">${world}</script>\n<script id="seven-research-runtime">${research}</script>\n<script id="seven-performance-runtime">${performance}</script>\n<script id="seven-control-runtime">${control}</script>\n<script id="seven-control-bridge">${bridge}</script>\n<script id="seven-pdf-runtime">${pdfRuntime}</script>\n<script id="seven-motion-runtime">${motion}</script>\n<script id="seven-ui-runtime">${ui}</script>\n<!-- /${MARK}:${fingerprint} -->\n`;
+  const body=`\n<script id="seven-canon-runtime">${canon}</script>\n<script id="seven-world-runtime">${world}</script>\n<script id="seven-research-runtime">${research}</script>\n<script id="seven-performance-runtime">${performance}</script>\n<script id="seven-control-runtime">${control}</script>\n<script id="seven-control-bridge">${bridge}</script>\n<script id="seven-execution-bridge">${execution}</script>\n<script id="seven-pdf-runtime">${pdfRuntime}</script>\n<script id="seven-motion-runtime">${motion}</script>\n<script id="seven-ui-runtime">${ui}</script>\n<!-- /${MARK}:${fingerprint} -->\n`;
   html=injectBeforeLast(html,'</head>',head);
   html=injectBeforeLast(html,'</body>',body);
   fs.mkdirSync(DIST_DIR,{recursive:true});
   fs.writeFileSync(OUTPUT,html);
   const result={output:OUTPUT,bytes:Buffer.byteLength(html),sourceBytes:fs.statSync(SOURCE).size,fingerprint,pdf,pdfLoadMode:'lazy-local'};
-  fs.writeFileSync(path.join(DIST_DIR,'release-manifest.json'),JSON.stringify({format:'seven-release-manifest',version:8,builtAt:new Date().toISOString(),...result},null,2));
+  fs.writeFileSync(path.join(DIST_DIR,'release-manifest.json'),JSON.stringify({format:'seven-release-manifest',version:9,builtAt:new Date().toISOString(),...result},null,2));
   return result;
 }
 
