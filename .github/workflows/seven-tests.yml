@@ -35,6 +35,8 @@ jobs:
             dist/release-manifest.json
             dist/static-audit.json
             dist/vendor/**
+            dist/visual-*.png
             release/release-results.json
+            release/visual-results.json
           if-no-files-found: error
           retention-days: 14
