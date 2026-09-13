@@ -27,21 +27,28 @@ function build(){
   html=replaceRequired(html,'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs',pdf.module,'PDF module URL');
   html=replaceRequired(html,'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs',pdf.worker,'PDF worker URL');
   html=replaceRequired(html,'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/cmaps/',pdf.cmaps,'PDF CMap URL');
+  const autoPdf=/<script\s+type=["']module["']>\s*import\s+\*\s+as\s+pdfjsLib\s+from\s+["']\.\/vendor\/pdfjs\/pdf\.min\.mjs["'];\s*pdfjsLib\.GlobalWorkerOptions\.workerSrc\s*=\s*["']\.\/vendor\/pdfjs\/pdf\.worker\.min\.mjs["'];\s*window\.pdfjsLib\s*=\s*pdfjsLib;\s*<\/script>/m;
+  if(!autoPdf.test(html))throw new Error('release packaging could not isolate automatic PDF module bootstrap');
+  html=html.replace(autoPdf,'');
+  const pdfGuard=/if\s*\(!window\.pdfjsLib\)\s*\{\s*throw\s+new\s+Error\(["']PDF reader is still loading — try again in a moment\.["']\);\s*\}/m;
+  if(!pdfGuard.test(html))throw new Error('release packaging could not find PDF lazy-load guard');
+  html=html.replace(pdfGuard,`if (!window.pdfjsLib && window.SevenPdf && typeof window.SevenPdf.load === "function") {\n                await window.SevenPdf.load();\n            }\n            if (!window.pdfjsLib) {\n                throw new Error("PDF reader could not be loaded.");\n            }`);
   const css=read('seven-final.css');
   const canon=read('canon-simulator.js').replace(/<\/script/gi,'<\\/script');
   const performance=read('performance-runtime.js').replace(/<\/script/gi,'<\\/script');
+  const pdfRuntime=read('pdf-runtime.js').replace(/<\/script/gi,'<\\/script');
   const motion=read('motion-runtime.js').replace(/<\/script/gi,'<\\/script');
-  const fingerprint=digest(css+canon+performance+motion+pdf.version);
+  const fingerprint=digest(css+canon+performance+pdfRuntime+motion+pdf.version);
   const head=`\n<!-- ${MARK}:${fingerprint} -->\n<meta name="theme-color" content="#121026">\n<style id="seven-final-style">${css}</style>\n`;
-  const body=`\n<script id="seven-canon-runtime">${canon}</script>\n<script id="seven-performance-runtime">${performance}</script>\n<script id="seven-motion-runtime">${motion}</script>\n<!-- /${MARK}:${fingerprint} -->\n`;
+  const body=`\n<script id="seven-canon-runtime">${canon}</script>\n<script id="seven-performance-runtime">${performance}</script>\n<script id="seven-pdf-runtime">${pdfRuntime}</script>\n<script id="seven-motion-runtime">${motion}</script>\n<!-- /${MARK}:${fingerprint} -->\n`;
   html=injectBeforeLast(html,'</head>',head);
   html=injectBeforeLast(html,'</body>',body);
   fs.mkdirSync(DIST_DIR,{recursive:true});
   fs.writeFileSync(OUTPUT,html);
-  const result={output:OUTPUT,bytes:Buffer.byteLength(html),sourceBytes:fs.statSync(SOURCE).size,fingerprint,pdf};
-  fs.writeFileSync(path.join(DIST_DIR,'release-manifest.json'),JSON.stringify({format:'seven-release-manifest',version:2,builtAt:new Date().toISOString(),...result},null,2));
+  const result={output:OUTPUT,bytes:Buffer.byteLength(html),sourceBytes:fs.statSync(SOURCE).size,fingerprint,pdf,pdfLoadMode:'lazy-local'};
+  fs.writeFileSync(path.join(DIST_DIR,'release-manifest.json'),JSON.stringify({format:'seven-release-manifest',version:3,builtAt:new Date().toISOString(),...result},null,2));
   return result;
 }
 
-if(require.main===module){const r=build();console.log(`release build: PASS (${r.bytes} bytes, ${r.fingerprint}, local PDF ${r.pdf.bytes} bytes)`);}
+if(require.main===module){const r=build();console.log(`release build: PASS (${r.bytes} bytes, ${r.fingerprint}, local lazy PDF ${r.pdf.bytes} bytes)`);}
 module.exports={build,OUTPUT,MARK,injectBeforeLast};
