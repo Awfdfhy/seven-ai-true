@@ -36,40 +36,52 @@ Core laws:
 Stop with `NO_QUALIFYING_EVOLUTION` when no candidate survives the current gate. Reaching generation 10 is bounded evidence, not proof of global optimality or a numeric 10x quality gain.
 
 ## Polishing Governance
-**Seven Polishing V5 — General Improvement Specialization** now exists as the successor architecture candidate:
+### Latest successor candidate: Polishing V5.1
+Record:
+`docs/project-memory/SEVEN_POLISHING_V5_1_EVALUATION_HARDENING.md`
+
+Challenge ledger:
+`docs/project-memory/SEVEN_POLISHING_V5_1_SELF_CHALLENGE_LEDGER.md`
+
+V5.1 materially hardens V5 around evaluator reliability. New architecture requirements include:
+- oracle hierarchy from deterministic/executable checks down to weak self-assessment;
+- trajectory/process evidence in addition to final outcomes;
+- silent-fault cases where the visible result survives an internal mistake;
+- repeated-trial consistency for stochastic behavior where relevant;
+- separate static tool quality from realized agent utility;
+- evaluation-realism axis so synthetic tests cannot silently claim deployment equivalence;
+- contamination/exposure ledger for PUBLIC/DEVELOPMENT/SHADOW/HOLDOUT/RELEASE evidence;
+- rotating holdouts after promotion;
+- orthogonal evaluator families rather than correlated judge agreement;
+- judge calibration using known-good, known-bad, overfit, mutation-generated and simpler-equivalent candidates;
+- evaluator firebreak and generation escrow before results are observed;
+- explicit EvidenceDebt and CapabilityDebt;
+- transfer labels and plateau detection;
+- anti-Goodhart tripwires when visible metrics rise while hidden/process/transfer evidence disagrees.
+
+The V5→V5.1 challenge found material gaps in ten architecture rounds. Therefore V5 was **not saturated**. V5.1 is stronger architecturally, but **is not frozen or empirically proven**.
+
+### V5 parent
 `docs/project-memory/SEVEN_POLISHING_V5_GENERAL_IMPROVEMENT_SPECIALIZATION.md`
 
-V5 turns Polishing into a specialization over the General Improvement Engine instead of a duplicated optimizer. It inherits V4.4 Velocity, V4.3 Maximum Research, V4.2 Motion/Expert, V4.1 Benchmark/Visual and the V4 safety laws, then adds recursive hostility, causal attribution, evaluator calibration, transfer checks and improvement economics.
+V5 made Polishing a specialization over the General Improvement Engine instead of a duplicated optimizer and inherited V4.4 Velocity, V4.3 Maximum Research, V4.2 Motion/Expert, V4.1 Benchmark/Visual and V4 safety laws.
 
-V5 campaign shape:
-`Target Lock → Domain Discovery → Maximum Research → Candidate Diversity → Causal Hypotheses → Precommitted Evaluation → Fast Rejection Gates → Bench/Visual/Motion/Expert Evidence → Attribution/Transfer → Adversarial/Holdout → Complexity/Resource Review → Independent Judge → Promotion → Harder Generation → Saturation 2/2`
-
-**Important truth boundary:** V5 is `ARCHITECTURE_CANDIDATE`, not yet empirically proven superior to V4.4. Therefore **V4.4 remains the active proven polishing governance** until V5 completes its own validation/freeze campaign.
+### Active proven governance
+**V4.4 remains the active proven polishing governance** until V5.1 or a later successor earns validation/freeze. V4.4 status remains `V4_4_ARCHITECTURE_SATURATED_2_OF_2`.
 
 ## Self-Evolution Integration
 Record:
 `docs/project-memory/SEVEN_SELF_EVOLUTION_GENERAL_IMPROVEMENT_INTEGRATION.md`
 
-Self-Evolution now has an explicit architecture path to use the General Improvement Engine and Polishing V5 while preserving separation of powers:
+Self-Evolution can use the General Improvement Engine and current Polishing successor candidates while preserving separation of powers:
 - Builder proposes/researches/builds;
-- Challenger/Judge evaluates against locked criteria and hidden/transfer cases;
+- Challenger/Judge evaluates against locked criteria and transfer/holdout cases;
 - Promotion Plane alone accepts, seals lineage and binds rollback.
 
-Candidates cannot silently mutate authoritative requirements, evidence-state semantics, permission invariants, hidden holdout boundaries, critical gates, promotion authority or committed benchmark identity. Heavy recursive evolution is not an always-on Android loop.
-
-## Canonical Historical Polishing
-**Seven Polishing Protocol V4.4 — Velocity Fabric** remains active until V5 is earned.
-
-Core records:
-- `docs/project-memory/SEVEN_POLISHING_V4_4_VELOCITY_FABRIC.md`
-- `docs/project-memory/SEVEN_POLISHING_V4_4_VELOCITY_SELF_POLISH.md`
-- `docs/project-memory/SEVEN_POLISHING_V4_3_MAXIMUM_RESEARCH_LOOP.md`
-- `docs/project-memory/SEVEN_BENCHMARK_AND_VISUAL_EVIDENCE_FABRIC.md`
-
-V4.4 status: `V4_4_ARCHITECTURE_SATURATED_2_OF_2`.
+Candidates cannot silently mutate authoritative requirements, evidence-state semantics, permission invariants, holdout boundaries, critical gates, promotion authority or committed benchmark identity. Heavy recursive evolution is not an always-on Android loop.
 
 ## Debugging & Repair Fabric
-**Seven Debugging & Repair Fabric 1.1 — Evidence-Governed Causal Repair Mesh** remains `V4_3_ARCHITECTURE_SATURATED_2_OF_2` and integrates with V4.4/V5. Repair Burst clusters related failures and revalidates affected proof before broader mandatory gates.
+**Seven Debugging & Repair Fabric 1.1 — Evidence-Governed Causal Repair Mesh** remains `V4_3_ARCHITECTURE_SATURATED_2_OF_2` and integrates with V4.4/V5.x. Repair Burst clusters related failures and revalidates affected proof before broader mandatory gates.
 
 ## Capability Roadmap
 Capabilities 01–15 retain their architecture freezes and implementation truth. Priority #16 Search/Retrieval, #17 Knowledge, #18 Vision and #20 Real Works remain reopened. #19 RPG 4.2, #21 Titles 4.1 and #22 Projects 4.3 are historical saturated candidates requiring revalidation where newer governance materially applies.
@@ -91,12 +103,17 @@ Next numbered product Mega-Campaign remains **#23 Sessions / Persistence + #24 R
 - fastest path is an empirical result, not an assumption
 - recursive self-improvement cannot rewrite the constitution that judges it
 - no universal percentage may be fabricated for non-ratio quality
+- final-outcome success cannot erase invalid process evidence
+- correlated evaluators cannot masquerade as independent evidence
+- deferred proof remains explicit debt until discharged
 
 ## Explicitly Partial / Unfinished
 - General Improvement Engine runtime/orchestrator
 - recursive candidate generator and Promotion Gate runtime
-- hidden holdout manager and evaluator-integrity harness
-- Polishing V5 validation/freeze campaign
+- holdout manager and evaluator-integrity harness
+- Polishing V5.1 further challenge / validation / freeze campaign
+- trajectory evidence runtime and repeated-trial evaluator
+- contamination/exposure ledger runtime
 - executable benchmark/research/visual/motion infrastructure
 - Debugging & Repair replay/repair benchmark/Repair Burst runtime
 - V4.4 ProofGraph/impact-selector/cache/scheduler/strategy-tournament runtime
@@ -112,4 +129,4 @@ Next numbered product Mega-Campaign remains **#23 Sessions / Persistence + #24 R
 Before declaring implementation PASS: verify CI, source integrity, protected-source integrity, release boot where applicable, mobile/RTL/theme/reduced-motion gates, benchmark identity/validity, repair semantic/regression evidence, research freshness/coverage, migration/recovery and release-specific broad evidence independent of iteration fast paths.
 
 ## Development Philosophy
-Use large coherent passes and strong final verification. The General Improvement Engine is now the reusable improvement laboratory. Polishing V5 is the candidate specialization built on it. Recursive campaigns may run up to ten promoted generations, but every generation must survive a harder valid evidence environment and demonstrate a real step-change. Stop rather than manufacture progress.
+Use large coherent passes and strong final verification. The General Improvement Engine is the reusable improvement laboratory. Polishing V5.1 is the newest successor candidate and now treats the evaluator itself as a system that must be challenged. Recursive campaigns may run up to ten promoted generations, but every generation must survive a harder valid evidence environment and demonstrate a real step-change. Stop rather than manufacture progress.
