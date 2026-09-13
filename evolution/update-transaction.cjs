@@ -83,10 +83,14 @@ function commitUpdate(tx) {
   return tx;
 }
 
-function requireRollback(tx, reason = "manual") {
-  if (!tx || !["APPLIED", "VERIFIED"].includes(tx.state)) throw new Error("rollback can only be requested after apply");
+function requireRollback(tx, reason = "manual", options = {}) {
+  if (!tx) throw new Error("transaction required");
+  const uncertainValidated = tx.state === "VALIDATED" && options.effectUncertain === true;
+  if (!uncertainValidated && !["APPLIED", "VERIFIED"].includes(tx.state)) {
+    throw new Error("rollback can only be requested after apply or uncertain apply");
+  }
   tx.state = "ROLLBACK_REQUIRED";
-  event(tx, "ROLLBACK_REQUIRED", { reason: String(reason) });
+  event(tx, "ROLLBACK_REQUIRED", { reason: String(reason), effectUncertain: options.effectUncertain === true });
   return tx;
 }
 
