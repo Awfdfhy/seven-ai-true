@@ -34,6 +34,7 @@ function build(){
   if(!pdfGuard.test(html))throw new Error('release packaging could not find PDF lazy-load guard');
   html=html.replace(pdfGuard,`if (!window.pdfjsLib && window.SevenPdf && typeof window.SevenPdf.load === "function") {\n                await window.SevenPdf.load();\n            }\n            if (!window.pdfjsLib) {\n                throw new Error("PDF reader could not be loaded.");\n            }`);
   const css=read('seven-final.css');
+  const betaCss=read('beta-ui.css');
   const canon=read('canon-simulator.js').replace(/<\/script/gi,'<\\/script');
   const world=read('world-runtime.js').replace(/<\/script/gi,'<\\/script');
   const research=read('research-runtime.js').replace(/<\/script/gi,'<\\/script');
@@ -44,15 +45,16 @@ function build(){
   const pdfRuntime=read('pdf-runtime.js').replace(/<\/script/gi,'<\\/script');
   const motion=read('motion-runtime.js').replace(/<\/script/gi,'<\\/script');
   const ui=read('ui-runtime.js').replace(/<\/script/gi,'<\\/script');
-  const fingerprint=digest(css+canon+world+research+performance+control+bridge+execution+pdfRuntime+motion+ui+pdf.version);
-  const head=`\n<!-- ${MARK}:${fingerprint} -->\n<meta name="theme-color" content="#121026">\n<style id="seven-final-style">${css}</style>\n`;
-  const body=`\n<script id="seven-canon-runtime">${canon}</script>\n<script id="seven-world-runtime">${world}</script>\n<script id="seven-research-runtime">${research}</script>\n<script id="seven-performance-runtime">${performance}</script>\n<script id="seven-control-runtime">${control}</script>\n<script id="seven-control-bridge">${bridge}</script>\n<script id="seven-execution-bridge">${execution}</script>\n<script id="seven-pdf-runtime">${pdfRuntime}</script>\n<script id="seven-motion-runtime">${motion}</script>\n<script id="seven-ui-runtime">${ui}</script>\n<!-- /${MARK}:${fingerprint} -->\n`;
+  const betaUi=read('beta-ui-runtime.js').replace(/<\/script/gi,'<\\/script');
+  const fingerprint=digest(css+betaCss+canon+world+research+performance+control+bridge+execution+pdfRuntime+motion+ui+betaUi+pdf.version);
+  const head=`\n<!-- ${MARK}:${fingerprint} -->\n<meta name="theme-color" content="#0f0d1d">\n<style id="seven-final-style">${css}</style>\n<style id="seven-beta-ui-style">${betaCss}</style>\n`;
+  const body=`\n<script id="seven-canon-runtime">${canon}</script>\n<script id="seven-world-runtime">${world}</script>\n<script id="seven-research-runtime">${research}</script>\n<script id="seven-performance-runtime">${performance}</script>\n<script id="seven-control-runtime">${control}</script>\n<script id="seven-control-bridge">${bridge}</script>\n<script id="seven-execution-bridge">${execution}</script>\n<script id="seven-pdf-runtime">${pdfRuntime}</script>\n<script id="seven-motion-runtime">${motion}</script>\n<script id="seven-ui-runtime">${ui}</script>\n<script id="seven-beta-ui-runtime">${betaUi}</script>\n<!-- /${MARK}:${fingerprint} -->\n`;
   html=injectBeforeLast(html,'</head>',head);
   html=injectBeforeLast(html,'</body>',body);
   fs.mkdirSync(DIST_DIR,{recursive:true});
   fs.writeFileSync(OUTPUT,html);
   const result={output:OUTPUT,bytes:Buffer.byteLength(html),sourceBytes:fs.statSync(SOURCE).size,fingerprint,pdf,pdfLoadMode:'lazy-local'};
-  fs.writeFileSync(path.join(DIST_DIR,'release-manifest.json'),JSON.stringify({format:'seven-release-manifest',version:9,builtAt:new Date().toISOString(),...result},null,2));
+  fs.writeFileSync(path.join(DIST_DIR,'release-manifest.json'),JSON.stringify({format:'seven-release-manifest',version:10,builtAt:new Date().toISOString(),...result},null,2));
   return result;
 }
 
