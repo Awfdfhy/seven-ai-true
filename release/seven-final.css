@@ -7,12 +7,12 @@
   --seven-ease-enter:cubic-bezier(.2,.8,.2,1);
   --seven-ease-exit:cubic-bezier(.4,0,1,1);
   --seven-ease-move:cubic-bezier(.2,.7,.2,1);
-  --seven-on-accent:#fff;
-  --seven-on-danger:#fff;
+  --seven-on-accent:#ffffff;
+  --seven-on-danger:#ffffff;
   --seven-ring:0 0 0 3px color-mix(in srgb,var(--accent) 28%,transparent);
   --seven-surface-glow:0 10px 30px color-mix(in srgb,var(--accent) 10%,transparent);
 }
-body.light{--accent:#655bef;--accent-hover:#564fd8;--muted:#777391;--danger:#d13a40;--seven-on-accent:#fff;--seven-on-danger:#fff}
+body.light{--accent:#655bef;--accent-hover:#564fd8;--muted:#777391;--danger:#d13a40;--seven-on-accent:#ffffff;--seven-on-danger:#ffffff}
 body:not(.light){--accent:#8b85ff;--accent-hover:#a29cff;--muted:#a29dc2;--danger:#e5484d;--seven-on-accent:#121026;--seven-on-danger:#121026}
 html{scroll-behavior:auto;-webkit-text-size-adjust:100%;text-rendering:optimizeLegibility}
 body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
