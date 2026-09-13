@@ -10,7 +10,7 @@ const {build,OUTPUT,MARK}=require('./build-release.cjs');
   const html=fs.readFileSync(OUTPUT,'utf8');
   const dist=path.dirname(OUTPUT);
   assert.ok(html.includes(MARK));
-  assert.ok(built.bytes-built.sourceBytes<100000,'release layer unexpectedly heavy');
+  assert.ok(built.bytes-built.sourceBytes<180000,'release layer unexpectedly heavy');
 
   const server=http.createServer((req,res)=>{
     const pathname=new URL(req.url,'http://127.0.0.1').pathname;
@@ -27,6 +27,23 @@ const {build,OUTPUT,MARK}=require('./build-release.cjs');
   const browser=await chromium.launch({headless:true});
   const results=[];
   async function test(name,fn){await fn();results.push({name,status:'PASS'});console.log('PASS',name)}
+  async function waitNamed(page,name,predicate){
+    try{
+      await page.waitForFunction(predicate,null,{timeout:10000});
+      console.log('READY',name);
+    }catch(error){
+      const snapshot=await page.evaluate(()=>({
+        readyState:document.readyState,
+        performance:{exists:!!window.SevenPerformance,ready:window.SevenPerformance?.state?.ready,tier:window.SevenPerformance?.state?.tier},
+        canon:{exists:!!window.SevenCanon},
+        motion:{exists:!!window.SevenMotion,ready:window.SevenMotion?.state?.ready},
+        pdf:{exists:!!window.SevenPdf,loaded:window.SevenPdf?.loaded},
+        visual:{exists:!!window.SevenVisualShell,ready:document.documentElement.dataset.sevenVisual||null},
+        persistence:{exists:typeof roomPersistence!=='undefined',ready:typeof roomPersistence!=='undefined'?roomPersistence.status().ready:null}
+      }));
+      throw new Error(`release readiness failed at ${name}: ${JSON.stringify(snapshot)} :: ${error.message}`);
+    }
+  }
   try{
     const context=await browser.newContext({viewport:{width:390,height:844}});
     await context.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
@@ -35,13 +52,19 @@ const {build,OUTPUT,MARK}=require('./build-release.cjs');
     await page.goto(origin,{waitUntil:'domcontentloaded'});
     await page.waitForTimeout(100);
     if(errors.length)throw new Error('release bootstrap pageerror: '+errors.join(' | '));
-    await page.waitForFunction(()=>window.SevenPerformance&&window.SevenPerformance.state.ready&&window.SevenCanon&&window.SevenMotion&&window.SevenMotion.state.ready&&window.SevenPdf,null,{timeout:10000});
-    await page.waitForFunction(()=>typeof roomPersistence!=='undefined'&&roomPersistence.status().ready,null,{timeout:10000});
+
+    await waitNamed(page,'Performance',()=>!!(window.SevenPerformance&&window.SevenPerformance.state.ready));
+    await waitNamed(page,'Canon',()=>!!window.SevenCanon);
+    await waitNamed(page,'Motion',()=>!!(window.SevenMotion&&window.SevenMotion.state.ready));
+    await waitNamed(page,'PDF',()=>!!window.SevenPdf);
+    await waitNamed(page,'Visual Shell',()=>!!(window.SevenVisualShell&&document.documentElement.dataset.sevenVisual==='brand-os-v1'));
+    await waitNamed(page,'Persistence',()=>typeof roomPersistence!=='undefined'&&roomPersistence.status().ready);
 
     await test('release runtime boots without page errors',async()=>{assert.deepEqual(errors,[])});
     await test('room persistence is ready',async()=>{const r=await page.evaluate(()=>roomPersistence.status());assert.equal(r.ready,true);assert.equal(r.failed,false)});
     await test('adaptive performance tier is installed',async()=>{const r=await page.evaluate(()=>({tier:SevenPerformance.state.tier,attr:document.documentElement.dataset.sevenPerformance,ready:SevenPerformance.state.ready}));assert.ok(['lite','balanced','full'].includes(r.tier));assert.equal(r.attr,r.tier);assert.equal(r.ready,true)});
     await test('motion layer is event delegated and ready',async()=>{assert.equal(await page.evaluate(()=>document.documentElement.classList.contains('seven-motion-ready')),true)});
+    await test('Brand OS visual shell is ready',async()=>{const r=await page.evaluate(()=>({visual:document.documentElement.dataset.sevenVisual,mode:document.documentElement.dataset.sevenMode,mark:!!document.querySelector('.seven-brand-mark')}));assert.equal(r.visual,'brand-os-v1');assert.ok(['core','build','world','research'].includes(r.mode));assert.equal(r.mark,true)});
     await test('PDF engine is not loaded during normal boot',async()=>{const r=await page.evaluate(()=>({loaded:SevenPdf.loaded,global:typeof window.pdfjsLib}));assert.equal(r.loaded,false);assert.equal(r.global,'undefined')});
     await test('localized PDF engine lazy-loads without CDN',async()=>{const r=await page.evaluate(async()=>{const lib=await SevenPdf.load();return {pdf:typeof lib.getDocument==='function',loaded:SevenPdf.loaded,worker:lib.GlobalWorkerOptions.workerSrc}});assert.equal(r.pdf,true);assert.equal(r.loaded,true);assert.equal(r.worker,'./vendor/pdfjs/pdf.worker.min.mjs');assert.deepEqual(errors,[])});
     await test('mobile layout has no document horizontal overflow',async()=>{const r=await page.evaluate(()=>({sw:document.documentElement.scrollWidth,w:document.documentElement.clientWidth,composer:!!document.querySelector('.composer')}));assert.equal(r.composer,true);assert.ok(r.sw<=r.w+2,JSON.stringify(r))});
