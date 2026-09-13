@@ -13,6 +13,7 @@ const {
   deduplicateDiscoveries,
   discoveryCandidate
 } = require("./observatory.cjs");
+const { createVerifiedProof, applyVerifiedProof } = require("./free-proof.cjs");
 const { evaluateModelCandidate, compareModels } = require("./model-evals.cjs");
 
 function pass(name, fn) {
@@ -29,6 +30,7 @@ const safeGates = {
   criticalRegression: false
 };
 const strongRun = { tests: 1, quality: 0.90, reliability: 0.90, performance: 0.85, efficiency: 0.85 };
+const verifier = { id: "seven-free-proof-v1", method: "official-source-check" };
 
 function verifiedHosted(overrides = {}) {
   return normalizeModelRecord({
@@ -40,7 +42,8 @@ function verifiedHosted(overrides = {}) {
       class: "FREE_API_TIER",
       status: "VERIFIED",
       evidence: ["provider states zero-cost tier"],
-      verifiedAt: "2026-09-13T00:01:00.000Z"
+      verifiedAt: "2026-09-13T00:01:00.000Z",
+      verifier
     },
     ...overrides
   });
@@ -56,11 +59,12 @@ pass("observatory discovery cannot self-promote to verified or active", () => {
     model: "NewModel",
     status: "ACTIVE",
     source: { url: "https://example.invalid/new", discoveredAt: "2026-09-13T00:00:00.000Z", sourceType: "feed" },
-    freeProof: { class: "FREE_API_TIER", status: "VERIFIED", evidence: ["claim"], verifiedAt: "2026-09-13T00:00:01.000Z" }
+    freeProof: { class: "FREE_API_TIER", status: "VERIFIED", evidence: ["claim"], verifiedAt: "2026-09-13T00:00:01.000Z", verifier }
   });
   assert.equal(record.status, "DISCOVERED");
   assert.equal(record.freeProof.status, "UNVERIFIED");
   assert.equal(record.freeProof.verifiedAt, "");
+  assert.equal(record.freeProof.verifier.id, "");
   assert.equal(discoveryCandidate(record).metadata.freeProofStatus, "UNVERIFIED");
 });
 
@@ -81,7 +85,7 @@ pass("open weights require a license and verified evidence", () => {
     provider: "Local",
     model: "weights",
     status: "ACTIVE",
-    freeProof: { class: "OPEN_WEIGHTS_LOCAL", status: "VERIFIED", evidence: ["model card"], verifiedAt: "2026-09-13T00:00:00.000Z" }
+    freeProof: { class: "OPEN_WEIGHTS_LOCAL", status: "VERIFIED", evidence: ["model card"], verifiedAt: "2026-09-13T00:00:00.000Z", verifier }
   });
   const proof = verifyFreeProof(record);
   assert.equal(proof.valid, false);
@@ -92,9 +96,43 @@ pass("unknown free-proof classes fail closed", () => {
   const record = normalizeModelRecord({
     provider: "P",
     model: "M",
-    freeProof: { class: "TRUST_ME", status: "VERIFIED", evidence: ["claim"], verifiedAt: "2026-09-13T00:00:00.000Z" }
+    freeProof: { class: "TRUST_ME", status: "VERIFIED", evidence: ["claim"], verifiedAt: "2026-09-13T00:00:00.000Z", verifier }
   });
   assert.equal(verifyFreeProof(record).valid, false);
+});
+
+pass("verified proof requires an official source and explicit verifier", () => {
+  assert.throws(() => createVerifiedProof({
+    proofClass: "FREE_API_TIER",
+    evidence: [{ url: "https://example.invalid/forum", observedAt: "2026-09-13T00:00:00.000Z", claim: "free", sourceType: "community" }],
+    verifiedAt: "2026-09-13T00:01:00.000Z",
+    verifier
+  }), /official free-proof evidence required/);
+  assert.throws(() => createVerifiedProof({
+    proofClass: "FREE_API_TIER",
+    evidence: [{ url: "https://example.invalid/official", observedAt: "2026-09-13T00:00:00.000Z", claim: "free", sourceType: "official" }],
+    verifiedAt: "2026-09-13T00:01:00.000Z",
+    verifier: {}
+  }), /explicit verifier/);
+});
+
+pass("verified proof transition preserves verifier lineage but does not activate model", () => {
+  const discovered = ingestDiscovery({
+    provider: "Provider",
+    model: "VerifiedLater",
+    source: { url: "https://example.invalid/catalog", discoveredAt: "2026-09-13T00:00:00.000Z", sourceType: "provider-catalog" }
+  });
+  const proof = createVerifiedProof({
+    proofClass: "FREE_API_TIER",
+    evidence: [{ url: "https://example.invalid/official", observedAt: "2026-09-13T00:00:30.000Z", claim: "zero-cost tier", sourceType: "provider-official" }],
+    verifiedAt: "2026-09-13T00:01:00.000Z",
+    verifier
+  });
+  const verified = applyVerifiedProof(discovered, proof);
+  assert.equal(verified.status, "VERIFIED");
+  assert.equal(verified.freeProof.verifier.id, verifier.id);
+  assert.equal(verified.lineage.sourceRecordId, discovered.id);
+  assert.equal(verifyFreeProof(verified).valid, true);
 });
 
 pass("active registry exposes only models with valid free proof", () => {
