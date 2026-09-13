@@ -20,6 +20,14 @@ Known integrity reference from the protected baseline:
 
 A source-integrity test exists and should remain part of release verification.
 
+## Ultimate Polish Campaign
+- Protocol: `SEVEN_ULTIMATE_POLISH_PROTOCOL.md` v2.1
+- Velocity Fabric is mandatory across every capability polish.
+- Capability 01 — Cognitive Runtime: **Architecture Freeze Candidate complete**
+- Canonical polish record: `docs/project-memory/ultimate-polish/01_COGNITIVE_RUNTIME_ULTIMATE_POLISH.md`
+- Cognitive Runtime implementation remains **partial/foundation**, not implementation-frozen. CR-P0 through CR-P7 remain to be built/wired/verified against the freeze candidate.
+- Next numbered core capability after Cognitive Runtime: Capability 02 — Truth / Epistemic Fabric.
+
 ## Implemented / Strongly Established
 - Hardened Cognitive Runtime v4.2 direction
 - Task contracts, truth fabric, context compiler, resource governance and side-effect ledger foundations
