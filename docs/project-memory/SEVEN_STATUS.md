@@ -23,10 +23,16 @@ A source-integrity test exists and should remain part of release verification.
 ## Ultimate Polish Campaign
 - Protocol: `SEVEN_ULTIMATE_POLISH_PROTOCOL.md` v2.1
 - Velocity Fabric is mandatory across every capability polish.
-- Capability 01 — Cognitive Runtime: **Architecture Freeze Candidate complete**
-- Canonical polish record: `docs/project-memory/ultimate-polish/01_COGNITIVE_RUNTIME_ULTIMATE_POLISH.md`
-- Cognitive Runtime implementation remains **partial/foundation**, not implementation-frozen. CR-P0 through CR-P7 remain to be built/wired/verified against the freeze candidate.
-- Next numbered core capability after Cognitive Runtime: Capability 02 — Truth / Epistemic Fabric.
+- Capability 01 — Cognitive Runtime: **Architecture frozen for campaign / implementation deferred**
+  - polish: `docs/project-memory/ultimate-polish/01_COGNITIVE_RUNTIME_ULTIMATE_POLISH.md`
+  - freeze: `docs/project-memory/ultimate-polish/01_COGNITIVE_RUNTIME_FREEZE_RECORD.md`
+  - implementation remains partial/foundation; CR-P0 through CR-P7 remain deferred until cross-system reconciliation.
+- Capability 02 — Truth / Epistemic Fabric: **Architecture frozen for campaign / implementation deferred**
+  - final target: **Seven Epistemic Fabric 3.0 — Provenance-Locked Claim Graph**
+  - polish: `docs/project-memory/ultimate-polish/02_TRUTH_EPISTEMIC_FABRIC_ULTIMATE_POLISH.md`
+  - freeze: `docs/project-memory/ultimate-polish/02_TRUTH_EPISTEMIC_FABRIC_FREEZE_RECORD.md`
+  - implementation remains partial/foundation; EF-P0 through EF-P8 remain deferred until cross-system reconciliation.
+- Next numbered core capability: Capability 03 — Memory Fabric.
 
 ## Implemented / Strongly Established
 - Hardened Cognitive Runtime v4.2 direction
