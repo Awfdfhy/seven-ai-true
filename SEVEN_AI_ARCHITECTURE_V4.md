@@ -1,4 +1,4 @@
-# Seven AI — Architecture v4 / Astra Handoff
+# Seven AI — Architecture v4.1 / Astra Handoff
 
 ## Mission
 Seven AI is being built as a Cognitive Runtime, not merely a chat UI.
@@ -6,28 +6,38 @@ Seven AI is being built as a Cognitive Runtime, not merely a chat UI.
 Core philosophy:
 1. Own the intelligence. Borrow the infrastructure.
 2. Canonical state is authoritative. Everything derived must prove where it came from.
+3. A subsystem is not complete until it is implemented, wired into the normal user path, verified, and recoverable.
 
 ## Core invariants
-- Authoritative state is explicit. Canonical memory, files, run state, and permissions are not summaries, embeddings, caches, or projections.
+- Authoritative state is explicit. Canonical memory, files, run state, permissions, world state, and work progression are not summaries, embeddings, caches, or projections.
 - Every derived object must carry lineage to its source and transformation.
-- Authority must never increase through summarization, consolidation, tool echo, or corroboration.
+- Authority must never increase through summarization, consolidation, tool echo, corroboration, model confidence, or repeated restatement.
 - Action-sensitive permission memory must bind to authoritative source events.
-- Retrieval, reasoning, tools, verification, and stronger models are selectively invoked, not always-on.
+- Retrieval, reasoning, tools, verification, stronger models, research, and expensive UI effects are selectively invoked, not always-on.
+- `PASS` requires evidence. `INCONCLUSIVE` is a valid terminal result when evidence is insufficient.
+- The UI may reveal runtime state, but it must never become the authority for runtime state.
 
 ## Target runtime
 Seven AI
 ├─ Cognitive Controller
 │  ├─ Task Router
 │  ├─ Memory Router
-│  └─ Tool Router
+│  ├─ Tool Router
+│  └─ Mode / Runtime Router
 ├─ Memory Fabric
 ├─ Context Fabric / Context Workspace
 ├─ Tool Fabric
-├─ Model Fabric / Unlimited Runtime
+├─ Model Fabric / Unlimited-by-design Runtime
 ├─ Evidence + Verification Runtime
 ├─ Research Runtime
 ├─ Coding Runtime
+├─ World Runtime
+│  ├─ Canon Simulator
+│  ├─ Real Works Runtime
+│  ├─ Player Agency Lock
+│  └─ Titles / Naming Runtime
 ├─ Projects / Workspace
+├─ Experience / UI Runtime
 └─ Protocol adapters
    ├─ MCP
    ├─ A2A
@@ -35,12 +45,12 @@ Seven AI
    └─ generative UI adapters
 
 Cross-cutting:
-Security, permissions, provenance, observability, evaluation, recovery, performance.
+Security, permissions, provenance, observability, evaluation, recovery, performance, accessibility, Android integration.
 
 ## Memory Fabric
 Canonical state remains authoritative.
 
-Planned/target additions:
+Target additions:
 - Append-only memory event ledger.
 - Three primary derived views: event, entity, semantic.
 - Orthogonal temporal, causal, lexical, and vector indexes.
@@ -112,9 +122,10 @@ Requirements:
 ## Persistence
 Target migration:
 - IndexedDB/Dexie for canonical persistence.
-- localStorage only for small preferences/cache-like state.
-- Android future: Storage Access Framework for user-granted files.
+- localStorage only for small preferences/cache-like state and bounded compatibility bridges.
+- Android Storage Access Framework for user-granted files.
 - Android Keystore for secrets.
+- imports/exports must preserve lineage and version metadata, not only rendered chat text.
 
 ## Research Runtime
 SearXNG adapter + fetch/extract/browser tiers.
@@ -127,6 +138,7 @@ Add:
 - freshness search
 - gap search
 - citation/evidence lock
+- explicit `INCONCLUSIVE` when evidence is missing or conflicting
 
 ## Coding Runtime
 Aider-style repo map + minimal SWE-agent-style inspect/edit/test loop.
@@ -134,7 +146,36 @@ Aider-style repo map + minimal SWE-agent-style inspect/edit/test loop.
 Understand → Inspect → Plan → Read → Modify → Test → Inspect Diff → Fix → Verify → Report.
 
 PASS requires evidence such as changed files, tests, diff inspection, and syntax checks.
-Use strict sandbox and command policy.
+Use strict sandbox and command policy. File-system and shell authority must come from the platform bridge, never from model text.
+
+## World Runtime
+World mode is a stateful simulation/runtime, not a roleplay prompt preset.
+
+### Canon Simulator
+- source authority classes
+- continuity selection
+- fact knowledge horizons
+- hard/soft anchors
+- invariants
+- canon debt
+- explicit branch creation when a rigid anchor is invalidated
+
+### Real Works Runtime
+For existing works, events must be represented as source-bound ordered beats rather than trusted model recollection.
+
+Source Pack → Normalize Beats → Bind Source References → Build Scene Contract
+→ Player Action → Validate Agency → Commit Canon Beat or Create Branch → Audit Fidelity.
+
+Rules:
+- missing sources yield `UNVERIFIED` or `INCONCLUSIVE`
+- out-of-order canon changes are blocked unless a branch is explicitly created
+- the model never invents the player's irreversible action, core intention, or emotion
+- work progress is canonical state and must be persisted independently of prose summaries
+- source fidelity and narrative quality are separate scores
+
+### Titles / Naming Runtime
+Naming is a deterministic world capability with configurable namespaces for episode, chapter, arc, side story, special, what-if, filler, game, and future content types.
+Naming metadata is not allowed to change world authority or canon state.
 
 ## Verification
 Escalation levels:
@@ -144,11 +185,13 @@ Escalation levels:
 4. model critic
 5. independent model only when needed
 
-Allowed terminal state: INCONCLUSIVE. Never manufacture PASS.
+Allowed terminal states include `PASS`, `FAIL`, `BLOCKED`, and `INCONCLUSIVE`. Never manufacture PASS.
 
 Unified loop:
 Plan → Execute → Observe → Verify → PASS
-                         └→ FAIL → Replan → Execute
+                         ├→ FAIL → Replan → Execute
+                         ├→ BLOCKED → Surface requirement/fallback
+                         └→ INCONCLUSIVE → Preserve uncertainty
 
 ## Local Intelligence Plane
 Use cheap/local computation wherever it preserves quality:
@@ -159,6 +202,30 @@ Use cheap/local computation wherever it preserves quality:
 - deterministic validation
 - llama.cpp local fallback when feasible
 
+## Experience / UI Runtime
+The interface is a projection of runtime truth, not an alternate state store.
+
+Requirements:
+- Core / Build / World / Research share one design language while exposing mode-specific state.
+- busy/ready/running/blocked/failed states come from runtime state.
+- mobile-first touch targets and safe areas.
+- Reduced Motion is authoritative.
+- performance tiers may remove blur, glow, long transitions, and decorative animation.
+- event-delegated or observer-driven updates; no animation polling loops.
+- long messages use offscreen rendering optimizations.
+- chat behaves as an accessible live log; toggles expose semantic pressed state.
+- UI polish must not materially increase startup cost, RAM, or APK size.
+
+## Performance budget
+Seven must remain lightweight on phone even when advanced systems exist.
+
+- Startup loads only essential chat/runtime/UI code.
+- PDF, large research tools, local models, and heavy adapters are lazy-loaded.
+- expensive effects are disabled on lite tier.
+- hidden-page animations pause.
+- long tasks may automatically downgrade the visual performance tier.
+- release assets have explicit size gates.
+
 ## Observability
 Internal tracing should align with OpenTelemetry GenAI concepts.
 Prompt/content capture should be opt-in.
@@ -168,7 +235,7 @@ Request → Controller Decision → Memory Retrieval → Tool Selection → Tool
 → Evidence → Verification → Response.
 
 Track latency, token/cost estimates, context size, memory hit rate, tool success,
-retry rate, conflict rate, verification failures, model routing, and cache hits.
+retry rate, conflict rate, verification failures, model routing, cache hits, world branches, source-fidelity gaps, UI long tasks, and fallback use.
 
 ## Evaluation gates
 Use evaluations as development gates, not decoration:
@@ -177,11 +244,20 @@ Use evaluations as development gates, not decoration:
 - SWE-bench for coding
 - BrowseComp for research
 - LLMRouterBench for routing
+- world/canon fixtures for RPG continuity, player agency, source fidelity, and branching
 - security/red-team suites
 - Promptfoo can be an optional external harness
 
 ## Protocol rule
 MCP, A2A, AG-UI, and generative UI are adapters/interoperability layers, never Seven's brain.
+
+## Definition of done per subsystem
+A subsystem may be called complete only when:
+1. executable implementation exists;
+2. normal user flow invokes it;
+3. failure/recovery state exists;
+4. automated evidence covers its critical path;
+5. device/platform-specific dependencies are tested where relevant.
 
 ## Recommended build order after T150
 A. Persistence + origin-bound authority hardening
@@ -190,6 +266,9 @@ C. Tool Fabric intelligence
 D. Research Runtime
 E. Coding Runtime
 F. Model Fabric learning
-G. Protocols / UI / sync
+G. World Runtime / Real Works / Titles integration
+H. Experience/UI runtime and mode-specific surfaces
+I. Android SAF/Keystore + real-device gates
+J. Protocols / sync / optional ecosystem adapters
 
 Task sizes should be natural. Advance by quality gates, not a fixed task count.
