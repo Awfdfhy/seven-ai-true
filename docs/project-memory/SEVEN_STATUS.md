@@ -39,7 +39,13 @@ A source-integrity test exists and should remain part of release verification.
   - freeze: `docs/project-memory/ultimate-polish/03_MEMORY_FABRIC_FREEZE_RECORD.md`
   - key reconciliations: flat memory taxonomy removed; working memory belongs to Context Workspace; events/time/causality are separated from durable memory roles; verified Experience/Lesson/Procedure learning is explicit; purge semantics remove reconstructable derived copies; semantic/vector intelligence is optional and lazy.
   - implementation remains partial/foundation; MF-P0 through MF-P10 remain deferred until cross-system reconciliation.
-- Next numbered core capability: Capability 04 — Context Fabric / Context Workspace.
+- Capability 04 — Context Fabric / Context Workspace: **Architecture frozen for campaign / implementation deferred**
+  - final target: **Seven Context Fabric 3.0 — Governed Elastic Context Workspace**
+  - polish: `docs/project-memory/ultimate-polish/04_CONTEXT_FABRIC_ULTIMATE_POLISH.md`
+  - freeze: `docs/project-memory/ultimate-polish/04_CONTEXT_FABRIC_FREEZE_RECORD.md`
+  - key reconciliations: context is a derived reconstructable execution view; privileged instructions are separated from contextual data; fixed shares become elastic phase/model/tier budgets; ordering is semantic; compression/folding remain source-bound and expandable; models may propose context actions but the deterministic Context Governor validates them; Lite does not require embeddings or learned compression.
+  - implementation remains partial/foundation; CF-P0 through CF-P10 remain deferred until cross-system reconciliation.
+- Next numbered core capability: Capability 05 — Model Fabric.
 
 ## Implemented / Strongly Established
 - Hardened Cognitive Runtime v4.2 direction
