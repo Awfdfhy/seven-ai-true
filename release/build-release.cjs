@@ -36,6 +36,13 @@ function build(){
   if(!pdfGuard.test(html))throw new Error('release packaging could not find PDF lazy-load guard');
   html=html.replace(pdfGuard,`if (!window.pdfjsLib && window.SevenPdf && typeof window.SevenPdf.load === "function") {\n                await window.SevenPdf.load();\n            }\n            if (!window.pdfjsLib) {\n                throw new Error("PDF reader could not be loaded.");\n            }`);
 
+  // The mode dock must be behavioral, not decorative. Extend the existing
+  // authoritative runtime policy at context-compilation time. The base policy
+  // remains the source of truth and mode policy can only narrow/specialize it.
+  const policyAssignment=/const policy = ("You are Seven AI,[^\n]+matching their language unless they ask you to switch\.";)/;
+  if(!policyAssignment.test(html))throw new Error('release packaging could not bind Seven mode policy');
+  html=html.replace(policyAssignment,`let policy = $1\n            if (window.SevenModePolicy && typeof window.SevenModePolicy === "function") {\n                const modePolicy = window.SevenModePolicy();\n                if (typeof modePolicy === "string" && modePolicy) policy += "\\n\\n" + modePolicy;\n            }`);
+
   const legacyCss=read('seven-final.css');
   const visualCss=read('visual-shell.css');
   const visualPolishCss=read('visual-polish.css');
@@ -47,14 +54,15 @@ function build(){
   const performance=read('performance-runtime.js').replace(/<\/script/gi,'<\\/script');
   const pdfRuntime=read('pdf-runtime.js').replace(/<\/script/gi,'<\\/script');
   const motion=read('motion-runtime.js').replace(/<\/script/gi,'<\\/script');
+  const modeRuntime=read('mode-runtime.js').replace(/<\/script/gi,'<\\/script');
   const visualShell=read('visual-shell.js')
     .replace('/*__SEVEN_MARK__*/',JSON.stringify(brandMark))
     .replace(/<\/script/gi,'<\\/script');
   const visualPolish=read('visual-polish.js').replace(/<\/script/gi,'<\\/script');
 
-  const fingerprint=digest(legacyCss+visualCss+visualPolishCss+brandMark+canon+performance+pdfRuntime+motion+visualShell+visualPolish+pdf.version);
+  const fingerprint=digest(legacyCss+visualCss+visualPolishCss+brandMark+canon+performance+pdfRuntime+motion+modeRuntime+visualShell+visualPolish+pdf.version);
   const head=`\n<!-- ${MARK}:${fingerprint} -->\n<meta name="theme-color" content="#080910">\n<meta name="color-scheme" content="dark light">\n<style id="seven-final-style">${legacyCss}</style>\n<style id="seven-visual-shell-style">${visualCss}</style>\n<style id="seven-visual-polish-style">${visualPolishCss}</style>\n`;
-  const body=`\n<script id="seven-canon-runtime">${canon}</script>\n<script id="seven-performance-runtime">${performance}</script>\n<script id="seven-pdf-runtime">${pdfRuntime}</script>\n<script id="seven-motion-runtime">${motion}</script>\n<script id="seven-visual-shell-runtime">${visualShell}</script>\n<script id="seven-visual-polish-runtime">${visualPolish}</script>\n<!-- /${MARK}:${fingerprint} -->\n`;
+  const body=`\n<script id="seven-canon-runtime">${canon}</script>\n<script id="seven-performance-runtime">${performance}</script>\n<script id="seven-pdf-runtime">${pdfRuntime}</script>\n<script id="seven-motion-runtime">${motion}</script>\n<script id="seven-mode-runtime">${modeRuntime}</script>\n<script id="seven-visual-shell-runtime">${visualShell}</script>\n<script id="seven-visual-polish-runtime">${visualPolish}</script>\n<!-- /${MARK}:${fingerprint} -->\n`;
 
   html=injectBeforeLast(html,'</head>',head);
   html=injectBeforeLast(html,'</body>',body);
@@ -65,7 +73,7 @@ function build(){
     bytes:Buffer.byteLength(html),
     sourceBytes:fs.statSync(SOURCE).size,
     fingerprint,
-    brand:{visualShell:'brand-os-v1',mark:'celestial-seven-v1',semanticPolish:'v1'},
+    brand:{visualShell:'brand-os-v1',mark:'celestial-seven-v1',semanticPolish:'v1',behavioralModes:'v1'},
     pdf,
     pdfLoadMode:'lazy-local'
   };
