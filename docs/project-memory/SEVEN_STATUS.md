@@ -58,8 +58,39 @@ Character-centered causal living-world architecture with governed visual identit
 ### Titles 4.1
 Provenance-governed temporal naming graph with NamingIdentity/NameForm separation, world grammar, social/earned titles, contextual and reverse resolution, temporal/branch/localization/Arabic support, and RPG/Real Works integration. Current dedicated saturation counter: 2/2 under its historical Hyper-Polish protocol. Runtime/evals/device proof remain unfinished.
 
+## Capability 22 — Projects System
+**Seven Project Fabric 4.3 — Local-First Durable Work Graph** is now `V4_ARCHITECTURE_SATURATED_2_OF_2`.
+
+Campaign records:
+- `docs/project-memory/projects-system/PROJECTS_V4_RESEARCH_AND_GROUND_TRUTH.md`
+- `docs/project-memory/projects-system/PROJECTS_V4_CAMPAIGN_LEDGER.md`
+- `docs/project-memory/projects-system/PROJECTS_V4_HYPER_POLISH_ROUNDS_01_05.md`
+- `docs/project-memory/projects-system/PROJECTS_V4_ROUNDS_06_08.md`
+- `docs/project-memory/projects-system/PROJECTS_V4_ROUND_09_IMPORT_IDENTITY.md`
+- `docs/project-memory/projects-system/PROJECTS_V4_ROUND_10_CRASH_MIGRATION.md`
+- `docs/project-memory/projects-system/PROJECTS_V4_ROUNDS_11_12_SCALE_EXPORT.md`
+- `docs/project-memory/projects-system/PROJECTS_V4_ROUNDS_13_14_DIRECTIVES_CONCURRENCY.md`
+- `docs/project-memory/projects-system/PROJECTS_4_3_RECONCILED_CANDIDATE.md`
+- `docs/project-memory/projects-system/PROJECTS_V4_ELIGIBILITY_AUDIT.md`
+- `docs/project-memory/projects-system/PROJECTS_V4_INDEPENDENT_REVIEW_A.md`
+- `docs/project-memory/projects-system/PROJECTS_V4_INDEPENDENT_REVIEW_B.md`
+- `docs/project-memory/projects-system/PROJECTS_4_3_V4_SATURATION_FREEZE.md`
+
+Projects V4 history:
+- Rounds 01–13: `MATERIAL_IMPROVEMENT_FOUND`
+- Round 14 targeted cross-project/concurrency attack: `NO_MATERIAL_IMPROVEMENT` (not counted toward final saturation)
+- Eligibility Audit: `ELIGIBLE_FOR_INDEPENDENT_SATURATION_REVIEWS`
+- Independent Review A: `NO_MATERIAL_IMPROVEMENT` → 1/2
+- Independent Review B: `NO_MATERIAL_IMPROVEMENT` → 2/2
+
+Core architecture result: project identity/lifecycle, typed resource relations, durable work graph, project directives, local-first persistence, revision-safe mutations, long-running re-entry manifests, owner-fabric boundaries, variant delegation, access revocation, provider/tool portability, storage lifecycle, safe import identity mapping, restart-safe migration/import, scalable event projections and evidence-bound export finalization.
+
+This is architecture-only. Project Fabric 4.3 is **not yet implemented, tested, device-verified or release-proven**.
+
 ## Campaign Navigation
-Capability 22 — Projects System remains paused until the user chooses to resume numbered progression or the open Priority 16–21 work is resolved. When #22 begins, it uses V4.
+The user explicitly resumed numbered progression and #22 has now completed V4 architecture saturation. The unfinished Priority #16, #17, #18 and #20 campaign remains open and must be revisited before final whole-Seven architecture freeze; it is not abandoned.
+
+Next numbered capability: **#23 Sessions / Persistence**, governed by Polishing V4, unless a higher-priority reopen trigger appears.
 
 ## Major Cross-System Laws
 - authoritative and derived state are explicit and separate
@@ -97,10 +128,11 @@ Capability 22 — Projects System remains paused until the user chooses to resum
 - RPG 4.2 runtime/evals/visual contracts/media wiring
 - Real Works final source-ingestion Canon Graph
 - Titles 4.1 runtime/multilingual evals
+- **Project Fabric 4.3 runtime implementation/evals/device proof**
 - final product UI, brand/logo freeze and real-phone resource certification
 
 ## Release Safety
 Before declaring major implementation PASS: verify CI, source integrity, no accidental deletion, protected source integrity, release boot where applicable, mobile/RTL/theme/reduced-motion gates, and do not merge protected PRs automatically.
 
 ## Development Philosophy
-Use large coherent passes and strong final verification. V4 now governs new polishing: discover the full surface before optimizing, compare real alternatives, simplify aggressively, preserve evidence/decision lineage, prove improvements, and treat 2/2 as the final bounded saturation gate rather than proof of perfection.
+Use large coherent passes and strong final verification. V4 governs new polishing: discover the full surface before optimizing, compare real alternatives, simplify aggressively, preserve evidence/decision lineage, prove improvements, and treat 2/2 as the final bounded saturation gate rather than proof of perfection.
