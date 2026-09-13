@@ -17,31 +17,38 @@ Known integrity reference: bytes `658133`; Git blob SHA `3e8dfa8e7da7124e1650414
 The protected source remains unchanged during architecture-only polish unless explicitly authorized.
 
 ## Canonical Polishing Governance
-**Seven Polishing Protocol V4.1 — The Loop** is now the canonical architecture-governance protocol for new polishing campaigns.
+**Seven Polishing Protocol V4.2 — The Loop: Benchmark, Visual & Motion Expert System** is now the canonical architecture-governance protocol for new polishing campaigns.
 
-Protocol: `docs/project-memory/SEVEN_POLISHING_PROTOCOL_V4_1_LOOP.md`
-Benchmark/Visual companion: `docs/project-memory/SEVEN_BENCHMARK_AND_VISUAL_EVIDENCE_FABRIC.md`
-Self-polish: `docs/project-memory/SEVEN_POLISHING_V4_1_LOOP_SELF_POLISH.md`
-Freeze: `docs/project-memory/SEVEN_POLISHING_V4_1_LOOP_SATURATION_FREEZE.md`
-Parent V4 remains historical provenance and fallback reference: `docs/project-memory/SEVEN_POLISHING_PROTOCOL_V4.md`.
+Core records:
+- Parent V4.1: `docs/project-memory/SEVEN_POLISHING_PROTOCOL_V4_1_LOOP.md`
+- Benchmark/Visual companion: `docs/project-memory/SEVEN_BENCHMARK_AND_VISUAL_EVIDENCE_FABRIC.md`
+- V4.2 Motion/Expert protocol: `docs/project-memory/SEVEN_POLISHING_V4_2_MOTION_AND_EXPERT_JUDGMENT.md`
+- V4.2 Self-Polish/Saturation: `docs/project-memory/SEVEN_POLISHING_V4_2_SELF_POLISH_AND_SATURATION.md`
+- Historical parent V4: `docs/project-memory/SEVEN_POLISHING_PROTOCOL_V4.md`
 
-V4.1 adds benchmark-governed measurable claims, precommitted BenchmarkContracts, benchmark health/invalidation, anti-Goodhart/holdout controls, executable regression growth, evidence tiers, visual/screenshot understanding, structural-vs-visual UI verification, golden-reference governance, evaluator identity/drift handling, screenshot privacy boundaries and a bounded self-polish loop.
+V4.2 inherits V4.1 benchmark-governed measurable claims, precommitted BenchmarkContracts, benchmark health/invalidation, anti-Goodhart/holdout controls, executable regression growth, evidence tiers, visual/screenshot understanding, structural-vs-visual verification, golden-reference governance, evaluator identity/drift handling and bounded self-polish.
 
-V4.1 self-polish history:
-- Rounds 01–08: `MATERIAL_IMPROVEMENT_FOUND`
-- Round 09 Simplifier: `NO_MATERIAL_IMPROVEMENT`
-- Challenge Review A (metrology/architecture): `NO_MATERIAL_IMPROVEMENT` → 1/2
-- Challenge Review B (UI/mobile/accessibility/privacy): `NO_MATERIAL_IMPROVEMENT` → 2/2
-- V4.1 architecture saturation: **2/2**
+V4.2 additionally makes screen recordings / frame sequences / interaction timelines first-class evidence for UI animation polish. It separates visual/video impressions from runtime frame/jank/input-latency/resource proof, adds MotionBenchmarkContract, refresh-rate-aware motion measurement, reduced-motion semantic equivalence, deeper multi-class research, a multi-lens Expert Judgment Council, TasteCalibrationSet, broad-audience hypotheses with uncertainty labels, aesthetic-usability counterchecks and a permanent Motion Failure Cemetery.
 
-Core new law: when a material quality claim is meaningfully measurable, polishing uses comparable precommitted benchmark evidence or records why valid measurement is unavailable. Benchmarks are evidence, not authority, and cannot compensate for C0/C1 failures.
+V4.2 self-polish history:
+- Rounds 01–09: `MATERIAL_IMPROVEMENT_FOUND`
+- Round 10 Simplifier/Cost Attack: `NO_MATERIAL_IMPROVEMENT`
+- Independent Challenge A (motion/HCI/metrology): `NO_MATERIAL_IMPROVEMENT` → 1/2
+- Independent Challenge B (broad-audience/product/low-end Android): `NO_MATERIAL_IMPROVEMENT` → 2/2
+- V4.2 architecture saturation: **2/2**
 
-Visual evidence law: screenshots/frame sequences may be inspected by deterministic diff and multimodal visual understanding, but pixel/model judgments remain derived evidence. Exact semantics, focus order, hit-target dimensions, contrast ratios and runtime smoothness require structural/deterministic/runtime evidence when available.
+Core laws:
+- measurable material claims require comparable precommitted benchmark evidence when meaningful, or an explicit reason why valid measurement is unavailable;
+- benchmarks are evidence, not authority, and cannot compensate for C0/C1 failures;
+- screenshots/video/model judgments are derived evidence, not proof of frame timing, accessibility-tree correctness, hit-target geometry, battery cost or device smoothness;
+- broad-audience taste is treated as a hypothesis unless supported by user evidence or convergent independent judgment;
+- major UI/motion decisions use multiple lenses: Product, Motion, Accessibility, Mobile Performance, Interaction, Brand, Localization, Simplifier and Broad-Audience;
+- references calibrate principles and quality bars but are not copied as templates.
 
-**Important:** protocol architecture saturation never means the benchmark runner, screenshot pipeline, multimodal evaluator, Android instrumentation or real-device verification is implemented. Evidence ladder remains `ARCHITECTURE_ACCEPTED != IMPLEMENTED != TESTED != DEVICE_VERIFIED != RELEASE_PROVEN`.
+**Important:** protocol architecture saturation does not mean the benchmark runner, screenshot/video pipeline, multimodal evaluator, Android instrumentation, user-research panel or real-device verification is implemented. Evidence ladder remains `ARCHITECTURE_ACCEPTED != IMPLEMENTED != TESTED != DEVICE_VERIFIED != RELEASE_PROVEN`.
 
 ## Capabilities 01–15
-Capabilities 01–15 retain their architecture freezes and implementation truth from their individual records and `SEVEN_IMPLEMENTATION_MATRIX.md`. They require V4.1 revalidation before Seven 1.0 where materially affected.
+Capabilities 01–15 retain their architecture freezes and implementation truth from individual records and `SEVEN_IMPLEMENTATION_MATRIX.md`. They require V4.2 revalidation before Seven 1.0 where materially affected.
 
 ## Priority capabilities 16–21
 The special Priority campaign remains active for unfinished capabilities.
@@ -51,9 +58,9 @@ The special Priority campaign remains active for unfinished capabilities.
 | 16 | Search / Retrieval Tools | `HYPER_POLISH_REOPENED` |
 | 17 | Knowledge / Files | `HYPER_POLISH_REOPENED` |
 | 18 | Vision | `HYPER_POLISH_REOPENED` |
-| 19 | RPG Engine | **`RPG_VISUAL_HYPER_POLISH_SATURATED_CANDIDATE` → Seven RPG 4.2**; V4.1 revalidation required pre-1.0 |
+| 19 | RPG Engine | **`RPG_VISUAL_HYPER_POLISH_SATURATED_CANDIDATE` → Seven RPG 4.2**; V4.2 revalidation required pre-1.0 |
 | 20 | Real Works / Canon Simulation | `HYPER_POLISH_REOPENED` |
-| 21 | Titles / World Linguistic Engine | **`TITLES_HYPER_POLISH_SATURATED_CANDIDATE` → Seven World Linguistic Engine 4.1**; V4.1 revalidation required pre-1.0 |
+| 21 | Titles / World Linguistic Engine | **`TITLES_HYPER_POLISH_SATURATED_CANDIDATE` → Seven World Linguistic Engine 4.1**; V4.2 revalidation required pre-1.0 |
 
 ### RPG 4.2
 Character-centered causal living-world architecture with governed visual identity. Current dedicated saturation counter: 2/2 under its historical Hyper-Polish protocol. Runtime implementation, mandatory evals, media-provider wiring, UI and real-device certification remain unfinished.
@@ -62,38 +69,18 @@ Character-centered causal living-world architecture with governed visual identit
 Provenance-governed temporal naming graph with NamingIdentity/NameForm separation, world grammar, social/earned titles, contextual and reverse resolution, temporal/branch/localization/Arabic support, and RPG/Real Works integration. Current dedicated saturation counter: 2/2 under its historical Hyper-Polish protocol. Runtime/evals/device proof remain unfinished.
 
 ## Capability 22 — Projects System
-**Seven Project Fabric 4.3 — Local-First Durable Work Graph** is now `V4_ARCHITECTURE_SATURATED_2_OF_2` and remains an accepted historical candidate under the newer V4.1 governance. It receives benchmark/visual revalidation only where the new protocol materially applies before Seven 1.0.
+**Seven Project Fabric 4.3 — Local-First Durable Work Graph** is `V4_ARCHITECTURE_SATURATED_2_OF_2` and remains an accepted historical candidate under the newer V4.2 governance. It receives revalidation where the new benchmark/visual/motion protocol materially applies before Seven 1.0.
 
-Campaign records:
-- `docs/project-memory/projects-system/PROJECTS_V4_RESEARCH_AND_GROUND_TRUTH.md`
-- `docs/project-memory/projects-system/PROJECTS_V4_CAMPAIGN_LEDGER.md`
-- `docs/project-memory/projects-system/PROJECTS_V4_HYPER_POLISH_ROUNDS_01_05.md`
-- `docs/project-memory/projects-system/PROJECTS_V4_ROUNDS_06_08.md`
-- `docs/project-memory/projects-system/PROJECTS_V4_ROUND_09_IMPORT_IDENTITY.md`
-- `docs/project-memory/projects-system/PROJECTS_V4_ROUND_10_CRASH_MIGRATION.md`
-- `docs/project-memory/projects-system/PROJECTS_V4_ROUNDS_11_12_SCALE_EXPORT.md`
-- `docs/project-memory/projects-system/PROJECTS_V4_ROUNDS_13_14_DIRECTIVES_CONCURRENCY.md`
-- `docs/project-memory/projects-system/PROJECTS_4_3_RECONCILED_CANDIDATE.md`
-- `docs/project-memory/projects-system/PROJECTS_V4_ELIGIBILITY_AUDIT.md`
-- `docs/project-memory/projects-system/PROJECTS_V4_INDEPENDENT_REVIEW_A.md`
-- `docs/project-memory/projects-system/PROJECTS_V4_INDEPENDENT_REVIEW_B.md`
-- `docs/project-memory/projects-system/PROJECTS_4_3_V4_SATURATION_FREEZE.md`
-
-Projects V4 history:
-- Rounds 01–13: `MATERIAL_IMPROVEMENT_FOUND`
-- Round 14 targeted cross-project/concurrency attack: `NO_MATERIAL_IMPROVEMENT` (not counted toward final saturation)
-- Eligibility Audit: `ELIGIBLE_FOR_INDEPENDENT_SATURATION_REVIEWS`
-- Independent Review A: `NO_MATERIAL_IMPROVEMENT` → 1/2
-- Independent Review B: `NO_MATERIAL_IMPROVEMENT` → 2/2
+Campaign records live under `docs/project-memory/projects-system/` and preserve rounds, research, eligibility, independent reviews, reconciled candidate and freeze.
 
 Core architecture result: project identity/lifecycle, typed resource relations, durable work graph, project directives, local-first persistence, revision-safe mutations, long-running re-entry manifests, owner-fabric boundaries, variant delegation, access revocation, provider/tool portability, storage lifecycle, safe import identity mapping, restart-safe migration/import, scalable event projections and evidence-bound export finalization.
 
 This is architecture-only. Project Fabric 4.3 is **not yet implemented, tested, device-verified or release-proven**.
 
 ## Campaign Navigation
-The next numbered capability is **#23 Sessions / Persistence**, now governed by **Polishing V4.1 — The Loop**. The unfinished Priority #16, #17, #18 and #20 campaign remains open and must be revisited before final whole-Seven architecture freeze; it is not abandoned.
+The next numbered capability is **#23 Sessions / Persistence**, governed by **Polishing V4.2 — The Loop**. The unfinished Priority #16, #17, #18 and #20 campaign remains open and must be revisited before final whole-Seven architecture freeze.
 
-Future UI/UX/Brand/Motion campaigns must use the Visual Evidence Plane: structural evidence plus screenshot/frame evidence and selective multimodal visual review, including Day/Night, Arabic/RTL, mixed bidi, font scaling, reduced motion and representative screen/device classes using risk-based coverage.
+Future UI/UX/Brand/Motion campaigns must use structural evidence plus screenshot and video/motion evidence. Coverage includes Day/Night, Arabic/RTL, mixed bidi, font scaling, reduced motion, representative screen/device classes, interaction timing, frame pacing, interruption/cancellation and low-end degradation using risk-based escalation.
 
 ## Major Cross-System Laws
 - authoritative and derived state are explicit and separate
@@ -110,7 +97,9 @@ Future UI/UX/Brand/Motion campaigns must use the Visual Evidence Plane: structur
 - architecture claims never become implementation/device/release claims without evidence
 - measurable material improvement claims use comparable benchmark evidence when feasible
 - benchmark metrics cannot compensate for critical regressions
-- visual model judgment remains derived evidence and is corroborated by stronger structural/runtime evidence where available
+- visual/video model judgment remains derived evidence and is corroborated by structural/runtime evidence where available
+- subjective aesthetic judgments are labeled and cannot masquerade as verified fact
+- broad-audience design quality must balance clarity, accessibility, performance, identity and delight rather than trend imitation
 
 ## Implemented / Strongly Established Foundations
 - hardened Cognitive Runtime direction
@@ -135,13 +124,14 @@ Future UI/UX/Brand/Motion campaigns must use the Visual Evidence Plane: structur
 - Real Works final source-ingestion Canon Graph
 - Titles 4.1 runtime/multilingual evals
 - Project Fabric 4.3 runtime implementation/evals/device proof
-- **V4.1 executable Benchmark runner / suite infrastructure**
-- **V4.1 screenshot capture/diff + multimodal Visual Evidence runtime**
-- **V4.1 Android benchmark/instrumentation + representative-device proof**
+- **V4.2 executable Benchmark runner / suite infrastructure**
+- **V4.2 screenshot/video capture, visual diff and multimodal Motion Evidence runtime**
+- **V4.2 Android frame/jank/input-latency instrumentation and representative-device proof**
+- **V4.2 user-research/broad-audience evidence infrastructure where required**
 - final product UI, brand/logo freeze and real-phone resource certification
 
 ## Release Safety
-Before declaring major implementation PASS: verify CI, source integrity, no accidental deletion, protected source integrity, release boot where applicable, mobile/RTL/theme/reduced-motion gates, benchmark identity/validity where claims are measurable, and do not merge protected PRs automatically.
+Before declaring major implementation PASS: verify CI, source integrity, no accidental deletion, protected source integrity, release boot where applicable, mobile/RTL/theme/reduced-motion gates, benchmark identity/validity where claims are measurable, motion/video evidence for material animation claims, and do not merge protected PRs automatically.
 
 ## Development Philosophy
-Use large coherent passes and strong final verification. V4.1 governs new polishing: discover the full surface before optimizing, compare real alternatives, benchmark measurable claims under locked contracts, use visual evidence for UI quality without confusing pixels for semantics, simplify aggressively, preserve evidence/decision lineage, prove improvements, and treat 2/2 as the final bounded saturation gate rather than proof of perfection.
+Use large coherent passes and strong final verification. V4.2 governs new polishing: discover broadly, research deeply across evidence classes, compare real alternatives, benchmark measurable claims under locked contracts, inspect screenshots and full motion where appearance/timing matters, judge from multiple expert lenses, separate taste hypotheses from facts, simplify aggressively, preserve evidence/decision lineage, prove improvements, and treat 2/2 only as the final bounded saturation gate rather than proof of perfection.
