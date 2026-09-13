@@ -1,5 +1,6 @@
-:root{--sb-bg:#0f0d1d;--sb-s:#171427;--sb-s2:#1e1a32;--sb-t:#f5f3ff;--sb-m:#aaa5c3;--sb-a:#8e7dff;--sb-a2:#72d7ff;--sb-b:rgba(255,255,255,.08);--sb-bs:rgba(142,125,255,.26);--sb-sh:0 18px 48px rgba(4,3,12,.22);--sb-mode:var(--sb-a);--sb-mode2:var(--sb-a2)}
-body.light{--sb-bg:#f7f6fb;--sb-s:#fff;--sb-s2:#f0eef7;--sb-t:#201d2d;--sb-m:#716c82;--sb-a:#6558ea;--sb-a2:#227fbd;--sb-b:rgba(33,29,45,.09);--sb-bs:rgba(101,88,234,.24);--sb-sh:0 18px 48px rgba(36,30,67,.09)}
+:root{color-scheme:dark;--sb-bg:#0f0d1d;--sb-s:#171427;--sb-s2:#1e1a32;--sb-t:#f5f3ff;--sb-m:#aaa5c3;--sb-a:#8e7dff;--sb-a2:#72d7ff;--sb-b:rgba(255,255,255,.08);--sb-bs:rgba(142,125,255,.26);--sb-sh:0 18px 48px rgba(4,3,12,.22);--sb-mode:var(--sb-a);--sb-mode2:var(--sb-a2)}
+html[data-seven-theme=day]{color-scheme:light;--sb-bg:#f7f6fb;--sb-s:#fff;--sb-s2:#f0eef7;--sb-t:#201d2d;--sb-m:#716c82;--sb-a:#6558ea;--sb-a2:#227fbd;--sb-b:rgba(33,29,45,.09);--sb-bs:rgba(101,88,234,.24);--sb-sh:0 14px 36px rgba(36,30,67,.09)}
+html[data-seven-theme=night]{color-scheme:dark}
 html[data-seven-beta-mode=think]{--sb-mode:#9f82ff;--sb-mode2:#d69cff}
 html[data-seven-beta-mode=search]{--sb-mode:#3ab8e8;--sb-mode2:#5e8cff}
 html[data-seven-beta-mode=research]{--sb-mode:#8a75ff;--sb-mode2:#39c5df}
@@ -16,7 +17,11 @@ html.seven-beta-ui .room-item{margin-inline:6px;border-radius:13px!important}
 html.seven-beta-ui .room-item.active{background:linear-gradient(90deg,color-mix(in srgb,var(--sb-a) 15%,var(--sb-s2)),color-mix(in srgb,var(--sb-a) 5%,var(--sb-s2)))!important;border-color:var(--sb-bs)!important}
 html.seven-beta-ui .sidebar-footer{background:color-mix(in srgb,var(--sb-s) 94%,transparent)}
 html.seven-beta-ui .main{background:radial-gradient(900px 420px at 52% -120px,color-mix(in srgb,var(--sb-mode) 12%,transparent),transparent 70%),var(--sb-bg)}
+html[data-seven-theme=day].seven-beta-ui .main{background:radial-gradient(720px 300px at 55% -80px,color-mix(in srgb,var(--sb-mode) 9%,transparent),transparent 72%),linear-gradient(180deg,#fbfaff,var(--sb-bg) 38%)}
+html[data-seven-theme=night].seven-beta-ui .main{background:radial-gradient(900px 420px at 52% -120px,color-mix(in srgb,var(--sb-mode) 14%,transparent),transparent 70%),var(--sb-bg)}
 html.seven-beta-ui .topbar{background:color-mix(in srgb,var(--sb-bg) 86%,transparent)!important;border-bottom:1px solid var(--sb-b)!important;box-shadow:0 1px 0 rgba(255,255,255,.015)}
+html[data-seven-theme=day].seven-beta-ui .topbar{background:color-mix(in srgb,#fff 88%,transparent)!important;box-shadow:0 1px 0 rgba(36,30,67,.04)}
+html[data-seven-theme=night].seven-beta-ui .topbar{backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
 html.seven-beta-ui .topbar .title{font-weight:720!important;letter-spacing:-.02em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .seven-beta-badge,.seven-beta-status{display:inline-flex;align-items:center;justify-content:center;height:20px;border-radius:999px;line-height:1;flex:0 0 auto}
 .seven-beta-badge{padding:0 7px;border:1px solid var(--sb-bs);background:color-mix(in srgb,var(--sb-a) 11%,transparent);color:var(--sb-a);font-size:10px;font-weight:800;letter-spacing:.08em}
@@ -30,15 +35,18 @@ html.seven-beta-ui .empty-sub{color:var(--sb-m)!important;max-width:540px}
 html.seven-beta-ui .message{max-width:980px;margin-inline:auto;width:100%}
 html.seven-beta-ui .bubble{unicode-bidi:plaintext;text-align:start}
 html.seven-beta-ui .message.user .bubble{background:linear-gradient(145deg,color-mix(in srgb,var(--sb-a) 17%,var(--sb-s2)),color-mix(in srgb,var(--sb-a) 8%,var(--sb-s2)))!important;border:1px solid var(--sb-bs)!important;border-radius:18px 18px 6px 18px!important;box-shadow:0 8px 24px rgba(5,4,14,.08)!important}
+html[data-seven-theme=day].seven-beta-ui .message.user .bubble{box-shadow:0 8px 20px rgba(45,38,90,.06)!important}
 html.seven-beta-ui .message.assistant .bubble{background:transparent!important}
 html.seven-beta-ui .message.assistant[data-seven-ui-decorated="1"]:before{background:linear-gradient(180deg,transparent,var(--sb-mode),var(--sb-mode2),transparent)!important;opacity:.34!important}
 html.seven-beta-ui .search-sources{background:color-mix(in srgb,var(--sb-s2) 58%,transparent);border:1px solid var(--sb-b)!important;border-left:2px solid #3ab8e8!important;border-radius:12px;padding:10px 12px!important}
 html.seven-beta-ui .bubble.markdown blockquote{margin:12px 0;padding:8px 12px;border-inline-start:2px solid color-mix(in srgb,var(--sb-mode) 55%,transparent);background:color-mix(in srgb,var(--sb-s2) 45%,transparent);border-radius:0 10px 10px 0}
 html.seven-beta-ui .bubble.markdown pre{background:color-mix(in srgb,var(--sb-s2) 88%,#080711 12%)!important;border:1px solid var(--sb-b)!important;border-top-color:color-mix(in srgb,var(--sb-mode) 28%,var(--sb-b))!important;border-radius:14px!important;box-shadow:inset 0 1px rgba(255,255,255,.025)}
+html[data-seven-theme=day].seven-beta-ui .bubble.markdown pre{background:color-mix(in srgb,var(--sb-s2) 94%,#fff 6%)!important}
 html.seven-beta-ui .bubble.markdown code{border-radius:6px!important}
 html.seven-beta-ui .input-area{background:linear-gradient(180deg,transparent,var(--sb-bg) 30%,var(--sb-bg))!important}
 html.seven-beta-ui .composer{background:color-mix(in srgb,var(--sb-s) 96%,transparent)!important;border:1px solid var(--sb-b)!important;border-radius:26px!important;box-shadow:var(--sb-sh)!important}
 html.seven-beta-ui .composer:after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;border:1px solid transparent;background:linear-gradient(130deg,color-mix(in srgb,var(--sb-mode) 24%,transparent),transparent 38%,color-mix(in srgb,var(--sb-mode2) 16%,transparent)) border-box;-webkit-mask:linear-gradient(#000 0 0) padding-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.42}
+html[data-seven-theme=day].seven-beta-ui .composer:after{opacity:.25}
 html.seven-beta-ui .composer:focus-within{border-color:color-mix(in srgb,var(--sb-mode) 30%,var(--sb-b))!important;box-shadow:var(--sb-sh),0 0 0 3px color-mix(in srgb,var(--sb-mode) 11%,transparent)!important;transform:translateY(-1px)}
 html.seven-beta-ui .composer[data-seven-composer-state=busy]:after{opacity:.72}
 html.seven-beta-ui .tool-btn{background:color-mix(in srgb,var(--sb-s2) 78%,transparent)!important;border:1px solid var(--sb-b)!important;color:var(--sb-m)!important}
@@ -48,9 +56,11 @@ html.seven-beta-ui .tool-btn.toggle.active{border-color:transparent!important;co
 html.seven-beta-ui .input-area button.send{background:linear-gradient(135deg,var(--sb-mode),color-mix(in srgb,var(--sb-mode) 60%,var(--sb-mode2)))!important;border:none!important;color:#fff!important;box-shadow:0 8px 24px color-mix(in srgb,var(--sb-mode) 25%,transparent)!important}
 html.seven-beta-ui .input-area button.stop{border:1px solid color-mix(in srgb,var(--danger) 28%,transparent)!important}
 html.seven-beta-ui .modal{background:rgba(5,4,12,.56)!important}
+html[data-seven-theme=day].seven-beta-ui .modal{background:rgba(37,31,68,.18)!important}
 html.seven-beta-ui .modal-content{background:color-mix(in srgb,var(--sb-s) 97%,transparent)!important;border:1px solid var(--sb-b)!important;border-radius:20px!important;box-shadow:var(--sb-sh)!important}
 html.seven-beta-ui .modal-content :is(input,textarea,select){background:var(--sb-s2)!important;border:1px solid var(--sb-b)!important}
 html.seven-beta-ui .settings-row button{background:var(--sb-s2)!important;border:1px solid var(--sb-b)!important}
+html.seven-beta-ui [data-seven-theme-control]:after{content:attr(data-seven-theme-state);margin-inline-start:6px;color:var(--sb-a);font-size:10px;font-weight:750}
 html.seven-beta-ui .regenerate-btn{border:1px solid var(--sb-b)!important;background:color-mix(in srgb,var(--sb-s2) 75%,transparent)!important}
 html.seven-beta-ui .seven-beta-surface{isolation:isolate}
 @media(prefers-reduced-motion:no-preference){html.seven-beta-ui-ready:not(.seven-tier-lite) .seven-beta-badge,html.seven-beta-ui-ready:not(.seven-tier-lite) .seven-beta-status{animation:sb-pop .26s cubic-bezier(.2,.8,.2,1) both}html.seven-beta-ui-ready:not(.seven-tier-lite) .composer{animation:sb-lift .3s cubic-bezier(.2,.8,.2,1) both}@keyframes sb-pop{from{opacity:0;transform:translateY(-3px) scale(.96)}to{opacity:1;transform:none}}@keyframes sb-lift{from{opacity:.72;transform:translateY(6px)}to{opacity:1;transform:none}}}
