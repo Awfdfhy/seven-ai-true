@@ -1,6 +1,8 @@
 # Seven AI — Ultimate Polish Plan
 
 > **Purpose:** This document captures the full feature/tool map that will be used as the checklist for systematically polishing Seven. It is not a claim that every item is fully implemented. It is the authoritative refinement map for future work.
+>
+> **Companion inventory:** `SEVEN_CAPABILITIES_MAP.md` is the canonical capability/tool inventory. This file defines how those capabilities are audited, scored, strengthened, evaluated, and frozen. Use both together during the Ultimate Polish campaign.
 
 ## Refinement Philosophy
 Seven should be improved by strengthening existing systems, not by accumulating random features. Each major system should be inspected, scored, hardened, simplified where necessary, evaluated, and only then frozen.
@@ -699,6 +701,7 @@ Project-memory system:
 - `SEVEN_MASTER_PLAN.md`
 - `SEVEN_DECISIONS.md`
 - `SEVEN_STATUS.md`
+- `SEVEN_CAPABILITIES_MAP.md`
 - `SEVEN_ULTIMATE_POLISH_PLAN.md`
 
 Major architectural, product, safety, roadmap, or brand decisions should be committed here so the project does not depend on conversation memory alone.
