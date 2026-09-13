@@ -29,6 +29,19 @@ body:not(.light) .seven-celestial-toggle::after{opacity:1;transform:translate(5p
 }
 #persistenceStatus.seven-save-status::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--seven-success);box-shadow:0 0 8px color-mix(in srgb,var(--seven-success) 35%,transparent);}
 
+/* Settings navigation keeps a long expert surface understandable. */
+.seven-settings-nav{
+  position:sticky;top:81px;z-index:4;display:flex;gap:6px;padding:8px 18px 9px;overflow-x:auto;scrollbar-width:none;
+  background:color-mix(in srgb,var(--seven-canvas-2) 95%,transparent);backdrop-filter:blur(16px);border-bottom:1px solid var(--seven-line);
+}
+.seven-settings-nav::-webkit-scrollbar{display:none;}
+.seven-settings-nav-button{
+  appearance:none;border:1px solid var(--seven-line);background:var(--seven-surface);color:var(--seven-text-3);height:30px;padding:0 10px;border-radius:10px;
+  white-space:nowrap;font:inherit;font-size:9.5px;font-weight:700;letter-spacing:.01em;cursor:pointer;
+}
+.seven-settings-nav-button:hover,.seven-settings-nav-button:focus-visible{color:var(--seven-text);border-color:var(--seven-line-strong);background:var(--seven-surface-2);outline:none;}
+.seven-settings-section{scroll-margin-top:132px;}
+
 /* First run must feel intentional, not like a full-screen form with empty space. */
 #nameModal{align-items:center!important;justify-content:center!important;padding:24px!important;background:
   radial-gradient(circle at 50% 22%,color-mix(in srgb,var(--seven-mode-accent) 15%,transparent),transparent 34%),rgba(3,4,11,.78)!important;}
@@ -45,9 +58,26 @@ body:not(.light) .seven-celestial-toggle::after{opacity:1;transform:translate(5p
 #nameModal .modal-buttons{position:static!important;display:grid!important;grid-template-columns:.72fr 1.28fr!important;gap:9px!important;padding:0!important;background:none!important;}
 #nameModal .modal-buttons button{min-height:46px!important;margin:0!important;max-width:none!important;border-radius:14px!important;}
 
+/* Mode atmosphere uses static geometry, so modes feel native without idle GPU work. */
+.main::after{content:"";position:fixed;pointer-events:none;z-index:-1;opacity:0;transition:opacity var(--seven-motion-deliberate) var(--seven-ease-enter);}
 html[data-seven-mode="build"] body::before{background-size:32px 32px;opacity:.82;}
+html[data-seven-mode="build"] .main::after{
+  opacity:.28;right:-36px;bottom:115px;width:230px;height:180px;
+  background:repeating-linear-gradient(0deg,transparent 0 15px,rgba(99,135,255,.055) 16px),repeating-linear-gradient(90deg,transparent 0 23px,rgba(99,135,255,.04) 24px);
+  mask-image:linear-gradient(135deg,transparent 8%,#000 46%,transparent 92%);transform:skewY(-8deg);
+}
 html[data-seven-mode="world"] body::before{background-image:radial-gradient(circle at 20% 20%,rgba(255,158,114,.035) 0 1px,transparent 1.5px);background-size:26px 26px;}
+html[data-seven-mode="world"] .main::after{
+  opacity:.42;left:7%;right:7%;bottom:126px;height:150px;
+  background:radial-gradient(ellipse at 50% 100%,rgba(255,158,114,.11),transparent 62%),linear-gradient(to top,rgba(157,111,255,.045),transparent 70%);
+  border-bottom:1px solid rgba(255,158,114,.08);border-radius:50%;filter:blur(.2px);
+}
 html[data-seven-mode="research"] body::before{background-image:linear-gradient(30deg,rgba(93,199,192,.018) 1px,transparent 1px),linear-gradient(150deg,rgba(95,140,255,.018) 1px,transparent 1px);background-size:38px 38px;}
+html[data-seven-mode="research"] .main::after{
+  opacity:.34;right:22px;bottom:150px;width:180px;height:160px;
+  background:radial-gradient(circle at 18% 70%,rgba(93,199,192,.5) 0 2px,transparent 3px),radial-gradient(circle at 52% 38%,rgba(95,140,255,.55) 0 2px,transparent 3px),radial-gradient(circle at 82% 67%,rgba(93,199,192,.45) 0 2px,transparent 3px),linear-gradient(32deg,transparent 34%,rgba(95,140,255,.1) 35% 36%,transparent 37%),linear-gradient(145deg,transparent 43%,rgba(93,199,192,.1) 44% 45%,transparent 46%);
+  mask-image:radial-gradient(ellipse,#000,transparent 72%);
+}
 
 html.seven-theme-shift::after{content:"";position:fixed;inset:-25vmax;z-index:9998;pointer-events:none;background:radial-gradient(circle at 78% 12%,color-mix(in srgb,var(--seven-solar) 18%,var(--seven-mode-accent) 16%),transparent 31%);animation:sevenCelestialWash var(--seven-motion-signature) var(--seven-ease-enter) both;}
 @keyframes sevenCelestialWash{0%{opacity:0;transform:scale(.96)}38%{opacity:.7}100%{opacity:0;transform:scale(1.025)}}
@@ -56,8 +86,19 @@ html.seven-theme-shift::after{content:"";position:fixed;inset:-25vmax;z-index:99
   .seven-context-rail{justify-content:flex-start;overflow-x:auto;scrollbar-width:none;padding:5px 10px;}
   .seven-context-rail::-webkit-scrollbar{display:none;}
   .seven-context-rail strong{position:sticky;left:0;background:var(--seven-canvas);padding-right:6px;}
+  .seven-mode-dock{max-width:calc(100vw - 102px)!important;gap:1px!important;}
+  .seven-mode-button{padding:0 7px!important;gap:4px!important;font-size:9px!important;}
+  .seven-mode-button span{display:inline!important;}
+  .seven-mode-button svg{width:12px!important;height:12px!important;}
+  .seven-settings-nav{top:69px;padding:7px 12px 8px;}
+  .seven-settings-section{scroll-margin-top:116px;}
   #nameModal{padding:14px!important;}
   #nameModal .modal-content{width:100%!important;height:auto!important;border-radius:25px!important;padding:27px 20px 20px!important;}
   .seven-settings-grid{padding-bottom:96px!important;}
+  .main::after{transform:scale(.86);transform-origin:bottom right;}
 }
-@media(prefers-reduced-motion:reduce){html.seven-processing .seven-brand-mark .seven-orbit{animation:none!important}.seven-celestial-toggle,.seven-celestial-toggle::after{transition:none!important}html.seven-theme-shift::after{display:none!important}}
+@media(max-width:360px){
+  .seven-mode-button{padding:0 6px!important;font-size:8.5px!important;}
+  .seven-mode-button svg{display:none;}
+}
+@media(prefers-reduced-motion:reduce){html.seven-processing .seven-brand-mark .seven-orbit{animation:none!important}.seven-celestial-toggle,.seven-celestial-toggle::after{transition:none!important}html.seven-theme-shift::after{display:none!important}.main::after{transition:none!important}}
