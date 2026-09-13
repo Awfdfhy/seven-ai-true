@@ -32,12 +32,18 @@ const {build,OUTPUT}=require('./build-release.cjs');
   async function pass(name,fn){await fn();checks.push(name);console.log('PASS',name)}
 
   try{
-    const ctx=await browser.newContext({viewport:{width:390,height:844}});
+    const ctx=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1});
+    await ctx.addInitScript(()=>{
+      localStorage.setItem('user_name','Visual QA');
+      localStorage.setItem('user-name','Visual QA');
+      localStorage.setItem('seven_ui_mode_v1','core');
+    });
     await ctx.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
     const page=await ctx.newPage();
     const errors=[];page.on('pageerror',e=>errors.push(e.message));
     await page.goto(origin,{waitUntil:'domcontentloaded'});
     await page.waitForFunction(()=>window.SevenVisualShell&&document.documentElement.dataset.sevenVisual==='brand-os-v1',null,{timeout:10000});
+    await page.waitForTimeout(120);
 
     await pass('Brand OS boots without page errors',async()=>assert.deepEqual(errors,[]));
     await pass('legacy sidebar bitmap is replaced by the Seven mark',async()=>{
@@ -52,6 +58,7 @@ const {build,OUTPUT}=require('./build-release.cjs');
       await page.click('.seven-mode-button[data-mode="world"]');
       const r=await page.evaluate(()=>({mode:document.documentElement.dataset.sevenMode,ph:document.getElementById('userInput').placeholder,selected:document.querySelector('.seven-mode-button[data-mode="world"]').getAttribute('aria-selected')}));
       assert.equal(r.mode,'world');assert.match(r.ph,/world/i);assert.equal(r.selected,'true');
+      await page.evaluate(()=>SevenVisualShell.setMode('core'));
     });
     await pass('settings are restructured into product-grade sections',async()=>{
       const r=await page.evaluate(()=>({count:document.querySelectorAll('#settingsModal .seven-settings-section').length,head:!!document.querySelector('#settingsModal .seven-settings-head'),names:Array.from(document.querySelectorAll('#settingsModal .seven-settings-section')).map(n=>n.dataset.section)}));
@@ -62,13 +69,22 @@ const {build,OUTPUT}=require('./build-release.cjs');
       assert.ok(r.sw<=r.cw+2,JSON.stringify(r));assert.ok(r.sidebarWidth>=280,JSON.stringify(r));assert.ok(r.radius>=20,JSON.stringify(r));assert.ok(r.dock>0,JSON.stringify(r));
     });
     await pass('RTL has a first-class structural treatment',async()=>{
-      const r=await page.evaluate(()=>{document.documentElement.dir='rtl';const s=getComputedStyle(document.querySelector('.sidebar'));return {left:s.borderLeftWidth,right:s.borderRightWidth}});
+      const r=await page.evaluate(()=>{document.documentElement.dir='rtl';const s=getComputedStyle(document.querySelector('.sidebar'));const out={left:s.borderLeftWidth,right:s.borderRightWidth};document.documentElement.dir='';return out});
       assert.notEqual(r.left,'0px');
     });
     await pass('dark and light themes use different canvas systems',async()=>{
-      const r=await page.evaluate(()=>{const dark=getComputedStyle(document.body).getPropertyValue('--seven-canvas').trim();document.body.classList.add('light');const light=getComputedStyle(document.body).getPropertyValue('--seven-canvas').trim();return {dark,light}});
+      const r=await page.evaluate(()=>{const dark=getComputedStyle(document.body).getPropertyValue('--seven-canvas').trim();document.body.classList.add('light');const light=getComputedStyle(document.body).getPropertyValue('--seven-canvas').trim();document.body.classList.remove('light');return {dark,light}});
       assert.notEqual(r.dark,r.light);assert.ok(r.dark&&r.light);
     });
+
+    await page.evaluate(()=>{const s=document.getElementById('sidebar');if(s&&!s.classList.contains('collapsed'))s.classList.add('collapsed');const b=document.querySelector('.sidebar-backdrop');if(b)b.classList.remove('visible')});
+    await page.screenshot({path:path.join(dist,'visual-core-mobile.png'),fullPage:true});
+    await page.evaluate(()=>{const s=document.getElementById('sidebar');if(s)s.classList.remove('collapsed');const b=document.querySelector('.sidebar-backdrop');if(b)b.classList.add('visible')});
+    await page.waitForTimeout(80);
+    await page.screenshot({path:path.join(dist,'visual-sidebar-mobile.png'),fullPage:true});
+    await page.evaluate(()=>{const s=document.getElementById('sidebar');if(s)s.classList.add('collapsed');const b=document.querySelector('.sidebar-backdrop');if(b)b.classList.remove('visible');const m=document.getElementById('settingsModal');if(m)m.style.display='flex'});
+    await page.waitForTimeout(80);
+    await page.screenshot({path:path.join(dist,'visual-settings-mobile.png'),fullPage:true});
     await ctx.close();
 
     const reduced=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});
