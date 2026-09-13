@@ -1,4 +1,4 @@
-# Seven AI — Ultimate Polish Protocol 2.0
+# Seven AI — Ultimate Polish Protocol 2.1
 
 > **Status:** Canonical architecture-polish protocol for Seven AI.
 > **Scope:** Apply independently to every capability in `SEVEN_CAPABILITIES_MAP.md`, including all 45 core capability families and each Tool Fabric 2.0 capability family.
@@ -7,266 +7,266 @@
 ---
 
 ## Operating Rule
-
-For every system under polish, do not merely add features. Audit, attack, compare, simplify, redesign where justified, verify, evaluate, and only then produce a freeze candidate.
-
-The governing question is:
+For every system under polish, do not merely add features. Audit, attack, compare, simplify, redesign where justified, verify, evaluate, optimize its critical path, and only then produce a freeze candidate.
 
 > If we were forced to build the strongest practical version of this system for Seven today, knowing everything we know now, would we still choose this architecture?
 
-If the answer is no, redesign it.
+If no, redesign it.
 
 ---
 
-## 1. Establish Ground Truth
-Determine precisely:
-- what exists in architecture
-- what is actually implemented
-- what is planned only
-- what is legacy
-- what is duplicated
-- what is speculative
-- what depends on unverified assumptions
+# Seven Velocity Fabric
 
-Never turn an architectural target into an implementation claim.
+Velocity Fabric is a cross-cutting performance and smoothness architecture. It applies to every Seven subsystem and is not limited to raw execution speed.
+
+## Objectives
+Optimize simultaneously for:
+- cold startup latency
+- warm startup latency
+- time to interactive
+- interaction/input latency
+- time to first visible response
+- time to first streamed token/result
+- end-to-end task latency
+- sustained throughput
+- frame/render smoothness
+- perceived latency
+- cancellation responsiveness
+- background-work interference
+- RAM/CPU/battery/thermal/network/storage efficiency
+
+## Core Law
+> **No capability may make Seven globally slower merely by existing.**
+
+A heavy capability that is unused should have near-zero cost on startup and ordinary paths wherever technically practical.
+
+## Velocity Architecture
+Every system must consider:
+- lazy/on-demand initialization
+- lazy capability/tool loading
+- fast paths for simple/common operations
+- cold vs warm paths
+- incremental computation
+- incremental rendering
+- streaming where useful
+- safe parallel execution for independent dependencies
+- batching where it lowers total cost
+- request coalescing
+- duplicate-work elimination
+- memoization/caching with explicit freshness and authority rules
+- bounded prefetching only when predicted benefit exceeds cost
+- priority scheduling
+- cooperative yielding to protect UI responsiveness
+- backpressure
+- bounded concurrency
+- immediate cancellation propagation
+- avoiding unnecessary serialization
+- avoiding unnecessary model/tool/network calls
+- local cheap decisions before expensive remote escalation where valid
+- DOM/render/layout/repaint minimization
+- list/tree/output virtualization for large surfaces
+- progressive disclosure/rendering
+- off-main-thread work where platform/runtime support makes it worthwhile
+- unloading/releasing heavy resources after use
+
+## Critical Path Discipline
+For each important user journey:
+1. Identify its true critical path.
+2. Mark required vs deferrable work.
+3. Remove redundant steps.
+4. Parallelize only genuinely independent work.
+5. Move optional work outside the blocking path.
+6. Measure rather than assume bottlenecks.
+7. Re-run correctness and authority checks after optimization.
+
+Optimization may never bypass required security, authority, verification, integrity, or side-effect safeguards.
+
+## Latency Budgets
+Every polished subsystem must define measurable budgets where applicable for:
+- initialization
+- interaction response
+- first visible feedback
+- first streamed output
+- ordinary operation
+- cancellation acknowledgment
+- UI frame work
+- memory footprint
+- background CPU/network activity
+
+Budgets may vary by Full / Balanced / Lite performance tier and device capability. A subsystem that exceeds its budget must justify the cost or be redesigned/deferred/degraded.
+
+## Smoothness Contract
+Seven should remain responsive while work continues. Long-running operations must not unnecessarily block:
+- scrolling
+- typing
+- navigation
+- cancellation
+- status updates
+- lightweight interactions
+
+Prefer progressive truthful feedback over frozen interfaces. Never fake progress merely to create perceived speed.
+
+## Resource-Aware Velocity
+Velocity Fabric integrates with Adaptive Compute and Resource Governor. Under pressure Seven may:
+- reduce concurrency
+- suppress expensive visual effects
+- postpone optional background work
+- unload nonessential caches/models
+- reduce speculative/prefetch work
+- select cheaper local/remote paths where appropriate
+- reduce optional verification depth only where safety/correctness contracts permit
+
+Use hysteresis so performance tiers do not oscillate rapidly.
+
+## Cache Correctness
+Caching must preserve Seven's truth/authority laws. Every important cache defines:
+- source identity
+- freshness/expiry semantics
+- invalidation strategy
+- authority level
+- principal/auth scope
+- reconstruction path where relevant
+
+A faster stale or authority-confused answer is a regression, not an optimization.
+
+## Perceived Performance
+Improve perceived speed through truthful mechanisms:
+- immediate input acknowledgment
+- early real status
+- progressive results
+- streaming
+- useful partial rendering
+- responsive cancellation
+- retaining usable UI during background work
+
+Never simulate completed work, fabricated tool activity, fake progress, or fake verification.
+
+## Velocity Observability
+Measure enough to locate real bottlenecks:
+- critical-path spans
+- queue delay
+- model/tool/network latency
+- cache hit/miss
+- initialization cost
+- render/main-thread stalls where measurable
+- memory pressure
+- thermal/resource state
+- cancellation latency
+- retries/duplicate work
+
+Telemetry must remain lightweight and respect privacy/redaction boundaries.
+
+## Velocity Regression Gates
+Changes should be tested against representative baselines. Track at minimum where applicable:
+- startup
+- time to interactive
+- first response/token/result
+- task completion latency
+- frame/input responsiveness
+- peak/steady RAM
+- CPU work
+- battery/thermal impact
+- network bytes/round trips
+- cancellation responsiveness
+
+A capability improvement that materially harms global responsiveness must be rejected, redesigned, lazy-loaded, tiered, or explicitly justified.
+
+## Velocity Failure Rule
+Never trade correctness for speed silently. If an optimization changes correctness, evidence quality, security, authority, durability, or side-effect semantics, it must be treated as an architectural change and pass the full polish/eval gates.
+
+---
+
+# Ultimate Polish Pass
+
+## 1. Establish Ground Truth
+Determine what exists architecturally, what is implemented, planned, legacy, duplicated, speculative, or dependent on unverified assumptions. Never turn an architectural target into an implementation claim.
 
 ## 2. First-Principles Reconstruction
-Ask:
-- What original problem does this system solve?
-- If the current design did not exist, how would we build it today?
-- What is the smallest useful set of primitives?
-- What must be authoritative?
-- What must remain derived?
-- Where are the correct responsibility boundaries?
+Ask what problem the system solves, how it would be built today from zero, what minimum useful primitives exist, what is authoritative vs derived, and where responsibility boundaries belong.
 
 ## 3. Adversarial Architecture Attack
-Attempt to break the system using:
-- race conditions
-- stale state
-- corruption
-- hallucinated state
-- authority escalation
-- ambiguous ownership
-- hidden coupling
-- retry hazards
-- cancellation hazards
-- partial failure
-- network loss
-- provider failure
-- malformed or malicious inputs
-- huge inputs
-- low-memory conditions
-- thermal pressure
-- offline operation
-- contradictory evidence
-- irreversible actions
-- migration failures
-- version drift
+Attack race conditions, stale/corrupt/hallucinated state, authority escalation, ambiguous ownership, hidden coupling, retries, cancellation, partial/network/provider failures, malformed/malicious/huge inputs, low-memory/thermal/offline states, contradictory evidence, irreversible actions, migrations and version drift.
 
 ## 4. Assumption Destruction
-Extract hidden assumptions. For each one ask:
-- Why is it required?
-- What happens if it is false?
-- Can the dependency be removed?
-- Can the architecture remain correct without it?
+Extract hidden assumptions. For each: why is it required, what if false, can dependency be removed, and can correctness survive without it?
 
 ## 5. Alternative Architecture Search
-Do not optimize only the current solution. Produce and compare meaningful alternatives, including radically different designs where justified.
-
-Compare by:
-- capability
-- correctness
-- complexity
-- latency
-- RAM
-- battery
-- storage
-- network cost
-- maintainability
-- security
-- recoverability
-- observability
-- testability
-
-Retain the current architecture only if it survives comparison.
+Compare meaningful alternatives, including radically different designs where justified, across capability, correctness, complexity, latency, RAM, battery, storage, network, maintainability, security, recoverability, observability and testability.
 
 ## 6. Capability Ceiling
-Determine the maximum useful capability of the system. Discover missing capabilities, but add one only when it is useful, implementable, compatible with Seven's invariants, and worth its complexity/resource cost.
+Find the maximum useful capability. Add capabilities only when useful, implementable, compatible with Seven invariants, and worth their complexity/resource cost.
 
 ## 7. Research & Competitive Sweep
-Search relevant research papers, production architectures, open-source systems, agent runtimes, databases, operating systems, compilers, browsers, distributed systems, mobile systems, and relevant AI products.
-
-Extract useful primitives and lessons. Do not copy systems merely because they are popular.
+Search relevant research, production architectures, open source, agent runtimes, databases, OS/compiler/browser/distributed/mobile systems and relevant AI products. Extract useful primitives rather than copying fashionable systems.
 
 ## 8. Intelligence Upgrade
-Identify static decisions, thresholds, and naive heuristics that can safely become:
-- adaptive policies
-- evidence-aware decisions
-- learned/local classifiers
-- capability-aware routing
-- resource-aware routing
-- uncertainty-aware decisions
-
-Retain deterministic fallbacks where they improve correctness or safety.
+Replace naive static decisions where justified with adaptive/evidence/capability/resource/uncertainty-aware policies, while retaining deterministic fallbacks when safer.
 
 ## 9. Truth & Authority Audit
-For every meaningful state/object define:
-- source
-- authority
-- owner
-- lineage
-- freshness
-- confidence
-- mutability
-- persistence
-- reconstruction path
-
-Derived information must never silently become authoritative.
+For meaningful state define source, authority, owner, lineage, freshness, confidence, mutability, persistence and reconstruction. Derived information never silently becomes authoritative.
 
 ## 10. Security & Side-Effect Audit
-Test:
-- permissions
-- privilege boundaries
-- injection
-- untrusted tool output
-- remote metadata
-- destructive actions
-- external communication
-- retries
-- idempotency
-- side-effect uncertainty
-- confirmation requirements
-- secret handling
+Test permissions, privilege boundaries, injection, untrusted outputs/metadata, destructive actions, external communication, retries, idempotency, uncertainty, confirmations and secrets.
 
 ## 11. Failure & Recovery Engineering
-For every important operation define:
-- failure states
-- retry policy
-- timeout policy
-- cancellation semantics
-- checkpoint behavior
-- rollback possibility
-- reconciliation strategy
-- corruption recovery
-- crash recovery
-
-Use explicit UNKNOWN/uncertain states where binary success/failure would invent certainty.
+Define failure states, retries, timeouts, cancellation, checkpoints, rollback, reconciliation, corruption recovery and crash recovery. Preserve explicit uncertainty rather than inventing binary certainty.
 
 ## 12. Performance & Mobile Assault
-Assume Seven runs on a constrained Android phone. Audit:
-- startup
-- APK size
-- RAM
-- CPU
-- battery
-- thermal load
-- storage
-- network
-- background work
-- concurrency
-- rendering
-- local models
+Assume constrained Android. Audit startup/APK/RAM/CPU/battery/thermal/storage/network/background work/concurrency/rendering/local models. Decide what can lazy-load, cache, stream, batch, defer, unload, disable or degrade gracefully.
 
-Determine what can be lazy-loaded, cached, streamed, batched, deferred, unloaded, disabled, or gracefully degraded.
+## 13. Velocity & Smoothness Assault
+Apply the complete Velocity Fabric to the subsystem. Profile its critical paths, remove redundant blocking work, establish latency/resource budgets, protect UI responsiveness, and test cold/warm/pressure conditions.
 
-## 13. UX Translation
-Important capabilities must have appropriate user-visible representations when needed, including:
-- progress
-- uncertainty
-- errors
-- recovery
-- permissions
-- verification
-- cancellation
-- long-running states
-- debugging surfaces
+## 14. UX Translation
+Represent progress, uncertainty, errors, recovery, permissions, verification, cancellation, long-running work and diagnostics appropriately without exposing useless internal complexity.
 
-Do not expose internal complexity without user value.
+## 15. Integration Audit
+Find duplicated responsibility, conflicting authority, circular dependencies, coupling, missing contracts/events and incompatible state models across Seven.
 
-## 14. Integration Audit
-Audit interactions with every relevant Seven system. Find:
-- duplicated responsibility
-- conflicting authority
-- circular dependencies
-- unnecessary coupling
-- missing contracts
-- missing events
-- incompatible state models
+## 16. Simplification Pass
+Try to remove primitives/layers/abstractions/features whose value does not justify complexity. Stronger does not mean larger.
 
-## 15. Simplification Pass
-After improving the design, attempt to remove things. Ask whether primitives can merge, layers can disappear, abstractions are unjustified, or features can emerge naturally from a cleaner architecture.
+## 17. Verification Contract
+Define evidence-bound proof that the system accomplished what it claims rather than relying on model confidence.
 
-**Stronger does not mean larger.**
+## 18. Evaluation Contract
+Measure correctness, reliability, latency, resources, recovery, security, UX, regressions and edge cases. Compare OLD vs NEW where possible.
 
-## 16. Verification Contract
-Define how Seven proves that the system accomplished what it claims. Prefer evidence bound to the resulting action or artifact rather than model self-confidence.
+## 19. Proof of Improvement
+For each major change record problem, solution, advantage, cost, new risks, measurement and acceptance/rejection rationale.
 
-## 17. Evaluation Contract
-Create measurable tests and metrics for:
-- correctness
-- reliability
-- latency
-- resource cost
-- recovery
-- security
-- UX
-- regressions
-- edge cases
+## 20. Future-Proofing
+Test new providers/models/tools/Android versions, schema evolution, larger projects, longer sessions, offline/local execution and future capabilities without product-wide rewrites.
 
-Compare OLD vs NEW where possible.
+## 21. Final Red-Team
+Attack the final proposal again as if trying to prove a competitor's architecture unsound. Material new failures return it to repair.
 
-## 18. Proof of Improvement
-For every major accepted change record:
-- current problem
-- proposed solution
-- why it is stronger
-- cost
-- new risks
-- measurement method
-- reason for acceptance or rejection
+## 22. Freeze Candidate
+Produce final architecture/capabilities/invariants/authority/interfaces/failure semantics/security boundaries/performance budgets/integration contracts/verification/evals/deferred and rejected ideas/implementation order. Do not freeze while a clear improvement remains whose expected value materially exceeds its cost.
 
-Never accept a change merely because it sounds advanced.
+---
 
-## 19. Future-Proofing
-Test against:
-- new providers
-- new models
-- new tools
-- new Android versions
-- schema evolution
-- larger projects
-- longer sessions
-- offline/local execution
-- future Seven capabilities
+# Double-Pass Campaign Rule
 
-The system should evolve without requiring product-wide rewrites.
+Every capability receives two full-strength independent polish passes:
 
-## 20. Final Red-Team
-After the proposed final design exists, attack it again as though trying to prove a competitor's architecture unsound. New material failures return the design to repair.
+**PASS A — MAXIMIZE**
+Apply the complete protocol, including Velocity & Smoothness Assault, and produce Freeze Candidate A.
 
-## 21. Freeze Candidate
-Produce a final specification containing:
-- final architecture
-- final capabilities
-- invariants
-- authoritative states
-- interfaces/contracts
-- failure semantics
-- security boundaries
-- performance budgets
-- integration contracts
-- verification requirements
-- eval requirements
-- deferred ideas
-- rejected ideas and rejection reasons
-- implementation order
+**PASS B — DESTROY THE WINNER**
+Start from Candidate A without assuming it is correct. Reapply the complete protocol at full strength, attack A, seek superior alternatives, detect overengineering and performance/security/correctness regressions, and allow removal or reversal of Pass A changes.
 
-Do not mark the system frozen while a clear improvement remains whose expected value materially exceeds its cost.
+Pass B is not required to invent changes. If no meaningful improvement survives proof/eval gates, record `NO MATERIAL IMPROVEMENT`.
+
+**RECONCILIATION GATE**
+Compare A and B. Accept only changes that survive correctness, authority, security, recovery, verification, eval and Velocity regression gates. Then produce FINAL FREEZE.
+
+Campaign flow:
+`Current -> Polish A -> Velocity Assault -> Candidate A -> Polish B -> Velocity Regression Assault -> Candidate B -> Reconciliation -> FINAL FREEZE`
 
 ---
 
 # Global Seven Laws
-
 1. Explicit authoritative state.
 2. Derived state never silently gains authority.
 3. Full lineage for meaningful derived objects.
@@ -279,19 +279,23 @@ Do not mark the system frozen while a clear improvement remains whose expected v
 10. Recoverability.
 11. Cancellation safety.
 12. Side-effect safety and idempotency.
-13. Security boundaries that AI/tool output cannot override.
+13. Security boundaries AI/tool output cannot override.
 14. Typed contracts between major systems.
-15. No fake actions, fake tool success, fake canon fidelity, or fake evidence.
+15. No fake actions, tool success, canon fidelity, evidence, verification, or progress.
 16. Complexity must earn its existence.
+17. No capability may impose material global startup/runtime cost merely by existing when that cost can technically be deferred.
+18. Optimize measured critical paths, not imagined bottlenecks.
+19. Speed never silently overrides correctness, authority, security, durability or verification.
+20. Smoothness and responsiveness are first-class product correctness properties.
 
 ---
 
 # Campaign Application
-
 Apply this protocol independently to:
 1. Every numbered core capability in `SEVEN_CAPABILITIES_MAP.md`.
-2. Every Tool Fabric 2.0 capability family, not Tool Fabric as one monolithic item.
-3. Cross-system boundaries after individual polishing is complete.
-4. A final whole-system integration/red-team pass after the campaign.
+2. Every Tool Fabric 2.0 capability family individually.
+3. Cross-system boundaries after individual polishing.
+4. Velocity Fabric itself, including two-pass polish and regression testing.
+5. A final whole-system integration, performance and red-team pass.
 
-Each polish record should preserve ground truth, alternatives considered, accepted/rejected changes, evidence, verification/eval requirements, and the resulting freeze candidate.
+Each polish record preserves ground truth, alternatives, accepted/rejected changes, evidence, verification/evals, latency/resource budgets, velocity results and the resulting freeze candidate.
