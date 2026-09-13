@@ -12,6 +12,7 @@ const {
   rollback
 } = require("./coordinator.cjs");
 const { createUpdateTransaction } = require("./update-transaction.cjs");
+const { createEvalLock } = require("./eval-lock.cjs");
 const { executePromotion } = require("./promotion-runner.cjs");
 
 const RISK_ORDER = Object.freeze({ LOW: 1, MEDIUM: 2, HIGH: 3, CRITICAL: 4 });
@@ -49,10 +50,14 @@ async function runSystemEvolution({
   baselineSha,
   candidateSha,
   candidateMetadata = {},
+  evaluationLock,
   adapter,
   onCheckpoint
 } = {}) {
   const experiment = createExperiment(experimentConfig);
+  // Freeze the evaluation identity at the beginning of the evolution run.
+  // Callers with a longer pre-evaluation phase may provide an even earlier lock.
+  const lockedEvaluation = evaluationLock || createEvalLock({ experimentId: experiment.id });
   const candidate = createCandidate({
     id: `system:${experiment.id}`,
     kind: "system",
@@ -148,6 +153,7 @@ async function runSystemEvolution({
     execution = await executePromotion({
       transaction,
       experimentPass: true,
+      evaluationLock: lockedEvaluation,
       adapter,
       onCheckpoint: transactionCheckpoint
     });
@@ -183,6 +189,7 @@ async function runSystemEvolution({
     transaction,
     experimentGate,
     approval,
+    evaluationIdentity: execution.evaluationIdentity || null,
     execution
   };
 }
