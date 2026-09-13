@@ -6,7 +6,7 @@ const ROOT=path.resolve(__dirname,'..');
 const sourceHtml=fs.readFileSync(path.join(ROOT,'seven_ai-final.html'),'utf8');
 const built=build();
 const html=fs.readFileSync(built.output,'utf8');
-const assetNames=['seven-final.css','canon-simulator.js','world-runtime.js','research-runtime.js','performance-runtime.js','control-runtime.js','control-bridge.js','pdf-runtime.js','motion-runtime.js','ui-runtime.js'];
+const assetNames=['seven-final.css','canon-simulator.js','world-runtime.js','research-runtime.js','performance-runtime.js','control-runtime.js','control-bridge.js','execution-bridge.js','pdf-runtime.js','motion-runtime.js','ui-runtime.js'];
 const assets=assetNames.map(name=>({name,bytes:fs.statSync(path.join(__dirname,name)).size}));
 const issues=[];const warnings=[];const apkBlockers=[];
 function issue(code,detail){issues.push({code,detail});}
@@ -38,7 +38,7 @@ const apkStaticBudgetBytes=8*1024*1024;
 if(staticPackageBytes>apkStaticBudgetBytes)issue('apk-static-asset-budget-exceeded',{staticPackageBytes,apkStaticBudgetBytes});
 if(fs.statSync(path.join(ROOT,'seven_ai-final.html')).size>900000)warn('monolith-size-high',fs.statSync(path.join(ROOT,'seven_ai-final.html')).size);
 if(built.pdfLoadMode!=='lazy-local')issue('pdf-load-mode-not-lazy-local',built.pdfLoadMode);
-const report={format:'seven-static-audit',version:9,sourceBytes:Buffer.byteLength(sourceHtml),builtHtmlBytes:built.bytes,releaseLayerBytes:layerBytes,pdfVendorBytes:built.pdf.bytes,pdfLoadMode:built.pdfLoadMode,staticPackageBytes,apkStaticBudgetBytes,assets,issues,warnings,apkReadiness:{ready:apkBlockers.length===0,blockers:apkBlockers}};
+const report={format:'seven-static-audit',version:10,sourceBytes:Buffer.byteLength(sourceHtml),builtHtmlBytes:built.bytes,releaseLayerBytes:layerBytes,pdfVendorBytes:built.pdf.bytes,pdfLoadMode:built.pdfLoadMode,staticPackageBytes,apkStaticBudgetBytes,assets,issues,warnings,apkReadiness:{ready:apkBlockers.length===0,blockers:apkBlockers}};
 fs.mkdirSync(path.join(ROOT,'dist'),{recursive:true});
 fs.writeFileSync(path.join(ROOT,'dist','static-audit.json'),JSON.stringify(report,null,2));
 if(warnings.length)for(const w of warnings)console.log('AUDIT WARN',w.code,JSON.stringify(w.detail));
