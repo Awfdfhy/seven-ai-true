@@ -9,6 +9,7 @@ const {
   confirmRollback
 } = require("./update-transaction.cjs");
 const { assessHealth } = require("./health-monitor.cjs");
+const { assertEvalLock } = require("./eval-lock.cjs");
 
 function assertAdapter(adapter) {
   for (const method of ["getHeadSha", "applyCandidate", "verifyCandidate", "rollbackTo"]) {
@@ -55,9 +56,14 @@ async function rollbackSafely(tx, adapter, reason, options = {}) {
   }
 }
 
-async function executePromotion({ transaction: tx, experimentPass = false, adapter, onCheckpoint } = {}) {
+async function executePromotion({ transaction: tx, experimentPass = false, evaluationLock, adapter, onCheckpoint } = {}) {
   if (!tx) throw new Error("transaction required");
   assertAdapter(adapter);
+
+  // A candidate may only be promoted against the exact evaluation corpus and
+  // baseline identity that were frozen for its experiment. This runs before
+  // reading or mutating the target repository, so benchmark drift fails closed.
+  const evalLockVerification = assertEvalLock(evaluationLock);
 
   const observedBaseSha = await adapter.getHeadSha();
   validateUpdate(tx, {
@@ -91,7 +97,8 @@ async function executePromotion({ transaction: tx, experimentPass = false, adapt
   try {
     verification = await adapter.verifyCandidate({
       candidateSha: tx.candidateSha,
-      transactionId: tx.id
+      transactionId: tx.id,
+      evaluationIdentity: evalLockVerification.expected
     });
   } catch (verifyError) {
     const rollback = await rollbackSafely(tx, adapter, "verification_error", { onCheckpoint });
@@ -136,6 +143,7 @@ async function executePromotion({ transaction: tx, experimentPass = false, adapt
   return {
     outcome: "COMMITTED",
     transaction: tx,
+    evaluationIdentity: evalLockVerification.expected,
     verification: {
       ciPassed: true,
       regressionFree: true,

@@ -34,7 +34,9 @@ Anything else is marked partial.
 | Motion System | Event-delegated reveals, press states, theme motion | Yes | Browser + reduced-motion gate | Strong |
 | Performance Runtime | Lite/balanced/full tiers, long-task downgrade, idle/frame scheduling | Yes | Browser/static gate | Strong |
 | PDF Runtime | Lazy local PDF.js packaging | Yes | Browser/static gate | Strong |
-| Android packaging | Capacitor generation, asset preparation, APK verification workflow | Build pipeline | GitHub Actions pipeline exists | Packaging implemented; device/live-provider proof must remain explicit |
+| Evaluation Baseline | Frozen cross-system JSONL corpus + baseline identity | Build/evolution gates | Corpus integrity CI gate | Implemented baseline; live model/device quality remains measured separately |
+| Evolution Promotion Safety | Transactional apply/verify/rollback plus baseline/corpus identity lock | Autonomous promotion runner | Evolution test suite | Strong fail-closed promotion foundation |
+| Android packaging | Capacitor generation, asset preparation, APK verification workflow | Build pipeline | GitHub Actions + Android 16 WebView smoke | Packaging and emulator smoke implemented; real-phone battery/RAM/thermal and live-provider proof remain explicit |
 | Android SAF / Keystore | No final integration | No | No | Planned |
 | MCP / A2A / AG-UI | Architecture target | No | No | Planned |
 | Full observability / OpenTelemetry alignment | Partial counters/modules | Partial | Partial | Planned/partial |
@@ -72,6 +74,15 @@ The UI is treated as a runtime surface, not decoration.
 - Citation locks contain only valid, non-stale supporting source URLs.
 - `PASS` is impossible while a claim is GAP, STALE, UNCITABLE, or CONFLICT.
 - Search/fetch/extract adapters remain separate acquisition layers and cannot self-certify their own output.
+
+## Evolution promotion rules
+
+- Candidate promotion is bound to a frozen evaluation identity.
+- The identity contains baseline commit, corpus version, task count, and SHA-256 corpus hash.
+- Missing or drifted evaluation identity fails before repository inspection or mutation.
+- A benchmark change requires a new deliberate baseline/evaluation cycle.
+- CI or regression failure after apply requires rollback; rollback failure is never reported as success.
+- Benchmark improvement cannot override a critical security, permission, persistence, or crash regression.
 
 ## Next integration gates
 
