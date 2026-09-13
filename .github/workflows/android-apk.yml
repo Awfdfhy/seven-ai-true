@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - apk-finalization
+      - main
     paths:
       - 'seven_ai-final.html'
       - 'release/**'
@@ -71,7 +72,7 @@ jobs:
           profile: pixel_6
           disable-animations: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: cd android && ./gradlew --no-daemon connectedDebugAndroidTest
+          script: cd android && ./gradlew --no-daemon :app:connectedDebugAndroidTest
 
       - name: Verify APK again after device tests
         run: npm run android:verify
