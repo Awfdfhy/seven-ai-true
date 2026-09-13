@@ -24,6 +24,7 @@ A source-integrity test exists and should remain part of release verification.
 - Protocol: `SEVEN_ULTIMATE_POLISH_PROTOCOL.md` v2.1
 - Velocity Fabric is mandatory across every capability polish.
 - Capability 01 — Cognitive Runtime: **Architecture frozen for campaign / implementation deferred**
+  - final target: **Seven Cognitive Runtime 3.0 — Event-Governed Adaptive Run Kernel**
   - polish: `docs/project-memory/ultimate-polish/01_COGNITIVE_RUNTIME_ULTIMATE_POLISH.md`
   - freeze: `docs/project-memory/ultimate-polish/01_COGNITIVE_RUNTIME_FREEZE_RECORD.md`
   - implementation remains partial/foundation; CR-P0 through CR-P7 remain deferred until cross-system reconciliation.
@@ -32,7 +33,13 @@ A source-integrity test exists and should remain part of release verification.
   - polish: `docs/project-memory/ultimate-polish/02_TRUTH_EPISTEMIC_FABRIC_ULTIMATE_POLISH.md`
   - freeze: `docs/project-memory/ultimate-polish/02_TRUTH_EPISTEMIC_FABRIC_FREEZE_RECORD.md`
   - implementation remains partial/foundation; EF-P0 through EF-P8 remain deferred until cross-system reconciliation.
-- Next numbered core capability: Capability 03 — Memory Fabric.
+- Capability 03 — Memory Fabric: **Architecture frozen for campaign / implementation deferred**
+  - final target: **Seven Memory Fabric 3.0 — Origin-Bound Temporal Experience Ledger**
+  - polish: `docs/project-memory/ultimate-polish/03_MEMORY_FABRIC_ULTIMATE_POLISH.md`
+  - freeze: `docs/project-memory/ultimate-polish/03_MEMORY_FABRIC_FREEZE_RECORD.md`
+  - key reconciliations: flat memory taxonomy removed; working memory belongs to Context Workspace; events/time/causality are separated from durable memory roles; verified Experience/Lesson/Procedure learning is explicit; purge semantics remove reconstructable derived copies; semantic/vector intelligence is optional and lazy.
+  - implementation remains partial/foundation; MF-P0 through MF-P10 remain deferred until cross-system reconciliation.
+- Next numbered core capability: Capability 04 — Context Fabric / Context Workspace.
 
 ## Implemented / Strongly Established
 - Hardened Cognitive Runtime v4.2 direction
