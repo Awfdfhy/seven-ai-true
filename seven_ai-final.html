@@ -1514,13 +1514,25 @@
             }
             if (Object.keys(rooms).length <= 1) { alert("Cannot delete last room."); return; }
             if (confirm("Delete this room?")) {
-                delete rooms[id];
-                delete roomTitles[id];
-                if (currentRoom === id) currentRoom = Object.keys(rooms)[0];
-                saveRooms();
-                updateRoomTitle();
-                renderChatHistory();
-                updateRoomListUI();
+                let committed = false;
+                const commitDelete = () => {
+                    if (committed) return;
+                    committed = true;
+                    delete rooms[id];
+                    delete roomTitles[id];
+                    if (currentRoom === id) currentRoom = Object.keys(rooms)[0];
+                    saveRooms();
+                    updateRoomTitle();
+                    renderChatHistory();
+                    updateRoomListUI();
+                };
+                const item = Array.from(document.querySelectorAll(".room-item")).find(node => node.dataset.roomId === id);
+                if (item) item.style.pointerEvents = "none";
+                const exit = item && window.SevenMotion && typeof window.SevenMotion.signal === "function"
+                    ? window.SevenMotion.signal("delete", { target: item })
+                    : null;
+                if (exit && exit.finished && typeof exit.finished.then === "function") exit.finished.then(commitDelete, commitDelete);
+                else commitDelete();
             }
         }
 
@@ -1535,6 +1547,7 @@
             for (const id of Object.keys(rooms)) {
                 const div = document.createElement("div");
                 div.className = "room-item" + (id === currentRoom ? " active" : "");
+                div.dataset.roomId = id;
                 const span = document.createElement("span");
                 span.textContent = roomTitles[id] || id;
                 const delBtn = document.createElement("button");
@@ -4549,7 +4562,18 @@
         // run receives explicit step checkpoints and terminal status.
         function checkpointLiveExecution(runId, stepId, status, checkpoint) {
             if (typeof runId !== "string" || runId === "" || typeof stepId !== "string" || stepId === "") return null;
-            return checkpointExecutionStep(runId, stepId, status, checkpoint || {});
+            const result = checkpointExecutionStep(runId, stepId, status, checkpoint || {});
+            if (result && typeof window !== "undefined" && typeof window.CustomEvent === "function") {
+                const run = result;
+                window.dispatchEvent(new CustomEvent("seven:execution-state", { detail: {
+                    runId,
+                    stepId,
+                    status,
+                    runStepCount: run && Array.isArray(run.steps) ? run.steps.length : 0,
+                    runAgeMs: run && typeof run.createdAt === "number" ? Math.max(0, Date.now() - run.createdAt) : 0
+                }}));
+            }
+            return result;
         }
 
         async function generateReply(text, roomId = currentRoom) {
@@ -4785,8 +4809,16 @@
             btn.textContent = "↻ Regenerate";
             btn.onclick = () => {
                 if (isGenerating) return;
-                wrapper.remove();
-                regenerateLastReply();
+                btn.disabled = true;
+                const regenerate = () => {
+                    if (wrapper.isConnected) wrapper.remove();
+                    regenerateLastReply();
+                };
+                const retry = window.SevenMotion && typeof window.SevenMotion.signal === "function"
+                    ? window.SevenMotion.signal("retry", { target: wrapper })
+                    : null;
+                if (retry && retry.finished && typeof retry.finished.then === "function") retry.finished.then(regenerate, regenerate);
+                else regenerate();
             };
             wrapper.appendChild(btn);
         }

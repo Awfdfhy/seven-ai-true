@@ -22,12 +22,13 @@
     return 'balanced';
   }
   function applyTier(tier){
-    state.tier=tier||detectTier();
+    const previous=state.tier;state.tier=tier||detectTier();
     if(!hasDOM)return state.tier;
     doc.documentElement.dataset.sevenPerformance=state.tier;
     doc.documentElement.classList.remove('seven-tier-lite','seven-tier-balanced','seven-tier-full');
     doc.documentElement.classList.add('seven-tier-'+state.tier);
     doc.documentElement.dataset.sevenReducedMotion=state.reducedMotion?'1':'0';
+    if(previous!==state.tier&&typeof root.CustomEvent==='function')root.dispatchEvent(new root.CustomEvent('seven:performance-tier',{detail:{previous,tier:state.tier}}));
     return state.tier;
   }
   function scheduleIdle(task,timeout){

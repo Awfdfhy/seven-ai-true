@@ -1,13 +1,17 @@
 (function(root,factory){
-  const api=factory();
+  const api=factory(root);
   if(typeof module==='object'&&module.exports)module.exports=api;
   else root.SevenWorld=api;
-})(typeof globalThis!=='undefined'?globalThis:this,function(){
+})(typeof globalThis!=='undefined'?globalThis:this,function(root){
   'use strict';
   const STATUS=Object.freeze({CANON:'CANON',BRANCH:'BRANCH',BLOCKED:'BLOCKED',UNVERIFIED:'UNVERIFIED'});
   const DEFAULT_LABELS=Object.freeze({episode:'Episode',chapter:'Chapter',arc:'Arc',sideStory:'Side Story',special:'Special',whatIf:'What If',filler:'Filler',game:'Game'});
   function clone(v){return v==null?v:JSON.parse(JSON.stringify(v));}
   function arr(v){return Array.isArray(v)?v:[];}
+  function notify(name,detail){
+    if(!root||!root.document||typeof root.dispatchEvent!=='function'||typeof root.CustomEvent!=='function')return;
+    root.dispatchEvent(new root.CustomEvent(name,{detail:detail||{}}));
+  }
   function normalizeWork(raw){
     const work=clone(raw||{});
     if(!work.id)throw new Error('work requires id');
@@ -36,7 +40,9 @@
     const work=normalizeWork(rawWork);
     function createSession(opts){
       opts=opts||{};
-      return {workId:work.id,workVersion:work.version,continuity:opts.continuity||work.continuity,beatIndex:Number.isInteger(opts.beatIndex)?opts.beatIndex:-1,branchId:opts.branchId||null,branchOrigin:clone(opts.branchOrigin)||null,history:arr(opts.history),titles:arr(opts.titles)};
+      const session={workId:work.id,workVersion:work.version,continuity:opts.continuity||work.continuity,beatIndex:Number.isInteger(opts.beatIndex)?opts.beatIndex:-1,branchId:opts.branchId||null,branchOrigin:clone(opts.branchOrigin)||null,history:arr(opts.history),titles:arr(opts.titles)};
+      notify('seven:world-entry',{workId:work.id,continuity:session.continuity,branched:!!session.branchId});
+      return session;
     }
     function expectedBeat(session){return work.beats[session.beatIndex+1]||null;}
     function beatById(id){return work.beats.find(b=>b.id===id)||null;}
@@ -60,15 +66,19 @@
       const inOrder=!!expected&&expected.id===beat.id;
       if(!inOrder&&!input.allowBranch)return {status:STATUS.BLOCKED,reason:'canon-order',expectedBeatId:expected&&expected.id,session:clone(session)};
       const next=clone(session);
+      let branchCreated=false;
       if(!inOrder&&!next.branchId){
         next.branchId=input.branchId||('work-branch-'+Date.now().toString(36));
         next.branchOrigin={fromBeatIndex:session.beatIndex,expectedBeatId:expected&&expected.id,chosenBeatId:beat.id,reason:'canon-order-divergence'};
+        branchCreated=true;
       }
       next.beatIndex=beat.index;
       const fidelity=sourceCoverage(work,beat);
       const record={id:input.id||('work-event-'+(next.history.length+1)),beatId:beat.id,beatIndex:beat.index,status:next.branchId?STATUS.BRANCH:fidelity,sourceRefs:beat.sourceRefs.slice(),playerActionSource:input.playerActionSource||null,at:new Date().toISOString()};
       if(input.playerAction&&input.playerActionSource!=='user')return {status:STATUS.BLOCKED,reason:'player-agency',session:clone(session)};
       next.history.push(record);
+      if(branchCreated)notify('seven:canon-divergence',{workId:work.id,branchId:next.branchId,origin:clone(next.branchOrigin)});
+      notify('seven:world-scene-change',{workId:work.id,beatId:beat.id,status:record.status,branchId:next.branchId});
       return {status:record.status,record,session:next};
     }
     function formatTitle(kind,meta){

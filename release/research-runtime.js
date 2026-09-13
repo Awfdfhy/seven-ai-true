@@ -1,8 +1,8 @@
 (function(root,factory){
-  const api=factory();
+  const api=factory(root);
   if(typeof module==='object'&&module.exports)module.exports=api;
   else root.SevenResearch=api;
-})(typeof globalThis!=='undefined'?globalThis:this,function(){
+})(typeof globalThis!=='undefined'?globalThis:this,function(root){
   'use strict';
 
   const STATUS=Object.freeze({PASS:'PASS',INCONCLUSIVE:'INCONCLUSIVE',BLOCKED:'BLOCKED'});
@@ -12,6 +12,10 @@
   function clone(v){return v==null?v:JSON.parse(JSON.stringify(v));}
   function arr(v){return Array.isArray(v)?v:[];}
   function str(v){return typeof v==='string'?v.trim():'';}
+  function notify(name,detail){
+    if(!root||!root.document||typeof root.dispatchEvent!=='function'||typeof root.CustomEvent!=='function')return;
+    root.dispatchEvent(new root.CustomEvent(name,{detail:detail||{}}));
+  }
   function authority(v){return AUTHORITY[String(v||'A5').toUpperCase()]||AUTHORITY.A5;}
   function validUrl(v){try{const u=new URL(v);return u.protocol==='https:'||u.protocol==='http:';}catch{return false;}}
   function toMs(v){const n=Date.parse(v||'');return Number.isFinite(n)?n:null;}
@@ -114,7 +118,9 @@
 
   function verify(rawClaims,rawSources,opts){
     const matrix=createClaimEvidenceMatrix(rawClaims,rawSources,opts);
-    return {matrix,analysis:analyze(matrix),citationLock:lockCitations(matrix),nextActions:nextActions(matrix)};
+    const result={matrix,analysis:analyze(matrix),citationLock:lockCitations(matrix),nextActions:nextActions(matrix)};
+    notify('seven:research-topology',{claimCount:matrix.claims.length,sourceCount:matrix.sourceCount,status:result.analysis.status});
+    return result;
   }
 
   return {STATUS,STANCE,AUTHORITY,normalizeClaims,normalizeSources,createClaimEvidenceMatrix,analyze,lockCitations,nextActions,verify};

@@ -31,7 +31,7 @@ Anything else is marked partial.
 | Titles System | Deterministic per-world naming rules for episode/chapter/arc/side story/special/what-if/filler/game | Available through World Runtime; product UI wiring pending | Unit gate added | Functional foundation |
 | UI Design System | Release CSS layer, adaptive tiers, reduced motion | Yes through release build | Browser/static release gates | Strong |
 | UI Runtime | Semantic message/composer/tool state, accessibility hooks, zero-polling observers | Yes through release build | Browser gate added | Functional layer |
-| Motion System | Event-delegated reveals, press states, theme motion | Yes | Browser + reduced-motion gate | Strong |
+| Motion System | Motion OS 3.0: semantic contracts, eight families, P0-P4 arbitration, adaptive Ultra/Balanced/Lite/Reduced/Off profiles, spatial continuity and signature moments | Yes; execution, message, modal, theme, World and Research bridges are wired | 21 deterministic checks plus browser/reduced-motion gates | Strong runtime; real Tecno Pova 5 frame/thermal/battery certification remains external |
 | Performance Runtime | Lite/balanced/full tiers, long-task downgrade, idle/frame scheduling | Yes | Browser/static gate | Strong |
 | PDF Runtime | Lazy local PDF.js packaging | Yes | Browser/static gate | Strong |
 | Evaluation Baseline | Frozen cross-system JSONL corpus + baseline identity | Build/evolution gates | Corpus integrity CI gate | Implemented baseline; live model/device quality remains measured separately |
@@ -54,6 +54,10 @@ The UI is treated as a runtime surface, not decoration.
 - Tool toggles expose semantic pressed state as well as visual state.
 - Chat is an accessible live log.
 - Expensive visual effects are optional and never required for functionality.
+- Every transition must explain state, space, cause, or hierarchy; unexplained motion is rejected.
+- Motion keyframes reject layout and paint-heavy properties; the release layer uses transform and opacity for spatial choreography.
+- Balanced is the default, Ultra is explicit, and the governor can only reduce visual expression—not product capability.
+- Repeating motion is permitted only while it communicates a live state; Seven has no permanent idle animation.
 
 ## World / Real Works rules
 
