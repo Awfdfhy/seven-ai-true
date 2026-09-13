@@ -57,7 +57,13 @@ A source-integrity test exists and should remain part of release verification.
   - freeze: `docs/project-memory/ultimate-polish/06_ADAPTIVE_COMPUTE_FREEZE_RECORD.md`
   - key reconciliations: canonical compute is a multi-dimensional BudgetVector rather than one scalar tier; risk is separated from reasoning difficulty; verification/recovery reserves are protected; allocation adapts at meaningful checkpoints; marginal verified utility and no-progress signals control escalation/early exit; child agents use hierarchical ComputeLeases; expensive arenas and multi-candidate paths are selective; a deterministic allocator remains the baseline for any future learned policy.
   - implementation remains partial/foundation; AC-P0 through AC-P10 remain deferred until cross-system reconciliation.
-- Next numbered core capability: Capability 07 — Tool Runtime / Tool Fabric.
+- Capability 07 — Tool Runtime / Tool Fabric: **Architecture frozen for campaign / implementation deferred**
+  - final target: **Seven Tool Fabric 3.0 — Governed Capability Execution Mesh**
+  - polish: `docs/project-memory/ultimate-polish/07_TOOL_RUNTIME_TOOL_FABRIC_ULTIMATE_POLISH.md`
+  - freeze: `docs/project-memory/ultimate-polish/07_TOOL_RUNTIME_TOOL_FABRIC_FREEZE_RECORD.md`
+  - key reconciliations: canonical capabilities are separated from concrete bindings/revisions; runs bind to catalogue snapshots and schema fingerprints; large catalogues use hierarchical retrieval plus progressive schema disclosure; hard eligibility precedes model/learned selection; deterministic retrieval remains the baseline; both inputs and outputs are contract-validated; dispatch certainty controls retries; tool outputs remain data rather than instruction authority; large results become artifacts/context capsules; MCP remains an interoperability adapter, not Seven's authority model.
+  - implementation remains partial/foundation; TR-P0 through TR-P11 remain deferred until cross-system reconciliation. Individual Tool Fabric 2.0 families remain governed by their separate Deep Polish queue and are not silently marked complete by this core freeze.
+- Next numbered core capability: Capability 08 — Tool Security Kernel.
 
 ## Implemented / Strongly Established
 - Hardened Cognitive Runtime v4.2 direction
