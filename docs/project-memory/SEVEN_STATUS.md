@@ -63,7 +63,25 @@ A source-integrity test exists and should remain part of release verification.
   - freeze: `docs/project-memory/ultimate-polish/07_TOOL_RUNTIME_TOOL_FABRIC_FREEZE_RECORD.md`
   - key reconciliations: canonical capabilities are separated from concrete bindings/revisions; runs bind to catalogue snapshots and schema fingerprints; large catalogues use hierarchical retrieval plus progressive schema disclosure; hard eligibility precedes model/learned selection; deterministic retrieval remains the baseline; both inputs and outputs are contract-validated; dispatch certainty controls retries; tool outputs remain data rather than instruction authority; large results become artifacts/context capsules; MCP remains an interoperability adapter, not Seven's authority model.
   - implementation remains partial/foundation; TR-P0 through TR-P11 remain deferred until cross-system reconciliation. Individual Tool Fabric 2.0 families remain governed by their separate Deep Polish queue and are not silently marked complete by this core freeze.
-- Next numbered core capability: Capability 08 — Tool Security Kernel.
+- Capability 08 — Tool Security Kernel: **Architecture frozen for campaign / implementation deferred**
+  - final target: **Seven Authority Kernel 3.0 — Intent-Bound Least-Privilege Execution Firewall**
+  - polish: `docs/project-memory/ultimate-polish/08_TOOL_SECURITY_KERNEL_ULTIMATE_POLISH.md`
+  - freeze: `docs/project-memory/ultimate-polish/08_TOOL_SECURITY_KERNEL_FREEZE_RECORD.md`
+  - key reconciliations: capability, binding and authority are separate; effective authority is an intersection of principal/task/project/resource/destination policy; explicit deny dominates; grants project into short-lived narrowed leases; approvals bind to exact action fingerprints or finite plan envelopes; read authority is distinct from release authority; origin survives derived transformations; child agents receive explicit subleases; revocation epochs invalidate cached authority; routine authorization is deterministic and does not require an LLM.
+  - implementation remains partial/foundation; TSK-P0 through TSK-P9 remain deferred until cross-system reconciliation.
+- Capability 09 — Side-Effect Ledger: **Architecture frozen for campaign / implementation deferred**
+  - final target: **Seven Effect Ledger 3.0 — Evidence-Bound Real-World Change Journal**
+  - polish: `docs/project-memory/ultimate-polish/09_SIDE_EFFECT_LEDGER_ULTIMATE_POLISH.md`
+  - freeze: `docs/project-memory/ultimate-polish/09_SIDE_EFFECT_LEDGER_FREEZE_RECORD.md`
+  - key reconciliations: logical effect identity is separate from attempts; lifecycle, dispatch certainty, effect certainty and compensation are orthogonal; transport outcome is not effect truth; uncertain post-dispatch actions are not blindly retried; no generic exactly-once claim is made across uncontrolled boundaries; compensation is a separate linked effect; partial effects remain partial; unresolved effects recover after reload/crash.
+  - implementation remains partial/foundation; SEL-P0 through SEL-P9 remain deferred until cross-system reconciliation.
+- Capability 10 — File & Project Tools: **Architecture frozen for campaign / implementation deferred**
+  - final target: **Seven Project File Fabric 3.0 — Transactional Scoped Workspace Engine**
+  - polish: `docs/project-memory/ultimate-polish/10_FILE_PROJECT_TOOLS_ULTIMATE_POLISH.md`
+  - freeze: `docs/project-memory/ultimate-polish/10_FILE_PROJECT_TOOLS_FREEZE_RECORD.md`
+  - key reconciliations: project/file access begins from explicit ProjectGrants; FileRef/version tokens replace raw-path trust; stale bases conflict instead of silently overwriting; multi-file edits use staged transactions; patch-first editing is preferred; project maps are derived and revalidated; large/binary/archive work is bounded and lazy; Android direction uses app-private storage plus SAF rather than broad storage authority.
+  - implementation remains partial/foundation; FPT-P0 through FPT-P10 remain deferred until cross-system reconciliation.
+- Next numbered core capability: Capability 11 — Coding Agent.
 
 ## Implemented / Strongly Established
 - Hardened Cognitive Runtime v4.2 direction
