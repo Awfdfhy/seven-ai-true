@@ -81,7 +81,37 @@ A source-integrity test exists and should remain part of release verification.
   - freeze: `docs/project-memory/ultimate-polish/10_FILE_PROJECT_TOOLS_FREEZE_RECORD.md`
   - key reconciliations: project/file access begins from explicit ProjectGrants; FileRef/version tokens replace raw-path trust; stale bases conflict instead of silently overwriting; multi-file edits use staged transactions; patch-first editing is preferred; project maps are derived and revalidated; large/binary/archive work is bounded and lazy; Android direction uses app-private storage plus SAF rather than broad storage authority.
   - implementation remains partial/foundation; FPT-P0 through FPT-P10 remain deferred until cross-system reconciliation.
-- Next numbered core capability: Capability 11 — Coding Agent.
+- Capability 11 — Coding Agent: **Architecture frozen for campaign / implementation deferred**
+  - final target: **Seven Coding Agent 3.0 — Transactional Evidence-Gated Software Engineering Loop**
+  - polish: `docs/project-memory/ultimate-polish/11_CODING_AGENT_ULTIMATE_POLISH.md`
+  - freeze: `docs/project-memory/ultimate-polish/11_CODING_AGENT_FREEZE_RECORD.md`
+  - key reconciliations: authoritative ChangeContract and RequirementLedger; baseline proof/reproduction where practical; progressive repository inspection; isolated candidate workspace; File Fabric-only mutation; evidence-backed command/test records; risk-adaptive verification ladder; review constraints beyond functional tests; bounded auto-repair; selective subagents/multi-candidate paths; separate evidence bundle and promotion boundary.
+  - implementation remains partial/foundation; CA-P0 through CA-P11 remain deferred until cross-system reconciliation.
+- Capability 12 — Verification / Judge Layer: **Architecture frozen for campaign / implementation deferred**
+  - final target: **Seven Verification Fabric 3.0 — Evidence-Calibrated Independent Decision Kernel**
+  - polish: `docs/project-memory/ultimate-polish/12_VERIFICATION_JUDGE_LAYER_ULTIMATE_POLISH.md`
+  - freeze: `docs/project-memory/ultimate-polish/12_VERIFICATION_JUDGE_LAYER_FREEZE_RECORD.md`
+  - key reconciliations: versioned VerificationContracts and subjects; requirement-to-check/evidence matrices; property-specific evidence classes; deterministic/authoritative checks dominate model judgment for the same property; producer self-report is not independent verification; judges are calibrated/versioned and may abstain; final verdict policy is deterministic; PASS/FAIL/INCONCLUSIVE/REPAIR_REQUIRED/BLOCKED are explicit; verification itself is evaluated.
+  - implementation remains partial/foundation; VJ-P0 through VJ-P10 remain deferred until cross-system reconciliation.
+- Capability 13 — Seven Evals: **Architecture frozen for campaign / implementation deferred**
+  - final target: **Seven Evals 3.0 — Version-Locked Multi-Axis Measurement Observatory**
+  - polish: `docs/project-memory/ultimate-polish/13_SEVEN_EVALS_ULTIMATE_POLISH.md`
+  - freeze: `docs/project-memory/ultimate-polish/13_SEVEN_EVALS_FREEZE_RECORD.md`
+  - key reconciliations: existing eval-lock/UNMEASURED discipline is preserved and extended to grader/runtime/environment identities; stochastic trials expose sample count/uncertainty; metrics remain multi-axis; critical regressions cannot be averaged away; public/shadow/holdout and contamination states are explicit; device and live-provider evidence are separately governed; Arabic remains a visible first-class stratum; suite saturation and evaluator validity are tracked.
+  - implementation remains partial/foundation; EV-P0 through EV-P11 remain deferred until cross-system reconciliation.
+- Capability 14 — Self-Evolution Engine: **Architecture frozen for campaign / implementation deferred**
+  - final target: **Seven Evolution Engine 3.0 — Governed Hypothesis-to-Promotion Improvement Laboratory**
+  - polish: `docs/project-memory/ultimate-polish/14_SELF_EVOLUTION_ENGINE_ULTIMATE_POLISH.md`
+  - freeze: `docs/project-memory/ultimate-polish/14_SELF_EVOLUTION_ENGINE_FREEZE_RECORD.md`
+  - key reconciliations: evolution is a bounded experiment laboratory; falsifiable hypotheses and immutable baselines are mandatory; control-plane-critical surfaces are separately governed; candidates preserve lineage and are compared through critical gates plus multi-objective/Pareto evidence instead of one weighted score; candidates cannot rewrite their active eval/promotion rules or self-promote; shadow/canary/promotion/rollback are explicit; evolution-engine changes are evaluated from a stable external control version.
+  - implementation remains partial/foundation; SE-P0 through SE-P11 remain deferred until cross-system reconciliation.
+- Capability 15 — Research System: **Architecture frozen for campaign / implementation deferred**
+  - final target: **Seven Research Fabric 3.0 — Claim-Driven Evidence Acquisition and Synthesis Engine**
+  - polish: `docs/project-memory/ultimate-polish/15_RESEARCH_SYSTEM_ULTIMATE_POLISH.md`
+  - freeze: `docs/project-memory/ultimate-polish/15_RESEARCH_SYSTEM_FREEZE_RECORD.md`
+  - key reconciliations: claim-driven gap-closing research is preserved; scalar A0–A5 source authority is removed from the final architecture in favor of Epistemic claim/domain/role-specific authority; discovery candidates are separated from SourceVersions/EvidenceUnits; evidence dependency and CoverageContract semantics are explicit; retrieval uses an adaptive portfolio with lexical/exact as a real baseline; freshness/conflicts are claim-scoped; synthesis follows ClaimEvidenceLock and citation verification; research depth is marginal-utility bounded and mobile-heavy work remains lazy.
+  - implementation remains partial/foundation; RS-P0 through RS-P11 remain deferred until cross-system reconciliation.
+- Next numbered core capability: Capability 16 — Search / Retrieval Tools.
 
 ## Implemented / Strongly Established
 - Hardened Cognitive Runtime v4.2 direction
