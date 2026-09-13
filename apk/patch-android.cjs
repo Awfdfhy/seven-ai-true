@@ -20,6 +20,11 @@ xml=xml.replace(/<activity\b([^>]*android:name="\.MainActivity"[^>]*)>/,(_,attrs
 });
 fs.writeFileSync(manifestPath,xml);
 
+// Capacitor generates a sample instrumentation test bound to its template
+// package. It is not a Seven test and must not ship or gate our Android run.
+const templateTest=path.join(ANDROID,'app','src','androidTest','java','com','getcapacitor','myapp','ExampleInstrumentedTest.java');
+if(fs.existsSync(templateTest))fs.rmSync(templateTest,{force:true});
+
 const testDir=path.join(ANDROID,'app','src','androidTest','java','ai','seven','app');
 fs.mkdirSync(testDir,{recursive:true});
 const test=`package ai.seven.app;
