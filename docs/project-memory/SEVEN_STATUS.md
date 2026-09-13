@@ -51,7 +51,13 @@ A source-integrity test exists and should remain part of release verification.
   - freeze: `docs/project-memory/ultimate-polish/05_MODEL_FABRIC_FREEZE_RECORD.md`
   - key reconciliations: model family/revision/deployment are separated; hard eligibility precedes learned routing; strict-free eligibility requires fresh evidence; a deterministic champion remains the routing baseline; model routing is separated from endpoint routing; route leases preserve cache/context continuity; static quality scores are priors only; local inference is governed by device evidence and Resource Governor.
   - implementation remains partial/foundation; MDL-P0 through MDL-P11 remain deferred until cross-system reconciliation.
-- Next numbered core capability: Capability 06 — Adaptive Compute.
+- Capability 06 — Adaptive Compute: **Architecture frozen for campaign / implementation deferred**
+  - final target: **Seven Adaptive Compute 3.0 — Closed-Loop Marginal-Utility Compute Governor**
+  - polish: `docs/project-memory/ultimate-polish/06_ADAPTIVE_COMPUTE_ULTIMATE_POLISH.md`
+  - freeze: `docs/project-memory/ultimate-polish/06_ADAPTIVE_COMPUTE_FREEZE_RECORD.md`
+  - key reconciliations: canonical compute is a multi-dimensional BudgetVector rather than one scalar tier; risk is separated from reasoning difficulty; verification/recovery reserves are protected; allocation adapts at meaningful checkpoints; marginal verified utility and no-progress signals control escalation/early exit; child agents use hierarchical ComputeLeases; expensive arenas and multi-candidate paths are selective; a deterministic allocator remains the baseline for any future learned policy.
+  - implementation remains partial/foundation; AC-P0 through AC-P10 remain deferred until cross-system reconciliation.
+- Next numbered core capability: Capability 07 — Tool Runtime / Tool Fabric.
 
 ## Implemented / Strongly Established
 - Hardened Cognitive Runtime v4.2 direction
