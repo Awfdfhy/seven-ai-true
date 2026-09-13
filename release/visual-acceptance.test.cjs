@@ -30,14 +30,15 @@ const {build,OUTPUT}=require('./build-release.cjs');
   const browser=await chromium.launch({headless:true});
   const checks=[];
   async function pass(name,fn){await fn();checks.push(name);console.log('PASS',name)}
+  const returningUser=()=>{
+    localStorage.setItem('user_name','Visual QA');
+    localStorage.setItem('user_name_asked','1');
+    localStorage.setItem('seven_ui_mode_v1','core');
+  };
 
   try{
     const ctx=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1});
-    await ctx.addInitScript(()=>{
-      localStorage.setItem('user_name','Visual QA');
-      localStorage.setItem('user-name','Visual QA');
-      localStorage.setItem('seven_ui_mode_v1','core');
-    });
+    await ctx.addInitScript(returningUser);
     await ctx.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
     const page=await ctx.newPage();
     const errors=[];page.on('pageerror',e=>errors.push(e.message));
@@ -46,6 +47,7 @@ const {build,OUTPUT}=require('./build-release.cjs');
     await page.waitForTimeout(120);
 
     await pass('Brand OS boots without page errors',async()=>assert.deepEqual(errors,[]));
+    await pass('returning user is not blocked by onboarding',async()=>assert.equal(await page.locator('#nameModal').evaluate(el=>getComputedStyle(el).display),'none'));
     await pass('legacy sidebar bitmap is replaced by the Seven mark',async()=>{
       const r=await page.evaluate(()=>({legacy:document.querySelectorAll('.sidebar-header img.app-icon').length,marks:document.querySelectorAll('.seven-brand-mark').length}));
       assert.equal(r.legacy,0);assert.ok(r.marks>=2,JSON.stringify(r));
@@ -87,7 +89,20 @@ const {build,OUTPUT}=require('./build-release.cjs');
     await page.screenshot({path:path.join(dist,'visual-settings-mobile.png'),fullPage:true});
     await ctx.close();
 
+    const onboarding=await browser.newContext({viewport:{width:390,height:844}});
+    await onboarding.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
+    const op=await onboarding.newPage();
+    await op.goto(origin,{waitUntil:'domcontentloaded'});
+    await op.waitForFunction(()=>window.SevenVisualShell&&getComputedStyle(document.getElementById('nameModal')).display!=='none',null,{timeout:10000});
+    await pass('first-run onboarding uses the new Seven identity',async()=>{
+      const r=await op.evaluate(()=>({mark:!!document.querySelector('#nameModal .seven-brand-mark'),legacy:!!document.querySelector('#nameModal img.name-modal-logo')}));
+      assert.equal(r.mark,true);assert.equal(r.legacy,false);
+    });
+    await op.screenshot({path:path.join(dist,'visual-onboarding-mobile.png'),fullPage:true});
+    await onboarding.close();
+
     const reduced=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});
+    await reduced.addInitScript(returningUser);
     await reduced.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
     const rp=await reduced.newPage();
     await rp.goto(origin,{waitUntil:'domcontentloaded'});
