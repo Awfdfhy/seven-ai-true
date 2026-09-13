@@ -119,10 +119,12 @@
   function cancelRun(run,reason){if(isTerminal(run))return run;run.cancelIntent={at:new Date().toISOString(),reason:String(reason||'user-cancelled')};run.task=control().transitionTask(run.task,'CANCELLED',{reason:run.cancelIntent.reason});appendEvent(run,'run.cancelled',run.cancelIntent,{allowTerminal:true});return run;}
   function registerTools(tools){return runtime().registerTools(arr(tools));}
   function persistCheckpoint(run,reason){
-    if(!run)throw new Error('run required');const r=runtime();const current=r.readRuns();const events=arr(current&&current.events).map(clone);const event={id:id('execution-checkpoint'),kind:'seven-execution-checkpoint-v1',taskId:run.task.id,runId:run.id,state:run.task.state,reason:reason||null,at:new Date().toISOString(),snapshot:clone(run)};
-    const ok=r.runLedger([...events,event]);if(!ok)throw new Error('run ledger rejected checkpoint');return clone(event);
+    if(!run)throw new Error('run required');const r=runtime();const current=r.readRuns();
+    const checkpoint={id:id('execution-checkpoint'),kind:'seven-execution-checkpoint-v1',taskId:run.task.id,runId:run.id,state:run.task.state,reason:reason||null,at:new Date().toISOString(),snapshot:clone(run)};
+    const objects=arr(current&&current.objects).filter(x=>!(x&&x.kind==='seven-execution-checkpoint-v1'&&x.taskId===run.task.id)).map(clone);
+    const ok=r.runLedger([...objects,checkpoint],'EXECUTION_CHECKPOINT');if(!ok)throw new Error('run ledger rejected checkpoint');return clone(checkpoint);
   }
-  function restoreLatest(taskId){const r=runtime();const current=r.readRuns();const events=arr(current&&current.events).filter(e=>e&&e.kind==='seven-execution-checkpoint-v1'&&e.taskId===taskId);return events.length?clone(events[events.length-1].snapshot):null;}
+  function restoreLatest(taskId){const r=runtime();const current=r.readRuns();const checkpoints=arr(current&&current.objects).filter(x=>x&&x.kind==='seven-execution-checkpoint-v1'&&x.taskId===taskId);return checkpoints.length?clone(checkpoints[checkpoints.length-1].snapshot):null;}
 
   const state={version:VERSION,ready:false,error:null,bootedAt:null};
   function boot(){const c=control(),r=runtime();if(!c.state||!c.state.ready)throw new Error('SevenControl runtime not ready');if(Number(r.version)!==4)throw new Error('SevenRuntime v4 required');state.ready=true;state.error=null;state.bootedAt=new Date().toISOString();return clone(state);}
