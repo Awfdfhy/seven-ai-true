@@ -22,8 +22,10 @@ const {build,OUTPUT,MARK}=require('./build-release.cjs');
     const page=await context.newPage();
     const errors=[];page.on('pageerror',e=>errors.push(e.message));
     await page.goto(origin,{waitUntil:'domcontentloaded'});
-    await page.waitForFunction(()=>window.SevenPerformance&&window.SevenPerformance.state.ready&&window.SevenCanon&&window.SevenMotion&&window.SevenMotion.state.ready);
-    await page.waitForFunction(()=>window.roomPersistence&&roomPersistence.status().ready);
+    await page.waitForTimeout(100);
+    if(errors.length)throw new Error('release bootstrap pageerror: '+errors.join(' | '));
+    await page.waitForFunction(()=>window.SevenPerformance&&window.SevenPerformance.state.ready&&window.SevenCanon&&window.SevenMotion&&window.SevenMotion.state.ready,null,{timeout:10000});
+    await page.waitForFunction(()=>window.roomPersistence&&roomPersistence.status().ready,null,{timeout:10000});
 
     await test('release runtime boots without page errors',async()=>{assert.deepEqual(errors,[])});
     await test('adaptive performance tier is installed',async()=>{const r=await page.evaluate(()=>({tier:SevenPerformance.state.tier,attr:document.documentElement.dataset.sevenPerformance,ready:SevenPerformance.state.ready}));assert.ok(['lite','balanced','full'].includes(r.tier));assert.equal(r.attr,r.tier);assert.equal(r.ready,true)});
@@ -35,7 +37,9 @@ const {build,OUTPUT,MARK}=require('./build-release.cjs');
 
     const reduced=await browser.newContext({reducedMotion:'reduce',viewport:{width:390,height:844}});
     await reduced.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
-    const rp=await reduced.newPage();await rp.goto(origin,{waitUntil:'domcontentloaded'});await rp.waitForFunction(()=>window.SevenPerformance&&SevenPerformance.state.ready);
+    const rp=await reduced.newPage();const reducedErrors=[];rp.on('pageerror',e=>reducedErrors.push(e.message));
+    await rp.goto(origin,{waitUntil:'domcontentloaded'});await rp.waitForTimeout(100);if(reducedErrors.length)throw new Error('reduced-motion pageerror: '+reducedErrors.join(' | '));
+    await rp.waitForFunction(()=>window.SevenPerformance&&SevenPerformance.state.ready,null,{timeout:10000});
     await test('reduced motion forces lightweight motion tier',async()=>{const r=await rp.evaluate(()=>({reduced:SevenPerformance.state.reducedMotion,tier:SevenPerformance.state.tier,attr:document.documentElement.dataset.sevenReducedMotion}));assert.equal(r.reduced,true);assert.equal(r.tier,'lite');assert.equal(r.attr,'1')});
     await reduced.close();
   } finally {
