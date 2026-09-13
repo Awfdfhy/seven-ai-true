@@ -38,15 +38,16 @@ function build(){
   const performance=read('performance-runtime.js').replace(/<\/script/gi,'<\\/script');
   const pdfRuntime=read('pdf-runtime.js').replace(/<\/script/gi,'<\\/script');
   const motion=read('motion-runtime.js').replace(/<\/script/gi,'<\\/script');
-  const fingerprint=digest(css+canon+performance+pdfRuntime+motion+pdf.version);
+  const ui=read('ui-runtime.js').replace(/<\/script/gi,'<\\/script');
+  const fingerprint=digest(css+canon+performance+pdfRuntime+motion+ui+pdf.version);
   const head=`\n<!-- ${MARK}:${fingerprint} -->\n<meta name="theme-color" content="#121026">\n<style id="seven-final-style">${css}</style>\n`;
-  const body=`\n<script id="seven-canon-runtime">${canon}</script>\n<script id="seven-performance-runtime">${performance}</script>\n<script id="seven-pdf-runtime">${pdfRuntime}</script>\n<script id="seven-motion-runtime">${motion}</script>\n<!-- /${MARK}:${fingerprint} -->\n`;
+  const body=`\n<script id="seven-canon-runtime">${canon}</script>\n<script id="seven-performance-runtime">${performance}</script>\n<script id="seven-pdf-runtime">${pdfRuntime}</script>\n<script id="seven-motion-runtime">${motion}</script>\n<script id="seven-ui-runtime">${ui}</script>\n<!-- /${MARK}:${fingerprint} -->\n`;
   html=injectBeforeLast(html,'</head>',head);
   html=injectBeforeLast(html,'</body>',body);
   fs.mkdirSync(DIST_DIR,{recursive:true});
   fs.writeFileSync(OUTPUT,html);
   const result={output:OUTPUT,bytes:Buffer.byteLength(html),sourceBytes:fs.statSync(SOURCE).size,fingerprint,pdf,pdfLoadMode:'lazy-local'};
-  fs.writeFileSync(path.join(DIST_DIR,'release-manifest.json'),JSON.stringify({format:'seven-release-manifest',version:3,builtAt:new Date().toISOString(),...result},null,2));
+  fs.writeFileSync(path.join(DIST_DIR,'release-manifest.json'),JSON.stringify({format:'seven-release-manifest',version:4,builtAt:new Date().toISOString(),...result},null,2));
   return result;
 }
 
