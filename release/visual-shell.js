@@ -25,14 +25,22 @@
     const saved=localStorage.getItem(MODE_KEY);
     return MODES[saved]?saved:'core';
   }
+
+  function writeText(node,value){
+    if(node && node.textContent!==value) node.textContent=value;
+  }
+
   function setMode(mode,{persist=true,announce=true}={}){
     if(!MODES[mode]) mode='core';
-    document.documentElement.dataset.sevenMode=mode;
-    if(persist) localStorage.setItem(MODE_KEY,mode);
-    document.querySelectorAll('.seven-mode-button').forEach(btn=>btn.setAttribute('aria-selected',btn.dataset.mode===mode?'true':'false'));
-    document.querySelectorAll('[data-seven-mode-label]').forEach(node=>node.textContent=MODES[mode].label);
+    if(document.documentElement.dataset.sevenMode!==mode) document.documentElement.dataset.sevenMode=mode;
+    if(persist && localStorage.getItem(MODE_KEY)!==mode) localStorage.setItem(MODE_KEY,mode);
+    document.querySelectorAll('.seven-mode-button').forEach(btn=>{
+      const next=btn.dataset.mode===mode?'true':'false';
+      if(btn.getAttribute('aria-selected')!==next) btn.setAttribute('aria-selected',next);
+    });
+    document.querySelectorAll('[data-seven-mode-label]').forEach(node=>writeText(node,MODES[mode].label));
     const input=document.getElementById('userInput');
-    if(input) input.placeholder=MODES[mode].placeholder;
+    if(input && input.placeholder!==MODES[mode].placeholder) input.placeholder=MODES[mode].placeholder;
     decorateEmptyState();
     if(announce) document.dispatchEvent(new CustomEvent('seven:modechange',{detail:{mode}}));
   }
@@ -41,10 +49,8 @@
     const header=document.querySelector('.sidebar-header');
     if(!header || header.dataset.sevenUpgraded==='1') return;
     header.dataset.sevenUpgraded='1';
-    const oldIcon=header.querySelector('img.app-icon');
-    const oldName=header.querySelector('.app-name');
-    if(oldIcon) oldIcon.remove();
-    if(oldName) oldName.remove();
+    header.querySelector('img.app-icon')?.remove();
+    header.querySelector('.app-name')?.remove();
     const lockup=document.createElement('div');
     lockup.className='seven-brand-lockup';
     lockup.append(mark('sidebar',false));
@@ -78,6 +84,7 @@
       btn.dataset.mode=id;
       btn.title=mode.hint;
       btn.setAttribute('aria-selected','false');
+      btn.setAttribute('aria-label',mode.label+' mode');
       btn.innerHTML=svgIcon(mode.icon)+`<span>${mode.short}</span>`;
       btn.addEventListener('click',()=>setMode(id));
       dock.append(btn);
@@ -107,8 +114,8 @@
       kicker.innerHTML='<span data-seven-mode-label></span><span>workspace</span>';
       empty.append(kicker);
     }
-    const mode=currentMode();
-    kicker.querySelector('[data-seven-mode-label]').textContent=MODES[mode].label;
+    const label=kicker.querySelector('[data-seven-mode-label]');
+    writeText(label,MODES[currentMode()].label);
   }
 
   function upgradeComposer(){
@@ -202,9 +209,22 @@
   }
 
   function ensureAccessibleLabels(){
-    document.querySelectorAll('.seven-mode-button').forEach(btn=>btn.setAttribute('aria-label',MODES[btn.dataset.mode]?.label+' mode'));
     const sidebar=document.getElementById('sidebar');
     if(sidebar) sidebar.setAttribute('aria-label','Seven navigation');
+  }
+
+  let refreshPending=false;
+  function refreshDerivedUI(){
+    refreshPending=false;
+    decorateEmptyState();
+    sectionizeSettings();
+    upgradeNameModal();
+  }
+  function scheduleRefresh(){
+    if(refreshPending) return;
+    refreshPending=true;
+    const schedule=window.requestAnimationFrame||((fn)=>setTimeout(fn,16));
+    schedule(refreshDerivedUI);
   }
 
   function boot(){
@@ -219,15 +239,15 @@
     setMode(currentMode(),{persist:false,announce:false});
     document.documentElement.dataset.sevenVisual='brand-os-v1';
     document.documentElement.classList.add('seven-visual-ready');
-    window.SevenVisualShell=Object.freeze({version:1,setMode,currentMode,refresh:()=>{decorateEmptyState();sectionizeSettings();}});
+    window.SevenVisualShell=Object.freeze({version:1,setMode,currentMode,refresh:refreshDerivedUI});
     document.dispatchEvent(new CustomEvent('seven:visualready',{detail:{version:1,mode:currentMode()}}));
   }
 
-  const observer=new MutationObserver(()=>{
-    decorateEmptyState();
-    sectionizeSettings();
-    upgradeNameModal();
+  const observer=new MutationObserver(records=>{
+    for(const record of records){
+      if(record.addedNodes && record.addedNodes.length){scheduleRefresh();break;}
+    }
   });
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true}); else boot();
-  observer.observe(document.documentElement,{subtree:true,childList:true});
+  observer.observe(document.body||document.documentElement,{subtree:true,childList:true});
 })();
