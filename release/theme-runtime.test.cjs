@@ -17,7 +17,13 @@ const {build}=require('./build-release.cjs');
   const night=await p.evaluate(()=>{SevenTheme.setPreference('night');return{pref:SevenTheme.getPreference(),root:document.documentElement.dataset.sevenTheme,light:document.body.classList.contains('light'),stored:localStorage.getItem('theme'),meta:document.querySelector('meta[name="theme-color"]').content,main:getComputedStyle(document.querySelector('.main')).backgroundImage,ctl:document.querySelector('[data-seven-theme-control]').dataset.sevenThemeState}});
   assert.deepEqual([night.pref,night.root,night.light,night.stored,night.ctl],['night','night',false,'night','Night']);assert.ok(night.meta.includes('0f0d1d'));assert.notEqual(day.main,night.main,'day and night must be visually distinct');
   assert.deepEqual(await p.evaluate(()=>{SevenTheme.setPreference('auto');const a=SevenTheme.getPreference();toggleTheme();const b=SevenTheme.getPreference();toggleTheme();const c=SevenTheme.getPreference();toggleTheme();return[a,b,c,SevenTheme.getPreference()]}),['auto','day','night','auto']);await c.close();
+  for(const [hour,expected] of [[5,'night'],[6,'day'],[17,'day'],[18,'night']]){
+   const x=await browser.newContext({viewport:{width:390,height:844}});
+   await x.addInitScript(({hour})=>{const R=Date,fixed=new R(2026,8,13,hour,0,0,0).getTime();class F extends R{constructor(...a){super(...(a.length?a:[fixed]))}static now(){return fixed}}window.Date=F;try{localStorage.setItem('theme','auto')}catch(e){}},{hour});
+   await x.route('**/*',r=>r.request().url().startsWith(origin)?r.continue():r.abort());const xp=await x.newPage();await xp.goto(origin,{waitUntil:'domcontentloaded'});await xp.waitForFunction(()=>window.SevenTheme&&window.SevenBetaUI?.state.ready);
+   const got=await xp.evaluate(()=>({theme:SevenTheme.getResolvedTheme(),root:document.documentElement.dataset.sevenTheme,pref:SevenTheme.getPreference()}));assert.deepEqual(got,{theme:expected,root:expected,pref:'auto'},`hour ${hour} boundary`);await x.close();
+  }
   const legacy=await browser.newContext();await legacy.addInitScript(()=>localStorage.setItem('theme','light'));await legacy.route('**/*',r=>r.request().url().startsWith(origin)?r.continue():r.abort());const lp=await legacy.newPage();await lp.goto(origin,{waitUntil:'domcontentloaded'});await lp.waitForFunction(()=>window.SevenTheme&&window.SevenBetaUI?.state.ready);assert.deepEqual(await lp.evaluate(()=>[SevenTheme.getPreference(),document.documentElement.dataset.sevenTheme,document.body.classList.contains('light')]),['day','day',true]);await legacy.close();
-  console.log('adaptive theme browser tests: PASS');
+  console.log('adaptive theme browser tests: PASS (boundaries + persistence)');
  }finally{await browser.close();await new Promise(r=>server.close(r))}
 })().catch(e=>{console.error(e);process.exit(1)});
