@@ -24,13 +24,13 @@ Anything else is marked partial.
 | Tool Fabric | Capability normalization, aliases, schema/risk/permission gates | Partial | Runtime smoke | Partial, external adapters/effect recovery remain |
 | Model Fabric | Provider routing pieces, health/free-proof/evolution modules | Partial | Deterministic evolution tests | Partial, live provider proof still required |
 | Local Intelligence | Deterministic embedding/classification helpers | Partial | Runtime smoke | Foundation implemented |
-| Research Runtime | Evidence envelope/citation-lock foundations | Partial | Runtime smoke | Early partial, not full fetch/compare/contradiction pipeline |
+| Research Runtime | Claim-evidence matrix, freshness/contradiction/gap analysis, citation locks and follow-up actions | Packaged verification API; live search/fetch orchestration remains partial | Unit gate + release size gate | Verification foundation implemented; acquisition/orchestration still partial |
 | Coding Runtime | Repo-map/patch/evidence foundations plus evolution modules | Partial | Runtime + evolution tests | Partial, real platform shell/file bridge remains |
 | Canon Runtime | Source authority, knowledge horizon, anchors, branch/debt audit | Packaged release API | Unit + browser release test | Implemented foundation |
-| Real Works Runtime | Source-bound beat order, fidelity status, branch-on-divergence, player-agency lock | Packaged release API; chat orchestration wiring still pending | Unit gate added | New functional foundation |
-| Titles System | Deterministic per-world naming rules for episode/chapter/arc/side story/special/what-if/filler/game | Available through World Runtime; product UI wiring pending | Unit gate added | New functional foundation |
-| UI Design System | Release CSS layer, adaptive tiers, reduced motion | Yes through release build | Browser/static release gates | Stronger in current polish branch |
-| UI Runtime | Semantic message/composer/tool state, accessibility hooks, zero-polling observers | Yes through release build | Browser gate added | New functional layer |
+| Real Works Runtime | Source-bound beat order, fidelity status, branch-on-divergence, player-agency lock | Packaged release API; chat orchestration wiring still pending | Unit gate added | Functional foundation |
+| Titles System | Deterministic per-world naming rules for episode/chapter/arc/side story/special/what-if/filler/game | Available through World Runtime; product UI wiring pending | Unit gate added | Functional foundation |
+| UI Design System | Release CSS layer, adaptive tiers, reduced motion | Yes through release build | Browser/static release gates | Strong |
+| UI Runtime | Semantic message/composer/tool state, accessibility hooks, zero-polling observers | Yes through release build | Browser gate added | Functional layer |
 | Motion System | Event-delegated reveals, press states, theme motion | Yes | Browser + reduced-motion gate | Strong |
 | Performance Runtime | Lite/balanced/full tiers, long-task downgrade, idle/frame scheduling | Yes | Browser/static gate | Strong |
 | PDF Runtime | Lazy local PDF.js packaging | Yes | Browser/static gate | Strong |
@@ -62,13 +62,24 @@ The UI is treated as a runtime surface, not decoration.
 - Naming is deterministic from a world's title rules and can be customized without changing state authority.
 - Full work ingestion still needs source acquisition, normalization, provenance binding, and user-facing orchestration.
 
+## Research verification rules
+
+- Claims are explicit objects, not implicit prose guesses.
+- Evidence is bound to a source, stance, locator, authority class, and transformation.
+- Time-sensitive claims are checked against a freshness window.
+- Supporting and contradicting evidence produce a conflict instead of false certainty.
+- Missing evidence produces a gap; stale evidence produces a freshness-search action.
+- Citation locks contain only valid, non-stale supporting source URLs.
+- `PASS` is impossible while a claim is GAP, STALE, UNCITABLE, or CONFLICT.
+- Search/fetch/extract adapters remain separate acquisition layers and cannot self-certify their own output.
+
 ## Next integration gates
 
-1. Merge the UI + World runtime only after full CI is green.
-2. Wire World Runtime into the RPG conversation controller so contracts are used before generation and commits happen after verified scene output.
-3. Promote Research from evidence-envelope primitives to real Search → Fetch → Extract → Compare → Verify → Cite.
-4. Promote Coding from repository primitives to the platform file/shell bridge with inspect/edit/test/diff evidence.
-5. Finish Model Fabric live free-proof/health/fallback validation without claiming external resources are unlimited.
-6. Move remaining canonical persistence away from bounded localStorage where practical.
-7. Add Android SAF/Keystore, then run real-device startup, storage, cancellation, offline/fallback, and provider tests.
+1. Wire World Runtime into the RPG conversation controller so contracts are used before generation and commits happen after verified scene output.
+2. Connect Research acquisition adapters to the verification runtime: Search → Fetch → Extract → Matrix → Verify → Cite.
+3. Promote Coding from repository primitives to the platform file/shell bridge with inspect/edit/test/diff evidence.
+4. Finish Model Fabric live free-proof/health/fallback validation without claiming external resources are unlimited.
+5. Move remaining canonical persistence away from bounded localStorage where practical.
+6. Add Android SAF/Keystore, then run real-device startup, storage, cancellation, offline/fallback, and provider tests.
+7. Add protocol adapters only after their underlying capabilities are authoritative and tested.
 8. Only after those gates, call the complete product release-ready.
