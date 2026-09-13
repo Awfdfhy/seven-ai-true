@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "promotionMode": "fail-closed",
+  "requiredMetrics": ["tests", "quality", "reliability", "performance", "efficiency"],
+  "requiredGates": ["isolated", "regressionFree", "provenanceVerified", "rollbackReady", "freeProofVerified", "licenseAllowed"],
+  "stages": ["DISCOVERED", "EVALUATED", "SHADOW", "CANARY", "PROMOTABLE", "PROMOTED"],
+  "rollbackState": "ROLLED_BACK",
+  "rejectState": "REJECTED",
+  "maxRepairAttempts": 3,
+  "allowStageSkipping": false,
+  "allowPromotionWithCriticalRegression": false,
+  "allowPromotionWithoutRollbackCheckpoint": false
+}
