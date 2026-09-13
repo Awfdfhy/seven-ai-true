@@ -24,3 +24,15 @@ jobs:
       - run: npx playwright install --with-deps --only-shell chromium
 
       - run: node all.cjs
+
+      - name: Upload verified release artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seven-ai-release
+          path: |
+            dist/seven_ai-release.html
+            dist/release-manifest.json
+            release/release-results.json
+          if-no-files-found: error
+          retention-days: 14
