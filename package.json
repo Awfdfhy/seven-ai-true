@@ -9,7 +9,7 @@
   "scripts": {
     "test": "node all.cjs",
     "build:web": "node release/build-release.cjs && node apk/prepare-web.cjs",
-    "android:generate": "npm run build:web && rm -rf android && npx cap add android && npx capacitor-assets generate --android --assetPath assets --iconBackgroundColor '#121026' --iconBackgroundColorDark '#121026' --splashBackgroundColor '#121026' --splashBackgroundColorDark '#121026' && node apk/patch-android.cjs && npx cap sync android",
+    "android:generate": "npm run build:web && node apk/prepare-assets.cjs && rm -rf android && npx cap add android && npx capacitor-assets generate --android --assetPath assets --iconBackgroundColor '#121026' --iconBackgroundColorDark '#121026' --splashBackgroundColor '#121026' --splashBackgroundColorDark '#121026' && node apk/patch-android.cjs && npx cap sync android",
     "android:verify": "node apk/verify-apk.cjs"
   },
   "dependencies": {
