@@ -10,8 +10,10 @@ const {build,OUTPUT}=require('./build-release.cjs');
   const html=fs.readFileSync(OUTPUT,'utf8');
   assert.equal(built.brand.visualShell,'brand-os-v1');
   assert.equal(built.brand.mark,'celestial-seven-v1');
+  assert.equal(built.brand.behavioralModes,'v1');
   assert.ok(html.includes('seven-visual-shell-style'));
   assert.ok(html.includes('seven-visual-shell-runtime'));
+  assert.ok(html.includes('seven-mode-runtime'));
   assert.ok(html.includes('type="image/svg+xml"'));
 
   const dist=path.dirname(OUTPUT);
@@ -56,15 +58,39 @@ const {build,OUTPUT}=require('./build-release.cjs');
       const r=await page.evaluate(()=>Array.from(document.querySelectorAll('.seven-mode-button')).map(b=>b.dataset.mode));
       assert.deepEqual(r,['core','build','world','research']);
     });
+    await pass('mode policies are behaviorally distinct',async()=>{
+      const r=await page.evaluate(()=>{
+        const out={};
+        for(const mode of ['core','build','world','research']){localStorage.setItem('seven_ui_mode_v1',mode);out[mode]=SevenModePolicy();}
+        localStorage.setItem('seven_ui_mode_v1','core');
+        return out;
+      });
+      assert.match(r.build,/software-engineering/i);assert.match(r.world,/stateful simulation/i);assert.match(r.research,/claims plus evidence/i);assert.notEqual(r.core,r.build);
+    });
+    await pass('mode policy enters the authoritative context projection',async()=>{
+      const r=await page.evaluate(()=>{
+        SevenVisualShell.setMode('build');
+        const room=rooms[currentRoom];
+        const sources=collectContextSources(room,'visual mode policy probe',null);
+        const policy=sources.find(s=>s.kind==='policy')?.content||'';
+        SevenVisualShell.setMode('core');
+        return policy;
+      });
+      assert.match(r,/BUILD MODE:/);
+    });
     await pass('mode transition updates environment and composer language',async()=>{
       await page.click('.seven-mode-button[data-mode="world"]');
-      const r=await page.evaluate(()=>({mode:document.documentElement.dataset.sevenMode,ph:document.getElementById('userInput').placeholder,selected:document.querySelector('.seven-mode-button[data-mode="world"]').getAttribute('aria-selected')}));
-      assert.equal(r.mode,'world');assert.match(r.ph,/world/i);assert.equal(r.selected,'true');
+      const r=await page.evaluate(()=>({mode:document.documentElement.dataset.sevenMode,ph:document.getElementById('userInput').placeholder,sub:document.querySelector('.empty-sub')?.textContent,selected:document.querySelector('.seven-mode-button[data-mode="world"]').getAttribute('aria-selected')}));
+      assert.equal(r.mode,'world');assert.match(r.ph,/world/i);assert.match(r.sub,/consequences/i);assert.equal(r.selected,'true');
       await page.evaluate(()=>SevenVisualShell.setMode('core'));
     });
     await pass('settings are restructured into product-grade sections',async()=>{
       const r=await page.evaluate(()=>({count:document.querySelectorAll('#settingsModal .seven-settings-section').length,head:!!document.querySelector('#settingsModal .seven-settings-head'),names:Array.from(document.querySelectorAll('#settingsModal .seven-settings-section')).map(n=>n.dataset.section)}));
       assert.equal(r.head,true);assert.ok(r.count>=5,JSON.stringify(r));assert.deepEqual(r.names,['intelligence','providers','generation','memory','data']);
+    });
+    await pass('persistence status is integrated into composer chrome',async()=>{
+      const r=await page.evaluate(()=>({className:document.getElementById('persistenceStatus')?.className,parent:document.getElementById('persistenceStatus')?.parentElement?.className,position:getComputedStyle(document.getElementById('persistenceStatus')).position}));
+      assert.equal(r.className,'seven-save-status');assert.equal(r.parent,'seven-composer-meta');assert.equal(r.position,'static');
     });
     await pass('mobile composition keeps the visual hierarchy and no overflow',async()=>{
       const r=await page.evaluate(()=>{const sidebar=getComputedStyle(document.querySelector('.sidebar'));const composer=getComputedStyle(document.querySelector('.composer'));return {sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,sidebarWidth:parseFloat(sidebar.width),radius:parseFloat(composer.borderTopLeftRadius),dock:document.querySelector('.seven-mode-dock').getBoundingClientRect().width}});
@@ -81,6 +107,14 @@ const {build,OUTPUT}=require('./build-release.cjs');
 
     await page.evaluate(()=>{const s=document.getElementById('sidebar');if(s&&!s.classList.contains('collapsed'))s.classList.add('collapsed');const b=document.querySelector('.sidebar-backdrop');if(b)b.classList.remove('visible')});
     await page.screenshot({path:path.join(dist,'visual-core-mobile.png'),fullPage:true});
+
+    for(const mode of ['build','world','research']){
+      await page.evaluate(mode=>SevenVisualShell.setMode(mode),mode);
+      await page.waitForTimeout(60);
+      await page.screenshot({path:path.join(dist,`visual-${mode}-mobile.png`),fullPage:true});
+    }
+    await page.evaluate(()=>SevenVisualShell.setMode('core'));
+
     await page.evaluate(()=>{const s=document.getElementById('sidebar');if(s)s.classList.remove('collapsed');const b=document.querySelector('.sidebar-backdrop');if(b)b.classList.add('visible')});
     await page.waitForTimeout(80);
     await page.screenshot({path:path.join(dist,'visual-sidebar-mobile.png'),fullPage:true});
@@ -95,8 +129,8 @@ const {build,OUTPUT}=require('./build-release.cjs');
     await op.goto(origin,{waitUntil:'domcontentloaded'});
     await op.waitForFunction(()=>window.SevenVisualShell&&getComputedStyle(document.getElementById('nameModal')).display!=='none',null,{timeout:10000});
     await pass('first-run onboarding uses the new Seven identity',async()=>{
-      const r=await op.evaluate(()=>({mark:!!document.querySelector('#nameModal .seven-brand-mark'),legacy:!!document.querySelector('#nameModal img.name-modal-logo')}));
-      assert.equal(r.mark,true);assert.equal(r.legacy,false);
+      const r=await op.evaluate(()=>({mark:!!document.querySelector('#nameModal .seven-brand-mark'),legacy:!!document.querySelector('#nameModal img.name-modal-logo'),height:document.querySelector('#nameModal .modal-content').getBoundingClientRect().height,viewport:innerHeight}));
+      assert.equal(r.mark,true);assert.equal(r.legacy,false);assert.ok(r.height<r.viewport*.7,JSON.stringify(r));
     });
     await op.screenshot({path:path.join(dist,'visual-onboarding-mobile.png'),fullPage:true});
     await onboarding.close();
