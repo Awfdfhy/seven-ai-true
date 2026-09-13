@@ -4,7 +4,7 @@
   else root.SevenBridge=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(root){
   'use strict';
-  const VERSION='1.0.0';
+  const VERSION='1.0.1';
   function clone(v){return v==null?v:JSON.parse(JSON.stringify(v));}
   function arr(v){return Array.isArray(v)?v:[];}
   function requireControl(){if(!root||!root.SevenControl)throw new Error('SevenControl runtime required');return root.SevenControl;}
@@ -85,7 +85,7 @@
       id:'world:'+String(contract.workId||'work')+':'+String(contract.beat&&contract.beat.id||contract.expectedBeatId||'scene'),
       text:'Scene contract is supported by the declared canon sources.',
       kind:covered?'FACT':'UNKNOWN',
-      sources:covered?normalized:[],
+      sources:covered?normalized:normalized,
       lineage:{parents:[],transformation:'canon-scene-contract',transformer:'SevenWorld'},
       metadata:{workId:contract.workId||null,beatId:contract.beat&&contract.beat.id||contract.expectedBeatId||null,sourceRefs:refs,worldStatus:contract.status}
     });
@@ -115,8 +115,17 @@
     return control.compileContext({items,maxTokens:budget,reserveTokens,activeScope:task.scope&&task.scope.activeScope||null});
   }
 
-  function boot(){const control=requireControl();syncResources();return {version:VERSION,ready:!!control.state.ready,tier:control.state.tier};}
-  const state={version:VERSION,ready:false};
-  try{const result=boot();state.ready=result.ready;state.tier=result.tier;}catch(e){state.error=String(e&&e.message||e);}
+  const state={version:VERSION,ready:false,tier:null,error:null,bootedAt:null};
+  function boot(){
+    const control=requireControl();
+    if(!control.state||!control.state.ready)throw new Error('SevenControl runtime not ready');
+    const budget=syncResources();
+    state.ready=true;state.tier=budget.tier;state.error=null;state.bootedAt=new Date().toISOString();
+    return clone(state);
+  }
+  function safeBoot(){try{return boot();}catch(e){state.ready=false;state.error=String(e&&e.message||e);return clone(state);}}
+  const hasDOM=!!(root&&root.document);
+  if(hasDOM&&root.document.readyState==='loading')root.document.addEventListener('DOMContentLoaded',safeBoot,{once:true});
+  else safeBoot();
   return {VERSION,state,syncResources,researchRowToClaim,researchVerificationToTruth,worldContractTruth,guardCanonCommit,buildTaskContext,boot};
 });
