@@ -14,80 +14,53 @@
 ## Protected Source
 `seven_ai-final.html`
 Known integrity reference: bytes `658133`; Git blob SHA `3e8dfa8e7da7124e16504140eb9631c10cabf053`.
-The protected source remains unchanged during architecture-only polish unless explicitly authorized.
+The protected source remains unchanged during architecture-only work unless explicitly authorized.
 
-## Canonical Polishing Governance
-**Seven Polishing Protocol V4.4 — Velocity Fabric** is now the canonical architecture-governance protocol for new polishing campaigns.
-
-Core records:
-- V4.4 Velocity protocol: `docs/project-memory/SEVEN_POLISHING_V4_4_VELOCITY_FABRIC.md`
-- V4.4 self-polish/saturation: `docs/project-memory/SEVEN_POLISHING_V4_4_VELOCITY_SELF_POLISH.md`
-- V4.3 Maximum Research parent: `docs/project-memory/SEVEN_POLISHING_V4_3_MAXIMUM_RESEARCH_LOOP.md`
-- V4.3 self-evolution: `docs/project-memory/SEVEN_POLISHING_V4_3_SELF_EVOLUTION_LEDGER.md`
-- V4.2 Motion/Expert parent: `docs/project-memory/SEVEN_POLISHING_V4_2_MOTION_AND_EXPERT_JUDGMENT.md`
-- Benchmark/Visual companion: `docs/project-memory/SEVEN_BENCHMARK_AND_VISUAL_EVIDENCE_FABRIC.md`
-- V4.1 Loop parent: `docs/project-memory/SEVEN_POLISHING_PROTOCOL_V4_1_LOOP.md`
-- Historical V4: `docs/project-memory/SEVEN_POLISHING_PROTOCOL_V4.md`
-
-V4.4 inherits all V4.3 quality/research laws and adds a benchmark-governed execution-speed layer. It searches for the **fastest valid completion path** rather than assuming one fixed fast path.
-
-### V4.4 core laws
-- speed may remove redundant work, reorder work, parallelize independent work and reuse valid evidence;
-- speed may never weaken mandatory evidence, C0/C1 gates, release proof, authority or uncertainty rules;
-- fastest path is selected by strategy tournament under a locked `VelocityContract`;
-- incremental revalidation uses a dependency-aware `ProofGraph` with explicit invalidation;
-- selected tests accelerate iteration but never imply full release PASS;
-- cache reuse is content/environment/evaluator bound and cannot override invalidation;
-- critical-path scheduling, early-kill/Pareto pruning, adaptive parallelism and campaign fusion are permitted only when traceability/correctness survive;
-- flaky tests remain explicit evidence-quality problems and are never silently discarded;
-- optimized paths are challenged by shadow/holdout cases so a path cannot appear fast merely because it misses defects;
-- release boundaries may still require broad/full regression, clean build/install, migration/recovery and representative-device evidence.
-
-### V4.4 self-polish history
-- Rounds 01–15: `MATERIAL_IMPROVEMENT_FOUND`
-- Round 16 Simplifier: `NO_MATERIAL_IMPROVEMENT`
-- Independent Challenge A (testing/metrology/CI safety): `NO_MATERIAL_IMPROVEMENT` → 1/2
-- Independent Challenge B (mobile/project/debugging/product throughput): `NO_MATERIAL_IMPROVEMENT` → 2/2
-- V4.4 architecture saturation: **2/2**
-
-Status: **`V4_4_ARCHITECTURE_SATURATED_2_OF_2`**.
-
-Important: architecture saturation does NOT mean the dependency graph builder, proof graph runtime, impact test selector, cache, scheduler, strategy tournament runner, Android benchmark harness or adaptive Repair Burst executor is implemented. Evidence ladder remains `ARCHITECTURE_ACCEPTED != IMPLEMENTED != TESTED != DEVICE_VERIFIED != RELEASE_PROVEN`.
-
-## Capabilities 01–15
-Capabilities 01–15 retain their architecture freezes and implementation truth from individual records and `SEVEN_IMPLEMENTATION_MATRIX.md`. They require V4.4 revalidation before Seven 1.0 where materially affected.
-
-## Priority capabilities 16–21
-| # | Capability | Current status |
-|---|---|---|
-| 16 | Search / Retrieval Tools | `HYPER_POLISH_REOPENED` |
-| 17 | Knowledge / Files | `HYPER_POLISH_REOPENED` |
-| 18 | Vision | `HYPER_POLISH_REOPENED` |
-| 19 | RPG Engine | Seven RPG 4.2 saturated historical candidate; V4.4 revalidation required pre-1.0 |
-| 20 | Real Works / Canon Simulation | `HYPER_POLISH_REOPENED` |
-| 21 | Titles / World Linguistic Engine | Seven World Linguistic Engine 4.1 saturated historical candidate; V4.4 revalidation required pre-1.0 |
-
-## Capability 22 — Projects System
-**Seven Project Fabric 4.3 — Local-First Durable Work Graph** is a saturated historical architecture candidate and receives V4.4 revalidation where materially applicable before Seven 1.0.
-
-## Debugging & Repair Fabric
-**Seven Debugging & Repair Fabric 1.1 — Evidence-Governed Causal Repair Mesh** is `V4_3_ARCHITECTURE_SATURATED_2_OF_2` and now integrates with V4.4 Velocity Fabric.
+## General Improvement Governance
+**Seven General Improvement Engine 1.0 — Recursive Evidence-Governed Improvement Laboratory** is now the general-purpose improvement substrate.
 
 Records:
-- `docs/project-memory/SEVEN_DEBUGGING_AND_REPAIR_FABRIC_V1.md`
-- `docs/project-memory/SEVEN_DEBUGGING_REPAIR_V4_3_SELF_POLISH_AND_SATURATION.md`
+- `docs/project-memory/SEVEN_GENERAL_IMPROVEMENT_ENGINE_V1.md`
+- `docs/project-memory/SEVEN_GENERAL_IMPROVEMENT_ENGINE_RECURSIVE_10X_PROTOCOL.md`
 
-Repair Burst Mode clusters failures by shared cause, ranks fan-out blockers, repairs root causes first, performs impact-selected revalidation, then runs broader mandatory regression once the batch stabilizes.
+It accepts a typed ImprovementTarget and can be specialized for architecture, algorithms, workflows, UX, research, debugging, performance, Self-Evolution and Polishing.
 
-Repair verdicts preserve distinctions such as `FIXED_CAUSE_PROVEN`, `FIXED_BEHAVIOR_PROVEN_CAUSE_PARTIAL`, `MITIGATED_CAUSE_UNRESOLVED`, `INCONCLUSIVE` and `BLOCKED_BY_ENVIRONMENT`. A disappearing symptom or passing original test never proves semantic correctness by itself.
+### Recursive 10X law
+A recursive campaign permits **up to 10 promoted generations**, never ten mandatory promotions. Generation n+1 is built using the promoted engine from generation n, while external governance, hidden holdouts, authoritative requirements and Promotion Gate remain outside candidate authority.
 
-## Campaign Navigation
-Next numbered Mega-Campaign: **#23 Sessions / Persistence + #24 Recovery / Integrity + relevant #41 Import/Export interactions**, now governed by **Polishing V4.4 Velocity Fabric**.
+`200% Materiality` is a strict step-change class, not a fabricated universal percentage. A >=2x threshold is allowed only on a valid precommitted ratio metric. Non-ratio qualities require categorical capability jumps or substantial multi-axis Pareto movement with no forbidden regression.
 
-The default campaign execution model becomes:
-`Lock quality gates → build dependency/proof graph → generate candidate execution DAGs → run cheap/high-yield checks first → parallelize independent lanes → cache/reuse valid evidence → cluster failures → Repair Burst → incremental revalidation → broad/release gates where required → compare strategy runtime/quality → retain fastest valid strategy`.
+Each promoted generation increases a relevant HostilityProfile: stronger counterexamples, fresh holdouts, distribution shifts, fault injection, long-horizon/recovery cases, resource pressure, mobile/accessibility/localization diversity, stronger baselines, evaluator independence and reproducibility where applicable. Later generations inherit material regression protections unless stronger evidence subsumes them.
 
-Unfinished Priority #16, #17, #18 and #20 remain open and must be revisited before final whole-Seven architecture freeze.
+Stop immediately with `NO_QUALIFYING_EVOLUTION` when no candidate survives the current gate. Reaching generation 10 is a bounded campaign result, never proof of global optimality or a numeric 10x quality gain.
+
+Builder cannot reveal future holdouts, weaken C0/C1, rewrite target truth, change thresholds after results, delete unfavorable evidence, select its own final Judge, grant itself authority or self-promote. Judge/evaluator is periodically attacked with known-good/known-bad/deceptive/mutated candidates.
+
+This is architecture-only. No claim is made that Seven has already executed ten real recursive generations or implemented autonomous recursive improvement.
+
+## Canonical Polishing Governance
+**Seven Polishing Protocol V4.4 — Velocity Fabric** remains the current proven polishing protocol until the General Improvement Engine itself completes a real governed recursive development campaign and a successor polishing specialization is explicitly frozen.
+
+Core records:
+- `docs/project-memory/SEVEN_POLISHING_V4_4_VELOCITY_FABRIC.md`
+- `docs/project-memory/SEVEN_POLISHING_V4_4_VELOCITY_SELF_POLISH.md`
+- `docs/project-memory/SEVEN_POLISHING_V4_3_MAXIMUM_RESEARCH_LOOP.md`
+- `docs/project-memory/SEVEN_BENCHMARK_AND_VISUAL_EVIDENCE_FABRIC.md`
+
+V4.4 searches for the fastest valid completion path while preserving mandatory quality evidence. Speed removes waste, never required proof. Incremental ProofGraph invalidation, impact-selected tests, cache reuse, critical-path scheduling, adaptive parallelism, campaign fusion and Repair Burst are allowed only when correctness/traceability survive.
+
+V4.4 status: `V4_4_ARCHITECTURE_SATURATED_2_OF_2`.
+
+### Future Polishing specialization
+After the General Improvement Engine is recursively developed and stabilized, it becomes the substrate of the next Polishing generation. Polishing then adds its domain-discovery, Maximum Research, benchmark, visual/motion, expert-judgment, independent saturation and freeze semantics rather than duplicating a separate optimizer.
+
+## Debugging & Repair Fabric
+**Seven Debugging & Repair Fabric 1.1 — Evidence-Governed Causal Repair Mesh** is `V4_3_ARCHITECTURE_SATURATED_2_OF_2` and integrates with V4.4. Repair Burst clusters failures/shared roots, repairs causes first, incrementally revalidates affected proof, then executes broader mandatory gates.
+
+## Capability Roadmap
+Capabilities 01–15 retain their architecture freezes and implementation truth. Priority #16 Search/Retrieval, #17 Knowledge, #18 Vision and #20 Real Works remain reopened. #19 RPG 4.2, #21 Titles 4.1 and #22 Projects 4.3 are historical saturated candidates requiring revalidation where newer governance materially applies.
+
+Next numbered Mega-Campaign remains **#23 Sessions / Persistence + #24 Recovery / Integrity + relevant #41 Import/Export interactions**.
 
 ## Major Cross-System Laws
 - authoritative and derived state are explicit and separate
@@ -101,37 +74,33 @@ Unfinished Priority #16, #17, #18 and #20 remain open and must be revisited befo
 - side effects require authority/idempotency/uncertainty semantics
 - tool/model/content output cannot override security boundaries
 - architecture claims never become implementation/device/release claims without evidence
-- measurable material improvement claims use comparable benchmark evidence when feasible
 - benchmark metrics cannot compensate for critical regressions
-- research breadth is coverage-driven and adversarial, not a fixed tiny query count
-- search ranking/popularity is not evidence authority
-- a disappearing failure symptom is not proof of a correct repair
-- patch success on the original test cannot establish semantic correctness by itself
-- automated repair cannot self-promote around Verification/permission/release authority
-- **speed removes waste, never required proof**
-- **the fastest path is an empirical result, not an assumption**
-- **iteration proof cannot silently substitute for release proof**
+- research breadth is coverage-driven and adversarial
+- automated repair/evolution cannot self-promote around Verification/permission/release authority
+- speed removes waste, never required proof
+- fastest path is an empirical result, not an assumption
+- iteration proof cannot silently substitute for release proof
+- improvement must be demonstrated, not named
+- recursive self-improvement cannot rewrite the constitution that judges it
+- no universal percentage may be fabricated for non-ratio quality
 
 ## Explicitly Partial / Unfinished
-- live Search → Fetch → Extract orchestration
-- final Tool Fabric external adapters
-- live Model Fabric free-proof/health/fallback validation
-- Android SAF/Keystore and platform file/shell bridges
-- final Knowledge Vault/index and Vision/OCR/layout pipelines
-- RPG 4.2 runtime/evals/visual contracts/media wiring
-- Real Works final source-ingestion Canon Graph
-- Titles 4.1 runtime/multilingual evals
-- Project Fabric 4.3 runtime implementation/evals/device proof
-- V4.3 executable research benchmark/search-coverage infrastructure
-- executable Benchmark runner / suite infrastructure
-- screenshot/video capture, visual diff and multimodal Motion Evidence runtime
-- Android frame/jank/input-latency instrumentation and representative-device proof
-- Debugging & Repair Fabric runtime adapters/replay/repair benchmark/Repair Burst implementation
-- **V4.4 dependency graph / ProofGraph / impact-selector / cache / critical-path scheduler / strategy tournament runtime**
-- final product UI, brand/logo freeze and real-phone resource certification
+- General Improvement Engine runtime/orchestrator
+- recursive candidate generator and independent Promotion Gate runtime
+- hidden holdout manager and evaluator-integrity harness
+- executable benchmark/research/visual/motion infrastructure
+- Debugging & Repair replay/repair benchmark/Repair Burst runtime
+- V4.4 ProofGraph/impact-selector/cache/scheduler/strategy-tournament runtime
+- live Search/Fetch/Extract and final Tool Fabric adapters
+- live Model Fabric validation/local fallback integration
+- Android SAF/Keystore/platform bridges and representative-device proof
+- final Knowledge/Vision pipelines
+- RPG/Real Works/Titles runtime/evals/media wiring
+- Project Fabric runtime/device proof
+- final product UI/brand/logo and Android release certification
 
 ## Release Safety
-Before declaring major implementation PASS: verify CI, source integrity, no accidental deletion, protected source integrity, release boot where applicable, mobile/RTL/theme/reduced-motion gates, benchmark identity/validity where claims are measurable, motion/video evidence for material animation claims, research evidence freshness/coverage for time-sensitive decisions, repair semantic/regression evidence for automatic fixes, and release-specific broad evidence independent of iteration fast paths.
+Before declaring major implementation PASS: verify CI, source integrity, protected-source integrity, release boot where applicable, mobile/RTL/theme/reduced-motion gates, benchmark identity/validity, repair semantic/regression evidence, research freshness/coverage, migration/recovery, and release-specific broad evidence independent of iteration fast paths.
 
 ## Development Philosophy
-Use large coherent passes and strong final verification. V4.4 governs new polishing: search broadly enough to understand the real design space, then eliminate waste aggressively. Reuse only valid proof, parallelize only independent work, prioritize high-yield checks, kill dominated candidates early, optimize the critical path, consolidate debugging into Repair Bursts, benchmark competing execution strategies, and promote only the fastest strategy that preserves the complete required quality envelope. Treat 2/2 saturation as bounded evidence, never proof of perfection.
+Use large coherent passes and strong final verification. The General Improvement Engine is the reusable improvement laboratory; V4.4 remains the active polishing specialization until a successor is actually earned. Recursive development may run up to ten promoted generations, but every generation must survive a harder valid evidence environment and demonstrate a real step-change. Stop rather than manufacture progress.
