@@ -4,7 +4,8 @@ const assert = require("assert/strict");
 const control = require("../release/control-runtime.js");
 
 globalThis.SevenControl = control;
-let persistedEvents = [];
+let persistedObjects = [];
+let persistedAudit = [];
 let gateCalls = 0;
 globalThis.SevenRuntime = {
   version: 4,
@@ -23,8 +24,13 @@ globalThis.SevenRuntime = {
     }
     return {capabilities,aliases};
   },
-  readRuns(){ return {events: JSON.parse(JSON.stringify(persistedEvents))}; },
-  runLedger(events){ persistedEvents=JSON.parse(JSON.stringify(events)); return true; }
+  readRuns(){ return {version:2,objects:JSON.parse(JSON.stringify(persistedObjects)),events:JSON.parse(JSON.stringify(persistedAudit))}; },
+  runLedger(objects,op="RUN_CREATE"){
+    if(!Array.isArray(objects)||objects.some(x=>!x||typeof x.id!=="string"||!x.id)) return false;
+    persistedAudit.push({id:`audit-${persistedAudit.length+1}`,operation:op});
+    persistedObjects=JSON.parse(JSON.stringify(objects));
+    return true;
+  }
 };
 
 delete require.cache[require.resolve("../release/execution-bridge.js")];
@@ -106,14 +112,20 @@ assert.equal(execution.state.ready,true);
 })();
 
 (function checkpointRestore(){
-  persistedEvents=[];
+  persistedObjects=[{id:"existing-run",kind:"existing"}];
+  persistedAudit=[];
   const run=execution.createRun({id:"restore-task",goal:"restore",allowedCapabilities:["fs.read"]},{id:"restore-run"});
   execution.startExecution(run);
   const saved=execution.persistCheckpoint(run,"before-tool");
   assert.equal(saved.kind,"seven-execution-checkpoint-v1");
+  assert.equal(persistedAudit.at(-1).operation,"EXECUTION_CHECKPOINT");
+  assert.ok(persistedObjects.some(x=>x.id==="existing-run"),"existing run objects must be preserved");
+  assert.equal(persistedObjects.filter(x=>x.kind==="seven-execution-checkpoint-v1"&&x.taskId==="restore-task").length,1);
   const restored=execution.restoreLatest("restore-task");
   assert.equal(restored.id,"restore-run");
   assert.equal(restored.task.state,"EXECUTING");
+  execution.persistCheckpoint(run,"replacement");
+  assert.equal(persistedObjects.filter(x=>x.kind==="seven-execution-checkpoint-v1"&&x.taskId==="restore-task").length,1,"checkpoint replacement must not grow duplicates per task");
 })();
 
 console.log("execution bridge security + recovery: PASS");
