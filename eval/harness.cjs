@@ -37,7 +37,9 @@ for(const task of tasks){
 }
 for(const category of requiredCategories)assert.ok(tasks.some(t=>t.category===category),`missing category coverage: ${category}`);
 for(const mode of requiredModes)assert.ok(tasks.some(t=>t.mode===mode),`missing mode coverage: ${mode}`);
-assert.ok(tasks.filter(t=>t.locale.startsWith('ar')).length>=8,'Arabic coverage is too small');
+const arabicCount=tasks.filter(t=>t.locale.startsWith('ar')).length;
+const minimumArabic=Math.ceil(tasks.length*0.25);
+assert.ok(arabicCount>=minimumArabic,`Arabic coverage is too small: ${arabicCount}/${tasks.length}, need ${minimumArabic}`);
 assert.ok(tasks.some(t=>t.scorer.type==='device'),'device evaluation coverage required');
 assert.ok(tasks.some(t=>t.scorer.type==='rubric'),'model/rubric evaluation coverage required');
 assert.ok(tasks.some(t=>t.scorer.type==='contract'),'deterministic contract coverage required');
@@ -50,8 +52,9 @@ const report={
   modes:Object.fromEntries([...new Set(tasks.map(t=>t.mode))].sort().map(k=>[k,tasks.filter(t=>t.mode===k).length])),
   locales:Object.fromEntries([...new Set(tasks.map(t=>t.locale))].sort().map(k=>[k,tasks.filter(t=>t.locale===k).length])),
   scorers:Object.fromEntries([...allowedScorers].map(k=>[k,tasks.filter(t=>t.scorer.type===k).length])),
+  arabicCoverage:{count:arabicCount,minimum:minimumArabic,ratio:Number((arabicCount/tasks.length).toFixed(4))},
   baseline:baseline.baselineCommit
 };
 fs.mkdirSync(path.join(ROOT,'dist'),{recursive:true});
 fs.writeFileSync(path.join(ROOT,'dist','eval-corpus-audit.json'),JSON.stringify(report,null,2));
-console.log(`eval corpus: PASS (${report.tasks} tasks, ${Object.keys(report.categories).length} categories, ${corpusHash.slice(0,12)})`);
+console.log(`eval corpus: PASS (${report.tasks} tasks, ${Object.keys(report.categories).length} categories, Arabic ${arabicCount}/${tasks.length}, ${corpusHash.slice(0,12)})`);
