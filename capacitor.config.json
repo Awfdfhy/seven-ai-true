@@ -1,0 +1,15 @@
+{
+  "appId": "ai.seven.app",
+  "appName": "Seven",
+  "webDir": "www",
+  "loggingBehavior": "none",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": false
+  },
+  "android": {
+    "webContentsDebuggingEnabled": false,
+    "allowMixedContent": false,
+    "captureInput": true
+  }
+}
