@@ -1,0 +1,40 @@
+/* Seven Brand OS semantic polish. No permanent animation loops. */
+.seven-brand-mark[data-animate="true"] .seven-orbit{animation:none!important;}
+html.seven-processing:not(.seven-tier-lite) .seven-brand-mark .seven-orbit{animation:sevenActiveOrbit 1.5s linear infinite!important;}
+@keyframes sevenActiveOrbit{to{transform:rotate(360deg)}}
+
+.seven-context-rail{
+  min-height:37px;display:flex;align-items:center;justify-content:center;gap:7px;
+  padding:5px 14px;border-bottom:1px solid var(--seven-line);
+  background:color-mix(in srgb,var(--seven-canvas) 93%,transparent);
+  color:var(--seven-text-3);font-size:10px;letter-spacing:.035em;z-index:12;
+}
+.seven-context-rail strong{color:var(--seven-text-2);font-size:10px;font-weight:750;margin-right:3px;}
+.seven-context-chip{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 9px;border:1px solid var(--seven-line);border-radius:999px;background:var(--seven-surface);white-space:nowrap;}
+.seven-context-chip::before{content:"";width:4px;height:4px;border-radius:50%;background:var(--seven-mode-accent);box-shadow:0 0 8px var(--seven-mode-glow);}
+html[data-seven-mode="build"] .seven-context-rail{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+html[data-seven-mode="world"] .seven-context-chip{border-radius:10px;background:linear-gradient(145deg,color-mix(in srgb,var(--seven-mode-accent) 8%,var(--seven-surface)),var(--seven-surface));}
+html[data-seven-mode="research"] .seven-context-chip::before{border-radius:1px;transform:rotate(45deg);}
+
+.seven-celestial-toggle{width:18px;height:18px;display:inline-grid;place-items:center;position:relative;border-radius:50%;margin-right:7px;vertical-align:-4px;background:var(--seven-solar);box-shadow:0 0 12px rgba(255,191,102,.22);transition:transform var(--seven-motion-standard) var(--seven-ease-enter),background var(--seven-motion-standard);}
+.seven-celestial-toggle::after{content:"";position:absolute;width:15px;height:15px;border-radius:50%;background:var(--seven-surface-2);transform:translate(5px,-4px) scale(.78);opacity:0;transition:opacity var(--seven-motion-standard),transform var(--seven-motion-standard) var(--seven-ease-enter);}
+body:not(.light) .seven-celestial-toggle{background:#b9b4ff;transform:rotate(-14deg);box-shadow:0 0 12px rgba(139,130,255,.22);}
+body:not(.light) .seven-celestial-toggle::after{opacity:1;transform:translate(5px,-4px) scale(1);}
+
+.seven-save-toast{position:fixed!important;right:14px!important;bottom:max(12px,env(safe-area-inset-bottom))!important;z-index:35!important;display:inline-flex!important;align-items:center!important;gap:6px!important;min-height:28px!important;padding:0 9px!important;border:1px solid var(--seven-line)!important;border-radius:999px!important;background:color-mix(in srgb,var(--seven-surface) 92%,transparent)!important;color:var(--seven-text-3)!important;box-shadow:none!important;font-size:9px!important;line-height:1!important;backdrop-filter:blur(8px);pointer-events:none;}
+.seven-save-toast::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--seven-success);}
+
+html[data-seven-mode="build"] body::before{background-size:32px 32px;opacity:.82;}
+html[data-seven-mode="world"] body::before{background-image:radial-gradient(circle at 20% 20%,rgba(255,158,114,.035) 0 1px,transparent 1.5px);background-size:26px 26px;}
+html[data-seven-mode="research"] body::before{background-image:linear-gradient(30deg,rgba(93,199,192,.018) 1px,transparent 1px),linear-gradient(150deg,rgba(95,140,255,.018) 1px,transparent 1px);background-size:38px 38px;}
+
+html.seven-theme-shift::after{content:"";position:fixed;inset:-25vmax;z-index:9998;pointer-events:none;background:radial-gradient(circle at 78% 12%,color-mix(in srgb,var(--seven-solar) 18%,var(--seven-mode-accent) 16%),transparent 31%);animation:sevenCelestialWash var(--seven-motion-signature) var(--seven-ease-enter) both;}
+@keyframes sevenCelestialWash{0%{opacity:0;transform:scale(.96)}38%{opacity:.7}100%{opacity:0;transform:scale(1.025)}}
+
+@media(max-width:720px){
+  .seven-context-rail{justify-content:flex-start;overflow-x:auto;scrollbar-width:none;padding:5px 10px;}
+  .seven-context-rail::-webkit-scrollbar{display:none;}
+  .seven-context-rail strong{position:sticky;left:0;background:var(--seven-canvas);padding-right:6px;}
+  .seven-save-toast{right:10px!important;bottom:max(6px,env(safe-area-inset-bottom))!important;opacity:.78;}
+}
+@media(prefers-reduced-motion:reduce){html.seven-processing .seven-brand-mark .seven-orbit{animation:none!important}.seven-celestial-toggle,.seven-celestial-toggle::after{transition:none!important}html.seven-theme-shift::after{display:none!important}}
