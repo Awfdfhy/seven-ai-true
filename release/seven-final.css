@@ -1,0 +1,50 @@
+:root{
+  --seven-motion-instant:90ms;
+  --seven-motion-fast:150ms;
+  --seven-motion-standard:220ms;
+  --seven-motion-deliberate:320ms;
+  --seven-motion-signature:520ms;
+  --seven-ease-enter:cubic-bezier(.2,.8,.2,1);
+  --seven-ease-exit:cubic-bezier(.4,0,1,1);
+  --seven-ease-move:cubic-bezier(.2,.7,.2,1);
+  --seven-ring:0 0 0 3px color-mix(in srgb,var(--accent) 28%,transparent);
+  --seven-surface-glow:0 10px 30px color-mix(in srgb,var(--accent) 10%,transparent);
+}
+html{scroll-behavior:auto;-webkit-text-size-adjust:100%;text-rendering:optimizeLegibility}
+body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+button,input,textarea,select{font:inherit}
+button,[role="button"],.room-item,.tool-btn{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button:focus-visible,[role="button"]:focus-visible,.room-item:focus-visible,.tool-btn:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:none;box-shadow:var(--seven-ring)}
+#chat{overscroll-behavior:contain;scrollbar-gutter:stable;contain:layout style paint}
+.message{content-visibility:auto;contain-intrinsic-size:1px 110px;contain:layout style paint}
+.room-item,.knowledge-file-item,.composer,.modal-content,.bubble.markdown pre{contain:layout style paint}
+.sidebar,.topbar,.composer,.modal-content,.room-item,.tool-btn,.new-chat-btn,.regenerate-btn,.settings-row button,.input-area button.send,.input-area button.stop{transition-property:transform,opacity,background-color,border-color,color,box-shadow;transition-duration:var(--seven-motion-fast);transition-timing-function:var(--seven-ease-move)}
+.room-item:hover,.tool-btn:hover,.new-chat-btn:hover,.regenerate-btn:hover,.settings-row button:hover{transform:translateY(-1px)}
+.seven-pressing{transform:scale(.975)!important;transition-duration:var(--seven-motion-instant)!important}
+.composer:focus-within{box-shadow:var(--shadow),var(--seven-ring);transform:translateY(-1px)}
+.input-area button.send:hover{transform:translateY(-1px) scale(1.02)}
+.input-area button.send:active{transform:scale(.96)}
+.empty-logo,.sidebar-header img.app-icon{transform:translateZ(0)}
+.modal[style*="display: flex"] .modal-content,.modal[style*="display:flex"] .modal-content{animation:sevenModalIn var(--seven-motion-standard) var(--seven-ease-enter) both}
+@keyframes sevenModalIn{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+.seven-reveal{animation:sevenReveal var(--seven-motion-standard) var(--seven-ease-enter) both!important}
+@keyframes sevenReveal{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.seven-theme-shift::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;background:radial-gradient(circle at 82% 12%,color-mix(in srgb,var(--accent) 16%,transparent),transparent 38%);animation:sevenThemeShift var(--seven-motion-signature) var(--seven-ease-enter) both}
+@keyframes sevenThemeShift{0%{opacity:0;transform:scale(.98)}45%{opacity:1}100%{opacity:0;transform:scale(1.02)}}
+.typing-dots span{will-change:transform,opacity}
+.bubble.markdown pre{scrollbar-gutter:stable;overscroll-behavior-x:contain}
+.bubble.markdown{overflow-wrap:anywhere}
+@media (max-width:720px){
+  .topbar{padding-inline:14px}.input-area{padding-inline:10px}.message{padding-inline:14px}
+  .composer{border-radius:20px}
+  button,.tool-btn,.topbar .icon-btn,.topbar .menu-toggle{min-height:40px}
+  .input-area button.send,.input-area button.stop{min-height:38px;min-width:38px;width:38px;height:38px}
+}
+html.seven-tier-lite .empty-logo,html.seven-tier-lite .modal-content,html.seven-tier-lite .sidebar{box-shadow:none!important}
+html.seven-tier-lite .seven-theme-shift::before{display:none}
+html.seven-tier-lite .room-item:hover,html.seven-tier-lite .tool-btn:hover,html.seven-tier-lite .new-chat-btn:hover,html.seven-tier-lite .regenerate-btn:hover{transform:none}
+html[data-seven-hidden="1"] *{animation-play-state:paused!important}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+  .seven-theme-shift::before{display:none!important}
+}
