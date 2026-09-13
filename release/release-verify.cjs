@@ -36,9 +36,10 @@ const {build,OUTPUT,MARK}=require('./build-release.cjs');
     await page.waitForTimeout(100);
     if(errors.length)throw new Error('release bootstrap pageerror: '+errors.join(' | '));
     await page.waitForFunction(()=>window.SevenPerformance&&window.SevenPerformance.state.ready&&window.SevenCanon&&window.SevenMotion&&window.SevenMotion.state.ready&&window.SevenPdf,null,{timeout:10000});
-    await page.waitForFunction(()=>window.roomPersistence&&roomPersistence.status().ready,null,{timeout:10000});
+    await page.waitForFunction(()=>typeof roomPersistence!=='undefined'&&roomPersistence.status().ready,null,{timeout:10000});
 
     await test('release runtime boots without page errors',async()=>{assert.deepEqual(errors,[])});
+    await test('room persistence is ready',async()=>{const r=await page.evaluate(()=>roomPersistence.status());assert.equal(r.ready,true);assert.equal(r.failed,false)});
     await test('adaptive performance tier is installed',async()=>{const r=await page.evaluate(()=>({tier:SevenPerformance.state.tier,attr:document.documentElement.dataset.sevenPerformance,ready:SevenPerformance.state.ready}));assert.ok(['lite','balanced','full'].includes(r.tier));assert.equal(r.attr,r.tier);assert.equal(r.ready,true)});
     await test('motion layer is event delegated and ready',async()=>{assert.equal(await page.evaluate(()=>document.documentElement.classList.contains('seven-motion-ready')),true)});
     await test('PDF engine is not loaded during normal boot',async()=>{const r=await page.evaluate(()=>({loaded:SevenPdf.loaded,global:typeof window.pdfjsLib}));assert.equal(r.loaded,false);assert.equal(r.global,'undefined')});
