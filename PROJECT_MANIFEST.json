@@ -13,5 +13,5 @@
   "release_layer_bytes": 95155,
   "version": "T164-motion-os",
   "local_gate": "PASS_DETERMINISTIC",
-  "browser_gate": "PENDING_MOTION_OS_3_CI"
+  "browser_gate": "PASS_GITHUB_ACTIONS_RUN_34751724151"
 }
