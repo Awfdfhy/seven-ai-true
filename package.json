@@ -1,0 +1,24 @@
+{
+  "name": "seven-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Seven AI Android release packaging",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node all.cjs",
+    "build:web": "node release/build-release.cjs && node apk/prepare-web.cjs",
+    "android:generate": "npm run build:web && rm -rf android && npx cap add android && node apk/patch-android.cjs && npx cap sync android",
+    "android:verify": "node apk/verify-apk.cjs"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.1",
+    "@capacitor/core": "8.5.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.1",
+    "pdfjs-dist": "4.10.38",
+    "playwright": "1.55.0"
+  }
+}
