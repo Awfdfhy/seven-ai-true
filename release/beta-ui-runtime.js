@@ -7,13 +7,14 @@
   function ensureBadge(){
     const topbar=doc.querySelector('.topbar');
     if(!topbar||topbar.querySelector('.seven-beta-badge'))return;
-    const host=topbar.querySelector('.title')||topbar;
+    const title=topbar.querySelector('.title');
     const badge=doc.createElement('span');
     badge.className='seven-beta-badge';
     badge.textContent='BETA';
     badge.setAttribute('aria-label','Seven beta interface');
     badge.dataset.sevenBetaBadge='1';
-    host.appendChild(badge);
+    if(title&&title.parentNode===topbar)title.insertAdjacentElement('afterend',badge);
+    else topbar.appendChild(badge);
   }
 
   function decorate(){
