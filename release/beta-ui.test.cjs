@@ -45,7 +45,7 @@ const {build}=require('./build-release.cjs');
       sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,bg:getComputedStyle(document.body).backgroundColor,
       composerRadius:getComputedStyle(document.querySelector('.composer')).borderRadius
     }));
-    assert.equal(state.ready,true);assert.equal(state.version,'1.1.0-beta.2');assert.equal(state.marker,'v1');assert.equal(state.mode,'chat');assert.equal(state.modeMarker,'chat');
+    assert.equal(state.ready,true);assert.equal(state.version,'1.2.0-beta.1');assert.equal(state.marker,'v1');assert.equal(state.mode,'chat');assert.equal(state.modeMarker,'chat');
     assert.equal(state.rootClass,true);assert.equal(state.badgeCount,1);assert.equal(state.statusCount,1);assert.equal(state.badgeText,'BETA');assert.equal(state.statusText,'Chat');
     assert.equal(state.sidebar,'navigation');assert.equal(state.topbar,'topbar');assert.equal(state.chat,'conversation');assert.equal(state.composer,'composer');
     assert.equal(state.thinkTool,'think');assert.equal(state.searchTool,'search');assert.equal(state.attachTool,'knowledge');
