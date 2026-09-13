@@ -46,7 +46,11 @@ function normalizeModelRecord(input = {}) {
       status: text(input.freeProof && input.freeProof.status) || "UNVERIFIED",
       license: text(input.freeProof && input.freeProof.license),
       evidence: Array.isArray(input.freeProof && input.freeProof.evidence) ? input.freeProof.evidence.filter(Boolean).map(String) : [],
-      verifiedAt: text(input.freeProof && input.freeProof.verifiedAt)
+      verifiedAt: text(input.freeProof && input.freeProof.verifiedAt),
+      verifier: {
+        id: text(input.freeProof && input.freeProof.verifier && input.freeProof.verifier.id),
+        method: text(input.freeProof && input.freeProof.verifier && input.freeProof.verifier.method)
+      }
     },
     lineage: {
       sourceRecordId: text(input.lineage && input.lineage.sourceRecordId),
@@ -63,6 +67,7 @@ function verifyFreeProof(record) {
   if (proof.status !== "VERIFIED") reasons.push("free_proof_not_verified");
   if (!proof.verifiedAt) reasons.push("missing_verified_at");
   if (!Array.isArray(proof.evidence) || proof.evidence.length === 0) reasons.push("missing_evidence");
+  if (!proof.verifier || !proof.verifier.id || !proof.verifier.method) reasons.push("missing_verifier");
   if (proof.class === "OPEN_WEIGHTS_LOCAL" && !proof.license) reasons.push("missing_license");
   return { valid: reasons.length === 0, reasons };
 }
