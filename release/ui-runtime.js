@@ -2,7 +2,7 @@
   'use strict';
   if(!root||!root.document)return;
   const doc=root.document;
-  const state={ready:false,version:'2.0.1',messageObserver:null,composerObserver:null};
+  const state={ready:false,version:'2.0.0',messageObserver:null,composerObserver:null};
   const raf=(key,fn)=>{
     const perf=root.SevenPerformance;
     if(perf&&typeof perf.batchFrame==='function')perf.batchFrame(key,fn);
