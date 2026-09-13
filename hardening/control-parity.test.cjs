@@ -22,20 +22,32 @@ const bridge = require("../release/control-bridge.js");
 })();
 
 (function truthParity(){
-  const source={id:"source-a",authority:"A2",independentGroup:"publisher-a",observedAt:new Date().toISOString()};
-  const n=nodeControl.truthFabric.createClaim({id:"claim-a",text:"fact",kind:"FACT",sources:[source]});
-  const b=browserControl.createClaim({id:"claim-a",text:"fact",kind:"FACT",sources:[source]});
+  const observedAt=new Date().toISOString();
+  const source={id:"source-a",authority:"A2",independentGroup:"publisher-a",observedAt,metadata:{title:"Primary source"}};
+  const input={id:"claim-a",text:"fact",kind:"FACT",sources:[source],metadata:{domain:"parity"},evidence:[{id:"e1"}],supports:["claim-z"]};
+  const n=nodeControl.truthFabric.createClaim(input);
+  const b=browserControl.createClaim(input);
   assert.equal(browserControl.AUTH[b.authority],nodeControl.truthFabric.AUTHORITY[n.authority]);
+  assert.deepEqual(b.metadata,n.metadata);
+  assert.deepEqual(b.sources[0].metadata,n.sources[0].metadata);
+  assert.deepEqual(b.evidence,n.evidence);
+  assert.deepEqual(b.supports,n.supports);
   const nd=nodeControl.truthFabric.deriveClaim({id:"claim-b",text:"derived",parents:[n],transformation:"summary"});
   const bd=browserControl.deriveClaim({id:"claim-b",text:"derived",parents:[b],transformation:"summary"});
   assert.equal(browserControl.AUTH[bd.authority],nodeControl.truthFabric.AUTHORITY[nd.authority]);
   assert.equal(browserControl.resolveClaim(bd,{allowInference:false}).state,nodeControl.truthFabric.resolveClaim(nd,{allowInference:false}).state);
+  const old="2020-01-01T00:00:00.000Z";
+  const ns=nodeControl.truthFabric.createClaim({id:"stale",text:"old",kind:"FACT",sources:[{id:"old-source",authority:"A1",observedAt:old}]});
+  const bs=browserControl.createClaim({id:"stale",text:"old",kind:"FACT",sources:[{id:"old-source",authority:"A1",observedAt:old}]});
+  assert.deepEqual(browserControl.resolveClaim(bs,{now:Date.parse("2026-09-13T00:00:00Z"),maxAgeMs:86400000}),nodeControl.truthFabric.resolveClaim(ns,{now:Date.parse("2026-09-13T00:00:00Z"),maxAgeMs:86400000}));
+  assert.equal(browserControl.grantsAuthority(bd),false);
 })();
 
 (function contextParity(){
   const input={maxTokens:600,reserveTokens:50,items:[
     {id:"task",category:"task",tokens:100,required:true,content:"task"},
-    {id:"evidence",category:"evidence",tokens:120,priority:100,content:"evidence"},
+    {id:"trusted",category:"evidence",tokens:80,priority:10,trust:"trusted",content:"trusted"},
+    {id:"untrusted",category:"evidence",tokens:80,priority:10,trust:"untrusted",content:"untrusted"},
     {id:"deleted",category:"memory",tokens:20,lifecycle:"deleted",content:"bad"},
     {id:"large",category:"conversation",tokens:500,content:"large"}
   ]};
@@ -44,6 +56,10 @@ const bridge = require("../release/control-bridge.js");
   assert.deepEqual(b.selected.map(x=>x.id),n.selected.map(x=>x.id));
   assert.equal(b.tokensUsed,n.tokensUsed);
   assert.equal(b.tokenBudget,n.tokenBudget);
+  const nz=nodeControl.contextCompiler.compileContext({maxTokens:0,items:[{id:"x",content:"x"}]});
+  const bz=browserControl.compileContext({maxTokens:0,items:[{id:"x",content:"x"}]});
+  assert.deepEqual(bz.warnings,nz.warnings);
+  assert.deepEqual(bz.selected,nz.selected);
 })();
 
 (function resourceParity(){
@@ -78,6 +94,7 @@ const bridge = require("../release/control-bridge.js");
   assert.equal(truth.status,"INCONCLUSIVE");
   assert.equal(truth.claims.find(c=>c.id==="research:c1").kind,"FACT");
   assert.equal(truth.claims.find(c=>c.id==="research:c2").kind,"UNKNOWN");
+  assert.equal(truth.claims.find(c=>c.id==="research:c1").metadata.researchStatus,"SUPPORTED");
   assert.ok(truth.unresolved.includes("research:c2"));
 })();
 
