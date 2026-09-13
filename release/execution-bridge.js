@@ -12,10 +12,24 @@
   function control(){if(!root||!root.SevenControl)throw new Error('SevenControl runtime required');return root.SevenControl;}
   function runtime(){if(!root||!root.SevenRuntime)throw new Error('SevenRuntime v4 required');return root.SevenRuntime;}
   function isTerminal(run){return !!(run&&run.task&&TERMINAL.has(run.task.state));}
-  function normalizePath(v){return String(v||'').replace(/\\/g,'/').replace(/^\.\//,'').replace(/\/+/g,'/');}
+  function canonicalPath(v){
+    const raw=String(v||'').trim().replace(/\\/g,'/').replace(/\/+/g,'/');
+    if(!raw)return {valid:true,path:''};
+    if(raw.startsWith('/')||/^[A-Za-z]:\//.test(raw))return {valid:false,path:'',reason:'absolute-path'};
+    const stack=[];
+    for(const part of raw.split('/')){
+      if(!part||part==='.')continue;
+      if(part==='..'){if(!stack.length)return {valid:false,path:'',reason:'path-traversal'};stack.pop();continue;}
+      if(part.includes('\0'))return {valid:false,path:'',reason:'nul-byte'};
+      stack.push(part);
+    }
+    return {valid:true,path:stack.join('/')};
+  }
   function fileInScope(path,allowed){
-    const target=normalizePath(path);if(!target)return true;const list=arr(allowed).map(normalizePath).filter(Boolean);if(!list.length)return true;
-    return list.some(base=>target===base||target.startsWith(base.replace(/\/$/,'')+'/'));
+    const target=canonicalPath(path);if(!target.valid)return false;if(!target.path)return true;
+    const requested=arr(allowed);if(!requested.length)return true;
+    const list=requested.map(canonicalPath).filter(x=>x.valid&&x.path).map(x=>x.path);if(!list.length)return false;
+    return list.some(base=>target.path===base||target.path.startsWith(base.replace(/\/$/,'')+'/'));
   }
   function domainInScope(url,allowed){
     if(!url)return true;const list=arr(allowed).map(x=>String(x||'').toLowerCase().replace(/^\.+/,'')).filter(Boolean);if(!list.length)return true;
@@ -108,11 +122,11 @@
     if(!run)throw new Error('run required');const r=runtime();const current=r.readRuns();const events=arr(current&&current.events).map(clone);const event={id:id('execution-checkpoint'),kind:'seven-execution-checkpoint-v1',taskId:run.task.id,runId:run.id,state:run.task.state,reason:reason||null,at:new Date().toISOString(),snapshot:clone(run)};
     const ok=r.runLedger([...events,event]);if(!ok)throw new Error('run ledger rejected checkpoint');return clone(event);
   }
-  function restoreLatest(taskId){const r=runtime();const events=arr(r.readRuns()&&r.readRuns().events).filter(e=>e&&e.kind==='seven-execution-checkpoint-v1'&&e.taskId===taskId);return events.length?clone(events[events.length-1].snapshot):null;}
+  function restoreLatest(taskId){const r=runtime();const current=r.readRuns();const events=arr(current&&current.events).filter(e=>e&&e.kind==='seven-execution-checkpoint-v1'&&e.taskId===taskId);return events.length?clone(events[events.length-1].snapshot):null;}
 
   const state={version:VERSION,ready:false,error:null,bootedAt:null};
   function boot(){const c=control(),r=runtime();if(!c.state||!c.state.ready)throw new Error('SevenControl runtime not ready');if(Number(r.version)!==4)throw new Error('SevenRuntime v4 required');state.ready=true;state.error=null;state.bootedAt=new Date().toISOString();return clone(state);}
   function safeBoot(){try{return boot();}catch(e){state.ready=false;state.error=String(e&&e.message||e);return clone(state);}}
   const hasDOM=!!(root&&root.document);if(hasDOM&&root.document.readyState==='loading')root.document.addEventListener('DOMContentLoaded',safeBoot,{once:true});else safeBoot();
-  return {VERSION,state,scopeDecision,authorizeTool,registerTools,createRun,startExecution,planToolCall,markToolAttempt,verifyToolCall,failToolCall,beginVerification,recordVerification,unresolvedEffects,canCommit,beginCommit,completeRun,cancelRun,appendEvent,persistCheckpoint,restoreLatest,boot};
+  return {VERSION,state,canonicalPath,scopeDecision,authorizeTool,registerTools,createRun,startExecution,planToolCall,markToolAttempt,verifyToolCall,failToolCall,beginVerification,recordVerification,unresolvedEffects,canCommit,beginCommit,completeRun,cancelRun,appendEvent,persistCheckpoint,restoreLatest,boot};
 });
