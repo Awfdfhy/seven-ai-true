@@ -17,7 +17,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
 
       - run: npm install --no-save playwright
 
@@ -33,6 +33,7 @@ jobs:
           path: |
             dist/seven_ai-release.html
             dist/release-manifest.json
+            dist/static-audit.json
             release/release-results.json
           if-no-files-found: error
           retention-days: 14
