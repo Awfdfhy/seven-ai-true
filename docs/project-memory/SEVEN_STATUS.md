@@ -45,7 +45,13 @@ A source-integrity test exists and should remain part of release verification.
   - freeze: `docs/project-memory/ultimate-polish/04_CONTEXT_FABRIC_FREEZE_RECORD.md`
   - key reconciliations: context is a derived reconstructable execution view; privileged instructions are separated from contextual data; fixed shares become elastic phase/model/tier budgets; ordering is semantic; compression/folding remain source-bound and expandable; models may propose context actions but the deterministic Context Governor validates them; Lite does not require embeddings or learned compression.
   - implementation remains partial/foundation; CF-P0 through CF-P10 remain deferred until cross-system reconciliation.
-- Next numbered core capability: Capability 05 — Model Fabric.
+- Capability 05 — Model Fabric: **Architecture frozen for campaign / implementation deferred**
+  - final target: **Seven Model Fabric 3.0 — Evidence-Governed Adaptive Inference Mesh**
+  - polish: `docs/project-memory/ultimate-polish/05_MODEL_FABRIC_ULTIMATE_POLISH.md`
+  - freeze: `docs/project-memory/ultimate-polish/05_MODEL_FABRIC_FREEZE_RECORD.md`
+  - key reconciliations: model family/revision/deployment are separated; hard eligibility precedes learned routing; strict-free eligibility requires fresh evidence; a deterministic champion remains the routing baseline; model routing is separated from endpoint routing; route leases preserve cache/context continuity; static quality scores are priors only; local inference is governed by device evidence and Resource Governor.
+  - implementation remains partial/foundation; MDL-P0 through MDL-P11 remain deferred until cross-system reconciliation.
+- Next numbered core capability: Capability 06 — Adaptive Compute.
 
 ## Implemented / Strongly Established
 - Hardened Cognitive Runtime v4.2 direction
