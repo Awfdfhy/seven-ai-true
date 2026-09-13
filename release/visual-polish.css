@@ -21,8 +21,29 @@ html[data-seven-mode="research"] .seven-context-chip::before{border-radius:1px;t
 body:not(.light) .seven-celestial-toggle{background:#b9b4ff;transform:rotate(-14deg);box-shadow:0 0 12px rgba(139,130,255,.22);}
 body:not(.light) .seven-celestial-toggle::after{opacity:1;transform:translate(5px,-4px) scale(1);}
 
-.seven-save-toast{position:fixed!important;right:14px!important;bottom:max(12px,env(safe-area-inset-bottom))!important;z-index:35!important;display:inline-flex!important;align-items:center!important;gap:6px!important;min-height:28px!important;padding:0 9px!important;border:1px solid var(--seven-line)!important;border-radius:999px!important;background:color-mix(in srgb,var(--seven-surface) 92%,transparent)!important;color:var(--seven-text-3)!important;box-shadow:none!important;font-size:9px!important;line-height:1!important;backdrop-filter:blur(8px);pointer-events:none;}
-.seven-save-toast::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--seven-success);}
+/* Persistence is part of the composer state, not a floating developer toast. */
+#persistenceStatus.seven-save-status{
+  position:static!important;inset:auto!important;z-index:auto!important;display:inline-flex!important;align-items:center!important;gap:6px!important;
+  max-width:none!important;min-height:auto!important;padding:0!important;margin-left:auto!important;border:0!important;border-radius:0!important;
+  background:transparent!important;color:var(--seven-text-3)!important;box-shadow:none!important;font-size:9px!important;line-height:1!important;pointer-events:none!important;
+}
+#persistenceStatus.seven-save-status::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--seven-success);box-shadow:0 0 8px color-mix(in srgb,var(--seven-success) 35%,transparent);}
+
+/* First run must feel intentional, not like a full-screen form with empty space. */
+#nameModal{align-items:center!important;justify-content:center!important;padding:24px!important;background:
+  radial-gradient(circle at 50% 22%,color-mix(in srgb,var(--seven-mode-accent) 15%,transparent),transparent 34%),rgba(3,4,11,.78)!important;}
+#nameModal .modal-content{
+  width:min(440px,calc(100vw - 28px))!important;height:auto!important;min-height:0!important;max-height:none!important;
+  padding:30px 26px 26px!important;border:1px solid var(--seven-line-strong)!important;border-radius:28px!important;
+  background:linear-gradient(160deg,color-mix(in srgb,var(--seven-surface) 97%,var(--seven-mode-accent) 3%),var(--seven-canvas-2))!important;
+  box-shadow:0 34px 90px rgba(0,0,0,.38),0 1px 0 rgba(255,255,255,.035) inset!important;text-align:center!important;overflow:visible!important;
+}
+#nameModal .seven-brand-mark{filter:drop-shadow(0 15px 28px var(--seven-mode-glow));}
+#nameModal .name-modal-title{display:block!important;margin:4px 0 7px!important;color:var(--seven-text)!important;font-size:22px!important;font-weight:760!important;letter-spacing:-.035em!important;}
+#nameModal .name-modal-sub{margin:0 0 20px!important;color:var(--seven-text-3)!important;font-size:12px!important;}
+#nameModal #nameInput{height:50px!important;margin:0 0 14px!important;border-radius:15px!important;text-align:start!important;font-size:15px!important;}
+#nameModal .modal-buttons{position:static!important;display:grid!important;grid-template-columns:.72fr 1.28fr!important;gap:9px!important;padding:0!important;background:none!important;}
+#nameModal .modal-buttons button{min-height:46px!important;margin:0!important;max-width:none!important;border-radius:14px!important;}
 
 html[data-seven-mode="build"] body::before{background-size:32px 32px;opacity:.82;}
 html[data-seven-mode="world"] body::before{background-image:radial-gradient(circle at 20% 20%,rgba(255,158,114,.035) 0 1px,transparent 1.5px);background-size:26px 26px;}
@@ -35,6 +56,8 @@ html.seven-theme-shift::after{content:"";position:fixed;inset:-25vmax;z-index:99
   .seven-context-rail{justify-content:flex-start;overflow-x:auto;scrollbar-width:none;padding:5px 10px;}
   .seven-context-rail::-webkit-scrollbar{display:none;}
   .seven-context-rail strong{position:sticky;left:0;background:var(--seven-canvas);padding-right:6px;}
-  .seven-save-toast{right:10px!important;bottom:max(6px,env(safe-area-inset-bottom))!important;opacity:.78;}
+  #nameModal{padding:14px!important;}
+  #nameModal .modal-content{width:100%!important;height:auto!important;border-radius:25px!important;padding:27px 20px 20px!important;}
+  .seven-settings-grid{padding-bottom:96px!important;}
 }
 @media(prefers-reduced-motion:reduce){html.seven-processing .seven-brand-mark .seven-orbit{animation:none!important}.seven-celestial-toggle,.seven-celestial-toggle::after{transition:none!important}html.seven-theme-shift::after{display:none!important}}
