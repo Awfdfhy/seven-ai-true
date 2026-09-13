@@ -7,6 +7,10 @@ const TIERS = Object.freeze({
 });
 
 function clamp(n, min, max) { return Math.max(min, Math.min(max, Number(n) || 0)); }
+function positiveOr(value, fallback) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
 
 function selectTier(signals = {}) {
   const mem = Number(signals.deviceMemoryGb || 0);
@@ -27,11 +31,17 @@ function selectTier(signals = {}) {
 function createBudget({ tier = "balanced", baseContextTokens = 16000, baseMemoryMb = 256, baseToolCalls = 12 } = {}) {
   const name = Object.prototype.hasOwnProperty.call(TIERS, tier) ? tier : "balanced";
   const policy = TIERS[name];
+  const baseContext = positiveOr(baseContextTokens, 16000);
+  const baseMemory = positiveOr(baseMemoryMb, 256);
+  const baseTools = positiveOr(baseToolCalls, 12);
   return {
     tier: name,
-    contextTokens: Math.max(1024, Math.floor(baseContextTokens * policy.contextScale)),
-    memoryMb: Math.max(64, Math.floor(baseMemoryMb * policy.contextScale)),
-    toolCalls: Math.max(1, Math.floor(baseToolCalls * (name === "full" ? 1 : name === "balanced" ? 0.75 : 0.5))),
+    baseContextTokens: baseContext,
+    baseMemoryMb: baseMemory,
+    baseToolCalls: baseTools,
+    contextTokens: Math.max(1024, Math.floor(baseContext * policy.contextScale)),
+    memoryMb: Math.max(64, Math.floor(baseMemory * policy.contextScale)),
+    toolCalls: Math.max(1, Math.floor(baseTools * (name === "full" ? 1 : name === "balanced" ? 0.75 : 0.5))),
     concurrency: policy.concurrency,
     animationScale: policy.animationScale,
     allowBackground: policy.allowBackground,
@@ -43,9 +53,9 @@ function adaptBudget(current, signals = {}) {
   const tier = selectTier(signals);
   return createBudget({
     tier,
-    baseContextTokens: Number(current?.baseContextTokens || current?.contextTokens || 16000),
-    baseMemoryMb: Number(current?.baseMemoryMb || current?.memoryMb || 256),
-    baseToolCalls: Number(current?.baseToolCalls || current?.toolCalls || 12)
+    baseContextTokens: positiveOr(current?.baseContextTokens, 16000),
+    baseMemoryMb: positiveOr(current?.baseMemoryMb, 256),
+    baseToolCalls: positiveOr(current?.baseToolCalls, 12)
   });
 }
 
