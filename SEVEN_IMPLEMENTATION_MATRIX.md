@@ -27,10 +27,11 @@ A subsystem is **DONE** only when executable code exists, normal-flow wiring inv
 | Research Fabric | ResearchContract/Agenda/ClaimRef, source-versioned locator-bound EvidenceUnits, dependency clusters, claim freshness/conflict, CoverageContract, ClaimEvidenceLock, CitationManifest, ResultPack | Release Research Runtime + hardening + Truth bridge; live acquisition partial | Research core 46 + Pass B 17 + bridge 2 | **Wave 08 foundation verified**; live acquisition, multimodal research and larger current-web/multilingual evals remain partial |
 | Retrieval Fabric | RetrievalNeed/QueryPlan, exact/lexical cheap baseline, conditional semantic/hybrid portfolio, discovery-only observations, candidate clustering, fetched/extracted lineage, run manifest | Hardening foundation; provider/browser adapters partial | Wave 08 Research suites | **Wave 08 foundation verified**; live providers, health/cache persistence and browser escalation remain partial |
 | Knowledge / Files | KnowledgeSource/SourceVersion/SourceLocator, derived representations, invalidation and source-bound KnowledgeResult | Hardening foundation; ingestion/storage adapters partial | Wave 08 Research suites | **Wave 08 foundation verified**; durable ingestion, OCR/multimodal bridge, optional semantic indexes and Android SAF remain partial |
-| Vision Fabric | Frozen VisualSource/Version/Region/OCR/Layout/Observation/Perception contracts | No complete executable specialist core yet | Architecture evidence only | **Wave 09 active**; implementation foundation is the current boundary |
-| Story Fabric / Narrative Engine | Architecture-polished StoryContract, graph/ledger, arcs, promises/reveals, scene/beat/pacing/voice/revision design | No dedicated executable runtime yet | Architecture review only | **Architecture-polished only**; implementation/benchmarks deferred to RPG/Real Works campaign |
+| Vision Fabric | VisualSource/Version/Frame/Region, derived OCR/Layout, grounded observations, perception request/plan/manifest, frame deltas, exact target proposals, Remote Perception Envelope, VisualEvidenceRef | Canonical host/hardening foundation; live OCR/VLM/UI integration partial | Vision Foundation 54 + Pass B 27 + full suite | **Wave 09 foundation verified**; real OCR/VLM/platform adapters, durable derivative cache, device capture permissions and product integration remain partial |
+| Story Fabric / Narrative Engine | Architecture-polished StoryContract, graph/ledger, arcs, promises/reveals, scene/beat/pacing/voice/revision design | No dedicated executable runtime yet | Architecture review only | **Architecture-polished only**; promoted into Mega-Wave 10 with RPG runtime |
 | Local Intelligence | Deterministic embedding/classification helpers | Partial | Runtime smoke | Foundation implemented |
-| Canon / Real Works | Source authority, anchors, world/canon contracts, branch/debt audit | Packaged APIs; chat orchestration partial | Unit/browser release tests | Functional foundation |
+| RPG Engine | World/canon runtime foundations and simulator pieces | Partial | Existing world/canon tests | **Mega-Wave 10 next**; authoritative world/actor/knowledge/agency + Story runtime bridge not yet foundation-complete |
+| Canon / Real Works | Source authority, anchors, world/canon contracts, branch/debt audit | Packaged APIs; chat orchestration partial | Unit/browser release tests | Functional foundation; specialist campaign still incomplete |
 | Titles System | Deterministic world naming rules | Via World Runtime; UI partial | Unit gate | Functional foundation |
 | UI Design / Runtime | Release CSS, adaptive tiers, semantic states, accessibility hooks | Yes | Browser/static gates | Strong foundation; final Visual campaign pending |
 | Motion System | Event-delegated reveals/press/theme motion | Yes | Browser + reduced-motion | Strong foundation |
@@ -42,12 +43,16 @@ A subsystem is **DONE** only when executable code exists, normal-flow wiring inv
 | Full observability | Partial counters/modules | Partial | Partial | Planned/partial |
 
 ## Current system laws
-- Authority cannot be created by model/tool/memory/summary/search text or increased through derivation.
+- Authority cannot be created by model/tool/memory/summary/search/vision text or increased through derivation.
 - Search observations, snippets and ranking are discovery signals, not evidence authority.
 - Durable Research evidence binds exact claim, SourceVersion, locator, principal/scope/realm and explicit dependency cluster.
 - Distinct source IDs do not manufacture independent corroboration.
 - Negative absence claims require bounded CoverageContract evidence; `NOT_FOUND` alone is not refutation.
 - Research → Truth transport remains conservative and cannot recreate Research scalar authority.
+- Vision pixels/OCR/VLM output remains derived observation; it cannot grant action, file, world or truth authority.
+- Screenshot/UI geometry is ephemeral; a target is usable only when frame/version/source/principal/content/viewport identity still matches.
+- Remote visual processing requires authoritative source/version binding, grounded regions, bounded area, explicit crop/redaction lineage and metadata stripping.
+- Foreign visual artifacts/regions cannot enter an evidence or perception manifest by merely copying an ID.
 - Memory Recall remains recall-only; contextual placement never creates evidence or permission.
 - Only trusted runtime/controller/policy instructions occupy the privileged system lane.
 - Child compute cannot mint budget or steal protected verification/recovery reserve.
@@ -68,15 +73,18 @@ A subsystem is **DONE** only when executable code exists, normal-flow wiring inv
 - Mobile-first reachability and safe areas.
 - Reduced Motion affects presentation only.
 - Performance tiers may reduce optional decoration/depth, never correctness/safety.
-- Heavy PDF/workspace/tool/benchmark/coding/research semantic assets remain lazy.
-- Release startup gate remains `<100000` bytes; Wave 08 final implementation evidence is **`98941` bytes**.
+- Heavy PDF/workspace/tool/benchmark/coding/research/vision assets remain lazy.
+- Release startup gate remains `<100000` bytes; Wave 09 final implementation evidence is **`98941` bytes**.
 
-## Research / World / Story rules
+## Research / Vision / World / Story rules
 - Search finds candidates; SourceVersions + locators anchor evidence; evidence supports claims; ClaimEvidenceLock precedes grounded synthesis.
 - GAP/STALE/UNCITABLE/CONFLICT cannot become PASS through prose.
 - Freshness and source fitness are claim-specific, not universal source scores.
+- Vision observes and grounds; it never silently converts perception into action authority.
+- Precise visual values require verified precise evidence, not geometric guesswork.
 - Canon order is source-bound; divergence branches rather than rewriting canon.
 - Story prose cannot silently overwrite authoritative RPG/Canon world state; proposed diffs require owning-controller verification/commit.
+- Real Works fidelity gaps must remain explicit (`CANON_GAP`/unresolved) instead of false certainty.
 
 ## Evolution / evaluation promotion rules
 - Promotion is bound to frozen evaluation identity and exact candidate/baseline state.
@@ -86,11 +94,11 @@ A subsystem is **DONE** only when executable code exists, normal-flow wiring inv
 - Apply/verify failure requires rollback; rollback failure is never reported success.
 
 ## Next integration gates
-1. **Vision Fabric:** provenance-bound VisualSource/Version/Region, derived OCR/layout, grounded observations, stale-frame guards, privacy/minimization and Truth evidence bridge.
-2. Research live acquisition: provider/browser adapters, durable cache/source persistence and optional semantic retrieval without moving heavy work onto startup.
-3. RPG/Real Works + Story Fabric: wire world/story contracts into conversation generation and verified scene/world commits.
-4. Persistence: reconcile remaining legacy state and durable Effect/Memory/Project/Research recovery.
-5. Android SAF/Keystore + real-device startup/storage/cancellation/offline/provider tests.
+1. **RPG Engine + Story Fabric:** authoritative world/actor/knowledge/relationship/quest/thread state plus Story planning/scene/arc/promise/reveal runtime and judgeable continuity/agency boundaries.
+2. Real Works + Titles: canon-source fidelity, branch/debt audit and world-specific naming integrated with the RPG/Story runtime.
+3. Research/Vision live adapters: provider/browser/OCR/VLM bridges, durable cache/derivatives and multimodal evidence transport without moving heavy work onto startup.
+4. Persistence: reconcile remaining legacy state and durable Effect/Memory/Project/Research/Vision recovery.
+5. Android SAF/Keystore + real-device startup/storage/cancellation/offline/provider/capture tests.
 6. Protocol adapters only after underlying capability authority/contracts are verified.
 7. Specialist/UI campaigns, Android certification, long-horizon/competitor evals and final Red Team.
 8. Only then may the complete product be called release-ready.
