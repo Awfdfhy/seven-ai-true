@@ -54,17 +54,21 @@ const {
     maxTokens: 1000,
     reserveTokens: 100,
     items: [
-      { id: "sys", category: "instructions", tokens: 100, pinned: true, content: "rules" },
+      { id: "sys", category: "instructions", contextRole: "AUTHORITY_INSTRUCTION", trustedInstruction: true, authoritySource: "runtime", tokens: 100, pinned: true, content: "rules" },
       { id: "task", category: "task", tokens: 120, required: true, content: "goal" },
       { id: "old", category: "conversation", tokens: 700, priority: 0, content: "old" },
       { id: "ev", category: "evidence", tokens: 150, priority: 50, content: "evidence" },
       { id: "bad", category: "memory", tokens: 20, lifecycle: "deleted", content: "deleted" }
     ]
   });
+  assert.equal(compiled.status, "PASS");
   assert.ok(compiled.tokensUsed <= compiled.tokenBudget);
   assert.ok(compiled.selected.some(x => x.id === "sys"));
   assert.ok(compiled.selected.some(x => x.id === "task"));
   assert.ok(!compiled.selected.some(x => x.id === "bad"));
+  const messages = contextCompiler.buildModelMessages(compiled);
+  assert.equal(messages.find(x => x.sevenContext.id === "sys").role, "system");
+  assert.equal(messages.find(x => x.sevenContext.id === "task").role, "user");
 })();
 
 (function resourceTests(){
