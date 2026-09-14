@@ -5,7 +5,7 @@
 ## Campaign
 - Branch: `ultimate-polish-v1`
 - Density target: `~20–25` Mega-Waves
-- Current counter: **`3 / ~20–25`**
+- Current counter: **`4 / ~20–25`**
 - Protected source: `seven_ai-final.html`
 - Protected source reference: `658133` bytes, Git blob `3e8dfa8e7da7124e16504140eb9631c10cabf053`
 - Protected-branch law: do not merge to `main` or another protected branch without explicit user approval.
@@ -13,141 +13,120 @@
 ## Mega-Wave 01 — Speed + Smoothness Foundation
 **Status:** `PASS_FOUNDATION`
 
-### Material implementation
-- separated Reduced Motion accessibility preference from compute-tier selection;
-- added resource/pressure-aware `lite/balanced/full` recommendation;
-- immediate downgrade plus conservative recovery/hysteresis;
-- visibility-aware degradation/re-evaluation;
-- retained keyed frame batching, cancellable idle work and cooperative yielding;
-- added 11 direct Performance Runtime assertions;
-- made `all.cjs` discover `release/*.test.cjs` automatically;
-- Simplifier Duel reduced the strengthened Performance Runtime to `4368` bytes, below the pre-wave `4487` bytes.
+Material result: Reduced Motion was separated from compute strength; adaptive resource/pressure tiers, immediate downgrade + guarded recovery/hysteresis, visibility re-evaluation, keyed frame batching, cancellable idle work and cooperative yielding were verified. Simplifier Duel made the strengthened Performance Runtime smaller than the pre-wave version.
 
-### Evidence
-Implementation commit `57fe639cdedc066e73bda64571fc68c38426c4f7`, implementation run `34847429061`, final documented HEAD `afa6b8205969d48c8487ed5a57f647d852ee5021`, final workflow run `34847605495`.
+Evidence: implementation `57fe639cdedc066e73bda64571fc68c38426c4f7`; final documented HEAD `afa6b8205969d48c8487ed5a57f647d852ee5021`; run `34847605495`; `39` suites; Performance `11`; Runtime Smoke `28`; source integrity PASS; `98946` startup bytes; six UI screenshots and release artifact PASS.
 
-Verified: `39` suites; Performance Runtime `11`; Runtime Smoke `28`; source integrity PASS; `98946` startup bytes; `34881` lazy workspace bytes; `3688736 / 8388608` static APK bytes; `0 warnings`; release verify `2` checks; six UI screenshots; release artifact upload.
-
-### Carry-forward gaps
-Real Android startup/RAM/battery/thermal/frame evidence, project-wide tail latency/jank, provider/network pressure and dependency hygiene remain release-level work.
+Carry-forward: real-device battery/RAM/thermal/frame and tail-latency evidence.
 
 ---
 
 ## Mega-Wave 02 — Cognitive Runtime + Truth/Epistemic Foundation
 **Status:** `PASS_FOUNDATION`
 
-### Material implementation
-- normalized Task Contract string risk so `high`/`critical` cannot collapse to numeric zero;
-- preserved verification floors under constrained compute tiers;
-- authority-sensitive decisions fail closed when trust provenance is absent or externally tainted;
-- fresh-claim evidence counts independent verified source groups rather than duplicate evidence rows;
-- deduplicated source/version evidence and stopped treating different wording as automatic contradiction;
-- unknown source independence stays unknown;
-- required reasons for `BLOCKED`, `INCONCLUSIVE`, `FAILED`, `CANCELLED` transitions;
-- restored Reduced Motion/compute separation in fallback Control/Resource paths;
-- Pass B repaired mission-budget concurrency: DONE/RUNNING work reserves budget, the ready frontier is cumulative, dependencies cannot start early, and concurrent starts cannot oversubscribe.
+Material result: normalized string/numeric risk, preserved mandatory verification under constrained resources, authority-sensitive fail-closed trust, independent-source freshness verification, evidence dedupe, explicit contradiction semantics, required failure reasons and dependency/cumulative-budget-safe mission planning.
 
-### Evidence
-Pass A run `34853211411` at `6d3fc01d04611edae09b5ae3652cdc69f75d61b4`.
-Final implementation run `34853584115` at `bf8c66e0ca9f7e2363dde7827ff530a5e3cd3d85`.
+Evidence: final implementation `bf8c66e0ca9f7e2363dde7827ff530a5e3cd3d85`; run `34853584115`; `40` suites; Cognitive Boost `23`; Gate `7`; Planner `4`; Runtime Smoke `28`; Performance `11`; source integrity/release/screenshots PASS; `99553` startup bytes.
 
-Verified: `40` suites; Cognitive Boost `23`; Cognitive Gate `7`; Cognitive Planner Polish `4`; Runtime Smoke `28`; Performance Runtime `11`; control/execution integration PASS; source integrity PASS; `99553` startup bytes; `34881` lazy workspace bytes; `3689343 / 8388608` static APK bytes; `0 warnings`; release verification and six screenshots PASS.
-
-### Carry-forward gaps
-Full CR3 execution classes, structured WAITING/CANCELLING/RECOVERING, uncertain-side-effect reconciliation, complete ClaimGraph/correction propagation and broader live/device evidence remain later ownership domains.
+Carry-forward: full CR3 execution classes, complete ClaimGraph/correction projection and uncertain-effect ownership.
 
 ---
 
 ## Mega-Wave 03 — Memory Fabric + Context Workspace Foundation
 **Status:** `PASS_FOUNDATION`
 
+Material result: added selective origin-bound versioned Memory atoms with correction history, point-in-time lookup, scope/principal filtering, same-origin dedupe, bounded recall, recall-only MemoryCapsules and hard purge semantics. Context gained typed roles, a strict trusted-instruction lane, pre-ranking scope filters, revision/content dedupe, mandatory-context blocking, elastic borrowing, chronology preservation and deterministic manifests/capsules. Pass B repaired Node/browser policy drift and Control Bridge system-role promotion. A startup-budget failure at `101169` bytes triggered a Simplifier Duel; the cap was not raised and the final release returned to `99794` bytes.
+
+Evidence: final implementation `5172c30fbb2eaffde30cbe65356668d75a12a0d8`; run `34857043114`; `41` suites; Memory/Context `15`; control parity PASS; source integrity PASS; `99794` startup bytes; six screenshots and artifact PASS.
+
+Carry-forward: scalable persistence/indexes, optional semantic retrieval, complete derived invalidation/purge reconciliation and real Android long-session evidence.
+
+---
+
+## Mega-Wave 04 — Model Fabric + Adaptive Compute Foundation
+**Status:** `PASS_FOUNDATION`
+
 ### Truth reconstructed
-The repository already had protected-source memory history, IDB/persistence tests, runtime context actions and a Node context compiler. The architecture target was materially stronger than the executable boundary: long-term memory needed origin-bound version semantics and Context needed hard separation between privileged instructions and recalled/retrieved/tool/project data. The audit also found Node/browser policy drift: the strengthened Node compiler could enforce rules the release Control Runtime did not yet share.
+The repository already had provider routing, model registry/free-proof, health/evolution/promotion pieces and cognitive adaptive-compute heuristics. The missing executable boundary was stronger identity and eligibility semantics: a model family/revision was still too easy to conflate with an endpoint, endpoint cost/health/quota could be underspecified, context/model compatibility did not have a standalone handshake, and compute budgeting lacked protected multi-dimensional leases/reserves.
 
-### Maximum Effort Pass A — Memory Fabric
-Added `hardening/memory-fabric.cjs` as a protected-source-safe foundation rather than rewriting `seven_ai-final.html`.
+### Maximum Effort Pass A — Model Fabric
+Added `evolution/model-fabric.cjs` as a protected-source-safe layer. It implements:
+1. deterministic, distinct ModelFamily / ModelRevision / DeploymentEndpoint identity;
+2. strict free-proof freshness validation;
+3. explicit endpoint pricing, health, quota and qualification semantics;
+4. hard capability/context/output eligibility before ranking;
+5. verified-outcome-only scoring;
+6. deterministic champion retention for immaterial differences;
+7. RouteLease stability to prevent route thrash;
+8. same-revision endpoint failover before cross-model switching;
+9. explicit `NO_ELIGIBLE_MODEL` terminal route state;
+10. ContextManifest revision/tokenizer handshake with RECOMPILE/BLOCKED outcomes;
+11. bounded provider-error normalization.
 
-Implemented:
-1. selective durable admission instead of transcript dumping;
-2. explicit durable roles (`EPISODE`, `STATE`, `PREFERENCE`, `GOAL`, `PROCEDURE`, `LESSON`, `PROFILE`);
-3. Procedure admission requires verified experience or authoritative instruction;
-4. immutable origin/principal/scope/cluster/authority binding;
-5. versioned correction/supersession with historical retrieval and point-in-time lookup;
-6. same-origin canonical-restatement dedupe so repetition cannot fake corroboration;
-7. scope/principal/namespace filtering before recall leaves Memory;
-8. bounded retrieval and deterministic ranking;
-9. `MemoryCapsule` projection marked `MEMORY_RECALL`, `RECALL_ONLY`, `grantsAuthority:false`;
-10. Memory cannot authorize an action;
-11. hard purge removes current and historical canonical payload and leaves only a non-sensitive receipt.
+### Maximum Effort Pass A — Adaptive Compute
+Added `evolution/adaptive-compute.cjs` with:
+1. explicit BudgetVector dimensions for reasoning, retrieval, context, tools, verification, candidates, retries, concurrency and recovery reserve;
+2. task risk/consequence correctness floors independent of optional difficulty;
+3. resource ceilings that block when mandatory correctness cannot fit rather than silently erasing it;
+4. FAST/AUTO/MAX_QUALITY preferences that alter optional compute, not required verification;
+5. parent/child ComputeLease accounting;
+6. deterministic next-action semantics including VERIFY_NOW, SHIFT, PIVOT, EARLY_EXIT and ABANDON_AS_INCONCLUSIVE;
+7. no speculative background compute by default;
+8. marginal verified-utility accounting.
 
-### Maximum Effort Pass A — Context Workspace
-Strengthened `hardening/context-compiler.cjs` into a governed elastic compiler:
-1. typed context roles instead of generic system-role projection;
-2. only trusted runtime/controller/policy `AUTHORITY_INSTRUCTION` can enter the privileged `system` lane;
-3. Memory, evidence, project material, tool observations/schemas and other contextual data cannot self-promote into instructions;
-4. principal/namespace/scope and lifecycle filtering occurs before ranking;
-5. revision/content dedupe before budget selection;
-6. mandatory anchors are selected first and oversized mandatory context returns `BLOCKED` rather than silently dropping requirements;
-7. elastic budget borrowing uses otherwise stranded budget without treating the window as a target fill level;
-8. semantic role ordering plus conversation chronology preservation;
-9. deterministic ContextManifest/ContextCapsule identity;
-10. blocked compilation refuses model-message assembly.
-
-### Pass B — browser parity, bridge hardening and Simplifier Duel
-Pass B found two independent release defects:
-- Node hardening policy had become stronger than the browser `release/control-runtime.js`, causing real policy drift;
-- the existing `release/control-bridge.js` still projected truth/project/memory/tool data using system-like roles.
-
-Repairs:
-- upgraded browser Control Runtime to `v4.3` with governed context semantics, scope filters, mandatory blocking, dedupe, elastic borrowing and chronology;
-- compacted and hardened Control Bridge `v1.1.0` so Task/Truth/Project/Memory/Tool/Conversation inputs carry explicit context roles and Memory remains recall-only data;
-- exposed `memoryFabric` through `hardening/index.cjs`;
-- added `hardening/memory-context.test.cjs` with 15 adversarial assertions;
-- aligned general hardening tests with the trusted-instruction boundary;
-- updated release verification to the `v4.3` contract marker.
-
-The first browser-parity candidate exceeded the unchanged startup cap (`101169 > 100000`). The cap was **not raised**. The Simplifier Duel compacted the bridge and brought the final release layer to **`99794` bytes**, preserving the stronger policy while returning under budget.
+### Pass B — adversarial routing and reserve hardening
+The first green implementation was challenged rather than immediately frozen. Pass B found material weaknesses and repaired them:
+- a hosted model's free-proof class could otherwise imply endpoint pricing too strongly, so hosted endpoint pricing must now be independently explicit and unknown fails closed;
+- free proof dated implausibly in the future now fails closed beyond bounded clock skew;
+- `LIMITED` quota with zero remaining is treated as exhausted;
+- ComputeLease double-release can no longer manufacture capacity around a still-active sibling lease;
+- verification and recovery reserves are explicit protected lanes;
+- ordinary/optional child work cannot consume either protected lane;
+- verification and recovery purposes can consume only their own reserved lane.
 
 ### Final implementation evidence
-Final implementation HEAD before documentation: `5172c30fbb2eaffde30cbe65356668d75a12a0d8`.
-GitHub Actions run **`34857043114`** / run #1426: **success**.
+Pass A implementation commit: `4dc26e2ee1f82b344471f2eed680cfe3066e4aff`.
+Pass B/final implementation commit: `0aff40a74f061c170230d8d74a109157b0dc88e5`.
+GitHub Actions run **`34858416658`** / #1429: **success**.
 
-Evidence from the exact HEAD:
-- complete gate: **`PASS (41 suites)`**;
-- Memory/Context hardening: **`PASS (15 assertions)`**;
-- control parity + bridge integration: PASS;
-- hardening tests: PASS;
-- Runtime Smoke: `PASS (28 assertions)`;
-- Performance Runtime: `PASS (11 assertions)`;
-- Cognitive Boost: `PASS (23 assertions)`;
-- Cognitive Gate: `PASS (7 assertions)`;
-- Cognitive Planner Polish: `PASS (4 assertions)`;
-- source-integrity lock: PASS, protected source remains `658133` bytes / blob `3e8dfa8e7da7124e16504140eb9631c10cabf053`;
-- static audit: **`99794` startup bytes**, `34881` lazy workspace bytes, `3689584 / 8388608` static APK bytes, `0 warnings`;
-- release verification: `PASS (2 checks, 99794 startup bytes)`;
-- UI screenshot capture: `PASS (6 files)`;
-- release artifact upload: PASS, artifact `10353232511`, zip SHA-256 `531211e047fda5921baf3cfae3b3a67c8a31e9f8633eb101585c37671ce0ed9b`.
+Evidence from exact Wave 04 implementation HEAD:
+- complete gate: **`PASS (42 suites)`**;
+- Model/Compute Polish: **`PASS (36 assertions)`**;
+- Runtime Smoke `28`;
+- Performance Runtime `11`;
+- Cognitive Boost `23`;
+- Cognitive Gate `7`;
+- Cognitive Planner `4`;
+- Memory/Context `15`;
+- source integrity PASS, protected source remains `658133` bytes / blob `3e8dfa8e7da7124e16504140eb9631c10cabf053`;
+- static audit: `99794 / 100000` startup bytes, `34881` lazy workspace bytes, `3689584 / 8388608` static APK bytes, `0 warnings`;
+- release verification PASS;
+- UI screenshots: `PASS (6 files)`;
+- artifact upload PASS, artifact `10354156004`, zip SHA-256 `b83aacc5b95601e21dd04c37983381c2195e65a776ac7596cadc1d5838638c93`.
 
 ### Unlimited / Speed / Smoothness / Zero-Manual gates
-- **Unlimited:** `PASS_FOUNDATION`. Retrieval/context are bounded by explicit resource/window budgets rather than arbitrary conversation counts; long-lived scalable persistence remains later work.
-- **Speed:** `PASS_FOUNDATION`. Required governance was added without raising the startup ceiling; the final release remains `99794 / 100000` bytes and heavy workspaces/PDF remain lazy.
-- **Smoothness:** `PASS_FOUNDATION`. No continuous background summarization, vector service or polling loop was added to the interaction path.
-- **Zero-Manual:** `PASS_FOUNDATION`. Scope filtering, recall labeling, dedupe, mandatory-context blocking and elastic budget use happen automatically.
+- **Unlimited:** `PASS_FOUNDATION`. Unknown/external quotas are represented truthfully rather than turned into product-level fake limits; route/failover behavior is open-ended while respecting actual endpoints.
+- **Speed:** `PASS_FOUNDATION`. Routing is deterministic and cheap by default, RouteLease suppresses needless switching, and the new layers stay outside the release startup path; startup remained `99794` bytes.
+- **Smoothness:** `PASS_FOUNDATION`. Stable leases and explicit fallback/recompile states reduce route oscillation and context surprises.
+- **Zero-Manual:** `PASS_FOUNDATION`. Normal routing chooses eligible endpoints automatically; uncertainty becomes an explicit system state rather than configuration work for the user.
 
-### Explicit open evidence/implementation gaps
-- full scalable persistent Memory 3.0 storage and materialized lexical/entity/time/vector indexes;
-- optional local semantic/vector retrieval, reranking and lazy embedding migration;
-- complete cross-system invalidation/reconstruction checkpoint machinery;
-- exact provider/model tokenizer handshake and model-switch recompilation, owned with Model Fabric;
-- full import/export/recovery/purge reconciliation across every derived representation;
-- real Android long-session RAM/battery/latency evidence;
-- protected legacy memory remains intact and later needs a governed compatibility bridge rather than casual source editing;
-- CI dependency install still reports `7` audit findings (`3 moderate`, `3 high`, `1 critical`) plus deprecation warnings; this remains explicit dependency-hardening work.
+### Explicit carry-forward gaps
+- live-provider proof/health/quota drift under real network conditions;
+- full provider adapter qualification across dialects/streaming/tool calls;
+- real Android battery/thermal/RAM evidence for local-vs-remote compute;
+- benchmark-driven tuning of routing weights/utility thresholds;
+- integration of these Node foundations into every specialist product flow;
+- release-level saturation is not claimed.
 
-### Wave 03 conclusion
+### Wave 04 conclusion
 `PASS_FOUNDATION`, not `IMPLEMENTATION_SATURATED`, not `RELEASE_SATURATED`.
 
-## Next Mega-Wave
-**Mega-Wave 04 — Model Fabric + Adaptive Compute Foundation**
+## Story Fabric insertion
+User-identified gap: RPG had a stronger world-simulation architecture than Seven's dedicated story-writing craft layer. `docs/project-memory/current/STORY_FABRIC_ULTIMATE_POLISH.md` now contains the Ultimate-Polished architecture for StoryContract, Narrative State Ledger, hierarchical Story Graph, character arcs, thread/promise setup-payoff, information/reveal state, scene/beat compilation, pacing, voice/dialogue, theme/motif, branching, revision and narrative benchmarks. Commit `949af00dd064f3dc0b0fcaead975159c8348ac9f` passed the full CI gate in run `34859601979`.
 
-Audit and strengthen ModelFamily/Revision/Endpoint identity, free-proof freshness and fail-closed eligibility, health/quota/endpoint semantics, champion/fallback/lease behavior, context-window handshake, verified-outcome routing and promotion safety. Reconcile Adaptive Compute around multi-dimensional budgets, protected verification/recovery floors, resource ceilings, early-exit/inconclusive semantics and deterministic champion behavior without adding a hot-path meta-model.
+This is **architecture-polished only**. It is intentionally excluded from the completed Mega-Wave count until executable implementation/eval evidence exists.
+
+## Next Mega-Wave
+**Mega-Wave 05 — Tool Fabric + Tool Security Kernel + Side-Effect Ledger / Recovery Foundation**
+
+Strengthen CapabilitySpec/ToolBinding/BindingRevision/ToolCatalogSnapshot identity, schema fingerprints/drift, progressive schema disclosure, hard eligibility and deterministic selection, ToolCallContract identity, permission authority, explicit invocation/dispatch/cancel states, idempotency, post-dispatch uncertainty, deterministic replay and effect reconciliation. Keep large catalog/discovery work lazy and protect the `99794 / 100000` startup boundary.

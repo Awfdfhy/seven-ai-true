@@ -14,10 +14,11 @@ A subsystem is **DONE** only when executable code exists, normal-flow wiring inv
 | Cognitive Runtime | Task state machine, scoped capabilities, adaptive compute/risk, dependency/budget mission frontier, route learning, trust gate, adversarial preflight | Partial across specialist flows | Cognitive Boost 23 + Gate 7 + Planner 4 + integration | Wave 02 foundation verified; CR3 execution classes/no-progress/uncertain-effect cancellation remain partial |
 | Truth / Epistemic | Claim kinds, authority ceiling, lineage, freshness, dedupe, independence, conflict semantics | Partial via Research/World/control | Hardening + parity + cognitive gates | Wave 02 foundation verified; full ClaimGraph/correction/retraction projection remains partial |
 | Memory Fabric | Selective admission, origin-bound versioned atoms, correction history, point-in-time lookup, scope/principal filters, same-origin dedupe, bounded recall, MemoryCapsules, hard purge | Hardening/runtime compatibility foundation; protected legacy source remains | Legacy memory tests + runtime smoke + 15 adversarial Memory/Context assertions | **Wave 03 foundation verified**; scalable persistence/indexes/semantic retrieval and complete derived purge reconciliation remain partial |
-| Context Workspace | Typed roles, privileged instruction boundary, scope filtering, dedupe, mandatory blocking, elastic budgets, ordering/chronology, manifest/capsule | Browser Control Runtime `v4.3` + Control Bridge `v1.1.0` | Node/browser parity + 15 adversarial Memory/Context assertions + release verify | **Wave 03 foundation verified**; target-tokenizer handshake, full source adapters/invalidation/reconstruction remain partial |
-| Model Fabric | Provider routing, registry, free-proof, health/evals/promotion modules | Partial | Deterministic evolution/model tests | Partial; Wave 04 active, live provider proof and full route contracts required |
-| Adaptive Compute | Risk/resource-aware compute, planner depth/candidate breadth controls | Partial through cognitive layer | Cognitive Boost + resource/performance gates | Foundation exists; multi-dimensional leases/reserves/closed-loop utility policy remains Wave 04 work |
-| Tool Fabric | Capability normalization, aliases, schema/risk/permission gates | Partial | Runtime smoke | Partial, external adapters/effect recovery remain |
+| Context Workspace | Typed roles, privileged instruction boundary, scope filtering, dedupe, mandatory blocking, elastic budgets, ordering/chronology, manifest/capsule | Browser Control Runtime `v4.3` + Control Bridge `v1.1.0` | Node/browser parity + 15 adversarial Memory/Context assertions + release verify | **Wave 03 foundation verified**; full source adapters/invalidation/reconstruction remain partial; Model handshake foundation now exists |
+| Model Fabric | Family/revision/endpoint identity, strict proof freshness, endpoint pricing/health/quota/qualification, hard eligibility, verified outcome ranking, champion/lease/failover, context handshake | Foundation available to cognitive/specialist integration; not every provider path migrated | Model/Compute Polish 36 + registry/promotion/evolution suites | **Wave 04 foundation verified**; live-provider/adapters and release-level saturation remain partial |
+| Adaptive Compute | BudgetVector, mandatory risk/consequence floors, resource ceilings, ComputeLease pool, protected verification/recovery reserves, early-exit/inconclusive actions, marginal utility | Partial through cognitive layer; specialist integration remains | Model/Compute Polish 36 + Cognitive/Performance gates | **Wave 04 foundation verified**; real-device tuning and broad closed-loop integration remain partial |
+| Tool Fabric | Capability normalization, aliases, schema/risk/permission foundations | Partial | Runtime smoke | Wave 05 active; binding revisions/catalogue snapshots/schema drift/contracts/effect recovery incomplete |
+| Story Fabric / Narrative Engine | Architecture-polished StoryContract, narrative graph/ledger, arcs, promises, reveals, scene/beat/pacing/voice/revision design | No dedicated executable runtime yet | Architecture review only | **Architecture-polished only**; implementation/benchmarks deferred to RPG/Real Works specialist campaign |
 | Local Intelligence | Deterministic embedding/classification helpers | Partial | Runtime smoke | Foundation implemented |
 | Research Runtime | Claim-evidence matrix, freshness/conflict/gap analysis, citation locks | Packaged verification API; acquisition partial | Unit + release gates | Verification foundation implemented |
 | Coding Runtime | Repo-map/patch/evidence foundations + evolution modules | Partial | Runtime + evolution tests | Partial; real platform shell/file bridge remains |
@@ -34,9 +35,9 @@ A subsystem is **DONE** only when executable code exists, normal-flow wiring inv
 | MCP / A2A / AG-UI | Architecture target | No | No | Planned |
 | Full observability | Partial counters/modules | Partial | Partial | Planned/partial |
 
-## Current cognitive / epistemic / memory / context laws
+## Current cognitive / epistemic / memory / context / model laws
 - Task risk is normalized before compute policy; `high`/`critical` cannot collapse to zero.
-- Resource pressure may reduce optional breadth but not mandatory verification floors.
+- Resource pressure may reduce optional breadth but not mandatory verification/recovery floors.
 - Missing trust provenance fails closed for authority-sensitive actions.
 - Mission planning respects dependencies and cumulative budgets; RUNNING work reserves budget.
 - Reduced Motion is presentation/accessibility state, not evidence of weak compute.
@@ -51,6 +52,12 @@ A subsystem is **DONE** only when executable code exists, normal-flow wiring inv
 - Required context cannot be silently evicted; insufficient mandatory capacity blocks compilation.
 - Context can borrow unused budget elastically while remaining below the global window.
 - Conversation chronology survives relevance selection.
+- A model family, revision and deployment endpoint are distinct identities.
+- Free-model proof does not by itself prove a hosted endpoint is free; unknown endpoint pricing fails closed.
+- Route scoring may learn only from verified outcomes; a deterministic champion remains available.
+- Model/tokenizer change requires Context recompilation before inference.
+- Child compute cannot mint budget or steal protected verification/recovery reserve.
+- Success cannot early-exit before verification; unresolved effects require reconciliation.
 
 ## UI / performance rules
 - Mobile-first reachability and safe areas.
@@ -58,12 +65,13 @@ A subsystem is **DONE** only when executable code exists, normal-flow wiring inv
 - Reduced Motion affects presentation only.
 - Performance tiers may reduce optional decoration/depth, never correctness/safety.
 - Heavy PDF/workspace assets remain lazy.
-- Current release startup gate remains `<100000` bytes; Wave 03 final evidence is `99794` bytes.
+- Current release startup gate remains `<100000` bytes; Wave 04 final evidence is `99794` bytes.
 
-## Research / World rules
+## Research / World / Story rules
 - Claims bind to source/stance/locator/authority/transformation.
 - GAP/STALE/UNCITABLE/CONFLICT cannot become PASS through prose.
 - Canon order is source-bound, missing source references remain unverified/inconclusive, divergence branches rather than rewriting canon, and player irreversible intent is not invented.
+- Story prose cannot silently overwrite authoritative RPG/Canon world state; Story Fabric proposes narrative/world diffs and the owning controller verifies/commits them.
 
 ## Evolution promotion rules
 - Promotion is bound to frozen evaluation identity and exact candidate/baseline state.
@@ -72,13 +80,13 @@ A subsystem is **DONE** only when executable code exists, normal-flow wiring inv
 - Apply/verify failure requires rollback; rollback failure is never reported success.
 
 ## Next integration gates
-1. **Model Fabric + Adaptive Compute:** reconcile ModelFamily/Revision/Endpoint identity, strict free-proof freshness, quota/health eligibility, champion/fallback/lease behavior, target-model context handshake, verified-outcome routing, multi-dimensional budgets and protected verification/recovery reserves.
-2. Tool/Side-Effect/Recovery: reconcile cancellation after dispatched/uncertain effects end-to-end.
+1. **Tool Fabric + Tool Security + Side Effects:** reconcile catalogue/binding/schema identity, permission authority, dispatch certainty, retries/cancellation, idempotency and reconciliation end-to-end.
+2. Verification/Judge + Seven Evals/Benchmark expansion.
 3. Research: Search → Fetch → Extract → Matrix → Verify → Cite with live acquisition adapters.
 4. Coding: connect repo primitives to platform file/shell inspect/edit/test/diff evidence.
-5. RPG/Real Works: wire contracts into conversation generation/verified scene commits.
+5. RPG/Real Works + Story Fabric: wire world/story contracts into conversation generation and verified scene/world commits.
 6. Persistence: migrate remaining bounded/local legacy state where practical and reconcile Memory purge/import/export/recovery.
 7. Android SAF/Keystore + real-device startup/storage/cancellation/offline/provider tests.
 8. Protocol adapters only after underlying capability authority/contracts are verified.
-9. Benchmark/eval expansion, specialist/UI campaigns, Android certification and final Red Team.
+9. Specialist/UI campaigns, Android certification and final Red Team.
 10. Only then may the complete product be called release-ready.
