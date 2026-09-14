@@ -25,19 +25,28 @@ const {
   const planning = taskContract.transitionTask(task, "PLANNING");
   const executing = taskContract.transitionTask(planning, "EXECUTING");
   assert.equal(executing.state, "EXECUTING");
+  assert.throws(() => taskContract.transitionTask(task, "BLOCKED"), /requires reason/);
+  assert.equal(taskContract.transitionTask(task, "BLOCKED", { reason: "dependency-unavailable" }).transition.reason, "dependency-unavailable");
   assert.throws(() => taskContract.transitionTask(task, "COMPLETED"), /illegal task transition/);
 })();
 
 (function truthTests(){
   const sourceA = { id: "a", authority: "A1", independentGroup: "publisher-a", observedAt: new Date().toISOString() };
   const sourceB = { id: "b", authority: "A2", independentGroup: "publisher-b", observedAt: new Date().toISOString() };
-  const fact = truthFabric.createClaim({ id: "c1", text: "Seven test fact", kind: "FACT", sources: [sourceA, sourceB] });
+  const fact = truthFabric.createClaim({ id: "c1", text: "Seven test fact", kind: "FACT", sources: [sourceA, sourceB, sourceA] });
+  assert.equal(fact.sources.length, 2);
+  assert.equal(fact.productionMode, "ASSERTED");
   assert.equal(truthFabric.resolveClaim(fact, { minIndependentSources: 2 }).state, "FACT");
   const derived = truthFabric.deriveClaim({ id: "c2", text: "Derived conclusion", parents: [fact], transformation: "summary" });
   assert.ok(truthFabric.AUTHORITY[derived.authority] <= truthFabric.AUTHORITY[fact.authority]);
   assert.equal(truthFabric.grantsAuthority(derived), false);
-  const conflict = truthFabric.mergeClaims([fact, truthFabric.createClaim({ id: "c3", text: "Different assertion", sources: [sourceA] })]);
-  assert.equal(conflict.state, "CONFLICT");
+  const different = truthFabric.createClaim({ id: "c3", text: "Different but compatible assertion", sources: [sourceA] });
+  assert.equal(truthFabric.mergeClaims([fact, different]).state, "CLAIM");
+  const contradicted = truthFabric.createClaim({ id: "c4", text: "Explicit contrary assertion", sources: [sourceB], contradicts: [fact.id] });
+  assert.equal(truthFabric.mergeClaims([fact, contradicted]).state, "CONFLICT");
+  const unknownIndependence = truthFabric.createClaim({ id: "c5", text: "Unknown independence", sources: [{ id: "u1", authority: "A2" }, { id: "u2", authority: "A2" }] });
+  assert.equal(truthFabric.independentSourceCount(unknownIndependence), 0);
+  assert.equal(truthFabric.resolveClaim(unknownIndependence, { minIndependentSources: 1 }).state, "UNKNOWN");
 })();
 
 (function contextTests(){
@@ -61,6 +70,7 @@ const {
 (function resourceTests(){
   assert.equal(resourceGovernor.selectTier({ deviceMemoryGb: 2, cores: 2 }), "lite");
   assert.equal(resourceGovernor.selectTier({ deviceMemoryGb: 8, cores: 8, batteryLevel: .8 }), "full");
+  assert.equal(resourceGovernor.selectTier({ deviceMemoryGb: 8, cores: 8, batteryLevel: .8, reducedMotion: true }), "full");
   const lite = resourceGovernor.createBudget({ tier: "lite", baseContextTokens: 10000 });
   assert.ok(lite.contextTokens < 10000);
   const adaptedOnce = resourceGovernor.adaptBudget(lite, { deviceMemoryGb: 2, cores: 2 });
