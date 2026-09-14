@@ -12,7 +12,7 @@ A subsystem is **DONE** only when executable code exists, normal-flow wiring inv
 | Chat / rooms | Yes | Yes | Browser + persistence gates | Strong, not final-production certified |
 | Room persistence | IndexedDB adapter | Yes | Browser gate | Strong |
 | Cognitive Runtime | Task state machine, scoped capabilities, adaptive compute/risk, dependency/budget mission frontier, route learning, trust gate, adversarial preflight | Partial across specialist flows | Cognitive Boost 23 + Gate 7 + Planner 4 + integration | **Wave 02 foundation verified**; full CR3 execution/no-progress classes remain partial |
-| Truth / Epistemic | Claim kinds, authority ceiling, lineage, freshness, dedupe, independence, conflict semantics | Partial via Research/World/control | Hardening + parity + cognitive gates | **Wave 02 foundation verified**; full ClaimGraph/correction/retraction projection remains partial |
+| Truth / Epistemic | Claim kinds, authority ceiling, lineage, freshness, dedupe, explicit independence, conflict semantics | Partial via Research/World/control | Hardening + parity + cognitive gates | **Wave 02 foundation verified**; full ClaimGraph/correction/retraction projection remains partial |
 | Memory Fabric | Selective admission, origin-bound atoms, correction history, point-in-time lookup, scope/principal filters, dedupe, bounded recall, capsules, hard purge | Hardening/runtime compatibility foundation | Legacy memory + runtime smoke + 15 adversarial assertions | **Wave 03 foundation verified**; scalable indexes/semantic retrieval/derived purge reconciliation remain partial |
 | Context Workspace | Typed roles, privileged instruction boundary, scope filtering, dedupe, mandatory blocking, elastic budgets, chronology, manifest/capsule | Browser Control Runtime + bridge | Node/browser parity + 15 adversarial assertions | **Wave 03 foundation verified**; full adapters/invalidation/reconstruction remain partial |
 | Model Fabric | Family/revision/endpoint identity, strict proof, endpoint pricing/health/quota, hard eligibility, verified outcome ranking, lease/failover, context handshake | Foundation available to specialist integration | Model/Compute 36 + registry/promotion/evolution | **Wave 04 foundation verified**; live provider/adapters and release saturation remain partial |
@@ -22,11 +22,14 @@ A subsystem is **DONE** only when executable code exists, normal-flow wiring inv
 | Side-Effect Ledger | Logical Effect identity, attempt/dispatch/effect/compensation state, idempotency-aware retry, bounded reconciliation, restart lineage, tamper detection | Host/hardening foundation + legacy API compatibility | Tool/Security/Effect 54 + execution recovery | **Wave 05 foundation verified**; durable on-device persistence/live provider reconciliation remain partial |
 | Verification / Judge | AcceptanceContract, VerificationPlan DAG, subject/scope/authority-bound candidates, typed evidence, freshness/independence, deterministic dominance, bounded repair, independent high-risk judge, effect-postcondition gate, JudgeReceipt/dependency invalidation | Host/evolution foundation; specialist migration partial | Judge/Benchmark 53 + existing evolution/cognitive gates | **Wave 06 foundation verified**; representative judge calibration and universal specialist handoff remain partial |
 | Seven Evals / Benchmark | EvaluationProgram, AffordanceContract, TrialPolicy, versioned tasks/suites/environments/runs, hard gates, uncertainty, paired matched comparison, contamination, strata, release decisions/receipts | Evolution/benchmark foundation; persistent UI/store later | Judge/Benchmark 53 + corpus/evolution gates | **Wave 06 foundation verified**; hidden/holdout scale, eval-of-evals, live/provider/device cohorts remain partial |
-| File / Project Tools | Legacy project/file helpers and path guards | Partial | Runtime/evolution tests | **Wave 07 active**; transactional ProjectRoot/Grant/FileRef/VersionToken/ProjectTransaction implementation is the current boundary |
-| Coding Runtime | Isolated candidate workspace, reproduce/repair/review/regression loop, evolution/promotion foundations | Partial | Coding candidate/evolution + promotion suites | Strong partial foundation; Wave 07 is adding canonical File Fabric, source-bound requirements/evidence and independent Judge handoff |
+| File / Project Tools | ProjectRoot/Grant, FileRef/VersionToken, protected-path policy, ProjectMap, staged ProjectTransaction, stale-base/version checks, commit/postcondition/rollback evidence | Hardening foundation; platform adapter integration partial | Coding/File 58 + Pass B 25 | **Wave 07 foundation verified**; SAF/shell bridge and durable on-device transaction journal remain partial |
+| Coding Runtime | Source-backed RequirementLedger, ChangeContract, BaselineProof, isolated CandidateWorkspace, reproduce/investigate/test/review/repair, exact ChangeEvidenceBundle and independent Judge promotion | Strong host/evolution foundation; product flow/UI partial | Coding/File 58 + Pass B 25 + Judge handoff | **Wave 07 foundation verified**; larger real-repository/device benchmarks and final specialist UI remain partial |
+| Research Fabric | ResearchContract/Agenda/ClaimRef, source-versioned locator-bound EvidenceUnits, dependency clusters, claim freshness/conflict, CoverageContract, ClaimEvidenceLock, CitationManifest, ResultPack | Release Research Runtime + hardening + Truth bridge; live acquisition partial | Research core 46 + Pass B 17 + bridge 2 | **Wave 08 foundation verified**; live acquisition, multimodal research and larger current-web/multilingual evals remain partial |
+| Retrieval Fabric | RetrievalNeed/QueryPlan, exact/lexical cheap baseline, conditional semantic/hybrid portfolio, discovery-only observations, candidate clustering, fetched/extracted lineage, run manifest | Hardening foundation; provider/browser adapters partial | Wave 08 Research suites | **Wave 08 foundation verified**; live providers, health/cache persistence and browser escalation remain partial |
+| Knowledge / Files | KnowledgeSource/SourceVersion/SourceLocator, derived representations, invalidation and source-bound KnowledgeResult | Hardening foundation; ingestion/storage adapters partial | Wave 08 Research suites | **Wave 08 foundation verified**; durable ingestion, OCR/multimodal bridge, optional semantic indexes and Android SAF remain partial |
+| Vision Fabric | Frozen VisualSource/Version/Region/OCR/Layout/Observation/Perception contracts | No complete executable specialist core yet | Architecture evidence only | **Wave 09 active**; implementation foundation is the current boundary |
 | Story Fabric / Narrative Engine | Architecture-polished StoryContract, graph/ledger, arcs, promises/reveals, scene/beat/pacing/voice/revision design | No dedicated executable runtime yet | Architecture review only | **Architecture-polished only**; implementation/benchmarks deferred to RPG/Real Works campaign |
 | Local Intelligence | Deterministic embedding/classification helpers | Partial | Runtime smoke | Foundation implemented |
-| Research Runtime | Claim-evidence matrix, freshness/conflict/gap analysis, citation locks | Packaged verification API; acquisition partial | Unit + release gates | Verification foundation implemented |
 | Canon / Real Works | Source authority, anchors, world/canon contracts, branch/debt audit | Packaged APIs; chat orchestration partial | Unit/browser release tests | Functional foundation |
 | Titles System | Deterministic world naming rules | Via World Runtime; UI partial | Unit gate | Functional foundation |
 | UI Design / Runtime | Release CSS, adaptive tiers, semantic states, accessibility hooks | Yes | Browser/static gates | Strong foundation; final Visual campaign pending |
@@ -39,7 +42,12 @@ A subsystem is **DONE** only when executable code exists, normal-flow wiring inv
 | Full observability | Partial counters/modules | Partial | Partial | Planned/partial |
 
 ## Current system laws
-- Authority cannot be created by model/tool/memory/summary text or increased through derivation.
+- Authority cannot be created by model/tool/memory/summary/search text or increased through derivation.
+- Search observations, snippets and ranking are discovery signals, not evidence authority.
+- Durable Research evidence binds exact claim, SourceVersion, locator, principal/scope/realm and explicit dependency cluster.
+- Distinct source IDs do not manufacture independent corroboration.
+- Negative absence claims require bounded CoverageContract evidence; `NOT_FOUND` alone is not refutation.
+- Research → Truth transport remains conservative and cannot recreate Research scalar authority.
 - Memory Recall remains recall-only; contextual placement never creates evidence or permission.
 - Only trusted runtime/controller/policy instructions occupy the privileged system lane.
 - Child compute cannot mint budget or steal protected verification/recovery reserve.
@@ -49,7 +57,6 @@ A subsystem is **DONE** only when executable code exists, normal-flow wiring inv
 - Read permission is not release/exfiltration permission; child leases may narrow but never widen authority.
 - Transport success is not real-world effect truth; possible post-dispatch effects never blind-retry without sufficient idempotency/evidence.
 - Verification verdicts are canonical and evidence-bound; missing evidence/executors cannot become PASS through prose.
-- Evidence must bind the actual subject/property and respect freshness/independence requirements.
 - Deterministic or authoritative refutation outranks semantic/model preference.
 - High-risk independent adjudication cannot be performed by the same builder/context.
 - Benchmark hard gates cannot be averaged away by quality scores.
@@ -61,12 +68,13 @@ A subsystem is **DONE** only when executable code exists, normal-flow wiring inv
 - Mobile-first reachability and safe areas.
 - Reduced Motion affects presentation only.
 - Performance tiers may reduce optional decoration/depth, never correctness/safety.
-- Heavy PDF/workspace/tool/benchmark/coding assets remain lazy.
-- Release startup gate remains `<100000` bytes; Wave 06 final evidence is `99794` bytes.
+- Heavy PDF/workspace/tool/benchmark/coding/research semantic assets remain lazy.
+- Release startup gate remains `<100000` bytes; Wave 08 final implementation evidence is **`98941` bytes**.
 
 ## Research / World / Story rules
-- Claims bind to source/stance/locator/authority/transformation.
+- Search finds candidates; SourceVersions + locators anchor evidence; evidence supports claims; ClaimEvidenceLock precedes grounded synthesis.
 - GAP/STALE/UNCITABLE/CONFLICT cannot become PASS through prose.
+- Freshness and source fitness are claim-specific, not universal source scores.
 - Canon order is source-bound; divergence branches rather than rewriting canon.
 - Story prose cannot silently overwrite authoritative RPG/Canon world state; proposed diffs require owning-controller verification/commit.
 
@@ -78,10 +86,10 @@ A subsystem is **DONE** only when executable code exists, normal-flow wiring inv
 - Apply/verify failure requires rollback; rollback failure is never reported success.
 
 ## Next integration gates
-1. **File/Project Tools + Coding Agent:** transactional scoped file identity/versioning/mutations, requirement/baseline/evidence contracts, independent Judge handoff and platform file/shell bridge.
-2. Research: Search → Fetch → Extract → Matrix → Verify → Cite with live acquisition adapters.
+1. **Vision Fabric:** provenance-bound VisualSource/Version/Region, derived OCR/layout, grounded observations, stale-frame guards, privacy/minimization and Truth evidence bridge.
+2. Research live acquisition: provider/browser adapters, durable cache/source persistence and optional semantic retrieval without moving heavy work onto startup.
 3. RPG/Real Works + Story Fabric: wire world/story contracts into conversation generation and verified scene/world commits.
-4. Persistence: reconcile remaining legacy state and durable Effect/Memory/benchmark recovery.
+4. Persistence: reconcile remaining legacy state and durable Effect/Memory/Project/Research recovery.
 5. Android SAF/Keystore + real-device startup/storage/cancellation/offline/provider tests.
 6. Protocol adapters only after underlying capability authority/contracts are verified.
 7. Specialist/UI campaigns, Android certification, long-horizon/competitor evals and final Red Team.
