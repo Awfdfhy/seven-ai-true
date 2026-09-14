@@ -4,9 +4,9 @@
 `ultimate-polish-v1`
 
 ## Ultimate Polish Execution
-**Counter:** `11 / ≤30`
+**Counter:** `12 / ≤30`
 
-The user-set campaign ceiling is now **30 Mega-Waves maximum**, not a quota to consume. Stop earlier if the required saturation/evidence gates are reached.
+The user-set campaign ceiling is **30 Mega-Waves maximum**, not a quota to consume. Stop earlier if the required saturation/evidence gates are reached.
 
 - Mega-Wave 01 — Speed + Smoothness Foundation → `PASS_FOUNDATION` ✅
 - Mega-Wave 02 — Cognitive Runtime + Truth/Epistemic Foundation → `PASS_FOUNDATION` ✅
@@ -19,32 +19,43 @@ The user-set campaign ceiling is now **30 Mega-Waves maximum**, not a quota to c
 - Mega-Wave 09 — Vision Fabric Foundation → `PASS_FOUNDATION` ✅
 - Mega-Wave 10 — RPG Engine + Story Fabric Runtime Foundation → `PASS_FOUNDATION` ✅
 - Mega-Wave 11 — Real Works Canon Simulation + Titles / World Linguistic Foundation → `PASS_FOUNDATION` ✅
+- Mega-Wave 12 — Visual Evidence Runtime Foundation → `PASS_FOUNDATION` ✅
 
 Detailed durable evidence: `ULTIMATE_POLISH_PROGRESS.md`.
 
-## Wave 11 verified truth
-Seven now has executable, source-bound Canon and World Linguistic hardening foundations. Canonical exports are `hardening/canon-fabric-final.cjs` and `hardening/title-fabric-final2.cjs` through `hardening/index.cjs`.
+## Wave 12 verified truth
+Seven now has an executable **Visual Evidence Runtime** that turns visual claims into sealed, scenario-bound evidence instead of prose or screenshot intuition. The strengthened runtime is layered through:
+- `release/visual-evidence-runtime.cjs`
+- `release/visual-evidence-runtime-passb.cjs`
+- `release/visual-evidence-runtime-final.cjs`
+- corresponding adversarial test suites
+- `release/capture-ui.cjs` live Playwright evidence capture
 
-Pass A commit `d497f3e86a2e1b5ca2a676dcce70fa87f1ac1e25` introduced the executable Canon/Title foundations and preserved the current model-frontier research snapshot in `docs/project-memory/current/MODEL_FRONTIER_RESEARCH.md`. Run `34887240280` / #1461 succeeded.
+The runtime binds exact scenario, viewport, locale/direction, theme, reduced-motion state, screenshot SHA-256, commit, branch and environment identity. It audits viewport overflow, touch targets, accessibility, contrast/state structure, and it keeps visual evidence tiers explicit (`HOST`, `EMULATOR`, `PHYSICAL_DEVICE`, etc.) so host evidence cannot masquerade as device certification.
 
-Pass B commit `019230858efd320fe66064b30fed2c9b3350d5ff` added adversarial hardening for stale SourceVersion invalidation, derivation invalidation, anchor dependency cycles, source-head-bound scenes, authentic RPG PlayerAction divergence lineage, verified RPG session constraints, title/profile/request/candidate/identity provenance seals, Arabic-aware collision normalization, branch-aware collisions, official evidence freshness, manifest dependency drift and no generated→official promotion path. Run `34887873154` / #1462 succeeded end-to-end.
+Pass A began at `2309a822c5d3d2bbf063c4e9d205d5cce3047ed2`; capture/test wiring reached `7504be4835fd2cbad3b8831009443b676532cfcd`. Initial live evidence correctly exposed hard touch-target failures rather than hiding them. The UI was repaired in `release/beta-ui.css` to guarantee practical 44px touch hit boxes for core controls. Pass B then added sealed audit verification, environment identity, device-tier proof, scenario/evidence registries, explicit baseline approval and anti-laundering rules. Final runtime added bounded sub-pixel measurement tolerance so 43.9px layout rounding does not create a false warning while material undersizing still warns/fails.
 
-Final adversarial commit `78a4b25d41c70e0ef0cb5c55b721d6efbc1c5820` closed two post-green authority/performance gaps:
-- source freshness is now **dependency-scoped**, so an unrelated updated/stale canon source cannot freeze an otherwise valid scene or coverage contract while a required source update still fails closed;
-- official titles/localizations now require **world + continuity + subject + claim-type scoped evidence**, current source heads and commit-time freshness. Generated names remain generated, and official evidence cannot be laundered from another continuity/subject.
+Final implementation HEAD **`7764d275b6231008d603352c442cf56a0bfd6132`** passed GitHub Actions run **`34890701798` / #1474** end-to-end:
+- `all test suites: PASS (60 suites)`;
+- Visual Evidence foundation: **43 assertions**;
+- Visual Evidence Pass B: **32 assertions**;
+- Final measurement guard: **5 assertions**;
+- live capture: **8 scenarios, 8 PASS, 0 WARN, 0 FAIL**, explicitly in `OBSERVE` mode;
+- source integrity lock: protected `seven_ai-final.html` remains exactly `658133` bytes / blob `3e8dfa8e7da7124e16504140eb9631c10cabf053`;
+- static audit: **`99743 / 100000` startup bytes**, `34881` lazy workspace bytes, `3689533 / 8388608` static APK bytes, `0` static warnings;
+- release artifact upload succeeded.
 
-Run `34888351330` / #1463 succeeded end-to-end: `node all.cjs`, verified UI capture and artifact upload passed. With the three new Wave 11 test files the repository now has **57 auto-discovered suites**. Release artifact `10365288940`, size `2054451` bytes, SHA-256 `4b8d622020fdae6b90e06f8093da954c08893b70bb1ecdc8601c5bcda5ac5de0`.
+Artifact: **`10366787278`**, size `2175309` bytes, SHA-256 **`fad44979a715b618ce6197c0b9b7b3d049d0df4e1fddf3b29cd6e9300c86ab38`**.
 
-The new specialist hardening remains outside the release startup hot path, so the existing startup gate remains governed by the prior verified `98941 / 100000` byte threshold rather than being inflated by Canon/Titles code.
+Important scope boundary: this is **HOST-tier Visual Evidence foundation**, not real-device Android visual certification and not a claim that the Final UI is complete. Goldens cannot auto-update to make tests green; baseline changes require explicit review/reason/reference. Device-tier evidence requires matching device proof.
 
-This is a **foundation PASS**, not release saturation. Live canon acquisition/index persistence, large real-work corpora, long-horizon insertion/replay, provider/model orchestration, specialist UI and real-device Android evidence remain later work.
+## Startup budget warning
+The verified release startup footprint is now **`99743 / 100000` bytes**, leaving only **257 bytes** of startup headroom. Wave 13 and later visual work must therefore remain build-time/lazy where practical, or simplify/compact existing startup assets before adding hot-path payload. Visual quality work may not silently break the startup gate.
 
 ## Model-frontier research decision
 `MODEL_FRONTIER_RESEARCH.md` records the current research snapshot. Model rankings are time-sensitive research evidence, not permanent architecture truth.
 
 Seven must never hard-code a model as “best” from one leaderboard or a stale score. Champion qualification requires model/revision identity, same-version independent benchmark evidence, access/free-proof, endpoint capability proof, Seven Evals, adversarial comparison and an expiring qualification lease. “Free” is a proof class, not a boolean; development/trial endpoints, signup credit, durable free tiers, local/self-hosted and paid access remain distinct.
-
-The current Kimi K3/NVIDIA route is therefore treated as a strong **development/trial-free candidate**, not proof of permanent unlimited production capacity.
 
 ## Protected Source
 `seven_ai-final.html`
@@ -64,33 +75,35 @@ Do not modify it without explicit user authorization. Do not merge this branch t
 - **Vision:** Wave 09 foundation verified; live OCR/VLM/platform adapters and capture permissions remain later work.
 - **RPG + Story:** Wave 10 foundation verified; persistence, larger simulations/benchmarks and specialist UI remain later.
 - **Real Works / Canon + Titles:** Wave 11 executable foundation verified; live source acquisition, persistence, corpus scale and UI remain later.
-- **UI / Android:** visual architecture is saturated, but final implementation and real-device certification remain later.
+- **Visual Evidence Runtime:** Wave 12 HOST-tier foundation verified; final design implementation and device-tier certification remain later.
+- **UI / Android:** visual architecture is saturated, but final implementation, genome convergence, identity tournament and real-device certification remain later.
 
 ## Cross-cutting laws
-- authority cannot be manufactured by model/tool/memory/summary/search/vision/story/title text or increase through derivation;
+- authority cannot be manufactured by model/tool/memory/summary/search/vision/story/title/visual text or increase through derivation;
+- visual screenshots are pixel evidence, not automatic proof of semantics/behavior/accessibility;
+- evidence tier cannot be promoted by relabeling; device-level claims require device-level proof;
+- golden/reference updates require explicit approval and cannot be used merely to silence regression;
 - canon is source-version/evidence/continuity bound; missing required support becomes `CANON_GAP`;
-- adaptation/branch state cannot silently leak into another continuity;
 - player choices and protected mental states remain user-owned;
-- Story/Canon may constrain or propose, but RPG World Kernel owns generic world-state commit;
 - generated titles never silently become official;
-- official title/localization evidence must be current and scoped to the exact world/continuity/subject/claim;
 - benchmark numbers from different index revisions cannot be compared as if they shared one scale;
-- expensive intelligence remains selective/lazy and startup-critical UI remains protected;
+- expensive intelligence and visual tooling remain selective/lazy where practical;
 - Unlimited means no arbitrary Seven-side quota, not denial of provider/device limits;
-- architecture, foundation implementation and release saturation are distinct claims.
+- architecture, foundation implementation, host evidence and release/device saturation are distinct claims.
 
 ## Explicit open issues
-- remaining Ultimate Polish Mega-Waves after `11 / ≤30`;
+- remaining Ultimate Polish Mega-Waves after `12 / ≤30`;
+- Design Genome Runtime + Design Lint, Logo/Identity Tournament, Global UI and specialist visual implementation;
 - live provider/model adapters and dynamic champion qualification;
 - live Research/Vision/Canon acquisition and durable derivative caches;
 - persistent recovery for remaining Effect/Memory/Project/Research/Vision/RPG/Story/Canon state;
-- real Android startup/RAM/battery/thermal/frame/long-session evidence;
+- real Android startup/RAM/battery/thermal/frame/long-session and visual evidence;
 - larger hidden/holdout, long-horizon and competitor/product benchmarks;
-- final visual implementation, specialist workspaces, Android visual certification and Visual Red Team;
-- dependency install audit/deprecation findings remain an explicit unresolved release issue until separately repaired/verified.
+- Android visual certification and final Visual Red Team;
+- dependency install still reports `7` audit findings (`3 moderate`, `3 high`, `1 critical`), deprecated transitive packages/install-script warnings and GitHub Action Node deprecation warnings. These remain explicit release issues rather than being hidden by subsystem PASS labels.
 
 ## Immediate Next Work
-**Mega-Wave 12 — Visual Evidence Runtime Foundation.** Follow the current Visual Implementation campaign: establish scenario/evidence/baseline registries, structural geometry/touch-target/contrast/state audits, visual regression evidence and mobile/RTL/accessibility proof primitives before large-scale UI styling. This begins the evidence-backed UI implementation path; it is not a claim that the final UI is already complete.
+**Mega-Wave 13 — Design Genome Runtime + Design Lint Foundation.** Converge existing visual token families into a governed Seven design genome, formalize reusable identity primitives/rules and add build-time/lazy Design Lint that detects drift without spending the remaining startup budget. Do not select the final logo in this wave; the Logo & Identity Tournament remains the next dedicated campaign.
 
 ## Development Philosophy
-Use the largest safe coherent pass, verify it, repair failures in the same turn when practical, preserve evidence in GitHub and continue. Do not manufacture complexity, benchmark equivalence or completion claims.
+Use the largest safe coherent pass, verify it, repair failures in the same turn when practical, preserve evidence in GitHub and continue. Do not manufacture complexity, benchmark equivalence, visual proof or completion claims.
