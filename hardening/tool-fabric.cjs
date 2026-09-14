@@ -1,143 +1,41 @@
 "use strict";
 
-const crypto = require("crypto");
-
-const EFFECT_CLASSES = Object.freeze(["NONE","OBSERVATIONAL","REVERSIBLE_WRITE","IRREVERSIBLE_WRITE","EXTERNAL_COMMUNICATION","UNKNOWN_EFFECT"]);
-const IDEMPOTENCY = Object.freeze(["SAFE_REPEAT","KEYED_REPEAT","DO_NOT_REPEAT","UNKNOWN"]);
-const ATTEMPT_STATES = Object.freeze(["PREPARED","AUTHORIZED","DISPATCHING","DISPATCHED","STREAMING","RESULT_RECEIVED","VALIDATING","RESULT_VALID","RESULT_INVALID","CANCEL_REQUESTED","CANCELLED_CONFIRMED","CANCELLED_UNCERTAIN","FAILED_PRE_DISPATCH","FAILED_POST_DISPATCH_UNKNOWN","HANDED_OFF_FOR_RECONCILIATION"]);
-const QUALIFICATION = new Set(["VERIFIED","PROVISIONAL","UNVERIFIED","REJECTED"]);
-const HEALTH = new Set(["HEALTHY","DEGRADED","DOWN","UNKNOWN"]);
-
+const crypto=require("crypto");
+const EFFECT_CLASSES=Object.freeze(["NONE","OBSERVATIONAL","REVERSIBLE_WRITE","IRREVERSIBLE_WRITE","EXTERNAL_COMMUNICATION","UNKNOWN_EFFECT"]);
+const IDEMPOTENCY=Object.freeze(["SAFE_REPEAT","KEYED_REPEAT","DO_NOT_REPEAT","UNKNOWN"]);
+const ATTEMPT_STATES=Object.freeze(["PREPARED","AUTHORIZED","DISPATCHING","DISPATCHED","STREAMING","RESULT_RECEIVED","VALIDATING","RESULT_VALID","RESULT_INVALID","CANCEL_REQUESTED","CANCELLED_CONFIRMED","CANCELLED_UNCERTAIN","FAILED_PRE_DISPATCH","FAILED_POST_DISPATCH_UNKNOWN","HANDED_OFF_FOR_RECONCILIATION"]);
+const QUALIFICATION=new Set(["VERIFIED","PROVISIONAL","UNVERIFIED","REJECTED"]),HEALTH=new Set(["HEALTHY","DEGRADED","DOWN","UNKNOWN"]);
 function clone(v){return v==null?v:JSON.parse(JSON.stringify(v));}
-function stable(v){
-  if(Array.isArray(v))return v.map(stable);
-  if(v&&typeof v==="object"){
-    const out={};for(const k of Object.keys(v).sort())if(v[k]!==undefined)out[k]=stable(v[k]);return out;
-  }
-  return v;
-}
+function stable(v){if(Array.isArray(v))return v.map(stable);if(v&&typeof v==="object"){const o={};for(const k of Object.keys(v).sort())if(v[k]!==undefined)o[k]=stable(v[k]);return o;}return v;}
 function stableJson(v){return JSON.stringify(stable(v));}
 function hash(v){return crypto.createHash("sha256").update(typeof v==="string"?v:stableJson(v)).digest("hex");}
 function text(v){return typeof v==="string"?v.trim():"";}
 function list(v){return [...new Set((Array.isArray(v)?v:[]).map(x=>text(x)).filter(Boolean))].sort();}
-function canonicalId(v,label="id"){
-  const id=text(v).toLowerCase();if(!id||!/^[a-z0-9][a-z0-9._:-]*$/.test(id))throw new Error(`invalid ${label}`);return id;
-}
+function canonicalId(v,label="id"){const id=text(v).toLowerCase();if(!id||!/^[a-z0-9][a-z0-9._:-]*$/.test(id))throw new Error(`invalid ${label}`);return id;}
 function effect(v){const x=String(v||"UNKNOWN_EFFECT").toUpperCase();return EFFECT_CLASSES.includes(x)?x:"UNKNOWN_EFFECT";}
 function idem(v){const x=String(v||"UNKNOWN").toUpperCase();return IDEMPOTENCY.includes(x)?x:"UNKNOWN";}
-function typeOk(type,v){
-  if(Array.isArray(type))return type.some(t=>typeOk(t,v));
-  if(type==="null")return v===null;if(type==="array")return Array.isArray(v);if(type==="object")return !!v&&typeof v==="object"&&!Array.isArray(v);
-  if(type==="integer")return Number.isInteger(v);if(type==="number")return typeof v==="number"&&Number.isFinite(v);return typeof v===type;
-}
-function validateSchema(schema,value,path="$"){
-  const errors=[];schema=schema&&typeof schema==="object"?schema:{};
-  if(schema.type&&!typeOk(schema.type,value))errors.push(`${path}:type`);
-  if(schema.enum&&!schema.enum.some(x=>stableJson(x)===stableJson(value)))errors.push(`${path}:enum`);
-  if(schema.type==="object"&&value&&typeof value==="object"&&!Array.isArray(value)){
-    const props=schema.properties||{};for(const r of schema.required||[])if(!(r in value))errors.push(`${path}.${r}:required`);
-    if(schema.additionalProperties===false)for(const k of Object.keys(value))if(!(k in props))errors.push(`${path}.${k}:additional`);
-    for(const [k,s] of Object.entries(props))if(k in value)errors.push(...validateSchema(s,value[k],`${path}.${k}`).errors);
-  }
-  if(schema.type==="array"&&Array.isArray(value)&&schema.items)for(let i=0;i<value.length;i++)errors.push(...validateSchema(schema.items,value[i],`${path}[${i}]`).errors);
-  if(typeof value==="string"){
-    if(Number.isFinite(schema.minLength)&&value.length<schema.minLength)errors.push(`${path}:minLength`);
-    if(Number.isFinite(schema.maxLength)&&value.length>schema.maxLength)errors.push(`${path}:maxLength`);
-  }
-  if(typeof value==="number"){
-    if(Number.isFinite(schema.minimum)&&value<schema.minimum)errors.push(`${path}:minimum`);
-    if(Number.isFinite(schema.maximum)&&value>schema.maximum)errors.push(`${path}:maximum`);
-  }
-  return {valid:errors.length===0,errors};
-}
-
-function createCapabilitySpec(input={}){
-  const id=canonicalId(input.id,"capability id");
-  return Object.freeze({schemaVersion:1,id,title:text(input.title)||id,aliases:list(input.aliases),actions:list(input.actions),requiredPermissions:list(input.requiredPermissions),effectClass:effect(input.effectClass||"OBSERVATIONAL"),idempotencyClass:idem(input.idempotencyClass||"SAFE_REPEAT"),description:text(input.description),inputSummary:text(input.inputSummary),outputSummary:text(input.outputSummary)});
-}
-
-function schemaFingerprint({capabilityId,bindingId,revision,inputSchema,outputSchema}={}){
-  return hash({capabilityId,bindingId,revision,inputSchema:stable(inputSchema||{}),outputSchema:stable(outputSchema||{})});
-}
-
-function createBinding({capability,provider,bindingId,revision,inputSchema={},outputSchema={},qualification="UNVERIFIED",health="UNKNOWN",status="DISCOVERED",metadata={},remoteHints={},metrics={}}={}){
-  if(!capability||!capability.id)throw new Error("capability spec required");
-  const id=canonicalId(bindingId,"binding id"),rev=text(revision);if(!rev)throw new Error("binding revision required");
-  const q=String(qualification).toUpperCase(),h=String(health).toUpperCase();
-  const fp=schemaFingerprint({capabilityId:capability.id,bindingId:id,revision:rev,inputSchema,outputSchema});
-  return Object.freeze({schemaVersion:1,id,provider:text(provider)||"local",capabilityId:capability.id,revision:rev,revisionId:`binding-rev-${hash({id,rev,fp}).slice(0,24)}`,schemaFingerprint:fp,inputSchema:clone(inputSchema),outputSchema:clone(outputSchema),qualification:QUALIFICATION.has(q)?q:"UNVERIFIED",health:HEALTH.has(h)?h:"UNKNOWN",status:String(status||"DISCOVERED").toUpperCase(),effectClass:capability.effectClass,idempotencyClass:capability.idempotencyClass,requiredPermissions:[...capability.requiredPermissions],metadata:clone(metadata),remoteHints:clone(remoteHints),metrics:{reliability:Math.max(0,Math.min(1,Number(metrics.reliability)||0)),latencyScore:Math.max(0,Math.min(1,Number(metrics.latencyScore)||0))}});
-}
-
-function createCatalogSnapshot({capabilities=[],bindings=[],epoch=1,createdAt=new Date().toISOString()}={}){
-  const caps=[...capabilities].sort((a,b)=>a.id.localeCompare(b.id));const capIds=new Set(caps.map(x=>x.id));
-  if(capIds.size!==caps.length)throw new Error("duplicate capability id");
-  const bs=[...bindings].sort((a,b)=>a.capabilityId.localeCompare(b.capabilityId)||a.id.localeCompare(b.id)||a.revision.localeCompare(b.revision));
-  const revisions=new Set();for(const b of bs){if(!capIds.has(b.capabilityId))throw new Error("binding references unknown capability");if(revisions.has(b.revisionId))throw new Error("duplicate binding revision");revisions.add(b.revisionId);}
-  const identity={epoch:Number(epoch)||1,capabilities:caps.map(c=>({id:c.id,effectClass:c.effectClass,idempotencyClass:c.idempotencyClass})),bindings:bs.map(b=>({revisionId:b.revisionId,capabilityId:b.capabilityId,schemaFingerprint:b.schemaFingerprint,qualification:b.qualification,status:b.status}))};
-  return Object.freeze({schemaVersion:1,id:`catalog-${hash(identity).slice(0,24)}`,epoch:identity.epoch,createdAt,capabilities:caps,bindings:bs});
-}
+function typeOk(type,v){if(Array.isArray(type))return type.some(t=>typeOk(t,v));if(type==="null")return v===null;if(type==="array")return Array.isArray(v);if(type==="object")return !!v&&typeof v==="object"&&!Array.isArray(v);if(type==="integer")return Number.isInteger(v);if(type==="number")return typeof v==="number"&&Number.isFinite(v);return typeof v===type;}
+function validateSchema(schema,value,path="$"){const errors=[];schema=schema&&typeof schema==="object"?schema:{};if(schema.type&&!typeOk(schema.type,value))errors.push(`${path}:type`);if(schema.enum&&!schema.enum.some(x=>stableJson(x)===stableJson(value)))errors.push(`${path}:enum`);if(schema.type==="object"&&value&&typeof value==="object"&&!Array.isArray(value)){const props=schema.properties||{};for(const r of schema.required||[])if(!(r in value))errors.push(`${path}.${r}:required`);if(schema.additionalProperties===false)for(const k of Object.keys(value))if(!(k in props))errors.push(`${path}.${k}:additional`);for(const [k,s] of Object.entries(props))if(k in value)errors.push(...validateSchema(s,value[k],`${path}.${k}`).errors);}if(schema.type==="array"&&Array.isArray(value)&&schema.items)for(let i=0;i<value.length;i++)errors.push(...validateSchema(schema.items,value[i],`${path}[${i}]`).errors);if(typeof value==="string"){if(Number.isFinite(schema.minLength)&&value.length<schema.minLength)errors.push(`${path}:minLength`);if(Number.isFinite(schema.maxLength)&&value.length>schema.maxLength)errors.push(`${path}:maxLength`);}if(typeof value==="number"){if(Number.isFinite(schema.minimum)&&value<schema.minimum)errors.push(`${path}:minimum`);if(Number.isFinite(schema.maximum)&&value>schema.maximum)errors.push(`${path}:maximum`);}return {valid:errors.length===0,errors};}
+function createCapabilitySpec(input={}){const id=canonicalId(input.id,"capability id");return Object.freeze({schemaVersion:1,id,title:text(input.title)||id,aliases:list(input.aliases),actions:list(input.actions),requiredPermissions:list(input.requiredPermissions),effectClass:effect(input.effectClass||"OBSERVATIONAL"),idempotencyClass:idem(input.idempotencyClass||"SAFE_REPEAT"),description:text(input.description),inputSummary:text(input.inputSummary),outputSummary:text(input.outputSummary)});}
+function schemaFingerprint({capabilityId,bindingId,revision,inputSchema,outputSchema}={}){return hash({capabilityId,bindingId,revision,inputSchema:stable(inputSchema||{}),outputSchema:stable(outputSchema||{})});}
+function createBinding({capability,provider,bindingId,revision,inputSchema={},outputSchema={},qualification="UNVERIFIED",health="UNKNOWN",status="DISCOVERED",metadata={},remoteHints={},metrics={}}={}){if(!capability||!capability.id)throw new Error("capability spec required");const id=canonicalId(bindingId,"binding id"),rev=text(revision);if(!rev)throw new Error("binding revision required");const q=String(qualification).toUpperCase(),h=String(health).toUpperCase(),fp=schemaFingerprint({capabilityId:capability.id,bindingId:id,revision:rev,inputSchema,outputSchema});return Object.freeze({schemaVersion:1,id,provider:text(provider)||"local",capabilityId:capability.id,revision:rev,revisionId:`binding-rev-${hash({id,rev,fp}).slice(0,24)}`,schemaFingerprint:fp,inputSchema:clone(inputSchema),outputSchema:clone(outputSchema),qualification:QUALIFICATION.has(q)?q:"UNVERIFIED",health:HEALTH.has(h)?h:"UNKNOWN",status:String(status||"DISCOVERED").toUpperCase(),effectClass:capability.effectClass,idempotencyClass:capability.idempotencyClass,requiredPermissions:[...capability.requiredPermissions],metadata:clone(metadata),remoteHints:clone(remoteHints),metrics:{reliability:Math.max(0,Math.min(1,Number(metrics.reliability)||0)),latencyScore:Math.max(0,Math.min(1,Number(metrics.latencyScore)||0))}});}
+function capabilityIdentity(c){return {id:c.id,actions:list(c.actions),requiredPermissions:list(c.requiredPermissions),effectClass:c.effectClass,idempotencyClass:c.idempotencyClass};}
+function bindingIdentity(b){return {revisionId:b.revisionId,id:b.id,provider:b.provider,capabilityId:b.capabilityId,schemaFingerprint:b.schemaFingerprint,qualification:b.qualification,status:b.status,effectClass:b.effectClass,idempotencyClass:b.idempotencyClass,requiredPermissions:list(b.requiredPermissions)};}
+function createCatalogSnapshot({capabilities=[],bindings=[],epoch=1,createdAt=new Date().toISOString()}={}){const caps=[...capabilities].sort((a,b)=>a.id.localeCompare(b.id)),capIds=new Set(caps.map(x=>x.id));if(capIds.size!==caps.length)throw new Error("duplicate capability id");const bs=[...bindings].sort((a,b)=>a.capabilityId.localeCompare(b.capabilityId)||a.id.localeCompare(b.id)||a.revision.localeCompare(b.revision)),revisions=new Set();for(const b of bs){if(!capIds.has(b.capabilityId))throw new Error("binding references unknown capability");if(revisions.has(b.revisionId))throw new Error("duplicate binding revision");revisions.add(b.revisionId);}const identity={epoch:Number(epoch)||1,capabilities:caps.map(capabilityIdentity),bindings:bs.map(bindingIdentity)};return Object.freeze({schemaVersion:1,id:`catalog-${hash(identity).slice(0,24)}`,epoch:identity.epoch,createdAt,capabilities:caps,bindings:bs});}
 function capabilityFor(snapshot,id){return snapshot&&snapshot.capabilities.find(c=>c.id===id)||null;}
 function bindingInSnapshot(snapshot,revisionId){return snapshot&&snapshot.bindings.find(b=>b.revisionId===revisionId)||null;}
-function hardEligibility(binding,snapshot,need={}){
-  const reasons=[],uncertainties=[];if(!binding||!snapshot)return {eligible:false,reasons:["missing-binding-or-snapshot"],uncertainties};
-  const snap=bindingInSnapshot(snapshot,binding.revisionId);if(!snap)reasons.push("binding-not-in-snapshot");else if(snap.schemaFingerprint!==binding.schemaFingerprint)reasons.push("schema-drift");
-  if(binding.qualification!=="VERIFIED")reasons.push("binding-not-qualified");if(binding.status!=="ACTIVE")reasons.push("binding-not-active");
-  if(binding.health==="DOWN")reasons.push("binding-down");else if(binding.health==="UNKNOWN")uncertainties.push("health-unknown");
-  const required=text(need.capabilityId);if(required&&binding.capabilityId!==required)reasons.push("wrong-capability");
-  const cap=capabilityFor(snapshot,binding.capabilityId);if(!cap)reasons.push("capability-missing");
-  for(const p of list(need.requiredPermissions))if(!binding.requiredPermissions.includes(p))reasons.push(`missing-permission-class:${p}`);
-  if(need.sensitive===true&&binding.health==="UNKNOWN")reasons.push("sensitive-health-unknown");
-  return {eligible:reasons.length===0,reasons:[...new Set(reasons)],uncertainties:[...new Set(uncertainties)]};
-}
+function sameBindingSecurity(a,b){return !!a&&!!b&&stableJson(bindingIdentity(a))===stableJson(bindingIdentity(b));}
+function hardEligibility(binding,snapshot,need={}){const reasons=[],uncertainties=[];if(!binding||!snapshot)return {eligible:false,reasons:["missing-binding-or-snapshot"],uncertainties};const snap=bindingInSnapshot(snapshot,binding.revisionId);if(!snap)reasons.push("binding-not-in-snapshot");else{if(snap.schemaFingerprint!==binding.schemaFingerprint)reasons.push("schema-drift");if(!sameBindingSecurity(binding,snap))reasons.push("binding-metadata-drift");}const b=snap||binding;if(b.qualification!=="VERIFIED")reasons.push("binding-not-qualified");if(b.status!=="ACTIVE")reasons.push("binding-not-active");if(b.health==="DOWN")reasons.push("binding-down");else if(b.health==="UNKNOWN")uncertainties.push("health-unknown");const required=text(need.capabilityId);if(required&&b.capabilityId!==required)reasons.push("wrong-capability");const cap=capabilityFor(snapshot,b.capabilityId);if(!cap)reasons.push("capability-missing");else{if(cap.effectClass!==b.effectClass||cap.idempotencyClass!==b.idempotencyClass||stableJson(list(cap.requiredPermissions))!==stableJson(list(b.requiredPermissions)))reasons.push("capability-binding-policy-drift");}for(const p of list(need.requiredPermissions))if(!b.requiredPermissions.includes(p))reasons.push(`missing-permission-class:${p}`);if(need.sensitive===true&&b.health==="UNKNOWN")reasons.push("sensitive-health-unknown");return {eligible:reasons.length===0,reasons:[...new Set(reasons)],uncertainties:[...new Set(uncertainties)]};}
 function tokens(v){return text(v).toLowerCase().split(/[^\p{L}\p{N}_.:-]+/u).filter(Boolean);}
-function retrieveCapabilities(snapshot,query,{limit=8}={}){
-  const q=text(query).toLowerCase(),qt=new Set(tokens(q));const rows=[];
-  for(const c of snapshot.capabilities){const names=[c.id,c.title,...c.aliases].map(x=>x.toLowerCase());const exact=names.includes(q)?100:0;let overlap=0;for(const t of tokens(names.join(" ")))if(qt.has(t))overlap++;const score=exact+overlap;if(score>0||!q)rows.push({capability:c,score});}
-  rows.sort((a,b)=>b.score-a.score||a.capability.id.localeCompare(b.capability.id));return rows.slice(0,Math.max(1,limit)).map(x=>({id:x.capability.id,title:x.capability.title,effectClass:x.capability.effectClass,score:x.score}));
-}
-function candidateFrontier(snapshot,need={},opts={}){
-  const capabilityIds=need.capabilityId?[need.capabilityId]:retrieveCapabilities(snapshot,need.query||"",{limit:opts.capabilityLimit||4}).map(x=>x.id);
-  const verified=Array.isArray(opts.outcomes)?opts.outcomes.filter(x=>x&&x.verified===true):[];const rows=[];
-  for(const b of snapshot.bindings){if(!capabilityIds.includes(b.capabilityId))continue;const gate=hardEligibility(b,snapshot,need);if(!gate.eligible)continue;const o=verified.filter(x=>x.revisionId===b.revisionId);const outcome=o.length?o.reduce((s,x)=>s+Math.max(0,Math.min(1,Number(x.score)||0)),0)/o.length:null;const score=(outcome==null?.5:outcome)*.7+b.metrics.reliability*.2+b.metrics.latencyScore*.1;rows.push({binding:b,gate,score});}
-  rows.sort((a,b)=>b.score-a.score||a.binding.revisionId.localeCompare(b.binding.revisionId));return rows.slice(0,Math.max(1,opts.limit||4)).map(x=>({revisionId:x.binding.revisionId,bindingId:x.binding.id,capabilityId:x.binding.capabilityId,schemaFingerprint:x.binding.schemaFingerprint,score:x.score,uncertainties:x.gate.uncertainties}));
-}
-function discloseBinding(snapshot,revisionId,level="CARD"){
-  const b=bindingInSnapshot(snapshot,revisionId);if(!b)throw new Error("binding revision not in snapshot");const cap=capabilityFor(snapshot,b.capabilityId);const l=String(level).toUpperCase();
-  const card={capabilityId:cap.id,title:cap.title,bindingId:b.id,revisionId:b.revisionId,effectClass:b.effectClass,idempotencyClass:b.idempotencyClass};
-  if(l==="CARD")return card;
-  const signature={...card,requiredPermissions:[...b.requiredPermissions],required:[...(b.inputSchema.required||[])],inputs:Object.fromEntries(Object.entries(b.inputSchema.properties||{}).map(([k,v])=>[k,v.type||"any"]))};
-  if(l==="SIGNATURE")return signature;if(l!=="FULL")throw new Error("invalid disclosure level");return {...signature,schemaFingerprint:b.schemaFingerprint,inputSchema:clone(b.inputSchema),outputSchema:clone(b.outputSchema)};
-}
-
-function createToolCallContract({snapshot,bindingRevisionId,args={},authorizationReceipt,budget={},timeoutMs=30000,cancelPolicy="BEST_EFFORT",verification={},runId,taskId,idempotencyKey}={}){
-  if(!snapshot)throw new Error("catalog snapshot required");const b=bindingInSnapshot(snapshot,bindingRevisionId);if(!b)throw new Error("binding revision not in snapshot");const gate=hardEligibility(b,snapshot,{capabilityId:b.capabilityId});if(!gate.eligible)throw new Error(`binding ineligible:${gate.reasons.join(",")}`);
-  if(!authorizationReceipt||authorizationReceipt.decision!=="ALLOW"||!authorizationReceipt.id)throw new Error("authoritative ALLOW receipt required");
-  if(authorizationReceipt.bindingRevisionId&&authorizationReceipt.bindingRevisionId!==b.revisionId)throw new Error("authorization binding mismatch");if(authorizationReceipt.schemaFingerprint&&authorizationReceipt.schemaFingerprint!==b.schemaFingerprint)throw new Error("authorization schema mismatch");
-  const checked=validateSchema(b.inputSchema,args);if(!checked.valid)throw new Error(`invalid tool arguments:${checked.errors.join(",")}`);
-  if(b.idempotencyClass==="KEYED_REPEAT"&&!text(idempotencyKey))throw new Error("keyed-repeat call requires idempotency key");
-  const argsFingerprint=hash(args);const core={snapshotId:snapshot.id,capabilityId:b.capabilityId,bindingRevisionId:b.revisionId,schemaFingerprint:b.schemaFingerprint,argsFingerprint,authorizationReceiptId:authorizationReceipt.id,runId:text(runId)||null,taskId:text(taskId)||null,idempotencyKey:text(idempotencyKey)||null};
-  return Object.freeze({schemaVersion:1,id:`tool-call-${hash(core).slice(0,24)}`,...core,args:clone(args),effectClass:b.effectClass,idempotencyClass:b.idempotencyClass,budget:{toolCalls:Math.max(1,Number(budget.toolCalls)||1),bytes:Math.max(0,Number(budget.bytes)||0)},timeoutMs:Math.max(100,Number(timeoutMs)||30000),cancelPolicy:String(cancelPolicy),verification:clone(verification),createdAt:new Date().toISOString()});
-}
-function validateToolResult(snapshot,contract,result){
-  if(!contract||!snapshot)return {valid:false,errors:["missing-contract-or-snapshot"]};const b=bindingInSnapshot(snapshot,contract.bindingRevisionId);if(!b)return {valid:false,errors:["binding-not-in-snapshot"]};if(b.schemaFingerprint!==contract.schemaFingerprint)return {valid:false,errors:["schema-drift"]};return validateSchema(b.outputSchema,result,"$result");
-}
-
+function retrieveCapabilities(snapshot,query,{limit=8}={}){const q=text(query).toLowerCase(),qt=new Set(tokens(q)),rows=[];for(const c of snapshot.capabilities){const names=[c.id,c.title,...c.aliases].map(x=>x.toLowerCase()),exact=names.includes(q)?100:0;let overlap=0;for(const t of tokens(names.join(" ")))if(qt.has(t))overlap++;const score=exact+overlap;if(score>0||!q)rows.push({capability:c,score});}rows.sort((a,b)=>b.score-a.score||a.capability.id.localeCompare(b.capability.id));return rows.slice(0,Math.max(1,limit)).map(x=>({id:x.capability.id,title:x.capability.title,effectClass:x.capability.effectClass,score:x.score}));}
+function candidateFrontier(snapshot,need={},opts={}){const capabilityIds=need.capabilityId?[need.capabilityId]:retrieveCapabilities(snapshot,need.query||"",{limit:opts.capabilityLimit||4}).map(x=>x.id),verified=Array.isArray(opts.outcomes)?opts.outcomes.filter(x=>x&&x.verified===true):[],rows=[];for(const b of snapshot.bindings){if(!capabilityIds.includes(b.capabilityId))continue;const gate=hardEligibility(b,snapshot,need);if(!gate.eligible)continue;const o=verified.filter(x=>x.revisionId===b.revisionId),outcome=o.length?o.reduce((s,x)=>s+Math.max(0,Math.min(1,Number(x.score)||0)),0)/o.length:null,score=(outcome==null?.5:outcome)*.7+b.metrics.reliability*.2+b.metrics.latencyScore*.1;rows.push({binding:b,gate,score});}rows.sort((a,b)=>b.score-a.score||a.binding.revisionId.localeCompare(b.binding.revisionId));return rows.slice(0,Math.max(1,opts.limit||4)).map(x=>({revisionId:x.binding.revisionId,bindingId:x.binding.id,capabilityId:x.binding.capabilityId,schemaFingerprint:x.binding.schemaFingerprint,score:x.score,uncertainties:x.gate.uncertainties}));}
+function discloseBinding(snapshot,revisionId,level="CARD",opts={}){const b=bindingInSnapshot(snapshot,revisionId);if(!b)throw new Error("binding revision not in snapshot");const cap=capabilityFor(snapshot,b.capabilityId),l=String(level).toUpperCase(),card={capabilityId:cap.id,title:cap.title,bindingId:b.id,revisionId:b.revisionId,effectClass:b.effectClass,idempotencyClass:b.idempotencyClass};if(l==="CARD")return card;const signature={...card,requiredPermissions:[...b.requiredPermissions],required:[...(b.inputSchema.required||[])],inputs:Object.fromEntries(Object.entries(b.inputSchema.properties||{}).map(([k,v])=>[k,v.type||"any"]))};if(l==="SIGNATURE")return signature;if(l!=="FULL")throw new Error("invalid disclosure level");const allowed=new Set(Array.isArray(opts.allowedRevisionIds)?opts.allowedRevisionIds:[]);if(!allowed.has(revisionId))throw new Error("full schema requires shortlisted binding");return {...signature,schemaFingerprint:b.schemaFingerprint,inputSchema:clone(b.inputSchema),outputSchema:clone(b.outputSchema)};}
+function createToolCallContract({snapshot,bindingRevisionId,args={},authorizationReceipt,budget={},timeoutMs=30000,cancelPolicy="BEST_EFFORT",verification={},runId,taskId,idempotencyKey}={}){if(!snapshot)throw new Error("catalog snapshot required");const b=bindingInSnapshot(snapshot,bindingRevisionId);if(!b)throw new Error("binding revision not in snapshot");const sensitive=!['NONE','OBSERVATIONAL'].includes(b.effectClass),gate=hardEligibility(b,snapshot,{capabilityId:b.capabilityId,sensitive});if(!gate.eligible)throw new Error(`binding ineligible:${gate.reasons.join(",")}`);if(!authorizationReceipt||authorizationReceipt.decision!=="ALLOW"||!authorizationReceipt.id)throw new Error("authoritative ALLOW receipt required");if(authorizationReceipt.bindingRevisionId&&authorizationReceipt.bindingRevisionId!==b.revisionId)throw new Error("authorization binding mismatch");if(authorizationReceipt.schemaFingerprint&&authorizationReceipt.schemaFingerprint!==b.schemaFingerprint)throw new Error("authorization schema mismatch");if(authorizationReceipt.capability&&authorizationReceipt.capability!==b.capabilityId)throw new Error("authorization capability mismatch");const task=text(taskId)||null;if(authorizationReceipt.taskId&&task&&authorizationReceipt.taskId!==task)throw new Error("authorization task mismatch");const checked=validateSchema(b.inputSchema,args);if(!checked.valid)throw new Error(`invalid tool arguments:${checked.errors.join(",")}`);const argsFingerprint=hash(args);if(sensitive&&!authorizationReceipt.payloadFingerprint)throw new Error("effectful authorization must bind exact arguments");if(authorizationReceipt.payloadFingerprint&&authorizationReceipt.payloadFingerprint!==argsFingerprint)throw new Error("authorization arguments mismatch");if(b.idempotencyClass==="KEYED_REPEAT"&&!text(idempotencyKey))throw new Error("keyed-repeat call requires idempotency key");const core={snapshotId:snapshot.id,capabilityId:b.capabilityId,bindingRevisionId:b.revisionId,schemaFingerprint:b.schemaFingerprint,argsFingerprint,authorizationReceiptId:authorizationReceipt.id,runId:text(runId)||null,taskId:task,idempotencyKey:text(idempotencyKey)||null};return Object.freeze({schemaVersion:1,id:`tool-call-${hash(core).slice(0,24)}`,...core,args:clone(args),effectClass:b.effectClass,idempotencyClass:b.idempotencyClass,budget:{toolCalls:Math.max(1,Number(budget.toolCalls)||1),bytes:Math.max(0,Number(budget.bytes)||0)},timeoutMs:Math.max(100,Number(timeoutMs)||30000),cancelPolicy:String(cancelPolicy),verification:clone(verification),createdAt:new Date().toISOString()});}
+function validateToolResult(snapshot,contract,result){if(!contract||!snapshot)return {valid:false,errors:["missing-contract-or-snapshot"]};const b=bindingInSnapshot(snapshot,contract.bindingRevisionId);if(!b)return {valid:false,errors:["binding-not-in-snapshot"]};if(b.schemaFingerprint!==contract.schemaFingerprint)return {valid:false,errors:["schema-drift"]};return validateSchema(b.outputSchema,result,"$result");}
 const ALLOWED_TRANSITIONS=Object.freeze({PREPARED:["AUTHORIZED","FAILED_PRE_DISPATCH","CANCELLED_CONFIRMED"],AUTHORIZED:["DISPATCHING","FAILED_PRE_DISPATCH","CANCELLED_CONFIRMED"],DISPATCHING:["DISPATCHED","FAILED_PRE_DISPATCH","FAILED_POST_DISPATCH_UNKNOWN","CANCEL_REQUESTED"],DISPATCHED:["STREAMING","RESULT_RECEIVED","FAILED_POST_DISPATCH_UNKNOWN","CANCEL_REQUESTED"],STREAMING:["RESULT_RECEIVED","FAILED_POST_DISPATCH_UNKNOWN","CANCEL_REQUESTED"],RESULT_RECEIVED:["VALIDATING"],VALIDATING:["RESULT_VALID","RESULT_INVALID"],CANCEL_REQUESTED:["CANCELLED_CONFIRMED","CANCELLED_UNCERTAIN","HANDED_OFF_FOR_RECONCILIATION"],CANCELLED_UNCERTAIN:["HANDED_OFF_FOR_RECONCILIATION"],FAILED_POST_DISPATCH_UNKNOWN:["HANDED_OFF_FOR_RECONCILIATION"],RESULT_VALID:[],RESULT_INVALID:[],FAILED_PRE_DISPATCH:[],CANCELLED_CONFIRMED:[],HANDED_OFF_FOR_RECONCILIATION:[]});
 function createAttempt(contract,{id,at=new Date().toISOString()}={}){if(!contract||!contract.id)throw new Error("tool call contract required");return {schemaVersion:1,id:text(id)||`attempt-${hash({contract:contract.id,at}).slice(0,20)}`,contractId:contract.id,state:"PREPARED",createdAt:at,history:[]};}
-function transitionAttempt(attempt,next,payload={}){
-  if(!attempt||!ATTEMPT_STATES.includes(attempt.state))throw new Error("valid attempt required");next=String(next).toUpperCase();if(!ATTEMPT_STATES.includes(next))throw new Error("invalid attempt state");if(!(ALLOWED_TRANSITIONS[attempt.state]||[]).includes(next))throw new Error(`illegal tool attempt transition:${attempt.state}->${next}`);
-  if(["FAILED_PRE_DISPATCH","FAILED_POST_DISPATCH_UNKNOWN","RESULT_INVALID","CANCELLED_UNCERTAIN"].includes(next)&&!text(payload.reason))throw new Error(`${next} requires reason`);
-  if(next==="RESULT_VALID"&&payload.validationValid!==true)throw new Error("RESULT_VALID requires schema validation evidence");
-  const out=clone(attempt);out.history.push({from:attempt.state,to:next,at:payload.at||new Date().toISOString(),reason:text(payload.reason)||null});out.state=next;out.last=clone(payload);return out;
-}
-function createBindingLease({snapshot,bindingRevisionId,ttlMs=300000,now=Date.now()}={}){
-  const b=bindingInSnapshot(snapshot,bindingRevisionId);if(!b)throw new Error("binding revision not in snapshot");const t=Number(now)||Date.now();return Object.freeze({schemaVersion:1,id:`binding-lease-${hash({s:snapshot.id,r:b.revisionId,t}).slice(0,20)}`,snapshotId:snapshot.id,bindingRevisionId:b.revisionId,schemaFingerprint:b.schemaFingerprint,issuedAt:t,expiresAt:t+Math.max(1000,Number(ttlMs)||300000),grantsAuthority:false});
-}
+function transitionAttempt(attempt,next,payload={}){if(!attempt||!ATTEMPT_STATES.includes(attempt.state))throw new Error("valid attempt required");next=String(next).toUpperCase();if(!ATTEMPT_STATES.includes(next))throw new Error("invalid attempt state");if(!(ALLOWED_TRANSITIONS[attempt.state]||[]).includes(next))throw new Error(`illegal tool attempt transition:${attempt.state}->${next}`);if(["FAILED_PRE_DISPATCH","FAILED_POST_DISPATCH_UNKNOWN","RESULT_INVALID","CANCELLED_UNCERTAIN"].includes(next)&&!text(payload.reason))throw new Error(`${next} requires reason`);if(next==="RESULT_VALID"&&payload.validationValid!==true)throw new Error("RESULT_VALID requires schema validation evidence");const out=clone(attempt);out.history.push({from:attempt.state,to:next,at:payload.at||new Date().toISOString(),reason:text(payload.reason)||null});out.state=next;out.last=clone(payload);return out;}
+function createBindingLease({snapshot,bindingRevisionId,ttlMs=300000,now=Date.now()}={}){const b=bindingInSnapshot(snapshot,bindingRevisionId);if(!b)throw new Error("binding revision not in snapshot");const t=Number(now)||Date.now();return Object.freeze({schemaVersion:1,id:`binding-lease-${hash({s:snapshot.id,r:b.revisionId,t}).slice(0,20)}`,snapshotId:snapshot.id,bindingRevisionId:b.revisionId,schemaFingerprint:b.schemaFingerprint,issuedAt:t,expiresAt:t+Math.max(1000,Number(ttlMs)||300000),grantsAuthority:false});}
 function bindingLeaseValid(lease,snapshot,{now=Date.now()}={}){if(!lease||!snapshot||lease.snapshotId!==snapshot.id||Number(now)>=lease.expiresAt)return false;const b=bindingInSnapshot(snapshot,lease.bindingRevisionId);return !!(b&&b.schemaFingerprint===lease.schemaFingerprint&&hardEligibility(b,snapshot).eligible);}
-function replayDecision({contract,recordedObservation}={}){
-  if(!contract)return {allowed:false,reason:"missing-contract"};if(!recordedObservation)return {allowed:false,reason:"missing-recorded-observation"};
-  if(contract.effectClass!=="NONE"&&contract.effectClass!=="OBSERVATIONAL")return {allowed:true,reexecute:false,reason:"effectful-replay-uses-recorded-observation",observation:clone(recordedObservation)};
-  return {allowed:true,reexecute:false,reason:"deterministic-replay",observation:clone(recordedObservation)};
-}
-
+function replayDecision({contract,recordedObservation}={}){if(!contract)return {allowed:false,reason:"missing-contract"};if(!recordedObservation)return {allowed:false,reason:"missing-recorded-observation"};if(contract.effectClass!=="NONE"&&contract.effectClass!=="OBSERVATIONAL")return {allowed:true,reexecute:false,reason:"effectful-replay-uses-recorded-observation",observation:clone(recordedObservation)};return {allowed:true,reexecute:false,reason:"deterministic-replay",observation:clone(recordedObservation)};}
 module.exports={EFFECT_CLASSES,IDEMPOTENCY,ATTEMPT_STATES,stableJson,hash,validateSchema,createCapabilitySpec,schemaFingerprint,createBinding,createCatalogSnapshot,capabilityFor,bindingInSnapshot,hardEligibility,retrieveCapabilities,candidateFrontier,discloseBinding,createToolCallContract,validateToolResult,createAttempt,transitionAttempt,createBindingLease,bindingLeaseValid,replayDecision};
