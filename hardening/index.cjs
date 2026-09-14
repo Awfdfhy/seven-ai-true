@@ -9,5 +9,5 @@ module.exports = Object.freeze({
   toolFabric: require("./tool-fabric.cjs"),
   toolSecurity: require("./tool-security.cjs"),
   sideEffectLedger: require("./side-effect-ledger.cjs"),
-  projectFileFabric: require("./project-file-fabric.cjs")
+  projectFileFabric: require("./project-file-fabric-passb.cjs")
 });
