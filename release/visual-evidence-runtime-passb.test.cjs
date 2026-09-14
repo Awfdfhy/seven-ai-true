@@ -1,0 +1,53 @@
+"use strict";
+const assert=require("assert/strict");
+const v=require("./visual-evidence-runtime-passb.cjs");
+let n=0;const pass=(name,fn)=>{fn();n++;console.log("PASS",name)},H=x=>String(x).repeat(64);
+const scenario=v.createScenario({id:"chat",surface:"chat",viewport:{width:390,height:844},locale:"en",direction:"ltr",theme:"night",criticalSelectors:["#chat"]});
+const artifact=v.createArtifact(scenario,{path:"screenshots/chat.png",sha256:H("a"),byteSize:100,width:390,height:844});
+const goodAudit=v.auditViewport({scrollWidth:390,clientWidth:390});
+const warnAudit=v.auditTouchTargets([{selector:"#send",width:40,height:40,visible:true}]);
+pass("audit seal verifies",()=>assert.equal(v.verifyAudit(goodAudit),true));
+pass("forged audit status is rejected",()=>assert.equal(v.verifyAudit({...goodAudit,status:"FAIL"}),false));
+pass("forged audit metrics are rejected",()=>assert.equal(v.verifyAudit({...goodAudit,metrics:{scrollWidth:999}}),false));
+assert.throws(()=>v.createEvidence(scenario,artifact,{tier:"MAGIC",environmentIdentity:"host:a",commitSha:H("b"),branch:"ultimate-polish-v1",audits:[goodAudit]}),/unknown evidence tier/);n++;console.log("PASS unknown evidence tier fails closed");
+assert.throws(()=>v.createEvidence(scenario,artifact,{tier:"HOST",commitSha:H("b"),branch:"ultimate-polish-v1",audits:[goodAudit]}),/environmentIdentity/);n++;console.log("PASS environment identity is mandatory");
+assert.throws(()=>v.createEvidence(scenario,artifact,{tier:"PHYSICAL_DEVICE",environmentIdentity:"pixel",commitSha:H("b"),branch:"ultimate-polish-v1",audits:[goodAudit]}),/tier proof required/);n++;console.log("PASS device tier cannot be self-asserted");
+assert.throws(()=>v.createEvidence(scenario,artifact,{tier:"PHYSICAL_DEVICE",environmentIdentity:"pixel",tierProof:{kind:"PHYSICAL_DEVICE",proofHash:"bad",sourceRef:"adb",capturedBy:"runner"},commitSha:H("b"),branch:"ultimate-polish-v1",audits:[goodAudit]}),/tier proof hash/);n++;console.log("PASS weak device proof blocked");
+const host=v.createEvidence(scenario,artifact,{tier:"HOST",environmentIdentity:"gha:ubuntu:chromium",commitSha:H("b"),branch:"ultimate-polish-v1",audits:[goodAudit]});
+pass("HOST evidence verifies",()=>assert.equal(v.verifyEvidence(host,scenario,artifact),true));
+pass("environment relabel breaks evidence",()=>assert.equal(v.verifyEvidence({...host,environmentIdentity:"physical:phone"},scenario,artifact),false));
+const device=v.createEvidence(scenario,artifact,{tier:"PHYSICAL_DEVICE",environmentIdentity:"device:abc",tierProof:{kind:"PHYSICAL_DEVICE",proofHash:H("c"),sourceRef:"device-receipt:1",capturedBy:"android-harness"},commitSha:H("b"),branch:"ultimate-polish-v1",audits:[goodAudit]});
+pass("physical-device tier needs and preserves proof",()=>{assert.equal(v.verifyEvidence(device,scenario,artifact),true);assert.equal(device.tierProof.kind,"PHYSICAL_DEVICE")});
+pass("device tier downgrade/relabel tamper is detected",()=>assert.equal(v.verifyEvidence({...device,foundation:{...device.foundation,tier:"HOST"}},scenario,artifact),false));
+assert.throws(()=>v.createEvidence(scenario,artifact,{tier:"HOST",environmentIdentity:"gha",commitSha:H("b"),branch:"ultimate-polish-v1",audits:[{...goodAudit,auditHash:"0".repeat(64)}]}),/forged visual audit/);n++;console.log("PASS forged audit cannot enter evidence");
+
+let sr=v.createScenarioRegistry({id:"visual-scenarios"});
+pass("empty scenario registry verifies",()=>assert.equal(v.verifyScenarioRegistry(sr),true));
+sr=v.addScenario(sr,scenario);pass("scenario registry stores sealed scenario",()=>assert.equal(v.verifyScenarioRegistry(sr),true));
+pass("same scenario add is idempotent",()=>assert.equal(v.addScenario(sr,scenario).registryHash,sr.registryHash));
+const changed=v.createScenario({id:"chat",surface:"chat",viewport:{width:412,height:915},locale:"en",direction:"ltr",theme:"night"});
+assert.throws(()=>v.addScenario(sr,changed),/explicit replacement approval/);n++;console.log("PASS scenario drift cannot silently replace baseline definition");
+assert.throws(()=>v.replaceScenario(sr,changed,{}),/approval.reviewer/);n++;console.log("PASS scenario replacement needs approval");
+sr=v.replaceScenario(sr,changed,{reviewer:"qa",reason:"new representative viewport",approvalRef:"VIS-12"});pass("approved scenario replacement is auditable",()=>assert.equal(v.verifyScenarioRegistry(sr),true));
+
+let er=v.createEvidenceRegistry({id:"visual-evidence"});
+pass("empty evidence registry verifies",()=>assert.equal(v.verifyEvidenceRegistry(er),true));
+er=v.appendEvidence(er,host,scenario,artifact);pass("evidence registry stores only verified evidence",()=>assert.equal(v.verifyEvidenceRegistry(er),true));
+pass("evidence registry append is idempotent",()=>assert.equal(v.appendEvidence(er,host,scenario,artifact).registryHash,er.registryHash));
+assert.throws(()=>v.appendEvidence(er,{...host,evidenceHashV2:"0".repeat(64)},scenario,artifact),/verified evidence/);n++;console.log("PASS forged evidence cannot enter registry");
+
+let br=v.createBaselineRegistry({id:"goldens"});
+const warning=v.createEvidence(scenario,artifact,{tier:"HOST",environmentIdentity:"gha:ubuntu:chromium",commitSha:H("b"),branch:"ultimate-polish-v1",audits:[warnAudit]});
+assert.throws(()=>v.approveBaseline(br,scenario,artifact,warning,{reviewer:"qa",reason:"known",approvalRef:"R1"}),/acceptWarnings/);n++;console.log("PASS WARN golden needs explicit acceptance");
+br=v.approveBaseline(br,scenario,artifact,warning,{reviewer:"qa",reason:"known accepted warning",approvalRef:"R1",acceptWarnings:true});pass("explicit WARN baseline approval succeeds",()=>assert.equal(v.verifyRegistry(br),true));
+
+const manifest=v.createManifest({branch:"ultimate-polish-v1",commitSha:H("b"),environmentIdentity:"gha:ubuntu:chromium",mode:"OBSERVE",scenarios:[scenario],artifacts:[artifact],evidence:[host]});
+pass("PassB manifest verifies",()=>assert.equal(v.verifyManifest(manifest),true));
+assert.throws(()=>v.createManifest({branch:"other",commitSha:H("b"),environmentIdentity:"gha:ubuntu:chromium",scenarios:[scenario],artifacts:[artifact],evidence:[host]}),/cross-commit\/branch/);n++;console.log("PASS cross-branch evidence laundering blocked");
+assert.throws(()=>v.createManifest({branch:"ultimate-polish-v1",commitSha:H("d"),environmentIdentity:"gha:ubuntu:chromium",scenarios:[scenario],artifacts:[artifact],evidence:[host]}),/cross-commit\/branch/);n++;console.log("PASS cross-commit evidence laundering blocked");
+assert.throws(()=>v.createManifest({branch:"ultimate-polish-v1",commitSha:H("b"),environmentIdentity:"other-env",scenarios:[scenario],artifacts:[artifact],evidence:[host]}),/cross-environment/);n++;console.log("PASS cross-environment evidence laundering blocked");
+assert.throws(()=>v.createManifest({branch:"ultimate-polish-v1",commitSha:H("b"),environmentIdentity:"gha:ubuntu:chromium",scenarios:[scenario,scenario],artifacts:[artifact],evidence:[host]}),/duplicate scenario id/);n++;console.log("PASS duplicate scenario identities blocked");
+assert.throws(()=>v.createManifest({branch:"ultimate-polish-v1",commitSha:H("b"),environmentIdentity:"gha:ubuntu:chromium",scenarios:[scenario],artifacts:[artifact,artifact],evidence:[host]}),/duplicate artifact identity/);n++;console.log("PASS duplicate artifact identities blocked");
+assert.throws(()=>v.createManifest({branch:"ultimate-polish-v1",commitSha:H("b"),environmentIdentity:"gha:ubuntu:chromium",scenarios:[scenario],artifacts:[artifact],evidence:[host,host]}),/duplicate evidence identity/);n++;console.log("PASS duplicate evidence identities blocked");
+pass("manifest tamper is detected",()=>assert.equal(v.verifyManifest({...manifest,environmentIdentity:"fake"}),false));
+console.log(`visual evidence PassB: PASS (${n} assertions)`);
