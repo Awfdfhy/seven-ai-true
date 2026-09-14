@@ -1,93 +1,78 @@
 # Seven AI — Decision Log
 
-This file records durable project decisions and the reasoning behind them. Add new decisions instead of relying on chat history alone.
+This file records durable project decisions and their reasoning. New explicit committed decisions supersede older conflicting directions.
 
-## D-001 — GitHub is the durable project memory
-**Status:** Adopted
-
-Seven project-memory documents in GitHub are the durable reference for roadmap, architecture, decisions and status. If chat memory conflicts with committed project-memory docs, prefer the newer explicit GitHub decision unless the user overrides it.
+## D-001 — GitHub is durable project memory
+**Adopted.** Roadmap, architecture, decisions, capability inventory and status must not depend on chat history alone.
 
 ## D-002 — Preserve the existing application
-**Status:** Adopted
-
-Seven evolves through controlled layers and migrations. Mature systems should not be replaced casually. Large rewrites require a clear safety case and explicit approval.
+**Adopted.** Mature systems are evolved through controlled layers/migrations rather than casual rewrites.
 
 ## D-003 — Protect `seven_ai-final.html`
-**Status:** Adopted
-
-`seven_ai-final.html` is a protected source artifact. Release builds may read from it and inject generated release layers, but Beta work must not silently modify or replace it.
+**Adopted.** It remains a protected source artifact unless explicitly authorized.
 
 ## D-004 — Verification beats appearance
-**Status:** Adopted
-
-A feature, action or release is not considered successful because it looks successful. Verify effects, persistence, source integrity and runtime state before declaring PASS.
+**Adopted.** A feature/action/release is not successful merely because it looks successful.
 
 ## D-005 — Explicit epistemic states
-**Status:** Adopted
-
-Seven distinguishes FACT, CLAIM, INFERENCE, ASSUMPTION, UNKNOWN and CONFLICT. Missing canon/source evidence becomes CANON_GAP instead of fabricated certainty.
+**Adopted.** FACT, CLAIM, INFERENCE, ASSUMPTION, UNKNOWN and CONFLICT remain explicit. Missing canon evidence becomes `CANON_GAP`.
 
 ## D-006 — Authority never increases through derivation
-**Status:** Adopted
-
-Summaries, embeddings, consolidation, model repetition, tool echo and corroborating derived objects do not grant new authority or permissions. Action-sensitive permission memory must bind back to authoritative source events.
+**Adopted.** Summaries, embeddings, consolidation, model repetition and tool echo cannot grant authority or permissions.
 
 ## D-007 — Selective compute
-**Status:** Adopted
-
-Strong models, retrieval, tools, deep reasoning and verification are selectively invoked based on task needs instead of running constantly.
+**Adopted.** Strong models, retrieval, tools, deep reasoning and verification are invoked according to task need rather than constantly.
 
 ## D-008 — Mobile weight is a product constraint
-**Status:** Adopted
-
-Performance is not just smoothness. Seven must minimize RAM, battery, storage, APK size and startup cost, using lazy loading and avoiding unnecessary background work and visual effects.
+**Adopted.** RAM, battery, CPU, thermal load, storage, APK size, network use and startup cost are first-class constraints.
 
 ## D-009 — Beta UI is not Final UI
-**Status:** Adopted
+**Adopted.** Intermediate coherence/polish must not be mislabeled as final visual freeze.
 
-Beta UI exists to make current systems coherent, testable and premium enough for development. A later dedicated Final UI redesign may be substantially more ambitious once the identity and systems are frozen.
-
-## D-010 — Adopt the curved ribbon Seven identity
-**Status:** Adopted
-
-The preferred Seven mark is a minimal curved/ribbon-like `7`. Its identity should survive app-icon scale, monochrome use, clothing/hardware placement and Day/Night themes without feeling like a generic AI logo.
-
-The core visual language is:
-- curves / ribbon continuity
-- Seven Blue + Cyan family
-- restrained light and shadow
-- bright clean Day surfaces
-- midnight/navy Night surfaces
-- minimal effect usage
-
-Avoid generic AI sparkle, brain, circuit, robot, infinity, shield, hexagon and crypto/game aesthetics as primary identity devices.
+## D-010 — Identity is selected by evidence, not attachment to an early logo
+**Updated.** Earlier curved-ribbon Seven work remains candidate/history, not an unquestionable final mark. The final identity is chosen through the Design Genome portfolio and Logo Tournament using distinctiveness, small-size, monochrome, Day/Night, Android mask/themed-icon, motion, accessibility and implementation-cost evidence.
 
 ## D-011 — Day and Night share one identity
-**Status:** Adopted
+**Adopted.** They may differ materially in surfaces/light while preserving common identity geometry and hierarchy.
 
-Day and Night are not separate brands. They retain the same geometry and hierarchy while adapting material, contrast and lighting. Day is airy and restrained; Night uses deeper navy surfaces and controlled blue luminance.
-
-## D-012 — Aurora is semantic
-**Status:** Adopted
-
-Aurora communicates runtime state such as thinking, research, coding, RPG, success, warning and error. It must never imply authority or verification by appearance alone, and it must respect Reduced Motion and Lite tiers.
+## D-012 — Aurora/visual state is semantic
+**Adopted.** Visual state may communicate runtime mode but never grants authority or proves verification.
 
 ## D-013 — Real Works prioritizes canon fidelity without false 100% claims
-**Status:** Adopted
-
-The Real Works system should pursue maximum canon fidelity through source hierarchy, timelines, invariants, knowledge state and scene contracts. When evidence is incomplete or conflicting, Seven exposes uncertainty rather than inventing canon.
+**Adopted.** Maximum fidelity is pursued through provenance, timelines, invariants and state tracking; uncertainty remains explicit.
 
 ## D-014 — No arbitrary Seven-side usage caps
-**Status:** Adopted
+**Adopted.** External provider/API constraints may still apply and must be represented honestly.
 
-Seven itself should not impose artificial per-feature usage quotas. External model/provider/API limits may still apply and must be represented honestly.
+## D-015 — Final screenshots are real renders
+**Adopted.** Concepts are labeled as concepts; implementation proof comes from verified runtime renders.
 
-## D-015 — Final screenshots must be real renders
-**Status:** Adopted
+## D-016 — Protected branches remain unmerged until explicit approval
+**Adopted.** Branch safety remains independent from feature enthusiasm.
 
-When demonstrating implemented UI, use screenshots rendered from the actual verified release. Concept images or generated branding boards must be labeled as concepts and never presented as implementation screenshots.
+## D-017 — Visual Intelligence & Design Fabric V1.4 is architecture-saturated
+**Adopted 2026-09-14.** V1.1 through V1.4 adversarial refinement closed material architecture gaps. Two consecutive final challenge rounds returned `NO_MATERIAL_IMPROVEMENT`; therefore the visual constitution is `ARCHITECTURE_SATURATED_2_OF_2`. This is an architecture claim only, not a claim that final visuals are implemented.
 
-## D-016 — Keep protected PRs unmerged until explicit approval
-**Status:** Adopted
+## D-018 — Seven must have a recognizable Design Genome
+**Adopted.** Seven should be identifiable from product surfaces even without its logo. Candidate primitives such as Orbit Thread, Seven Cut, Evidence Rail, Focus Halo and State Node are explored competitively, not copied from ChatGPT, Claude, Material or another product.
 
-PR #15 (`seven-v4.2-hardening` → `main`) and PR #16 (`seven-beta-ui-v1` → `seven-v4.2-hardening`) stay unmerged until explicit approval.
+## D-019 — Logo selection uses a tournament
+**Adopted.** Logo/icon families must survive monochrome, tiny sizes, Day/Night, Android adaptive masks, themed icons, splash/motion, distinctiveness and implementation/resource cost. Beauty at large canvas size is insufficient.
+
+## D-020 — Visual implementation uses a 12-Mega-Wave campaign
+**Adopted.** Visual Evidence Runtime comes first, then Design Genome Runtime, then Logo & Identity Tournament, followed by Global UI, specialist workspaces, generated UI, motion, Arabic/RTL, accessibility, mobile performance, Android certification and final Visual Red Team/saturation.
+
+## D-021 — Every capability receives Ultimate Polish
+**Adopted.** The campaign applies not only to 12 broad Boss Systems but to each canonical capability in `SEVEN_CAPABILITIES_MAP.md`, including Tool Fabric 2.0 additions.
+
+## D-022 — Default to two strong polish passes per capability
+**Adopted.** Each capability should receive two independent maximum-strength challenge/polish passes when materially useful. A second pass may legitimately conclude `NO_MATERIAL_IMPROVEMENT`; it must never invent complexity merely to create visible change. Any material constitutional change resets relevant saturation evidence.
+
+## D-023 — Add a cross-cutting Speeding & Smoothness System
+**Adopted.** Every capability is evaluated for end-to-end latency, startup, frame stability, responsiveness, scheduling, memory pressure, redundant work, caching, progressive/lazy loading, rendering/network/background cost and cancellation responsiveness. Speed cannot remove required verification, safety, accessibility, authority boundaries or correctness.
+
+## D-024 — Maximum Effort commands become stronger and self-applicable
+**Adopted.** The Context-Adaptive Maximum Effort protocol is the default execution contract for substantial work. Each command must be domain-specific, adversarial, evidence-driven, implementation-aware and performance-aware, and must preserve material results in project memory. The protocol itself is subject to the same improvement discipline rather than being treated as immutable magic wording.
+
+## D-025 — Tool Fabric 2.0 remains governed capability infrastructure
+**Adopted.** Waves 01–19, Canonical Tool Contract/SchemaGuard, MCP/interoperability, SearchBroker and related additions belong in the canonical capability inventory and Ultimate Polish campaign. Tool count alone is never the success metric.
