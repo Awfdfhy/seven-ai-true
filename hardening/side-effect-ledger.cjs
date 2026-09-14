@@ -1,74 +1,70 @@
 "use strict";
 
-const EFFECT_STATE = Object.freeze({
-  PLANNED: "PLANNED",
-  ATTEMPTED: "ATTEMPTED",
-  VERIFIED: "VERIFIED",
-  FAILED: "FAILED",
-  UNCERTAIN: "UNCERTAIN",
-  RECONCILED: "RECONCILED",
-  ROLLED_BACK: "ROLLED_BACK"
-});
+const crypto=require("crypto");
 
-function clone(v) { return v == null ? v : JSON.parse(JSON.stringify(v)); }
+// Legacy compatibility states used by the existing release bridge.
+const EFFECT_STATE=Object.freeze({PLANNED:"PLANNED",ATTEMPTED:"ATTEMPTED",VERIFIED:"VERIFIED",FAILED:"FAILED",UNCERTAIN:"UNCERTAIN",RECONCILED:"RECONCILED",ROLLED_BACK:"ROLLED_BACK"});
+const LIFECYCLE=Object.freeze(["OPEN","RECONCILING","COMPENSATING","CLOSED","ESCALATED_UNRESOLVED"]);
+const DISPATCH=Object.freeze(["NOT_DISPATCHED","DISPATCH_CONFIRMED","DISPATCH_POSSIBLE","DISPATCH_REJECTED_BEFORE_SEND"]);
+const CERTAINTY=Object.freeze(["UNKNOWN","ABSENT_VERIFIED","PRESENT_VERIFIED","PARTIAL_VERIFIED","CONFLICTING_EVIDENCE","NOT_APPLICABLE"]);
+const COMPENSATION=Object.freeze(["NONE","AVAILABLE","PLANNED","ATTEMPTED","VERIFIED","FAILED","UNCERTAIN"]);
+const EFFECT_CLASS=Object.freeze(["NONE","OBSERVATIONAL","REVERSIBLE_WRITE","IRREVERSIBLE_WRITE","EXTERNAL_COMMUNICATION","UNKNOWN_EFFECT"]);
+const IDEMPOTENCY=Object.freeze(["SAFE_REPEAT","KEYED_REPEAT","DO_NOT_REPEAT","UNKNOWN"]);
+function clone(v){return v==null?v:JSON.parse(JSON.stringify(v));}
+function stable(v){if(Array.isArray(v))return v.map(stable);if(v&&typeof v==="object"){const o={};for(const k of Object.keys(v).sort())if(v[k]!==undefined)o[k]=stable(v[k]);return o;}return v;}
+function stableJson(v){return JSON.stringify(stable(v));}
+function hash(v){return crypto.createHash("sha256").update(typeof v==="string"?v:stableJson(v)).digest("hex");}
+function text(v){return typeof v==="string"?v.trim():"";}
+function enumValue(v,allowed,fallback){const x=String(v||fallback).toUpperCase();return allowed.includes(x)?x:fallback;}
 
-function createLedger(seed = []) {
-  const entries = clone(seed);
-  const byKey = new Map(entries.filter(e => e && e.idempotencyKey).map(e => [e.idempotencyKey, e]));
-
-  function plan(input = {}) {
-    const key = String(input.idempotencyKey || "").trim();
-    if (!key) throw new Error("side effect requires idempotencyKey");
-    if (byKey.has(key)) return clone(byKey.get(key));
-    const entry = {
-      id: String(input.id || `effect-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`),
-      idempotencyKey: key,
-      taskId: input.taskId || null,
-      capability: input.capability || null,
-      target: clone(input.target || null),
-      reversible: Boolean(input.reversible),
-      state: EFFECT_STATE.PLANNED,
-      plannedAt: input.at || new Date().toISOString(),
-      attempt: null,
-      verification: null,
-      reconciliation: null,
-      history: []
-    };
-    entries.push(entry); byKey.set(key, entry); return clone(entry);
-  }
-
-  function mutate(key, nextState, payload = {}) {
-    const entry = byKey.get(key);
-    if (!entry) throw new Error(`unknown side effect: ${key}`);
-    const from = entry.state;
-    const allowed = {
-      PLANNED: new Set(["ATTEMPTED", "FAILED"]),
-      ATTEMPTED: new Set(["VERIFIED", "FAILED", "UNCERTAIN"]),
-      UNCERTAIN: new Set(["RECONCILED", "VERIFIED", "FAILED", "ROLLED_BACK"]),
-      VERIFIED: new Set(["ROLLED_BACK"]),
-      FAILED: new Set(["RECONCILED"]),
-      RECONCILED: new Set(["VERIFIED", "FAILED", "ROLLED_BACK"]),
-      ROLLED_BACK: new Set()
-    };
-    if (!allowed[from] || !allowed[from].has(nextState)) throw new Error(`illegal side effect transition: ${from}->${nextState}`);
-    if (nextState === EFFECT_STATE.VERIFIED && !payload.evidence) throw new Error("verified side effect requires evidence");
-    if (nextState === EFFECT_STATE.ROLLED_BACK && !entry.reversible) throw new Error("irreversible side effect cannot be marked rolled back");
-    entry.state = nextState;
-    entry.history.push({ from, to: nextState, at: payload.at || new Date().toISOString(), reason: payload.reason || null });
-    if (nextState === EFFECT_STATE.ATTEMPTED) entry.attempt = clone(payload);
-    if (nextState === EFFECT_STATE.VERIFIED) entry.verification = clone(payload);
-    if (nextState === EFFECT_STATE.RECONCILED || nextState === EFFECT_STATE.ROLLED_BACK) entry.reconciliation = clone(payload);
-    return clone(entry);
-  }
-
-  function unresolved() {
-    return entries.filter(e => [EFFECT_STATE.PLANNED, EFFECT_STATE.ATTEMPTED, EFFECT_STATE.UNCERTAIN, EFFECT_STATE.RECONCILED].includes(e.state)).map(clone);
-  }
-
-  function snapshot() { return clone(entries); }
-  function get(key) { return byKey.has(key) ? clone(byKey.get(key)) : null; }
-
-  return { plan, mutate, unresolved, snapshot, get };
+// Backward-compatible ledger. Existing release execution remains untouched.
+function createLedger(seed=[]){
+  const entries=clone(seed),byKey=new Map(entries.filter(e=>e&&e.idempotencyKey).map(e=>[e.idempotencyKey,e]));
+  function plan(input={}){const key=text(input.idempotencyKey);if(!key)throw new Error("side effect requires idempotencyKey");if(byKey.has(key))return clone(byKey.get(key));const entry={id:String(input.id||`effect-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`),idempotencyKey:key,taskId:input.taskId||null,capability:input.capability||null,target:clone(input.target||null),reversible:Boolean(input.reversible),state:EFFECT_STATE.PLANNED,plannedAt:input.at||new Date().toISOString(),attempt:null,verification:null,reconciliation:null,history:[]};entries.push(entry);byKey.set(key,entry);return clone(entry);}
+  function mutate(key,nextState,payload={}){const entry=byKey.get(key);if(!entry)throw new Error(`unknown side effect: ${key}`);const from=entry.state;const allowed={PLANNED:new Set(["ATTEMPTED","FAILED"]),ATTEMPTED:new Set(["VERIFIED","FAILED","UNCERTAIN"]),UNCERTAIN:new Set(["RECONCILED","VERIFIED","FAILED","ROLLED_BACK"]),VERIFIED:new Set(["ROLLED_BACK"]),FAILED:new Set(["RECONCILED"]),RECONCILED:new Set(["VERIFIED","FAILED","ROLLED_BACK"]),ROLLED_BACK:new Set()};if(!allowed[from]||!allowed[from].has(nextState))throw new Error(`illegal side effect transition: ${from}->${nextState}`);if(nextState===EFFECT_STATE.VERIFIED&&!payload.evidence)throw new Error("verified side effect requires evidence");if(nextState===EFFECT_STATE.ROLLED_BACK&&!entry.reversible)throw new Error("irreversible side effect cannot be marked rolled back");entry.state=nextState;entry.history.push({from,to:nextState,at:payload.at||new Date().toISOString(),reason:payload.reason||null});if(nextState===EFFECT_STATE.ATTEMPTED)entry.attempt=clone(payload);if(nextState===EFFECT_STATE.VERIFIED)entry.verification=clone(payload);if(nextState===EFFECT_STATE.RECONCILED||nextState===EFFECT_STATE.ROLLED_BACK)entry.reconciliation=clone(payload);return clone(entry);}
+  function unresolved(){return entries.filter(e=>[EFFECT_STATE.PLANNED,EFFECT_STATE.ATTEMPTED,EFFECT_STATE.UNCERTAIN,EFFECT_STATE.RECONCILED].includes(e.state)).map(clone);}
+  return {plan,mutate,unresolved,snapshot(){return clone(entries);},get(key){return byKey.has(key)?clone(byKey.get(key)):null;}};
 }
 
-module.exports = { EFFECT_STATE, createLedger };
+function deriveEffectKey(input={}){
+  const logical={principalId:text(input.principalId),taskId:text(input.taskId),runId:text(input.runId),action:text(input.action),target:stable(input.target||null),payloadFingerprint:text(input.payloadFingerprint)||hash(input.payload||null),bindingRevisionId:text(input.bindingRevisionId),schemaFingerprint:text(input.schemaFingerprint),idempotencyNamespace:text(input.idempotencyNamespace),idempotencyKey:text(input.idempotencyKey)};
+  if(!logical.principalId||!logical.taskId||!logical.action||!logical.bindingRevisionId||!logical.schemaFingerprint)throw new Error("effect identity requires principal/task/action/binding/schema");return `effect-${hash(logical).slice(0,32)}`;
+}
+function normalizePlan(input={}){
+  if(!input.authorizationReceipt||input.authorizationReceipt.decision!=="ALLOW"||!input.authorizationReceipt.id)throw new Error("effect plan requires ALLOW authorization receipt");if(!text(input.toolCallContractId))throw new Error("effect plan requires ToolCallContract lineage");
+  const effectClass=enumValue(input.effectClass,EFFECT_CLASS,"UNKNOWN_EFFECT"),idempotencyClass=enumValue(input.idempotencyClass,IDEMPOTENCY,"UNKNOWN");if(idempotencyClass==="KEYED_REPEAT"&&!text(input.idempotencyKey))throw new Error("KEYED_REPEAT effect requires idempotency key");
+  const key=deriveEffectKey(input);return {schemaVersion:1,key,principalId:text(input.principalId),taskId:text(input.taskId),runId:text(input.runId)||null,action:text(input.action),target:clone(input.target||null),payloadFingerprint:text(input.payloadFingerprint)||hash(input.payload||null),bindingRevisionId:text(input.bindingRevisionId),schemaFingerprint:text(input.schemaFingerprint),idempotencyNamespace:text(input.idempotencyNamespace)||"default",idempotencyKey:text(input.idempotencyKey)||null,idempotencyClass,effectClass,authorizationReceiptId:input.authorizationReceipt.id,toolCallContractId:text(input.toolCallContractId),verificationRecipe:clone(input.verificationRecipe||null),reconciliationRecipe:clone(input.reconciliationRecipe||null),compensationRecipe:clone(input.compensationRecipe||null),idempotencyEvidence:input.idempotencyEvidence===true};}
+function snapshotHash(records,journal){return hash({records:stable(records),journal:stable(journal)});}
+function createEffectLedger(seed){
+  let records=[],journal=[];
+  if(seed&& !Array.isArray(seed)){records=clone(seed.records||[]);journal=clone(seed.journal||[]);if(seed.journalHash&&seed.journalHash!==snapshotHash(records,journal))throw new Error("effect journal integrity failure");}else if(Array.isArray(seed))records=clone(seed);
+  const byKey=new Map();for(const r of records){if(!r||!r.key||byKey.has(r.key))throw new Error("invalid or duplicate effect record");if(!LIFECYCLE.includes(r.lifecycle)||!DISPATCH.includes(r.dispatchCertainty)||!CERTAINTY.includes(r.effectCertainty)||!COMPENSATION.includes(r.compensationState))throw new Error("invalid effect state dimensions");byKey.set(r.key,r);}
+  let seq=journal.reduce((m,e)=>Math.max(m,Number(e.seq)||0),0);
+  function event(record,type,data={}){const e={seq:++seq,effectKey:record.key,type,at:data.at||new Date().toISOString(),data:clone(data)};journal.push(e);record.updatedAt=e.at;return e;}
+  function get(key){return byKey.has(key)?clone(byKey.get(key)):null;}
+  function planEffect(input={}){const plan=normalizePlan(input),fingerprint=hash(plan);const existing=byKey.get(plan.key);if(existing){if(existing.planFingerprint!==fingerprint)throw new Error("effect-key collision with different plan");return clone(existing);}const at=input.at||new Date().toISOString();const record={schemaVersion:1,key:plan.key,planFingerprint:fingerprint,plan,lifecycle:"OPEN",dispatchCertainty:"NOT_DISPATCHED",effectCertainty:plan.effectClass==="NONE"||plan.effectClass==="OBSERVATIONAL"?"NOT_APPLICABLE":"UNKNOWN",compensationState:plan.compensationRecipe?"AVAILABLE":"NONE",attempts:[],evidence:[],compensationLink:null,createdAt:at,updatedAt:at};records.push(record);byKey.set(record.key,record);event(record,"EFFECT_PLANNED",{at});return clone(record);}
+  function currentAttempt(record,attemptId){const a=record.attempts.find(x=>x.id===attemptId);if(!a)throw new Error("unknown effect attempt");return a;}
+  function canRetryRecord(record){
+    if(record.effectCertainty==="PRESENT_VERIFIED"||record.effectCertainty==="PARTIAL_VERIFIED"||record.effectCertainty==="CONFLICTING_EVIDENCE")return {allowed:false,reason:"effect-not-proven-absent"};
+    if(record.effectCertainty==="ABSENT_VERIFIED")return {allowed:true,reason:"verified-absent"};
+    if(["NOT_DISPATCHED","DISPATCH_REJECTED_BEFORE_SEND"].includes(record.dispatchCertainty))return {allowed:true,reason:"not-dispatched"};
+    if(record.plan.idempotencyClass==="SAFE_REPEAT")return {allowed:true,reason:"safe-repeat"};
+    if(record.plan.idempotencyClass==="KEYED_REPEAT"&&record.plan.idempotencyKey&&record.plan.idempotencyEvidence)return {allowed:true,reason:"provider-keyed-repeat-evidence"};
+    return {allowed:false,reason:"post-dispatch-uncertainty-no-blind-retry"};
+  }
+  function beginAttempt(key,{attemptId,at}={}){const r=byKey.get(key);if(!r)throw new Error("unknown effect");if(r.attempts.length){const gate=canRetryRecord(r);if(!gate.allowed)throw new Error(gate.reason);}const id=text(attemptId)||`effect-attempt-${r.attempts.length+1}`;if(r.attempts.some(a=>a.id===id))throw new Error("duplicate attempt id");const a={id,state:"PREPARED",createdAt:at||new Date().toISOString(),dispatch:"NOT_DISPATCHED",transport:null};r.attempts.push(a);event(r,"ATTEMPT_PREPARED",{attemptId:id,at});return clone(a);}
+  function markDispatch(key,attemptId,status,{at,reason}={}){const r=byKey.get(key);if(!r)throw new Error("unknown effect");const a=currentAttempt(r,attemptId),s=String(status||"").toUpperCase();const map={CONFIRMED:"DISPATCH_CONFIRMED",POSSIBLE:"DISPATCH_POSSIBLE",REJECTED_BEFORE_SEND:"DISPATCH_REJECTED_BEFORE_SEND"};if(!map[s])throw new Error("invalid dispatch status");if(a.dispatch!=="NOT_DISPATCHED")throw new Error("dispatch state already recorded");a.dispatch=map[s];a.state=s==="REJECTED_BEFORE_SEND"?"FAILED_PRE_DISPATCH":"DISPATCHED";r.dispatchCertainty=map[s];event(r,"DISPATCH_RECORDED",{attemptId,status:map[s],reason:text(reason)||null,at});return clone(r);}
+  function recordTransport(key,attemptId,{ok,status,error,resultRef,at}={}){const r=byKey.get(key);if(!r)throw new Error("unknown effect");const a=currentAttempt(r,attemptId);a.transport={ok:ok===true,status:status??null,error:text(error)||null,resultRef:text(resultRef)||null,at:at||new Date().toISOString()};event(r,"TRANSPORT_OBSERVED",{attemptId,...a.transport});return clone(r);}
+  function verifyEffect(key,{verdict,evidence,at}={}){const r=byKey.get(key);if(!r)throw new Error("unknown effect");if(!evidence||!text(evidence.sourceRef))throw new Error("effect verification requires source-bound evidence");const v=String(verdict||"").toUpperCase(),map={PRESENT:"PRESENT_VERIFIED",ABSENT:"ABSENT_VERIFIED",PARTIAL:"PARTIAL_VERIFIED",CONFLICTING:"CONFLICTING_EVIDENCE"};if(!map[v])throw new Error("invalid effect verdict");r.effectCertainty=map[v];r.evidence.push(clone(evidence));r.lifecycle=["PRESENT","ABSENT"].includes(v)?"CLOSED":"RECONCILING";event(r,"EFFECT_VERIFIED",{verdict:map[v],evidence,at});return clone(r);}
+  function reconcile(key,input={}){const r=byKey.get(key);if(!r)throw new Error("unknown effect");if(r.lifecycle==="CLOSED")return clone(r);r.lifecycle="RECONCILING";event(r,"RECONCILIATION_STARTED",{recipeRef:text(input.recipeRef)||null,at:input.at});return verifyEffect(key,input);}
+  function cancelEffect(key,{confirmed=false,at,reason}={}){const r=byKey.get(key);if(!r)throw new Error("unknown effect");if(["NOT_DISPATCHED","DISPATCH_REJECTED_BEFORE_SEND"].includes(r.dispatchCertainty)&&confirmed){r.effectCertainty="ABSENT_VERIFIED";r.lifecycle="CLOSED";}else if(r.effectCertainty==="UNKNOWN")r.lifecycle="RECONCILING";event(r,confirmed?"CANCEL_CONFIRMED":"CANCEL_UNCERTAIN",{reason:text(reason)||null,at});return clone(r);}
+  function linkCompensation(key,{compensationEffectKey,state="PLANNED",at}={}){const r=byKey.get(key);if(!r)throw new Error("unknown effect");const s=enumValue(state,COMPENSATION,"PLANNED");if(s==="NONE")throw new Error("compensation link cannot be NONE");r.compensationState=s;r.compensationLink=text(compensationEffectKey)||null;r.lifecycle=s==="VERIFIED"?"CLOSED":"COMPENSATING";event(r,"COMPENSATION_LINKED",{compensationEffectKey:r.compensationLink,state:s,at});return clone(r);}
+  function canRetry(key){const r=byKey.get(key);return r?canRetryRecord(r):{allowed:false,reason:"unknown-effect"};}
+  function unresolved(){return records.filter(r=>r.lifecycle!=="CLOSED"||["UNKNOWN","PARTIAL_VERIFIED","CONFLICTING_EVIDENCE"].includes(r.effectCertainty)).map(clone);}
+  function recoveryQueue({limit=100}={}){return unresolved().sort((a,b)=>String(a.updatedAt).localeCompare(String(b.updatedAt))).slice(0,Math.max(1,Math.min(1000,Number(limit)||100)));}
+  function snapshot(){const rs=clone(records),j=clone(journal);return {schemaVersion:1,records:rs,journal:j,journalHash:snapshotHash(rs,j)};}
+  return {planEffect,beginAttempt,markDispatch,recordTransport,verifyEffect,reconcile,cancelEffect,linkCompensation,canRetry,unresolved,recoveryQueue,get,snapshot};
+}
+function restoreEffectLedger(snapshot){return createEffectLedger(snapshot);}
+
+module.exports={EFFECT_STATE,LIFECYCLE,DISPATCH,CERTAINTY,COMPENSATION,EFFECT_CLASS,IDEMPOTENCY,createLedger,deriveEffectKey,createEffectLedger,restoreEffectLedger,snapshotHash};
