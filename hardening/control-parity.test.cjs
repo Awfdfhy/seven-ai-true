@@ -19,15 +19,20 @@ const bridge = require("../release/control-bridge.js");
     assert.deepEqual(browserControl.canUseCapability(browser,cap),nodeControl.taskContract.canUseCapability(node,cap),`capability parity: ${cap}`);
   }
   assert.equal(browserControl.transitionTask(browser,"PLANNING").state,nodeControl.taskContract.transitionTask(node,"PLANNING").state);
+  assert.throws(()=>browserControl.transitionTask(browser,"BLOCKED"),/requires reason/);
+  assert.throws(()=>nodeControl.taskContract.transitionTask(node,"BLOCKED"),/requires reason/);
+  assert.equal(browserControl.transitionTask(browser,"BLOCKED",{reason:"waiting"}).transition.reason,nodeControl.taskContract.transitionTask(node,"BLOCKED",{reason:"waiting"}).transition.reason);
 })();
 
 (function truthParity(){
   const observedAt=new Date().toISOString();
   const source={id:"source-a",authority:"A2",independentGroup:"publisher-a",observedAt,metadata:{title:"Primary source"}};
-  const input={id:"claim-a",text:"fact",kind:"FACT",sources:[source],metadata:{domain:"parity"},evidence:[{id:"e1"}],supports:["claim-z"]};
+  const input={id:"claim-a",text:"fact",kind:"FACT",sources:[source,source],metadata:{domain:"parity"},evidence:[{id:"e1"}],supports:["claim-z"]};
   const n=nodeControl.truthFabric.createClaim(input);
   const b=browserControl.createClaim(input);
   assert.equal(browserControl.AUTH[b.authority],nodeControl.truthFabric.AUTHORITY[n.authority]);
+  assert.equal(b.productionMode,n.productionMode);
+  assert.equal(b.sources.length,n.sources.length);
   assert.deepEqual(b.metadata,n.metadata);
   assert.deepEqual(b.sources[0].metadata,n.sources[0].metadata);
   assert.deepEqual(b.evidence,n.evidence);
@@ -36,6 +41,18 @@ const bridge = require("../release/control-bridge.js");
   const bd=browserControl.deriveClaim({id:"claim-b",text:"derived",parents:[b],transformation:"summary"});
   assert.equal(browserControl.AUTH[bd.authority],nodeControl.truthFabric.AUTHORITY[nd.authority]);
   assert.equal(browserControl.resolveClaim(bd,{allowInference:false}).state,nodeControl.truthFabric.resolveClaim(nd,{allowInference:false}).state);
+  const compatibleN=nodeControl.truthFabric.createClaim({id:"compatible",text:"another assertion",sources:[source]});
+  const compatibleB=browserControl.createClaim({id:"compatible",text:"another assertion",sources:[source]});
+  assert.equal(browserControl.mergeClaims([b,compatibleB]).state,nodeControl.truthFabric.mergeClaims([n,compatibleN]).state);
+  assert.equal(browserControl.mergeClaims([b,compatibleB]).state,"CLAIM");
+  const conflictN=nodeControl.truthFabric.createClaim({id:"conflict",text:"contrary",sources:[source],contradicts:[n.id]});
+  const conflictB=browserControl.createClaim({id:"conflict",text:"contrary",sources:[source],contradicts:[b.id]});
+  assert.equal(browserControl.mergeClaims([b,conflictB]).state,nodeControl.truthFabric.mergeClaims([n,conflictN]).state);
+  assert.equal(browserControl.mergeClaims([b,conflictB]).state,"CONFLICT");
+  const unknownN=nodeControl.truthFabric.createClaim({id:"unknown",text:"unknown independence",sources:[{id:"u1",authority:"A2"},{id:"u2",authority:"A2"}]});
+  const unknownB=browserControl.createClaim({id:"unknown",text:"unknown independence",sources:[{id:"u1",authority:"A2"},{id:"u2",authority:"A2"}]});
+  assert.equal(browserControl.independentSourceCount(unknownB),nodeControl.truthFabric.independentSourceCount(unknownN));
+  assert.equal(browserControl.independentSourceCount(unknownB),0);
   const old="2020-01-01T00:00:00.000Z";
   const ns=nodeControl.truthFabric.createClaim({id:"stale",text:"old",kind:"FACT",sources:[{id:"old-source",authority:"A1",observedAt:old}]});
   const bs=browserControl.createClaim({id:"stale",text:"old",kind:"FACT",sources:[{id:"old-source",authority:"A1",observedAt:old}]});
@@ -66,9 +83,11 @@ const bridge = require("../release/control-bridge.js");
   for(const signals of [
     {deviceMemoryGb:2,cores:2,batteryLevel:.8},
     {deviceMemoryGb:8,cores:8,batteryLevel:.9},
+    {deviceMemoryGb:8,cores:8,batteryLevel:.9,reducedMotion:true},
     {deviceMemoryGb:4,cores:4,batteryLevel:.5},
     {deviceMemoryGb:8,cores:8,batteryLevel:.08}
   ]) assert.equal(browserControl.selectTier(signals),nodeControl.resourceGovernor.selectTier(signals));
+  assert.equal(browserControl.selectTier({deviceMemoryGb:8,cores:8,batteryLevel:.9,reducedMotion:true}),"full");
   const n=nodeControl.resourceGovernor.createBudget({tier:"lite",baseContextTokens:12000,baseMemoryMb:300,baseToolCalls:20});
   const b=browserControl.createBudget({tier:"lite",baseContextTokens:12000,baseMemoryMb:300,baseToolCalls:20});
   for(const key of ["tier","baseContextTokens","baseMemoryMb","baseToolCalls","contextTokens","memoryMb","toolCalls","concurrency","verificationDepth"]) assert.equal(b[key],n[key],`budget parity: ${key}`);
