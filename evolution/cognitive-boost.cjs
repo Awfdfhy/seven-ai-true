@@ -18,32 +18,56 @@ const TRUST = Object.freeze({
   UNTRUSTED: 0
 });
 
+const RISK_SCORE = Object.freeze({ low: 0.15, medium: 0.45, high: 0.75, critical: 1 });
+const COMPUTE_ORDER = Object.freeze(["FAST", "STANDARD", "DEEP", "EXTREME"]);
+
 function clamp01(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return 0;
   return Math.max(0, Math.min(1, n));
 }
 
+function riskScore(value) {
+  const key = String(value == null ? "" : value).toLowerCase();
+  return Object.prototype.hasOwnProperty.call(RISK_SCORE, key) ? RISK_SCORE[key] : clamp01(value);
+}
+
+function minimumTier(tier, floor) {
+  return COMPUTE_ORDER.indexOf(tier) >= COMPUTE_ORDER.indexOf(floor) ? tier : floor;
+}
+
+function applyResourceBudget(plan, resourceTier) {
+  const tier = String(resourceTier || "full").toLowerCase();
+  if (tier === "lite") return Object.freeze({ ...plan, maxCandidates: Math.min(plan.maxCandidates, 2), plannerDepth: Math.min(plan.plannerDepth, 4), resourceTier: "lite" });
+  if (tier === "balanced") return Object.freeze({ ...plan, maxCandidates: Math.min(plan.maxCandidates, 4), plannerDepth: Math.min(plan.plannerDepth, 6), resourceTier: "balanced" });
+  return Object.freeze({ ...plan, resourceTier: tier === "full" ? "full" : "unknown" });
+}
+
 function allocateCompute(input = {}) {
+  const risk = riskScore(input.risk);
   const score = clamp01(
     clamp01(input.complexity) * 0.30 +
-    clamp01(input.risk) * 0.24 +
+    risk * 0.24 +
     clamp01(input.freshnessNeed) * 0.14 +
     clamp01(input.toolDepth) * 0.12 +
     clamp01(input.longHorizon) * 0.12 +
     clamp01(input.recentFailureRate) * 0.08
   );
-  const tier = score >= COMPUTE_TIERS.EXTREME.scoreFloor ? "EXTREME"
+  let tier = score >= COMPUTE_TIERS.EXTREME.scoreFloor ? "EXTREME"
     : score >= COMPUTE_TIERS.DEEP.scoreFloor ? "DEEP"
       : score >= COMPUTE_TIERS.STANDARD.scoreFloor ? "STANDARD"
         : "FAST";
-  return Object.freeze({ tier, score, ...COMPUTE_TIERS[tier] });
+  if (risk >= RISK_SCORE.critical) tier = minimumTier(tier, "DEEP");
+  else if (risk >= RISK_SCORE.high) tier = minimumTier(tier, "STANDARD");
+  return applyResourceBudget({ tier, score, risk, ...COMPUTE_TIERS[tier] }, input.resourceTier || input.performanceTier);
 }
 
 function normalizeEvidence(item = {}) {
+  const source = String(item.source || "unknown");
   return Object.freeze({
     id: String(item.id || `evidence-${hashObject(item).slice(0, 16)}`),
-    source: String(item.source || "unknown"),
+    source,
+    independentGroup: item.independentGroup ? String(item.independentGroup) : source === "unknown" ? null : source,
     sourceTrust: clamp01(item.sourceTrust),
     timestamp: item.timestamp || null,
     stance: item.stance === "CONTRADICT" ? "CONTRADICT" : "SUPPORT",
@@ -76,9 +100,13 @@ function assessClaim(claim) {
   let support = 0;
   let contradict = 0;
   let verifiedCount = 0;
+  const independent = new Set();
   for (const row of claim.evidence) {
     const weight = clamp01(row.sourceTrust) * (row.verified ? 1 : 0.45);
-    if (row.verified) verifiedCount += 1;
+    if (row.verified) {
+      verifiedCount += 1;
+      if (row.independentGroup) independent.add(row.independentGroup);
+    }
     if (row.stance === "CONTRADICT") contradict += weight;
     else support += weight;
   }
@@ -93,7 +121,8 @@ function assessClaim(claim) {
     confidence: clamp01(confidence),
     contradiction,
     verifiedEvidence: verifiedCount,
-    needsMoreEvidence: status === "UNVERIFIED" || status === "CONTESTED" || (claim.freshnessSensitive && verifiedCount < 2)
+    verifiedIndependentSources: independent.size,
+    needsMoreEvidence: status === "UNVERIFIED" || status === "CONTESTED" || (claim.freshnessSensitive && independent.size < 2)
   });
 }
 
@@ -264,14 +293,17 @@ function buildCognitiveDecision({ task, claims = [], mission, routeState = {}, r
     route,
     readyTasks: Object.freeze(readyTasks),
     trust,
-    mayUseAuthorityTools: trust ? canInfluenceAuthority(trust, "USER") && !truthBlocked : !truthBlocked
+    mayUseAuthorityTools: trust ? canInfluenceAuthority(trust, "USER") && !truthBlocked : false
   });
 }
 
 module.exports = {
   COMPUTE_TIERS,
   TRUST,
+  RISK_SCORE,
   clamp01,
+  riskScore,
+  applyResourceBudget,
   allocateCompute,
   normalizeEvidence,
   createClaim,
