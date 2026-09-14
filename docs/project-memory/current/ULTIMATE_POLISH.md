@@ -9,6 +9,24 @@ For every canonical Seven capability and every Tool Fabric 2.0 capability, ask:
 
 Polish strengthens systems. It does not reward random feature accumulation or expose internal complexity to the user.
 
+## Maximum Work-Per-Message Execution Law 🔥
+Ultimate Polish is executed in the largest safe, coherent Mega-Waves practical for the current task. Every development turn should accomplish as much verified work as reasonably possible instead of spending turns on ceremonial status checks, tiny patches or repeated requests to continue.
+
+At the start of each subsequent Ultimate Polish development turn, re-read this section and use it as an execution constraint.
+
+Default loop:
+`Re-read current plan/status → take the largest safe coherent scope → inspect only evidence required to avoid blind changes → implement/polish the whole scope → run the strongest practical final verification → repair material failures in the same turn when practical → preserve evidence/status in GitHub → automatically advance as far as remaining turn/tool capacity safely allows.`
+
+Rules:
+- Target roughly 18–25 maximum-density Mega-Wave turns for the complete campaign when reality permits; this is an efficiency target, not a quality gate.
+- Never split work merely to create another progress message.
+- Do not stop after a PASS if another dependency-safe campaign can be advanced in the same turn.
+- Prefer one large coherent patch plus meaningful final verification over many tiny patches/checks.
+- Intermediate inspection is allowed when required to prevent corruption, resolve implementation truth, protect invariants or choose between materially different designs.
+- Never trade correctness, evidence, rollback safety, Android constraints, Zero-Manual quality, Unlimited behavior, Speed or Smoothness merely to reduce turn count.
+- If a tool, CI, permission boundary or unexpected failure blocks further safe progress, record the exact blocker and preserve completed work rather than fabricating completion.
+- Architecture-only progress must remain labeled architecture-only; implementation PASS requires implementation evidence.
+
 ## Four Cross-Cutting Product Laws
 Every Ultimate Polish campaign is governed by four product-wide laws. They apply to every capability, Tool Fabric 2.0 component, workspace and user flow.
 
@@ -82,7 +100,7 @@ For each capability:
 6. run the Smoothness Gate;
 7. run the Zero-Manual / Discoverability Gate where user-facing;
 8. challenge the strengthened result adversarially;
-9. run Maximum Effort Polish Pass B independently against that state;
+9. run Maximum Effort Polish Pass B independently against the strengthened state;
 10. allow `NO_MATERIAL_IMPROVEMENT` if evidence supports it;
 11. run a Simplifier Duel against a materially simpler candidate where applicable;
 12. define implementation/eval plan and freeze criteria;
