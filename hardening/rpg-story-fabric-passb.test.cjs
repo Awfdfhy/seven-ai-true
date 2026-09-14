@@ -78,7 +78,7 @@ const evidenceProposal=r.createWorldDiffProposal(world,session,{operations:[{typ
 committed=r.commitWorldDiff(world,session,evidenceProposal,{eventId:"e3"});session=committed.session;
 const story2=r.createStoryContract({id:"story2",principal:"user",worldSessionId:session.id,branchId:session.branch.id,worldRevision:session.revision,mode:"DIRECTOR",medium:"SCENE",userIntent:"continue"});
 let l2=r.createNarrativeLedger(story2),g2=r.createStoryGraph(story2);g2=r.addStoryNode(g2,{id:"w2",level:"WORK",purpose:"root"});g2=r.addStoryNode(g2,{id:"s2",level:"SCENE",parentId:"w2",purpose:"reveal"});
-const sc2=r.createSceneContract(world,session,story2,l2,g2,{locationId:"a",participants:["npc"],purpose:"reveal",nodeIds:["s2"],permittedRevealFactIds:["new-fact"]});
+const sc2=r.createSceneContract(world,session,story2,l2,g2,{locationId:"a",participants:["npc"],purpose:"reveal",nodeIds:["s2"],permittedRevealFactIds:["new-fact","source-fact"]});
 pass("character reveal bridge requires real transmission evidence",()=>assert.throws(()=>r.createCharacterRevealProposal(world,session,sc2,{actorId:"npc",factId:"new-fact",value:true,evidenceEventId:"ghost"}),/unknown/));
 const revealProposal=r.createCharacterRevealProposal(world,session,sc2,{actorId:"npc",factId:"new-fact",value:true,evidenceEventId:"e3"});
 pass("character reveal remains a WorldDiff proposal, not narrative mutation",()=>{assert.equal(revealProposal.operations[0].type,"ADD_KNOWLEDGE");assert.equal(r.knowledgeView(session,"npc").facts["new-fact"],undefined);});
