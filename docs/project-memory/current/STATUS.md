@@ -8,11 +8,13 @@
 **Mega-Wave 01:** Speed + Smoothness Foundation  
 **Result:** `PASS_FOUNDATION` ✅
 
-Wave 01 converted the cross-cutting performance direction from plan-only language into stronger executable release behavior and a dedicated verification gate. It fixed the coupling between Reduced Motion and compute tier selection, added pressure-aware tier recommendation and conservative recovery/hysteresis, preserved bounded telemetry and lightweight scheduling, added 11 direct Performance Runtime assertions, and changed the master test runner to auto-discover release test suites.
+Wave 01 converted the cross-cutting performance direction from plan-only language into stronger executable release behavior and a dedicated verification gate. It fixed the coupling between Reduced Motion and compute tier selection in the primary release Performance Runtime, added pressure-aware tier recommendation and conservative recovery/hysteresis, preserved bounded telemetry and lightweight scheduling, added 11 direct Performance Runtime assertions, and changed the master test runner to auto-discover release test suites.
 
-GitHub Actions run `34846916622` at commit `64951b3539423f0ac3b72b77d2c8e0232b573ec1` passed the full workflow: `39` suites, Performance Runtime `11/11`, runtime smoke `28` assertions, static audit `99529` startup bytes with `0` warnings, release verification, six UI screenshots and artifact upload.
+A second Simplifier Duel then reduced the strengthened Performance Runtime to `4368` bytes, smaller than the pre-wave `4487`-byte implementation while retaining the new behavior and all direct gates.
 
-This is foundation PASS only. Real-phone RAM/battery/thermal/frame evidence, project-wide p95/p99 latency/jank baselines and native resource-signal integration remain open and cannot be relabeled as release saturation.
+Final implementation GitHub Actions run `34847429061` at commit `57fe639cdedc066e73bda64571fc68c38426c4f7` passed the full workflow: `39` suites, Performance Runtime `11/11`, runtime smoke `28` assertions, static audit `98946` startup bytes with `0` warnings, release verification, six UI screenshots and artifact upload.
+
+This is foundation PASS only. Real-phone RAM/battery/thermal/frame evidence, project-wide p95/p99 latency/jank baselines, native resource-signal integration and standalone Control Runtime tier-policy parity remain open and cannot be relabeled as release saturation.
 
 Detailed ledger: `ULTIMATE_POLISH_PROGRESS.md`.
 
@@ -65,9 +67,9 @@ Candidates must survive tiny sizes, monochrome, Day/Night, Android masks, themed
 ## Speeding & Smoothness System
 **Status:** Wave 01 foundation implemented and verified; full cross-capability campaign remains open.
 
-Verified foundation now includes adaptive lite/balanced/full behavior, pressure-aware downgrade, conservative upgrade hysteresis, automatic hidden-state reduction, keyed frame batching, cancellable idle work, cooperative yielding, bounded marks/long-task history and direct CI assertions. Reduced Motion is no longer treated as evidence that the device has weak compute capacity.
+Verified primary release foundation now includes adaptive lite/balanced/full behavior, pressure-aware downgrade, conservative upgrade hysteresis, automatic hidden-state reduction, keyed frame batching, cancellable idle work, cooperative yielding, bounded marks/long-task history and direct CI assertions. Reduced Motion is no longer treated by the primary Performance Runtime as evidence that device compute capacity is low.
 
-Still required: capability-level latency/jank/resource gates, real Android device evidence, native resource-signal bridges where useful and integration with every specialist workflow.
+Still required: Control Runtime fallback parity review, capability-level latency/jank/resource gates, real Android device evidence, native resource-signal bridges where useful and integration with every specialist workflow.
 
 ## RPG / Real Works
 The maximum-canon-fidelity direction remains active: provenance, timeline/event graph, character/world/knowledge state, invariants, safe player insertion, Scene Contracts, CANON/DIVERGENCE/WHAT-IF and `CANON_GAP`. Titles/World Linguistic Engine remains part of the capability map.
@@ -101,7 +103,7 @@ The maximum-canon-fidelity direction remains active: provenance, timeline/event 
 - human/visual confidence cannot substitute for executable evidence where executable evidence is required.
 
 ## Immediate Next Work
-**Mega-Wave 02:** Cognitive Runtime + Truth/Epistemic Foundation. Audit and strengthen Task Contract, execution graph/state machine, planning/orchestration, capability/risk routing, BLOCKED/FAIL/INCONCLUSIVE semantics, cancellation/recovery boundaries, authority/lineage and adaptive budget interaction. Then continue automatically through Memory, Context, Models, Tool Fabric and Verification/Evals in dependency-aware order.
+**Mega-Wave 02:** Cognitive Runtime + Truth/Epistemic Foundation. Audit and strengthen Task Contract, execution graph/state machine, planning/orchestration, capability/risk routing, BLOCKED/FAIL/INCONCLUSIVE semantics, cancellation/recovery boundaries, authority/lineage, standalone tier-policy parity and adaptive budget interaction. Then continue automatically through Memory, Context, Models, Tool Fabric and Verification/Evals in dependency-aware order.
 
 ## Development Philosophy
 Use the largest safe coherent passes and strong final verification. Prefer measurable simplification and speed over decorative complexity. Stop when evidence says there is no material improvement rather than manufacturing progress.
