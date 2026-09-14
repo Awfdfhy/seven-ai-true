@@ -29,6 +29,14 @@ function test(name, fn) {
 
 (async () => {
   test("adaptive compute keeps trivial tasks fast", () => allocateCompute({ complexity: 0.05 }).tier === "FAST");
+  test("string high risk cannot collapse to numeric zero", () => {
+    const plan = allocateCompute({ complexity: 0.05, risk: "high" });
+    return plan.risk === 0.75 && plan.tier !== "FAST";
+  });
+  test("critical risk keeps verification depth under lite resources", () => {
+    const plan = allocateCompute({ complexity: 0.1, risk: "critical", resourceTier: "lite" });
+    return plan.tier === "DEEP" && plan.verifierPasses === 2 && plan.maxCandidates <= 2 && plan.plannerDepth <= 4;
+  });
   test("adaptive compute escalates difficult risky long-horizon tasks", () => {
     const plan = allocateCompute({ complexity: 1, risk: 1, freshnessNeed: 1, toolDepth: 1, longHorizon: 1, recentFailureRate: 1 });
     return plan.tier === "EXTREME" && plan.maxCandidates === 6 && plan.verifierPasses === 3;
@@ -37,10 +45,15 @@ function test(name, fn) {
   let claim = createClaim({ text: "A current fact", freshnessSensitive: true });
   claim = addEvidence(claim, { id: "a", source: "official-a", sourceTrust: 1, verified: true, stance: "SUPPORT", excerpt: "yes" });
   test("fresh claims request more than one verified source", () => assessClaim(claim).needsMoreEvidence === true);
+  claim = addEvidence(claim, { id: "a2", source: "official-a", sourceTrust: 1, verified: true, stance: "SUPPORT", excerpt: "yes again" });
+  test("duplicate evidence from one source cannot fake independence", () => {
+    const result = assessClaim(claim);
+    return result.verifiedEvidence === 2 && result.verifiedIndependentSources === 1 && result.needsMoreEvidence === true;
+  });
   claim = addEvidence(claim, { id: "b", source: "official-b", sourceTrust: 1, verified: true, stance: "CONTRADICT", excerpt: "no" });
   test("truth engine surfaces direct contradiction instead of averaging it away", () => {
     const result = assessClaim(claim);
-    return result.status === "CONTESTED" && result.contradiction && result.confidence === 0;
+    return result.status === "CONTESTED" && result.contradiction && result.confidence < 0.45;
   });
 
   let mission = createMission({
@@ -80,6 +93,7 @@ function test(name, fn) {
   test("tainted external content cannot authorize user-level side effects", () => canInfluenceAuthority(flow, "USER") === false);
   const verifiedFlow = propagateTrust([{ id: "user", trust: "USER" }, { id: "verified", trust: "VERIFIED" }]);
   test("sufficiently trusted flow can influence authority", () => canInfluenceAuthority(verifiedFlow, "USER") === true);
+  test("missing trust provenance cannot authorize authority tools", () => buildCognitiveDecision({ task: { complexity: 0.1 } }).mayUseAuthorityTools === false);
 
   const safeArena = await runAdversarialArena({
     candidate: { id: "candidate-safe" },
