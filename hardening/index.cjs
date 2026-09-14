@@ -12,5 +12,5 @@ module.exports = Object.freeze({
   projectFileFabric: require("./project-file-fabric-passb.cjs"),
   researchFabric: require("./research-fabric.cjs"),
   visionFabric: require("./vision-fabric-passb.cjs"),
-  rpgStoryFabric: require("./rpg-story-fabric-passb.cjs")
+  rpgStoryFabric: require("./rpg-story-fabric-final.cjs")
 });
