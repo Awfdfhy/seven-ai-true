@@ -5,7 +5,7 @@
 ## Campaign
 - Branch: `ultimate-polish-v1`
 - Density target: `~20–25` Mega-Waves
-- Current counter: **`7 / ~20–25`**
+- Current counter: **`8 / ~20–25`**
 - Protected source: `seven_ai-final.html`
 - Protected source reference: `658133` bytes, Git blob `3e8dfa8e7da7124e16504140eb9631c10cabf053`
 - Protected-branch law: do not merge to `main` or another protected branch without explicit user approval.
@@ -27,7 +27,7 @@ Origin-bound versioned memories, correction history, point-in-time lookup, scope
 Family/revision/endpoint identity, strict free proof and endpoint eligibility, verified-outcome routing, RouteLease/failover, context/tokenizer handshake, multidimensional budgets, protected verification/recovery reserves and non-minting ComputeLeases. Final `0aff40a74f061c170230d8d74a109157b0dc88e5`; run `34858416658`; `42` suites; Model/Compute `36`.
 
 ## Story Fabric insertion
-`docs/project-memory/current/STORY_FABRIC_ULTIMATE_POLISH.md` architecture-polishes StoryContract, Narrative State Ledger, Story Graph, arcs, promises/reveals, scene/beat/pacing/voice/theme/branch/revision and benchmarks. Commit `949af00dd064f3dc0b0fcaead975159c8348ac9f`; run `34859601979` success. **Architecture-polished only**; no Mega-Wave increment until executable/eval evidence exists.
+`docs/project-memory/current/STORY_FABRIC_ULTIMATE_POLISH.md` architecture-polishes StoryContract, Narrative State Ledger, Story Graph, arcs, promises/reveals, scene/beat/pacing/voice/revision and benchmarks. Commit `949af00dd064f3dc0b0fcaead975159c8348ac9f`; run `34859601979` success. **Architecture-polished only**; no Mega-Wave increment until executable/eval evidence exists.
 
 ## Mega-Wave 05 — Tool Fabric + Tool Security + Side-Effect Recovery Foundation
 **Status:** `PASS_FOUNDATION`
@@ -87,7 +87,64 @@ Final exact evidence:
 
 Carry-forward: Android SAF/shell adapters, durable on-device project transaction persistence/restart reconciliation, larger real-repository benchmarks, performance on huge projects, and final Coding workspace UI. Wave 07 is not implementation or release saturation.
 
-## Next Mega-Wave
-**Mega-Wave 08 — Research + Search/Retrieval + Knowledge/Files Foundation**
+## Mega-Wave 08 — Research + Search/Retrieval + Knowledge/Files Foundation
+**Status:** `PASS_FOUNDATION`
 
-Primary discovered drift: the current release `research-runtime.js` still uses a universal `A0–A5` scalar source-authority model, contradicting the frozen Research 3.0 architecture. Wave 08 will replace this with claim/domain/role-specific evidence semantics, SourceCandidate versus SourceVersion identity, locator-bound EvidenceUnits and dependency clusters, claim-specific freshness/conflict/CoverageContract, ClaimEvidenceLock and citation verification, adaptive cheap-first retrieval, source-bound Knowledge versions and lazy heavy retrieval/index paths without increasing startup cost casually.
+### Pass A and architectural correction
+Commit `411eeaa3b0ab272d19b67158fe93823b3df278c9` replaced the release Research runtime's universal scalar `A0–A5` source-authority behavior with claim-scoped evidence semantics and introduced the first executable source-bound Research/Retrieval/Knowledge hardening layer. It added canonical KnowledgeSource/SourceVersion/SourceLocator/derived representation contracts, RetrievalNeed/QueryPlan/SearchObservation/candidate/fetch/extract/run manifests, and ResearchContract/ClaimRef/Agenda/EvidenceUnit/CoverageContract/ClaimEvidenceLock/CitationManifest/ResultPack foundations.
+
+Run `34871212078` / #1443 **failed correctly** because the new hardening module had been truncated at `createSearchObservation`. Earlier release/static/source-integrity gates in that same run had already shown the protected source unchanged and the startup path below budget. The failure was repaired rather than hidden.
+
+### Pass B adversarial challenge and integration repair
+Commit `772a8fdb8d7582ad50fb553cc28341ff0b7ff3a8` rebuilt the module completely and added adversarial gates for:
+- duplicate/unknown/cyclic query variants;
+- undeclared search variants and non-fetchable URL identity;
+- cross-plan candidate/manifest contamination;
+- exact principal/scope/realm evidence boundaries;
+- explicit dependency clusters for independence;
+- claim-specific freshness and unresolved conflict;
+- negative claims requiring a bounded, hash-bound `CoverageContract` with real query/provider evidence;
+- tamper-verifiable ClaimEvidenceLocks and citation manifests;
+- locked-evidence omission/extra citation/locator lineage failures;
+- source-version invalidation and ResultPack lock/citation lineage.
+
+Run `34872700050` / #1444 then **failed correctly** on an older control-bridge integration fixture that supplied Research support without a locator. The rule was preserved. Commit `b1989a71768e22ee79b85a7e76f2b416ae4fbf8b` updated that fixture to provide real locator/dependency identity instead of weakening the new contract. Run `34873043229` / #1445 succeeded with `48` suites.
+
+### Final Research → Truth boundary challenge
+Post-green review found one remaining architectural leak in `release/control-bridge.js`: it could fall back from unknown Research independence to `sourceId`, accidentally recreating corroboration while crossing into Truth. Implementation commit `12fa443be9f3ec7f9d1d4fd4184692814cfae552` upgraded the bridge to v1.2.0; test commit `bc2038b505c1596508252eb7de2e4a51893865fe` added the dedicated adversarial bridge suite. Research now transports conservatively with Truth-layer `A5` compatibility authority, preserves source-version/locator lineage, carries only explicit dependency groups, marks `researchAuthorityMode: claim-scoped`, and leaves unknown source independence as unknown.
+
+Final run **`34873736180` / #1447 succeeded**.
+
+Final exact evidence:
+- all suites: **`PASS (49 suites)`**;
+- Research/Retrieval/Knowledge Fabric: **`46 assertions`**;
+- Research Fabric Pass B: **`17 assertions`**;
+- Research → Truth bridge polish: **`2 assertions`**;
+- Runtime Smoke `28`; Performance `11`;
+- Coding/File Pass B `25`; Coding/File base `58`;
+- Judge/Benchmark `53`;
+- Tool/Security/Effect `54`;
+- Model/Compute `36`;
+- Memory/Context `15`;
+- Cognitive Boost `23`; Gate `7`; Planner `4`;
+- control parity + bridge integration PASS;
+- source integrity PASS at `658133` bytes / blob `3e8dfa8e7da7124e16504140eb9631c10cabf053`;
+- static audit: **`98941 / 100000` startup bytes**, `34881` lazy workspace bytes, `3688731 / 8388608` static APK bytes, `0 warnings`;
+- release verification PASS at `98941` startup bytes;
+- six UI screenshots PASS;
+- artifact upload PASS: artifact **`10360490156`**, zip SHA-256 **`4d6bd2be962f639391197d9e4bb64206de5318f9a0ff6cb1106c46c15d67e167`**, zip size `2075364` bytes.
+
+### Gates and carry-forward
+- **Truth/Integrity:** PASS foundation. Search/snippet/ranking no longer creates evidence authority; support is source-versioned, locator-bound and claim-scoped.
+- **Independence:** PASS foundation. Distinct IDs do not create independent corroboration; dependency clusters must be explicit.
+- **Freshness/Conflict/Negative claims:** PASS foundation with claim-specific freshness, explicit conflicts and bounded CoverageContract semantics.
+- **Unlimited:** PASS foundation through progressive gap-driven retrieval and source/version manifests rather than arbitrary product caps.
+- **Speed/Smoothness:** PASS foundation. Exact/lexical cheap baseline remains first; semantic/hybrid/browser work stays conditional/lazy; startup remains below the `100000` byte gate.
+- **Zero-Manual:** PASS foundation at the orchestration-contract level; Research can represent gaps and choose next evidence actions without forcing the user to manually reason about source versions/locators.
+
+Carry-forward: live provider/browser acquisition adapters, durable source/cache/index persistence, optional semantic/vector/entity retrieval, multimodal extraction, larger current-web/Arabic/English research benchmarks and real-device network/RAM/thermal evidence. Wave 08 is not implementation or release saturation.
+
+## Next Mega-Wave
+**Mega-Wave 09 — Vision Fabric Foundation**
+
+Frozen target: **Seven Vision Fabric 3.0 — Provenance-Bound Selective Perception Plane**. Implement exact VisualSource/VisualVersion/VisualRegion identity, derived OCR/layout artifacts with lineage, provenance-bound observations, cheap-to-expensive perception planning, stale-frame/coordinate guards, privacy/minimization contracts, and a Truth/Evidence bridge. Heavy OCR/VLM/video work must remain lazy, bounded and off the startup path; Vision observations never gain action authority merely because a model described pixels confidently.
