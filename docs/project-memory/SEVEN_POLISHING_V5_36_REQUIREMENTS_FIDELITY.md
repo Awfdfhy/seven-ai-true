@@ -14,6 +14,11 @@ Purpose: verify that evaluation rules, executable checks, and proof claims remai
 - candidates cannot rewrite the requirements that judge them;
 - known historical defects are reused to test whether the requirement set would detect them;
 - high-criticality claims use more than one interpretation route where practical;
-- uncovered behavior remains explicitly unproven.
+- uncovered behavior remains explicitly unproven;
+- changing benchmark or environment versions create explicit evidence identities rather than silent continuity;
+- live and replay results are bridged before one is allowed to stand in for the other;
+- diagnostic evidence is graded separately for detection, localization, attribution and reproducibility;
+- fresh evidence cannot erase older contradictory evidence without an explicit reconciliation record;
+- a missing observation channel is recorded as uncertainty rather than interpreted as evidence of absence.
 
 Saturation remains 0/2. Architecture only.
