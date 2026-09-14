@@ -1,7 +1,7 @@
 const {chromium}=require('playwright');
 const fs=require('fs'),path=require('path'),http=require('http'),crypto=require('crypto');
 const {build}=require('./build-release.cjs');
-const V=require('./visual-evidence-runtime-passb.cjs');
+const V=require('./visual-evidence-runtime-final.cjs');
 
 function sha256File(file){return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')}
 async function collectStructure(page,scenario){
