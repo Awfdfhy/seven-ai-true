@@ -1,9 +1,10 @@
 "use strict";
 
-const { buildCognitiveDecision, runAdversarialArena } = require("./cognitive-boost.cjs");
+const { buildCognitiveDecision, runAdversarialArena, riskScore } = require("./cognitive-boost.cjs");
 
 function requiresArena(decision, context = {}) {
-  return context.forceArena === true || decision.compute.tier === "DEEP" || decision.compute.tier === "EXTREME" || Number(context.risk || 0) >= 0.7;
+  const risk = riskScore(context.risk == null ? context.task && context.task.risk : context.risk);
+  return context.forceArena === true || decision.compute.tier === "DEEP" || decision.compute.tier === "EXTREME" || risk >= 0.7;
 }
 
 async function runCognitivePreflight({ candidate, context = {}, arenaAdapter } = {}) {
