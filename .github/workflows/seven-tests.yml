@@ -25,6 +25,10 @@ jobs:
 
       - run: node all.cjs
 
+      - name: Build logo tournament review pack
+        if: success()
+        run: node release/build-logo-tournament.cjs
+
       - name: Capture verified Beta UI
         if: success()
         run: node release/capture-ui.cjs
@@ -41,6 +45,7 @@ jobs:
             dist/vendor/**
             dist/workspaces/**
             dist/screenshots/**
+            dist/logo-tournament/**
             release/release-results.json
           if-no-files-found: error
           retention-days: 14
