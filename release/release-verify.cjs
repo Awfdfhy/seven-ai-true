@@ -34,7 +34,7 @@ const {build,OUTPUT,MARK,THEME_BOOT}=require('./build-release.cjs');
       const page=await browser.newPage();
       await page.goto(origin,{waitUntil:'domcontentloaded'});
       await page.waitForFunction(()=>window.SevenRuntime&&window.SevenControl&&window.SevenBridge&&window.SevenExecution&&window.SevenBetaUI);
-      assert.equal(await page.evaluate(()=>document.documentElement.dataset.sevenControl),'v4.2');
+      assert.equal(await page.evaluate(()=>document.documentElement.dataset.sevenControl),'v4.3');
       await page.close();
     });
     await test('workspace assets are lazy and loadable',async()=>{
