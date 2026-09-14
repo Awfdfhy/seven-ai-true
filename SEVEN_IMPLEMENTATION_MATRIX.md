@@ -32,7 +32,7 @@ Anything else is marked partial.
 | UI Design System | Release CSS layer, adaptive tiers, reduced motion | Yes through release build | Browser/static release gates | Strong |
 | UI Runtime | Semantic message/composer/tool state, accessibility hooks, zero-polling observers | Yes through release build | Browser gate added | Functional layer |
 | Motion System | Event-delegated reveals, press states, theme motion | Yes | Browser + reduced-motion gate | Strong |
-| Performance Runtime | Lite/balanced/full tiers, long-task downgrade, idle/frame scheduling | Yes | Browser/static gate | Strong |
+| Performance Runtime | Adaptive lite/balanced/full tiers, pressure downgrade, guarded recovery, bounded long-task marks, idle/frame scheduling and cooperative yield | Yes through release build | 11 direct assertions + static/browser/release CI gates | Ultimate Polish Wave 01 foundation verified; real-phone battery/RAM/thermal/frame and project-wide tail-latency evidence still required |
 | PDF Runtime | Lazy local PDF.js packaging | Yes | Browser/static gate | Strong |
 | Evaluation Baseline | Frozen cross-system JSONL corpus + baseline identity | Build/evolution gates | Corpus integrity CI gate | Implemented baseline; live model/device quality remains measured separately |
 | Evolution Promotion Safety | Transactional apply/verify/rollback plus baseline/corpus identity lock | Autonomous promotion runner | Evolution test suite | Strong fail-closed promotion foundation |
@@ -47,7 +47,7 @@ The UI is treated as a runtime surface, not decoration.
 
 - Mobile-first reachability and safe-area support.
 - No polling animation loops.
-- Reduced Motion is authoritative.
+- Reduced Motion is authoritative for presentation but is not evidence that device compute capacity is low.
 - Performance tier can remove blur, glow, decoration, and expensive motion.
 - Message rendering keeps `content-visibility` optimization.
 - Composer state reflects actual busy/ready state.
