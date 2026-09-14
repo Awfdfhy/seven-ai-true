@@ -20,6 +20,13 @@ const TERMINAL_STATES = Object.freeze(new Set([
   TASK_STATES.CANCELLED
 ]));
 
+const EXPLAINED_STATES = Object.freeze(new Set([
+  TASK_STATES.BLOCKED,
+  TASK_STATES.INCONCLUSIVE,
+  TASK_STATES.FAILED,
+  TASK_STATES.CANCELLED
+]));
+
 const ALLOWED_TRANSITIONS = Object.freeze({
   CREATED: new Set(["PLANNING", "BLOCKED", "CANCELLED", "FAILED"]),
   PLANNING: new Set(["EXECUTING", "BLOCKED", "INCONCLUSIVE", "CANCELLED", "FAILED"]),
@@ -147,6 +154,8 @@ function transitionTask(contract, nextState, meta = {}) {
   if (!Object.values(TASK_STATES).includes(next)) throw new Error(`unknown task state: ${next}`);
   const allowed = ALLOWED_TRANSITIONS[current];
   if (!allowed || !allowed.has(next)) throw new Error(`illegal task transition: ${current}->${next}`);
+  const reason = String(meta.reason || "").trim();
+  if (EXPLAINED_STATES.has(next) && !reason) throw new Error(`task transition requires reason: ${current}->${next}`);
   return {
     ...clone(contract),
     state: next,
@@ -154,7 +163,7 @@ function transitionTask(contract, nextState, meta = {}) {
       from: current,
       to: next,
       at: meta.at || new Date().toISOString(),
-      reason: meta.reason || null,
+      reason: reason || null,
       evidenceRef: meta.evidenceRef || null
     }
   };
