@@ -29,6 +29,10 @@ jobs:
         if: success()
         run: node release/build-logo-tournament.cjs
 
+      - name: Capture logo host visual evidence
+        if: success()
+        run: node release/capture-logo-host-evidence.cjs
+
       - name: Capture verified Beta UI
         if: success()
         run: node release/capture-ui.cjs
