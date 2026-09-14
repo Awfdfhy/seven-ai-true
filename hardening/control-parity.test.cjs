@@ -107,7 +107,7 @@ const bridge = require("../release/control-bridge.js");
 (function researchBridge(){
   const verification=research.verify(
     [{id:"c1",text:"supported"},{id:"c2",text:"gap"}],
-    [{id:"s1",title:"Source",url:"https://example.com/a",authority:"A1",evidence:[{claimId:"c1",stance:"support",excerpt:"e"}]}]
+    [{id:"s1",title:"Source",url:"https://example.com/a",clusterId:"source-a",evidence:[{claimId:"c1",stance:"support",locator:"p1"}]}]
   );
   const truth=bridge.researchVerificationToTruth(verification);
   assert.equal(truth.status,"INCONCLUSIVE");
