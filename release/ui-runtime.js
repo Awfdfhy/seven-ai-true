@@ -18,7 +18,7 @@
     if(!node||node.nodeType!==1||!node.classList.contains('message'))return;
     node.dataset.sevenMessageRole=messageRole(node);
     const bubble=node.querySelector('.bubble');
-    if(bubble)bubble.dataset.sevenBubble='1';
+    if(bubble){bubble.dataset.sevenBubble='1';bubble.dir='auto';}
     if(node.dataset.sevenUiDecorated)return;
     node.dataset.sevenUiDecorated='1';
   }
@@ -31,6 +31,7 @@
     const composer=doc.querySelector('.composer');
     if(!composer)return;
     const textarea=composer.querySelector('textarea');
+    if(textarea)textarea.dir='auto';
     const stop=doc.querySelector('.input-area button.stop');
     const send=doc.querySelector('.input-area button.send');
     const busy=!!(textarea&&textarea.disabled)||!!(stop&&root.getComputedStyle(stop).display!=='none');

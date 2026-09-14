@@ -6,7 +6,7 @@
   'use strict';
   const hasDOM=!!(root&&root.document);
   const doc=hasDOM?root.document:null;
-  const state={tier:'balanced',reducedMotion:false,longTasks:[],marks:[],ready:false};
+  const state={tier:'balanced',reducedMotion:false,longTasks:[],marks:[],ready:false,observer:null,visibilityBound:false};
   const frameQueue=new Map();
   let framePending=false;
 
@@ -65,6 +65,7 @@
   }
   function observeLongTasks(){
     if(!hasDOM||!root.PerformanceObserver)return null;
+    if(state.observer)return state.observer;
     try{
       const observer=new root.PerformanceObserver(list=>{
         for(const entry of list.getEntries())state.longTasks.push({duration:entry.duration,startTime:entry.startTime});
@@ -73,11 +74,13 @@
         if(state.longTasks.slice(-3).filter(x=>x.duration>=80).length>=2)applyTier('lite');
       });
       observer.observe({entryTypes:['longtask']});
+      state.observer=observer;
       return observer;
     }catch(_){return null;}
   }
   function suspendWhenHidden(){
-    if(!hasDOM)return;
+    if(!hasDOM||state.visibilityBound)return;
+    state.visibilityBound=true;
     doc.addEventListener('visibilitychange',()=>{doc.documentElement.dataset.sevenHidden=doc.hidden?'1':'0';},{passive:true});
   }
   function boot(){

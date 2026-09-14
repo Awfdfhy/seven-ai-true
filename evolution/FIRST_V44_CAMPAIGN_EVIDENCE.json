@@ -1,0 +1,27 @@
+{
+  "format": "seven-self-evolution-campaign-evidence",
+  "version": 1,
+  "campaignId": "first-closed-loop-canary",
+  "target": "release/performance-runtime.js idempotent boot",
+  "targetHash": "6e7110b624655c20e62e828a8f7acf165b3ffd0d506d98270b02bb0e3cf5f0b4",
+  "baselineSha1": "2bd9f9a6ee7e091f45d9f342374b0a2f596a463b",
+  "candidateSha1": "9eac3f4fb0fbdb9f240134ac7766bce96b380716",
+  "evidenceId": "perf-idempotency:9eac3f4fb0fbdb9f240134ac7766bce96b380716",
+  "campaignOutcome": "COMMITTED",
+  "baselineObservation": {
+    "performanceObserversAfterRepeatedBoot": 3,
+    "visibilityListenersAfterRepeatedBoot": 3
+  },
+  "candidateExpectation": {
+    "performanceObserversAfterRepeatedBoot": 1,
+    "visibilityListenersAfterRepeatedBoot": 1
+  },
+  "strictRuntimeCommit": "8b57668f3c7a0377b01462f442af02cf6f81e300",
+  "strictRuntimeCiRun": 1306,
+  "strictRuntimeCiConclusion": "success",
+  "repositoryPromotionCommit": "aa7aeeee25acdb0658db05422fa63f23dc294e4f",
+  "permanentRegressionGateCommit": "8cabc2a33a337fa28f508c37bba90782aa053784",
+  "promotionAuthority": "external GitHub connector under user authorization",
+  "productionSelfAuthorityGranted": false,
+  "truthBoundary": "Seeded deterministic closed-loop CI campaign. Candidate generation, evaluation, V4.4 governance, promotion simulation and verification ran automatically. Final repository write used external authorized GitHub authority; this is not autonomous production self-modification."
+}

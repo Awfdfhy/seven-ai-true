@@ -25,6 +25,10 @@ jobs:
 
       - run: node all.cjs
 
+      - name: Capture verified Beta UI
+        if: success()
+        run: node release/capture-ui.cjs
+
       - name: Upload verified release artifact
         if: success()
         uses: actions/upload-artifact@v4
@@ -35,6 +39,8 @@ jobs:
             dist/release-manifest.json
             dist/static-audit.json
             dist/vendor/**
+            dist/workspaces/**
+            dist/screenshots/**
             release/release-results.json
           if-no-files-found: error
           retention-days: 14
