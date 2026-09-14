@@ -1,15 +1,7 @@
 # Seven AI — Current Status
 
-> Compact operational truth snapshot. Architecture intent and implementation truth remain separate.
-
 ## Active Development Branch
 `seven-beta-ui-v1`
-
-## Protected Branches / PRs
-- `main` — baseline
-- `seven-v4.2-hardening` — hardened architecture branch
-- PR #15: keep unmerged
-- PR #16: keep Draft/unmerged
 
 ## Protected Source
 `seven_ai-final.html`
@@ -17,116 +9,100 @@ Known integrity reference: bytes `658133`; Git blob SHA `3e8dfa8e7da7124e1650414
 Architecture-only work must not modify this file unless explicitly authorized.
 
 ## General Improvement Governance
-**Seven General Improvement Engine 1.0 — Recursive Evidence-Governed Improvement Laboratory** is the reusable improvement substrate.
+**Seven General Improvement Engine 1.0** is the reusable improvement substrate.
 
-Records:
+Core records:
 - `docs/project-memory/SEVEN_GENERAL_IMPROVEMENT_ENGINE_V1.md`
 - `docs/project-memory/SEVEN_GENERAL_IMPROVEMENT_ENGINE_RECURSIVE_10X_PROTOCOL.md`
 - `docs/project-memory/SEVEN_QUALITY_OPTIMIZATION_V2.md`
 
-Core laws:
+Core laws remain:
 - improvement must be demonstrated, not named;
-- up to 10 promoted recursive generations, never ten mandatory promotions;
-- `200% Materiality` means a real step-change class, with literal >=2x only on valid precommitted ratio metrics;
-- each promoted generation receives a harder valid HostilityProfile;
-- Builder cannot expose future holdouts, weaken C0/C1, rewrite target truth, change thresholds after results, delete unfavorable evidence, grant itself authority or self-promote;
-- evaluator integrity is itself tested;
-- causal attribution, transfer checks, reproducibility, complexity/resource cost and rollback are first-class evidence.
+- recursive campaigns allow up to 10 promoted generations, never ten mandatory promotions;
+- `200% Materiality` means a demonstrated step-change class; literal >=2x is used only for valid ratio metrics;
+- each promoted generation receives a harder valid evaluation environment;
+- Builder cannot weaken critical gates, expose hidden evaluation data, rewrite target truth, grant itself authority or self-promote;
+- evaluator integrity, transfer, causal attribution, reproducibility, mobile cost and rollback are first-class evidence.
 
-Stop with `NO_QUALIFYING_EVOLUTION` when no candidate survives the current gate. Reaching generation 10 is bounded evidence, not proof of global optimality or a numeric 10x quality gain.
+## Latest Polishing Successor Candidate
+**Seven Polishing V5.3 — Formal Promotion Constitution** is the newest architecture candidate.
 
-## Polishing Governance
-### Latest successor candidate: Polishing V5.1
-Record:
-`docs/project-memory/SEVEN_POLISHING_V5_1_EVALUATION_HARDENING.md`
+Records:
+- `docs/project-memory/SEVEN_POLISHING_V5_GENERAL_IMPROVEMENT_SPECIALIZATION.md`
+- `docs/project-memory/SEVEN_POLISHING_V5_1_EVALUATION_HARDENING.md`
+- `docs/project-memory/SEVEN_POLISHING_V5_2_ADVERSARIAL_EVAL_HARDENING.md`
+- `docs/project-memory/SEVEN_POLISHING_V5_2_BRUTAL_CHALLENGE_LEDGER.md`
+- `docs/project-memory/SEVEN_POLISHING_V5_3_FORMAL_PROMOTION_CONSTITUTION.md`
 
-Challenge ledger:
-`docs/project-memory/SEVEN_POLISHING_V5_1_SELF_CHALLENGE_LEDGER.md`
+V5.2 added stronger handling for evaluation-surface risk, trajectory/state evidence, repeated trials, contamination/exposure tracking, hidden dependencies, deployment reality, oracle strength, state/order isolation, evidence quarantine and explicit benchmark-to-release verdict levels.
 
-V5.1 materially hardens V5 around evaluator reliability. New architecture requirements include:
-- oracle hierarchy from deterministic/executable checks down to weak self-assessment;
-- trajectory/process evidence in addition to final outcomes;
-- silent-fault cases where the visible result survives an internal mistake;
-- repeated-trial consistency for stochastic behavior where relevant;
-- separate static tool quality from realized agent utility;
-- evaluation-realism axis so synthetic tests cannot silently claim deployment equivalence;
-- contamination/exposure ledger for PUBLIC/DEVELOPMENT/SHADOW/HOLDOUT/RELEASE evidence;
-- rotating holdouts after promotion;
-- orthogonal evaluator families rather than correlated judge agreement;
-- judge calibration using known-good, known-bad, overfit, mutation-generated and simpler-equivalent candidates;
-- evaluator firebreak and generation escrow before results are observed;
-- explicit EvidenceDebt and CapabilityDebt;
-- transfer labels and plateau detection;
-- anti-Goodhart tripwires when visible metrics rise while hidden/process/transfer evidence disagrees.
+V5.3 adds:
+- a locked Promotion Constitution before results are visible;
+- comparison epochs so material rule changes cannot be mixed silently;
+- benchmark lifecycle states and evidence freshness envelopes;
+- sealed canary sets for evaluation-process integrity;
+- a G0–G5 generalization ladder from benchmark-local to release-proven;
+- causal-invariance checks;
+- fair comparator rules for retries, tools, cache, time, external data and environments;
+- Promotion Escrow before canonical adoption;
+- challenger diversity requirements;
+- neutral/regressive controls for evaluator calibration;
+- counterfactual and simpler baselines;
+- deployment coverage contracts and drift invalidation;
+- failure-density and tail-risk reporting;
+- recovery-correctness and permission-sensitive evaluation;
+- explicit structured promotion verdicts;
+- saturation reset whenever the material evaluation constitution changes.
 
-The V5→V5.1 challenge found material gaps in ten architecture rounds. Therefore V5 was **not saturated**. V5.1 is stronger architecturally, but **is not frozen or empirically proven**.
+### Current truth
+V5.3 is **ARCHITECTURE_CANDIDATE**. It is stronger than earlier V5.x designs by architecture review, but it is not yet empirically proven, frozen, or runtime implemented.
 
-### V5 parent
-`docs/project-memory/SEVEN_POLISHING_V5_GENERAL_IMPROVEMENT_SPECIALIZATION.md`
-
-V5 made Polishing a specialization over the General Improvement Engine instead of a duplicated optimizer and inherited V4.4 Velocity, V4.3 Maximum Research, V4.2 Motion/Expert, V4.1 Benchmark/Visual and V4 safety laws.
-
-### Active proven governance
-**V4.4 remains the active proven polishing governance** until V5.1 or a later successor earns validation/freeze. V4.4 status remains `V4_4_ARCHITECTURE_SATURATED_2_OF_2`.
+**V4.4 remains the active proven polishing governance** until a V5.x successor earns a valid validation/freeze.
 
 ## Self-Evolution Integration
-Record:
-`docs/project-memory/SEVEN_SELF_EVOLUTION_GENERAL_IMPROVEMENT_INTEGRATION.md`
-
 Self-Evolution can use the General Improvement Engine and current Polishing successor candidates while preserving separation of powers:
-- Builder proposes/researches/builds;
-- Challenger/Judge evaluates against locked criteria and transfer/holdout cases;
+- Builder proposes and builds;
+- Challenger/Judge evaluates under locked evidence rules;
 - Promotion Plane alone accepts, seals lineage and binds rollback.
 
-Candidates cannot silently mutate authoritative requirements, evidence-state semantics, permission invariants, holdout boundaries, critical gates, promotion authority or committed benchmark identity. Heavy recursive evolution is not an always-on Android loop.
+Heavy recursive evolution is not an always-on Android process.
 
 ## Debugging & Repair Fabric
-**Seven Debugging & Repair Fabric 1.1 — Evidence-Governed Causal Repair Mesh** remains `V4_3_ARCHITECTURE_SATURATED_2_OF_2` and integrates with V4.4/V5.x. Repair Burst clusters related failures and revalidates affected proof before broader mandatory gates.
+**Seven Debugging & Repair Fabric 1.1** remains integrated with the improvement stack. Repair Burst groups related failures and requires affected evidence to be revalidated before broad promotion claims.
 
 ## Capability Roadmap
-Capabilities 01–15 retain their architecture freezes and implementation truth. Priority #16 Search/Retrieval, #17 Knowledge, #18 Vision and #20 Real Works remain reopened. #19 RPG 4.2, #21 Titles 4.1 and #22 Projects 4.3 are historical saturated candidates requiring revalidation where newer governance materially applies.
+Capabilities 01–15 retain their architecture freezes and implementation truth. Priority #16 Search/Retrieval, #17 Knowledge, #18 Vision and #20 Real Works remain open. #19 RPG, #21 Titles and #22 Projects remain historical architecture candidates requiring revalidation where newer governance materially applies.
 
-Next numbered product Mega-Campaign remains **#23 Sessions / Persistence + #24 Recovery / Integrity + relevant #41 Import/Export interactions** after the current improvement-governance campaign is closed.
+Next numbered product Mega-Campaign remains **#23 Sessions / Persistence + #24 Recovery / Integrity + relevant #41 Import/Export interactions** after the current improvement-governance campaign closes.
 
-## Major Cross-System Laws
-- authoritative and derived state are explicit and separate
-- derived objects never silently gain authority
-- verification precedes claims of real-world success
+## Major Laws
+- authoritative and derived state are separate
+- verification precedes claims of success
 - uncertainty remains explicit
 - expensive intelligence is selective
-- mobile resource discipline and graceful degradation are mandatory
-- side effects require authority/idempotency/uncertainty semantics
-- architecture claims never become implementation/device/release claims without evidence
-- benchmark metrics cannot compensate for critical regressions
-- automated repair/evolution cannot self-promote around verification/permission/release authority
+- mobile resource discipline is mandatory
+- automated repair/evolution cannot self-promote
 - speed removes waste, never required proof
-- fastest path is an empirical result, not an assumption
-- recursive self-improvement cannot rewrite the constitution that judges it
-- no universal percentage may be fabricated for non-ratio quality
-- final-outcome success cannot erase invalid process evidence
-- correlated evaluators cannot masquerade as independent evidence
-- deferred proof remains explicit debt until discharged
+- no universal percentage is fabricated for non-ratio quality
+- final-output success cannot erase invalid process/state evidence
+- public benchmark success cannot substitute for fresh hidden evidence
+- claims cannot exceed supporting oracle/evidence strength
+- benchmark-local gains cannot be called deployment or release proof
+- moving the evaluation constitution resets saturation evidence
 
 ## Explicitly Partial / Unfinished
 - General Improvement Engine runtime/orchestrator
 - recursive candidate generator and Promotion Gate runtime
-- holdout manager and evaluator-integrity harness
-- Polishing V5.1 further challenge / validation / freeze campaign
-- trajectory evidence runtime and repeated-trial evaluator
-- contamination/exposure ledger runtime
+- hidden evaluation manager and evaluator-integrity harness
+- Polishing V5.3 further challenge / validation / freeze campaign
+- trajectory/state evidence runtime and repeated-trial evaluator
+- contamination/exposure tracking runtime
+- Android deployment coverage runner
 - executable benchmark/research/visual/motion infrastructure
-- Debugging & Repair replay/repair benchmark/Repair Burst runtime
-- V4.4 ProofGraph/impact-selector/cache/scheduler/strategy-tournament runtime
-- live Search/Fetch/Extract and final Tool Fabric adapters
-- live Model Fabric validation/local fallback integration
-- Android SAF/Keystore/platform bridges and representative-device proof
-- final Knowledge/Vision pipelines
-- RPG/Real Works/Titles runtime/evals/media wiring
-- Project Fabric runtime/device proof
+- Debugging & Repair runtime
+- V4.4 ProofGraph/cache/scheduler/strategy-tournament runtime
+- final Search/Knowledge/Vision/Provider/Android integrations
 - final product UI/brand/logo and Android release certification
 
-## Release Safety
-Before declaring implementation PASS: verify CI, source integrity, protected-source integrity, release boot where applicable, mobile/RTL/theme/reduced-motion gates, benchmark identity/validity, repair semantic/regression evidence, research freshness/coverage, migration/recovery and release-specific broad evidence independent of iteration fast paths.
-
 ## Development Philosophy
-Use large coherent passes and strong final verification. The General Improvement Engine is the reusable improvement laboratory. Polishing V5.1 is the newest successor candidate and now treats the evaluator itself as a system that must be challenged. Recursive campaigns may run up to ten promoted generations, but every generation must survive a harder valid evidence environment and demonstrate a real step-change. Stop rather than manufacture progress.
+Use large coherent passes and strong final verification. The General Improvement Engine is the reusable improvement laboratory. Polishing V5.3 is the newest successor candidate and treats the evaluation constitution itself as something that must remain fixed, inspectable and independently challenged. Stop rather than manufacture progress.
