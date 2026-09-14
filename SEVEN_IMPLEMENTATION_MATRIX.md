@@ -1,113 +1,84 @@
 # Seven AI — Implementation Truth Matrix
 
-This file separates architecture from shipped behavior. A subsystem is not complete because a prompt, document, button, or API name exists.
+This file separates architecture from shipped behavior. A prompt, document, button or API name does not make a subsystem complete.
 
 ## Definition of done
-
-A Seven subsystem is **DONE** only when all four are true:
-
-1. **Implemented**: executable code exists.
-2. **Wired**: the normal user flow actually invokes it.
-3. **Verified**: deterministic/browser/device evidence exists for the important path.
-4. **Recoverable**: failure has an explicit BLOCKED, FAIL, INCONCLUSIVE, retry, fallback, or recovery state.
-
-Anything else is marked partial.
+A subsystem is **DONE** only when executable code exists, normal-flow wiring invokes it, important paths have deterministic/browser/device evidence, and failures have explicit BLOCKED/FAIL/INCONCLUSIVE/retry/fallback/recovery semantics.
 
 ## Current implementation map
 
 | System | Executable core | Normal-flow wiring | Verification | Current truth |
 | --- | --- | --- | --- | --- |
-| Chat / rooms | Yes | Yes | Browser + persistence gates exist | Strong, not final-production certified |
-| Room persistence | IndexedDB adapter | Yes | Browser gate exists | Strong |
-| Cognitive Runtime | Task state machine, capability scope, adaptive compute/risk mapping, dependency-aware mission frontier, route learning, trust gate and adversarial preflight exist | Partial across specialist flows | Cognitive Boost 23 assertions + Cognitive Gate 7 + Planner Polish 4 + control/execution integration | Ultimate Polish Wave 02 foundation verified; full CR3 execution classes, no-progress loop control and uncertain-side-effect cancellation reconciliation remain partial |
-| Truth / Epistemic Fabric | Explicit claim kinds, authority ceiling, lineage, freshness, source-version-ish dedupe, explicit independence and conflict semantics exist | Partial through Research/World/control bridges | Hardening + control parity + cognitive truth gates | Ultimate Polish Wave 02 foundation verified; full provenance-locked ClaimGraph, typed evidence edges, correction/retraction and caller-independent FACT projection remain partial |
-| Memory Fabric | Canonical objects, event history, origin-bound permission primitives | Partial | Memory + runtime smoke | Partial versus Architecture v4 target |
-| Context Workspace | Pin/compress/expand/evict/reconstruct primitives | Partial | Runtime smoke | Partial |
+| Chat / rooms | Yes | Yes | Browser + persistence gates | Strong, not final-production certified |
+| Room persistence | IndexedDB adapter | Yes | Browser gate | Strong |
+| Cognitive Runtime | Task state machine, scoped capabilities, adaptive compute/risk, dependency/budget mission frontier, route learning, trust gate, adversarial preflight | Partial across specialist flows | Cognitive Boost 23 + Gate 7 + Planner 4 + integration | Wave 02 foundation verified; CR3 execution classes/no-progress/uncertain-effect cancellation remain partial |
+| Truth / Epistemic | Claim kinds, authority ceiling, lineage, freshness, dedupe, independence, conflict semantics | Partial via Research/World/control | Hardening + parity + cognitive gates | Wave 02 foundation verified; full ClaimGraph/correction/retraction projection remains partial |
+| Memory Fabric | Selective admission, origin-bound versioned atoms, correction history, point-in-time lookup, scope/principal filters, same-origin dedupe, bounded recall, MemoryCapsules, hard purge | Hardening/runtime compatibility foundation; protected legacy source remains | Legacy memory tests + runtime smoke + 15 adversarial Memory/Context assertions | **Wave 03 foundation verified**; scalable persistence/indexes/semantic retrieval and complete derived purge reconciliation remain partial |
+| Context Workspace | Typed roles, privileged instruction boundary, scope filtering, dedupe, mandatory blocking, elastic budgets, ordering/chronology, manifest/capsule | Browser Control Runtime `v4.3` + Control Bridge `v1.1.0` | Node/browser parity + 15 adversarial Memory/Context assertions + release verify | **Wave 03 foundation verified**; target-tokenizer handshake, full source adapters/invalidation/reconstruction remain partial |
+| Model Fabric | Provider routing, registry, free-proof, health/evals/promotion modules | Partial | Deterministic evolution/model tests | Partial; Wave 04 active, live provider proof and full route contracts required |
+| Adaptive Compute | Risk/resource-aware compute, planner depth/candidate breadth controls | Partial through cognitive layer | Cognitive Boost + resource/performance gates | Foundation exists; multi-dimensional leases/reserves/closed-loop utility policy remains Wave 04 work |
 | Tool Fabric | Capability normalization, aliases, schema/risk/permission gates | Partial | Runtime smoke | Partial, external adapters/effect recovery remain |
-| Model Fabric | Provider routing pieces, health/free-proof/evolution modules | Partial | Deterministic evolution tests | Partial, live provider proof still required |
 | Local Intelligence | Deterministic embedding/classification helpers | Partial | Runtime smoke | Foundation implemented |
-| Research Runtime | Claim-evidence matrix, freshness/contradiction/gap analysis, citation locks and follow-up actions | Packaged verification API; live search/fetch orchestration remains partial | Unit gate + release size gate | Verification foundation implemented; acquisition/orchestration still partial |
-| Coding Runtime | Repo-map/patch/evidence foundations plus evolution modules | Partial | Runtime + evolution tests | Partial, real platform shell/file bridge remains |
-| Canon Runtime | Source authority, knowledge horizon, anchors, branch/debt audit | Packaged release API | Unit + browser release test | Implemented foundation |
-| Real Works Runtime | Source-bound beat order, fidelity status, branch-on-divergence, player-agency lock | Packaged release API; chat orchestration wiring still pending | Unit gate added | Functional foundation |
-| Titles System | Deterministic per-world naming rules for episode/chapter/arc/side story/special/what-if/filler/game | Available through World Runtime; product UI wiring pending | Unit gate added | Functional foundation |
-| UI Design System | Release CSS layer, adaptive tiers, reduced motion | Yes through release build | Browser/static release gates | Strong |
-| UI Runtime | Semantic message/composer/tool state, accessibility hooks, zero-polling observers | Yes through release build | Browser gate added | Functional layer |
-| Motion System | Event-delegated reveals, press states, theme motion | Yes | Browser + reduced-motion gate | Strong |
-| Performance Runtime | Adaptive lite/balanced/full tiers, pressure downgrade, guarded recovery, bounded long-task marks, idle/frame scheduling and cooperative yield | Yes through release build | 11 direct assertions + static/browser/release CI gates | Ultimate Polish Wave 01 foundation verified; real-phone battery/RAM/thermal/frame and project-wide tail-latency evidence still required |
-| PDF Runtime | Lazy local PDF.js packaging | Yes | Browser/static gate | Strong |
-| Evaluation Baseline | Frozen cross-system JSONL corpus + baseline identity | Build/evolution gates | Corpus integrity CI gate | Implemented baseline; live model/device quality remains measured separately |
-| Evolution Promotion Safety | Transactional apply/verify/rollback plus baseline/corpus identity lock | Autonomous promotion runner | Evolution test suite | Strong fail-closed promotion foundation |
-| Android packaging | Capacitor generation, asset preparation, APK verification workflow | Build pipeline | GitHub Actions + Android 16 WebView smoke | Packaging and emulator smoke implemented; real-phone battery/RAM/thermal and live-provider proof remain explicit |
+| Research Runtime | Claim-evidence matrix, freshness/conflict/gap analysis, citation locks | Packaged verification API; acquisition partial | Unit + release gates | Verification foundation implemented |
+| Coding Runtime | Repo-map/patch/evidence foundations + evolution modules | Partial | Runtime + evolution tests | Partial; real platform shell/file bridge remains |
+| Canon / Real Works | Source authority, anchors, world/canon contracts, branch/debt audit | Packaged APIs; chat orchestration partial | Unit/browser release tests | Functional foundation |
+| Titles System | Deterministic world naming rules | Via World Runtime; UI partial | Unit gate | Functional foundation |
+| UI Design / Runtime | Release CSS, adaptive tiers, semantic states, accessibility hooks | Yes through release build | Browser/static gates | Strong foundation; final Visual campaign pending |
+| Motion System | Event-delegated reveals/press/theme motion | Yes | Browser + reduced-motion gate | Strong foundation |
+| Performance Runtime | Adaptive tiers, pressure downgrade, guarded recovery, bounded marks, idle/frame scheduling/yield | Yes | 11 direct assertions + static/browser gates | Wave 01 foundation verified; real-device/tail evidence pending |
+| PDF Runtime | Lazy local PDF.js | Yes | Browser/static | Strong |
+| Evaluation Baseline | Frozen cross-system JSONL corpus + identity | Build/evolution gates | Corpus integrity | Implemented baseline; broader benchmark system later |
+| Evolution Promotion Safety | Transactional apply/verify/rollback + baseline/corpus lock | Promotion runner | Evolution suites | Strong fail-closed foundation |
+| Android packaging | Capacitor/assets/APK workflow | Build pipeline | Actions + emulator smoke | Packaging foundation; real-device evidence pending |
 | Android SAF / Keystore | No final integration | No | No | Planned |
 | MCP / A2A / AG-UI | Architecture target | No | No | Planned |
-| Full observability / OpenTelemetry alignment | Partial counters/modules | Partial | Partial | Planned/partial |
+| Full observability | Partial counters/modules | Partial | Partial | Planned/partial |
 
-## Cognitive / epistemic rules
-
-- Task risk vocabulary is normalized before compute or adversarial policy. String risks such as `high` and `critical` cannot silently collapse to numeric zero.
-- Resource tiers may reduce optional candidate breadth or planner depth, but they do not remove mandatory verification depth for high-risk work.
+## Current cognitive / epistemic / memory / context laws
+- Task risk is normalized before compute policy; `high`/`critical` cannot collapse to zero.
+- Resource pressure may reduce optional breadth but not mandatory verification floors.
 - Missing trust provenance fails closed for authority-sensitive actions.
-- `BLOCKED`, `INCONCLUSIVE`, `FAILED`, and `CANCELLED` transitions require a reason in the current Task Contract/control runtime.
-- Mission planning respects dependencies and a cumulative budget frontier; RUNNING work reserves budget and dependent work cannot start early.
-- Reduced Motion is a presentation/accessibility preference, not evidence of weak compute capacity, in both primary Performance Runtime and Control Runtime fallback policy.
-- Different claim text is not itself proof of contradiction. Conflict requires an explicit contradiction relationship or conflict state.
-- Unknown source independence is not promoted to independence merely because source IDs differ.
-- Duplicate source/version evidence is deduplicated before truth aggregation; repeated evidence from one independent group cannot fake multi-source consensus.
-- Derived claims remain bounded by the weakest parent/source authority and never grant action authority by themselves.
+- Mission planning respects dependencies and cumulative budgets; RUNNING work reserves budget.
+- Reduced Motion is presentation/accessibility state, not evidence of weak compute.
+- Different wording is not contradiction; explicit conflict relationships remain conflicts.
+- Unknown source independence is not promoted to independence.
+- Derived claims cannot exceed weakest source/parent authority and never grant action authority.
+- Memory origin/principal/scope authority is immutable through correction, summary, retrieval or restatement.
+- Memory Recall is `RECALL_ONLY`; placement in Context does not make it evidence or permission.
+- Only trusted runtime/controller/policy authority instructions may occupy the privileged system lane.
+- Retrieved/tool/project/memory/evidence data cannot self-promote into privileged instructions.
+- Principal/namespace/scope filtering occurs before context ranking.
+- Required context cannot be silently evicted; insufficient mandatory capacity blocks compilation.
+- Context can borrow unused budget elastically while remaining below the global window.
+- Conversation chronology survives relevance selection.
 
-## UI polish rules
+## UI / performance rules
+- Mobile-first reachability and safe areas.
+- No polling animation loops or required decorative effects.
+- Reduced Motion affects presentation only.
+- Performance tiers may reduce optional decoration/depth, never correctness/safety.
+- Heavy PDF/workspace assets remain lazy.
+- Current release startup gate remains `<100000` bytes; Wave 03 final evidence is `99794` bytes.
 
-The UI is treated as a runtime surface, not decoration.
-
-- Mobile-first reachability and safe-area support.
-- No polling animation loops.
-- Reduced Motion is authoritative for presentation but is not evidence that device compute capacity is low.
-- Performance tier can remove blur, glow, decoration, and expensive motion.
-- Message rendering keeps `content-visibility` optimization.
-- Composer state reflects actual busy/ready state.
-- Tool toggles expose semantic pressed state as well as visual state.
-- Chat is an accessible live log.
-- Expensive visual effects are optional and never required for functionality.
-
-## World / Real Works rules
-
-- Canon order is source-bound, not model-memory-bound.
-- Missing source references produce `UNVERIFIED` or `INCONCLUSIVE`, never fake certainty.
-- Divergent choices create a branch instead of silently rewriting the original work.
-- The runtime cannot invent the player's irreversible action, intention, or emotion.
-- Naming is deterministic from a world's title rules and can be customized without changing state authority.
-- Full work ingestion still needs source acquisition, normalization, provenance binding, and user-facing orchestration.
-
-## Research verification rules
-
-- Claims are explicit objects, not implicit prose guesses.
-- Evidence is bound to a source, stance, locator, authority class, and transformation.
-- Time-sensitive claims are checked against a freshness window.
-- Supporting and contradicting evidence produce a conflict instead of false certainty.
-- Missing evidence produces a gap; stale evidence produces a freshness-search action.
-- Citation locks contain only valid, non-stale supporting source URLs.
-- `PASS` is impossible while a claim is GAP, STALE, UNCITABLE, or CONFLICT.
-- Search/fetch/extract adapters remain separate acquisition layers and cannot self-certify their own output.
+## Research / World rules
+- Claims bind to source/stance/locator/authority/transformation.
+- GAP/STALE/UNCITABLE/CONFLICT cannot become PASS through prose.
+- Canon order is source-bound, missing source references remain unverified/inconclusive, divergence branches rather than rewriting canon, and player irreversible intent is not invented.
 
 ## Evolution promotion rules
-
-- Candidate promotion is bound to a frozen evaluation identity.
-- The identity contains baseline commit, corpus version, task count, and SHA-256 corpus hash.
-- Missing or drifted evaluation identity fails before repository inspection or mutation.
-- A benchmark change requires a new deliberate baseline/evaluation cycle.
-- CI or regression failure after apply requires rollback; rollback failure is never reported as success.
-- Benchmark improvement cannot override a critical security, permission, persistence, or crash regression.
+- Promotion is bound to frozen evaluation identity and exact candidate/baseline state.
+- Missing/drifted eval identity fails before mutation.
+- Critical security/permission/persistence/crash regression overrides benchmark gains.
+- Apply/verify failure requires rollback; rollback failure is never reported success.
 
 ## Next integration gates
-
-1. Continue Ultimate Polish through Memory Fabric and Context Workspace, preserving authority/lineage boundaries introduced by Wave 02.
-2. Reconcile cancellation after dispatched/uncertain side effects when Tool/Side-Effect/Recovery polish owns the full protocol rather than adding a partial startup-path patch.
-3. Wire World Runtime into the RPG conversation controller so contracts are used before generation and commits happen after verified scene output.
-4. Connect Research acquisition adapters to the verification runtime: Search → Fetch → Extract → Matrix → Verify → Cite.
-5. Promote Coding from repository primitives to the platform file/shell bridge with inspect/edit/test/diff evidence.
-6. Finish Model Fabric live free-proof/health/fallback validation without claiming external resources are unlimited.
-7. Move remaining canonical persistence away from bounded localStorage where practical.
-8. Add Android SAF/Keystore, then run real-device startup, storage, cancellation, offline/fallback, and provider tests.
-9. Add protocol adapters only after their underlying capabilities are authoritative and tested.
-10. Only after those gates, call the complete product release-ready.
+1. **Model Fabric + Adaptive Compute:** reconcile ModelFamily/Revision/Endpoint identity, strict free-proof freshness, quota/health eligibility, champion/fallback/lease behavior, target-model context handshake, verified-outcome routing, multi-dimensional budgets and protected verification/recovery reserves.
+2. Tool/Side-Effect/Recovery: reconcile cancellation after dispatched/uncertain effects end-to-end.
+3. Research: Search → Fetch → Extract → Matrix → Verify → Cite with live acquisition adapters.
+4. Coding: connect repo primitives to platform file/shell inspect/edit/test/diff evidence.
+5. RPG/Real Works: wire contracts into conversation generation/verified scene commits.
+6. Persistence: migrate remaining bounded/local legacy state where practical and reconcile Memory purge/import/export/recovery.
+7. Android SAF/Keystore + real-device startup/storage/cancellation/offline/provider tests.
+8. Protocol adapters only after underlying capability authority/contracts are verified.
+9. Benchmark/eval expansion, specialist/UI campaigns, Android certification and final Red Team.
+10. Only then may the complete product be called release-ready.
