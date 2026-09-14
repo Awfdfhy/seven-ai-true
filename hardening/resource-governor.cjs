@@ -17,13 +17,12 @@ function selectTier(signals = {}) {
   const cores = Number(signals.cores || 0);
   const battery = signals.batteryLevel == null ? 1 : clamp(signals.batteryLevel, 0, 1);
   const memoryPressure = String(signals.memoryPressure || "normal");
-  const reducedMotion = Boolean(signals.reducedMotion);
   const thermal = String(signals.thermal || "normal");
   const hidden = Boolean(signals.hidden);
   const recentLongTasks = Math.max(0, Number(signals.recentLongTasks || 0));
 
   if (memoryPressure === "critical" || thermal === "critical" || battery <= 0.1) return "lite";
-  if (reducedMotion || memoryPressure === "high" || thermal === "high" || hidden || recentLongTasks >= 3 || (mem && mem <= 2) || (cores && cores <= 2) || battery <= 0.2) return "lite";
+  if (memoryPressure === "high" || thermal === "high" || hidden || recentLongTasks >= 3 || (mem && mem <= 2) || (cores && cores <= 2) || battery <= 0.2) return "lite";
   if (mem >= 6 && cores >= 6 && battery > 0.35 && recentLongTasks === 0) return "full";
   return "balanced";
 }
