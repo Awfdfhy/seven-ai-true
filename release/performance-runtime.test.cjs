@@ -1,0 +1,23 @@
+const assert=require('assert/strict');
+const fs=require('fs');
+const perf=require('./performance-runtime.js');
+
+(async()=>{
+  let count=0;
+  const check=(name,fn)=>{fn();count++;console.log('PASS',name)};
+  check('reduced motion does not downgrade compute tier',()=>assert.equal(perf.recommendTier({deviceMemoryGb:8,cores:8,batteryLevel:1,reducedMotion:true}),'full'));
+  check('critical resource pressure selects lite',()=>assert.equal(perf.recommendTier({deviceMemoryGb:8,cores:8,memoryPressure:'critical'}),'lite'));
+  check('single recent long task avoids full tier',()=>assert.equal(perf.recommendTier({deviceMemoryGb:8,cores:8,recentLongTasks:1}),'balanced'));
+  check('small devices select lite',()=>assert.equal(perf.recommendTier({deviceMemoryGb:2,cores:2}),'lite'));
+  check('runtime stays inside startup byte budget',()=>assert.ok(fs.statSync(__dirname+'/performance-runtime.js').size<5500));
+  check('measure records bounded timing evidence',()=>{const before=perf.state.marks.length;const m=perf.measure('unit',()=>42);assert.equal(m.value,42);assert.equal(perf.state.marks.length,before+1)});
+  perf.applyTier('full');
+  check('pressure downgrade is immediate',()=>assert.equal(perf.reconsiderTier({memoryPressure:'high'}),'lite'));
+  check('upgrade is hysteresis guarded after pressure',()=>assert.equal(perf.reconsiderTier({deviceMemoryGb:8,cores:8,batteryLevel:1}),'lite'));
+  let frames=0;perf.batchFrame('same',()=>{frames=1});perf.batchFrame('same',()=>{frames=2});await new Promise(r=>setTimeout(r,25));
+  check('frame batching coalesces work by key',()=>assert.equal(frames,2));
+  let idleRan=false;const cancel=perf.scheduleIdle(()=>{idleRan=true},10);cancel();await new Promise(r=>setTimeout(r,20));
+  check('idle work is cancellable',()=>assert.equal(idleRan,false));
+  const yielded=await perf.yieldIfNeeded(performance.now()-10,1);check('cooperative yield activates after budget',()=>assert.equal(yielded,true));
+  console.log('performance runtime: PASS ('+count+' assertions)');
+})().catch(e=>{console.error(e);process.exit(1)});
