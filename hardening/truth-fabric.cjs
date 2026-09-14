@@ -20,6 +20,16 @@ function weakestAuthority(values) {
   return authorityName(ranks.length ? Math.min(...ranks) : 0);
 }
 function unique(values) { return Array.from(new Set(asArray(values).filter(v => v != null))); }
+function sourceKey(source = {}) { return [source.id || "", source.contentHash || "", source.capturedAt || source.observedAt || ""].join("|"); }
+function dedupeSources(values) {
+  const seen = new Set();
+  return asArray(values).map(normalizeSource).filter(source => {
+    const key = sourceKey(source);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
 
 function normalizeSource(source = {}) {
   if (!source.id) throw new Error("source requires id");
@@ -30,7 +40,7 @@ function normalizeSource(source = {}) {
     capturedAt: source.capturedAt || null,
     observedAt: source.observedAt || null,
     contentHash: source.contentHash || null,
-    independentGroup: source.independentGroup || source.id,
+    independentGroup: source.independentGroup || null,
     trust: source.trust || "untrusted",
     metadata: clone(source.metadata || {})
   };
@@ -41,7 +51,7 @@ function createClaim(input = {}) {
   if (!text) throw new Error("claim requires text");
   const kind = String(input.kind || EPISTEMIC_KIND.CLAIM).toUpperCase();
   if (!Object.values(EPISTEMIC_KIND).includes(kind)) throw new Error(`unknown epistemic kind: ${kind}`);
-  const sources = asArray(input.sources).map(normalizeSource);
+  const sources = dedupeSources(input.sources);
   const sourceAuthority = weakestAuthority(sources.map(s => s.authority));
   const declaredAuthority = authorityName(authorityRank(input.authority || sourceAuthority));
   const effectiveAuthority = authorityName(Math.min(authorityRank(declaredAuthority), authorityRank(sourceAuthority || declaredAuthority)));
@@ -50,6 +60,7 @@ function createClaim(input = {}) {
     id: String(input.id || `claim-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`),
     text,
     kind,
+    productionMode: kind === EPISTEMIC_KIND.INFERENCE ? "INFERRED" : kind === EPISTEMIC_KIND.ASSUMPTION ? "ASSUMED" : kind === EPISTEMIC_KIND.UNKNOWN ? "UNKNOWN" : "ASSERTED",
     status: input.status || "OPEN",
     authority: effectiveAuthority,
     sources,
@@ -76,7 +87,7 @@ function isFresh(claim, now = Date.now(), maxAgeMs = 0) {
 }
 
 function independentSourceCount(claim) {
-  return new Set(claim.sources.map(s => s.independentGroup || s.id)).size;
+  return new Set(claim.sources.map(s => s.independentGroup).filter(Boolean)).size;
 }
 
 function resolveClaim(claim, options = {}) {
@@ -94,8 +105,7 @@ function resolveClaim(claim, options = {}) {
 function deriveClaim({ text, parents, transformation, transformer, kind = EPISTEMIC_KIND.INFERENCE, id } = {}) {
   const ps = asArray(parents);
   if (!ps.length) throw new Error("derived claim requires parents");
-  const inheritedSources = [];
-  for (const p of ps) for (const s of asArray(p.sources)) inheritedSources.push(s);
+  const inheritedSources = dedupeSources(ps.flatMap(p => asArray(p.sources)));
   const authority = weakestAuthority(ps.map(p => p.authority));
   const claim = createClaim({
     id,
@@ -118,14 +128,15 @@ function deriveClaim({ text, parents, transformation, transformer, kind = EPISTE
 function mergeClaims(claims = []) {
   const list = asArray(claims);
   if (!list.length) return { state: EPISTEMIC_KIND.UNKNOWN, authority: "NONE", claims: [] };
-  const normalizedTexts = new Set(list.map(c => String(c.text || "").trim().toLowerCase()));
-  const hasConflict = normalizedTexts.size > 1 || list.some(c => asArray(c.contradicts).length > 0);
+  const ids = new Set(list.map(c => c.id));
+  const hasConflict = list.some(c => c.kind === EPISTEMIC_KIND.CONFLICT || asArray(c.contradicts).some(id => ids.has(id)));
+  const sameAssertion = new Set(list.map(c => String(c.text || "").trim().toLowerCase())).size === 1;
   return {
-    state: hasConflict ? EPISTEMIC_KIND.CONFLICT : list.some(c => c.kind === EPISTEMIC_KIND.FACT) ? EPISTEMIC_KIND.FACT : EPISTEMIC_KIND.CLAIM,
+    state: hasConflict ? EPISTEMIC_KIND.CONFLICT : sameAssertion && list.some(c => c.kind === EPISTEMIC_KIND.FACT) ? EPISTEMIC_KIND.FACT : EPISTEMIC_KIND.CLAIM,
     authority: weakestAuthority(list.map(c => c.authority)),
     claims: list.map(c => c.id),
-    sourceCount: new Set(list.flatMap(c => c.sources.map(s => s.id))).size,
-    independentSourceCount: new Set(list.flatMap(c => c.sources.map(s => s.independentGroup || s.id))).size
+    sourceCount: new Set(list.flatMap(c => c.sources.map(sourceKey))).size,
+    independentSourceCount: new Set(list.flatMap(c => c.sources.map(s => s.independentGroup).filter(Boolean))).size
   };
 }
 
