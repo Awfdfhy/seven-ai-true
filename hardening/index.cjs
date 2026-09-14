@@ -13,6 +13,6 @@ module.exports = Object.freeze({
   researchFabric: require("./research-fabric.cjs"),
   visionFabric: require("./vision-fabric-passb.cjs"),
   rpgStoryFabric: require("./rpg-story-fabric-final.cjs"),
-  canonFabric: require("./canon-fabric.cjs"),
-  titleFabric: require("./title-fabric.cjs")
+  canonFabric: require("./canon-fabric-passb.cjs"),
+  titleFabric: require("./title-fabric-passb.cjs")
 });
