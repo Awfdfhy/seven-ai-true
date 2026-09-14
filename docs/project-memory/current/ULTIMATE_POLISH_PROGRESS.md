@@ -5,7 +5,7 @@
 ## Campaign
 - Branch: `ultimate-polish-v1`
 - User-set hard ceiling: **`≤30` Mega-Waves**. This is a maximum, not a target to consume.
-- Current counter: **`11 / ≤30`**
+- Current counter: **`12 / ≤30`**
 - Protected source: `seven_ai-final.html`
 - Protected source reference: `658133` bytes, Git blob `3e8dfa8e7da7124e16504140eb9631c10cabf053`
 - Protected-branch law: do not merge to `main` or another protected branch without explicit user approval.
@@ -22,7 +22,7 @@ Final `bf8c66e0ca9f7e2363dde7827ff530a5e3cd3d85`; run `34854002261`; `40` suites
 
 ### Mega-Wave 03 — Memory Fabric + Context Workspace Foundation
 **Status:** `PASS_FOUNDATION`
-Final `5172c30fbb2eaffde30cbe65356668d75a12a0d8`; run `34857043114`; `41` suites; Memory/Context `15`; startup Simplifier Duel returned to `99794`.
+Final `5172c30fbb2eaffde30cbe65356668d75a12a0d8`; run `34857043114`; `41` suites; Memory/Context `15`.
 
 ### Mega-Wave 04 — Model Fabric + Adaptive Compute Foundation
 **Status:** `PASS_FOUNDATION`
@@ -44,7 +44,7 @@ Pass A `10a9d8facabfd4bb11e3e7a15dd36c6b7112a97f`; Pass B `6e8d7382cfedce04d3916
 
 ### Mega-Wave 08 — Research + Search/Retrieval + Knowledge/Files Foundation
 **Status:** `PASS_FOUNDATION`
-Pass A `411eeaa3b0ab272d19b67158fe93823b3df278c9`; rebuilt/Pass B `772a8fdb8d7582ad50fb553cc28341ff0b7ff3a8`; fixture repair `b1989a71768e22ee79b85a7e76f2b416ae4fbf8b`; final Research→Truth boundary `12fa443be9f3ec7f9d1d4fd4184692814cfae552` + `bc2038b505c1596508252eb7de2e4a51893865fe`. Final run `34873736180` / #1447: `49` suites, Research core `46`, Pass B `17`, bridge `2`, startup `98941`.
+Pass A `411eeaa3b0ab272d19b67158fe93823b3df278c9`; rebuilt/PassB `772a8fdb8d7582ad50fb553cc28341ff0b7ff3a8`; fixture repair `b1989a71768e22ee79b85a7e76f2b416ae4fbf8b`; final Research→Truth boundary `12fa443be9f3ec7f9d1d4fd4184692814cfae552` + `bc2038b505c1596508252eb7de2e4a51893865fe`. Final run `34873736180` / #1447: `49` suites, Research core `46`, Pass B `17`, bridge `2`, startup `98941`.
 
 ### Mega-Wave 09 — Vision Fabric Foundation
 **Status:** `PASS_FOUNDATION`
@@ -55,76 +55,91 @@ Pass A `3983edf9426a5008f6615c38c17528faafe57622`, `79c9634fd5edbabc67f105cd47a2
 Pass A `d8485312657e2423d63534d29f5c15a766b0534c`; Pass B `4bd5d8e79176cdd8cd194f8de1ede6e148c67e6c`; test-only fixture repair `47dab9e2e3bdcb8447c79537567dbd200cc84e02`; final authority guard `be4f2642e8ee0c1455ab0e4e467570e7c9d4fa4e`.
 Final implementation run `34879527880` / #1459 succeeded with `54` auto-discovered suites. Artifact `10362351591`, size `2072583`, SHA-256 `605f0e94a86ef4af5bc6b200869d1f149a55b69ed68e38c3ea8b9c5584e9c10e`. Docs close `ce4688df39f27142e8f64dabd0707d619a3ee2d7`; #1460 succeeded.
 
-World truth is World-Kernel-owned; PlayerAction semantics, actor knowledge transmission, deterministic RNG receipts, snapshots/branches, Story artifact integrity and Judge-bound Story→World handoff fail closed.
-
 ### Mega-Wave 11 — Real Works Canon Simulation + Titles / World Linguistic Foundation
 **Status:** `PASS_FOUNDATION`
+Pass A `d497f3e86a2e1b5ca2a676dcce70fa87f1ac1e25`; Pass B `019230858efd320fe66064b30fed2c9b3350d5ff`; final adversarial guard `78a4b25d41c70e0ef0cb5c55b721d6efbc1c5820`.
+Final implementation run `34888351330` / #1463 succeeded end-to-end with `57` suites. Artifact `10365288940`, size `2054451`, SHA-256 `4b8d622020fdae6b90e06f8093da954c08893b70bb1ecdc8601c5bcda5ac5de0`.
 
-#### Pass A — executable Canon + Titles foundation
-Commit `d497f3e86a2e1b5ca2a676dcce70fa87f1ac1e25` added:
-- `hardening/canon-fabric.cjs`
-- `hardening/title-fabric.cjs`
-- `hardening/canon-title-fabric.test.cjs`
-- canonical hardening exports
-- `docs/project-memory/current/MODEL_FRONTIER_RESEARCH.md`
+Wave 11 established source/version/evidence-bound Canon, explicit continuity/adaptation separation, partial chronology, character knowledge horizons, `CANON_GAP`, explicit player divergence, constraint-only RPG integration and official/generated naming separation with Arabic/localization/replay safeguards.
 
-Canon gained deterministic work/continuity/source/evidence/fact/event identities, partial chronology, character knowledge, anchors, corpus integrity, CoverageContract, `CANON_GAP`, scene contracts, insertion analysis, explicit divergence branches and RPG constraint-only integration. Titles gained typed status/domain identities, evidence-bound world language profiles, deterministic grammar, model-assist gating, official/generated separation, collision handling, localization, Arabic numbering/RTL structure and reproducible naming manifests.
+### Mega-Wave 12 — Visual Evidence Runtime Foundation
+**Status:** `PASS_FOUNDATION`
 
-Run `34887240280` / #1461 succeeded end-to-end.
+#### Pass A — executable visual evidence model
+Commit `2309a822c5d3d2bbf063c4e9d205d5cce3047ed2` created `release/visual-evidence-runtime.cjs`. Commit `7504be4835fd2cbad3b8831009443b676532cfcd` wired deterministic tests and upgraded `release/capture-ui.cjs` to gather structured DOM evidence together with screenshots.
 
-#### Pass B — stale evidence, lineage and naming authority hardening
-Commit `019230858efd320fe66064b30fed2c9b3350d5ff` added canonical Pass B wrappers/tests and moved `hardening/index.cjs` to the strengthened exports.
+The foundation introduced:
+- sealed `VisualScenario` identity across surface/journey/state/viewport/density/font scale/locale/direction/theme/performance tier/reduced motion/capture method;
+- screenshot/artifact SHA-256 binding;
+- viewport overflow, touch-target, accessibility, contrast and structural state audits;
+- PASS/WARN/FAIL/INCONCLUSIVE verdicts without averaging away hard failures;
+- explicit visual evidence tiers;
+- baseline registry with explicit reviewer/reason/reference;
+- baseline comparison states (`MATCH`, `CHANGED`, `NO_BASELINE`, `SCENARIO_CHANGED`);
+- sealed evidence manifests.
 
-Closed or hardened:
-- SourceVersion/head drift detection and invalidation propagation through derived facts;
-- anchor dependency-cycle rejection;
-- source-bound scene seals;
-- authentic RPG WorldDefinition/WorldSession/PlayerAction lineage for player-caused divergence;
-- exact RPG session proof at Canon→RPG constraint boundary;
-- profile/grammar/request/candidate/decision/identity provenance seals;
-- unsafe naming-regex rejection;
-- candidate text/status tamper detection;
-- branch-scoped generated-name collisions with official identities protected globally;
-- Arabic collision folding for diacritics/tatweel/digit variants;
-- official title/localization evidence freshness;
-- manifest dependency/registry drift detection.
+The first live capture was intentionally allowed to expose reality rather than auto-pass. It found hard touch-target failures, including a status control whose visible hit box was only about 18px, plus several sub-44px targets. Those findings were treated as implementation bugs, not as reasons to weaken the audit.
 
-Run `34887873154` / #1462 succeeded end-to-end. Artifact `10365821287`, size `2067096`, SHA-256 `eb452a9f0f14ecedc0ab4f2e6aa22b23650acc3a547ac7513ab13d184079a44e`.
+#### Evidence-driven UI repair
+`release/beta-ui.css` was strengthened so core buttons, composer controls, form controls, status/tool/send/new-chat/icon/menu actions have practical 44px minimum touch hit boxes. The mobile status control is also 44×44 at narrow width. This fixed actual reachability while preserving the compact visual treatment.
 
-#### Final adversarial guard — dependency scope + anti-evidence-laundering
-Post-green review found two material gaps worth fixing rather than declaring victory early.
+The repair increased startup payload, but the static gate still passes at **`99743 / 100000` bytes**. This leaves only **257 bytes** of hot-path headroom, which is now an explicit constraint on later visual waves.
 
-Commit `78a4b25d41c70e0ef0cb5c55b721d6efbc1c5820` added the final Canon/Titles layers and final adversarial test suite.
+#### Pass B — evidence authority and anti-laundering
+`release/visual-evidence-runtime-passb.cjs` + `release/visual-evidence-runtime-passb.test.cjs` added:
+- verification of every audit seal before evidence admission;
+- strict known evidence-tier vocabulary;
+- mandatory environment identity;
+- explicit proof for device-tier claims;
+- protection against relabeling HOST evidence as physical-device evidence;
+- governed scenario registry and evidence registry;
+- explicit approval for scenario replacement;
+- WARN baseline promotion only with explicit warning acceptance;
+- duplicate identity rejection;
+- cross-branch, cross-commit and cross-environment evidence-laundering rejection.
 
-It closed:
-1. **Unrelated-source freeze:** scene/coverage freshness is dependency-scoped. An unrelated source update no longer blocks an otherwise valid scene, while a required source update still yields `CANON_GAP`/invalidates the scene.
-2. **Official naming evidence laundering:** official titles/localizations require evidence scoped to the exact world, continuity, subject and claim type.
-3. **Commit-time staleness:** official naming candidate/identity/localization paths recheck authoritative source heads at commit time.
-4. **Continuity-bound identity:** official/generated title identities preserve continuity and fail verification when continuity is tampered.
-5. **No hidden promotion:** there is still no generic generated→official promotion API.
+Pass B contributes **32 adversarial assertions**.
 
-Run **`34888351330` / #1463 succeeded end-to-end**, including `node all.cjs`, verified UI capture and release artifact upload. With the three Wave 11 test suites, the repository now has **57 auto-discovered suites**. Artifact **`10365288940`**, size `2054451`, SHA-256 **`4b8d622020fdae6b90e06f8093da954c08893b70bb1ecdc8601c5bcda5ac5de0`**.
+#### Final guard — sub-pixel measurement correctness
+A post-green review found one remaining false-positive class: an intended 44px element may measure about 43.9px in Chromium due sub-pixel layout/rendering. `release/visual-evidence-runtime-final.cjs` introduced a bounded default measurement tolerance of `0.25px` (never more than `1px`). Materially subpreferred targets still WARN and materially sub-hard targets still FAIL. `release/visual-evidence-runtime-final.test.cjs` adds **5 assertions** and the final capture path uses this strengthened runtime.
 
-### Wave 11 gates
-- **Source/version/evidence lineage:** PASS foundation.
-- **Continuity/adaptation separation:** PASS foundation.
-- **Partial chronology:** PASS foundation; no invented total order required.
-- **Character knowledge horizon:** PASS foundation.
-- **CANON_GAP:** PASS foundation for missing/stale required support.
-- **Player agency/divergence:** PASS foundation through explicit branch + authentic PlayerAction lineage.
-- **RPG integration:** PASS foundation as constraint-only, never competing world-state ownership.
-- **Official/generated title separation:** PASS foundation.
-- **Arabic/localization/collision/replay:** PASS foundation.
-- **Speed/startup:** PASS foundation because specialist hardening stays outside startup hot path.
+#### Final verification
+Final implementation HEAD: **`7764d275b6231008d603352c442cf56a0bfd6132`**.
+GitHub Actions run **`34890701798` / #1474: SUCCESS** end-to-end.
 
-Carry-forward: live source acquisition, durable Canon/Title persistence/indexes, large real-work corpus ingestion, long-horizon branch/replay evaluation, live model orchestration, specialist Real Works UI, Android resource evidence and broader canon fidelity benchmarks.
+Evidence from that run:
+- `all test suites: PASS (60 suites)`;
+- Visual Evidence foundation: **43 assertions**;
+- Visual Evidence Pass B: **32 assertions**;
+- Final measurement guard: **5 assertions**;
+- `UI visual evidence: PASS (8 scenarios; 8 pass, 0 warn, 0 fail; OBSERVE mode)`;
+- scenarios cover chat Night, chat Day, semantic thinking state, workspace launcher, Coding workspace, RPG/Real Works workspace, structural RTL probe and Reduced Motion;
+- contrast gate remains green: light accent `4.89:1`, light danger `4.78:1`, light muted `4.52:1`, dark accent `6.12:1`, dark danger `4.76:1`, dark muted `7.22:1`;
+- source integrity lock PASS at `658133` bytes / protected blob `3e8dfa8e7da7124e16504140eb9631c10cabf053`;
+- static audit PASS: **`99743` startup bytes**, `34881` lazy workspace bytes, `3689533 / 8388608` static APK bytes, lazy-local PDF/workspaces, `0` static warnings;
+- release verification PASS.
+
+Final artifact **`10366787278`**, size **`2175309`** bytes, SHA-256 **`fad44979a715b618ce6197c0b9b7b3d049d0df4e1fddf3b29cd6e9300c86ab38`**.
+
+### Wave 12 gates
+- **Scenario/evidence identity:** PASS foundation.
+- **Screenshot integrity:** PASS foundation.
+- **Structural geometry/state evidence:** PASS foundation.
+- **Touch-target evidence:** PASS foundation and used to repair real UI defects.
+- **Contrast:** PASS current release gate.
+- **Baseline governance:** PASS foundation; no automatic golden laundering.
+- **Evidence-tier integrity:** PASS foundation; host evidence cannot self-promote to device evidence.
+- **RTL + Reduced Motion probe:** PASS host-tier foundation.
+- **Live capture:** PASS 8/8 scenarios in explicit `OBSERVE` mode.
+- **Speed/startup:** PASS, but near ceiling at `99743 / 100000`; later visual work must be lazy/build-time or recover bytes through simplification.
+- **Real Android visual certification:** NOT YET CLAIMED.
+
+Carry-forward: Design Genome/Design Lint, approved golden portfolio, larger state/locale/font-scale/IME/device matrix, final Global UI and specialist workspaces, real Android evidence tiers, frame/thermal evidence and Visual Red Team.
 
 ## Model Frontier Research Snapshot
-`docs/project-memory/current/MODEL_FRONTIER_RESEARCH.md` records current time-sensitive findings without promoting them into permanent architecture truth.
-
-Key law: model champion qualification is evidence-driven and expiring. Benchmark revision identity, model revision, endpoint/free-proof class, terms freshness, provider health/quota, capabilities and Seven-Eval receipts remain separate inputs. Scores from different benchmark revisions/scales cannot be compared directly.
+`docs/project-memory/current/MODEL_FRONTIER_RESEARCH.md` records current time-sensitive findings without promoting them into permanent architecture truth. Model champion qualification is evidence-driven and expiring; benchmark revisions/scales, endpoint/free-proof class and Seven-Eval receipts stay explicit.
 
 ## Next Mega-Wave
-**Mega-Wave 12 — Visual Evidence Runtime Foundation.**
+**Mega-Wave 13 — Design Genome Runtime + Design Lint Foundation.**
 
-Start the frozen Visual Implementation campaign with scenario/evidence/baseline registries, touch-target/geometry/contrast/state audits, visual regression evidence and explicit RTL/accessibility/mobile proof primitives. This is the evidence layer required before large-scale Global UI and specialist visual implementation.
+Converge legacy token families into a governed Seven visual genome and add deterministic Design Lint/build evidence without consuming the remaining startup budget. Formalize Seven-specific primitives/rules such as Orbit Thread, Seven Cut, Evidence Rail, Focus Halo and State Node as tested design hypotheses/contracts rather than decorative names. Preserve Day/Night, RTL/accessibility, Android efficiency and anti-copy distinctiveness. The final logo is **not** selected here; the Logo & Identity Tournament remains its own following Mega-Wave.
