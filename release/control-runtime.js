@@ -8,6 +8,7 @@
   const hasDOM=!!(root&&root.document);
   const TASK_STATES=Object.freeze(['CREATED','PLANNING','EXECUTING','VERIFYING','COMMITTING','COMPLETED','BLOCKED','INCONCLUSIVE','FAILED','CANCELLED']);
   const TERMINAL=new Set(['COMPLETED','INCONCLUSIVE','FAILED','CANCELLED']);
+  const EXPLAINED=new Set(['BLOCKED','INCONCLUSIVE','FAILED','CANCELLED']);
   const TRANSITIONS=Object.freeze({
     CREATED:new Set(['PLANNING','BLOCKED','CANCELLED','FAILED']),
     PLANNING:new Set(['EXECUTING','BLOCKED','INCONCLUSIVE','CANCELLED','FAILED']),
@@ -31,6 +32,7 @@
   function rank(v){const k=String(v||'NONE').toUpperCase();return Object.prototype.hasOwnProperty.call(AUTH,k)?AUTH[k]:0;}
   function authorityName(n){return Object.entries(AUTH).find(([,x])=>x===n)?.[0]||'NONE';}
   function weakest(values){const r=arr(values).map(rank);return authorityName(r.length?Math.min(...r):0);}
+  function sourceKey(s){return [s.id||'',s.contentHash||'',s.capturedAt||s.observedAt||''].join('|');}
   function positive(v,f){const n=Number(v);return Number.isFinite(n)&&n>0?n:f;}
   function clamp(n,min,max){return Math.max(min,Math.min(max,Number(n)||0));}
   function id(prefix){return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;}
@@ -52,19 +54,20 @@
     if(!contract)throw new Error('contract required');next=String(next);meta=meta||{};
     if(!TASK_STATES.includes(next))throw new Error('unknown task state: '+next);
     if(!TRANSITIONS[contract.state]||!TRANSITIONS[contract.state].has(next))throw new Error(`illegal task transition: ${contract.state}->${next}`);
-    return {...clone(contract),state:next,transition:{from:contract.state,to:next,at:meta.at||new Date().toISOString(),reason:meta.reason||null,evidenceRef:meta.evidenceRef||null}};
+    const reason=String(meta.reason||'').trim();if(EXPLAINED.has(next)&&!reason)throw new Error(`task transition requires reason: ${contract.state}->${next}`);
+    return {...clone(contract),state:next,transition:{from:contract.state,to:next,at:meta.at||new Date().toISOString(),reason:reason||null,evidenceRef:meta.evidenceRef||null}};
   }
 
-  function normalizeSource(s){if(!s||!s.id)throw new Error('source requires id');return {id:String(s.id),authority:authorityName(rank(s.authority||'A5')),observedAt:s.observedAt||null,capturedAt:s.capturedAt||null,independentGroup:s.independentGroup||s.id,uri:s.uri||null,contentHash:s.contentHash||null,trust:s.trust||'untrusted',metadata:clone(s.metadata||{})};}
+  function normalizeSource(s){if(!s||!s.id)throw new Error('source requires id');return {id:String(s.id),authority:authorityName(rank(s.authority||'A5')),observedAt:s.observedAt||null,capturedAt:s.capturedAt||null,independentGroup:s.independentGroup||null,uri:s.uri||null,contentHash:s.contentHash||null,trust:s.trust||'untrusted',metadata:clone(s.metadata||{})};}
   function createClaim(input){
     input=input||{};const text=String(input.text||'').trim();if(!text)throw new Error('claim requires text');
     const kind=String(input.kind||'CLAIM').toUpperCase();if(!EPISTEMIC_KIND.includes(kind))throw new Error('unknown epistemic kind: '+kind);
-    const sources=arr(input.sources).map(normalizeSource);const srcAuth=weakest(sources.map(s=>s.authority));
+    const seen=new Set(),sources=arr(input.sources).map(normalizeSource).filter(s=>{const k=sourceKey(s);if(seen.has(k))return false;seen.add(k);return true;});const srcAuth=weakest(sources.map(s=>s.authority));
     const declared=authorityName(rank(input.authority||srcAuth));const effective=authorityName(Math.min(rank(declared),rank(srcAuth||declared)));
-    return {schemaVersion:1,id:String(input.id||id('claim')),text,kind,status:input.status||'OPEN',authority:effective,sources,evidence:arr(input.evidence).map(clone),lineage:clone(input.lineage||{parents:[],transformation:'direct'}),contradicts:strings(input.contradicts),supports:strings(input.supports),createdAt:input.createdAt||new Date().toISOString(),validFrom:input.validFrom||null,validUntil:input.validUntil||null,metadata:clone(input.metadata||{})};
+    return {schemaVersion:1,id:String(input.id||id('claim')),text,kind,productionMode:kind==='INFERENCE'?'INFERRED':kind==='ASSUMPTION'?'ASSUMED':kind==='UNKNOWN'?'UNKNOWN':'ASSERTED',status:input.status||'OPEN',authority:effective,sources,evidence:arr(input.evidence).map(clone),lineage:clone(input.lineage||{parents:[],transformation:'direct'}),contradicts:strings(input.contradicts),supports:strings(input.supports),createdAt:input.createdAt||new Date().toISOString(),validFrom:input.validFrom||null,validUntil:input.validUntil||null,metadata:clone(input.metadata||{})};
   }
   function isFresh(claim,now,maxAgeMs){if(!maxAgeMs)return true;const stamps=arr(claim&&claim.sources).map(s=>s.observedAt||s.capturedAt).filter(Boolean).map(Date.parse).filter(Number.isFinite);if(!stamps.length)return false;return (now||Date.now())-Math.max(...stamps)<=maxAgeMs;}
-  function independentSourceCount(claim){return new Set(arr(claim&&claim.sources).map(s=>s.independentGroup||s.id)).size;}
+  function independentSourceCount(claim){return new Set(arr(claim&&claim.sources).map(s=>s.independentGroup).filter(Boolean)).size;}
   function deriveClaim(input){input=input||{};const parents=arr(input.parents);if(!parents.length)throw new Error('derived claim requires parents');return createClaim({id:input.id,text:input.text,kind:input.kind||'INFERENCE',authority:weakest(parents.map(p=>p.authority)),sources:parents.flatMap(p=>arr(p.sources)),lineage:{parents:parents.map(p=>p.id),transformation:input.transformation||'derived',transformer:input.transformer||null},metadata:clone(input.metadata||{})});}
   function resolveClaim(claim,options){options=options||{};if(!claim)return {state:'UNKNOWN',reason:'missing-claim',authority:'NONE'};if(arr(claim.contradicts).length)return {state:'CONFLICT',reason:'explicit-conflict',authority:claim.authority};
     if(Number(options.minIndependentSources||0)>independentSourceCount(claim))return {state:'UNKNOWN',reason:'insufficient-independent-sources',authority:claim.authority};
@@ -72,7 +75,7 @@
     if(claim.kind==='ASSUMPTION')return {state:'ASSUMPTION',reason:'declared-assumption',authority:claim.authority};
     if(options.allowInference===false&&claim.kind==='INFERENCE')return {state:'UNKNOWN',reason:'inference-not-allowed',authority:claim.authority};
     if(!arr(claim.sources).length)return {state:'UNKNOWN',reason:'no-sources',authority:'NONE'};return {state:claim.kind,reason:'supported',authority:claim.authority};}
-  function mergeClaims(claims){const list=arr(claims);if(!list.length)return {state:'UNKNOWN',authority:'NONE',claims:[]};const texts=new Set(list.map(c=>String(c.text||'').trim().toLowerCase()));const conflict=texts.size>1||list.some(c=>arr(c.contradicts).length);return {state:conflict?'CONFLICT':list.some(c=>c.kind==='FACT')?'FACT':'CLAIM',authority:weakest(list.map(c=>c.authority)),claims:list.map(c=>c.id),sourceCount:new Set(list.flatMap(c=>arr(c.sources).map(s=>s.id))).size,independentSourceCount:new Set(list.flatMap(c=>arr(c.sources).map(s=>s.independentGroup||s.id))).size};}
+  function mergeClaims(claims){const list=arr(claims);if(!list.length)return {state:'UNKNOWN',authority:'NONE',claims:[]};const ids=new Set(list.map(c=>c.id)),same=new Set(list.map(c=>String(c.text||'').trim().toLowerCase())).size===1,conflict=list.some(c=>c.kind==='CONFLICT'||arr(c.contradicts).some(x=>ids.has(x)));return {state:conflict?'CONFLICT':same&&list.some(c=>c.kind==='FACT')?'FACT':'CLAIM',authority:weakest(list.map(c=>c.authority)),claims:list.map(c=>c.id),sourceCount:new Set(list.flatMap(c=>arr(c.sources).map(sourceKey))).size,independentSourceCount:new Set(list.flatMap(c=>arr(c.sources).map(s=>s.independentGroup).filter(Boolean))).size};}
   function grantsAuthority(){return false;}
 
   const DEFAULT_SHARES=Object.freeze({instructions:.12,task:.16,evidence:.22,project:.18,memory:.14,tools:.10,conversation:.08});
@@ -83,7 +86,7 @@
     eligible.sort((a,b)=>contextScore(b)-contextScore(a)||(Number(b.recency||0)-Number(a.recency||0))||String(a.id||'').localeCompare(String(b.id||'')));
     for(const item of eligible){const required=item.pinned||item.required,catFits=usage[item.category]+item.tokens<=(budgets[item.category]||0),fits=total+item.tokens<=available;if(fits&&(required||catFits)){selected.push(item);usage[item.category]+=item.tokens;total+=item.tokens;if(required&&!catFits)warnings.push('category-overflow:'+item.category+':'+(item.id||'item'));}else evicted.push({...item,evictionReason:fits?'category-budget':'total-budget'});}const missing=eligible.filter(x=>(x.required||x.pinned)&&!selected.some(s=>s.id===x.id));if(missing.length)warnings.push('required-items-evicted:'+missing.map(x=>x.id||'item').join(','));return {selected,evicted,tokensUsed:total,tokenBudget:available,categoryUsage:usage,categoryBudgets:budgets,warnings};}
 
-  function selectTier(signals){signals=signals||{};const battery=signals.batteryLevel==null?1:clamp(signals.batteryLevel,0,1),mem=Number(signals.deviceMemoryGb||0),cores=Number(signals.cores||0),pressure=String(signals.memoryPressure||'normal'),thermal=String(signals.thermal||'normal');if(pressure==='critical'||thermal==='critical'||battery<=.1)return 'lite';if(signals.reducedMotion||pressure==='high'||thermal==='high'||signals.hidden||Number(signals.recentLongTasks||0)>=3||(mem&&mem<=2)||(cores&&cores<=2)||battery<=.2)return 'lite';if(mem>=6&&cores>=6&&battery>.35&&!Number(signals.recentLongTasks||0))return 'full';return 'balanced';}
+  function selectTier(signals){signals=signals||{};const battery=signals.batteryLevel==null?1:clamp(signals.batteryLevel,0,1),mem=Number(signals.deviceMemoryGb||0),cores=Number(signals.cores||0),pressure=String(signals.memoryPressure||'normal'),thermal=String(signals.thermal||'normal');if(pressure==='critical'||thermal==='critical'||battery<=.1)return 'lite';if(pressure==='high'||thermal==='high'||signals.hidden||Number(signals.recentLongTasks||0)>=3||(mem&&mem<=2)||(cores&&cores<=2)||battery<=.2)return 'lite';if(mem>=6&&cores>=6&&battery>.35&&!Number(signals.recentLongTasks||0))return 'full';return 'balanced';}
   function createBudget(input){input=input||{};const tier=TIERS[input.tier]?input.tier:'balanced',p=TIERS[tier],bc=positive(input.baseContextTokens,16000),bm=positive(input.baseMemoryMb,256),bt=positive(input.baseToolCalls,12);return {tier,baseContextTokens:bc,baseMemoryMb:bm,baseToolCalls:bt,contextTokens:Math.max(1024,Math.floor(bc*p.contextScale)),memoryMb:Math.max(64,Math.floor(bm*p.contextScale)),toolCalls:Math.max(1,Math.floor(bt*(tier==='full'?1:tier==='balanced'?.75:.5))),concurrency:p.concurrency,animationScale:p.animationScale,allowBackground:p.allowBackground,verificationDepth:p.verificationDepth};}
   function adaptBudget(current,signals){current=current||{};return createBudget({tier:selectTier(signals),baseContextTokens:positive(current.baseContextTokens,16000),baseMemoryMb:positive(current.baseMemoryMb,256),baseToolCalls:positive(current.baseToolCalls,12)});}
 
