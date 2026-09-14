@@ -1,26 +1,28 @@
-# Seven AI — Project Memory Index
+# Seven AI — Project Memory
 
-This directory is Seven's durable project memory inside GitHub.
+This directory is Seven's durable project memory.
 
-## Read order
-1. `SEVEN_MASTER_PLAN.md` — current product direction and architecture
-2. `SEVEN_DECISIONS.md` — durable decisions and reasons
-3. `SEVEN_STATUS.md` — current implementation snapshot and immediate next work
-4. `SEVEN_CAPABILITIES_MAP.md` — canonical capability/tool inventory
-5. `SEVEN_ULTIMATE_POLISH_PLAN.md` — subsystem-by-subsystem refinement campaign
-6. `SEVEN_MAXIMUM_EFFORT_COMMAND_PROTOCOL.md` — execution contract used for substantial polish work
+## Canonical current layer
+Only the documents under `current/` are the default authoritative read set for present-day planning and execution:
+
+1. `current/MASTER_PLAN.md` — product direction and architecture
+2. `current/DECISIONS.md` — durable decisions and reasons
+3. `current/STATUS.md` — current implementation truth and next work
+4. `current/CAPABILITY_REGISTRY.md` — canonical capability/tool inventory
+5. `current/ULTIMATE_POLISH.md` — capability-by-capability refinement campaign
+6. `current/MAXIMUM_EFFORT_PROTOCOL.md` — execution contract for substantial work
+
+Start every substantial Seven task with `current/README.md` or the six files above.
+
+## Specialist evidence
+Other directories and files in `docs/project-memory/` preserve research, experiments, polishing generations, visual evidence, Tool Fabric work, challenge ledgers, freezes and historical reasoning. They remain valuable evidence but are **not automatically current authority**.
+
+See `LEGACY_AND_ARCHIVE_POLICY.md` for precedence rules.
 
 ## Current campaign checkpoint — 2026-09-14
-Seven has completed the architecture campaign for **Visual Intelligence & Design Fabric V1.4**. After successive V1.1–V1.4 adversarial improvements, the final two architecture challenge rounds returned `NO_MATERIAL_IMPROVEMENT`, establishing `ARCHITECTURE_SATURATED_2_OF_2` for the visual architecture itself.
+Visual Intelligence & Design Fabric V1.4 reached `ARCHITECTURE_SATURATED_2_OF_2` after two successive architecture challenges returned `NO_MATERIAL_IMPROVEMENT`. This freezes the architecture, not the final implemented design.
 
-Execution has now begun. The repository contains a Design Genome candidate portfolio, a Logo Tournament brief, and a 12-Mega-Wave visual implementation campaign. Architecture saturation is not implementation completion: the next work is to turn the frozen visual constitution into verified product surfaces and then challenge the implemented result again.
-
-The active visual direction now includes full UI, raster/vector imagery, logo/icon systems, motion, Arabic/RTL, accessibility, Android adaptive/themed icons, typed/generated UI, visual judges, human evidence, performance/privacy constraints, anti-copy/distinctiveness, Design Lint, regression evidence, and post-release visual health.
-
-## Operating rule
-When beginning substantial Seven work, read these files first. When a major roadmap, architecture, safety, branding, capability, polish-protocol or status decision changes, update the appropriate project-memory files in the same development cycle.
-
-Git history is part of the memory system: previous versions remain recoverable through commits.
+The implementation program now contains the Design Genome candidate portfolio, Logo Tournament and 12 visual Mega-Waves. Ultimate Polish has also expanded to capability-level passes across the canonical capability registry and Tool Fabric 2.0, with a cross-cutting Speeding & Smoothness System and independent second-pass challenge.
 
 ## Safety
-These documents are planning/coordination files only. They do not authorize deleting, replacing or merging protected application code. `seven_ai-final.html` remains protected unless explicitly approved.
+Project-memory documents coordinate work; they do not authorize destructive repository changes. `seven_ai-final.html` remains protected unless explicitly authorized. Historical evidence should be preserved unless a reviewed cleanup proves it redundant and safe to remove.
