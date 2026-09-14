@@ -1,6 +1,6 @@
 # Seven AI — Ultimate Polish Plan
 
-> **Purpose:** Authoritative refinement campaign for the complete capability inventory in `SEVEN_CAPABILITIES_MAP.md`. This plan defines how systems are audited, challenged, accelerated, evaluated and frozen. It is not a blanket implementation claim.
+> **Purpose:** Authoritative refinement campaign for the complete capability inventory in `CAPABILITY_REGISTRY.md`. This plan defines how systems are audited, challenged, accelerated, evaluated and frozen. It is not a blanket implementation claim.
 
 ## Prime Directive
 For every canonical Seven capability and every Tool Fabric 2.0 capability, ask:
@@ -10,7 +10,7 @@ For every canonical Seven capability and every Tool Fabric 2.0 capability, ask:
 Polish strengthens systems. It does not reward random feature accumulation.
 
 ## Campaign Upgrade — Capability-Level Polish
-The earlier 12 Boss Systems remain useful grouping containers, but they are no longer the smallest polish unit. **Every capability in the canonical capability map receives its own dedicated campaign.** Tool Fabric 2.0 Waves 01–19 and their resulting contracts/brokers/capabilities are included.
+The earlier 12 Boss Systems remain useful grouping containers, but they are no longer the smallest polish unit. **Every capability in `CAPABILITY_REGISTRY.md` receives its own dedicated campaign.** Tool Fabric 2.0 Waves 01–19 and their resulting contracts/brokers/capabilities are included.
 
 For each capability:
 1. reconstruct current architecture and implementation truth;
@@ -23,7 +23,7 @@ For each capability:
 8. define implementation/eval plan and freeze criteria;
 9. preserve results in GitHub Project Memory.
 
-Two passes mean **two opportunities to discover material improvement**, not two mandatory rewrites. Never add complexity merely to make Pass B look productive.
+Two passes mean two opportunities to discover material improvement, not two mandatory rewrites. Never add complexity merely to make Pass B look productive.
 
 ## The 12 Boss Systems
 1. Brain / Cognitive Runtime
@@ -42,57 +42,26 @@ Two passes mean **two opportunities to discover material improvement**, not two 
 Each Boss System aggregates capability-level evidence rather than replacing it.
 
 ## Required Capability Audit
-Every capability receives, where applicable:
-- architecture and implementation truth
-- user value and failure cost
-- dependencies/interfaces/invariants
-- current bottlenecks
-- correctness and epistemic risks
-- permission/side-effect/security risks
-- recovery/idempotency/cancellation behavior
-- Android RAM/CPU/battery/thermal/storage/network/startup cost
-- UX, Arabic/RTL, accessibility and Reduced Motion impact
-- competing designs and rejected alternatives
-- adversarial challenge
-- before/after evaluation
-- simplification opportunity
-- freeze/saturation criteria
+Every capability receives, where applicable: architecture and implementation truth; user value and failure cost; dependencies/interfaces/invariants; bottlenecks; correctness/epistemic/security risks; recovery/idempotency/cancellation behavior; Android resource cost; UX/RTL/accessibility impact; competing designs; adversarial challenge; before/after evaluation; simplification opportunities; and freeze/saturation criteria.
 
 ## Seven Speeding & Smoothness System ⚡
 This is a cross-cutting optimization layer applied to **every** capability rather than a final one-time performance pass.
 
-### Optimize
-- cold/warm startup and time-to-interactive
-- end-to-end request latency and time-to-first-useful-result
-- UI frame stability and input responsiveness
-- cancellation/stop responsiveness
-- scheduling and concurrency
-- redundant model/tool/retrieval/verification work
-- context compilation overhead
-- memory allocation/retention and pressure
-- cache correctness, locality and invalidation cost
-- progressive rendering and progressive results
-- lazy/on-demand feature loading
-- network round trips and payload size
-- background activity and wakeups
-- storage reads/writes and migration cost
-- thermal/battery pressure
-- perceived responsiveness without fake completion states
+Optimize cold/warm startup, time-to-interactive, time-to-first-useful-result, end-to-end and tail latency, frame stability, input/cancellation responsiveness, scheduling/concurrency, redundant model/tool/retrieval/verification work, context compilation, memory pressure, cache correctness, progressive/lazy loading, network/storage cost, background work, thermal/battery pressure and truthful perceived responsiveness.
 
 ### Speed Laws
 - remove waste before removing capability;
-- cheap/direct path before expensive escalation when valid;
-- cache only when authority/freshness/identity boundaries remain correct;
+- use cheap/direct paths before expensive escalation when valid;
+- cache only with correct authority/freshness/identity boundaries;
 - parallelize only independent work;
 - cancel obsolete work aggressively when safe;
 - prioritize critical-path work;
 - defer optional heavy work;
-- use progressive evidence/results where it improves responsiveness without lying;
 - performance tiers may reduce decoration/optional depth but not required correctness or safety;
 - measure tail latency and jank, not only averages.
 
 ## Maximum Effort Execution
-Every substantial pass uses `SEVEN_MAXIMUM_EFFORT_COMMAND_PROTOCOL.md`. The command is generated for the exact capability and explicitly includes research, architecture, adversarial failure search, implementation reality, mobile cost, speed/smoothness, verification, simplification and preservation.
+Every substantial pass uses `MAXIMUM_EFFORT_PROTOCOL.md`. The command is generated for the exact capability and explicitly includes research, architecture, adversarial failure search, implementation reality, mobile cost, speed/smoothness, verification, simplification and preservation.
 
 The protocol itself can be polished when a material weakness is discovered. It is not a magic immutable prompt.
 
