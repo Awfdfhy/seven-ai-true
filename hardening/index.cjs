@@ -11,5 +11,5 @@ module.exports = Object.freeze({
   sideEffectLedger: require("./side-effect-ledger.cjs"),
   projectFileFabric: require("./project-file-fabric-passb.cjs"),
   researchFabric: require("./research-fabric.cjs"),
-  visionFabric: require("./vision-fabric.cjs")
+  visionFabric: require("./vision-fabric-passb.cjs")
 });
