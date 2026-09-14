@@ -5,6 +5,7 @@ const crypto = require("crypto");
 const LANES = Object.freeze(["RUNTIME_ADAPTATION", "ENGINEERING_EVOLUTION", "META_EVOLUTION", "MODEL_TRAINING"]);
 const SCOPES = Object.freeze(["DEVICE_LOCAL", "USER_LOCAL", "PROJECT_LOCAL", "CAMPAIGN_LOCAL", "PRODUCT", "GLOBAL"]);
 const DECISIONS = Object.freeze(["REJECT", "EXPERIMENT_ONLY", "REQUIRE_APPROVAL", "AUTO_ELIGIBLE"]);
+const BUDGET_FIELDS = Object.freeze(["modelCalls", "toolCalls", "tokens", "wallTimeMs", "networkBytes"]);
 
 function canonicalize(value) {
   if (Array.isArray(value)) return value.map(canonicalize);
@@ -98,7 +99,35 @@ function pathwayReceipt(input = {}) {
   return deepFreeze({ complete: missing.length === 0, missing });
 }
 
-function promotionDecision({ target, campaign, candidate = {}, judge = {}, assistance = {}, policy = {} } = {}) {
+function roleIsolationReceipt({ builder = {}, judge = {}, promotion = {} } = {}) {
+  const identities = [builder.identity, judge.identity, promotion.identity].map((v) => String(v || ""));
+  const reasons = [];
+  if (identities.some((v) => !v)) reasons.push("role_identity_missing");
+  if (new Set(identities.filter(Boolean)).size !== identities.filter(Boolean).length) reasons.push("role_identity_overlap");
+  if (builder.contextHash && judge.contextHash && String(builder.contextHash) === String(judge.contextHash)) reasons.push("builder_judge_context_shared");
+  if (builder.memoryHash && judge.memoryHash && String(builder.memoryHash) === String(judge.memoryHash)) reasons.push("builder_judge_memory_shared");
+  return deepFreeze({ isolated: reasons.length === 0, reasons, identities });
+}
+
+function matchedBudgetReceipt({ baseline = {}, candidate = {}, tolerance = 0 } = {}) {
+  const reasons = [];
+  const delta = {};
+  const slack = Number(tolerance || 0);
+  if (!Number.isFinite(slack) || slack < 0) throw new Error("budget tolerance must be non-negative");
+  for (const field of BUDGET_FIELDS) {
+    const b = Number(baseline[field]);
+    const c = Number(candidate[field]);
+    if (!Number.isFinite(b) || b < 0 || !Number.isFinite(c) || c < 0) {
+      reasons.push(`budget_missing_or_invalid:${field}`);
+      continue;
+    }
+    delta[field] = c - b;
+    if (c > b * (1 + slack)) reasons.push(`candidate_budget_exceeds_baseline:${field}`);
+  }
+  return deepFreeze({ matched: reasons.length === 0, reasons, delta, tolerance: slack });
+}
+
+function promotionDecision({ target, campaign, candidate = {}, judge = {}, assistance = {}, pathway = {}, isolation = {}, budget = {}, policy = {} } = {}) {
   const reasons = [];
   if (!target || !campaign) reasons.push("missing_governance_identity");
   else {
@@ -112,11 +141,14 @@ function promotionDecision({ target, campaign, candidate = {}, judge = {}, assis
   if (judge.holdoutPassed !== true) reasons.push("holdout_not_passed");
   if (judge.forbiddenRegression === true) reasons.push("forbidden_regression");
   if (judge.rollbackReady !== true) reasons.push("rollback_not_ready");
+  if (isolation.isolated !== true) reasons.push(...(isolation.reasons || ["role_isolation_unproven"]));
+  if (budget.matched !== true) reasons.push(...(budget.reasons || ["budget_fairness_unproven"]));
+  if (candidate.claimsLearning === true && pathway.complete !== true) reasons.push("learning_pathway_unproven");
   if (assistance.autonomousEvidence === false && candidate.claimsAutonomous === true) reasons.push("assistance_misattributed");
   if (candidate.scope && !SCOPES.includes(candidate.scope)) reasons.push("invalid_candidate_scope");
   if (candidate.scope && target && candidate.scope !== target.scope && policy.allowScopePromotion !== true) reasons.push("scope_escalation_not_authorized");
 
-  if (reasons.length) return deepFreeze({ decision: "REJECT", reasons });
+  if (reasons.length) return deepFreeze({ decision: "REJECT", reasons: [...new Set(reasons)] });
   const requested = String(policy.decision || "REQUIRE_APPROVAL");
   const decision = DECISIONS.includes(requested) ? requested : "REQUIRE_APPROVAL";
   return deepFreeze({ decision, reasons: [] });
@@ -126,6 +158,7 @@ module.exports = {
   LANES,
   SCOPES,
   DECISIONS,
+  BUDGET_FIELDS,
   canonicalize,
   deepFreeze,
   stableHash,
@@ -134,5 +167,7 @@ module.exports = {
   assertCampaignAdvance,
   assessAssistance,
   pathwayReceipt,
+  roleIsolationReceipt,
+  matchedBudgetReceipt,
   promotionDecision
 };
