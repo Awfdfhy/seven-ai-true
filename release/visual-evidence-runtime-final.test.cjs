@@ -1,0 +1,11 @@
+"use strict";
+const assert=require("assert/strict");
+const v=require("./visual-evidence-runtime-final.cjs");
+let n=0;const pass=(name,fn)=>{fn();n++;console.log("PASS",name)};
+pass("subpixel 44px rounding remains PASS",()=>assert.equal(v.auditTouchTargets([{selector:"#input",width:350,height:43.9,visible:true}]).status,"PASS"));
+pass("materially subpreferred target still WARNs",()=>assert.equal(v.auditTouchTargets([{selector:"#input",width:350,height:43.5,visible:true}]).status,"WARN"));
+pass("materially sub-hard target still FAILs",()=>assert.equal(v.auditTouchTargets([{selector:"#bad",width:23.5,height:44,visible:true}]).status,"FAIL"));
+pass("measurement tolerance is bounded",()=>assert.equal(v.auditTouchTargets([{selector:"#x",width:43.1,height:43.1,visible:true}],{measurementTolerance:99}).status,"PASS"));
+const a=v.auditTouchTargets([{selector:"#x",width:44,height:44,visible:true}]);
+pass("final touch audit seal verifies in PassB evidence validator",()=>assert.equal(v.verifyAudit(a),true));
+console.log(`visual evidence final guard: PASS (${n} assertions)`);
