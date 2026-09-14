@@ -164,24 +164,30 @@ function createMission({ id, goal, tasks = [], budget = {} } = {}) {
 
 function nextMissionTasks(mission) {
   const completed = new Set(mission.tasks.filter(task => task.status === "DONE").map(task => task.id));
-  const spent = mission.tasks.filter(task => task.status === "DONE").reduce((sum, task) => sum + task.cost, 0);
-  const available = Math.max(0, mission.budget.maxCost - spent);
-  return mission.tasks.filter(task => task.status === "PENDING" && task.cost <= available && task.dependsOn.every(dep => completed.has(dep)));
+  const committed = mission.tasks.filter(task => task.status === "DONE" || task.status === "RUNNING").reduce((sum, task) => sum + task.cost, 0);
+  let available = Math.max(0, mission.budget.maxCost - committed);
+  const ready = [];
+  for (const task of mission.tasks) {
+    if (task.status !== "PENDING" || !task.dependsOn.every(dep => completed.has(dep)) || task.cost > available) continue;
+    ready.push(task);
+    available -= task.cost;
+  }
+  return ready;
 }
 
 function updateMissionTask(mission, taskId, status) {
   const allowed = new Set(["PENDING", "RUNNING", "DONE", "FAILED", "BLOCKED"]);
   if (!allowed.has(status)) throw new Error("invalid mission status");
-  let found = false;
-  const tasks = mission.tasks.map(task => {
-    if (task.id !== taskId) return task;
-    found = true;
-    if (status === "DONE" && task.dependsOn.some(dep => mission.tasks.find(t => t.id === dep).status !== "DONE")) {
-      throw new Error("cannot complete task before dependencies");
-    }
-    return Object.freeze({ ...task, status });
-  });
-  if (!found) throw new Error("mission task not found");
+  const current = mission.tasks.find(task => task.id === taskId);
+  if (!current) throw new Error("mission task not found");
+  if ((status === "RUNNING" || status === "DONE") && current.dependsOn.some(dep => mission.tasks.find(t => t.id === dep).status !== "DONE")) {
+    throw new Error("cannot start or complete task before dependencies");
+  }
+  if (status === "RUNNING" || status === "DONE") {
+    const committed = mission.tasks.filter(task => task.id !== taskId && (task.status === "DONE" || task.status === "RUNNING")).reduce((sum, task) => sum + task.cost, 0);
+    if (committed + current.cost > mission.budget.maxCost) throw new Error("mission budget exceeded");
+  }
+  const tasks = mission.tasks.map(task => task.id === taskId ? Object.freeze({ ...task, status }) : task);
   return Object.freeze({ ...mission, tasks: Object.freeze(tasks) });
 }
 
