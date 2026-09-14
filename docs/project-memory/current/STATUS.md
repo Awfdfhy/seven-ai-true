@@ -4,24 +4,43 @@
 `ultimate-polish-v1`
 
 ## Ultimate Polish Execution
-**Counter:** `1 / ~20–25`  
-**Mega-Wave 01:** Speed + Smoothness Foundation  
-**Result:** `PASS_FOUNDATION` ✅
+**Counter:** `2 / ~20–25`  
+**Mega-Wave 01:** Speed + Smoothness Foundation → `PASS_FOUNDATION` ✅  
+**Mega-Wave 02:** Cognitive Runtime + Truth/Epistemic Foundation → `PASS_FOUNDATION` ✅
 
-Wave 01 converted the cross-cutting performance direction from plan-only language into stronger executable release behavior and a dedicated verification gate. It fixed the coupling between Reduced Motion and compute tier selection in the primary release Performance Runtime, added pressure-aware tier recommendation and conservative recovery/hysteresis, preserved bounded telemetry and lightweight scheduling, added 11 direct Performance Runtime assertions, and changed the master test runner to auto-discover release test suites.
+Wave 02 strengthened real executable cognitive/truth behavior rather than only changing architecture documents. It repaired Task Contract risk-vocabulary integration, authority fail-closed behavior, evidence independence, false-conflict semantics, source deduplication, explained non-success task states, Control Runtime tier parity and mission budget/dependency enforcement.
 
-A second Simplifier Duel then reduced the strengthened Performance Runtime to `4368` bytes, smaller than the pre-wave `4487`-byte implementation while retaining the new behavior and all direct gates.
+Maximum Effort Pass B found and repaired a separate planning flaw: multiple individually affordable ready tasks could collectively exceed the mission budget. DONE/RUNNING work now reserves budget, the ready frontier is cumulative, dependent tasks cannot start early, and concurrent starts cannot exceed the budget.
 
-Final implementation GitHub Actions run `34847429061` at commit `57fe639cdedc066e73bda64571fc68c38426c4f7` passed the full workflow: `39` suites, Performance Runtime `11/11`, runtime smoke `28` assertions, static audit `98946` startup bytes with `0` warnings, release verification, six UI screenshots and artifact upload.
+Final implementation GitHub Actions run `34853584115` at commit `bf8c66e0ca9f7e2363dde7827ff530a5e3cd3d85` passed the full workflow: `40` suites, Cognitive Boost `23` assertions, Cognitive Gate `7`, Cognitive Planner Polish `4`, Runtime Smoke `28`, Performance Runtime `11`, control/execution integration, static audit, release verification, six UI screenshots and artifact upload. Static audit remained inside the unchanged startup cap at `99553 / 100000` bytes with `0 warnings`.
 
-This is foundation PASS only. Real-phone RAM/battery/thermal/frame evidence, project-wide p95/p99 latency/jank baselines, native resource-signal integration and standalone Control Runtime tier-policy parity remain open and cannot be relabeled as release saturation.
+This remains a foundation PASS. Full Cognitive Runtime 3.0 execution classes, structured WAITING/CANCELLING/RECOVERING, uncertain-side-effect cancellation reconciliation, the full provenance-locked ClaimGraph and correction/retraction propagation remain explicit future implementation work.
 
-Detailed ledger: `ULTIMATE_POLISH_PROGRESS.md`.
+Detailed evidence ledger: `ULTIMATE_POLISH_PROGRESS.md`.
 
 ## Protected Source
 `seven_ai-final.html`
 Known integrity reference: bytes `658133`; Git blob SHA `3e8dfa8e7da7124e16504140eb9631c10cabf053`.
-Do not modify this protected source unless explicitly authorized. Wave 01 left it unchanged and CI source-integrity verification passed.
+Do not modify this protected source unless explicitly authorized. Wave 02 left it unchanged and CI source-integrity verification passed.
+
+## Cognitive Runtime + Truth/Epistemic
+**Status:** Wave 02 foundation implemented and verified; architecture target remains broader than current runtime.
+
+Verified behavior now includes:
+- string and numeric risk normalization so `high` / `critical` cannot collapse to zero-risk compute;
+- selective escalation with mandatory verification depth retained under constrained resource tiers;
+- fail-closed authority-sensitive decisions when trust provenance is missing or externally tainted;
+- dependency-aware, cumulatively budgeted mission frontier with RUNNING work reserving budget;
+- reasons required for `BLOCKED`, `INCONCLUSIVE`, `FAILED` and `CANCELLED` Task Contract transitions;
+- explicit source independence rather than treating every source ID as independent;
+- duplicate source/version evidence deduplication;
+- different wording no longer treated as automatic contradiction;
+- explicit contradiction relationships still produce conflict;
+- authority/lineage cannot increase through derivation;
+- browser Control Runtime parity for the relevant truth/task/resource laws;
+- Reduced Motion is presentation state, not weak-compute evidence, across primary and fallback tier logic.
+
+Open work remains intentionally separated instead of being called complete: full execution-class/durability policy, no-progress loop control, uncertain side-effect reconciliation, full ClaimGraph/typed evidence/correction model and broader live/device evidence.
 
 ## General Improvement / Polishing Governance
 Seven General Improvement Engine remains the reusable improvement substrate. Ultimate Polish is capability-level, evidence-driven and governed by the Context-Adaptive Maximum Effort Command Protocol plus the Maximum Work-Per-Message Execution Law.
@@ -57,7 +76,7 @@ Goal: make Seven recognizable without relying on the logo and avoid becoming a s
 Candidates must survive tiny sizes, monochrome, Day/Night, Android masks, themed icons, splash/motion, distinctiveness and implementation/resource cost. Earlier ribbon-logo direction is historical/candidate input rather than guaranteed final identity.
 
 ## Visual Implementation Mega-Campaign
-**Status:** architecture/implementation campaign remains active but is now sequenced inside the broader Ultimate Polish dependency order.
+**Status:** architecture/implementation campaign remains active but is sequenced inside the broader Ultimate Polish dependency order.
 
 12 Visual Mega-Waves remain defined: Visual Evidence Runtime; Design Genome Runtime; Logo & Identity Tournament; Global UI; specialist Coding/Research/RPG workspaces; typed/generated UI; Motion; Arabic/RTL; accessibility; mobile performance; Android certification; Visual Red Team + implementation saturation.
 
@@ -65,18 +84,19 @@ Candidates must survive tiny sizes, monochrome, Day/Night, Android masks, themed
 **Architecture/research expansion:** Waves 01–19 are integrated into the canonical capability map, including Canonical Tool Contract + SchemaGuard, MCP/ToolInterop direction, SearchBroker and related broker/capability infrastructure. This remains inventory/architecture truth, not a blanket runtime-completion claim.
 
 ## Speeding & Smoothness System
-**Status:** Wave 01 foundation implemented and verified; full cross-capability campaign remains open.
+**Status:** Wave 01 foundation implemented and verified; Wave 02 extended its accessibility/compute separation into Control Runtime and Resource Governor fallback paths.
 
-Verified primary release foundation now includes adaptive lite/balanced/full behavior, pressure-aware downgrade, conservative upgrade hysteresis, automatic hidden-state reduction, keyed frame batching, cancellable idle work, cooperative yielding, bounded marks/long-task history and direct CI assertions. Reduced Motion is no longer treated by the primary Performance Runtime as evidence that device compute capacity is low.
+Verified primary release foundation includes adaptive lite/balanced/full behavior, pressure-aware downgrade, conservative upgrade hysteresis, automatic hidden-state reduction, keyed frame batching, cancellable idle work, cooperative yielding, bounded marks/long-task history and direct CI assertions. Reduced Motion is not treated as evidence of low device compute capacity.
 
-Still required: Control Runtime fallback parity review, capability-level latency/jank/resource gates, real Android device evidence, native resource-signal bridges where useful and integration with every specialist workflow.
+Still required: capability-level latency/jank/resource gates, real Android device evidence, native resource-signal bridges where useful and integration with every specialist workflow.
 
 ## RPG / Real Works
 The maximum-canon-fidelity direction remains active: provenance, timeline/event graph, character/world/knowledge state, invariants, safe player insertion, Scene Contracts, CANON/DIVERGENCE/WHAT-IF and `CANON_GAP`. Titles/World Linguistic Engine remains part of the capability map.
 
 ## Explicitly Partial / Unfinished
-- remaining Ultimate Polish Mega-Waves after `1 / ~20–25`;
-- complete Cognitive Runtime + Truth/Epistemic polish;
+- remaining Ultimate Polish Mega-Waves after `2 / ~20–25`;
+- full Cognitive Runtime 3.0 / Epistemic Fabric 3.0 implementation beyond the verified Wave 02 foundation;
+- complete Memory Fabric + Context Workspace polish;
 - complete capability-by-capability two-pass campaign;
 - final visual implementation of all 12 Visual Mega-Waves;
 - final Design Genome selection and token migration;
@@ -103,7 +123,7 @@ The maximum-canon-fidelity direction remains active: provenance, timeline/event 
 - human/visual confidence cannot substitute for executable evidence where executable evidence is required.
 
 ## Immediate Next Work
-**Mega-Wave 02:** Cognitive Runtime + Truth/Epistemic Foundation. Audit and strengthen Task Contract, execution graph/state machine, planning/orchestration, capability/risk routing, BLOCKED/FAIL/INCONCLUSIVE semantics, cancellation/recovery boundaries, authority/lineage, standalone tier-policy parity and adaptive budget interaction. Then continue automatically through Memory, Context, Models, Tool Fabric and Verification/Evals in dependency-aware order.
+**Mega-Wave 03:** Memory Fabric + Context Workspace Foundation. Strengthen authoritative memory events and derived views, lineage/permission separation, retrieval/index correctness, compaction/reconstruction, pin/compress/expand/evict behavior, category budgets, duplicate/stale handling and long-lived bounded storage. Integrate Memory ↔ Context while preserving Wave 02 truth/authority laws, then continue dependency-aware into Models, Tool Fabric and Verification/Evals.
 
 ## Development Philosophy
 Use the largest safe coherent passes and strong final verification. Prefer measurable simplification and speed over decorative complexity. Stop when evidence says there is no material improvement rather than manufacturing progress.
