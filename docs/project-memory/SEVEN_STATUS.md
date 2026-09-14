@@ -6,105 +6,89 @@
 ## Protected Source
 `seven_ai-final.html`
 Known integrity reference: bytes `658133`; Git blob SHA `3e8dfa8e7da7124e16504140eb9631c10cabf053`.
-Architecture-only work must not modify this file unless explicitly authorized.
+Do not modify this protected source unless explicitly authorized.
 
-## General Improvement Governance
-**Seven General Improvement Engine 1.0** is the reusable improvement substrate.
+## Current Repository Checkpoint
+Before this documentation synchronization, the visual campaign HEAD was `8dee3c498b328bcbba46d5bf8e17a00c87311be7` (`visual: add visual implementation mega-campaign waves`). GitHub Actions for that checkpoint was reported successful. Documentation synchronization commits follow it and therefore supersede that SHA as branch HEAD without changing the protected application source.
 
-Core records:
-- `docs/project-memory/SEVEN_GENERAL_IMPROVEMENT_ENGINE_V1.md`
-- `docs/project-memory/SEVEN_GENERAL_IMPROVEMENT_ENGINE_RECURSIVE_10X_PROTOCOL.md`
-- `docs/project-memory/SEVEN_QUALITY_OPTIMIZATION_V2.md`
+## General Improvement / Polishing Governance
+Seven General Improvement Engine remains the reusable improvement substrate. The current Ultimate Polish direction is capability-level, evidence-driven and governed by the Context-Adaptive Maximum Effort Command Protocol.
 
-Core laws:
-- improvement must be demonstrated, not named;
-- recursive campaigns allow up to 10 promoted generations, never ten mandatory promotions;
-- `200% Materiality` means a demonstrated step-change class; literal >=2x applies only to valid precommitted ratio metrics;
-- each promoted generation receives a harder valid evaluation environment;
-- Builder cannot weaken critical gates, expose future hidden evaluation data, rewrite target truth, grant itself authority or self-promote;
-- evaluator integrity, transfer, causal attribution, reproducibility, mobile cost, recovery and rollback are first-class evidence.
+Rules now include:
+- every canonical capability, including Tool Fabric 2.0 additions, receives dedicated Ultimate Polish;
+- default target is two independent high-strength polish/challenge passes per capability;
+- the second pass may return `NO_MATERIAL_IMPROVEMENT` and must not manufacture complexity;
+- material constitution/evaluation changes reset relevant saturation evidence;
+- speed/smoothness optimization is cross-cutting and may remove waste but not proof, safety or correctness;
+- architecture, runtime implementation, evaluation evidence and release certification are distinct claims.
 
-## Latest Polishing Successor Candidate
-**Seven Polishing V5.4 — Adversarial Reality Gauntlet** is the newest architecture candidate.
+## Visual Intelligence & Design Fabric
+**Version:** V1.4
+**Architecture status:** `ARCHITECTURE_SATURATED_2_OF_2` ✅
 
-Latest records:
-- `docs/project-memory/SEVEN_POLISHING_V5_4_ADVERSARIAL_REALITY_GAUNTLET.md`
-- `docs/project-memory/SEVEN_POLISHING_V5_4_BRUTAL_CHALLENGE_LEDGER.md`
+V1.1–V1.4 adversarial refinement closed material gaps. The last two architecture challenges both returned `NO_MATERIAL_IMPROVEMENT`.
 
-Parent records include V5, V5.1, V5.2 and V5.3 Formal Promotion Constitution.
+Coverage now includes full UI, images, raster/vector, logo/icon, motion, Arabic/RTL, accessibility, Android adaptive/themed icons, typed/generated UI, visual judges, human evidence, performance, privacy, anti-copy/distinctiveness, Design Lint, regression baselines/cemetery and post-release visual health.
 
-V5.4 adds:
-- evidence triangulation across executable/observable/independent/transfer/deployment channels;
-- SearchExposureManifest and contamination-aware benchmark isolation for research-capable agents;
-- observable action/state evidence outranking persuasive reasoning narratives;
-- counterfactual attribution and ablation checks;
-- metamorphic/invariance tests;
-- dependency shock tests for provider/tool/network/cache/restart/schema/resource changes where valid;
-- tail-risk/failure-density gates rather than mean-only success;
-- release-like constrained-device resource reality gates for mobile claims;
-- explicit ComplexityDelta and mandatory Simplifier Duel;
-- Evaluator Independence Graph so correlated judges cannot masquerade as independent proof;
-- judge robustness probes and evaluator quarantine;
-- precommitted sequential statistical discipline for stochastic comparisons;
-- freshness/drift invalidation through ProofGraph;
-- safe no-side-effect shadow evidence where available;
-- recovery/reversibility promotion gates;
-- cross-generation protection ratchet;
-- material hostility escalation rather than cosmetic test growth;
-- saturation reset after any material constitutional change.
+**Important:** this freezes the visual architecture, not the final implemented design.
 
-### Current truth
-V5.3 was **NOT SATURATED**. The V5.4 challenge found 17 material architecture gaps. V5.4 is `ARCHITECTURE_CANDIDATE`, saturation counter `0/2`.
+## Design Genome Runtime
+**Status:** candidate portfolio started.
 
-V5.4 is stronger by architecture review, but this does not prove its runtime, benchmarks, evaluator graph, isolation controls, statistical harness or mobile/device evaluation infrastructure are implemented.
+Goal: make Seven recognizable without relying on the logo and avoid becoming a skin of ChatGPT, Claude or Material. Current candidate vocabulary includes Orbit Thread, Seven Cut, Evidence Rail, Focus Halo and State Node. Candidates remain subject to implementation and evidence rather than automatic adoption.
 
-**V4.4 remains the active proven polishing governance** until a V5.x successor earns a valid validation/freeze.
+## Logo & Identity Tournament
+**Status:** tournament brief created; final winner not yet frozen.
 
-## Self-Evolution Integration
-Self-Evolution can use the General Improvement Engine and current Polishing successor candidates while preserving separation of powers: Builder builds; Challenger/Judge evaluates under locked evidence rules; Promotion Plane alone accepts, seals lineage and binds rollback. Heavy recursive evolution is not an always-on Android process.
+Candidates must survive tiny sizes, monochrome, Day/Night, Android masks, themed icons, splash/motion, distinctiveness and implementation/resource cost. Earlier ribbon-logo direction is historical/candidate input rather than guaranteed final identity.
 
-## Debugging & Repair Fabric
-**Seven Debugging & Repair Fabric 1.1** remains integrated. Repair Burst groups related failures and requires invalidated evidence to be rerun before broad promotion claims.
+## Visual Implementation Mega-Campaign
+**Status:** started.
 
-## Capability Roadmap
-Capabilities 01–15 retain their architecture freezes and implementation truth. Priority #16 Search/Retrieval, #17 Knowledge, #18 Vision and #20 Real Works remain open. #19 RPG, #21 Titles and #22 Projects remain historical architecture candidates requiring revalidation where newer governance materially applies.
+12 Mega-Waves are defined. Immediate sequence:
+1. Visual Evidence Runtime: scenario matrix, touch targets, contrast, structural geometry, baseline registry, evidence capture.
+2. Design Genome Runtime: converge token systems and add Design Lint.
+3. Logo & Identity Tournament: generate/test/eliminate candidate families.
+4–12. Global UI; Coding/Research/RPG; typed/generated UI; Motion; Arabic/RTL; accessibility; mobile performance; Android certification; Visual Red Team and final implementation saturation.
 
-Next numbered product Mega-Campaign remains **#23 Sessions / Persistence + #24 Recovery / Integrity + relevant #41 Import/Export interactions** after the current improvement-governance campaign closes.
+## Tool Fabric 2.0
+**Architecture/research expansion:** Waves 01–19 integrated into the canonical capability map, including Canonical Tool Contract + SchemaGuard, MCP/ToolInterop direction, SearchBroker and related broker/capability infrastructure. This is an inventory/architecture truth, not a blanket runtime-completion claim.
+
+## Speeding & Smoothness System
+**Status:** added to the Ultimate Polish plan; implementation/evaluation remains campaign work.
+
+Targets include end-to-end latency, startup, frame pacing, scheduling, cancellation responsiveness, memory pressure, redundant computation, caching, lazy/progressive loading, rendering cost, network cost and unnecessary background activity. Mobile resource reality remains mandatory.
+
+## RPG / Real Works
+The maximum-canon-fidelity direction remains active: provenance, timeline/event graph, character/world/knowledge state, invariants, safe player insertion, Scene Contracts, CANON/DIVERGENCE/WHAT-IF and `CANON_GAP`. Titles/World Linguistic Engine remains part of the capability map.
+
+## Explicitly Partial / Unfinished
+- final visual implementation of all 12 Mega-Waves
+- final Design Genome selection and token migration
+- final logo/icon winner and Android icon certification
+- implementation-level Visual Red Team + 2/2 saturation
+- capability-by-capability double Ultimate Polish campaign
+- Speeding & Smoothness runtime/evals across all capabilities
+- General Improvement Engine runtime/orchestrator and promotion infrastructure
+- executable evaluator-independence/statistical/mobile reality infrastructure where still architectural
+- final Search/Knowledge/Vision/Provider/Android integrations
+- final release certification
 
 ## Major Laws
 - authoritative and derived state are separate
-- verification precedes claims of success
+- verification precedes success claims
 - uncertainty remains explicit
 - expensive intelligence is selective
 - mobile resource discipline is mandatory
 - automated repair/evolution cannot self-promote
 - speed removes waste, never required proof
-- no universal percentage is fabricated for non-ratio quality
 - final-output success cannot erase invalid process/state evidence
-- public benchmark success cannot substitute for fresh hidden evidence
-- claims cannot exceed supporting oracle/evidence strength
-- benchmark-local gains cannot be called deployment or release proof
-- moving the evaluation constitution resets saturation evidence
-- reasoning narratives are evidence candidates, not ground truth
-- correlated evaluators do not count as independent proofs
-- average gains cannot compensate for critical tail failures
-- later recursive generations inherit valid regression protections
+- architecture saturation cannot be relabeled implementation completion
+- average gains cannot hide critical tail failures
+- human/visual confidence cannot substitute for executable evidence where executable evidence is required
 
-## Explicitly Partial / Unfinished
-- General Improvement Engine runtime/orchestrator
-- recursive candidate generator and Promotion Gate runtime
-- hidden evaluation manager and evaluator-integrity harness
-- Polishing V5.4 further challenge / validation / freeze campaign
-- trajectory/state evidence runtime and repeated-trial evaluator
-- contamination/SearchExposure tracking runtime
-- evaluator independence graph runtime
-- statistical comparison harness
-- Android deployment/resource coverage runner
-- executable benchmark/research/visual/motion infrastructure
-- Debugging & Repair runtime
-- V4.4 ProofGraph/cache/scheduler/strategy-tournament runtime
-- final Search/Knowledge/Vision/Provider/Android integrations
-- final product UI/brand/logo and Android release certification
+## Immediate Next Work
+Execute Visual Evidence Runtime, Design Genome Runtime and Logo & Identity Tournament in that order, then continue through the remaining visual Mega-Waves. In parallel/afterward, apply the strengthened Maximum Effort + two-pass Ultimate Polish + Speeding & Smoothness discipline to every canonical capability.
 
 ## Development Philosophy
-Use large coherent passes and strong final verification. The General Improvement Engine is the reusable improvement laboratory. V5.4 now treats apparent progress as a hypothesis that must survive contamination controls, causal attribution, invariance, dependency shocks, independent judging, tail-risk analysis, resource reality and simplification pressure. Stop rather than manufacture progress.
+Use large coherent passes and strong final verification. Prefer measurable simplification and speed over decorative complexity. Stop when evidence says there is no material improvement rather than manufacturing progress.
