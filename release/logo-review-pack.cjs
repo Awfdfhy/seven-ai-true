@@ -10,6 +10,7 @@ const handoffRuntime=require("./logo-review-handoff.cjs");
 const VERSION="1.0.0";
 const VISUAL_COVERAGE=passb.requiredVisualCoverage();
 const VISUAL_STAGES=Object.freeze(Object.keys(VISUAL_COVERAGE));
+const PRODUCT_CONTEXTS=Object.freeze(["launcher","splash","sidebar","topbar","settings"]);
 const HASH64=/^[0-9a-f]{64}$/i;
 function req(v,n){const s=String(v??"").trim();if(!s)throw new Error(`${n} required`);return s}
 function seal(body){return Object.freeze({...body,seal:tournament.sha(body)})}
@@ -44,9 +45,10 @@ function createStageWorksheet(record,hostCandidate){
   }
   return Object.freeze({candidateId:record.candidate.id,candidateSeal:record.candidate.seal,hostCoverageSeal:hostCandidate.coverage.seal,stages,dimensions:Object.fromEntries(tournament.DIMENSIONS.map(d=>[d,null])),winnerEligible:false,authorityBoundary:{hostEvidenceProvesRenderIntegrityOnly:true,semanticRatingsStillIndependent:true,humanEvidenceOptional:true,noWinnerClaim:true}});
 }
+function hardGateFindingsTemplate(){return Object.freeze({silhouetteIdentifiable:null,tinySizes:Object.fromEntries(tournament.REQUIRED_SIZES.map(x=>[String(x),null])),adaptiveMasks:Object.fromEntries(tournament.REQUIRED_MASKS.map(x=>[x,null])),monochromeOneColorSurvives:null,dayNight:{sameCoreGeometry:null,lightBackgroundPass:null,darkBackgroundPass:null},productContexts:Object.fromEntries(PRODUCT_CONTEXTS.map(x=>[x,null])),simplifierSurvives:null})}
 function createSubmissionTemplate({handoff,worksheet}){
   if(!handoffRuntime.verifyReviewHandoff(handoff)||worksheet?.candidateSeal!==handoff.candidateSeal)throw new Error("verified handoff/worksheet required");
-  return Object.freeze({schema:"seven-logo-review-submission-template",version:VERSION,handoffSeal:handoff.seal,candidateId:handoff.candidateId,candidateSeal:handoff.candidateSeal,reviewer:null,role:null,reviewerContext:null,reviewReference:null,ratings:Object.fromEntries(tournament.DIMENSIONS.map(d=>[d,null])),landscapeSha256:null,sourceRefs:[],comparedProducts:[],suspiciousImitation:false,notes:"",evidenceRefs:uniq(Object.values(worksheet.stages).flatMap(s=>(s.evidence||[]).map(e=>e.bindingSeal))),instructions:{useDifferentContextFromBuilder:true,ratingsAreIntegersZeroToFour:true,minimumDistinctivenessSources:3,minimumComparedProducts:5,hostEvidenceIsRenderIntegrityNotSemanticApproval:true,humanRecognitionEvidenceOptional:true,doNotChooseWinnerInSubmission:true}});
+  return Object.freeze({schema:"seven-logo-review-submission-template",version:VERSION,handoffSeal:handoff.seal,candidateId:handoff.candidateId,candidateSeal:handoff.candidateSeal,reviewer:null,role:null,reviewerContext:null,reviewReference:null,ratings:Object.fromEntries(tournament.DIMENSIONS.map(d=>[d,null])),hardGateFindings:hardGateFindingsTemplate(),landscapeSha256:null,sourceRefs:[],comparedProducts:[],suspiciousImitation:false,notes:"",evidenceRefs:uniq(Object.values(worksheet.stages).flatMap(s=>(s.evidence||[]).map(e=>e.bindingSeal))),instructions:{useDifferentContextFromBuilder:true,ratingsAreIntegersZeroToFour:true,hardGateFindingsRequireExplicitBooleans:true,minimumDistinctivenessSources:3,minimumComparedProducts:5,hostEvidenceIsRenderIntegrityNotSemanticApproval:true,humanRecognitionEvidenceOptional:true,doNotChooseWinnerInSubmission:true}});
 }
 function createReviewBundle({portfolio,hostPack,builderContext="seven-ci-logo-builder-wave14-v1",artifactRef="dist/logo-tournament"}){
   if(!portfolioRuntime.verifyPortfolioManifest(portfolio?.manifest))throw new Error("verified portfolio required");
@@ -61,7 +63,7 @@ function createReviewBundle({portfolio,hostPack,builderContext="seven-ci-logo-bu
     const submissionTemplate=createSubmissionTemplate({handoff,worksheet});
     return Object.freeze({candidateId:record.candidate.id,candidateSeal:record.candidate.seal,handoff,worksheet,submissionTemplate});
   });
-  const body={schema:"seven-logo-independent-review-pack",version:VERSION,portfolioSeal:portfolio.manifest.seal,hostPackHash:hostPack.packHash,branch:hostPack.branch,commitSha:hostPack.commitSha,builderContext,artifactRef,candidateCount:candidates.length,candidates,status:"READY_FOR_INDEPENDENT_SEMANTIC_REVIEW",winner:null,freezeEligible:false,remainingGates:["independent semantic/dimension review","independent distinctiveness review","evidence-backed hard-gate adjudication","Pareto finalist comparison and decision","winner export to brand/final","Android production consumption proof","RELEASE_BUILD_DEVICE icon evidence","rollback-safe brand freeze"],authorityBoundary:{sameBuilderContextCannotReview:true,hostEvidenceCannotBecomeSemanticApproval:true,humanEvidenceOptionalButNeverFabricated:true,noWinnerClaim:true,noExportAuthorization:true,noReleaseDeviceClaim:true}};
+  const body={schema:"seven-logo-independent-review-pack",version:VERSION,portfolioSeal:portfolio.manifest.seal,hostPackHash:hostPack.packHash,branch:hostPack.branch,commitSha:hostPack.commitSha,builderContext,artifactRef,candidateCount:candidates.length,candidates,status:"READY_FOR_INDEPENDENT_SEMANTIC_REVIEW",winner:null,freezeEligible:false,remainingGates:["independent semantic/dimension review","independent hard-gate findings","independent distinctiveness review","evidence-backed hard-gate adjudication","Pareto finalist comparison and decision","winner export to brand/final","Android production consumption proof","RELEASE_BUILD_DEVICE icon evidence","rollback-safe brand freeze"],authorityBoundary:{sameBuilderContextCannotReview:true,hostEvidenceCannotBecomeSemanticApproval:true,humanEvidenceOptionalButNeverFabricated:true,noWinnerClaim:true,noExportAuthorization:true,noReleaseDeviceClaim:true}};
   return seal(body);
 }
 function verifyReviewBundle(bundle,{portfolio,hostPack}={}){
@@ -70,7 +72,7 @@ function verifyReviewBundle(bundle,{portfolio,hostPack}={}){
     if(portfolio){if(!portfolioRuntime.verifyPortfolioManifest(portfolio.manifest)||bundle.portfolioSeal!==portfolio.manifest.seal||bundle.candidateCount!==portfolio.records.length)return false}
     if(hostPack){if(!portfolio||!hostRuntime.verifyPack(hostPack,portfolio.records)||bundle.hostPackHash!==hostPack.packHash||bundle.branch!==hostPack.branch||bundle.commitSha!==hostPack.commitSha)return false}
     const records=portfolio?new Map(portfolio.records.map(r=>[r.candidate.id,r])):null;
-    for(const c of bundle.candidates||[]){const r=records?.get(c.candidateId);if(r&&c.candidateSeal!==r.candidate.seal)return false;if(!handoffRuntime.verifyReviewHandoff(c.handoff,r?{portfolioManifest:portfolio.manifest,candidate:r.candidate}:undefined))return false;if(c.worksheet?.candidateSeal!==c.candidateSeal||c.submissionTemplate?.handoffSeal!==c.handoff.seal)return false}
+    for(const c of bundle.candidates||[]){const r=records?.get(c.candidateId);if(r&&c.candidateSeal!==r.candidate.seal)return false;if(!handoffRuntime.verifyReviewHandoff(c.handoff,r?{portfolioManifest:portfolio.manifest,candidate:r.candidate}:undefined))return false;if(c.worksheet?.candidateSeal!==c.candidateSeal||c.submissionTemplate?.handoffSeal!==c.handoff.seal||c.submissionTemplate?.instructions?.hardGateFindingsRequireExplicitBooleans!==true)return false}
     return (bundle.candidates||[]).length===bundle.candidateCount;
   }catch{return false}
 }
@@ -83,4 +85,4 @@ function writeReviewBundle({root=process.cwd(),outDir="dist/logo-tournament",por
   for(const c of bundle.candidates){fs.writeFileSync(path.join(reviewDir,`${c.candidateId}-handoff.json`),JSON.stringify(c.handoff,null,2));fs.writeFileSync(path.join(reviewDir,`${c.candidateId}-submission-template.json`),JSON.stringify(c.submissionTemplate,null,2));}
   return bundle;
 }
-module.exports=Object.freeze({VERSION,VISUAL_STAGES,stageEvidenceIndex,assertExactVisualCoverage,createStageWorksheet,createSubmissionTemplate,createReviewBundle,verifyReviewBundle,writeReviewBundle});
+module.exports=Object.freeze({VERSION,VISUAL_STAGES,PRODUCT_CONTEXTS,stageEvidenceIndex,assertExactVisualCoverage,createStageWorksheet,hardGateFindingsTemplate,createSubmissionTemplate,createReviewBundle,verifyReviewBundle,writeReviewBundle});
