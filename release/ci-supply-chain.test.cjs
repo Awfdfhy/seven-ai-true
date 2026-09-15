@@ -3,6 +3,7 @@ const assert=require("assert/strict"),fs=require("fs"),path=require("path");let 
 const root=path.join(__dirname,"..");
 const tests=fs.readFileSync(path.join(root,".github","workflows","seven-tests.yml"),"utf8");
 const android=fs.readFileSync(path.join(root,".github","workflows","android-apk.yml"),"utf8");
+const pkg=JSON.parse(fs.readFileSync(path.join(root,"package.json"),"utf8"));
 const testPins={
   checkout:"actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
   setup:"actions/setup-node@820762786026740c76f36085b0efc47a31fe5020",
@@ -36,4 +37,8 @@ ok(/branches:\s*\n(?:\s*-.*\n)*\s*- ultimate-polish-v1\b/.test(android),"Android
 ok(android.includes("- 'package-lock.json'"),"future dependency lock changes must retrigger Android verification");
 ok(android.includes("./gradlew --no-daemon lintDebug testDebugUnitTest assembleDebug"),"Android lint, unit test and APK build gate required");
 ok(android.includes(":app:connectedDebugAndroidTest"),"Android emulator instrumentation smoke gate required");
-console.log(`CI Supply Chain Contract: PASS (${n} assertions; test + Android workflows SHA-pinned, script-suppressed installs, audit gates, read-only tokens)`);
+ok(!pkg.devDependencies?.["@capacitor/assets"],"legacy @capacitor/assets tooling with nested native install script must stay removed");
+ok(pkg.scripts?.["android:generate"]?.includes("apk/materialize-android-assets.cjs"),"Android build must use Seven deterministic asset materializer");
+ok(pkg.scripts?.["android:generate"]?.includes("npx --no-install cap"),"Capacitor CLI must resolve only from installed dependency graph");
+ok(!pkg.scripts?.["android:generate"]?.includes("capacitor-assets"),"Android build cannot silently restore legacy asset generator");
+console.log(`CI Supply Chain Contract: PASS (${n} assertions; test + Android workflows SHA-pinned, script-suppressed installs, local asset pipeline, audit gates, read-only tokens)`);

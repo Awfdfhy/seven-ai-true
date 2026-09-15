@@ -3,13 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "description": "Seven AI Android release packaging",
-  "engines": {
-    "node": ">=22"
-  },
+  "engines": {"node": ">=22"},
   "scripts": {
     "test": "node all.cjs",
     "build:web": "node release/build-release.cjs && node apk/prepare-web.cjs",
-    "android:generate": "npm run build:web && node apk/prepare-assets.cjs && rm -rf android && npx cap add android && npx capacitor-assets generate --android --assetPath assets --iconBackgroundColor '#121026' --iconBackgroundColorDark '#121026' --splashBackgroundColor '#121026' --splashBackgroundColorDark '#121026' && node apk/patch-android.cjs && npx cap sync android",
+    "android:generate": "npm run build:web && node apk/prepare-assets.cjs && rm -rf android && npx --no-install cap add android && npx --no-install cap sync android && node apk/materialize-android-assets.cjs && node apk/patch-android.cjs",
     "android:verify": "node apk/verify-apk.cjs"
   },
   "dependencies": {
@@ -17,7 +15,6 @@
     "@capacitor/core": "8.5.1"
   },
   "devDependencies": {
-    "@capacitor/assets": "3.0.5",
     "@capacitor/cli": "8.5.1",
     "pdfjs-dist": "4.10.38",
     "playwright": "1.63.0",
