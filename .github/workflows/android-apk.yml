@@ -5,12 +5,14 @@ on:
   push:
     branches:
       - ultimate-polish-v1
+      - wave14-review-pack-hardening
       - apk-finalization
       - main
     paths:
       - 'seven_ai-final.html'
       - 'release/**'
       - 'apk/**'
+      - 'brand/**'
       - 'package.json'
       - 'package-lock.json'
       - 'capacitor.config.json'
@@ -43,6 +45,9 @@ jobs:
       - name: Install JS build dependencies without lifecycle scripts
         run: npm install --ignore-scripts --no-audit --no-fund
 
+      - name: Install pinned independent visual reviewer runtime
+        run: npm install --ignore-scripts --no-save @huggingface/transformers@4.2.0
+
       - name: Materialize dependency audit lock
         run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
 
@@ -58,12 +63,46 @@ jobs:
       - name: Re-run Seven pre-APK release gate
         run: node all.cjs
 
-      - name: Generate native Android project
+      - name: Build Wave 14 logo tournament pack
+        run: node release/build-logo-tournament.cjs
+
+      - name: Capture Wave 14 HOST visual evidence
+        run: node release/capture-logo-host-evidence.cjs
+
+      - name: Assemble Wave 14 independent review pack
+        run: node release/assemble-logo-review-pack.cjs
+
+      - name: Run pinned independent CLIP visual review
+        run: node release/run-logo-independent-ai-review.mjs
+
+      - name: Adjudicate Wave 14 and materialize champion
+        run: node release/run-logo-tournament-closure.cjs
+
+      - name: Generate native Android project from approved brand/final
         run: npm run android:generate
+
+      - name: Materialize Wave 14 Android logo instrumentation
+        run: node apk/materialize-wave14-logo-device-test.cjs
 
       - name: Android lint, unit tests and APK build
         working-directory: android
         run: ./gradlew --no-daemon lintDebug testDebugUnitTest assembleDebug
+
+      - name: Build release target and instrumentation APK
+        working-directory: android
+        run: ./gradlew --no-daemon assembleRelease assembleDebugAndroidTest
+
+      - name: Sign exact release evidence APK
+        run: |
+          mkdir -p "$HOME/.android"
+          if [ ! -f "$HOME/.android/debug.keystore" ]; then
+            keytool -genkeypair -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey -keypass android -dname "CN=Android Debug,O=Android,C=US" -keyalg RSA -keysize 2048 -validity 10000
+          fi
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)"
+          test -x "$APKSIGNER"
+          test -f android/app/build/outputs/apk/release/app-release-unsigned.apk
+          "$APKSIGNER" sign --ks "$HOME/.android/debug.keystore" --ks-key-alias androiddebugkey --ks-pass pass:android --key-pass pass:android --out android/app/build/outputs/apk/release/app-release-evidence.apk android/app/build/outputs/apk/release/app-release-unsigned.apk
+          "$APKSIGNER" verify --verbose android/app/build/outputs/apk/release/app-release-evidence.apk
 
       - name: Verify packaged APK contents and size
         run: npm run android:verify
@@ -74,7 +113,7 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Android 16 WebView device smoke test
+      - name: Android 16 WebView and Wave 14 release-logo device evidence
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: 36
@@ -83,15 +122,41 @@ jobs:
           profile: pixel_6
           disable-animations: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: cd android && ./gradlew --no-daemon :app:connectedDebugAndroidTest
+          script: |
+            cd android && ./gradlew --no-daemon :app:connectedDebugAndroidTest
+            cd ..
+            adb uninstall ai.seven.app || true
+            adb uninstall ai.seven.app.test || true
+            adb install -r android/app/build/outputs/apk/release/app-release-evidence.apk
+            adb install -r android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+            adb shell am instrument -w -e class ai.seven.app.Wave14LogoEvidenceTest ai.seven.app.test/androidx.test.runner.AndroidJUnitRunner
+            mkdir -p dist/logo-tournament/android-device
+            for f in wave14-adaptive-icon.png wave14-themed-icon.png wave14-legacy-icon.png wave14-device-proof.json; do
+              adb exec-out run-as ai.seven.app.test cat files/$f > dist/logo-tournament/android-device/$f
+              test -s dist/logo-tournament/android-device/$f
+            done
+            WAVE14_RELEASE_APK=android/app/build/outputs/apk/release/app-release-evidence.apk node release/certify-wave14-android-logo.cjs
 
       - name: Verify APK again after device tests
         run: npm run android:verify
 
-      - name: Upload installable Seven APK
+      - name: Verify Wave 14 freeze receipt exists
+        run: |
+          test -s brand/final/brand-freeze-receipt.json
+          test -s dist/logo-tournament/wave14-freeze-receipt.json
+          node -e "const x=require('./dist/logo-tournament/wave14-freeze-receipt.json'); if(x.status!=='FROZEN'||x.authorityBoundary?.wave14LogoClosed!==true) process.exit(1); console.log('Wave 14 freeze receipt: PASS',x.candidateId,x.family,x.seal)"
+
+      - name: Upload installable Seven APK and Wave 14 evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          path: android/app/build/outputs/apk/debug/app-debug.apk
-          archive: false
+          name: seven-android-wave14
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/app/build/outputs/apk/release/app-release-evidence.apk
+            android/seven-android-assets.json
+            dist/logo-tournament/**
+            brand/final/**
+            brand/rollback/**
+          archive: true
           if-no-files-found: error
           retention-days: 14
