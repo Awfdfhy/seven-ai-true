@@ -41,3 +41,5 @@ jobs:
         run: node tools/seven-design-studio/home-capability-catalog.test.cjs
       - name: Run Seven Home visual polish test
         run: node tools/seven-design-studio/home-visual-polish.test.cjs
+      - name: Run Seven Home finalization test
+        run: node tools/seven-design-studio/home-finalization.test.cjs
