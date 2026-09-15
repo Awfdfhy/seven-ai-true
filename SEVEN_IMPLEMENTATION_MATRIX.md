@@ -15,7 +15,7 @@ A subsystem is **DONE** only when executable code exists, normal-flow wiring inv
 | Truth / Epistemic | Claim kinds, authority ceiling, lineage, freshness, dedupe, independence, conflict semantics | Partial via Research/World/control | Hardening + parity + cognitive gates | **Wave 02 foundation verified** |
 | Memory Fabric | Selective admission, origin-bound atoms, correction history, scope/principal filters, dedupe, bounded recall, capsules, hard purge | Foundation | Legacy/runtime + 15 adversarial | **Wave 03 foundation verified** |
 | Context Workspace | Typed roles, privileged instruction boundary, scope filtering, dedupe, mandatory blocking, elastic budgets, chronology | Browser Control Runtime + bridge | Node/browser + adversarial | **Wave 03 foundation verified** |
-| Model Fabric | Family/revision/endpoint identity, proof/pricing/health/quota, hard eligibility, verified ranking, lease/failover, context handshake | Foundation; live adapters partial | Model/Compute 36 + registry/promotion | **Wave 04 foundation verified** |
+| Model Fabric | Family/revision/endpoint identity, proof/pricing/health/quota, hard eligibility, provider-adapter contracts, fresh endpoint observations, benchmark identity, Seven-Eval/adversarial receipts, qualification leases, dynamic champion selection, failover/context handshake | Runtime foundation; real provider probes/evals not yet supplied | Model/Compute 36 + Provider Adapter 26 + Frontier Qualification 33 + registry/promotion | **Wave 04 foundation verified; parallel frontier qualification runtime verified** |
 | Adaptive Compute | BudgetVector, mandatory floors, ceilings, leases, protected verification/recovery reserves | Partial through cognitive layer | Model/Compute + Cognitive/Performance | **Wave 04 foundation verified** |
 | Tool Fabric | CapabilitySpec/BindingRevision, snapshots, schema fingerprints, bounded retrieval/frontier, exact ToolCallContract, invocation states | Strong host/hardening foundation | Tool/Security/Effect 54 | **Wave 05 foundation verified** |
 | Tool Security Kernel | Authoritative grants, epochs, exact scope/destination, read-vs-release, confirmations, narrowing leases | Host/hardening | Tool/Security/Effect 54 | **Wave 05 foundation verified** |
@@ -61,6 +61,9 @@ A subsystem is **DONE** only when executable code exists, normal-flow wiring inv
 - Transport success is not real-world effect truth.
 - Verification verdicts are evidence-bound; missing evidence cannot become PASS through prose.
 - Benchmark hard gates cannot be averaged away by quality scores.
+- Benchmark observations from different index revisions or methodology fingerprints are non-comparable.
+- Provider marketing or a strong benchmark cannot manufacture free endpoint eligibility or champion status.
+- Durable-free champion access is distinct from trial, promotion and signup-credit capacity; qualification leases expire.
 - World state is owned by the RPG World Kernel, not prose/model memory.
 - Player agency is authoritative user input.
 - Canon is source/version/evidence/continuity bound; missing required coverage remains `CANON_GAP`.
@@ -79,7 +82,7 @@ A subsystem is **DONE** only when executable code exists, normal-flow wiring inv
 ## Next integration gates
 1. **Logo & Identity Tournament:** genuine independent adjudication, winner export/freeze, then exact release-device evidence. No self-election by builder context.
 2. Persistent recovery for remaining stateful fabrics and durable derivative caches.
-3. Live provider/model adapters plus dynamic free-proof/champion qualification.
+3. Real provider endpoint probes + fresh terms/free-proof observations + matched external benchmark evidence + actual Seven Eval/adversarial receipts, then evidence-backed champion selection through the now-executable qualification runtime.
 4. Live Research/Vision/Canon acquisition and platform capture adapters.
 5. Shell/native execution expansion where needed and larger repositories/simulations.
 6. Real physical/release-device startup/RAM/battery/thermal/frame/long-session + TalkBack/visual certification.
