@@ -1,5 +1,5 @@
-const CACHE='seven-design-studio-v18';
-const LOCAL=['./','./index.html','./studio.css','./studio-preview-polish.css','./studio-bridge.js','./studio.js','./home-launchpad-v4.js','./seven-mark-polish.js','./home-synthesis-kick.js','./home-completion-v5.js','./home-capability-catalog-v1.js','./home-visual-polish-v1.js','./home-visual-polish-v2.js','./home-visual-polish-v3.js','./home-visual-polish-a11y-v1.js','./mobile-polish.css','./mobile-polish.js','./manifest.webmanifest','./seven-design-icon.svg'];
+const CACHE='seven-design-studio-v19';
+const LOCAL=['./','./index.html','./studio.css','./studio-preview-polish.css','./studio-bridge.js','./studio.js','./studio-preview-behavior.js','./home-launchpad-v4.js','./seven-mark-polish.js','./home-synthesis-kick.js','./home-completion-v5.js','./home-capability-catalog-v1.js','./home-visual-polish-v1.js','./home-visual-polish-v2.js','./home-visual-polish-v3.js','./home-visual-polish-a11y-v1.js','./mobile-polish.css','./mobile-polish.js','./manifest.webmanifest','./seven-design-icon.svg'];
 const REMOTE=[
   'https://unpkg.com/grapesjs@0.23.6/dist/css/grapes.min.css',
   'https://unpkg.com/grapesjs@0.23.6/dist/grapes.min.js'
