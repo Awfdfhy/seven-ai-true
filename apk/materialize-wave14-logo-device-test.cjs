@@ -7,7 +7,6 @@ fs.mkdirSync(TEST_JAVA,{recursive:true});fs.mkdirSync(TEST_ASSETS,{recursive:tru
 const java=`package ai.seven.app;
 
 import android.content.Context;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -22,6 +21,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import static org.junit.Assert.*;
@@ -46,11 +46,23 @@ public final class Wave14LogoEvidenceTest {
     captureTargetDrawable(target,test,mono,"wave14-themed-icon.png",true,true);
     try(InputStream in=test.getAssets().open("wave14-legacy-icon.png")){Bitmap legacy=BitmapFactory.decodeStream(in);assertNotNull("legacy raster asset decode failed",legacy);Bitmap scaled=Bitmap.createScaledBitmap(legacy,SIZE,SIZE,true);writeBitmap(scaled,out(test,"wave14-legacy-icon.png"));}
     DisplayMetrics dm=target.getResources().getDisplayMetrics();int widthDp=target.getResources().getConfiguration().screenWidthDp,heightDp=target.getResources().getConfiguration().screenHeightDp;
-    String json="{\"schema\":\"seven.wave14.device-capture.v1\",\"manufacturer\":\""+esc(Build.MANUFACTURER)+"\",\"model\":\""+esc(Build.MODEL)+"\",\"androidVersion\":\""+esc(Build.VERSION.RELEASE)+"\",\"apiLevel\":"+Build.VERSION.SDK_INT+",\"widthDp\":"+widthDp+",\"heightDp\":"+heightDp+",\"density\":"+dm.density+",\"packageName\":\""+esc(target.getPackageName())+"\",\"adaptiveResource\":\"@mipmap/ic_launcher\",\"themedResource\":\"@mipmap/ic_launcher_monochrome\",\"captureSize\":"+SIZE+"}";
-    try(FileOutputStream o=new FileOutputStream(out(test,"wave14-device-proof.json"))){o.write(json.getBytes(StandardCharsets.UTF_8));}
+    JSONObject proof=new JSONObject();
+    proof.put("schema","seven.wave14.device-capture.v1");
+    proof.put("manufacturer",Build.MANUFACTURER);
+    proof.put("model",Build.MODEL);
+    proof.put("androidVersion",Build.VERSION.RELEASE);
+    proof.put("apiLevel",Build.VERSION.SDK_INT);
+    proof.put("widthDp",widthDp);
+    proof.put("heightDp",heightDp);
+    proof.put("density",dm.density);
+    proof.put("packageName",target.getPackageName());
+    proof.put("adaptiveResource","@mipmap/ic_launcher");
+    proof.put("themedResource","@mipmap/ic_launcher_monochrome");
+    proof.put("captureSize",SIZE);
+    byte[] json=proof.toString().getBytes(StandardCharsets.UTF_8);
+    try(FileOutputStream o=new FileOutputStream(out(test,"wave14-device-proof.json"))){o.write(json);}
     assertTrue(out(test,"wave14-adaptive-icon.png").length()>0);assertTrue(out(test,"wave14-themed-icon.png").length()>0);assertTrue(out(test,"wave14-legacy-icon.png").length()>0);assertTrue(out(test,"wave14-device-proof.json").length()>0);
   }
-  private static String esc(String x){return String.valueOf(x).replace("\\","\\\\").replace("\"","\\\"");}
 }
 `;
 fs.writeFileSync(path.join(TEST_JAVA,"Wave14LogoEvidenceTest.java"),java);
