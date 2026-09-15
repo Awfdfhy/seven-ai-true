@@ -12,6 +12,7 @@ const oldRelease=`    try{Uri uri=contentUri(call.getString("uri"));int flags=In
 const newRelease=`    try{Uri uri=contentUri(call.getString("uri"));ContentResolver resolver=getContext().getContentResolver();boolean released=false;for(android.content.UriPermission p:resolver.getPersistedUriPermissions()){if(uri.equals(p.getUri())){if(p.isReadPermission()&&p.isWritePermission())resolver.releasePersistableUriPermission(uri,Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION);else if(p.isReadPermission())resolver.releasePersistableUriPermission(uri,Intent.FLAG_GRANT_READ_URI_PERMISSION);else if(p.isWritePermission())resolver.releasePersistableUriPermission(uri,Intent.FLAG_GRANT_WRITE_URI_PERMISSION);released=true;break;}}JSObject ret=new JSObject();ret.put("released",released);call.resolve(ret);}`;
 if(!src.includes(oldRelease))throw new Error("release URI block shape changed; refusing blind rewrite");
 src=src.replace(oldRelease,newRelease);
-if(src.includes('@SuppressLint("WrongConstant")'))throw new Error("WrongConstant suppression is forbidden at native permission boundary");
+const forbiddenLintSuppression='@SuppressLint'+ '("WrongConstant")';
+if(src.includes(forbiddenLintSuppression))throw new Error("WrongConstant suppression is forbidden at native permission boundary");
 fs.writeFileSync(file,src);
 console.log("android native platform hardening: PASS (explicit SAF permission constants)");
