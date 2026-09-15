@@ -4,6 +4,7 @@
   const STORAGE_KEY = 'seven-design-studio-project-v1';
   const SETTINGS_KEY = 'seven-design-studio-settings-v1';
   const RECOVERY_KEY = 'seven-design-studio-recovery-v1';
+  const GUIDE_KEY = 'seven-design-studio-guides-v1';
   const CACHE_NAME = 'seven-design-studio-v4';
 
   const previewFrame = document.getElementById('previewFrame');
@@ -17,6 +18,7 @@
   const sheetBody = document.getElementById('sheetBody');
   const closeSheet = document.getElementById('closeSheet');
   const saveState = document.getElementById('saveState');
+  const phoneStage = document.getElementById('phoneStage');
 
   let recoveryTimer = 0;
   let recoveryDirty = false;
@@ -148,6 +150,46 @@
     if (device) Array.from(device.options).forEach(option => {
       if (!/px$/i.test(option.textContent.trim())) option.textContent = `${option.value}px`;
     });
+  }
+
+  function getGuidePrefs() {
+    const value = safeJSON(localStorage.getItem(GUIDE_KEY), {});
+    return { grid: !!value.grid, safe: !!value.safe };
+  }
+
+  function ensureGuideOverlay() {
+    if (!phoneStage) return null;
+    let overlay = document.getElementById('sevenGuideOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'sevenGuideOverlay';
+      overlay.className = 'seven-guide-overlay';
+      overlay.setAttribute('aria-hidden','true');
+      overlay.innerHTML = '<div class="seven-guide-grid" id="sevenGuideGrid"></div><div class="seven-guide-safe" id="sevenGuideSafe"><span></span></div>';
+      phoneStage.appendChild(overlay);
+    }
+    return overlay;
+  }
+
+  function applyGuidePrefs() {
+    const prefs = getGuidePrefs();
+    const overlay = ensureGuideOverlay();
+    if (!overlay) return;
+    const grid = document.getElementById('sevenGuideGrid');
+    const safe = document.getElementById('sevenGuideSafe');
+    overlay.classList.toggle('on', prefs.grid || prefs.safe);
+    if (grid) grid.style.display = prefs.grid ? 'block' : 'none';
+    if (safe) safe.classList.toggle('on', prefs.safe);
+    document.getElementById('gridGuidePolish')?.classList.toggle('guide-active', prefs.grid);
+    document.getElementById('safeGuidePolish')?.classList.toggle('guide-active', prefs.safe);
+  }
+
+  function toggleGuide(type) {
+    const prefs = getGuidePrefs();
+    prefs[type] = !prefs[type];
+    try { localStorage.setItem(GUIDE_KEY, JSON.stringify(prefs)); } catch (_) {}
+    applyGuidePrefs();
+    notify(`${type === 'grid' ? '8px grid' : 'Safe-area guides'} ${prefs[type] ? 'on' : 'off'}`);
   }
 
   function prototypeScript() {
@@ -286,13 +328,21 @@
         <button class="action" id="snapshotPolish" type="button">Recovery snapshot</button>
         <button class="action ghost" id="restorePolish" type="button">Restore latest</button>
       </div>
+      <div class="section-title" style="margin-top:14px"><h3>Canvas guides</h3><span>non-exported</span></div>
+      <div class="action-row">
+        <button class="action ghost" id="gridGuidePolish" type="button">8px grid</button>
+        <button class="action ghost" id="safeGuidePolish" type="button">Safe-area guides</button>
+      </div>
       <div class="hint" id="offlineStatusPolish" style="margin-top:9px">Offline shell: checking…</div>
-      <div class="hint" style="margin-top:7px">HTML export is hardened with the same Night/Day contrast guard used by Prototype Preview. Recovery snapshots stay only on this device.</div>
+      <div class="hint" style="margin-top:7px">HTML export is hardened with the same Night/Day contrast guard used by Prototype Preview. Recovery snapshots stay only on this device. Guides are editor-only and never enter exported UI.</div>
     `;
     sheetBody.appendChild(section);
     document.getElementById('copyHtmlPolish').onclick = copyHardenedHTML;
     document.getElementById('snapshotPolish').onclick = () => saveRecoverySnapshot();
     document.getElementById('restorePolish').onclick = restoreLatestRecovery;
+    document.getElementById('gridGuidePolish').onclick = () => toggleGuide('grid');
+    document.getElementById('safeGuidePolish').onclick = () => toggleGuide('safe');
+    applyGuidePrefs();
     updateOfflineStatus();
   }
 
@@ -318,7 +368,6 @@
     setTimeout(guardPreview, 60);
   }, true);
 
-  // Replace the core HTML export at event-capture time so Android receives the hardened document.
   document.addEventListener('click', event => {
     const target = event.target.closest?.('#exportHtml');
     if (!target) return;
@@ -361,5 +410,7 @@
   attachEditorReliability(window.__sevenDesignEditor);
   improveLabels();
   syncShellA11y();
+  ensureGuideOverlay();
+  applyGuidePrefs();
   augmentMorePanel();
 })();
