@@ -100,7 +100,7 @@ jobs:
         working-directory: android
         run: ./gradlew --no-daemon :app:assembleRelease :app:assembleDebugAndroidTest
 
-      - name: Sign exact release evidence APK
+      - name: Sign exact release and instrumentation evidence APKs
         run: |
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)"
           test -x "$APKSIGNER"
@@ -108,8 +108,14 @@ jobs:
           test -f android/app/build/outputs/apk/release/app-release-unsigned.apk
           test -f android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
           "$APKSIGNER" sign --ks "$HOME/.android/debug.keystore" --ks-key-alias androiddebugkey --ks-pass pass:android --key-pass pass:android --out android/app/build/outputs/apk/release/app-release-evidence.apk android/app/build/outputs/apk/release/app-release-unsigned.apk
-          "$APKSIGNER" verify --verbose android/app/build/outputs/apk/release/app-release-evidence.apk
-          "$APKSIGNER" verify --verbose android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+          "$APKSIGNER" sign --ks "$HOME/.android/debug.keystore" --ks-key-alias androiddebugkey --ks-pass pass:android --key-pass pass:android --out android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest-evidence.apk android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+          "$APKSIGNER" verify --verbose --print-certs android/app/build/outputs/apk/release/app-release-evidence.apk
+          "$APKSIGNER" verify --verbose --print-certs android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest-evidence.apk
+          REL_CERT="$($APKSIGNER verify --print-certs android/app/build/outputs/apk/release/app-release-evidence.apk | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -1)"
+          TEST_CERT="$($APKSIGNER verify --print-certs android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest-evidence.apk | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -1)"
+          test -n "$REL_CERT"
+          test "$REL_CERT" = "$TEST_CERT"
+          echo "Wave14 signing identity: PASS $REL_CERT"
 
       - name: Verify packaged APK contents and size
         run: npm run android:verify
@@ -135,7 +141,7 @@ jobs:
             adb uninstall ai.seven.app || true
             adb uninstall ai.seven.app.test || true
             adb install -r android/app/build/outputs/apk/release/app-release-evidence.apk
-            adb install -r android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+            adb install -r android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest-evidence.apk
             adb shell am instrument -w -e wave14ReleaseEvidence 1 -e class ai.seven.app.Wave14LogoEvidenceTest ai.seven.app.test/androidx.test.runner.AndroidJUnitRunner
             mkdir -p dist/logo-tournament/android-device
             for f in wave14-adaptive-icon.png wave14-themed-icon.png wave14-legacy-icon.png wave14-device-proof.json; do
@@ -160,6 +166,7 @@ jobs:
           path: |
             android/app/build/outputs/apk/debug/app-debug.apk
             android/app/build/outputs/apk/release/app-release-evidence.apk
+            android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest-evidence.apk
             android/seven-android-assets.json
             dist/logo-tournament/**
             brand/final/**
