@@ -22,32 +22,46 @@ The user-set campaign ceiling is **30 Mega-Waves maximum**, not a quota to consu
 - Mega-Wave 12 — Visual Evidence Runtime Foundation → `PASS_FOUNDATION` ✅
 - Mega-Wave 13 — Design Genome Runtime + Design Lint Foundation → `PASS_FOUNDATION` ✅
 
-Detailed durable evidence: `ULTIMATE_POLISH_PROGRESS.md` and `WAVE_13_DESIGN_GENOME_CLOSURE.md`.
+Detailed durable evidence: `ULTIMATE_POLISH_PROGRESS.md`, `WAVE_13_DESIGN_GENOME_CLOSURE.md` and `PARALLEL_VISUAL_IMPLEMENTATION_PROGRESS.md`.
 
 ## Wave 13 verified truth
-Seven now has an executable, sealed **Design Genome** and build-time **Design Lint** instead of relying only on visual prose and legacy CSS conventions.
+Seven has an executable, sealed **Design Genome** and build-time **Design Lint** instead of relying only on visual prose and legacy CSS conventions.
 
 Pass A commit `9a3b185eeaf959dcf39f75b1a9429ac7aff13319` introduced canonical Day/Night, brand, Aurora, domain, typography, spacing, shape, motion and touch-target semantics; deterministic Genome snapshots and coverage ledgers; compatibility adapters for legacy `--sb-*` / `--seven-*` tokens; and formal contracts for Orbit Thread, Seven Cut, Evidence Rail, Focus Halo and State Node.
 
 Pass B commit `72246f62c10babd201ec1ed0ef86119cf27d83e7` hardened source/branch/commit identity, monotonic migration coverage, sealed migration receipts and primitive-use audits so design authority cannot be manufactured by relabeling or token drift.
 
-Final implementation run `34892708588` / #1479 succeeded end-to-end:
-- `all test suites: PASS (63 suites)`;
-- Design Genome: `141` assertions PASS;
-- Design Lint: `37` assertions PASS;
-- Design Genome Pass B: `35` assertions PASS;
-- current live CSS lint: `0 FAIL`, `7 WARN`, `54 INFO`;
-- UI Visual Evidence remains `8/8 PASS` in HOST/OBSERVE mode;
-- source integrity lock PASS at `658133` bytes / blob `3e8dfa8e7da7124e16504140eb9631c10cabf053`;
-- static audit unchanged at `99743 / 100000` startup bytes, `34881` lazy workspace bytes, `3689533 / 8388608` static APK bytes, `0` static warnings;
-- release verification PASS.
+Final Wave 13 implementation run `34892708588` / #1479 succeeded end-to-end with `63` suites, Design Genome `141`, Design Lint `37`, Design Genome Pass B `35`, live CSS lint `0 FAIL / 7 WARN / 54 INFO`, Visual Evidence `8/8 PASS` HOST/OBSERVE and protected-source integrity PASS.
 
-Artifact `10368050591`, size `2180110` bytes, SHA-256 `f4ee05b5f40efc97c5eaffcb1e4bb7de8f94f7a060ebbb4203914f9c0735c4d1`.
+Important truth boundary: Wave 13 establishes the governed Design Genome foundation, but it does not claim all existing UI CSS is canonical or that final identity/device certification is complete.
 
-Important truth boundary: Wave 13 establishes the governed Design Genome foundation, but it does not claim all existing UI CSS is already canonical. The remaining lint warnings/info are explicit migration debt. The Final UI and final logo are not complete yet.
+## Parallel post-Wave13 verified implementation
+Wave 14 is intentionally still open because the builder context may not manufacture the independent logo decision. Dependency-safe later foundations have therefore been implemented in parallel without advancing the official counter.
+
+Latest fully green implementation before the current readiness-gate patch: commit `17b4e1c2dfef2d67f9511442236373ba5d4655d9`, GitHub Actions `34913532315` / #1507 **SUCCESS**, `all test suites: PASS (90 suites)`.
+
+Verified parallel foundations now include:
+- Global UI, specialist Coding/Research/RPG surfaces, Generated UI, Motion, Arabic/RTL and Accessibility host/browser contracts plus adversarial guards;
+- Mobile Performance host guard and strict startup/lazy/static budgets;
+- six real logo candidate families, review handoff and 108 exact HOST render-evidence bindings without fabricated winner;
+- Android Visual Certification contract with 11 required release scenarios and anti-HOST-laundering;
+- Visual Red Team with device attestation, freshness, anti-replay and evidence-laundering guards;
+- dependency audit split and CI supply-chain hardening with immutable GitHub Action SHAs and production vulnerability fail-closed gate.
+
+Run #1507 current release/resource evidence:
+- startup `99758 / 100000` bytes;
+- lazy workspace `63855 / 65536` bytes;
+- static APK estimate `3718522 / 8388608` bytes;
+- static warnings `0`;
+- protected source unchanged at `658133` bytes / blob `3e8dfa8e7da7124e16504140eb9631c10cabf053`;
+- production npm audit: `0` vulnerabilities;
+- full dev/tooling graph: `7` findings, isolated to `@capacitor/assets`, `@capacitor/cli`, `@trapezedev/project`, `sharp`, `tar`, `uuid`, `xcode`;
+- release artifact `10375492204`, size `3101297`, SHA-256 `98e1b5196c078ae6ea2de10926e2d87089358d6995305ae5729bcca1064784aa`.
+
+These are foundations and host/CI evidence, not permission to self-close Wave 14 or to claim physical Android certification.
 
 ## Startup budget warning
-The verified release startup footprint remains **`99743 / 100000` bytes**, leaving only **257 bytes** of hot-path headroom. Later visual work must remain build-time/lazy where practical or recover/compact existing startup assets before adding material hot-path payload.
+The current verified release startup footprint is **`99758 / 100000` bytes**, leaving only **242 bytes** of hot-path headroom. Later work must remain build-time/lazy where practical or recover/compact startup bytes before adding material hot-path payload.
 
 ## Model-frontier research decision
 `MODEL_FRONTIER_RESEARCH.md` is a time-sensitive research snapshot, not permanent model truth. Seven must not hard-code a model as “best” from one leaderboard. Champion qualification requires exact model/revision, same-version independent benchmark evidence, access/free-proof class, endpoint capability proof, Seven Evals, adversarial comparison and an expiring qualification lease.
@@ -57,19 +71,21 @@ The verified release startup footprint remains **`99743 / 100000` bytes**, leavi
 Do not modify it without explicit user authorization. Do not merge this branch to `main` or another protected branch without explicit user approval.
 
 ## Major implementation truth
-- **Performance:** Wave 01 foundation verified; real-phone battery/RAM/thermal/frame-tail evidence remains.
+- **Performance:** Wave 01 foundation verified; host mobile guards now exist; real-phone battery/RAM/thermal/frame-tail evidence remains.
 - **Cognitive + Truth:** Wave 02 foundation verified; full CR3/ClaimGraph/correction/retraction projection remains partial.
 - **Memory + Context:** Wave 03 foundation verified; scalable persistence/semantic indexes/complete derived invalidation remain later work.
 - **Model + Adaptive Compute:** Wave 04 foundation verified; live-provider adapters/dynamic free-proof refresh/device tuning remain later.
 - **Tool/Security/Effects:** Wave 05 foundation verified; external adapters/durable effect persistence/live reconciliation remain integration work.
 - **Verification/Evals:** Wave 06 foundation verified; larger holdouts/calibration/persistent reporting/device cohorts remain later.
-- **File/Coding:** Wave 07 foundation verified; SAF/shell bridges, durable transactions, larger repositories and final UI remain later.
+- **File/Coding:** Wave 07 foundation verified; SAF/shell bridges, durable platform transactions, larger repositories and release-device validation remain later.
 - **Research:** Wave 08 foundation verified; live acquisition, durable indexes and multilingual/current-web scale remain later.
 - **Vision:** Wave 09 foundation verified; live OCR/VLM/platform adapters and capture permissions remain later.
-- **RPG + Story:** Wave 10 foundation verified; persistence, larger simulations/benchmarks and specialist UI remain later.
-- **Real Works / Canon + Titles:** Wave 11 foundation verified; live acquisition, persistence, corpus scale and UI remain later.
-- **Visual Evidence:** Wave 12 HOST-tier foundation verified; real Android certification remains later.
-- **Design Genome:** Wave 13 foundation verified; canonical migration, final identity and final surfaces remain later.
+- **RPG + Story:** Wave 10 foundation verified; persistence and larger simulations/benchmarks remain later; specialist UI foundation exists.
+- **Real Works / Canon + Titles:** Wave 11 foundation verified; live acquisition, persistence and corpus scale remain later.
+- **Visual Evidence:** Wave 12 HOST-tier foundation verified; Android certification contract/Red Team exist, but real release-device evidence remains.
+- **Design Genome:** Wave 13 foundation verified; final independent identity adjudication and full migration remain.
+- **UI/accessibility/RTL/motion:** substantial host/browser foundations are already green in parallel; device and final-closure claims remain gated.
+- **Dependency security:** production dependency audit is currently clean; build/dev tooling still carries seven explicit findings and lacks a committed transitive lock.
 
 ## Cross-cutting laws
 - authority cannot be manufactured by model/tool/memory/summary/search/vision/story/title/visual text or increase through derivation;
@@ -84,20 +100,21 @@ Do not modify it without explicit user authorization. Do not merge this branch t
 - benchmark numbers from different index revisions cannot be compared as one scale;
 - expensive intelligence and visual tooling remain selective/lazy where practical;
 - Unlimited means no arbitrary Seven-side quota, not denial of provider/device limits;
-- architecture, foundation implementation, host evidence and release/device saturation are distinct claims.
+- architecture, foundation implementation, host evidence and release/device saturation are distinct claims;
+- Saturation `2/2` must be evidence-backed on the same release identity and may not be fabricated from duplicated evidence.
 
 ## Explicit open issues
-- remaining Ultimate Polish Mega-Waves after `13 / ≤30`;
-- Logo & Identity Tournament, Global UI, specialist workspaces, Generated UI, Motion, Arabic/RTL, Accessibility and Mobile Performance;
+- remaining formal Ultimate Polish closures after `13 / ≤30`, with later foundation work already reducing the amount left;
+- genuine independent Logo & Identity adjudication and winner export/freeze;
+- real release-device Android visual, TalkBack/accessibility, startup/RAM/battery/thermal/frame/long-session evidence;
 - live provider/model adapters and dynamic champion qualification;
 - live Research/Vision/Canon acquisition and durable derivative caches;
 - persistent recovery for remaining stateful fabrics;
-- real Android startup/RAM/battery/thermal/frame/long-session and visual evidence;
-- Android SAF/Keystore, visual certification, larger holdouts/competitor evals and final Red Team/Saturation;
-- dependency install currently reports `7` audit findings (`3 moderate`, `3 high`, `1 critical`) plus deprecated transitive/action warnings. These remain explicit release issues rather than being hidden by subsystem PASS labels.
+- Android SAF/Keystore/platform bridges, larger holdouts/competitor evals, final Red Team and Saturation `2/2`;
+- seven dev/tooling audit findings plus absence of a committed dependency lock; production audit is currently `0` and CI fails closed if that changes.
 
 ## Immediate Next Work
-**Mega-Wave 14 — Logo & Identity Tournament.** Build governed candidate asset/evidence machinery, compare distinct visual families under the locked Visual Evaluation Constitution, preserve Day/Night + monochrome + adaptive-mask + tiny-size requirements, and do not replace production Android assets until a winner is proven and export verification passes.
+**Mega-Wave 14 — Logo & Identity Tournament remains the formal next closure.** The candidate/evidence machinery is built far beyond its initial foundation, but the winner must come from genuine independent evidence. Until that arrives, continue dependency-safe finalization infrastructure without manufacturing the missing proof.
 
 ## Development Philosophy
 Use the largest safe coherent pass, verify it, repair failures in the same turn when practical, preserve evidence in GitHub and continue. Do not manufacture complexity, benchmark equivalence, visual proof or completion claims.

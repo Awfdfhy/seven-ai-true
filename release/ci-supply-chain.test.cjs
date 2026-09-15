@@ -8,11 +8,11 @@ const pins={
 };
 for(const [name,pin] of Object.entries(pins))ok(y.includes(pin),`${name} action must be immutable-SHA pinned`);
 ok(!/uses:\s*actions\/(?:checkout|setup-node|upload-artifact)@v\d+/i.test(y),"mutable major tags must not be executable refs");
-ok(y.includes("playwright@1.63.0")&&y.includes("pdfjs-dist@4.10.38"),"test toolchain versions must be explicit");
+ok(y.includes("npm install --ignore-scripts --no-save playwright@1.63.0 pdfjs-dist@4.10.38"),"test toolchain must be explicit and install scripts disabled");
 ok(y.includes("npm install --package-lock-only --ignore-scripts --no-audit --no-fund"),"audit resolution must suppress install scripts");
 ok(y.includes("npm audit --json > /tmp/seven-audit-full.json || true"),"full graph audit evidence required");
 ok(y.includes("npm audit --omit=dev --json > /tmp/seven-audit-prod.json || true"),"production audit evidence required");
 ok(y.includes("node release/dependency-audit-gate.cjs"),"sealed dependency audit gate required");
 ok(y.includes("package-manager-cache: false"),"setup-node package-manager cache must be explicitly disabled without committed lockfile");
 ok(/permissions:\s*\n\s*contents:\s*read/.test(y),"workflow token must retain read-only contents permission");
-console.log(`CI Supply Chain Contract: PASS (${n} assertions; immutable action pins, explicit tool versions, read-only token, audit gate)`);
+console.log(`CI Supply Chain Contract: PASS (${n} assertions; immutable action pins, no install scripts, explicit tool versions, read-only token, audit gate)`);
