@@ -64,13 +64,6 @@ const server=http.createServer((req,res)=>{
   const focusShadow=await canvas.locator('.v5-composer').evaluate(el=>getComputedStyle(el).boxShadow);
   if(!focusShadow||focusShadow==='none')throw new Error('Composer focus state is visually silent');
 
-  await canvas.locator('.v4-all').click();
-  const commandLayer=canvas.locator('.v5-layer:not([hidden])');
-  await commandLayer.waitFor({timeout:5000});
-  await commandLayer.locator('[data-seven-catalog-extra]').waitFor({timeout:5000});
-  if(await commandLayer.locator('.v5-command').count()<60)throw new Error('Visual polish hid progressive capability coverage');
-  await commandLayer.locator('.v5-sheet-close').click();
-
   await page.locator('#themeBtn').click();
   const day=await home.evaluate(el=>({bg:getComputedStyle(el).backgroundImage,color:getComputedStyle(el).color}));
   if(!day.bg.includes('gradient')||!day.color)throw new Error('Day visual polish failed');
@@ -94,6 +87,12 @@ const server=http.createServer((req,res)=>{
   if(await preview.locator('.v5-shortcuts').evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').filter(Boolean).length)!==2)throw new Error('Prototype preview lost visual polish');
   const pReadable=await preview.locator('.v5-eyebrow,.v5-bottom-nav small').evaluateAll(els=>els.every(el=>parseFloat(getComputedStyle(el).fontSize)>=11));
   if(!pReadable)throw new Error('Prototype preview lost visual readability floor');
+
+  await preview.locator('.v4-all').click();
+  const sheet=preview.locator('.v5-layer:not([hidden])');
+  await sheet.waitFor({timeout:5000});
+  await sheet.locator('[data-seven-catalog-extra="2026.09-capability-catalog-v1"]').waitFor({timeout:5000});
+  if(await sheet.locator('.v5-command').count()<60)throw new Error('Visual polish hid progressive capability coverage in preview');
 
   if(errors.length)throw new Error(`Browser errors: ${errors.slice(0,5).join(' | ')}`);
   await browser.close();server.close();
