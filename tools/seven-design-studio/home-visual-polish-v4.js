@@ -5,10 +5,10 @@
   const HOME='2026.09-home-v5';
   const STYLE_MARKER='--seven-home-visual-polish-v4-final';
 
-  // Deliberately higher specificity than the earlier visual layers. V4 is the
-  // final freeze, so its layout fixes must remain authoritative even when an
-  // older layer is re-injected later by the editor lifecycle.
-  const ROOT=`.seven-home-v5.seven-home-v5[data-seven-home-completion="${HOME}"][data-seven-home-visual-polish-v4="${VERSION}"]`;
+  // Final-freeze selectors intentionally key off the persistent Home V5
+  // contract so the same geometry survives standalone/iframe export, where
+  // editor-only DOM markers are not guaranteed to be serialized.
+  const ROOT=`.seven-home-v5.seven-home-v5[data-seven-home-completion="${HOME}"]`;
   const CSS=`
 :root{--seven-home-visual-polish-v4-final:1}
 ${ROOT}{
