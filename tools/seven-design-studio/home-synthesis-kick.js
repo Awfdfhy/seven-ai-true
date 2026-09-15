@@ -2,6 +2,7 @@
   'use strict';
 
   let cssPromise = null;
+  const TOUCH_OVERRIDE = '.v3-circle,.v3-voice{width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important}';
 
   const readHomeCss = async () => {
     if (cssPromise) return cssPromise;
@@ -24,9 +25,9 @@
     setTimeout(async () => {
       try {
         const css = await readHomeCss();
-        if (css && typeof editor.getCss === 'function' && !String(editor.getCss()).includes('--seven-home-synthesis-v3')) {
-          editor.addStyle(css);
-        }
+        const current = typeof editor.getCss === 'function' ? String(editor.getCss()) : '';
+        if (css && !current.includes('--seven-home-synthesis-v3')) editor.addStyle(css);
+        if (!String(editor.getCss?.() || '').includes('min-width:44px!important')) editor.addStyle(TOUCH_OVERRIDE);
         if (typeof editor.trigger === 'function') editor.trigger('update');
       } catch (_) {}
     }, 0);
