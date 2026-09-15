@@ -30,9 +30,11 @@ fs.mkdirSync(testDir,{recursive:true});
 const test=`package ai.seven.app;
 
 import static org.junit.Assert.*;
+import android.content.Context;
 import android.webkit.WebView;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -71,7 +73,27 @@ public class SevenSmokeTest {
       assertEquals("true",js(webView,"document.documentElement.scrollWidth<=document.documentElement.clientWidth+2"));
       assertEquals("true",js(webView,"SevenPdf.loaded===false"));
       assertEquals("true",js(webView,"(()=>{const e=document.getElementById('userInput');e.focus();return document.activeElement===e})()"));
+      assertEquals("true",js(webView,"Boolean(window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.SevenPlatform)"));
+      assertEquals("true",js(webView,"(()=>{window.__sevenNativeCaps='pending';const p=Capacitor.Plugins.SevenPlatform;p.getCapabilities().then(x=>window.__sevenNativeCaps=(x.secureStore&&x.androidKeystore&&x.saf&&x.chunkedIO&&!x.broadStoragePermission)?'ok':'bad').catch(()=>window.__sevenNativeCaps='error');return true})()"));
+      waitFor(webView,"window.__sevenNativeCaps==='ok'");
+      assertEquals("true",js(webView,"(()=>{window.__sevenSecure='pending';(async()=>{const p=Capacitor.Plugins.SevenPlatform,k='ci.webview.roundtrip',v='seven-'+Date.now();await p.secureSet({key:k,value:v});const r=await p.secureGet({key:k});await p.secureRemove({key:k});window.__sevenSecure=(r.found&&r.value===v)?'ok':'bad'})().catch(()=>window.__sevenSecure='error');return true})()"));
+      waitFor(webView,"window.__sevenSecure==='ok'");
     }
+  }
+
+  @Test
+  public void secureStoreEncryptsAtRest() throws Exception {
+    Context context=InstrumentationRegistry.getInstrumentation().getTargetContext();
+    SevenSecureStore store=new SevenSecureStore(context);
+    String key="ci.native."+System.nanoTime(),secret="seven-secret-"+System.nanoTime();
+    try{
+      store.put(key,secret);
+      assertEquals(secret,store.get(key));
+      String raw=context.getSharedPreferences(SevenSecureStore.PREFS_NAME,Context.MODE_PRIVATE).getString(key,"");
+      assertNotNull(raw);
+      assertFalse("secret must not be stored as plaintext",raw.contains(secret));
+      assertTrue("encrypted payload must contain IV and ciphertext",raw.contains("."));
+    } finally { store.remove(key); }
   }
 }
 `;
