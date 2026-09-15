@@ -129,7 +129,7 @@ jobs:
             adb uninstall ai.seven.app.test || true
             adb install -r android/app/build/outputs/apk/release/app-release-evidence.apk
             adb install -r android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-            adb shell am instrument -w -e class ai.seven.app.Wave14LogoEvidenceTest ai.seven.app.test/androidx.test.runner.AndroidJUnitRunner
+            adb shell am instrument -w -e wave14ReleaseEvidence 1 -e class ai.seven.app.Wave14LogoEvidenceTest ai.seven.app.test/androidx.test.runner.AndroidJUnitRunner
             mkdir -p dist/logo-tournament/android-device
             for f in wave14-adaptive-icon.png wave14-themed-icon.png wave14-legacy-icon.png wave14-device-proof.json; do
               adb exec-out run-as ai.seven.app.test cat files/$f > dist/logo-tournament/android-device/$f
