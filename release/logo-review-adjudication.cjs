@@ -8,13 +8,14 @@ const REQUIRED_CONTEXTS=Object.freeze(["launcher","splash","sidebar","topbar","s
 function seal(body){return Object.freeze({...body,seal:tournament.sha(body)})}
 function verifySeal(x,schema){if(!x||x.schema!==schema||!HASH64.test(String(x.seal||"")))return false;const {seal:s,...body}=x;return s===tournament.sha(body)}
 function bool(v,n){if(typeof v!=="boolean")throw new Error(`${n} must be boolean`);return v}
-function exactBooleanMap(input,keys,n){if(!input||typeof input!=="object"||Array.isArray(input))throw new Error(`${n} required`);const out={};for(const k of keys)out[k]=bool(input[k],`${n}.${k}`);for(const k of Object.keys(input))if(!keys.map(String).includes(String(k)))throw new Error(`${n}.${k} unknown`);return out}
+function exactBooleanMap(input,keys,n){if(!input||typeof input!=="object"||Array.isArray(input))throw new Error(`${n} required`);const allowed=keys.map(String),out={};for(const k of allowed)out[k]=bool(input[k],`${n}.${k}`);for(const k of Object.keys(input))if(!allowed.includes(String(k)))throw new Error(`${n}.${k} unknown`);return out}
 function normalizeFindings(findings={}){
   const tiny=exactBooleanMap(findings.tinySizes,tournament.REQUIRED_SIZES.map(String),"tinySizes");
   const masks=exactBooleanMap(findings.adaptiveMasks,tournament.REQUIRED_MASKS,"adaptiveMasks");
   const contexts=exactBooleanMap(findings.productContexts,REQUIRED_CONTEXTS,"productContexts");
   const dayNight=findings.dayNight;if(!dayNight||typeof dayNight!=="object"||Array.isArray(dayNight))throw new Error("dayNight required");
   const normalizedDayNight={sameCoreGeometry:bool(dayNight.sameCoreGeometry,"dayNight.sameCoreGeometry"),lightBackgroundPass:bool(dayNight.lightBackgroundPass,"dayNight.lightBackgroundPass"),darkBackgroundPass:bool(dayNight.darkBackgroundPass,"dayNight.darkBackgroundPass")};
+  for(const k of Object.keys(dayNight))if(!Object.prototype.hasOwnProperty.call(normalizedDayNight,k))throw new Error(`dayNight.${k} unknown`);
   return Object.freeze({silhouetteIdentifiable:bool(findings.silhouetteIdentifiable,"silhouetteIdentifiable"),tinySizes:tiny,adaptiveMasks:masks,monochromeOneColorSurvives:bool(findings.monochromeOneColorSurvives,"monochromeOneColorSurvives"),dayNight:normalizedDayNight,productContexts:contexts,simplifierSurvives:bool(findings.simplifierSurvives,"simplifierSurvives")});
 }
 function createHardGateSubmission({candidate,handoff,reviewSubmission,findings}){
@@ -37,7 +38,7 @@ function verifyHardGateSubmission(s,{candidate,handoff,reviewSubmission}={}){
 function materializeHardGateEvidence({candidate,handoff,reviewSubmission,hardGateSubmission}){
   if(!verifyHardGateSubmission(hardGateSubmission,{candidate,handoff,reviewSubmission}))throw new Error("verified hard-gate submission required");
   const f=hardGateSubmission.findings,producer=`${reviewSubmission.reviewer}:${reviewSubmission.reviewReference}:hard-gate`,stageEvidence=[];
-  // SILHOUETTE and SIMPLIFIER are presence-only in the v1 tournament evaluator. Failed findings are therefore omitted so they fail closed as missing instead of being laundered into PASS.
+  // SILHOUETTE and SIMPLIFIER are presence-only in the v1 tournament evaluator. Failed findings are omitted so they fail closed as missing instead of being laundered into PASS.
   if(f.silhouetteIdentifiable)stageEvidence.push(tournament.createStageEvidence({candidate,stage:"SILHOUETTE",producer,independent:true,observations:{identifiable:true}}));
   stageEvidence.push(tournament.createStageEvidence({candidate,stage:"TINY_SIZE",producer,independent:true,observations:{sizes:tournament.REQUIRED_SIZES.map(px=>({px,identifiable:f.tinySizes[String(px)]}))}}));
   stageEvidence.push(tournament.createStageEvidence({candidate,stage:"ADAPTIVE_MASK",producer,independent:true,observations:{masks:tournament.REQUIRED_MASKS.map(mask=>({mask,essentialPreserved:f.adaptiveMasks[mask]}))}}));
@@ -47,8 +48,6 @@ function materializeHardGateEvidence({candidate,handoff,reviewSubmission,hardGat
   stageEvidence.push(tournament.createStageEvidence({candidate,stage:"DISTINCTIVENESS",producer,independent:true,observations:{suspiciousImitation:reviewSubmission.suspiciousImitation===true,landscapeSha256:reviewSubmission.landscapeSha256,sourceRefs:reviewSubmission.sourceRefs,comparedProducts:reviewSubmission.comparedProducts}}));
   if(f.simplifierSurvives)stageEvidence.push(tournament.createStageEvidence({candidate,stage:"SIMPLIFIER",producer,independent:true,observations:{simplifiedStillIdentifiable:true}}));
   if(!stageEvidence.every(e=>tournament.verifyStageEvidence(e,candidate)))throw new Error("materialized stage evidence verification failed");
-  const hardGate=tournament.evaluateHardGates({candidate,geometry:null,evidence:[]});
-  void hardGate;
   const receipt=seal({schema:"seven-logo-review-hard-gate-materialization",version:VERSION,candidateSeal:candidate.seal,hardGateSubmissionSeal:hardGateSubmission.seal,reviewSubmissionSeal:reviewSubmission.seal,stageEvidenceSeals:stageEvidence.map(e=>e.seal).sort(),stageCount:stageEvidence.length,status:"EVIDENCE_MATERIALIZED",authorityBoundary:{doesNotChooseWinner:true,doesNotAuthorizeExport:true,doesNotProveAndroidConsumption:true}});
   return Object.freeze({receipt,stageEvidence});
 }
