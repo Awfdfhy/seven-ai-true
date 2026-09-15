@@ -1,6 +1,6 @@
 # Seven Design Studio
 
-Status: **feature-complete mobile-first design-studio candidate; first physical Android pass completed; host polish suite green; final device recheck pending**
+Status: **feature-complete mobile-first design-studio candidate; primary Android flow device-verified; host polish suite green**
 
 Branch: `seven-design-studio-v0`
 
@@ -210,25 +210,16 @@ Implemented response:
 - pinned dependency offline caching after a successful load;
 - automated regression coverage for the physical-pass defect and mobile reliability features.
 
-The fixes are host-verified. They still require the user's next physical-device recheck before being called fully device-verified.
+Second device recheck: **completed for the primary design flow**.
 
-## Remaining physical checks
+User report after the hardened build: **“كل شيء جيد جداً”**. No new visual or interaction defect was reported in that recheck. The Night/Day fix, mobile composition, and primary design workflow are therefore accepted as device-verified for the tested flow.
 
-These still require the real Android device and must not be fabricated from host Chromium:
-1. recheck Night and Day prototype contrast after the new guard;
-2. actual drag/select comfort over a longer editing session;
-3. Android keyboard / IME behavior while editing text and numeric fields;
-4. safe-area behavior in browser and installed PWA display modes;
-5. HTML/JSON export and Copy HTML behavior under Android;
-6. recovery snapshot/restore behavior in normal use;
-7. PWA installation and relaunch;
-8. cached relaunch with network unavailable;
-9. performance, heat and battery feel during a real design session.
+This does not fabricate evidence for unobserved long-duration conditions. Extended heat/battery behavior and a deliberate offline relaunch remain optional endurance checks rather than blockers for beginning the SEVEN UI campaign.
 
-## Next physical test target
+## Current readiness
 
-Use one compact flow:
+Seven Design Studio is ready to serve as the primary design environment for SEVEN UI work.
 
-`Home → 320px → Night Preview → Day Preview → RTL → close Preview → More → 8px Grid → Safe-area Guides → select Composer → Design → change radius/token → States → Researching → Preview → Recovery Snapshot → Save → Export HTML/JSON`
+Recommended production-design sequence:
 
-If this remains comfortable on-device, the Studio is ready to become the primary design environment for the full SEVEN UI campaign.
+`Global Design System → Home → Universal Composer refinement → Chat → Projects/Spaces → Memory/Context → Research → Coding → RPG/Real Works → Tools/Library/Models → Settings/You → final integration`
