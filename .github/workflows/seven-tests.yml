@@ -11,7 +11,7 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -22,6 +22,9 @@ jobs:
 
       - name: Install pinned test toolchain
         run: npm install --ignore-scripts --no-save playwright@1.63.0 pdfjs-dist@4.10.38
+
+      - name: Install pinned independent visual reviewer runtime
+        run: npm install --ignore-scripts --no-save @huggingface/transformers@4.2.0
 
       - name: Materialize audit lock
         run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
@@ -48,12 +51,20 @@ jobs:
         if: success()
         run: node release/assemble-logo-review-pack.cjs
 
+      - name: Run independent AI visual review
+        if: success()
+        run: node release/run-logo-independent-ai-review.mjs
+
+      - name: Adjudicate tournament and materialize champion brand
+        if: success()
+        run: node release/run-logo-tournament-closure.cjs
+
       - name: Capture verified Beta UI
         if: success()
         run: node release/capture-ui.cjs
 
       - name: Upload verified release artifact
-        if: success()
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: seven-ai-release
@@ -65,7 +76,9 @@ jobs:
             dist/workspaces/**
             dist/screenshots/**
             dist/logo-tournament/**
+            brand/final/**
+            brand/rollback/**
             release/release-results.json
             release/dependency-audit-summary.json
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
