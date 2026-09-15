@@ -1,5 +1,5 @@
-const CACHE='seven-design-studio-v3';
-const LOCAL=['./','./index.html','./studio.css','./studio.js','./mobile-polish.css','./mobile-polish.js','./manifest.webmanifest','./seven-design-icon.svg'];
+const CACHE='seven-design-studio-v4';
+const LOCAL=['./','./index.html','./studio.css','./studio-bridge.js','./studio.js','./mobile-polish.css','./mobile-polish.js','./manifest.webmanifest','./seven-design-icon.svg'];
 const REMOTE=[
   'https://unpkg.com/grapesjs@0.23.6/dist/grapes.min.css',
   'https://unpkg.com/grapesjs@0.23.6/dist/grapes.min.js'
