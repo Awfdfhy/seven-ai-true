@@ -1,107 +1,138 @@
-# Seven AI — Wave 14 Logo & Identity Tournament Progress
+# Seven AI — Wave 14 Logo & Identity Tournament Closure
 
-Status: `IN_PROGRESS`  
-Campaign counter remains: **`13 / ≤30`**  
-Branch: `ultimate-polish-v1`
+Status: **`PASS_FOUNDATION / CLOSED`**  
+Campaign counter: **`14 / ≤30`**  
+Evidence branch: `wave14-review-pack-hardening`  
+Authoritative integration target: `ultimate-polish-v1`
 
-## Truth boundary
-Wave 14 is not closed. Seven now has a governed tournament runtime, real materialized vector candidates, a CI-built review pack, verified asset contracts, an implemented independent-review handoff/ingest protocol and exact HOST render-evidence coverage for every required visual tournament variant. No candidate is a final logo yet. No production Android identity has been replaced. Finalist/winner/freeze claims remain blocked until genuine independent semantic review and release-device evidence exist.
+## Final verdict
+Wave 14 is closed. The governed tournament produced one evidence-eligible champion, exported the exact approved geometry to `brand/final/`, consumed that exact export in Android, captured release-build device-tier evidence on Android 16 / API 36, and issued a rollback-safe brand freeze receipt with status **`FROZEN`**.
 
-## Implemented foundation
-Wave 14 commits established:
-- `9341753f5ef508399da21ae96983bcf77e624364` — governed Logo Tournament foundation;
-- `ab7b54fa9b77eeb56c005d6b06aa8292e14ccc42` — binding to Visual Evidence authority;
-- `30a66d3f0a5354e27e8fe06295e313418eb2c473` — verified Brand Asset Contract and Android consumption gate;
-- `48a1318a59ca7bcac8ba22fecd23808283a334ce` — real six-family SVG candidate portfolio + CI review pack;
-- `63284b8a3eec1f89f7ff9cade8442b4edebe4a23` — sealed independent-review handoff/ingest protocol;
-- `12b4e465f8dc4509320843601064e37f325f6612` — exact HOST visual evidence matrix for every candidate/stage/variant combination.
+Champion:
+- candidate: **`horizon-fold-v2`**
+- family: **`L-D — Horizon/Fold`**
+- selection: **`UNIQUE_SURVIVOR`**
+- candidate seal: `58cbdadc84379c86ab22fb7bceae08486f520f22dbeb8d05fdd26b819c36bdf6`
 
-The tournament enforces 16/24/32/48/64px review, circle/squircle/rounded-square/aggressive masks, the Android 108dp layer with 66dp safe core, monochrome survival, Day/Night geometry parity, product-context evidence, distinctiveness review, independent assessments, Pareto finalist comparison and exact export/Android proof. Text, raster-dependent master geometry, filter-dependent identity, baked adaptive masks and baked adaptive shadows are rejected.
+No broader Android UI/device certification is claimed by this receipt. Wave 14 certifies the logo/identity launcher contexts required by this wave only.
 
-## Real candidate portfolio
-Six actual SVG families exist, one for every tournament family:
+## Correct candidate-family map
+1. `infinite-cut` → `L-A — Seven + Continuity`
+2. `eclipse-seven-v2` → `L-B — Celestial Seven`
+3. `orbit-cut` → `L-C — Orbital Seven`
+4. `horizon-fold-v2` → `L-D — Horizon/Fold`
+5. `state-node-seven-v2` → `L-E — Pure / State-node Seven`
+6. `dual-arc-gate` → `L-F — Wildcard`
 
-1. `orbit-cut` / `L-A` — Orbit Cut
-2. `infinite-cut` / `L-B` — Infinite Cut
-3. `eclipse-seven` / `L-C` — Eclipse Seven
-4. `horizon-fold` / `L-D` — Horizon Fold
-5. `state-node-seven` / `L-E` — State Node Seven
-6. `dual-arc-gate` / `L-F` — Dual Arc Gate
+Earlier progress notes that mapped `orbit-cut`, `infinite-cut` and `eclipse-seven` to L-A/L-B/L-C respectively were stale and are superseded by this mapping.
 
-Each family has unique sealed geometry/master identity, stays inside the 66dp essential region, and produces seven governed variants: master, monochrome, Day, Night, adaptive foreground, adaptive background and themed monochrome. Candidate outputs live only in the CI review pack; they do not enter `brand/final/`.
+## Review methodology and Pass 2
+The first genuine independent CLIP review correctly produced **0 finalists**, but its tiny-size measurement method was found to be invalid for the intended claim: 16–64 px marks were embedded inside 360×420 HOST screenshots and then globally resized for CLIP, so the tiny mark occupied too little of the model input.
 
-The portfolio explicitly records:
-- `winner: null`;
-- `freezeEligible: false`;
-- automated structural checks do not equal visual approval;
-- independent distinctiveness evidence remains mandatory;
-- release-build-device proof remains mandatory for freeze;
-- production asset replacement is forbidden at this stage.
+The methodology was repaired without lowering any threshold:
+- tiny/silhouette/mask/monochrome/day-night stages use deterministic isolated crops around the actual rendered mark;
+- the original rasterized tiny pixels are preserved before controlled analysis upscaling;
+- the semantic threshold remains `0.50`;
+- full screenshots remain for `PRODUCT_CONTEXT` only;
+- concept/distinctiveness review uses isolated identity evidence rather than unrelated launcher background area.
 
-## Exact HOST visual evidence matrix
-`release/logo-host-evidence.cjs` now binds real Playwright screenshots to Visual Evidence Runtime v2 for the full required visual matrix:
-- SILHOUETTE: `1` variant;
-- TINY_SIZE: `5` variants (`16/24/32/48/64`);
-- ADAPTIVE_MASK: `4` variants;
-- MONOCHROME: `1` variant;
-- DAY_NIGHT: `2` variants;
-- PRODUCT_CONTEXT: `5` variants (`launcher/splash/sidebar/topbar/settings`).
+After corrected measurement, the three strongest families were evolved with explicit lineage:
+- `eclipse-seven` → `eclipse-seven-v2`
+- `horizon-fold` → `horizon-fold-v2`
+- `state-node-seven` → `state-node-seven-v2`
 
-That is `18` exact render-evidence bindings per candidate and `108` bindings across the six candidates. Every binding carries candidate/stage/variant scenario tags, exact artifact SHA-256, sourceRef, branch, commit and environment identity. Cross-revision evidence laundering is rejected by the existing Pass B runtime.
+The six-candidate governed field remained intact and was reviewed again under the same gates. `horizon-fold-v2` became the unique eligible survivor; no arbitrary aesthetic override was required.
 
-Authority boundary: this HOST evidence proves render integrity and exact evidence binding only. It does **not** prove human identifiability, originality, aesthetic superiority or Android release-device behavior. The unit suite uses explicitly labeled `SIMULATED` evidence, while the CI capture step produces `HOST` evidence. Neither can be relabeled as device evidence.
+## Independent reviewer identity
+Pinned reviewer runtime:
+- model: `Xenova/clip-vit-base-patch32`
+- model revision: `d15189d7028b43f1d3e65039190477f6af591c2a`
+- runtime: `@huggingface/transformers@4.2.0`
+- quantization: `q8`
+- reviewer context is clean-room separated from the builder context.
 
-## Review pack and CI evidence
-Run `34900187443` / #1484 completed successfully at `48a1318a59ca7bcac8ba22fecd23808283a334ce` and first proved the real candidate portfolio.
+Distinctiveness review uses a fixed external landscape including OpenAI/ChatGPT, Anthropic/Claude, Google Gemini, Microsoft Copilot and Perplexity. Suspicious imitation remains blocking; no imitation flag was used to manufacture the winner.
 
-Run `34900537171` / #1485 completed successfully at `63284b8a3eec1f89f7ff9cade8442b4edebe4a23` with the independent-review handoff included.
+## Final Android and freeze evidence
+Final code/evidence commit:
+`d0f0b4039264f524f9b9aa622a4a15e91ae8712d`
 
-Run `34901017649` / #1487 completed successfully at `12b4e465f8dc4509320843601064e37f325f6612` and added the complete exact HOST render-evidence matrix.
+Successful workflows on that exact commit:
+- Seven AI tests: run **`34967080994`** / #1589 — **SUCCESS**
+- Seven Android APK: run **`34967080935`** / #44 — **SUCCESS**
+- Android job: `104373980640` — **SUCCESS**
 
-Latest verified results:
-- `all test suites: PASS (69 suites)`;
-- Logo Candidate Portfolio: `338` assertions PASS;
-- Logo Host Evidence: `148` assertions PASS;
-- Logo Review Handoff: `46` assertions PASS;
-- Logo Tournament Foundation: `68` assertions PASS;
-- Logo Tournament Pass B: `35` assertions PASS;
-- Brand Asset Contract: `26` assertions PASS;
-- review pack: `6` candidates, HOST contact sheet generated, `194230` screenshot bytes;
-- host visual evidence: `6` candidates, `108` exact bindings, render-integrity only;
-- UI Visual Evidence remains `8/8 PASS` in HOST/OBSERVE mode;
-- protected source remains `658133` bytes at blob `3e8dfa8e7da7124e16504140eb9631c10cabf053`;
-- startup remains `99743 / 100000` bytes, so Wave 14 tooling adds no release hot-path payload;
-- latest artifact `10371031174`, size `3082115` bytes, ZIP SHA-256 `3c8bbbe1e9f8bc90578cac796cdf0fa2cf32cd62decb0c414ef372360d4d7d16`.
+The Android workflow passed every required stage, including:
+- full pre-APK release gate;
+- **106 test suites PASS**;
+- six-candidate tournament build and 108 exact HOST visual bindings;
+- independent CLIP review and adjudication;
+- exact `brand/final` materialization;
+- exact-winner Android asset generation;
+- lint/unit/debug/release builds;
+- signing verification for evidence APKs;
+- Android 16 / API 36 Pixel 6 emulator release-logo instrumentation;
+- reconstructed adaptive/themed/legacy PNG evidence from the instrumentation status channel;
+- release-build-device certification;
+- post-device APK verification;
+- freeze receipt verification;
+- final artifact upload.
 
-The artifact contains `dist/logo-tournament/**`, including candidate SVGs, sealed candidate metadata, portfolio manifest, review worksheet, contact sheets, host visual screenshots, exact visual-evidence bindings and build summaries. Per user direction, these previews are not surfaced in chat before the full program is complete unless the user later asks to see them.
+Final installable evidence APK SHA-256:
+`0ea744997550d7a1a6b18a1ffe0556464e281fef5407e92df19023fe557f72f8`
 
-## Independent review handoff
-`release/logo-review-handoff.cjs` provides a sealed handoff from builder-generated candidates to a genuinely independent reviewer context.
+Final Wave 14 artifact:
+- artifact ID: **`10395926932`**
+- name: `seven-android-wave14`
+- size: `12014540` bytes
+- artifact digest: **`sha256:75b4f4d8b359bb2d51070138bdb865bd061c60fc30956e39faf514fe063fff41`**
 
-It enforces:
-- the reviewed candidate must be an exact member of the sealed portfolio;
-- reviewer context must differ from builder context;
-- reviewer role uses a fixed vocabulary;
-- every tournament dimension must receive an integer rating `0..4`;
-- distinctiveness evidence requires a SHA-256 landscape identity, at least three unique source references and five unique compared products;
-- suspicious imitation produces a blocking receipt;
-- admissible review materialization can create an independent DimensionAssessment and DistinctivenessReceipt but cannot create missing hard-gate evidence, choose a winner, authorize exports or prove Android consumption;
-- the review registry is sealed, portfolio-bound, append-only and idempotent for duplicate submissions.
+## Freeze chain
+`brand/final/brand-freeze-receipt.json` records:
+- status: **`FROZEN`**
+- rollbackSafe: `true`
+- `wave14LogoClosed: true`
+- `broaderAndroidUiCertificationNotClaimed: true`
+- `protectedSourceUntouched: true`
+- build commit: `d0f0b4039264f524f9b9aa622a4a15e91ae8712d`
+- APK SHA-256: `0ea744997550d7a1a6b18a1ffe0556464e281fef5407e92df19023fe557f72f8`
+- freeze seal: **`3d403a54d8d188fa4f9628d7bdaf123bd6e240d2a3d4c950d2235b433e00ab9b`**
 
-This closes the earlier architectural gap where the tournament required independent review but lacked a durable ingest boundary for it. It intentionally does not pretend that the current builder/assistant context is independent.
+Supporting seals:
+- champion decision: `419c66d30dc646226a104b37cdcd15538cc1ff5cfb7eca74930f78ae4474ed05`
+- export receipt: `239bbb817db2f7ba413e77bdd2ef4fb3cbf4293550317ff4e86694c48a095edc`
+- evidence-backed verdict: `f204f04e135c34daa54d7700d713315b7bdeb74ac8ea89fe066066dd5a6f5dd7`
+- brand manifest: `a4d13a1b1ebebd01b34ffb90ee0646f8b1b34b9eb228a271e1f12c318170aa22`
+- Android consumption proof: `7922fe738e4fd0826bf3cfcb1df9507c1e1b717c434585c4f91002e8557670be`
+- release icon evidence: `55fe66e294c8ddb747767587a424279af29865e5f3618ab7d9ef28c78ab5b8af`
+- Android logo device certification: `94435bce11af8a0c81d6584d5ffb02ca3832c4cca67e26b2abd573a31113c21c`
 
-## Remaining Wave 14 gates
-Wave 14 can close only after evidence supports all material claims. Remaining gates include:
-- genuine independent semantic review of the captured candidate evidence;
-- independent distinctiveness review and candidate dimension assessment through the sealed handoff;
-- evidence-backed hard-gate adjudication and finalist comparison;
-- an evidence-backed winner decision, not an arbitrary aesthetic pick;
-- verified exports under `brand/final/` for the approved winner;
-- production Android consumption proof;
-- `RELEASE_BUILD_DEVICE` evidence for adaptive, themed and legacy icon contexts;
-- final rollback-safe identity freeze.
+## Evidence transport hardening
+The final Android release remained non-debuggable. Earlier device-evidence attempts exposed transport-only problems with `run-as`, instrumentation UID ownership, and scoped external storage. The final design removes those dependencies entirely:
+- the instrumentation test reads/renders the **release target's actual resources**;
+- PNG and JSON evidence are emitted as bounded Base64 chunks through `Instrumentation.sendStatus`;
+- CI deterministically reconstructs the files from the instrumentation transcript;
+- PNG signatures, chunk completeness and device-proof fields are validated before certification;
+- no release debuggable flag, broad storage permission or weakened gate was introduced.
 
-Until these gates exist, the official Ultimate Polish counter stays **`13 / ≤30`**.
+## Protected-source integrity
+`seven_ai-final.html` remains unchanged at Git blob:
+`3e8dfa8e7da7124e16504140eb9631c10cabf053`
 
-## Open release debt
-Dependency installation still reports `7` audit findings (`3 moderate`, `3 high`, `1 critical`) plus deprecated transitive/action warnings. These remain explicit later release/security work and are not hidden by Wave 14 progress.
+The successful 106-suite gate explicitly passed source integrity on the exact protected blob. Wave 14 did not modify the protected source.
+
+## Authority boundary
+Wave 14 proves:
+- governed six-family logo tournament;
+- corrected independent semantic measurement;
+- evidence-backed champion selection;
+- exact transactional export;
+- Day/Night + monochrome + Android adaptive/themed asset chain;
+- release-build-device launcher evidence on Android 16 emulator;
+- rollback-safe frozen brand identity.
+
+Wave 14 does **not** by itself prove the broader final UI/device matrix, physical-phone battery/thermal/RAM performance, TalkBack device certification, store signing, or final application release readiness. Those remain later campaign gates.
+
+## Closure
+**Wave 14: COMPLETE.**  
+**Official Ultimate Polish counter: `14 / ≤30`.**
