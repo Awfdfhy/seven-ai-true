@@ -19,7 +19,11 @@ jobs:
         with:
           node-version: 24
 
-      - run: npm install --no-save playwright pdfjs-dist@4.10.38
+      - name: Install pinned test toolchain
+        run: npm install --no-save playwright@1.63.0 pdfjs-dist@4.10.38
+
+      - name: Audit production dependency surface
+        run: npm audit --omit=dev --audit-level=high
 
       - run: npx playwright install --with-deps --only-shell chromium
 
