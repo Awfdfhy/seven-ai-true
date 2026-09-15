@@ -47,10 +47,10 @@ const server=http.createServer((req,res)=>{
   const chat=canvas.locator('[data-seven-chat-version="2026.09-chat-v1"]');
   await chat.waitFor({timeout:10000});
 
-  const geom=await chat.evaluate(el=>({sw:el.scrollWidth,cw:el.clientWidth,minH:el.getBoundingClientRect().height,w:el.getBoundingClientRect().width}));
-  if(geom.sw>geom.cw+1)throw new Error(`Chat overflows at 393px: ${geom.sw}/${geom.cw}`);
+  const geom=await chat.evaluate(el=>{const d=el.ownerDocument.documentElement,r=el.getBoundingClientRect();return{internalSW:el.scrollWidth,internalCW:el.clientWidth,minH:r.height,w:r.width,docSW:d.scrollWidth,docCW:d.clientWidth};});
+  if(geom.docSW>geom.docCW+1)throw new Error(`Chat creates visible document overflow at 393px: ${geom.docSW}/${geom.docCW}`);
   const composer=await canvas.locator('.svchat-composer-zone').evaluate(el=>{const s=getComputedStyle(el),r=el.getBoundingClientRect();return{position:s.position,bottom:s.bottom,w:r.width,h:r.height}});
-  if(composer.position!=='fixed'||parseFloat(composer.bottom)!==0||composer.w<geom.w*.95)throw new Error(`Chat composer is not keyboard-edge anchored: ${JSON.stringify({composer,chatWidth:geom.w})}`);
+  if(composer.position!=='fixed'||parseFloat(composer.bottom)!==0||composer.w<geom.docCW*.95)throw new Error(`Chat composer is not keyboard-edge anchored: ${JSON.stringify({composer,viewportWidth:geom.docCW})}`);
   const targets=await canvas.locator('.svchat-icon,.svchat-primary,.svchat-response-actions button').evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect();return{w:r.width,h:r.height}}).filter(x=>x.w>0&&x.h>0&&(x.w<48||x.h<48)));
   if(targets.length)throw new Error(`Chat has undersized primary touch targets: ${JSON.stringify(targets.slice(0,5))}`);
   const user=await canvas.locator('.svchat-user-bubble').first().evaluate(el=>{const s=getComputedStyle(el),r=el.getBoundingClientRect();return{w:r.width,bg:s.backgroundImage,radius:s.borderTopLeftRadius}});
@@ -73,8 +73,8 @@ const server=http.createServer((req,res)=>{
 
   await page.locator('#deviceSelect').selectOption('320');
   await page.setViewportSize({width:320,height:760});
-  const tinyGeom=await chat.evaluate(el=>({sw:el.scrollWidth,cw:el.clientWidth}));
-  if(tinyGeom.sw>tinyGeom.cw+1)throw new Error(`Chat overflows at 320px: ${tinyGeom.sw}/${tinyGeom.cw}`);
+  const tinyGeom=await chat.evaluate(el=>{const d=el.ownerDocument.documentElement;return{docSW:d.scrollWidth,docCW:d.clientWidth};});
+  if(tinyGeom.docSW>tinyGeom.docCW+1)throw new Error(`Chat creates visible document overflow at 320px: ${tinyGeom.docSW}/${tinyGeom.docCW}`);
   const firstSource=await canvas.locator('.svchat-source-rail button').first().evaluate(el=>{const r=el.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom};});
   if(firstSource.left<0||firstSource.right<=0)throw new Error(`First source is clipped at 320px: ${JSON.stringify(firstSource)}`);
 
@@ -84,8 +84,8 @@ const server=http.createServer((req,res)=>{
   const pChat=preview.locator('[data-seven-chat-version="2026.09-chat-v1"]');
   await pChat.waitFor({timeout:10000});
   if(await preview.locator('.svchat-composer').count()!==1)throw new Error('Standalone preview lost Chat composer');
-  const pGeom=await pChat.evaluate(el=>({sw:el.scrollWidth,cw:el.clientWidth}));
-  if(pGeom.sw>pGeom.cw+1)throw new Error(`Standalone Chat preview overflows: ${pGeom.sw}/${pGeom.cw}`);
+  const pGeom=await pChat.evaluate(el=>{const d=el.ownerDocument.documentElement;return{docSW:d.scrollWidth,docCW:d.clientWidth};});
+  if(pGeom.docSW>pGeom.docCW+1)throw new Error(`Standalone Chat preview creates document overflow: ${pGeom.docSW}/${pGeom.docCW}`);
 
   if(errors.length)throw new Error(`Browser errors: ${errors.slice(0,5).join(' | ')}`);
   await browser.close();server.close();
