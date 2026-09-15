@@ -1,109 +1,114 @@
 # Seven AI — Ultimate Polish Progress
 
-> Durable evidence ledger for the maximum-density Ultimate Polish campaign. Runtime/repository evidence outranks documentation claims.
+> Durable evidence ledger for the maximum-density Ultimate Polish campaign. Runtime/repository evidence outranks documentation claims. Per-wave closure documents preserve the detailed implementation history; this file is the current campaign ledger.
 
 ## Campaign
-- Branch: `ultimate-polish-v1`
+- Authoritative development branch: `ultimate-polish-v1`
+- Wave 14 evidence/hardening branch: `wave14-review-pack-hardening`
 - User-set hard ceiling: **`≤30` Mega-Waves**. This is a maximum, not a target to consume.
-- Current counter: **`13 / ≤30`**
+- Current counter: **`14 / ≤30`**
 - Protected source: `seven_ai-final.html`
 - Protected source reference: `658133` bytes, Git blob `3e8dfa8e7da7124e16504140eb9631c10cabf053`
 - Protected-branch law: do not merge to `main` or another protected branch without explicit user approval.
 
 ## Completed Mega-Waves
 
-### Mega-Wave 01 — Speed + Smoothness Foundation
-**Status:** `PASS_FOUNDATION`
-Final implementation `57fe639cdedc066e73bda64571fc68c38426c4f7`; documented HEAD `afa6b8205969d48c8487ed5a57f647d852ee5021`; run `34847605495`; `39` suites; Performance `11`; Runtime Smoke `28`.
+| Wave | Foundation | Status | Primary final evidence |
+|---|---|---|---|
+| 01 | Speed + Smoothness | `PASS_FOUNDATION` | `57fe639c…`; run `34847605495`; 39 suites |
+| 02 | Cognitive Runtime + Truth/Epistemic | `PASS_FOUNDATION` | `bf8c66e0…`; run `34854002261`; 40 suites |
+| 03 | Memory Fabric + Context Workspace | `PASS_FOUNDATION` | `5172c30f…`; run `34857043114`; 41 suites |
+| 04 | Model Fabric + Adaptive Compute | `PASS_FOUNDATION` | `0aff40a7…`; run `34858416658`; 42 suites |
+| 05 | Tool Fabric + Security + Side-Effect Recovery | `PASS_FOUNDATION` | `20071a76…`; run `34862645886`; 43 suites |
+| 06 | Verification/Judge + Evals/Benchmark | `PASS_FOUNDATION` | `b0f21373…`; run `34864774616`; 44 suites |
+| 07 | File/Project Tools + Coding Agent | `PASS_FOUNDATION` | `6e8d7382…` + repair `781d04ae…`; run `34869078956`; 46 suites |
+| 08 | Research/Search/Retrieval/Knowledge | `PASS_FOUNDATION` | `12fa443b…` + `bc2038b5…`; run `34873736180`; 49 suites |
+| 09 | Vision Fabric | `PASS_FOUNDATION` | `77210911…`; run `34877171756`; 51 suites |
+| 10 | RPG Engine + Story Fabric | `PASS_FOUNDATION` | `be4f2642…`; run `34879527880`; 54 suites |
+| 11 | Real Works Canon Simulation + Titles | `PASS_FOUNDATION` | `78a4b25d…`; run `34888351330`; 57 suites |
+| 12 | Visual Evidence Runtime | `PASS_FOUNDATION` | `7764d275…`; run `34890701798`; 60 suites; 8/8 HOST visual capture |
+| 13 | Design Genome + Design Lint | `PASS_FOUNDATION` | `72246f62…`; run `34892708588`; 63 suites |
+| 14 | Logo & Identity Tournament | **`PASS_FOUNDATION / FROZEN`** | `d0f0b403…`; tests `34967080994`; Android `34967080935`; 106 suites |
 
-### Mega-Wave 02 — Cognitive Runtime + Truth/Epistemic Foundation
-**Status:** `PASS_FOUNDATION`
-Final `bf8c66e0ca9f7e2363dde7827ff530a5e3cd3d85`; run `34854002261`; `40` suites; Cognitive Boost `23`, Gate `7`, Planner `4`.
+## Wave 14 — Logo & Identity Tournament — CLOSED
+Detailed closure: `WAVE_14_LOGO_TOURNAMENT_PROGRESS.md`.
 
-### Mega-Wave 03 — Memory Fabric + Context Workspace Foundation
-**Status:** `PASS_FOUNDATION`
-Final `5172c30fbb2eaffde30cbe65356668d75a12a0d8`; run `34857043114`; `41` suites; Memory/Context `15`.
+### Champion
+- candidate: **`horizon-fold-v2`**
+- family: **`L-D — Horizon/Fold`**
+- selection mode: **`UNIQUE_SURVIVOR`**
+- candidate seal: `58cbdadc84379c86ab22fb7bceae08486f520f22dbeb8d05fdd26b819c36bdf6`
 
-### Mega-Wave 04 — Model Fabric + Adaptive Compute Foundation
-**Status:** `PASS_FOUNDATION`
-Final `0aff40a74f061c170230d8d74a109157b0dc88e5`; run `34858416658`; `42` suites; Model/Compute `36`.
-Story Fabric architecture insertion `949af00dd064f3dc0b0fcaead975159c8348ac9f` passed run `34859601979`; architecture-only then, later executed in Wave 10.
+Correct final family mapping:
+- `infinite-cut` → L-A Seven + Continuity
+- `eclipse-seven-v2` → L-B Celestial Seven
+- `orbit-cut` → L-C Orbital Seven
+- `horizon-fold-v2` → L-D Horizon/Fold
+- `state-node-seven-v2` → L-E Pure/State-node Seven
+- `dual-arc-gate` → L-F wildcard
 
-### Mega-Wave 05 — Tool Fabric + Tool Security + Side-Effect Recovery Foundation
-**Status:** `PASS_FOUNDATION`
-Final `20071a7673e88c7d4949fc96dedb8ea8584f7a73`; run `34862645886`; `43` suites; Tool/Security/Effect `54`.
+### Evidence path
+Wave 14 built and closed the full governed path:
+1. six real SVG candidate families;
+2. exact 18-variant visual matrix per candidate / 108 HOST bindings total;
+3. sealed independent-review handoff;
+4. pinned independent CLIP reviewer;
+5. corrected tiny-size methodology after the first genuine review returned zero finalists;
+6. explicit Pass-2 lineage for the top three families without lowering the `0.50` semantic threshold;
+7. hard-gate adjudication and unique-survivor decision;
+8. transactional exact export to `brand/final`;
+9. exact-winner Android asset consumption;
+10. Android 16 / API 36 release-logo instrumentation;
+11. permissionless evidence transport through `Instrumentation.sendStatus` and deterministic reconstruction;
+12. `RELEASE_BUILD_DEVICE` evidence for adaptive, themed and legacy launcher contexts;
+13. rollback-safe brand freeze.
 
-### Mega-Wave 06 — Verification/Judge + Seven Evals/Benchmark Foundation
-**Status:** `PASS_FOUNDATION`
-Final `b0f21373c6f3b7bb2584a92457f780821dbe748d`; run `34864774616`; `44` suites; Judge/Benchmark `53`.
+### Exact final evidence identity
+Code/evidence commit:
+`d0f0b4039264f524f9b9aa622a4a15e91ae8712d`
 
-### Mega-Wave 07 — File & Project Tools + Coding Agent Foundation
-**Status:** `PASS_FOUNDATION`
-Pass A `10a9d8facabfd4bb11e3e7a15dd36c6b7112a97f`; Pass B `6e8d7382cfedce04d3916bfdcb0f60ca7efb68fe`; repair `781d04ae63f215da79b479a1ee85137cd4784526`; final run `34869078956` / #1440; `46` suites; Coding/File base `58`, Pass B `25`.
+Successful workflows on that exact code identity:
+- Seven AI tests `34967080994` / #1589 — **SUCCESS**
+- Seven Android APK `34967080935` / #44 — **SUCCESS**
+- Android job `104373980640` — **SUCCESS**
+- full pre-APK gate: **106 suites PASS**
 
-### Mega-Wave 08 — Research + Search/Retrieval + Knowledge/Files Foundation
-**Status:** `PASS_FOUNDATION`
-Pass A `411eeaa3b0ab272d19b67158fe93823b3df278c9`; rebuilt/PassB `772a8fdb8d7582ad50fb553cc28341ff0b7ff3a8`; fixture repair `b1989a71768e22ee79b85a7e76f2b416ae4fbf8b`; final Research→Truth boundary `12fa443be9f3ec7f9d1d4fd4184692814cfae552` + `bc2038b505c1596508252eb7de2e4a51893865fe`; final run `34873736180` / #1447: `49` suites, Research core `46`, Pass B `17`, bridge `2`.
+Final release-evidence APK:
+- SHA-256 `0ea744997550d7a1a6b18a1ffe0556464e281fef5407e92df19023fe557f72f8`
 
-### Mega-Wave 09 — Vision Fabric Foundation
-**Status:** `PASS_FOUNDATION`
-Pass A `3983edf9426a5008f6615c38c17528faafe57622`, `79c9634fd5edbabc67f105cd47a2351bcc4b95a6`, `dd076a0c810b0bc6074e47c91e2e0f1b08232abe`; Pass B `77210911f6ad4e948710d8e45d4b1fe137837736`; final run `34877171756` / #1454: `51` suites, Vision `54 + 27`; artifact `10361900160`.
+Final artifact:
+- ID `10395926932`
+- `seven-android-wave14`
+- size `12014540` bytes
+- digest `sha256:75b4f4d8b359bb2d51070138bdb865bd061c60fc30956e39faf514fe063fff41`
 
-### Mega-Wave 10 — RPG Engine + Story Fabric Runtime Foundation
-**Status:** `PASS_FOUNDATION`
-Pass A `d8485312657e2423d63534d29f5c15a766b0534c`; Pass B `4bd5d8e79176cdd8cd194f8de1ede6e148c67e6c`; fixture repair `47dab9e2e3bdcb8447c79537567dbd200cc84e02`; final authority guard `be4f2642e8ee0c1455ab0e4e467570e7c9d4fa4e`; final run `34879527880` / #1459; `54` suites; artifact `10362351591`.
+Freeze receipt:
+- status **`FROZEN`**
+- rollbackSafe `true`
+- `wave14LogoClosed: true`
+- `broaderAndroidUiCertificationNotClaimed: true`
+- `protectedSourceUntouched: true`
+- seal **`3d403a54d8d188fa4f9628d7bdaf123bd6e240d2a3d4c950d2235b433e00ab9b`**
 
-### Mega-Wave 11 — Real Works Canon Simulation + Titles / World Linguistic Foundation
-**Status:** `PASS_FOUNDATION`
-Pass A `d497f3e86a2e1b5ca2a676dcce70fa87f1ac1e25`; Pass B `019230858efd320fe66064b30fed2c9b3350d5ff`; final adversarial guard `78a4b25d41c70e0ef0cb5c55b721d6efbc1c5820`; final run `34888351330` / #1463; `57` suites; artifact `10365288940`.
-Wave 11 established source/version/evidence-bound Canon, explicit continuity/adaptation separation, partial chronology, character knowledge horizons, `CANON_GAP`, explicit player divergence, constraint-only RPG integration and official/generated naming separation with Arabic/localization/replay safeguards.
+Protected source remained exactly:
+`3e8dfa8e7da7124e16504140eb9631c10cabf053`
 
-### Mega-Wave 12 — Visual Evidence Runtime Foundation
-**Status:** `PASS_FOUNDATION`
-Pass A `2309a822c5d3d2bbf063c4e9d205d5cce3047ed2` + capture/test wiring `7504be4835fd2cbad3b8831009443b676532cfcd`; final implementation `7764d275b6231008d603352c442cf56a0bfd6132`; run `34890701798` / #1474 SUCCESS; `60` suites; Visual Evidence `43 + 32 + 5`; live capture `8/8 PASS` in HOST/OBSERVE mode. UI touch-target defects discovered by the evidence system were repaired rather than hidden. Static gate ended at `99743 / 100000` startup bytes. Artifact `10366787278`, SHA-256 `fad44979a715b618ce6197c0b9b7b3d049d0df4e1fddf3b29cd6e9300c86ab38`.
+### Truth boundary
+Wave 14 closes the logo/identity tournament and Android launcher identity proof. It does not manufacture broader final-UI device certification, physical-device battery/thermal/RAM evidence, TalkBack-device proof, production store signing, live model champion proof, or overall application release completion.
 
-### Mega-Wave 13 — Design Genome Runtime + Design Lint Foundation
-**Status:** `PASS_FOUNDATION`
+## Campaign state after Wave 14
+The campaign has now passed the point where most remaining value comes from rebuilding isolated foundations. Subsequent waves should increasingly combine already-green systems into release-quality product behavior and then attack the integrated product with device, failure, adversarial, long-session and saturation evidence.
 
-Pass A commit **`9a3b185eeaf959dcf39f75b1a9429ac7aff13319`** created executable/build-time Design Genome and Design Lint foundations:
-- canonical Day/Night + brand + Aurora + domain token semantics;
-- typography/spacing/shape/motion/touch roles;
-- formal Seven signature primitive contracts: Orbit Thread, Seven Cut, Evidence Rail, Focus Halo, State Node;
-- deterministic sealed Genome snapshots;
-- Genome Coverage Ledger;
-- compatibility adapters for existing `--sb-*` and `--seven-*` families;
-- lint for unsafe global transitions, continuous-motion guards, RTL physical-edge migration candidates, raw colors, unknown canonical tokens, unmapped legacy tokens and unknown signature primitives.
-
-Pass B commit **`72246f62c10babd201ec1ed0ef86119cf27d83e7`** hardened:
-- exact repository path/blob/commit/branch source identity;
-- single-commit/single-branch manifests;
-- traversal/weak-SHA/duplicate-source rejection;
-- monotonic token migration comparison;
-- no silent canonical/adapted coverage loss;
-- explicit approval for newly unmapped legacy tokens;
-- sealed migration receipts;
-- semantic primitive audits including non-color State Node meaning;
-- promotion requires manifest + PASS comparison + migration receipt + primitive audits.
-
-Final implementation run **`34892708588` / #1479: SUCCESS** end-to-end:
-- `all test suites: PASS (63 suites)`;
-- Design Genome: **141 assertions**;
-- Design Lint: **37 assertions**;
-- Design Genome Pass B: **35 assertions**;
-- current live CSS lint: **0 FAIL, 7 WARN, 54 INFO**;
-- live Visual Evidence still **8/8 PASS** in HOST/OBSERVE mode;
-- protected source integrity PASS;
-- static audit unchanged at **`99743 / 100000` startup bytes**, `34881` lazy workspace bytes, `3689533 / 8388608` static APK, `0` static warnings;
-- artifact **`10368050591`**, size `2180110`, SHA-256 **`f4ee05b5f40efc97c5eaffcb1e4bb7de8f94f7a060ebbb4203914f9c0735c4d1`**.
-
-Truth boundary: Wave 13 proves governed Design Genome + build-time drift/migration authority. It does **not** claim every existing CSS token has migrated, nor that the final logo/UI is complete. The `7 WARN / 54 INFO` findings remain explicit migration debt.
-
-Detailed closure: `WAVE_13_DESIGN_GENOME_CLOSURE.md`.
-
-## Model Frontier Research Snapshot
-`MODEL_FRONTIER_RESEARCH.md` records time-sensitive findings without promoting them into permanent architecture truth. Champion qualification remains evidence-driven and expiring.
+Remaining categories include:
+- full-system integration across Core/Coding/Research/RPG/Memory/Models/Tools/Verification;
+- final UI-wide Design Genome migration/polish;
+- broader Android release-device visual/accessibility/TalkBack evidence;
+- physical-phone startup/RAM/battery/thermal/frame-tail evidence;
+- live provider/model qualification and matched real Seven Evals;
+- live Research/Vision/Canon acquisition and durable caches;
+- persistent recovery/platform integration;
+- stress/failure/long-session campaigns;
+- final Red Team, release hardening and genuine Saturation `2/2`.
 
 ## Next Mega-Wave
-**Mega-Wave 14 — Logo & Identity Tournament.**
-
-Build the governed candidate asset/evidence pipeline, compare distinct families under the locked Visual Evaluation Constitution, verify monochrome silhouette, tiny-size identity, Android adaptive masks, Day/Night treatments, themed icon behavior, export integrity and anti-imitation. Production Android identity must not be replaced until a candidate wins with evidence and rollback remains possible.
+**Mega-Wave 15** is the next formal closure. Select its exact scope from the authoritative master plan with priority on integration/release truth, not redoing Wave 14.
