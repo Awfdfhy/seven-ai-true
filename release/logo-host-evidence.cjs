@@ -6,7 +6,7 @@ const visual=require("./visual-evidence-runtime-final.cjs");
 const passb=require("./logo-tournament-passb.cjs");
 const tournament=require("./logo-tournament.cjs");
 
-const VERSION="1.0.0";
+const VERSION="1.1.0";
 const HOST_ENV="github-actions:ubuntu-24.04:chromium-headless:seven-logo-host-v1";
 function sha(buf){return crypto.createHash("sha256").update(buf).digest("hex")}
 function safe(s){return String(s).replace(/[^a-z0-9._-]+/gi,"-").replace(/^-+|-+$/g,"").toLowerCase()}
@@ -17,11 +17,11 @@ function maskRadius(v){return ({"mask-circle":"50%","mask-squircle":"28%","mask-
 function renderHtml(record,{stage,variant}){
   let svg=assetSvg(record,"MASTER_VECTOR"),markSize=108,bg="#07111f",frameClass="plain",label=`${stage} / ${variant}`,extra="";
   if(stage==="SILHOUETTE"||stage==="MONOCHROME"){svg=assetSvg(record,"MONOCHROME_VECTOR");bg="#ffffff"}
-  if(stage==="TINY_SIZE"){svg=assetSvg(record,"MASTER_VECTOR");markSize=pxFromVariant(variant)||24;bg="#f7fbff"}
+  if(stage==="TINY_SIZE"){svg=assetSvg(record,"DAY_VECTOR");markSize=pxFromVariant(variant)||24;bg="#f7fbff"}
   if(stage==="ADAPTIVE_MASK"){svg=assetSvg(record,"ADAPTIVE_FOREGROUND");bg="#101c2e";frameClass="mask";extra=`border-radius:${maskRadius(variant)};background:#07111f;`}
   if(stage==="DAY_NIGHT"){const day=variant==="day";svg=assetSvg(record,day?"DAY_VECTOR":"NIGHT_VECTOR");bg=day?"#f7fbff":"#07111f"}
   if(stage==="PRODUCT_CONTEXT"){
-    const map={launcher:{size:92,cls:"launcher",text:"Launcher"},splash:{size:112,cls:"splash",text:"Seven"},sidebar:{size:44,cls:"sidebar",text:"Seven AI"},topbar:{size:38,cls:"topbar",text:"Seven"},settings:{size:46,cls:"settings",text:"Identity"}},m=map[variant]||map.launcher;markSize=m.size;frameClass=`product ${m.cls}`;label=m.text;
+    const map={launcher:{size:92,cls:"launcher",text:"Launcher",dark:true},splash:{size:112,cls:"splash",text:"Seven",dark:true},sidebar:{size:44,cls:"sidebar",text:"Seven AI",dark:true},topbar:{size:38,cls:"topbar",text:"Seven",dark:false},settings:{size:46,cls:"settings",text:"Identity",dark:true}},m=map[variant]||map.launcher;markSize=m.size;frameClass=`product ${m.cls}`;label=m.text;svg=assetSvg(record,m.dark?"NIGHT_VECTOR":"DAY_VECTOR");
   }
   return `<!doctype html><html><head><meta charset="utf-8"><style>*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden}body{display:grid;place-items:center;background:${bg};font:13px system-ui,sans-serif}.stage{width:320px;height:320px;display:grid;place-items:center;position:relative}.plain{display:grid;place-items:center}.mark{width:${markSize}px;height:${markSize}px;display:block}.mark svg{width:100%;height:100%;display:block}.mask{width:108px;height:108px;display:grid;place-items:center;overflow:hidden;${extra}}.mask .mark{width:108px;height:108px}.product{border:1px solid #33475e;box-shadow:0 8px 30px rgba(0,0,0,.16);color:#93a5bb}.launcher{width:144px;height:144px;border-radius:34px;background:#0b1728;display:grid;place-items:center}.splash{width:300px;height:240px;border:0;box-shadow:none;background:#07111f;display:grid;place-items:center;gap:10px}.sidebar{width:280px;height:82px;border-radius:18px;background:#0b1728;display:flex;align-items:center;gap:14px;padding:18px}.topbar{width:300px;height:64px;border-radius:16px;background:#f7fbff;color:#203047;display:flex;align-items:center;gap:12px;padding:13px}.settings{width:300px;height:96px;border-radius:18px;background:#0b1728;display:flex;align-items:center;gap:16px;padding:20px}.product .mark{flex:0 0 auto}.caption{position:absolute;bottom:7px;left:0;right:0;text-align:center;color:${bg==="#f7fbff"?"#52657a":"#8fa2b8"};font-size:10px}.product .caption{display:none}.context-label{font-weight:650;letter-spacing:.01em}</style></head><body><main id="evidence-frame" class="stage"><section class="${frameClass}"><div id="mark" class="mark" aria-label="${record.candidate.name}">${svg}</div>${stage==="PRODUCT_CONTEXT"?`<span class="context-label">${label}</span>`:""}</section><div class="caption">${record.candidate.id} · ${stage} · ${variant}</div></main></body></html>`;
 }
