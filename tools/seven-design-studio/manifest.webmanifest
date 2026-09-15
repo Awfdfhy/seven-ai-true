@@ -1,0 +1,19 @@
+{
+  "name": "Seven Design Studio",
+  "short_name": "Seven Design",
+  "description": "Mobile-first visual design environment for Seven UI.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0A1022",
+  "theme_color": "#0A1022",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./seven-design-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
