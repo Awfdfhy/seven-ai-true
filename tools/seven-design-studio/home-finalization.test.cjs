@@ -47,17 +47,20 @@ const server=http.createServer((req,res)=>{
   await page.locator('#previewBtn').click();
   await page.locator('#previewShell:not([hidden])').waitFor();
   const preview=page.locator('#previewFrame').contentFrame();
-  const pHome=preview.locator('[data-seven-home-visual-polish-v4="2026.09-visual-polish-v4-final"]');
+  const pHome=preview.locator('[data-seven-home-completion="2026.09-home-v5"]');
   await pHome.waitFor({timeout:10000});
   await page.waitForTimeout(950);
 
+  const pPad=await pHome.evaluate(el=>parseFloat(getComputedStyle(el).paddingBottom));
+  const pNavH=await preview.locator('.v5-bottom-nav').evaluate(el=>el.getBoundingClientRect().height);
+  if(pPad<pNavH+55)throw new Error(`Standalone preview lost final bottom clearance: padding=${pPad}, nav=${pNavH}`);
   const scrollY=await preview.locator('body').evaluate(()=>window.scrollY);
   if(Math.abs(scrollY)>1)throw new Error(`Preview did not reset to top: ${scrollY}`);
-  const title=await preview.locator('.v5-intro h1').evaluate(el=>el.getBoundingClientRect());
+  const title=await preview.locator('.v5-intro h1').evaluate(el=>{const r=el.getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right};});
   if(title.top<0)throw new Error(`Home title is clipped above the viewport: ${JSON.stringify(title)}`);
   const rail=await preview.locator('.v5-shortcuts').evaluate(el=>({left:el.scrollLeft,sw:el.scrollWidth,cw:el.clientWidth}));
   if(Math.abs(rail.left)>1)throw new Error(`LTR intent rail did not reset to Research: ${JSON.stringify(rail)}`);
-  const first=await preview.locator('.v4-shortcut').first().evaluate(el=>el.getBoundingClientRect());
+  const first=await preview.locator('.v4-shortcut').first().evaluate(el=>{const r=el.getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right};});
   if(first.left<0||first.right<=0)throw new Error(`First Home shortcut is clipped: ${JSON.stringify(first)}`);
   const geom=await pHome.evaluate(el=>({sw:el.scrollWidth,cw:el.clientWidth}));
   if(geom.sw>geom.cw+1)throw new Error(`Final Home overflows horizontally at 320px: ${geom.sw}/${geom.cw}`);
