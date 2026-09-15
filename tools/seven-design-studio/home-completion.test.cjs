@@ -70,12 +70,13 @@ const server=http.createServer((req,res)=>{
   const preview=page.locator('#previewFrame').contentFrame();
   await preview.locator('[data-seven-home-completion="2026.09-home-v5"]').waitFor({timeout:10000});
   const pLayer=preview.locator('.v5-layer:not([hidden])');
+  const close=()=>pLayer.locator('.v5-sheet-close').click();
 
   await preview.locator('.v4-add').click();
   await pLayer.waitFor({timeout:5000});
   const addLabels=await pLayer.locator('.v5-action-tile small').allTextContents();
   for(const expected of ['Files','Photos','Camera','Scan','Web','Tools','Connect','Context'])if(!addLabels.includes(expected))throw new Error(`Add sheet missing ${expected}`);
-  await pLayer.locator('[data-v5-close]').first().click();
+  await close();
 
   await preview.locator('.v4-mode').click();
   await pLayer.waitFor({timeout:5000});
@@ -88,7 +89,7 @@ const server=http.createServer((req,res)=>{
   if(await pLayer.locator('[data-v5-context-toggle]').count()!==6)throw new Error('Context sheet must expose six governed source families');
   const contextText=(await pLayer.textContent())||'';
   for(const expected of ['Conversation','Memories','Current Space','Files','Pinned','Sources','Context Compiler'])if(!contextText.includes(expected))throw new Error(`Context sheet missing ${expected}`);
-  await pLayer.locator('[data-v5-close]').first().click();
+  await close();
 
   await preview.locator('.v4-all').click();
   await pLayer.waitFor({timeout:5000});
@@ -100,7 +101,7 @@ const server=http.createServer((req,res)=>{
   await pLayer.locator('[data-v5-command="permissions"]').click();
   await pLayer.waitFor({timeout:5000});
   if(!((await pLayer.textContent())||'').includes('READ_REMOTE'))throw new Error('Permission UI did not expose scoped authority');
-  await pLayer.locator('[data-v5-close]').first().click();
+  await close();
 
   await preview.locator('.v4-shortcut.research').click();
   if(await preview.locator('.v5-active-chip').count()!==1)throw new Error('Specialist shortcut did not become a removable composer chip');
