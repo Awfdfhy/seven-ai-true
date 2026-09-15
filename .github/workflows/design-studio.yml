@@ -37,3 +37,5 @@ jobs:
         run: node tools/seven-design-studio/seven-mark-polish.test.cjs
       - name: Run Seven Home completion test
         run: node tools/seven-design-studio/home-completion.test.cjs
+      - name: Run Seven Home capability catalog test
+        run: node tools/seven-design-studio/home-capability-catalog.test.cjs
