@@ -7,7 +7,10 @@
   api.init = function sevenDesignInit(...args) {
     const editor = originalInit(...args);
     window.__sevenDesignEditor = editor;
-    window.dispatchEvent(new CustomEvent('seven-design-editor-ready', { detail: { editor } }));
+
+    const announce = () => window.dispatchEvent(new CustomEvent('seven-design-editor-ready', { detail: { editor } }));
+    announce();
+    editor.on('load', announce);
     return editor;
   };
 
