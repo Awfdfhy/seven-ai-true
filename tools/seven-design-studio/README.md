@@ -1,6 +1,6 @@
 # Seven Design Studio
 
-Status: **feature-complete mobile-first design-studio candidate; first physical Android pass completed; post-pass polish awaiting device recheck**
+Status: **feature-complete mobile-first design-studio candidate; first physical Android pass completed; host polish suite green; final device recheck pending**
 
 Branch: `seven-design-studio-v0`
 
@@ -23,7 +23,7 @@ The studio is isolated from the production Seven runtime. It does **not** claim 
 - Full / Balanced / Lite preview behavior;
 - Large Text stress mode;
 - Reduced Motion mode;
-- safe-area aware shell;
+- safe-area-aware shell;
 - Android IME-friendly viewport mode;
 - >=44px critical touch targets with 46-48px mobile polish targets;
 - visible keyboard focus treatment;
@@ -38,7 +38,10 @@ The studio is isolated from the production Seven runtime. It does **not** claim 
 - editable layout properties;
 - gap, padding, radius, font size, background and text color;
 - SEVEN design tokens;
-- reusable local component library.
+- reusable local component library;
+- persistent optional 8px design grid;
+- persistent optional safe-area guides;
+- design guides are editor-only and are never exported.
 
 ### Component library
 General primitives:
@@ -99,7 +102,7 @@ A separate Preview surface renders the actual current screen as standalone HTML.
 - open-command placeholder;
 - toggle-state.
 
-A mobile preview guard now enforces the selected Night/Day palette and text contrast in the prototype iframe. This specifically addresses the first physical Android finding where a preview labelled `night` rendered a light screen with low-contrast text.
+A mobile preview guard enforces the selected Night/Day palette and text contrast in the prototype iframe. This specifically addresses the first physical Android finding where a preview labelled `night` rendered a light screen with low-contrast text.
 
 These remain prototype-only and are not production runtime claims.
 
@@ -114,62 +117,73 @@ The deterministic judge can inspect the current rendered canvas for mechanical r
 
 The score is a local heuristic, not a claim of artistic quality or release readiness.
 
-### Persistence and export
+### Persistence, recovery and export
 - automatic local project save;
 - explicit save;
+- save-on-background/page-exit hardening;
+- bounded local recovery snapshots;
+- manual Recovery Snapshot;
+- Restore Latest recovery action;
 - document name;
 - reusable component library in local storage;
-- standalone HTML export;
+- hardened standalone HTML export;
+- Copy HTML fallback for Android workflows;
 - full Seven Design Studio JSON export;
 - JSON import.
 
-### Installability
+Hardened HTML export carries the selected theme/direction/accessibility classes and the same Night/Day contrast guard used by Prototype Preview. It also includes mobile viewport/safe-area metadata.
+
+### Installability and offline resilience
 The studio includes:
 - Web App Manifest;
 - SEVEN Design app icon;
-- service worker shell caching;
 - standalone PWA display mode;
-- versioned app-shell cache including the mobile polish assets.
+- versioned app-shell cache;
+- best-effort first-load pre-cache for pinned GrapesJS Core 0.23.6 assets;
+- cache-first reuse of the pinned GrapesJS assets after a successful online load;
+- an in-editor offline readiness status.
 
-Once served over HTTPS, compatible Android browsers can install it to the home screen.
+The studio itself has no usage-credit counter. GrapesJS Core is pinned to `0.23.6` and is loaded from `unpkg.com` on the first uncached load. A future vendoring pass can remove that remaining first-load network dependency entirely.
 
 ## Files
 
 - `index.html` — mobile studio shell;
 - `studio.css` — editor UI system;
-- `studio.js` — editor runtime, components, states, judge, preview and export;
-- `mobile-polish.css` — Android/touch/safe-area presentation hardening;
-- `mobile-polish.js` — preview theme guard, mobile accessibility labels and escape handling;
+- `studio-bridge.js` — narrow bridge exposing the GrapesJS editor to hardening extensions without rewriting the core runtime;
+- `studio.js` — editor runtime, components, states, judge, preview and base export;
+- `mobile-polish.css` — Android/touch/safe-area/guides presentation hardening;
+- `mobile-polish.js` — preview theme guard, hardened export, recovery, offline status, guides and mobile reliability layer;
 - `manifest.webmanifest` — PWA metadata;
-- `sw.js` — versioned app-shell cache;
+- `sw.js` — versioned local + pinned dependency cache;
 - `seven-design-icon.svg` — temporary studio icon, not the final governed SEVEN logo;
-- `test.cjs` — mobile-browser verification and protected-source integrity check.
-
-## Dependency boundary
-
-GrapesJS Core is pinned at `0.23.6` but is currently loaded from `unpkg.com`. The studio itself has no usage-credit counter, but first load requires network access to that external dependency. A later hardening step may vendor GrapesJS locally so the editor can become deterministic and genuinely offline-first.
+- `test.cjs` — core mobile-browser verification and protected-source integrity check;
+- `polish.test.cjs` — hardened export/recovery/editor-bridge browser regression suite.
 
 ## Verification
 
-The isolated `Seven Design Studio` GitHub Actions workflow runs `test.cjs` independently from unrelated repository suites.
+The isolated `Seven Design Studio` GitHub Actions workflow is the authoritative host verification for this tool. It runs both browser suites independently from unrelated repository systems.
 
-`test.cjs` performs:
-- JavaScript syntax parse for the core and mobile polish layers;
-- required asset/shell checks;
+Host verification currently covers:
+- JavaScript syntax and required asset wiring;
 - mobile Chromium boot with touch enabled;
 - actual GrapesJS canvas render;
-- minimum touch-target checks;
-- Night prototype preview contrast and palette check;
-- Day mode propagation into the canvas;
+- minimum critical touch-target checks;
+- Night prototype preview contrast/palette;
+- Day mode propagation;
 - RTL propagation;
-- Day + RTL prototype preview check;
+- Day + RTL prototype preview;
 - component library render;
-- 320px device switching;
-- 320px shell overflow check;
-- preview horizontal-overflow check;
+- prototype horizontal-overflow check;
+- 320px device switching and shell overflow check;
+- editor bridge availability;
+- recovery snapshot persistence;
+- hardened HTML export/download;
+- export mobile viewport metadata;
+- export theme/direction preservation;
+- export contrast guard;
 - protected `seven_ai-final.html` byte-integrity check.
 
-The branch also wires the test through `hardening/design-studio.test.cjs`, allowing the repository's existing discovery to execute it without changing the protected application source. The wider repository workflow currently has an unrelated pre-existing acquisition-cache assertion (`STALE` vs `HIT`); the isolated Design Studio workflow is the authoritative host check for this tool until that separate failure is resolved.
+The wider repository workflow currently has an unrelated pre-existing acquisition-cache assertion (`STALE` vs `HIT`). It is not used to mislabel the Studio as failed when the isolated Studio workflow is green.
 
 ## Physical Android evidence
 
@@ -178,7 +192,7 @@ First device pass: **completed**.
 User-observed result:
 - the hosted Studio opened successfully on Android;
 - Prototype Preview rendered at 320px;
-- the overall mobile composition was judged comfortable/good by the user;
+- the overall mobile composition was judged good by the user;
 - no obvious horizontal layout break was visible in the supplied screenshot.
 
 Observed defect from that pass:
@@ -187,13 +201,16 @@ Observed defect from that pass:
 Implemented response:
 - explicit prototype Night/Day fallback variables;
 - forced foreground/background pairing for core SEVEN surfaces;
-- theme-color synchronization;
 - stronger touch sizing;
 - small-phone shell polish;
 - improved preview framing;
-- automated regression coverage for Night/Day preview contrast.
+- hardened exported HTML;
+- recovery snapshots and background save hardening;
+- persistent 8px grid and safe-area guides;
+- pinned dependency offline caching after a successful load;
+- automated regression coverage for the physical-pass defect and mobile reliability features.
 
-The fix is host-tested but still requires the user's next physical-device recheck before being called device-verified.
+The fixes are host-verified. They still require the user's next physical-device recheck before being called fully device-verified.
 
 ## Remaining physical checks
 
@@ -201,15 +218,17 @@ These still require the real Android device and must not be fabricated from host
 1. recheck Night and Day prototype contrast after the new guard;
 2. actual drag/select comfort over a longer editing session;
 3. Android keyboard / IME behavior while editing text and numeric fields;
-4. safe-area behavior under browser/PWA display modes;
-5. export/download behavior under Android storage handling;
-6. PWA installation and relaunch;
-7. performance, heat and battery feel during a real design session.
+4. safe-area behavior in browser and installed PWA display modes;
+5. HTML/JSON export and Copy HTML behavior under Android;
+6. recovery snapshot/restore behavior in normal use;
+7. PWA installation and relaunch;
+8. cached relaunch with network unavailable;
+9. performance, heat and battery feel during a real design session.
 
 ## Next physical test target
 
 Use one compact flow:
 
-`Home → 320px → Night Preview → Day Preview → RTL → close Preview → select Composer → Design → change radius/token → States → Researching → Preview → Save → export JSON`
+`Home → 320px → Night Preview → Day Preview → RTL → close Preview → More → 8px Grid → Safe-area Guides → select Composer → Design → change radius/token → States → Researching → Preview → Recovery Snapshot → Save → Export HTML/JSON`
 
-If this remains comfortable on-device, the Studio is ready to become the primary tool for the full SEVEN UI campaign.
+If this remains comfortable on-device, the Studio is ready to become the primary design environment for the full SEVEN UI campaign.
