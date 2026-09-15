@@ -2,13 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content" />
   <meta name="theme-color" content="#0A1022" />
+  <meta name="color-scheme" content="dark light" />
   <meta name="description" content="Seven Design Studio — mobile-first visual UI design environment for Seven." />
   <link rel="manifest" href="./manifest.webmanifest" />
   <title>Seven Design Studio</title>
   <link rel="stylesheet" href="https://unpkg.com/grapesjs@0.23.6/dist/css/grapes.min.css" />
   <link rel="stylesheet" href="./studio.css" />
+  <link rel="stylesheet" href="./mobile-polish.css" />
 </head>
 <body>
   <div class="app-shell" id="appShell">
@@ -26,11 +28,11 @@
 
     <section class="subbar" aria-label="Preview controls">
       <select id="deviceSelect" aria-label="Preview width">
-        <option value="320">320</option>
-        <option value="360">360</option>
-        <option value="393" selected>393</option>
-        <option value="412">412</option>
-        <option value="480">480</option>
+        <option value="320">320px</option>
+        <option value="360">360px</option>
+        <option value="393" selected>393px</option>
+        <option value="412">412px</option>
+        <option value="480">480px</option>
       </select>
       <button class="chip" id="themeBtn" aria-label="Toggle theme">Night</button>
       <button class="chip" id="dirBtn" aria-label="Toggle text direction">LTR</button>
@@ -77,6 +79,7 @@
 
   <script src="https://unpkg.com/grapesjs@0.23.6/dist/grapes.min.js"></script>
   <script src="./studio.js"></script>
+  <script src="./mobile-polish.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
