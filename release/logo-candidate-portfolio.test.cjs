@@ -8,10 +8,11 @@ const tournament=require("./logo-tournament.cjs");
 const brand=require("./brand-asset-contract.cjs");
 let n=0;const ok=(v,m)=>{assert.ok(v,m);n++},eq=(a,b,m)=>{assert.strictEqual(a,b,m);n++};
 const p=portfolio.buildPortfolio();
-eq(p.records.length,6);ok(portfolio.verifyPortfolioManifest(p.manifest));eq(p.manifest.winner,null);eq(p.manifest.freezeEligible,false);eq(p.manifest.authorityBoundary.productionAssetReplacementAllowed,false);eq(p.manifest.authorityBoundary.independentDistinctivenessRequired,true);eq(p.manifest.authorityBoundary.releaseBuildDeviceProofRequiredForFreeze,true);
+eq(p.records.length,6);ok(portfolio.verifyPortfolioManifest(p.manifest));eq(p.manifest.winner,null);eq(p.manifest.freezeEligible,false);eq(p.manifest.authorityBoundary.productionAssetReplacementAllowed,false);eq(p.manifest.authorityBoundary.independentDistinctivenessRequired,true);eq(p.manifest.authorityBoundary.releaseBuildDeviceProofRequiredForFreeze,true);eq(p.manifest.authorityBoundary.pass2LineageRequired,true);
 eq(new Set(p.records.map(r=>r.candidate.family)).size,6);eq(new Set(p.records.map(r=>r.geometrySignature)).size,6);eq(new Set(p.records.map(r=>r.assets.find(a=>a.kind==="MASTER_VECTOR").ref.sha256)).size,6);
-const expectedFamilies={"infinite-cut":"L-A","eclipse-seven":"L-B","orbit-cut":"L-C","horizon-fold":"L-D","state-node-seven":"L-E","dual-arc-gate":"L-F"};
-for(const [id,family] of Object.entries(expectedFamilies)){const r=p.records.find(x=>x.candidate.id===id);ok(r,`missing ${id}`);eq(r.candidate.family,family,`${id} family must match tournament brief`)}
+const expectedFamilies={"infinite-cut":"L-A","eclipse-seven-v2":"L-B","orbit-cut":"L-C","horizon-fold-v2":"L-D","state-node-seven-v2":"L-E","dual-arc-gate":"L-F"};
+const expectedParents={"eclipse-seven-v2":"eclipse-seven","horizon-fold-v2":"horizon-fold","state-node-seven-v2":"state-node-seven"};
+for(const [id,family] of Object.entries(expectedFamilies)){const r=p.records.find(x=>x.candidate.id===id);ok(r,`missing ${id}`);eq(r.candidate.family,family,`${id} family must match tournament brief`);eq(r.candidate.parentId,expectedParents[id]||null,`${id} lineage`)}
 for(const r of p.records){
   const master=r.assets.find(a=>a.kind==="MASTER_VECTOR").ref;ok(tournament.verifyCandidate(r.candidate,{masterAsset:master,geometry:r.geometry}));eq(r.geometry.essentialSafeRegionPass,true);ok(r.geometry.essentialBounds.x>=tournament.SAFE.margin);ok(r.geometry.essentialBounds.y>=tournament.SAFE.margin);ok(r.geometry.essentialBounds.x+r.geometry.essentialBounds.width<=tournament.SAFE.layer-tournament.SAFE.margin);ok(r.geometry.essentialBounds.y+r.geometry.essentialBounds.height<=tournament.SAFE.layer-tournament.SAFE.margin);
   eq(r.assets.length,brand.REQUIRED_KINDS.length);eq(new Set(r.assets.map(a=>a.kind)).size,brand.REQUIRED_KINDS.length);
@@ -24,4 +25,4 @@ const temp=fs.mkdtempSync(path.join(os.tmpdir(),"seven-logo-portfolio-"));const 
 const diskManifest=JSON.parse(fs.readFileSync(path.join(result.out,"portfolio-manifest.json"),"utf8"));ok(portfolio.verifyPortfolioManifest(diskManifest));
 for(const r of p.records)for(const a of r.assets){const full=path.join(result.out,"candidates",r.candidate.id,a.file);ok(fs.existsSync(full));eq(brand.fileSha256(fs.readFileSync(full)),a.ref.sha256);}
 fs.rmSync(temp,{recursive:true,force:true});
-console.log(`Logo Candidate Portfolio: PASS (${n} assertions; 6 real vector families, brief semantics locked, no fabricated winner)`);
+console.log(`Logo Candidate Portfolio: PASS (${n} assertions; 6 real vector families, Pass-2 lineage locked, no fabricated winner)`);
