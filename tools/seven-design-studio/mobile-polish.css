@@ -24,11 +24,31 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .subbar{height:54px;padding:5px 10px;gap:7px;scroll-snap-type:x proximity}
 .subbar select,.chip{height:42px;min-height:42px;scroll-snap-align:start}
 .workspace{padding:10px 8px}
-.phone-stage{box-shadow:var(--studio-shadow);border-color:#334563}
+.phone-stage{position:relative;box-shadow:var(--studio-shadow);border-color:#334563}
 .dock{gap:6px;padding-top:8px}
 .dock-button{min-height:58px;border-radius:15px}
 .dock-button span{font-size:20px}
 .dock-button small{font-size:10px;font-weight:650;letter-spacing:.01em}
+
+/* Design guides live above the canvas but never intercept touches. */
+.seven-guide-overlay{position:absolute;inset:0;z-index:30;pointer-events:none;border-radius:inherit;overflow:hidden;opacity:0;transition:opacity .16s ease}
+.seven-guide-overlay.on{opacity:1}
+.seven-guide-grid{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(50,190,207,.13) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(50,190,207,.13) 1px,transparent 1px),
+    linear-gradient(rgba(65,102,245,.12) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(65,102,245,.12) 1px,transparent 1px);
+  background-size:8px 8px,8px 8px,32px 32px,32px 32px;
+}
+.seven-guide-safe{position:absolute;inset:0;display:none}
+.seven-guide-safe.on{display:block}
+.seven-guide-safe:before,.seven-guide-safe:after{content:"";position:absolute;left:0;right:0;border-color:rgba(255,184,77,.82);border-style:dashed;filter:drop-shadow(0 0 4px rgba(255,184,77,.18))}
+.seven-guide-safe:before{top:24px;border-width:1px 0 0}
+.seven-guide-safe:after{bottom:24px;border-width:0 0 1px}
+.seven-guide-safe span{position:absolute;inset:24px 12px;border:1px dashed rgba(130,101,220,.62);border-radius:16px}
+.guide-active{border-color:rgba(50,190,207,.62)!important;background:rgba(50,190,207,.1)!important;color:#dffcff!important}
 
 /* Sheets */
 .backdrop{backdrop-filter:blur(2px)}
@@ -94,5 +114,5 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 }
 
 @media(prefers-reduced-motion:reduce){
-  .phone-stage,.sheet,.toast,.icon-button,.block{transition:none!important}
+  .phone-stage,.sheet,.toast,.icon-button,.block,.seven-guide-overlay{transition:none!important}
 }
