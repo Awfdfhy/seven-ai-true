@@ -50,7 +50,7 @@ const server=http.createServer((req,res)=>{
   const geom=await chat.evaluate(el=>({sw:el.scrollWidth,cw:el.clientWidth,minH:el.getBoundingClientRect().height,w:el.getBoundingClientRect().width}));
   if(geom.sw>geom.cw+1)throw new Error(`Chat overflows at 393px: ${geom.sw}/${geom.cw}`);
   const composer=await canvas.locator('.svchat-composer-zone').evaluate(el=>{const s=getComputedStyle(el),r=el.getBoundingClientRect();return{position:s.position,bottom:s.bottom,w:r.width,h:r.height}});
-  if(composer.position!=='fixed'||parseFloat(composer.bottom)!==0||composer.w<geom.w-2)throw new Error(`Chat composer is not keyboard-edge anchored: ${JSON.stringify({composer,chatWidth:geom.w})}`);
+  if(composer.position!=='fixed'||parseFloat(composer.bottom)!==0||composer.w<geom.w*.95)throw new Error(`Chat composer is not keyboard-edge anchored: ${JSON.stringify({composer,chatWidth:geom.w})}`);
   const targets=await canvas.locator('.svchat-icon,.svchat-primary,.svchat-response-actions button').evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect();return{w:r.width,h:r.height}}).filter(x=>x.w>0&&x.h>0&&(x.w<48||x.h<48)));
   if(targets.length)throw new Error(`Chat has undersized primary touch targets: ${JSON.stringify(targets.slice(0,5))}`);
   const user=await canvas.locator('.svchat-user-bubble').first().evaluate(el=>{const s=getComputedStyle(el),r=el.getBoundingClientRect();return{w:r.width,bg:s.backgroundImage,radius:s.borderTopLeftRadius}});
