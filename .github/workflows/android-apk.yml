@@ -145,11 +145,16 @@ jobs:
             adb install -r android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest-evidence.apk
             adb shell am instrument -w -e wave14ReleaseEvidence 1 -e class ai.seven.app.Wave14LogoEvidenceTest ai.seven.app.test/androidx.test.runner.AndroidJUnitRunner > /tmp/wave14-instrumentation.txt 2>&1; cat /tmp/wave14-instrumentation.txt; ! grep -q 'FAILURES!!!' /tmp/wave14-instrumentation.txt; grep -Eq 'OK \(1 test\)' /tmp/wave14-instrumentation.txt
             mkdir -p dist/logo-tournament/android-device
-            adb exec-out run-as ai.seven.app.test cat files/wave14-adaptive-icon.png > dist/logo-tournament/android-device/wave14-adaptive-icon.png && test -s dist/logo-tournament/android-device/wave14-adaptive-icon.png
-            adb exec-out run-as ai.seven.app.test cat files/wave14-themed-icon.png > dist/logo-tournament/android-device/wave14-themed-icon.png && test -s dist/logo-tournament/android-device/wave14-themed-icon.png
-            adb exec-out run-as ai.seven.app.test cat files/wave14-legacy-icon.png > dist/logo-tournament/android-device/wave14-legacy-icon.png && test -s dist/logo-tournament/android-device/wave14-legacy-icon.png
-            adb exec-out run-as ai.seven.app.test cat files/wave14-device-proof.json > dist/logo-tournament/android-device/wave14-device-proof.json && test -s dist/logo-tournament/android-device/wave14-device-proof.json
-            node -e "const fs=require('fs'); const p='dist/logo-tournament/android-device/wave14-device-proof.json'; const x=JSON.parse(fs.readFileSync(p,'utf8')); if(x.packageName!=='ai.seven.app'||x.evidenceTransportPackage!=='ai.seven.app.test') process.exit(1); console.log('Wave14 device proof transport: PASS')"
+            DEVICE_EVIDENCE=/sdcard/Android/data/ai.seven.app/files/wave14-evidence
+            adb shell test -s "$DEVICE_EVIDENCE/wave14-adaptive-icon.png"
+            adb shell test -s "$DEVICE_EVIDENCE/wave14-themed-icon.png"
+            adb shell test -s "$DEVICE_EVIDENCE/wave14-legacy-icon.png"
+            adb shell test -s "$DEVICE_EVIDENCE/wave14-device-proof.json"
+            adb exec-out cat "$DEVICE_EVIDENCE/wave14-adaptive-icon.png" > dist/logo-tournament/android-device/wave14-adaptive-icon.png
+            adb exec-out cat "$DEVICE_EVIDENCE/wave14-themed-icon.png" > dist/logo-tournament/android-device/wave14-themed-icon.png
+            adb exec-out cat "$DEVICE_EVIDENCE/wave14-legacy-icon.png" > dist/logo-tournament/android-device/wave14-legacy-icon.png
+            adb exec-out cat "$DEVICE_EVIDENCE/wave14-device-proof.json" > dist/logo-tournament/android-device/wave14-device-proof.json
+            node -e "const fs=require('fs'); const p='dist/logo-tournament/android-device/wave14-device-proof.json'; const x=JSON.parse(fs.readFileSync(p,'utf8')); if(x.packageName!=='ai.seven.app'||x.evidenceTransportPackage!=='ai.seven.app'||x.evidenceTransportMode!=='target-external-app-storage') process.exit(1); console.log('Wave14 device proof transport: PASS')"
             WAVE14_RELEASE_APK=android/app/build/outputs/apk/release/app-release-evidence.apk node release/certify-wave14-android-logo.cjs
 
       - name: Verify APK again after device tests
