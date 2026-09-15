@@ -1,5 +1,5 @@
-const CACHE='seven-design-studio-v1';
-const LOCAL=['./','./index.html','./studio.css','./studio.js','./manifest.webmanifest','./seven-design-icon.svg'];
+const CACHE='seven-design-studio-v2';
+const LOCAL=['./','./index.html','./studio.css','./studio.js','./mobile-polish.css','./mobile-polish.js','./manifest.webmanifest','./seven-design-icon.svg'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(LOCAL)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
 self.addEventListener('fetch',event=>{
