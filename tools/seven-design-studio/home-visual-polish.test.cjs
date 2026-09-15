@@ -6,7 +6,7 @@ const {chromium}=require('playwright');
 
 const root=path.resolve(__dirname,'../..');
 const dir=path.join(root,'tools/seven-design-studio');
-const names=['home-visual-polish-v1.js','home-visual-polish-v2.js','home-visual-polish-a11y-v1.js','home-visual-polish-v3.js'];
+const names=['home-visual-polish-v1.js','home-visual-polish-v2.js','home-visual-polish-a11y-v1.js','home-visual-polish-v3.js','studio-preview-behavior.js'];
 const src={};
 for(const name of names){
   const file=path.join(dir,name);
@@ -21,14 +21,14 @@ for(const token of ['2026.09-visual-polish-v3','--seven-home-visual-polish-v3','
 if(v3.includes('backdrop-filter')||v3.includes('filter:blur('))throw new Error('Visual polish v3 introduced expensive always-on blur');
 
 const index=fs.readFileSync(path.join(dir,'index.html'),'utf8');
-for(const asset of ['./home-visual-polish-v1.js','./home-visual-polish-v2.js','./home-visual-polish-a11y-v1.js','./home-visual-polish-v3.js','./studio-preview-polish.css']){
+for(const asset of ['./home-visual-polish-v1.js','./home-visual-polish-v2.js','./home-visual-polish-a11y-v1.js','./home-visual-polish-v3.js','./studio-preview-polish.css','./studio-preview-behavior.js']){
   if(!index.includes(asset))throw new Error(`Visual polish asset not wired: ${asset}`);
 }
 if(!(index.indexOf('./home-visual-polish-v1.js')<index.indexOf('./home-visual-polish-v2.js')&&index.indexOf('./home-visual-polish-v2.js')<index.indexOf('./home-visual-polish-a11y-v1.js')&&index.indexOf('./home-visual-polish-a11y-v1.js')<index.indexOf('./home-visual-polish-v3.js'))){
   throw new Error('Visual polish module order is invalid');
 }
 const sw=fs.readFileSync(path.join(dir,'sw.js'),'utf8');
-for(const token of ['./home-visual-polish-v3.js','./studio-preview-polish.css','seven-design-studio-v18'])if(!sw.includes(token))throw new Error(`Current service worker missing ${token}`);
+for(const token of ['./home-visual-polish-v3.js','./studio-preview-polish.css','./studio-preview-behavior.js','seven-design-studio-v19'])if(!sw.includes(token))throw new Error(`Current service worker missing ${token}`);
 
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.svg':'image/svg+xml'};
 const server=http.createServer((req,res)=>{
@@ -107,6 +107,8 @@ const server=http.createServer((req,res)=>{
   const preview=page.locator('#previewFrame').contentFrame();
   const pHome=preview.locator('[data-seven-home-visual-polish-v3="2026.09-visual-polish-v3"]');
   await pHome.waitFor({timeout:10000});
+  const top=await preview.locator('html').evaluate(el=>el.scrollTop);
+  if(top!==0)throw new Error(`Prototype preview did not reset to top: ${top}`);
   if(await preview.locator('.v5-shortcuts').evaluate(el=>getComputedStyle(el).display)!=='flex')throw new Error('Prototype preview lost the intent rail');
   if(await preview.locator('.v5-live').evaluate(el=>getComputedStyle(el).display)!=='none')throw new Error('Prototype preview restored redundant Live badge');
 
