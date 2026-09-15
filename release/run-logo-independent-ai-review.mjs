@@ -48,18 +48,17 @@ function packageFor(hostCandidate,stage,variant){const p=hostCandidate.packages.
 function resolvedArtifact(pkg){const raw=String(pkg.artifact.path||'');const full=path.isAbsolute(raw)?raw:path.resolve(ROOT,raw);if(!fs.existsSync(full))throw new Error(`review artifact missing: ${raw}`);return full}
 function familyPrompt(candidate){return ({
   'L-A':'a proprietary number seven fused with a continuity or infinity gesture',
-  'L-B':'a proprietary celestial seven with an eclipse or orbital arc',
-  'L-C':'a compact number seven intersected by one orbital path',
-  'L-D':'a folded or horizon-like geometric number seven mark',
-  'L-E':'a minimal proprietary pure number seven glyph',
-  'L-F':'a distinctive abstract gateway mark with a seven-like identity'
+  'L-B':'a proprietary celestial number seven with a controlled eclipse or orbital arc',
+  'L-C':'a compact number seven intersected by one orbital path and node',
+  'L-D':'a folded or horizon-like geometric number seven mark with strong negative space',
+  'L-E':'a compact proprietary number seven connected to a small cluster of intelligence state nodes',
+  'L-F':'a distinctive abstract dual-arc gateway mark with a subtle seven-like identity'
 })[candidate.family]||'a distinctive proprietary Seven app identity'}
 function structuralScores(record){const g=record.geometry,totalBytes=record.assets.reduce((n,a)=>n+a.ref.bytes,0);const complexity=g.pathCount*5+g.nodeCount;return {
   motionPotential:complexity<=38?4:complexity<=48?3:complexity<=60?2:1,
   implementationSimplicity:complexity<=34?4:complexity<=44?3:complexity<=56?2:1,
   assetCost:totalBytes<=5000?4:totalBytes<=8000?3:totalBytes<=12000?2:1
 }}
-function average(xs){return xs.length?xs.reduce((a,b)=>a+b,0)/xs.length:0}
 async function evaluateCandidate({classifier,record,hostCandidate,reviewCandidate}){
   const traces={};
   const pair=async(name,pkg,positive,negative)=>{const rows=await classify(classifier,resolvedArtifact(pkg),[positive,negative]);const p=byLabel(rows,positive);traces[name]={artifactSha256:pkg.binding.artifactSha256,labels:rows,positive};return {p,pass:p>=0.50,score:scoreFromProbability(p)}};
@@ -74,7 +73,7 @@ async function evaluateCandidate({classifier,record,hostCandidate,reviewCandidat
   const conceptRows=await classify(classifier,masterPath,[familyPrompt(record.candidate),'an unrelated generic abstract app symbol']);const conceptP=byLabel(conceptRows,familyPrompt(record.candidate));traces.concept={labels:conceptRows,positive:familyPrompt(record.candidate)};
   const distinctRows=await classify(classifier,masterPath,LANDSCAPE.prompts);const uniquePrompt=LANDSCAPE.prompts.at(-1),uniqueP=byLabel(distinctRows,uniquePrompt),known=distinctRows.filter(x=>x.label!==uniquePrompt),maxKnown=Math.max(...known.map(x=>x.score));const suspicious=maxKnown>=0.45&&maxKnown>uniqueP+0.15;traces.distinctiveness={labels:distinctRows,uniquePrompt,uniqueP,maxKnown,suspicious};
   const structural=structuralScores(record);
-  const tinyP=Math.min(...tiny.map(x=>x.p)),maskP=Math.min(...masks.map(x=>x.p)),contextP=Math.min(...contexts.map(x=>x.p)),dayNightP=Math.min(day.p,night.p);
+  const tinyP=Math.min(...tiny.map(x=>x.p)),maskP=Math.min(...masks.map(x=>x.p)),dayNightP=Math.min(day.p,night.p);
   const ratings={
     silhouette:silhouette.score,
     smallSize:scoreFromProbability(tinyP),
