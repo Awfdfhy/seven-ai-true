@@ -35,3 +35,5 @@ jobs:
         run: node tools/seven-design-studio/home-reference.test.cjs
       - name: Run Seven mark polish test
         run: node tools/seven-design-studio/seven-mark-polish.test.cjs
+      - name: Run Seven Home completion test
+        run: node tools/seven-design-studio/home-completion.test.cjs
