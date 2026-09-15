@@ -13,10 +13,10 @@ const handoffRuntime=require('./logo-review-handoff.cjs');
 
 const ROOT=path.resolve(path.dirname(new URL(import.meta.url).pathname),'..');
 const DIST=path.join(ROOT,'dist','logo-tournament');
-const MODEL='Xenova/mobileclip_s0';
-const MODEL_REVISION='20c6e4f26ad3f7f7e9cde13c4f9bb54852dd42c6';
+const MODEL='Xenova/clip-vit-base-patch32';
+const MODEL_REVISION='d15189d7028b43f1d3e65039190477f6af591c2a';
 const TRANSFORMERS_VERSION='4.2.0';
-const REVIEWER='mobileclip-s0-independent-visual-reviewer';
+const REVIEWER='clip-vit-base-patch32-independent-visual-reviewer';
 const REVIEWER_CONTEXT=`clean-room:${MODEL}@${MODEL_REVISION}:transformers.js-${TRANSFORMERS_VERSION}:wave14-v1`;
 const LANDSCAPE=Object.freeze({
   epoch:'VISUAL-EPOCH-1',
@@ -107,7 +107,7 @@ async function main(){
   const portfolio=portfolioRuntime.buildPortfolio(),hostPack=readJson(path.join(DIST,'host-visual-evidence.json')),reviewPack=readJson(path.join(DIST,'review-pack.json'));
   if(!hostRuntime.verifyPack(hostPack,portfolio.records))throw new Error('HOST pack invalid before independent review');
   if(!reviewPackRuntime.verifyReviewBundle(reviewPack,{portfolio,hostPack}))throw new Error('review pack invalid before independent review');
-  env.cacheDir=path.join(ROOT,'.cache','wave14-mobileclip');env.allowRemoteModels=true;
+  env.cacheDir=path.join(ROOT,'.cache','wave14-clip');env.allowRemoteModels=true;
   const classifier=await pipeline('zero-shot-image-classification',MODEL,{revision:MODEL_REVISION,dtype:'q8'});
   const results=[];for(const record of portfolio.records){const hostCandidate=hostPack.candidates.find(x=>x.candidateId===record.candidate.id),reviewCandidate=reviewPack.candidates.find(x=>x.candidateId===record.candidate.id);results.push(await evaluateCandidate({classifier,record,hostCandidate,reviewCandidate}))}
   const body={schema:'seven-logo-independent-ai-review.v1',version:1,portfolioSeal:portfolio.manifest.seal,hostPackHash:hostPack.packHash,reviewPackSeal:reviewPack.seal,model:{id:MODEL,revision:MODEL_REVISION,transformersJs:TRANSFORMERS_VERSION,dtype:'q8',task:'zero-shot-image-classification'},reviewer:REVIEWER,reviewerContext:REVIEWER_CONTEXT,builderContext:reviewPack.builderContext,landscape:LANDSCAPE,landscapeSha256:LANDSCAPE_SHA,results,authorityBoundary:{independentModel:true,differentContextFromBuilder:REVIEWER_CONTEXT!==reviewPack.builderContext,doesNotChooseWinner:true,doesNotAuthorizeExport:true,doesNotProveAndroidConsumption:true}};
