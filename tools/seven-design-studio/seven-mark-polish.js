@@ -84,14 +84,14 @@ body.seven-lite .seven-mark-polished .seven-mark-tail-highlight,body[data-seven-
       if (!html.includes(`data-seven-home-version="${HOME_VERSION}"`)) return;
       if (html.includes(`data-seven-mark-version="${VERSION}"`)) return;
 
-      const oldMark = /<svg class="v4-seven-mark(?: seven-mark-polished)?"[\s\S]*?<\/svg>/g;
+      const oldMark = /<svg\b[^>]*class="[^"]*\bv4-seven-mark\b[^"]*"[^>]*>[\s\S]*?<\/svg>/g;
       if (!oldMark.test(html)) return;
       oldMark.lastIndex = 0;
 
       let index = 0;
       const next = html
         .replace(oldMark, () => mark(index++))
-        .replace(/data-seven-mark-polish="[^"]*"/g, '')
+        .replace(/\sdata-seven-mark-polish="[^"]*"/g, '')
         .replace(`data-seven-home-version="${HOME_VERSION}"`, `data-seven-home-version="${HOME_VERSION}" data-seven-mark-polish="${VERSION}"`);
 
       busy = true;
