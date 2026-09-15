@@ -14,5 +14,8 @@ module.exports = Object.freeze({
   visionFabric: require("./vision-fabric-passb.cjs"),
   rpgStoryFabric: require("./rpg-story-fabric-final.cjs"),
   canonFabric: require("./canon-fabric-final.cjs"),
-  titleFabric: require("./title-fabric-final2.cjs")
+  titleFabric: require("./title-fabric-final2.cjs"),
+  durableFabricState: require("./durable-fabric-state.cjs"),
+  acquisitionFabric: require("./acquisition-fabric.cjs"),
+  nativeExecutionFabric: require("./native-execution-fabric-passb.cjs")
 });
