@@ -4,12 +4,15 @@ const fs=require("fs");
 const path=require("path");
 const ROOT=path.resolve(__dirname,"..");
 const generator=fs.readFileSync(path.join(ROOT,"apk","materialize-native-platform.cjs"),"utf8");
+const hardener=fs.readFileSync(path.join(ROOT,"apk","harden-native-platform.cjs"),"utf8");
 const patch=fs.readFileSync(path.join(ROOT,"apk","patch-android.cjs"),"utf8");
 const pkg=JSON.parse(fs.readFileSync(path.join(ROOT,"package.json"),"utf8"));
 let n=0;const ok=(v,m)=>{assert.ok(v,m);n++};const no=(v,m)=>{assert.ok(!v,m);n++};
 
 ok(pkg.scripts["android:generate"].includes("materialize-native-platform.cjs"),"native platform materialization must be in Android generation path");
+ok(pkg.scripts["android:generate"].includes("harden-native-platform.cjs"),"native permission hardening must be in Android generation path");
 ok(pkg.scripts["android:generate"].indexOf("cap add android")<pkg.scripts["android:generate"].indexOf("materialize-native-platform.cjs"),"native materialization must happen after Android project generation");
+ok(pkg.scripts["android:generate"].indexOf("materialize-native-platform.cjs")<pkg.scripts["android:generate"].indexOf("harden-native-platform.cjs"),"native permission hardening must run after materialization");
 ok(generator.includes('@CapacitorPlugin(name="SevenPlatform")'),"SevenPlatform must be a real Capacitor plugin");
 ok(generator.includes("registerPlugin(SevenPlatformPlugin.class)"),"plugin must be registered in MainActivity");
 ok(generator.indexOf("registerPlugin(SevenPlatformPlugin.class)")<generator.indexOf("super.onCreate(savedInstanceState)"),"plugin must register before BridgeActivity creates its bridge");
@@ -35,6 +38,12 @@ no(generator.includes('MANAGE_EXTERNAL_STORAGE'),"all-files access is forbidden"
 no(generator.includes('READ_EXTERNAL_STORAGE'),"legacy broad storage read permission is forbidden");
 no(generator.includes('WRITE_EXTERNAL_STORAGE'),"legacy broad storage write permission is forbidden");
 
+ok(hardener.includes('canRead&&canWrite'),"persisted SAF grants must choose explicit read/write constant combinations");
+ok(hardener.includes('Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION'),"combined SAF grant must remain a compile-time allowed constant expression");
+ok(hardener.includes('getPersistedUriPermissions()'),"release must inspect grants actually held instead of guessing");
+no(hardener.includes('@SuppressLint("WrongConstant")'),"native permission boundary must not suppress WrongConstant lint");
+ok(hardener.includes('refusing blind rewrite'),"native hardening must fail closed when generated source shape drifts");
+
 ok(generator.includes('MAX_CHUNK=262144'),"native IO must be chunk bounded for mobile memory safety");
 ok(generator.includes('@PluginMethod public void readChunk'),"chunked SAF read method must exist");
 ok(generator.includes('@PluginMethod public void writeChunk'),"chunked SAF write method must exist");
@@ -50,4 +59,4 @@ ok(patch.includes("secureRemove({key:k})"),"instrumentation must clean its secur
 ok(patch.includes("secureStoreEncryptsAtRest"),"instrumentation must verify ciphertext-at-rest behavior");
 ok(patch.includes("assertFalse(\"secret must not be stored as plaintext\""),"plaintext leakage assertion must be present");
 
-console.log(`Android Native Platform Bridge: PASS (${n} assertions; Keystore + SAF + bridge instrumentation)`);
+console.log(`Android Native Platform Bridge: PASS (${n} assertions; Keystore + SAF + bridge instrumentation + lint-safe grants)`);

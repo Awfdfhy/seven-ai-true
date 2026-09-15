@@ -1,0 +1,17 @@
+"use strict";
+const fs=require("fs");
+const path=require("path");
+const file=path.resolve(__dirname,"..","android","app","src","main","java","ai","seven","app","SevenPlatformPlugin.java");
+if(!fs.existsSync(file))throw new Error("SevenPlatformPlugin.java missing; materialize native platform first");
+let src=fs.readFileSync(file,"utf8");
+const oldPersist=`    Uri uri=result.getData().getData();ContentResolver resolver=getContext().getContentResolver();int wanted=Intent.FLAG_GRANT_READ_URI_PERMISSION|(writable?Intent.FLAG_GRANT_WRITE_URI_PERMISSION:0);int granted=result.getData().getFlags()&wanted;boolean persisted=false;\n    try{resolver.takePersistableUriPermission(uri,granted);persisted=true;}catch(SecurityException ignored){}`;
+const newPersist=`    Uri uri=result.getData().getData();ContentResolver resolver=getContext().getContentResolver();int offered=result.getData().getFlags();boolean persisted=false;\n    try{\n      boolean canRead=(offered&Intent.FLAG_GRANT_READ_URI_PERMISSION)!=0;\n      boolean canWrite=writable&&(offered&Intent.FLAG_GRANT_WRITE_URI_PERMISSION)!=0;\n      if(canRead&&canWrite){resolver.takePersistableUriPermission(uri,Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION);persisted=true;}\n      else if(canRead){resolver.takePersistableUriPermission(uri,Intent.FLAG_GRANT_READ_URI_PERMISSION);persisted=true;}\n      else if(canWrite){resolver.takePersistableUriPermission(uri,Intent.FLAG_GRANT_WRITE_URI_PERMISSION);persisted=true;}\n    }catch(SecurityException ignored){}`;
+if(!src.includes(oldPersist))throw new Error("persistable URI block shape changed; refusing blind rewrite");
+src=src.replace(oldPersist,newPersist);
+const oldRelease=`    try{Uri uri=contentUri(call.getString("uri"));int flags=Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION;getContext().getContentResolver().releasePersistableUriPermission(uri,flags);call.resolve();}`;
+const newRelease=`    try{Uri uri=contentUri(call.getString("uri"));ContentResolver resolver=getContext().getContentResolver();boolean released=false;for(android.content.UriPermission p:resolver.getPersistedUriPermissions()){if(uri.equals(p.getUri())){if(p.isReadPermission()&&p.isWritePermission())resolver.releasePersistableUriPermission(uri,Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION);else if(p.isReadPermission())resolver.releasePersistableUriPermission(uri,Intent.FLAG_GRANT_READ_URI_PERMISSION);else if(p.isWritePermission())resolver.releasePersistableUriPermission(uri,Intent.FLAG_GRANT_WRITE_URI_PERMISSION);released=true;break;}}JSObject ret=new JSObject();ret.put("released",released);call.resolve(ret);}`;
+if(!src.includes(oldRelease))throw new Error("release URI block shape changed; refusing blind rewrite");
+src=src.replace(oldRelease,newRelease);
+if(src.includes('@SuppressLint("WrongConstant")'))throw new Error("WrongConstant suppression is forbidden at native permission boundary");
+fs.writeFileSync(file,src);
+console.log("android native platform hardening: PASS (explicit SAF permission constants)");
