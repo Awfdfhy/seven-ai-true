@@ -17,5 +17,5 @@ module.exports = Object.freeze({
   titleFabric: require("./title-fabric-final2.cjs"),
   durableFabricState: require("./durable-fabric-state.cjs"),
   acquisitionFabric: require("./acquisition-fabric.cjs"),
-  nativeExecutionFabric: require("./native-execution-fabric-passb.cjs")
+  nativeExecutionFabric: require("./native-execution-fabric-final.cjs")
 });
