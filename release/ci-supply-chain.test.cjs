@@ -41,4 +41,7 @@ ok(!pkg.devDependencies?.["@capacitor/assets"],"legacy @capacitor/assets tooling
 ok(pkg.scripts?.["android:generate"]?.includes("apk/materialize-android-assets.cjs"),"Android build must use Seven deterministic asset materializer");
 ok(pkg.scripts?.["android:generate"]?.includes("npx --no-install cap"),"Capacitor CLI must resolve only from installed dependency graph");
 ok(!pkg.scripts?.["android:generate"]?.includes("capacitor-assets"),"Android build cannot silently restore legacy asset generator");
-console.log(`CI Supply Chain Contract: PASS (${n} assertions; test + Android workflows SHA-pinned, script-suppressed installs, local asset pipeline, audit gates, read-only tokens)`);
+const capVersions=[pkg.dependencies?.["@capacitor/core"],pkg.dependencies?.["@capacitor/android"],pkg.devDependencies?.["@capacitor/cli"]];
+ok(capVersions.every(v=>v==="8.5.2"),"Capacitor core/android/cli must stay coherently pinned to vetted 8.5.2 patch line");
+ok(new Set(capVersions).size===1,"Capacitor runtime and CLI versions cannot drift independently");
+console.log(`CI Supply Chain Contract: PASS (${n} assertions; test + Android workflows SHA-pinned, coherent Capacitor patch line, script-suppressed installs, local asset pipeline, audit gates, read-only tokens)`);
