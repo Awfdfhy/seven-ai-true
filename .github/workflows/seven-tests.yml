@@ -44,6 +44,10 @@ jobs:
         if: success()
         run: node release/capture-logo-host-evidence.cjs
 
+      - name: Assemble independent logo review pack
+        if: success()
+        run: node release/assemble-logo-review-pack.cjs
+
       - name: Capture verified Beta UI
         if: success()
         run: node release/capture-ui.cjs
