@@ -1,0 +1,25 @@
+"use strict";
+const crypto=require("crypto");const VERSION="1.0.0",H40=/^[0-9a-f]{40}$/i;
+function arr(v){return Array.isArray(v)?v:[]}function stable(v){if(Array.isArray(v))return v.map(stable);if(v&&typeof v==="object"){const o={};for(const k of Object.keys(v).sort())if(v[k]!==undefined)o[k]=stable(v[k]);return o}return v}function hash(v){return crypto.createHash("sha256").update(JSON.stringify(stable(v))).digest("hex")}function seal(b){return Object.freeze({...b,seal:hash(b)})}function verify(x,s){if(!x||x.schema!==s||!/^[0-9a-f]{64}$/i.test(String(x.seal||"")))return false;const{seal:q,...b}=x;return q===hash(b)}
+function audit({betaRuntime="",hubRuntime="",betaCss="",hubCss="",generatedJs=""}={}){const fail=[],warn=[],info=[],need=(v,id)=>(v?info:fail).push(id),note=(v,id)=>(v?info:warn).push(id);
+ need(betaRuntime.includes("role','navigation'")&&betaRuntime.includes("role','banner'")&&betaRuntime.includes("role','group'"),"landmarks:global");
+ need(betaRuntime.includes("aria-live','polite'"),"status:live-region");
+ need(hubRuntime.includes("setAttribute('role','dialog')")&&hubRuntime.includes("setAttribute('aria-modal','true')"),"dialog:semantics");
+ need(hubRuntime.includes("aria-labelledby")&&hubRuntime.includes("seven-ws-launcher-title"),"dialog:labelled-heading");
+ need(hubRuntime.includes(".inert=")||hubRuntime.includes(".inert ="),"dialog:background-inert");
+ need(hubRuntime.includes("e.key==='Tab'")&&hubRuntime.includes("Shift")||hubRuntime.includes("e.shiftKey"),"dialog:focus-trap");
+ need(hubRuntime.includes("e.key==='Escape'"),"dialog:escape");
+ need(hubRuntime.includes("launcherOpener")&&hubRuntime.includes(".focus()"),"dialog:focus-return");
+ need(/:focus-visible/.test(hubCss),"focus:visible-workspaces");
+ need(/min-width:44px/.test(betaCss)&&/min-height:44px/.test(betaCss)&&/min-height:48px/.test(hubCss),"target:44-48-floor");
+ need(/prefers-reduced-motion:reduce/.test(betaCss)&&/prefers-reduced-motion:reduce/.test(hubCss),"motion:reduced");
+ need(!/tabindex=["']-1["'][^>]*data-ws/i.test(hubRuntime),"keyboard:no-disabled-workspace-choices");
+ need(generatedJs.includes("aria-label")||generatedJs.includes("label"),"generated:naming-support");
+ note(!/aria-label','Seven navigation'/.test(betaRuntime)&&!/aria-label','Seven workspaces'/.test(hubRuntime),"locale:accessible-names-localized");
+ const b={schema:"seven.accessibility-audit.v1",version:VERSION,status:fail.length?"FAIL":warn.length?"WARN":"PASS",fail:[...new Set(fail)].sort(),warn:[...new Set(warn)].sort(),info:[...new Set(info)].sort(),truthBoundary:"STRUCTURAL_HOST_ACCESSIBILITY_NOT_ASSISTIVE_TECH_DEVICE_CERTIFICATION"};return seal(b)}
+function verifyAudit(x){return verify(x,"seven.accessibility-audit.v1")}
+function manifest({branch,commitSha,audit:a,sources}={}){branch=String(branch||"").trim();commitSha=String(commitSha||"").trim();if(!branch)throw Error("branch required");if(!H40.test(commitSha))throw Error("commitSha invalid");if(!verifyAudit(a)||a.status==="FAIL")throw Error("non-failing verified accessibility audit required");const seen=new Set(),rows=[];for(const x of arr(sources)){const p=String(x.path||"");if(!p||p.startsWith("/")||p.includes("..")||seen.has(p))throw Error("invalid or duplicate source path");seen.add(p);const c=String(x.content??"");rows.push({path:p,bytes:Buffer.byteLength(c),sha256:crypto.createHash("sha256").update(c).digest("hex")})}for(const p of ["release/beta-ui-runtime.js","release/beta-ui.css","release/workspaces/hub.js","release/workspaces/hub.css"])if(!seen.has(p))throw Error(`missing source:${p}`);return seal({schema:"seven.accessibility-manifest.v1",version:VERSION,branch,commitSha:commitSha.toLowerCase(),auditSeal:a.seal,sources:rows.sort((x,y)=>x.path.localeCompare(y.path)),claim:"HOST_STRUCTURAL_ACCESSIBILITY"})}
+function verifyManifest(x){return verify(x,"seven.accessibility-manifest.v1")&&x.claim==="HOST_STRUCTURAL_ACCESSIBILITY"}
+function hostReceipt({manifest:m,browser,startupBytes,startupCap=100000}={}){if(!verifyManifest(m))throw Error("verified manifest required");startupBytes=Number(startupBytes);startupCap=Number(startupCap);if(!Number.isFinite(startupBytes)||startupBytes>startupCap)throw Error("startup budget exceeded");const b=browser||{};for(const k of ["landmarks","dialogName","backgroundIsolation","focusEntry","focusTrap","escapeClose","focusReturn","touchTargets","noOverflow"])if(b[k]!==true)throw Error(`browser ${k} required`);return seal({schema:"seven.accessibility-host-receipt.v1",version:VERSION,manifestSeal:m.seal,browser:Object.fromEntries(Object.keys(b).sort().map(k=>[k,b[k]===true])),startupBytes,startupCap,evidenceTier:"HOST",claim:"HOST_STRUCTURE_ONLY_NOT_SCREEN_READER_DEVICE_CERTIFIED"})}
+function verifyHostReceipt(x){return verify(x,"seven.accessibility-host-receipt.v1")&&x.evidenceTier==="HOST"&&x.claim==="HOST_STRUCTURE_ONLY_NOT_SCREEN_READER_DEVICE_CERTIFIED"}
+module.exports=Object.freeze({VERSION,hash,audit,verifyAudit,manifest,verifyManifest,hostReceipt,verifyHostReceipt});
