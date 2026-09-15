@@ -1,0 +1,31 @@
+name: Seven Design Studio
+
+on:
+  push:
+    branches:
+      - seven-design-studio-v0
+    paths:
+      - 'tools/seven-design-studio/**'
+      - '.github/workflows/design-studio.yml'
+      - 'seven_ai-final.html'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  studio-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install Playwright
+        run: npm install --ignore-scripts --no-save playwright@1.63.0
+      - name: Install Chromium
+        run: npx playwright install --with-deps --only-shell chromium
+      - name: Run Seven Design Studio browser test
+        run: node tools/seven-design-studio/test.cjs
