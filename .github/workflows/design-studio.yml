@@ -31,3 +31,5 @@ jobs:
         run: node tools/seven-design-studio/test.cjs
       - name: Run Seven Design Studio mobile polish test
         run: node tools/seven-design-studio/polish.test.cjs
+      - name: Run Seven Home reference V2 test
+        run: node tools/seven-design-studio/home-reference.test.cjs
