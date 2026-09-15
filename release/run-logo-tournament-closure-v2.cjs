@@ -13,7 +13,8 @@ const write=(name,v)=>fs.writeFileSync(path.join(DIST,name),JSON.stringify(v,nul
 const HASH64=/^[0-9a-f]{64}$/i;
 function verifyIndependentAiReview(x,{portfolio,hostPack,reviewPack}){
   if(!x||!["seven-logo-independent-ai-review.v1","seven-logo-independent-ai-review.v2"].includes(x.schema)||!HASH64.test(String(x.seal||"")))return false;const {seal,...body}=x;if(seal!==tournament.sha(body))return false;
-  if(x.schema.endsWith(".v2")&&(!HASH64.test(String(x.preprocessingSha256||""))||x.version!==2||x.preprocessing?.threshold!==0.50))return false;
+  const semanticThreshold=x?.preprocessing?.semanticThreshold??x?.preprocessing?.threshold;
+  if(x.schema.endsWith(".v2")&&(!HASH64.test(String(x.preprocessingSha256||""))||x.version!==2||semanticThreshold!==0.50))return false;
   if(x.portfolioSeal!==portfolio.manifest.seal||x.hostPackHash!==hostPack.packHash||x.reviewPackSeal!==reviewPack.seal||x.builderContext!==reviewPack.builderContext||x.reviewerContext===x.builderContext||x.authorityBoundary?.independentModel!==true||x.authorityBoundary?.doesNotChooseWinner!==true)return false;
   if(!Array.isArray(x.results)||x.results.length!==portfolio.records.length)return false;
   for(const record of portfolio.records){const r=x.results.find(y=>y.candidateId===record.candidate.id),rc=reviewPack.candidates.find(y=>y.candidateId===record.candidate.id);if(!r||r.candidateSeal!==record.candidate.seal||!handoffRuntime.verifyReviewerSubmission(r.submission,rc.handoff))return false}
