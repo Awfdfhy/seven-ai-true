@@ -43,3 +43,5 @@ jobs:
         run: node tools/seven-design-studio/home-finalization.test.cjs
       - name: Run Seven Chat UI test
         run: node tools/seven-design-studio/chat-ui.test.cjs
+      - name: Run Seven product screen suite test
+        run: node tools/seven-design-studio/product-screens.test.cjs
