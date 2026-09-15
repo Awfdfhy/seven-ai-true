@@ -13,11 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
+          package-manager-cache: false
 
       - name: Install pinned test toolchain
         run: npm install --no-save playwright@1.63.0 pdfjs-dist@4.10.38
@@ -25,8 +26,11 @@ jobs:
       - name: Materialize audit lock
         run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
 
-      - name: Audit production dependency surface
-        run: npm audit --omit=dev --audit-level=high
+      - name: Capture dependency audit evidence
+        run: |
+          npm audit --json > /tmp/seven-audit-full.json || true
+          npm audit --omit=dev --json > /tmp/seven-audit-prod.json || true
+          node release/dependency-audit-gate.cjs /tmp/seven-audit-full.json /tmp/seven-audit-prod.json release/dependency-audit-summary.json
 
       - run: npx playwright install --with-deps --only-shell chromium
 
@@ -46,7 +50,7 @@ jobs:
 
       - name: Upload verified release artifact
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: seven-ai-release
           path: |
@@ -58,5 +62,6 @@ jobs:
             dist/screenshots/**
             dist/logo-tournament/**
             release/release-results.json
+            release/dependency-audit-summary.json
           if-no-files-found: error
           retention-days: 14
