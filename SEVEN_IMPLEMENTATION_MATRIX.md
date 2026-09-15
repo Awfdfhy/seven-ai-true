@@ -22,7 +22,7 @@ A subsystem is **DONE** only when executable code exists, normal-flow wiring inv
 | Side-Effect Ledger | Logical Effect identity, dispatch/effect/compensation state, idempotency retry, bounded reconciliation, tamper detection | Host/hardening + compatibility | Tool/Security/Effect 54 | **Wave 05 foundation verified** |
 | Verification / Judge | AcceptanceContract, VerificationPlan DAG, evidence freshness/independence, bounded repair, independent high-risk judge, JudgeReceipt | Host/evolution; migration partial | Judge/Benchmark 53 | **Wave 06 foundation verified** |
 | Seven Evals / Benchmark | Versioned tasks/suites/environments/runs, hard gates, uncertainty, paired comparison, contamination, release receipts | Evolution/benchmark | Judge/Benchmark 53 | **Wave 06 foundation verified** |
-| File / Project Tools | ProjectRoot/Grant, FileRef/VersionToken, protected paths, ProjectMap, staged transaction, rollback/postconditions | Foundation; platform adapter partial | Coding/File 58 + Pass B 25 | **Wave 07 foundation verified** |
+| File / Project Tools | ProjectRoot/Grant, FileRef/VersionToken, protected paths, ProjectMap, staged transaction, rollback/postconditions | Foundation + Android SAF bridge; shell/native transaction expansion partial | Coding/File 58 + Pass B 25 + Android instrumentation | **Wave 07 foundation verified; Android document bridge now executable** |
 | Coding Runtime | RequirementLedger, ChangeContract, BaselineProof, isolated candidate, reproduce/investigate/test/review/repair, Judge promotion | Strong host/evolution; UI partial | Coding/File + Judge | **Wave 07 foundation verified** |
 | Research Fabric | Source-versioned locator-bound EvidenceUnits, dependency clusters, freshness/conflict, CoverageContract, locks/citations | Release + hardening + Truth bridge | Research 46 + 17 + bridge 2 | **Wave 08 foundation verified** |
 | Retrieval Fabric | QueryPlan, cheap exact/lexical baseline, conditional semantic/hybrid portfolio, discovery-only observations, clustering/manifests | Foundation; provider adapters partial | Wave 08 suites | **Wave 08 foundation verified** |
@@ -32,16 +32,18 @@ A subsystem is **DONE** only when executable code exists, normal-flow wiring inv
 | Story Fabric | StoryContract/Ledger/Graph, arcs/promises/reveals, Scene/Beat/Artifact, critics, Judge-bound Story→World handoff | Canonical hardening; live writer/UI partial | Pass A/B/final + Judge | **Wave 10 foundation verified** |
 | Canon / Real Works | Source/version/evidence continuities, facts/events/partial chronology, knowledge, anchors, coverage, insertion/divergence, RPG constraints | Canonical hardening; live acquisition partial | Wave 11 + Pass B/final | **Wave 11 foundation verified** |
 | Titles / World Linguistic | Typed status/domains, evidence-bound profiles, deterministic grammar, collisions, localization/Arabic, replay manifests | Canonical hardening; UI/model assist partial | Wave 11 + Pass B/final | **Wave 11 foundation verified** |
-| Visual Evidence Runtime | Sealed scenarios/artifacts/audits/evidence, evidence tiers, registries, anti-laundering, environment/device proof | Playwright capture + build/test | 43 + 32 + 5; 8/8 HOST captures | **Wave 12 HOST-tier foundation verified** |
+| Visual Evidence Runtime | Sealed scenarios/artifacts/audits/evidence, evidence tiers, registries, anti-laundering, environment/device proof | Playwright capture + build/test | 43 + 32 + 5; HOST captures + Android certification contracts | **Wave 12 HOST-tier foundation verified; physical/release-device certification pending** |
 | Design Genome Runtime | Canonical semantic tokens, Day/Night/Aurora/domain roles, typography/spacing/shape/motion, signature primitives, sealed snapshots | Build/test authority; component migration incremental | Genome 141 + Pass B 35 | **Wave 13 foundation verified** |
-| Design Lint / Genome Coverage | Drift lint, legacy adapters, coverage ledger, exact source manifest, monotonic migration comparison, migration receipts, primitive audits | Build/test path | Lint 37; live `0 FAIL / 7 WARN / 54 INFO` | **Wave 13 foundation verified**; warnings/info are explicit migration debt |
-| UI Design / Runtime | Release CSS, adaptive tiers, semantic states, accessibility hooks, 44px core touch repair | Yes | Browser/static/contrast + host visual evidence | Strong foundation; final Genome migration/global UI tournament pending |
-| Motion System | Event-delegated reveal/press/theme motion | Yes | Browser + reduced-motion + visual probe | Strong foundation; dedicated motion campaign pending |
-| Performance Runtime | Adaptive tiers, pressure downgrade, guarded recovery, bounded marks, idle/frame scheduling/yield | Yes | 11 direct + static/browser | **Wave 01 foundation verified** |
+| Design Lint / Genome Coverage | Drift lint, legacy adapters, coverage ledger, exact source manifest, monotonic migration comparison, migration receipts, primitive audits | Build/test path | Lint 37; live warnings are explicit debt | **Wave 13 foundation verified** |
+| UI Design / Runtime | Release CSS, adaptive tiers, semantic states, accessibility, global/specialist/generated surfaces | Yes, heavy surfaces lazy | Browser/static/contrast/accessibility/RTL/motion + host visual evidence | Strong parallel foundation; final independent identity/device closure pending |
+| Motion System | Semantic motion, event-delegated reveal/press/theme feedback, reduced/lite governance | Yes | Browser + reduced-motion contracts | Strong parallel foundation |
+| Performance Runtime | Adaptive tiers, pressure downgrade, guarded recovery, bounded marks, idle/frame scheduling/yield | Yes | direct + static/browser + mobile host guard | **Wave 01 foundation verified; physical-device budgets pending** |
 | PDF Runtime | Lazy local PDF.js | Yes | Browser/static | Strong |
 | Evolution Promotion Safety | Transactional apply/verify/rollback + baseline/corpus lock | Promotion runner | Evolution suites | Strong fail-closed foundation |
-| Android packaging | Capacitor/assets/APK workflow | Build pipeline | Actions + emulator smoke | Packaging foundation; real-device evidence pending |
-| Android SAF / Keystore | No final integration | No | No | Planned |
+| Android packaging | Capacitor + deterministic local visual assets + APK workflow | Build pipeline | lint/unit/APK + Android 16 emulator instrumentation | **Executable and emulator-verified; physical/release-device evidence pending** |
+| Android SAF / Keystore | First-party `SevenPlatform` plugin; Keystore AES-GCM; SAF grants; 256 KiB chunked I/O | Materialized during Android generation; JS/native bridge | 44 contract assertions + Android 16 emulator `2/2` instrumentation | **Parallel foundation verified on emulator; not physical-device certified** |
+| Dependency security | Production/dev split, audit summary/gate, SHA-pinned CI actions, script-suppressed install | Test + Android CI | production audit `0`; fail-closed regression gate | Strong production gate; 3 dev/tooling-only findings remain |
+| Release readiness / saturation contract | Exact release identity, evidence-class floors, freshness/independence, Saturation 2/2 contract | Build/test authority | 33 assertions | Contract verified; genuine final evidence not yet complete |
 | Full observability | Partial counters/modules | Partial | Partial | Planned/partial |
 
 ## Current system laws
@@ -63,21 +65,23 @@ A subsystem is **DONE** only when executable code exists, normal-flow wiring inv
 - Player agency is authoritative user input.
 - Canon is source/version/evidence/continuity bound; missing required coverage remains `CANON_GAP`.
 - Generated titles never silently become official titles.
+- Android emulator evidence cannot be promoted to physical/release-device evidence.
+- Native file access is user-authorized SAF `content://` scope, not broad filesystem authority.
 
 ## UI / performance rules
 - Mobile-first reachability and safe areas.
 - Reduced Motion changes presentation only, never correctness.
 - Performance tiers may reduce optional decoration/depth, never safety/meaning.
 - Heavy PDF/workspace/tool/benchmark/coding/research/vision/RPG/Story/Canon/visual-evidence/design-evaluation tooling stays lazy or build-time where practical.
-- Release startup gate remains `<100000` bytes. Current verified startup is **`99743 / 100000` bytes**, leaving **257 bytes** headroom.
-- Wave 14+ visual work must not silently inflate startup. Recover/compact bytes first or keep work lazy/build-time.
+- Release startup gate remains `<100000` bytes. Current verified startup is **`99758 / 100000` bytes**, leaving **242 bytes** headroom.
+- Wave 14+ visual/platform work must not silently inflate startup. Prefer native/lazy/build-time or recover bytes first.
 
 ## Next integration gates
-1. **Logo & Identity Tournament:** governed candidate manifests, silhouette/tiny-size/adaptive-mask/Day-Night/themed-icon evidence, distinctiveness and anti-imitation review. No production asset replacement until promotion passes.
-2. Canonical token migration + Global UI tournament.
-3. Specialist workspaces + Typed/Generated UI + Motion Genome.
-4. Accessibility + Arabic/RTL + mobile-performance offensives.
-5. Live Research/Vision/provider adapters and durable caches/persistence.
-6. Android SAF/Keystore + real-device startup/storage/cancellation/offline/provider/capture/visual certification.
-7. Larger holdout/competitor evals, Visual Red Team and final saturation 2/2.
+1. **Logo & Identity Tournament:** genuine independent adjudication, winner export/freeze, then exact release-device evidence. No self-election by builder context.
+2. Persistent recovery for remaining stateful fabrics and durable derivative caches.
+3. Live provider/model adapters plus dynamic free-proof/champion qualification.
+4. Live Research/Vision/Canon acquisition and platform capture adapters.
+5. Shell/native execution expansion where needed and larger repositories/simulations.
+6. Real physical/release-device startup/RAM/battery/thermal/frame/long-session + TalkBack/visual certification.
+7. Larger holdout/competitor evals, final Red Team and genuine saturation 2/2.
 8. Only then may the complete product be called release-ready.
