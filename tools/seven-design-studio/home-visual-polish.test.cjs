@@ -18,12 +18,13 @@ new vm.Script(a11y,{filename:'home-visual-polish-a11y-v1.js'});
 new vm.Script(v2,{filename:'home-visual-polish-v2.js'});
 for(const token of ['2026.09-visual-polish-v2','--seven-home-visual-polish-v2','border:0!important;border-radius:0!important;box-shadow:none!important','display:flex;grid-template-columns:none','border-radius:0;','v6-status','body.seven-day','body.seven-lite','prefers-reduced-motion'])if(!v2.includes(token))throw new Error(`Visual polish v2 contract missing ${token}`);
 if(v2.includes('backdrop-filter')||v2.includes('filter:blur('))throw new Error('Visual polish v2 introduced expensive always-on blur');
-if(!a11y.includes('font-size:11px'))throw new Error('Visual readability floor is missing');
+if(!a11y.includes('font-size:11px')||!a11y.includes('height:48px;min-height:48px'))throw new Error('Visual readability or touch-target floor is missing');
 const index=fs.readFileSync(path.join(dir,'index.html'),'utf8');
-for(const mod of ['./home-visual-polish-v1.js','./home-visual-polish-a11y-v1.js','./home-visual-polish-v2.js'])if(!index.includes(mod))throw new Error(`Visual module not wired: ${mod}`);
+for(const mod of ['./home-visual-polish-v1.js','./home-visual-polish-v2.js','./home-visual-polish-a11y-v1.js'])if(!index.includes(mod))throw new Error(`Visual module not wired: ${mod}`);
 if(index.indexOf('./home-visual-polish-v2.js')<index.indexOf('./home-visual-polish-v1.js'))throw new Error('V2 must load after V1');
+if(index.indexOf('./home-visual-polish-a11y-v1.js')<index.indexOf('./home-visual-polish-v2.js'))throw new Error('Accessibility guard must load after V2');
 const sw=fs.readFileSync(path.join(dir,'sw.js'),'utf8');
-if(!sw.includes('./home-visual-polish-v2.js')||!sw.includes("seven-design-studio-v16"))throw new Error('Visual polish v2 is not cached by the current service worker');
+if(!sw.includes('./home-visual-polish-v2.js')||!sw.includes('./home-visual-polish-a11y-v1.js')||!sw.includes("seven-design-studio-v17"))throw new Error('Visual polish v2 is not cached by the current service worker');
 
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.svg':'image/svg+xml'};
 const server=http.createServer((req,res)=>{
@@ -78,6 +79,8 @@ const server=http.createServer((req,res)=>{
   const readable=await canvas.locator('.v5-eyebrow,.v5-input-hint,.v5-bottom-nav small,.v5-section-heading>button').evaluateAll(els=>els.map(el=>({text:el.textContent.trim(),size:parseFloat(getComputedStyle(el).fontSize)})));
   const tooSmall=readable.filter(x=>x.size<11);
   if(tooSmall.length)throw new Error(`Visual polish readability floor regressed: ${JSON.stringify(tooSmall)}`);
+  const primaryTouch=await canvas.locator('.v5-mode,.v5-context').evaluateAll(els=>els.map(el=>({h:el.getBoundingClientRect().height,w:el.getBoundingClientRect().width})));
+  if(primaryTouch.some(x=>x.h<48||x.w<48))throw new Error(`Composer primary touch targets regressed: ${JSON.stringify(primaryTouch)}`);
 
   await canvas.locator('.v5-composer textarea').focus();
   const focusShadow=await canvas.locator('.v5-composer').evaluate(el=>getComputedStyle(el).boxShadow);
