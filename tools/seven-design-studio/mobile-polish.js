@@ -75,7 +75,12 @@
     doc.body.dataset.sevenPreviewTheme = state.theme;
     doc.body.dataset.sevenPreviewDirection = state.dir;
 
-    const themeMeta = doc.querySelector('meta[name="theme-color"]') || doc.head.appendChild(Object.assign(doc.createElement('meta'), {name:'theme-color'}));
+    let themeMeta = doc.querySelector('meta[name="theme-color"]');
+    if (!themeMeta) {
+      themeMeta = doc.createElement('meta');
+      themeMeta.setAttribute('name','theme-color');
+      doc.head.appendChild(themeMeta);
+    }
     themeMeta.setAttribute('content', state.theme === 'day' ? '#F4F6FB' : '#0A1022');
   }
 
@@ -111,7 +116,7 @@
   }, true);
 
   const shellObserver = new MutationObserver(syncShellThemeColor);
-  [themeBtn, dirBtn, densityBtn].filter(Boolean).forEach(el => shellObserver.observe(el, {childList:true,subtree:true,attributes:true}));
+  [themeBtn, dirBtn, densityBtn].filter(Boolean).forEach(el => shellObserver.observe(el, {childList:true,subtree:true,characterData:true}));
 
   document.addEventListener('keydown', event => {
     if (event.key !== 'Escape') return;
