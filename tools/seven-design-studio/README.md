@@ -1,6 +1,6 @@
 # Seven Design Studio
 
-Status: **feature-complete mobile-first design-studio candidate, pending first physical Android usability pass**
+Status: **feature-complete mobile-first design-studio candidate; first physical Android pass completed; post-pass polish awaiting device recheck**
 
 Branch: `seven-design-studio-v0`
 
@@ -22,7 +22,12 @@ The studio is isolated from the production Seven runtime. It does **not** claim 
 - LTR / RTL;
 - Full / Balanced / Lite preview behavior;
 - Large Text stress mode;
-- Reduced Motion mode.
+- Reduced Motion mode;
+- safe-area aware shell;
+- Android IME-friendly viewport mode;
+- >=44px critical touch targets with 46-48px mobile polish targets;
+- visible keyboard focus treatment;
+- compact small-phone behavior.
 
 ### Visual construction
 - GrapesJS Core canvas;
@@ -94,6 +99,8 @@ A separate Preview surface renders the actual current screen as standalone HTML.
 - open-command placeholder;
 - toggle-state.
 
+A mobile preview guard now enforces the selected Night/Day palette and text contrast in the prototype iframe. This specifically addresses the first physical Android finding where a preview labelled `night` rendered a light screen with low-contrast text.
+
 These remain prototype-only and are not production runtime claims.
 
 ### Local Design Judge
@@ -121,7 +128,8 @@ The studio includes:
 - Web App Manifest;
 - SEVEN Design app icon;
 - service worker shell caching;
-- standalone PWA display mode.
+- standalone PWA display mode;
+- versioned app-shell cache including the mobile polish assets.
 
 Once served over HTTPS, compatible Android browsers can install it to the home screen.
 
@@ -130,47 +138,78 @@ Once served over HTTPS, compatible Android browsers can install it to the home s
 - `index.html` — mobile studio shell;
 - `studio.css` — editor UI system;
 - `studio.js` — editor runtime, components, states, judge, preview and export;
+- `mobile-polish.css` — Android/touch/safe-area presentation hardening;
+- `mobile-polish.js` — preview theme guard, mobile accessibility labels and escape handling;
 - `manifest.webmanifest` — PWA metadata;
-- `sw.js` — app-shell cache;
+- `sw.js` — versioned app-shell cache;
 - `seven-design-icon.svg` — temporary studio icon, not the final governed SEVEN logo;
-- `test.cjs` — mobile-browser smoke test and protected-source integrity check.
+- `test.cjs` — mobile-browser verification and protected-source integrity check.
 
 ## Dependency boundary
 
-GrapesJS Core is currently loaded from `unpkg.com`. The studio itself has no usage-credit counter, but first load requires network access to that external dependency. After the first real Android pass, the next hardening step should vendor/pin GrapesJS locally so the editor can become deterministic and genuinely offline-first.
+GrapesJS Core is pinned at `0.23.6` but is currently loaded from `unpkg.com`. The studio itself has no usage-credit counter, but first load requires network access to that external dependency. A later hardening step may vendor GrapesJS locally so the editor can become deterministic and genuinely offline-first.
 
 ## Verification
 
+The isolated `Seven Design Studio` GitHub Actions workflow runs `test.cjs` independently from unrelated repository suites.
+
 `test.cjs` performs:
-- JavaScript syntax parse;
+- JavaScript syntax parse for the core and mobile polish layers;
 - required asset/shell checks;
-- mobile Chromium boot;
+- mobile Chromium boot with touch enabled;
 - actual GrapesJS canvas render;
+- minimum touch-target checks;
+- Night prototype preview contrast and palette check;
 - Day mode propagation into the canvas;
 - RTL propagation;
+- Day + RTL prototype preview check;
 - component library render;
-- Preview open/close;
 - 320px device switching;
+- 320px shell overflow check;
+- preview horizontal-overflow check;
 - protected `seven_ai-final.html` byte-integrity check.
 
-The branch also wires the test through `hardening/design-studio.test.cjs`, allowing the repository's existing test discovery to execute it in CI without changing the protected application source.
+The branch also wires the test through `hardening/design-studio.test.cjs`, allowing the repository's existing discovery to execute it without changing the protected application source. The wider repository workflow currently has an unrelated pre-existing acquisition-cache assertion (`STALE` vs `HIT`); the isolated Design Studio workflow is the authoritative host check for this tool until that separate failure is resolved.
 
-## What remains before calling it physically verified
+## Physical Android evidence
 
-Only evidence that requires the user's real Android device:
-1. actual touch comfort and drag/select behavior;
-2. Android Chrome keyboard / IME behavior;
-3. real viewport and safe-area behavior on the user's phone;
-4. export/download behavior under Android storage permissions;
-5. PWA installation behavior;
-6. performance and battery feel during a real design session.
+First device pass: **completed**.
 
-Those cannot be truthfully certified from host Chromium alone.
+User-observed result:
+- the hosted Studio opened successfully on Android;
+- Prototype Preview rendered at 320px;
+- the overall mobile composition was judged comfortable/good by the user;
+- no obvious horizontal layout break was visible in the supplied screenshot.
 
-## First physical test target
+Observed defect from that pass:
+- Preview header reported `night` while the prototype content appeared light and several foreground elements lost contrast.
 
-When host verification is green enough to proceed, open the hosted studio on Android and test one complete flow:
+Implemented response:
+- explicit prototype Night/Day fallback variables;
+- forced foreground/background pairing for core SEVEN surfaces;
+- theme-color synchronization;
+- stronger touch sizing;
+- small-phone shell polish;
+- improved preview framing;
+- automated regression coverage for Night/Day preview contrast.
 
-`Home template → select Composer → Design → change radius/token → States → Researching → switch 320px → RTL → Preview → Save → export JSON`
+The fix is host-tested but still requires the user's next physical-device recheck before being called device-verified.
 
-If this flow is comfortable, the editor is ready to be used for the full SEVEN UI campaign.
+## Remaining physical checks
+
+These still require the real Android device and must not be fabricated from host Chromium:
+1. recheck Night and Day prototype contrast after the new guard;
+2. actual drag/select comfort over a longer editing session;
+3. Android keyboard / IME behavior while editing text and numeric fields;
+4. safe-area behavior under browser/PWA display modes;
+5. export/download behavior under Android storage handling;
+6. PWA installation and relaunch;
+7. performance, heat and battery feel during a real design session.
+
+## Next physical test target
+
+Use one compact flow:
+
+`Home → 320px → Night Preview → Day Preview → RTL → close Preview → select Composer → Design → change radius/token → States → Researching → Preview → Save → export JSON`
+
+If this remains comfortable on-device, the Studio is ready to become the primary tool for the full SEVEN UI campaign.
