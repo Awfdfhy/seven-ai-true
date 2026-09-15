@@ -63,7 +63,13 @@ const server=http.createServer((req,res)=>{
   await canvas.locator('.v5-composer textarea').focus();
   const focusShadow=await canvas.locator('.v5-composer').evaluate(el=>getComputedStyle(el).boxShadow);
   if(!focusShadow||focusShadow==='none')throw new Error('Composer focus state is visually silent');
-  if(await canvas.locator('.v5-command').count()<60)throw new Error('Visual polish hid progressive capability coverage');
+
+  await canvas.locator('.v4-all').click();
+  const commandLayer=canvas.locator('.v5-layer:not([hidden])');
+  await commandLayer.waitFor({timeout:5000});
+  await commandLayer.locator('[data-seven-catalog-extra]').waitFor({timeout:5000});
+  if(await commandLayer.locator('.v5-command').count()<60)throw new Error('Visual polish hid progressive capability coverage');
+  await commandLayer.locator('.v5-sheet-close').click();
 
   await page.locator('#themeBtn').click();
   const day=await home.evaluate(el=>({bg:getComputedStyle(el).backgroundImage,color:getComputedStyle(el).color}));
