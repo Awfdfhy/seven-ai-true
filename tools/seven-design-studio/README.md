@@ -1,71 +1,176 @@
-# Seven Design Studio V0
+# Seven Design Studio
 
-Status: **isolated experimental implementation**
+Status: **feature-complete mobile-first design-studio candidate, pending first physical Android usability pass**
 
 Branch: `seven-design-studio-v0`
 
-This is the smallest practical mobile-first visual editor for designing Seven UI without changing the protected application source.
+Seven Design Studio is a focused visual UI design environment for building SEVEN itself. It is intentionally not a general Figma clone. The goal is to provide the parts SEVEN needs most: touch-first canvas editing, reusable components, visual properties, state/variant design, mobile previews, prototype behavior, deterministic design checks, export, and SEVEN-specific design language.
 
-## Why this exists
+## Product boundary
 
-The goal is to own the design workflow instead of depending on limited external AI design generations. V0 deliberately stays small: a touch-oriented editor shell around GrapesJS Core, plus Seven-specific tokens and mobile preview behavior.
+The studio is isolated from the production Seven runtime. It does **not** claim real model execution, research, memory, permissions, tools, verification, provider actions, or side effects. Prototype interactions are explicitly local prototype behavior.
 
-## V0 scope
+`seven_ai-final.html` remains protected and is not modified by the studio.
 
-Implemented in `index.html`:
+## Implemented editor
 
-- visual canvas;
-- touch-friendly mobile shell;
-- add: Frame, Stack, Text, Button, Card, Composer, Sheet and Nav;
-- layer tree and selection;
-- design properties for layout, direction, gap, padding, radius, font size, background and text color;
-- Seven color tokens;
-- 320 / 360 / 393 / 412 / 480 px preview widths;
-- Night / Day preview;
-- LTR / RTL preview;
-- local autosave plus explicit Save;
-- HTML export;
-- GrapesJS project JSON export;
-- starter Seven Home surface.
+### Mobile shell
+- touch-oriented top bar, preview controls, canvas and bottom dock;
+- Android portrait-first layout;
+- 320 / 360 / 393 / 412 / 480 preview widths;
+- Night / Day;
+- LTR / RTL;
+- Full / Balanced / Lite preview behavior;
+- Large Text stress mode;
+- Reduced Motion mode.
 
-## Safety boundary
+### Visual construction
+- GrapesJS Core canvas;
+- select and edit real component trees;
+- Layers tree;
+- Undo / Redo;
+- duplicate / delete;
+- editable layout properties;
+- gap, padding, radius, font size, background and text color;
+- SEVEN design tokens;
+- reusable local component library.
 
-This editor is isolated from Seven runtime code. It does not claim real tools, permissions, model execution, research, verification, memory, side effects or provider connectivity.
+### Component library
+General primitives:
+- Frame;
+- Stack;
+- Row;
+- Divider;
+- Text;
+- Title;
+- Button;
+- Chip.
 
-`seven_ai-final.html` is not modified by this experiment.
+SEVEN primitives:
+- Universal Composer;
+- Active Task;
+- Continue card;
+- Bottom Navigation + Seven Orb;
+- Bottom Sheet;
+- Evidence card.
 
-## Run
+### Screens / starter templates
+- Home;
+- Chat;
+- Research;
+- Coding;
+- World / RPG;
+- Blank.
 
-The file is a static web app. Serve `tools/seven-design-studio/` from any basic static HTTP server and open `index.html` in Android Chrome.
+The editor also supports multiple GrapesJS pages/screens inside one local project.
 
-The only network dependency in V0 is GrapesJS Core loaded from `unpkg.com`. A later pass can pin/vendor the dependency for deterministic offline use.
+### Variants and semantic states
+Selected components can carry:
+- `default`;
+- `compact`;
+- `expanded`;
+- `active`;
+- `disabled`;
+- `error` variants.
 
-## Deliberately not in V0
+Aurora state family:
+- Idle;
+- Listening;
+- Thinking;
+- Researching;
+- Coding;
+- World;
+- Generating;
+- Success;
+- Warning;
+- Error.
 
-- AI Designer;
-- Design Judge;
-- prototype flow engine;
-- full component variants/state model;
-- collaborative editing;
-- GitHub sync from inside the editor;
-- APK wrapper;
-- production integration with Seven runtime.
+Aurora is presentation only. It never means truth, confidence, authority, permission, verification, or canon proof.
 
-These should be added only after V0 is verified usable on the phone.
+### Prototype preview
+A separate Preview surface renders the actual current screen as standalone HTML. Components may be assigned local prototype actions such as:
+- toast;
+- next-screen placeholder;
+- open-command placeholder;
+- toggle-state.
 
-## Next gate
+These remain prototype-only and are not production runtime claims.
 
-Before expanding scope, verify on Android:
+### Local Design Judge
+The deterministic judge can inspect the current rendered canvas for mechanical risks including:
+- undersized touch controls;
+- missing image alt attributes;
+- horizontal overflow;
+- tiny text;
+- excessive card density;
+- state surfaces relying too heavily on visual state without text.
 
-1. page loads;
-2. starter canvas renders;
-3. selecting elements works;
-4. Add inserts components;
-5. Layers selects the correct component;
-6. Design changes update the selected element;
-7. 320/393/480 previews remain usable;
-8. Day and RTL toggles work;
-9. Save survives reload;
-10. HTML and JSON export download correctly.
+The score is a local heuristic, not a claim of artistic quality or release readiness.
 
-If those pass, V1 should add a governed Seven component/state system rather than more generic editor chrome.
+### Persistence and export
+- automatic local project save;
+- explicit save;
+- document name;
+- reusable component library in local storage;
+- standalone HTML export;
+- full Seven Design Studio JSON export;
+- JSON import.
+
+### Installability
+The studio includes:
+- Web App Manifest;
+- SEVEN Design app icon;
+- service worker shell caching;
+- standalone PWA display mode.
+
+Once served over HTTPS, compatible Android browsers can install it to the home screen.
+
+## Files
+
+- `index.html` — mobile studio shell;
+- `studio.css` — editor UI system;
+- `studio.js` — editor runtime, components, states, judge, preview and export;
+- `manifest.webmanifest` — PWA metadata;
+- `sw.js` — app-shell cache;
+- `seven-design-icon.svg` — temporary studio icon, not the final governed SEVEN logo;
+- `test.cjs` — mobile-browser smoke test and protected-source integrity check.
+
+## Dependency boundary
+
+GrapesJS Core is currently loaded from `unpkg.com`. The studio itself has no usage-credit counter, but first load requires network access to that external dependency. After the first real Android pass, the next hardening step should vendor/pin GrapesJS locally so the editor can become deterministic and genuinely offline-first.
+
+## Verification
+
+`test.cjs` performs:
+- JavaScript syntax parse;
+- required asset/shell checks;
+- mobile Chromium boot;
+- actual GrapesJS canvas render;
+- Day mode propagation into the canvas;
+- RTL propagation;
+- component library render;
+- Preview open/close;
+- 320px device switching;
+- protected `seven_ai-final.html` byte-integrity check.
+
+The branch also wires the test through `hardening/design-studio.test.cjs`, allowing the repository's existing test discovery to execute it in CI without changing the protected application source.
+
+## What remains before calling it physically verified
+
+Only evidence that requires the user's real Android device:
+1. actual touch comfort and drag/select behavior;
+2. Android Chrome keyboard / IME behavior;
+3. real viewport and safe-area behavior on the user's phone;
+4. export/download behavior under Android storage permissions;
+5. PWA installation behavior;
+6. performance and battery feel during a real design session.
+
+Those cannot be truthfully certified from host Chromium alone.
+
+## First physical test target
+
+When host verification is green enough to proceed, open the hosted studio on Android and test one complete flow:
+
+`Home template → select Composer → Design → change radius/token → States → Researching → switch 320px → RTL → Preview → Save → export JSON`
+
+If this flow is comfortable, the editor is ready to be used for the full SEVEN UI campaign.
