@@ -1,0 +1,98 @@
+/* Seven Design Studio — Android/mobile polish layer.
+   Kept separate from the core editor so mobile fixes stay easy to audit/revert. */
+
+:root{
+  --tap:48px;
+  --studio-shadow:0 20px 64px rgba(0,0,0,.34);
+}
+
+html{color-scheme:dark;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+button,select,input,textarea{accent-color:var(--blue)}
+button,select{min-height:var(--tap)}
+button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{
+  outline:3px solid rgba(50,190,207,.72);
+  outline-offset:2px;
+}
+
+/* Shell ergonomics */
+.topbar{min-height:64px;padding-left:12px;padding-right:12px}
+.brand{min-height:48px;border-radius:14px;padding:4px 6px 4px 2px}
+.brand-mark{width:38px;height:38px;border-radius:13px}
+.top-actions{gap:7px}
+.icon-button{min-width:48px;height:48px;border-radius:14px}
+.subbar{height:54px;padding:5px 10px;gap:7px;scroll-snap-type:x proximity}
+.subbar select,.chip{height:42px;min-height:42px;scroll-snap-align:start}
+.workspace{padding:10px 8px}
+.phone-stage{box-shadow:var(--studio-shadow);border-color:#334563}
+.dock{gap:6px;padding-top:8px}
+.dock-button{min-height:58px;border-radius:15px}
+.dock-button span{font-size:20px}
+.dock-button small{font-size:10px;font-weight:650;letter-spacing:.01em}
+
+/* Sheets */
+.backdrop{backdrop-filter:blur(2px)}
+.sheet{max-height:min(84dvh,820px);border-color:#334563}
+.sheet-header{min-height:68px;padding-left:16px;padding-right:12px}
+.sheet-body{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.block{min-height:78px;padding:13px}
+.row{min-height:58px}
+.row input[type="number"],.row input[type="text"],.row select,.field{min-height:44px;font-size:16px}
+.action{min-height:46px}
+.layer{min-height:46px}
+.state-card{min-height:58px}
+.state-card button{min-height:42px}
+
+/* Prototype presentation */
+.preview-shell{background:#050b15}
+.preview-bar{min-height:66px;padding-left:12px;padding-right:12px;background:rgba(8,17,31,.98);backdrop-filter:blur(14px)}
+.preview-bar strong{font-size:14px}
+.preview-bar span{font-size:12px}
+.preview-stage{
+  padding:12px 8px calc(12px + var(--safe-bottom));
+  background:
+    radial-gradient(circle at 50% -12%,rgba(65,102,245,.14),transparent 34%),
+    #050b15;
+  overscroll-behavior:contain;
+}
+.preview-stage iframe{
+  min-height:100%;
+  border-color:#354866;
+  border-radius:28px;
+  box-shadow:0 24px 80px rgba(0,0,0,.44);
+}
+
+/* Better status feedback */
+.save-state{font-size:11px;padding:0 6px}
+.toast{min-height:42px;display:flex;align-items:center;font-size:12px;line-height:1.35}
+
+/* GrapesJS touch affordances without changing document output. */
+.gjs-toolbar{min-height:40px!important;padding:3px!important;box-shadow:0 8px 24px rgba(0,0,0,.3)!important}
+.gjs-toolbar-item{min-width:34px!important;min-height:34px!important;display:inline-grid!important;place-items:center!important}
+
+@media(max-width:360px){
+  :root{--tap:46px}
+  .topbar{padding-left:8px;padding-right:8px}
+  .brand-copy strong{font-size:10px}
+  .brand-copy small{max-width:82px}
+  .top-actions{gap:4px}
+  .icon-button{min-width:46px;height:46px}
+  .subbar{padding-left:6px;padding-right:6px;gap:5px}
+  .subbar select,.chip{padding-left:8px;padding-right:8px}
+  .workspace{padding:5px 4px}
+  .dock{gap:3px;padding-left:4px;padding-right:4px}
+  .dock-button{min-height:56px}
+  .preview-stage{padding-left:4px;padding-right:4px}
+  .preview-stage iframe{border-radius:22px}
+}
+
+@media(max-height:620px) and (orientation:landscape){
+  .topbar{min-height:54px;padding-top:4px;padding-bottom:4px}
+  .subbar{height:48px}
+  .dock-button{min-height:48px}
+  .dock-button small{display:none}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .phone-stage,.sheet,.toast,.icon-button,.block{transition:none!important}
+}
