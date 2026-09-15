@@ -14,6 +14,7 @@ if(!index.includes('./seven-mark-polish.js'))throw new Error('Polished mark modu
 const sw=fs.readFileSync(path.join(dir,'sw.js'),'utf8');
 if(!sw.includes('./seven-mark-polish.js'))throw new Error('Polished mark module is not cached by service worker');
 
+const VERSION='2026.09-mark-v2';
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.svg':'image/svg+xml'};
 const server=http.createServer((req,res)=>{
   const raw=decodeURIComponent(req.url.split('?')[0]);
@@ -35,13 +36,13 @@ const server=http.createServer((req,res)=>{
   const canvas=page.locator('.gjs-frame').contentFrame();
   const home=canvas.locator('[data-seven-home-version="2026.09-launchpad-v4"]');
   await home.waitFor({timeout:15000});
-  await canvas.locator('[data-seven-mark-version="2026.09-mark-v1"]').first().waitFor({timeout:10000});
+  await canvas.locator(`[data-seven-mark-version="${VERSION}"]`).first().waitFor({timeout:10000});
 
   const marks=canvas.locator('.seven-mark-polished');
   const count=await marks.count();
   if(count<2)throw new Error(`Expected polished Seven mark in header and orb, found ${count}`);
   if(await canvas.locator('svg.v4-seven-mark:not(.seven-mark-polished)').count())throw new Error('Legacy unpolished Seven mark remains in rendered Home');
-  if((await home.getAttribute('data-seven-mark-polish'))!=='2026.09-mark-v1')throw new Error('Home is missing mark polish version metadata');
+  if((await home.getAttribute('data-seven-mark-polish'))!==VERSION)throw new Error('Home is missing mark polish version metadata');
 
   const ids=await marks.evaluateAll(els=>els.flatMap(el=>Array.from(el.querySelectorAll('linearGradient')).map(n=>n.id)));
   if(new Set(ids).size!==ids.length)throw new Error(`Polished mark gradient IDs are not unique: ${ids.join(',')}`);
@@ -49,10 +50,13 @@ const server=http.createServer((req,res)=>{
   const boxes=await marks.evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect();return {w:r.width,h:r.height};}));
   if(boxes.some(b=>b.w<28||b.h<24))throw new Error(`Polished mark became illegible at small size: ${JSON.stringify(boxes)}`);
 
-  const body=await marks.first().locator('.seven-mark-body').getAttribute('d');
-  if(!body||body.length<120)throw new Error('Polished Seven silhouette is unexpectedly simple');
-  if(await marks.first().locator('.seven-mark-highlight').count()!==1)throw new Error('Polished mark highlight layer missing');
-  if(await marks.first().locator('.seven-mark-edge').count()!==1)throw new Error('Polished mark edge layer missing');
+  const loop=await marks.first().locator('.seven-mark-loop').getAttribute('d');
+  const tail=await marks.first().locator('.seven-mark-tail').getAttribute('d');
+  if(!loop||loop.length<160)throw new Error('Polished Seven loop silhouette is unexpectedly simple');
+  if(!tail||tail.length<80)throw new Error('Polished Seven tail silhouette is unexpectedly simple');
+  if(await marks.first().locator('.seven-mark-highlight').count()!==1)throw new Error('Polished mark loop highlight layer missing');
+  if(await marks.first().locator('.seven-mark-tail-highlight').count()!==1)throw new Error('Polished mark tail highlight layer missing');
+  if(await marks.first().locator('.seven-mark-fold').count()!==1)throw new Error('Polished mark fold layer missing');
 
   await page.locator('#themeBtn').click();
   if(await canvas.locator('.seven-mark-polished').count()<2)throw new Error('Day mode lost polished Seven marks');
@@ -65,10 +69,10 @@ const server=http.createServer((req,res)=>{
   await page.locator('#previewBtn').click();
   await page.locator('#previewShell:not([hidden])').waitFor();
   const preview=page.locator('#previewFrame').contentFrame();
-  await preview.locator('[data-seven-mark-version="2026.09-mark-v1"]').first().waitFor({timeout:10000});
+  await preview.locator(`[data-seven-mark-version="${VERSION}"]`).first().waitFor({timeout:10000});
   if(await preview.locator('.seven-mark-polished').count()<2)throw new Error('Prototype preview lost polished Seven marks');
 
   if(errors.length)throw new Error(`Browser errors: ${errors.slice(0,5).join(' | ')}`);
   await browser.close();server.close();
-  console.log('SEVEN_MARK_POLISH_PASS');
+  console.log('SEVEN_MARK_POLISH_V2_PASS');
 })().catch(async err=>{console.error(err);server.close();process.exit(1);});
