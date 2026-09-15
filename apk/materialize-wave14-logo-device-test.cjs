@@ -30,9 +30,11 @@ import static org.junit.Assert.*;
 @RunWith(AndroidJUnit4.class)
 public final class Wave14LogoEvidenceTest {
   private static final int SIZE=432;
-  private File out(Context c,String name){
-    File dir=c.getFilesDir();
-    if(!dir.exists())assertTrue("test files dir create failed",dir.mkdirs());
+  private File out(Context target,String name){
+    File dir=target.getFilesDir();
+    assertNotNull("target files dir unavailable",dir);
+    if(!dir.isDirectory())assertTrue("target files dir create failed",dir.mkdirs());
+    assertTrue("target files dir is not writable",dir.canWrite());
     return new File(dir,name);
   }
   private void writeBitmap(Bitmap b,File f)throws Exception{try(FileOutputStream o=new FileOutputStream(f)){assertTrue(b.compress(Bitmap.CompressFormat.PNG,100,o));}}
@@ -40,7 +42,7 @@ public final class Wave14LogoEvidenceTest {
     Drawable d=DrawableCompat.wrap(original.mutate());if(tintBlack)DrawableCompat.setTint(d,Color.BLACK);
     Bitmap b=Bitmap.createBitmap(SIZE,SIZE,Bitmap.Config.ARGB_8888);Canvas c=new Canvas(b);if(whiteBackground)c.drawColor(Color.WHITE);d.setBounds(0,0,SIZE,SIZE);d.draw(c);return b;
   }
-  private void captureTargetDrawable(Context target,Context test,int id,String name,boolean white,boolean black)throws Exception{Drawable d=target.getDrawable(id);assertNotNull(name+" drawable missing",d);writeBitmap(render(d,white,black),out(test,name));}
+  private void captureTargetDrawable(Context target,int id,String name,boolean white,boolean black)throws Exception{Drawable d=target.getDrawable(id);assertNotNull(name+" drawable missing",d);writeBitmap(render(d,white,black),out(target,name));}
   @Test public void captureWave14ReleaseLogoEvidence() throws Exception {
     Assume.assumeTrue("Wave14 release evidence test requires explicit release-evidence invocation","1".equals(InstrumentationRegistry.getArguments().getString("wave14ReleaseEvidence")));
     Context target=InstrumentationRegistry.getInstrumentation().getTargetContext();Context test=InstrumentationRegistry.getInstrumentation().getContext();
@@ -48,9 +50,9 @@ public final class Wave14LogoEvidenceTest {
     int adaptive=target.getResources().getIdentifier("ic_launcher","mipmap",target.getPackageName());
     int mono=target.getResources().getIdentifier("ic_launcher_monochrome","mipmap",target.getPackageName());
     assertTrue("adaptive launcher resource missing",adaptive!=0);assertTrue("themed monochrome resource missing",mono!=0);
-    captureTargetDrawable(target,test,adaptive,"wave14-adaptive-icon.png",false,false);
-    captureTargetDrawable(target,test,mono,"wave14-themed-icon.png",true,true);
-    try(InputStream in=test.getAssets().open("wave14-legacy-icon.png")){Bitmap legacy=BitmapFactory.decodeStream(in);assertNotNull("legacy raster asset decode failed",legacy);Bitmap scaled=Bitmap.createScaledBitmap(legacy,SIZE,SIZE,true);writeBitmap(scaled,out(test,"wave14-legacy-icon.png"));}
+    captureTargetDrawable(target,adaptive,"wave14-adaptive-icon.png",false,false);
+    captureTargetDrawable(target,mono,"wave14-themed-icon.png",true,true);
+    try(InputStream in=test.getAssets().open("wave14-legacy-icon.png")){Bitmap legacy=BitmapFactory.decodeStream(in);assertNotNull("legacy raster asset decode failed",legacy);Bitmap scaled=Bitmap.createScaledBitmap(legacy,SIZE,SIZE,true);writeBitmap(scaled,out(target,"wave14-legacy-icon.png"));}
     DisplayMetrics dm=target.getResources().getDisplayMetrics();int widthDp=target.getResources().getConfiguration().screenWidthDp,heightDp=target.getResources().getConfiguration().screenHeightDp;
     JSONObject proof=new JSONObject();
     proof.put("schema","seven.wave14.device-capture.v1");
@@ -66,10 +68,10 @@ public final class Wave14LogoEvidenceTest {
     proof.put("themedResource","@mipmap/ic_launcher_monochrome");
     proof.put("captureSize",SIZE);
     byte[] json=proof.toString().getBytes(StandardCharsets.UTF_8);
-    try(FileOutputStream o=new FileOutputStream(out(test,"wave14-device-proof.json"))){o.write(json);}
-    assertTrue(out(test,"wave14-adaptive-icon.png").length()>0);assertTrue(out(test,"wave14-themed-icon.png").length()>0);assertTrue(out(test,"wave14-legacy-icon.png").length()>0);assertTrue(out(test,"wave14-device-proof.json").length()>0);
+    try(FileOutputStream o=new FileOutputStream(out(target,"wave14-device-proof.json"))){o.write(json);}
+    assertTrue(out(target,"wave14-adaptive-icon.png").length()>0);assertTrue(out(target,"wave14-themed-icon.png").length()>0);assertTrue(out(target,"wave14-legacy-icon.png").length()>0);assertTrue(out(target,"wave14-device-proof.json").length()>0);
   }
 }
 `;
 fs.writeFileSync(path.join(TEST_JAVA,"Wave14LogoEvidenceTest.java"),java);
-console.log("Wave 14 Android logo evidence instrumentation: PASS (release-only gated adaptive + themed target resources, legacy packaged raster fixture)");
+console.log("Wave 14 Android logo evidence instrumentation: PASS (release-only gated adaptive + themed target resources, legacy packaged raster fixture; target-owned evidence storage)");
