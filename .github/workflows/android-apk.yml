@@ -90,7 +90,7 @@ jobs:
 
       - name: Build release target and instrumentation APK
         working-directory: android
-        run: ./gradlew --no-daemon assembleRelease assembleDebugAndroidTest
+        run: ./gradlew --no-daemon :app:assembleRelease :app:assembleDebugAndroidTest
 
       - name: Sign exact release evidence APK
         run: |
