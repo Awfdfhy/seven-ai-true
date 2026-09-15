@@ -42,22 +42,6 @@ const server=http.createServer((req,res)=>{
     if(!routes.includes(required))throw new Error(`Extended capability route missing: ${required}`);
   }
 
-  await canvas.locator('.v4-all').click();
-  const sheet=canvas.locator('.v5-layer:not([hidden])');
-  await sheet.waitFor({timeout:5000});
-  await sheet.locator('[data-seven-catalog-extra="2026.09-capability-catalog-v1"]').waitFor({timeout:5000});
-  const text=(await sheet.textContent())||'';
-  for(const group of ['Data & knowledge','Documents & media','Automation & connections','Device & local','Tool fabric','Trust & provenance'])if(!text.includes(group))throw new Error(`Capability catalog missing group: ${group}`);
-  for(const item of ['SQL & local data','Data analysis','Charts & tables','Math & science','Maps & weather','PDF tools','DOCX & reports','Spreadsheets','Image generation','Media transform','APIs','Webhooks','Connected accounts','Mail','Calendar','Cloud files','Code hosting','OCR & scanner','Speech','Local intelligence','Device actions','Notifications','SchemaGuard','MCP tools','Artifact provenance','Content integrity'])if(!text.includes(item))throw new Error(`Capability catalog missing item: ${item}`);
-  const all=sheet.locator('.v5-command');
-  if(await all.count()<60)throw new Error(`Expected at least 60 progressively disclosed commands, found ${await all.count()}`);
-
-  const search=sheet.locator('[data-v5-command-search]');
-  await search.fill('webhook');
-  const visible=await all.evaluateAll(els=>els.filter(el=>!el.hidden).map(el=>el.textContent.trim()));
-  if(visible.length!==1||visible[0]!=='Webhooks')throw new Error(`Command search filter failed: ${JSON.stringify(visible)}`);
-
-  await sheet.locator('[data-v5-close]').first().click();
   await page.locator('#deviceSelect').selectOption('320');
   await page.setViewportSize({width:320,height:760});
   const geom=await home.evaluate(el=>({sw:el.scrollWidth,cw:el.clientWidth}));
@@ -68,10 +52,20 @@ const server=http.createServer((req,res)=>{
   const preview=page.locator('#previewFrame').contentFrame();
   await preview.locator('[data-seven-capability-catalog="2026.09-capability-catalog-v1"]').waitFor({timeout:10000});
   await preview.locator('.v4-all').click();
-  const pSheet=preview.locator('.v5-layer:not([hidden])');
-  await pSheet.waitFor({timeout:5000});
-  await pSheet.locator('[data-seven-catalog-extra]').waitFor({timeout:5000});
-  if(await pSheet.locator('.v5-command').count()<60)throw new Error('Prototype preview lost full progressive capability coverage');
+  const sheet=preview.locator('.v5-layer:not([hidden])');
+  await sheet.waitFor({timeout:5000});
+  await sheet.locator('[data-seven-catalog-extra="2026.09-capability-catalog-v1"]').waitFor({timeout:5000});
+
+  const text=(await sheet.textContent())||'';
+  for(const group of ['Data & knowledge','Documents & media','Automation & connections','Device & local','Tool fabric','Trust & provenance'])if(!text.includes(group))throw new Error(`Capability catalog missing group: ${group}`);
+  for(const item of ['SQL & local data','Data analysis','Charts & tables','Math & science','Maps & weather','PDF tools','DOCX & reports','Spreadsheets','Image generation','Media transform','APIs','Webhooks','Connected accounts','Mail','Calendar','Cloud files','Code hosting','OCR & scanner','Speech','Local intelligence','Device actions','Notifications','SchemaGuard','MCP tools','Artifact provenance','Content integrity'])if(!text.includes(item))throw new Error(`Capability catalog missing item: ${item}`);
+
+  const all=sheet.locator('.v5-command');
+  if(await all.count()<60)throw new Error(`Expected at least 60 progressively disclosed commands, found ${await all.count()}`);
+  const search=sheet.locator('[data-v5-command-search]');
+  await search.fill('webhook');
+  const visible=await all.evaluateAll(els=>els.filter(el=>!el.hidden).map(el=>el.textContent.trim()));
+  if(visible.length!==1||visible[0]!=='Webhooks')throw new Error(`Command search filter failed: ${JSON.stringify(visible)}`);
 
   if(errors.length)throw new Error(`Browser errors: ${errors.slice(0,5).join(' | ')}`);
   await browser.close();server.close();
