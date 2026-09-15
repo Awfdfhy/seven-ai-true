@@ -7,15 +7,20 @@ const {chromium}=require('playwright');
 const root=path.resolve(__dirname,'../..');
 const dir=path.join(root,'tools/seven-design-studio');
 const file=path.join(dir,'home-visual-polish-v1.js');
+const a11yFile=path.join(dir,'home-visual-polish-a11y-v1.js');
 if(!fs.existsSync(file))throw new Error('Missing home-visual-polish-v1.js');
+if(!fs.existsSync(a11yFile))throw new Error('Missing home-visual-polish-a11y-v1.js');
 const source=fs.readFileSync(file,'utf8');
+const a11ySource=fs.readFileSync(a11yFile,'utf8');
 new vm.Script(source,{filename:'home-visual-polish-v1.js'});
+new vm.Script(a11ySource,{filename:'home-visual-polish-a11y-v1.js'});
 for(const token of ['2026.09-visual-polish-v1','--seven-home-visual-polish-v1','grid-template-columns:repeat(2','border-radius:29px 29px 29px 10px','left:0;right:0;bottom:0','body.seven-day','body.seven-lite','prefers-reduced-motion'])if(!source.includes(token))throw new Error(`Visual polish contract missing ${token}`);
 if(source.includes('backdrop-filter')||source.includes('filter:blur('))throw new Error('Visual polish introduced expensive always-on blur');
+if(!a11ySource.includes('font-size:11px'))throw new Error('Visual readability floor is missing');
 const index=fs.readFileSync(path.join(dir,'index.html'),'utf8');
-if(!index.includes('./home-visual-polish-v1.js'))throw new Error('Visual polish is not wired into index.html');
+if(!index.includes('./home-visual-polish-v1.js')||!index.includes('./home-visual-polish-a11y-v1.js'))throw new Error('Visual polish modules are not wired into index.html');
 const sw=fs.readFileSync(path.join(dir,'sw.js'),'utf8');
-if(!sw.includes('./home-visual-polish-v1.js')||!sw.includes("seven-design-studio-v14"))throw new Error('Visual polish is not cached by the current service worker');
+if(!sw.includes('./home-visual-polish-v1.js')||!sw.includes('./home-visual-polish-a11y-v1.js')||!sw.includes("seven-design-studio-v15"))throw new Error('Visual polish is not cached by the current service worker');
 
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.svg':'image/svg+xml'};
 const server=http.createServer((req,res)=>{
@@ -51,6 +56,10 @@ const server=http.createServer((req,res)=>{
   if(parseFloat(nav.left)!==0||parseFloat(nav.right)!==0||parseFloat(nav.bottom)!==0)throw new Error(`Bottom navigation is not edge-integrated: ${JSON.stringify(nav)}`);
   if(parseFloat(nav.tl)<20||parseFloat(nav.bl)>1)throw new Error(`Bottom navigation geometry regressed: ${JSON.stringify(nav)}`);
 
+  const readable=await canvas.locator('.v5-eyebrow,.v5-input-hint,.v5-bottom-nav small').evaluateAll(els=>els.map(el=>({text:el.textContent.trim(),size:parseFloat(getComputedStyle(el).fontSize)})));
+  const tooSmall=readable.filter(x=>x.size<11);
+  if(tooSmall.length)throw new Error(`Visual polish readability floor regressed: ${JSON.stringify(tooSmall)}`);
+
   await canvas.locator('.v5-composer textarea').focus();
   const focusShadow=await canvas.locator('.v5-composer').evaluate(el=>getComputedStyle(el).boxShadow);
   if(!focusShadow||focusShadow==='none')throw new Error('Composer focus state is visually silent');
@@ -77,6 +86,8 @@ const server=http.createServer((req,res)=>{
   const pHome=preview.locator('[data-seven-home-visual-polish="2026.09-visual-polish-v1"]');
   await pHome.waitFor({timeout:10000});
   if(await preview.locator('.v5-shortcuts').evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').filter(Boolean).length)!==2)throw new Error('Prototype preview lost visual polish');
+  const pReadable=await preview.locator('.v5-eyebrow,.v5-bottom-nav small').evaluateAll(els=>els.every(el=>parseFloat(getComputedStyle(el).fontSize)>=11));
+  if(!pReadable)throw new Error('Prototype preview lost visual readability floor');
 
   if(errors.length)throw new Error(`Browser errors: ${errors.slice(0,5).join(' | ')}`);
   await browser.close();server.close();
