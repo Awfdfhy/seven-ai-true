@@ -1,0 +1,82 @@
+"use strict";
+
+const crypto=require("crypto");
+const HASH64=/^[0-9a-f]{64}$/i;
+
+function arr(v){return Array.isArray(v)?v:[]}
+function req(v,n){const s=String(v??"").trim();if(!s)throw new Error(`${n} required`);return s}
+function finite(v,n){const x=Number(v);if(!Number.isFinite(x))throw new Error(`${n} must be finite`);return x}
+function int(v,n){const x=finite(v,n);if(!Number.isInteger(x)||x<0)throw new Error(`${n} must be a non-negative integer`);return x}
+function stable(v){if(Array.isArray(v))return v.map(stable);if(v&&typeof v==="object"){const o={};for(const k of Object.keys(v).sort())if(v[k]!==undefined)o[k]=stable(v[k]);return o}return v}
+function clone(v){return v==null?v:JSON.parse(JSON.stringify(v))}
+function sha(v){return crypto.createHash("sha256").update(typeof v==="string"?v:JSON.stringify(stable(v))).digest("hex")}
+function seal(body){return Object.freeze({...body,seal:sha(body)})}
+function verifySealed(x,schema){if(!x||x.schema!==schema||!HASH64.test(String(x.seal||"")))return false;const {seal:s,...body}=x;return s===sha(body)}
+function iso(v,n){const s=req(v,n),t=Date.parse(s);if(!Number.isFinite(t))throw new Error(`${n} invalid`);return new Date(t).toISOString()}
+function keyId({fabricId,principalId,scopeId}){return sha({fabricId:req(fabricId,"fabricId"),principalId:req(principalId,"principalId"),scopeId:String(scopeId||"")})}
+function headMap(input){const out={};for(const [k,v] of Object.entries(input||{})){const key=req(k,"dependency head key"),value=req(v,`dependencyHeads.${key}`);out[key]=value}return Object.freeze(stable(out))}
+
+function createFabricCheckpoint(input={}){
+  const fabricId=req(input.fabricId,"fabricId"),principalId=req(input.principalId,"principalId"),scopeId=String(input.scopeId||""),revision=int(input.revision,"revision"),state=clone(input.state);
+  if(state===undefined)throw new Error("state required");
+  const previousSeal=input.previousSeal==null?null:req(input.previousSeal,"previousSeal").toLowerCase();if(previousSeal&&!HASH64.test(previousSeal))throw new Error("previousSeal must be sha256");
+  if(revision===0&&previousSeal)throw new Error("revision zero cannot have previous checkpoint");if(revision>0&&!previousSeal)throw new Error("nonzero revision requires previous checkpoint seal");
+  const dependencyHeads=headMap(input.dependencyHeads),stateHash=sha(state),dependencyFingerprint=sha(dependencyHeads);
+  const body={schema:"seven.fabric-checkpoint.v1",fabricId,principalId,scopeId,keyId:keyId({fabricId,principalId,scopeId}),revision,previousSeal,stateHash,dependencyHeads,dependencyFingerprint,state,committedAt:iso(input.committedAt||new Date().toISOString(),"committedAt"),authorityMode:"PRESERVE_ONLY",rebuildable:input.rebuildable===true};
+  return seal(body);
+}
+function verifyFabricCheckpoint(x){
+  if(!verifySealed(x,"seven.fabric-checkpoint.v1"))return false;
+  if(x.keyId!==keyId(x)||x.stateHash!==sha(x.state)||x.dependencyFingerprint!==sha(headMap(x.dependencyHeads)))return false;
+  if(!Number.isInteger(x.revision)||x.revision<0||x.authorityMode!=="PRESERVE_ONLY")return false;
+  if(x.revision===0&&x.previousSeal!==null)return false;if(x.revision>0&&!HASH64.test(String(x.previousSeal||"")))return false;
+  return true;
+}
+function assessCheckpointFreshness(checkpoint,currentHeads={}){
+  if(!verifyFabricCheckpoint(checkpoint))return Object.freeze({status:"BLOCK",reasons:["invalid-checkpoint"],staleDependencies:[]});
+  const stale=[];for(const [k,v] of Object.entries(checkpoint.dependencyHeads||{}))if(String(currentHeads?.[k]??"")!==String(v))stale.push(k);
+  return Object.freeze({status:stale.length?"STALE":"FRESH",reasons:stale.map(x=>`dependency-drift:${x}`),staleDependencies:stale.sort()});
+}
+
+function createCheckpointManifest(input={}){
+  const fabricId=req(input.fabricId,"fabricId"),principalId=req(input.principalId,"principalId"),scopeId=String(input.scopeId||"");
+  const activeCheckpointSeal=req(input.activeCheckpointSeal,"activeCheckpointSeal").toLowerCase();if(!HASH64.test(activeCheckpointSeal))throw new Error("activeCheckpointSeal invalid");
+  const previousCheckpointSeal=input.previousCheckpointSeal==null?null:req(input.previousCheckpointSeal,"previousCheckpointSeal").toLowerCase();if(previousCheckpointSeal&&!HASH64.test(previousCheckpointSeal))throw new Error("previousCheckpointSeal invalid");
+  const body={schema:"seven.fabric-checkpoint-manifest.v1",fabricId,principalId,scopeId,keyId:keyId({fabricId,principalId,scopeId}),generation:int(input.generation,"generation"),activeCheckpointSeal,previousCheckpointSeal,updatedAt:iso(input.updatedAt||new Date().toISOString(),"updatedAt")};return seal(body);
+}
+function verifyCheckpointManifest(x){return verifySealed(x,"seven.fabric-checkpoint-manifest.v1")&&x.keyId===keyId(x)&&HASH64.test(String(x.activeCheckpointSeal||""))&&(x.previousCheckpointSeal==null||HASH64.test(String(x.previousCheckpointSeal)))}
+function assertCheckpointStore(adapter){for(const m of ["readManifest","readCheckpoint","writeCheckpoint","compareAndSwapManifest"])if(!adapter||typeof adapter[m]!=="function")throw new Error(`checkpoint store adapter missing ${m}`)}
+
+async function recoverCommittedCheckpoint({adapter,key="seven-fabric-state"}={}){
+  assertCheckpointStore(adapter);const manifest=await adapter.readManifest({key});if(!manifest)return Object.freeze({status:"EMPTY",checkpoint:null,manifest:null,reasons:[]});
+  if(!verifyCheckpointManifest(manifest))return Object.freeze({status:"HALT",checkpoint:null,manifest:null,reasons:["manifest-corrupt"]});
+  const active=await adapter.readCheckpoint({key,checkpointSeal:manifest.activeCheckpointSeal});
+  if(verifyFabricCheckpoint(active)&&active.seal===manifest.activeCheckpointSeal&&active.keyId===manifest.keyId)return Object.freeze({status:"ACTIVE",checkpoint:active,manifest,reasons:[]});
+  if(manifest.previousCheckpointSeal){const fallback=await adapter.readCheckpoint({key,checkpointSeal:manifest.previousCheckpointSeal});if(verifyFabricCheckpoint(fallback)&&fallback.seal===manifest.previousCheckpointSeal&&fallback.keyId===manifest.keyId)return Object.freeze({status:"FALLBACK",checkpoint:fallback,manifest,reasons:["active-checkpoint-invalid","verified-previous-checkpoint-used"]})}
+  return Object.freeze({status:"HALT",checkpoint:null,manifest,reasons:["active-checkpoint-invalid","no-verified-fallback"]});
+}
+
+async function persistCheckpointAtomic({adapter,key="seven-fabric-state",checkpoint,expectedManifestSeal=null,updatedAt}={}){
+  assertCheckpointStore(adapter);if(!verifyFabricCheckpoint(checkpoint))throw new Error("verified checkpoint required");
+  const recovery=await recoverCommittedCheckpoint({adapter,key});if(recovery.status==="HALT")throw new Error("cannot persist over unrecoverable checkpoint state");if(recovery.status==="FALLBACK")throw new Error("repair manifest before advancing from fallback recovery");
+  const currentManifest=recovery.manifest,current=recovery.checkpoint,observedManifestSeal=currentManifest?.seal||null;if(expectedManifestSeal!==observedManifestSeal)throw new Error("checkpoint manifest compare-and-swap conflict");
+  if(current){if(current.keyId!==checkpoint.keyId)throw new Error("checkpoint key identity mismatch");if(checkpoint.revision!==current.revision+1)throw new Error("checkpoint revision must advance exactly one");if(checkpoint.previousSeal!==current.seal)throw new Error("checkpoint lineage mismatch")}else if(checkpoint.revision!==0)throw new Error("first checkpoint must be revision zero");
+  await adapter.writeCheckpoint({key,checkpointSeal:checkpoint.seal,checkpoint});const reread=await adapter.readCheckpoint({key,checkpointSeal:checkpoint.seal});if(!verifyFabricCheckpoint(reread)||reread.seal!==checkpoint.seal)throw new Error("checkpoint object verification failed");
+  const manifest=createCheckpointManifest({fabricId:checkpoint.fabricId,principalId:checkpoint.principalId,scopeId:checkpoint.scopeId,generation:(currentManifest?.generation??-1)+1,activeCheckpointSeal:checkpoint.seal,previousCheckpointSeal:current?.seal||null,updatedAt:updatedAt||new Date().toISOString()});
+  const swapped=await adapter.compareAndSwapManifest({key,expectedSeal:observedManifestSeal,manifest});if(swapped!==true)throw new Error("checkpoint manifest compare-and-swap failed");const final=await recoverCommittedCheckpoint({adapter,key});if(final.status!=="ACTIVE"||final.checkpoint.seal!==checkpoint.seal)throw new Error("checkpoint post-commit verification failed");return Object.freeze({checkpoint:final.checkpoint,manifest:final.manifest,status:"COMMITTED"});
+}
+function createManifestRepairReceipt({manifest,recoveredCheckpoint,reviewer,reason,at}={}){if(!verifyCheckpointManifest(manifest)||!verifyFabricCheckpoint(recoveredCheckpoint)||manifest.previousCheckpointSeal!==recoveredCheckpoint.seal||manifest.keyId!==recoveredCheckpoint.keyId)throw new Error("verified previous checkpoint recovery required");return seal({schema:"seven.fabric-manifest-repair.v1",manifestSeal:manifest.seal,recoveredCheckpointSeal:recoveredCheckpoint.seal,keyId:manifest.keyId,reviewer:req(reviewer,"reviewer"),reason:req(reason,"reason"),at:iso(at||new Date().toISOString(),"at")})}
+function verifyManifestRepairReceipt(x){return verifySealed(x,"seven.fabric-manifest-repair.v1")}
+async function repairManifestToFallback({adapter,key="seven-fabric-state",recovery,receipt,updatedAt}={}){assertCheckpointStore(adapter);if(recovery?.status!=="FALLBACK"||!verifyCheckpointManifest(recovery.manifest)||!verifyFabricCheckpoint(recovery.checkpoint))throw new Error("fallback recovery required");if(!verifyManifestRepairReceipt(receipt)||receipt.manifestSeal!==recovery.manifest.seal||receipt.recoveredCheckpointSeal!==recovery.checkpoint.seal)throw new Error("verified repair receipt required");const repaired=createCheckpointManifest({fabricId:recovery.checkpoint.fabricId,principalId:recovery.checkpoint.principalId,scopeId:recovery.checkpoint.scopeId,generation:recovery.manifest.generation+1,activeCheckpointSeal:recovery.checkpoint.seal,previousCheckpointSeal:recovery.checkpoint.previousSeal,updatedAt:updatedAt||new Date().toISOString()});const ok=await adapter.compareAndSwapManifest({key,expectedSeal:recovery.manifest.seal,manifest:repaired});if(ok!==true)throw new Error("manifest repair compare-and-swap failed");const final=await recoverCommittedCheckpoint({adapter,key});if(final.status!=="ACTIVE"||final.checkpoint.seal!==recovery.checkpoint.seal)throw new Error("manifest repair verification failed");return Object.freeze({status:"REPAIRED_TO_VERIFIED_FALLBACK",checkpoint:final.checkpoint,manifest:final.manifest,receipt})}
+
+function createJournal(input={}){const fabricId=req(input.fabricId,"fabricId"),principalId=req(input.principalId,"principalId"),scopeId=String(input.scopeId||"");return seal({schema:"seven.fabric-journal.v1",fabricId,principalId,scopeId,keyId:keyId({fabricId,principalId,scopeId}),revision:0,head:null,events:[]})}
+function verifyJournal(j){if(!verifySealed(j,"seven.fabric-journal.v1")||j.keyId!==keyId(j)||!Number.isInteger(j.revision)||j.revision<0||!Array.isArray(j.events)||j.revision!==j.events.length)return false;let prev=null;for(let i=0;i<j.events.length;i++){const e=j.events[i];if(e.index!==i||e.previousEventSeal!==prev)return false;const {eventSeal,...body}=e;if(eventSeal!==sha(body))return false;prev=eventSeal}return j.head===prev}
+function appendJournal(j,{type,subjectSeal,detailHash,at}={}){if(!verifyJournal(j))throw new Error("verified journal required");const t=req(type,"type").toUpperCase(),ss=req(subjectSeal,"subjectSeal").toLowerCase(),dh=req(detailHash,"detailHash").toLowerCase();if(!HASH64.test(ss)||!HASH64.test(dh))throw new Error("journal hashes invalid");const body={index:j.events.length,type:t,subjectSeal:ss,detailHash:dh,at:iso(at||new Date().toISOString(),"at"),previousEventSeal:j.head};const event=Object.freeze({...body,eventSeal:sha(body)}),next={schema:j.schema,fabricId:j.fabricId,principalId:j.principalId,scopeId:j.scopeId,keyId:j.keyId,revision:j.revision+1,head:event.eventSeal,events:[...j.events,event]};return seal(next)}
+
+function normalizeSourceRefs(refs){const out=arr(refs).map(r=>({sourceId:req(r?.sourceId,"sourceRef.sourceId"),versionId:req(r?.versionId,"sourceRef.versionId"),locatorId:String(r?.locatorId||"")}));out.sort((a,b)=>`${a.sourceId}:${a.versionId}:${a.locatorId}`.localeCompare(`${b.sourceId}:${b.versionId}:${b.locatorId}`));for(let i=1;i<out.length;i++)if(JSON.stringify(out[i])===JSON.stringify(out[i-1]))throw new Error("duplicate source reference");return out}
+function createDerivedCacheEntry(input={}){const fabricId=req(input.fabricId,"fabricId"),principalId=req(input.principalId,"principalId"),scopeId=String(input.scopeId||""),sourceRefs=normalizeSourceRefs(input.sourceRefs);if(!sourceRefs.length)throw new Error("sourceRefs required");const transformHash=req(input.transformHash,"transformHash").toLowerCase(),producerHash=req(input.producerHash,"producerHash").toLowerCase();if(!HASH64.test(transformHash)||!HASH64.test(producerHash))throw new Error("transform/producer hashes must be sha256");const payload=clone(input.payload);if(payload===undefined)throw new Error("payload required");const payloadHash=sha(payload),payloadBytes=Buffer.byteLength(JSON.stringify(payload),"utf8"),createdAt=iso(input.createdAt||new Date().toISOString(),"createdAt"),expiresAt=input.expiresAt?iso(input.expiresAt,"expiresAt"):null;if(expiresAt&&Date.parse(expiresAt)<=Date.parse(createdAt))throw new Error("cache expiry must follow creation");return seal({schema:"seven.derived-cache-entry.v1",fabricId,principalId,scopeId,keyId:keyId({fabricId,principalId,scopeId}),sourceRefs,sourceFingerprint:sha(sourceRefs),transformHash,producerHash,payloadHash,payloadBytes,payload,createdAt,expiresAt,authoritative:false,grantsAuthority:false,rebuildable:true})}
+function verifyDerivedCacheEntry(x){return verifySealed(x,"seven.derived-cache-entry.v1")&&x.keyId===keyId(x)&&x.authoritative===false&&x.grantsAuthority===false&&x.rebuildable===true&&x.payloadHash===sha(x.payload)&&x.payloadBytes===Buffer.byteLength(JSON.stringify(x.payload),"utf8")&&x.sourceFingerprint===sha(normalizeSourceRefs(x.sourceRefs))}
+function evaluateDerivedCacheEntry(entry,{principalId,scopeId,currentSourceVersions={},now=Date.now()}={}){if(!verifyDerivedCacheEntry(entry))return Object.freeze({status:"BLOCK",reasons:["cache-entry-invalid"]});const reasons=[];if(principalId!=null&&entry.principalId!==String(principalId))reasons.push("principal-mismatch");if(scopeId!=null&&entry.scopeId!==String(scopeId))reasons.push("scope-mismatch");const n=now instanceof Date?now.getTime():Number(now);if(entry.expiresAt&&Number.isFinite(n)&&n>=Date.parse(entry.expiresAt))reasons.push("expired");for(const r of entry.sourceRefs)if(String(currentSourceVersions?.[r.sourceId]??"")!==r.versionId)reasons.push(`source-version-drift:${r.sourceId}`);if(reasons.some(x=>x==="principal-mismatch"||x==="scope-mismatch"))return Object.freeze({status:"BLOCK",reasons:[...new Set(reasons)].sort()});return Object.freeze({status:reasons.length?"STALE":"HIT",reasons:[...new Set(reasons)].sort(),payload:reasons.length?null:clone(entry.payload)})}
+function compactDerivedCache(entries,{maxEntries=128,maxBytes=8*1024*1024,currentSourceVersions=null,now=Date.now()}={}){const count=Math.max(0,int(maxEntries,"maxEntries")),bytes=Math.max(0,int(maxBytes,"maxBytes"));let rows=arr(entries).filter(verifyDerivedCacheEntry);if(currentSourceVersions)rows=rows.filter(e=>evaluateDerivedCacheEntry(e,{principalId:e.principalId,scopeId:e.scopeId,currentSourceVersions,now}).status==="HIT");rows.sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt)||a.seal.localeCompare(b.seal));const kept=[];let total=0;for(const e of rows){if(kept.length>=count||total+e.payloadBytes>bytes)continue;kept.push(e);total+=e.payloadBytes}return Object.freeze({kept:Object.freeze(kept),evictedSeals:Object.freeze(rows.filter(e=>!kept.includes(e)).map(e=>e.seal).sort()),totalBytes:total,maxEntries:count,maxBytes:bytes})}
+
+module.exports=Object.freeze({sha,keyId,createFabricCheckpoint,verifyFabricCheckpoint,assessCheckpointFreshness,createCheckpointManifest,verifyCheckpointManifest,assertCheckpointStore,recoverCommittedCheckpoint,persistCheckpointAtomic,createManifestRepairReceipt,verifyManifestRepairReceipt,repairManifestToFallback,createJournal,verifyJournal,appendJournal,createDerivedCacheEntry,verifyDerivedCacheEntry,evaluateDerivedCacheEntry,compactDerivedCache});
