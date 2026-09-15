@@ -29,3 +29,5 @@ jobs:
         run: npx playwright install --with-deps --only-shell chromium
       - name: Run Seven Design Studio browser test
         run: node tools/seven-design-studio/test.cjs
+      - name: Run Seven Design Studio mobile polish test
+        run: node tools/seven-design-studio/polish.test.cjs
