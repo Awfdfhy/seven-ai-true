@@ -22,6 +22,7 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import org.json.JSONObject;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import static org.junit.Assert.*;
@@ -29,7 +30,11 @@ import static org.junit.Assert.*;
 @RunWith(AndroidJUnit4.class)
 public final class Wave14LogoEvidenceTest {
   private static final int SIZE=432;
-  private File out(Context c,String name){return new File(c.getFilesDir(),name);}
+  private File out(Context c,String name){
+    File dir=c.getFilesDir();
+    if(!dir.exists())assertTrue("test files dir create failed",dir.mkdirs());
+    return new File(dir,name);
+  }
   private void writeBitmap(Bitmap b,File f)throws Exception{try(FileOutputStream o=new FileOutputStream(f)){assertTrue(b.compress(Bitmap.CompressFormat.PNG,100,o));}}
   private Bitmap render(Drawable original,boolean whiteBackground,boolean tintBlack){
     Drawable d=DrawableCompat.wrap(original.mutate());if(tintBlack)DrawableCompat.setTint(d,Color.BLACK);
@@ -37,6 +42,7 @@ public final class Wave14LogoEvidenceTest {
   }
   private void captureTargetDrawable(Context target,Context test,int id,String name,boolean white,boolean black)throws Exception{Drawable d=target.getDrawable(id);assertNotNull(name+" drawable missing",d);writeBitmap(render(d,white,black),out(test,name));}
   @Test public void captureWave14ReleaseLogoEvidence() throws Exception {
+    Assume.assumeTrue("Wave14 release evidence test requires explicit release-evidence invocation","1".equals(InstrumentationRegistry.getArguments().getString("wave14ReleaseEvidence")));
     Context target=InstrumentationRegistry.getInstrumentation().getTargetContext();Context test=InstrumentationRegistry.getInstrumentation().getContext();
     assertEquals("ai.seven.app",target.getPackageName());
     int adaptive=target.getResources().getIdentifier("ic_launcher","mipmap",target.getPackageName());
@@ -66,4 +72,4 @@ public final class Wave14LogoEvidenceTest {
 }
 `;
 fs.writeFileSync(path.join(TEST_JAVA,"Wave14LogoEvidenceTest.java"),java);
-console.log("Wave 14 Android logo evidence instrumentation: PASS (adaptive + themed target resources, legacy packaged raster fixture)");
+console.log("Wave 14 Android logo evidence instrumentation: PASS (release-only gated adaptive + themed target resources, legacy packaged raster fixture)");
