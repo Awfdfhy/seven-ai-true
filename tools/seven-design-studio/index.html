@@ -7,7 +7,7 @@
   <meta name="description" content="Seven Design Studio — mobile-first visual UI design environment for Seven." />
   <link rel="manifest" href="./manifest.webmanifest" />
   <title>Seven Design Studio</title>
-  <link rel="stylesheet" href="https://unpkg.com/grapesjs/dist/css/grapes.min.css" />
+  <link rel="stylesheet" href="https://unpkg.com/grapesjs@0.23.6/dist/css/grapes.min.css" />
   <link rel="stylesheet" href="./studio.css" />
 </head>
 <body>
@@ -32,9 +32,9 @@
         <option value="412">412</option>
         <option value="480">480</option>
       </select>
-      <button class="chip" id="themeBtn">Night</button>
-      <button class="chip" id="dirBtn">LTR</button>
-      <button class="chip" id="densityBtn">Balanced</button>
+      <button class="chip" id="themeBtn" aria-label="Toggle theme">Night</button>
+      <button class="chip" id="dirBtn" aria-label="Toggle text direction">LTR</button>
+      <button class="chip" id="densityBtn" aria-label="Cycle performance tier">Balanced</button>
       <span class="save-state" id="saveState" aria-live="polite">Saved</span>
     </section>
 
@@ -75,7 +75,7 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="https://unpkg.com/grapesjs"></script>
+  <script src="https://unpkg.com/grapesjs@0.23.6/dist/grapes.min.js"></script>
   <script src="./studio.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
