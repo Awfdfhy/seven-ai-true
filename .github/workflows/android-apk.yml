@@ -111,9 +111,10 @@ jobs:
           "$APKSIGNER" sign --ks "$HOME/.android/debug.keystore" --ks-key-alias androiddebugkey --ks-pass pass:android --key-pass pass:android --out android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest-evidence.apk android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
           "$APKSIGNER" verify --verbose --print-certs android/app/build/outputs/apk/release/app-release-evidence.apk
           "$APKSIGNER" verify --verbose --print-certs android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest-evidence.apk
-          REL_CERT="$($APKSIGNER verify --print-certs android/app/build/outputs/apk/release/app-release-evidence.apk | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -1)"
-          TEST_CERT="$($APKSIGNER verify --print-certs android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest-evidence.apk | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -1)"
+          REL_CERT="$($APKSIGNER verify --print-certs android/app/build/outputs/apk/release/app-release-evidence.apk | grep -E 'certificate SHA-256 digest:' | head -1 | awk '{print $NF}')"
+          TEST_CERT="$($APKSIGNER verify --print-certs android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest-evidence.apk | grep -E 'certificate SHA-256 digest:' | head -1 | awk '{print $NF}')"
           test -n "$REL_CERT"
+          test -n "$TEST_CERT"
           test "$REL_CERT" = "$TEST_CERT"
           echo "Wave14 signing identity: PASS $REL_CERT"
 
