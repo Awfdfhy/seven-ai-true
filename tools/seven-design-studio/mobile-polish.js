@@ -84,13 +84,13 @@
     themeMeta.setAttribute('content', state.theme === 'day' ? '#F4F6FB' : '#0A1022');
   }
 
-  function syncShellThemeColor() {
+  function syncShellA11y() {
     const day = (themeBtn?.textContent || '').trim().toLowerCase() === 'day';
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', day ? '#F4F6FB' : '#0A1022');
-    document.documentElement.style.colorScheme = day ? 'light dark' : 'dark';
-    if (themeBtn) themeBtn.setAttribute('aria-label', `Theme: ${day ? 'Day' : 'Night'}. Tap to switch.`);
-    if (dirBtn) dirBtn.setAttribute('aria-label', `Direction: ${(dirBtn.textContent || 'LTR').trim()}. Tap to switch.`);
+    if (meta) meta.setAttribute('content', '#07101F');
+    document.documentElement.style.colorScheme = 'dark';
+    if (themeBtn) themeBtn.setAttribute('aria-label', `Preview theme: ${day ? 'Day' : 'Night'}. Tap to switch.`);
+    if (dirBtn) dirBtn.setAttribute('aria-label', `Preview direction: ${(dirBtn.textContent || 'LTR').trim()}. Tap to switch.`);
     if (densityBtn) densityBtn.setAttribute('aria-label', `Performance preview: ${(densityBtn.textContent || 'Balanced').trim()}. Tap to cycle.`);
   }
 
@@ -115,7 +115,7 @@
     setTimeout(guardPreview, 60);
   }, true);
 
-  const shellObserver = new MutationObserver(syncShellThemeColor);
+  const shellObserver = new MutationObserver(syncShellA11y);
   [themeBtn, dirBtn, densityBtn].filter(Boolean).forEach(el => shellObserver.observe(el, {childList:true,subtree:true,characterData:true}));
 
   document.addEventListener('keydown', event => {
@@ -129,5 +129,5 @@
   });
 
   improveLabels();
-  syncShellThemeColor();
+  syncShellA11y();
 })();
