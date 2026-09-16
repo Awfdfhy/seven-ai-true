@@ -1,0 +1,27 @@
+{
+  "schema": "seven.exact-rc-policy.v1",
+  "version": 1,
+  "branch": "ultimate-polish-v1",
+  "applicationId": "ai.seven.app",
+  "artifactKind": "APK",
+  "minCanonicalSuites": 118,
+  "requiredAndroidScenarioCount": 11,
+  "requiredFiles": [
+    "release/full-seven-red-team-wave27.test.cjs",
+    "release/product-wiring-contract.test.cjs",
+    "release/release-readiness.test.cjs",
+    "release/visual-red-team-wave26.test.cjs",
+    "release/material-design-quality-wave25.test.cjs",
+    "docs/project-memory/current/PRODUCT_WIRING_MATRIX.json"
+  ],
+  "protectedSource": {
+    "path": "seven_ai-final.html",
+    "bytes": 658133,
+    "gitBlobSha1": "3e8dfa8e7da7124e16504140eb9631c10cabf053"
+  },
+  "signingClaimBoundary": "RELEASE_VARIANT_CI_SIGNED_NOT_STORE_PRODUCTION_SIGNING",
+  "rcClaimBoundary": "EXACT_RC_CI_SIGNED_NOT_STORE_PRODUCTION_SIGNING_NO_PHYSICAL_DEVICE_CLAIM",
+  "requireProductionVulnerabilityFree": true,
+  "requireFullGraphVulnerabilityFree": true,
+  "requirePhysicalDevice": false
+}
