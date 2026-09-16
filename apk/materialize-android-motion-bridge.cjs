@@ -12,6 +12,11 @@ const bridge=`
   // WebView does not reliably map Android's Remove animations / animation-scale
   // state to CSS prefers-reduced-motion. Mirror the genuine Android system state
   // into SevenPerformance so the release app honors the device preference.
+  // The WebView global may be replaced while Capacitor finishes navigation, so a
+  // resume sync is considered complete only after SevenPerformance itself is ready.
+  private static final int SEVEN_MOTION_SYNC_MAX_ATTEMPTS=80;
+  private static final long SEVEN_MOTION_SYNC_RETRY_MS=200L;
+
   private boolean sevenAndroidReducedMotionEnabled() {
     try {
       android.content.ContentResolver resolver=getContentResolver();
@@ -22,16 +27,22 @@ const bridge=`
     } catch(Exception ignored) { return false; }
   }
 
+  private void retrySevenAndroidReducedMotion(final int attempt) {
+    if(attempt<SEVEN_MOTION_SYNC_MAX_ATTEMPTS) {
+      getWindow().getDecorView().postDelayed(() -> syncSevenAndroidReducedMotion(attempt+1),SEVEN_MOTION_SYNC_RETRY_MS);
+    }
+  }
+
   private void syncSevenAndroidReducedMotion(final int attempt) {
     if(getBridge()==null||getBridge().getWebView()==null) {
-      if(attempt<6)getWindow().getDecorView().postDelayed(() -> syncSevenAndroidReducedMotion(attempt+1),150L*(attempt+1));
+      retrySevenAndroidReducedMotion(attempt);
       return;
     }
     final android.webkit.WebView webView=getBridge().getWebView();
     final boolean nativeReduced=sevenAndroidReducedMotionEnabled();
-    final String js="(()=>{const p=window.SevenPerformance,css=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches),nativeReduced="+(nativeReduced?"true":"false")+";window.__sevenAndroidMotion={source:'ANDROID_GLOBAL_ANIMATION_SCALES',reducedMotion:nativeReduced};if(!p||!p.state)return false;p.state.reducedMotion=nativeReduced||css;if(p.applyTier)p.applyTier(p.state.tier);else if(document&&document.documentElement)document.documentElement.dataset.sevenReducedMotion=p.state.reducedMotion?'1':'0';return true})()";
+    final String js="(()=>{const p=window.SevenPerformance,css=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches),nativeReduced="+(nativeReduced?"true":"false")+";window.__sevenAndroidMotion={source:'ANDROID_GLOBAL_ANIMATION_SCALES',reducedMotion:nativeReduced};if(!p||!p.state||p.state.ready!==true)return false;p.state.reducedMotion=nativeReduced||css;if(p.applyTier)p.applyTier(p.state.tier);else if(document&&document.documentElement)document.documentElement.dataset.sevenReducedMotion=p.state.reducedMotion?'1':'0';return p.state.reducedMotion===(nativeReduced||css)&&document&&document.documentElement&&document.documentElement.dataset.sevenReducedMotion===(p.state.reducedMotion?'1':'0')})()";
     webView.evaluateJavascript(js,value -> {
-      if(!"true".equals(value)&&attempt<6)webView.postDelayed(() -> syncSevenAndroidReducedMotion(attempt+1),150L*(attempt+1));
+      if(!"true".equals(value))retrySevenAndroidReducedMotion(attempt);
     });
   }
 
