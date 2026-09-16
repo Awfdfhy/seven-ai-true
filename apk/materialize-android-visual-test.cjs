@@ -48,15 +48,18 @@ public class SevenVisualEvidenceTest {
     String safe=value!=null&&value.matches("[0-9]+(?:\\\\.[0-9]+)?")?value:"1";
     shell("settings put global "+key+" "+safe);
   }
+  private File evidenceDir() {
+    Context testContext=InstrumentationRegistry.getInstrumentation().getContext();
+    File root=new File(testContext.getFilesDir(),"seven-visual");
+    assertTrue("internal evidence directory unavailable",root.exists()||root.mkdirs());
+    return root;
+  }
   private void shot(String name) throws Exception {
     Bitmap bitmap=InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();
     assertNotNull("device screenshot unavailable",bitmap);
-    Context testContext=InstrumentationRegistry.getInstrumentation().getContext();
-    File root=new File(testContext.getExternalFilesDir(null),"seven-visual");
-    assertTrue(root.exists()||root.mkdirs());
-    File out=new File(root,name+".png");
-    try(FileOutputStream stream=new FileOutputStream(out)){ assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG,100,stream)); }
-    assertTrue(out.isFile()&&out.length()>128);
+    File out=new File(evidenceDir(),name+".png");
+    try(FileOutputStream stream=new FileOutputStream(out)){ assertTrue("PNG compression failed",bitmap.compress(Bitmap.CompressFormat.PNG,100,stream)); }
+    assertTrue("captured screenshot is empty",out.isFile()&&out.length()>128);
     bitmap.recycle();
   }
   private void theme(WebView webView,String value) throws Exception {
@@ -75,9 +78,9 @@ public class SevenVisualEvidenceTest {
   }
   @Test
   public void captureReleaseVisualStates() throws Exception {
-    Context testContext=InstrumentationRegistry.getInstrumentation().getContext();
-    File root=new File(testContext.getExternalFilesDir(null),"seven-visual");
-    if(root.exists()){File[] files=root.listFiles();if(files!=null)for(File f:files)f.delete();}else assertTrue(root.mkdirs());
+    File root=evidenceDir();
+    File[] files=root.listFiles();
+    if(files!=null)for(File f:files)assertTrue("stale evidence cleanup failed: "+f.getName(),f.delete());
     try(ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)){
       AtomicReference<WebView> ref=new AtomicReference<>();
       scenario.onActivity(a -> ref.set(a.getBridge().getWebView()));

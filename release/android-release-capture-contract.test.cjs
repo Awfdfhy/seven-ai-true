@@ -7,6 +7,7 @@ ok(!/(?:^|\s)assembleAndroidTest(?:\s|\\)/m.test(wf),"root-level AndroidTest ass
 ok(!wf.includes(":app:assembleDebugAndroidTest"),"release-device visual evidence must not be assembled from the debug AndroidTest variant");
 match(wf,/android\.testInstrumentationRunnerArguments\.class=ai\.seven\.app\.SevenSmokeTest/,"release WebView smoke must select only SevenSmokeTest so visual capture cannot contaminate the smoke gate");
 match(wf,/:app:connectedReleaseAndroidTest/,"CI smoke must exercise the release-bound AndroidTest variant");
+match(wf,/script: cd android && \.\/gradlew --no-daemon :app:connectedReleaseAndroidTest/,"emulator-runner smoke must keep cd and Gradle in one shell command because multiline script lines do not share cwd");
 match(wf,/awk -F': ' '\/certificate SHA-256 digest\//,"CI release identity must parse modern apksigner certificate output");
 ok(!wf.includes("Signer #1 certificate SHA-256 digest"),"signer parsing must not depend on the obsolete Signer #1 prefix");
 match(patch,/def sevenCiKeystore = project\.findProperty\("sevenCiKeystore"\)/,"generated Gradle must accept an explicit CI keystore without embedding credentials");
@@ -22,6 +23,11 @@ match(cap,/DEFAULT_BUILD_IDENTITY="evidence\/android\/build-identity\.json"/,"ca
 match(cap,/function inferProfileId/);match(cap,/api===28\)return"api28-compact"/);match(cap,/api===36\)return"api36-modern"/);
 match(cap,/SEVEN_ANDROID_PROFILE_OUT\|\|`evidence\/android\/profiles\/\$\{profileId\}`/,"profile output must remain deterministic even when shell exports are not persistent");
 match(mat,/UiAutomation\(\)\.takeScreenshot|UiAutomation\(\).*takeScreenshot|UiAutomation.*takeScreenshot/);match(mat,/theme\(webView,"day"\)/);match(mat,/theme\(webView,"night"\)/);match(mat,/SevenWorkspaces\.open/);match(mat,/ar-IQ/);
+match(mat,/testContext\.getFilesDir\(\)/,"visual evidence staging must use instrumentation-private storage so API 28 does not depend on external storage availability");
+ok(!mat.includes("getExternalFilesDir"),"visual evidence staging must not regress to nullable external files storage");
+match(cap,/"exec-out","run-as",TEST_PACKAGE,"cat"/,"host collector must export private visual evidence through run-as without changing screenshot bytes");
+match(cap,/runAs\("rm","-rf","files\/seven-visual"\)/,"private evidence staging must be cleared before capture");
+ok(!cap.includes("/sdcard/Android/data/ai.seven.app.test/files/seven-visual"),"collector must not depend on external test-app storage");
 match(mat,/settings put global window_animation_scale 0/);match(mat,/settings put global transition_animation_scale 0/);match(mat,/settings put global animator_duration_scale 0/);match(mat,/prefers-reduced-motion: reduce/);match(mat,/SevenPerformance\.reconsiderTier/);match(mat,/shot\("reduced-motion"\)/);
 ok(!/SevenPerformance\.state\.reducedMotion\s*=\s*true/.test(mat),"Reduced Motion evidence must come from Android/WebView preference state, not direct runtime mutation");
 ok(!/dataset\.sevenReducedMotion\s*=\s*['\"]1['\"]/.test(mat),"Reduced Motion DOM evidence must not be manually forged");
@@ -30,4 +36,4 @@ ok(!/deviceIdentityHash:android\.hash\(\{profileId/.test(cap),"device identity m
 ok(!/scenario:"launcher-/.test(cap),"in-app collector must not fabricate launcher scenarios");ok(!/scenario:"splash"/.test(cap),"in-app collector must not fabricate splash evidence");
 match(cap,/GENUINE_RELEASE_APP_DEVICE_CAPTURES_FOR_IN_APP_STATES_ONLY_NO_LAUNCHER_OR_SPLASH_CLAIM/);match(id,/RELEASE_VARIANT_CI_SIGNED_NOT_STORE_PRODUCTION_SIGNING/);match(merge,/PARTIAL_RELEASE_DEVICE_EVIDENCE_ONLY/);
 ok(!patch.includes("seven_ai-final.html"),"Android shell patch must not touch protected source");ok(!mat.includes("seven_ai-final.html"),"visual materializer must not touch protected source");ok(!cap.includes("seven_ai-final.html"),"capture collector must not touch protected source");
-console.log(`Android Release Capture Contract: PASS (${n} assertions; release-variant instrumentation, signer parity, runner fail-safe and truthful visual evidence)`);
+console.log(`Android Release Capture Contract: PASS (${n} assertions; release-variant instrumentation, private evidence export, signer parity and truthful visual evidence)`);
