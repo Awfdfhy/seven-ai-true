@@ -11,6 +11,8 @@ const APP_ID = "ai.seven.app";
 const DEFAULT_APK = "android/app/build/outputs/apk/release/app-release.apk";
 const DEFAULT_BUILD = "evidence/android/build-identity.json";
 const SET_WALLPAPER = "android.intent.action.SET_WALLPAPER";
+const UI_DUMP_ATTEMPTS = 12;
+const UI_DUMP_RETRY_MS = 350;
 
 function run(cmd, args, { allow = false, encoding = "utf8", timeout = 20000 } = {}) {
   const r = spawnSync(cmd, args, { encoding, maxBuffer: 32 * 1024 * 1024, timeout });
@@ -53,15 +55,30 @@ function parseBounds(s) {
 function nodeText(n) { return `${n.text || ""} ${n["content-desc"] || ""}`.trim(); }
 function dumpUi() {
   const remote = "/data/local/tmp/seven-themed-ui.xml";
-  run("adb", ["shell", "uiautomator", "dump", remote]);
-  const r = spawnSync("adb", ["exec-out", "cat", remote], {
-    encoding: "utf8",
-    maxBuffer: 8 * 1024 * 1024
-  });
-  if (r.error || r.status !== 0 || !r.stdout.includes("<hierarchy")) {
-    throw Error(`customization UI dump unavailable: ${r.error?.message || r.stderr || r.stdout}`);
+  const failures = [];
+  for (let attempt = 1; attempt <= UI_DUMP_ATTEMPTS; attempt++) {
+    run("adb", ["wait-for-device"], { allow: true, timeout: 12000 });
+    run("adb", ["shell", "rm", "-f", remote], { allow: true, timeout: 5000 });
+    const dumped = run("adb", ["shell", "uiautomator", "dump", remote], { allow: true, timeout: 12000 });
+    const read = run("adb", ["exec-out", "cat", remote], { allow: true, timeout: 8000 });
+    const xml = String(read.stdout || "");
+    const freshHierarchy = !read.error && read.status === 0 && xml.includes("<hierarchy") && xml.includes("<node");
+    if (freshHierarchy) return xml;
+    failures.push([
+      `attempt=${attempt}`,
+      `dumpStatus=${dumped.status}`,
+      dumped.error && `dumpError=${dumped.error.message}`,
+      String(dumped.stderr || dumped.stdout || "").trim() && `dumpOutput=${JSON.stringify(String(dumped.stderr || dumped.stdout).trim().slice(0, 240))}`,
+      `readStatus=${read.status}`,
+      read.error && `readError=${read.error.message}`,
+      String(read.stderr || "").trim() && `readErrorOutput=${JSON.stringify(String(read.stderr).trim().slice(0, 240))}`,
+      `bytes=${Buffer.byteLength(xml)}`,
+      `hierarchy=${xml.includes("<hierarchy")}`,
+      `node=${xml.includes("<node")}`
+    ].filter(Boolean).join(" "));
+    if (attempt < UI_DUMP_ATTEMPTS) sleep(UI_DUMP_RETRY_MS);
   }
-  return r.stdout;
+  throw Error(`customization UI dump unavailable after ${UI_DUMP_ATTEMPTS} fresh attempts: ${failures.join(" | ")}`);
 }
 function visibleUiSummary(xml) {
   const rows = [];
