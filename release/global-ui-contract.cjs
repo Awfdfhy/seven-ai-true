@@ -28,7 +28,7 @@ function audit({css="",betaRuntime="",uiRuntime=""}={}){
   need(betaRuntime.includes("sevenGlobalUi='v1'")||betaRuntime.includes('sevenGlobalUi="v1"')||betaRuntime.includes("sevenGlobalUi='v1'"),"runtime:global-ui-marker");
   for(const s of REQUIRED_SURFACES)need(betaRuntime.includes(`'${s}'`),`surface:${s}`);
   for(const p of REQUIRED_PRIMITIVES)need(betaRuntime.includes(p),`runtime:${p}`);
-  need(betaRuntime.includes("Q('Seven navigation','تنقل Seven')")&&betaRuntime.includes("Q('Message composer','محرر الرسالة')"),"a11y:landmark-labels");
+  need(betaRuntime.includes("Q('Seven navigation','التنقل')")&&betaRuntime.includes("Q('Message composer','رسالة')"),"a11y:landmark-labels");
   need(betaRuntime.includes("Open workspaces"),"zero-manual:workspace-discovery");
   if(/\bleft\s*:/.test(css))warn.push("physical-left-remains");
   if(/\bright\s*:/.test(css))warn.push("physical-right-remains");
