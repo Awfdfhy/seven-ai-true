@@ -108,17 +108,22 @@ function screenHost(outPath){const r=spawnSync("adb",["exec-out","screencap","-p
 function splashCapture(outPath){
   const remotePng="/data/local/tmp/seven-splash.png",remoteWitness="/data/local/tmp/seven-splash-window.txt";
   run("adb",["shell","rm","-f",remotePng,remoteWitness],{allow:true});adb("shell","am","force-stop",APP_ID);home();
-  const loop=`i=0; while [ $i -lt 160 ]; do D="$(dumpsys window windows)"; printf '%s\\n' "$D" | grep -E 'Splash Screen ${APP_ID}|Starting[^[:cntrl:]]*${APP_ID}|${APP_ID}[^[:cntrl:]]*Splash' > ${remoteWitness} && { screencap -p ${remotePng}; exit 0; }; i=$((i+1)); sleep 0.02; done; exit 7`;
-  const monitor=spawn("adb",["shell","sh","-c",loop],{stdio:"ignore"});sleep(80);
+  // Android 12+ starting windows can live for only a few frames. Poll the compositor
+  // first because its layer list is both faster and closer to what was actually drawn;
+  // retain WindowManager as an independent compatibility witness for older releases.
+  const expr=`(Splash Screen|Starting Window|Starting).*${APP_ID.replace(/\./g,"\\.")}|${APP_ID.replace(/\./g,"\\.")}.*(Splash|Starting)`;
+  const loop=`i=0; while [ $i -lt 480 ]; do S="$(dumpsys SurfaceFlinger --list 2>/dev/null)"; M="$(printf '%s\\n' "$S" | grep -Ei '${expr}' | head -n 8)"; if [ -n "$M" ]; then { printf 'source=SurfaceFlinger\\n'; printf '%s\\n' "$M"; } > ${remoteWitness}; screencap -p ${remotePng} && exit 0; fi; if [ $((i%12)) -eq 0 ]; then W="$(dumpsys window windows 2>/dev/null)"; M="$(printf '%s\\n' "$W" | grep -Ei '${expr}' | head -n 8)"; if [ -n "$M" ]; then { printf 'source=WindowManager\\n'; printf '%s\\n' "$M"; } > ${remoteWitness}; screencap -p ${remotePng} && exit 0; fi; fi; i=$((i+1)); done; exit 7`;
+  const monitor=spawn("adb",["shell","sh","-c",loop],{stdio:"ignore"});sleep(40);
   run("adb",["shell","am","start","-n",ACTIVITY],{allow:false,timeout:8000});
-  let ready=false;for(let i=0;i<120;i++){const r=run("adb",["shell","test","-s",remotePng],{allow:true});if(r.status===0){ready=true;break}sleep(50)}
-  if(!ready){try{monitor.kill()}catch{}throw Error("genuine Android splash/starting-window witness was not observed")}
+  let ready=false;for(let i=0;i<200;i++){const r=run("adb",["shell","test","-s",remotePng],{allow:true});if(r.status===0){ready=true;break}sleep(50)}
+  if(!ready){try{monitor.kill()}catch{}throw Error("genuine Android splash/starting-window compositor witness was not observed")}
   const png=spawnSync("adb",["exec-out","cat",remotePng],{encoding:null,maxBuffer:32*1024*1024}),wit=spawnSync("adb",["exec-out","cat",remoteWitness],{encoding:"utf8",maxBuffer:2*1024*1024});
   if(png.error||png.status!==0||wit.error||wit.status!==0)throw Error("splash evidence export failed");
-  const witness=String(wit.stdout||"").trim();if(!new RegExp(`Splash Screen ${APP_ID}|Starting.*${APP_ID}|${APP_ID}.*Splash`,"i").test(witness))throw Error("splash witness text invalid");
+  const witness=String(wit.stdout||"").trim(),source=/^source=(SurfaceFlinger|WindowManager)$/m.exec(witness)?.[1];
+  if(!source||!new RegExp(`(?:Splash Screen|Starting Window|Starting).*${APP_ID.replace(/\./g,"\\.")}|${APP_ID.replace(/\./g,"\\.")}.*(?:Splash|Starting)`,"i").test(witness))throw Error("splash compositor/window witness text invalid");
   const dim=pngSizeBuffer(png.stdout);fs.mkdirSync(path.dirname(outPath),{recursive:true});fs.writeFileSync(outPath,png.stdout);
   sleep(700);const windows=adb("shell","dumpsys","window","windows").stdout;if(!windows.includes(APP_ID))throw Error("app did not become foreground after witnessed splash");
-  return{...dim,sha256:shaBytes(png.stdout),witness,witnessHash:shaBytes(Buffer.from(witness))};
+  return{...dim,sha256:shaBytes(png.stdout),witness,witnessSource:source,witnessHash:shaBytes(Buffer.from(witness))};
 }
 function loadEvidence(outDir,build,profileId,runId){
   const p=path.join(outDir,"profile-evidence.json");
