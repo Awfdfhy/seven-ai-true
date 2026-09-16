@@ -45,6 +45,10 @@ public class SevenVisualEvidenceTest {
     String safe=value!=null&&value.matches("[0-9]+(?:\\\\.[0-9]+)?")?value:"1";
     shell("settings put global "+key+" "+safe);
   }
+  private void assertZeroScale(String key) throws Exception {
+    String value=shell("settings get global "+key);
+    assertEquals("Android animation scale must be genuinely disabled: "+key,0f,Float.parseFloat(value),0.0001f);
+  }
   private void shot(String name) throws Exception {
     assertTrue("invalid evidence screenshot name",name!=null&&name.matches("[a-z0-9-]+"));
     String out=EVIDENCE_ROOT+"/"+name+".png";
@@ -95,18 +99,21 @@ public class SevenVisualEvidenceTest {
       shell("settings put global window_animation_scale 0");
       shell("settings put global transition_animation_scale 0");
       shell("settings put global animator_duration_scale 0");
-      Thread.sleep(700);
+      assertZeroScale("window_animation_scale");
+      assertZeroScale("transition_animation_scale");
+      assertZeroScale("animator_duration_scale");
+      Thread.sleep(250);
 
-      // Android 16 WebView does not reliably dispatch a live prefers-reduced-motion
-      // media-query change to an already-running WebView. Relaunch after the real
-      // device animation scales are disabled so the fresh WebView observes the
-      // system state instead of fabricating a browser-only override.
+      // Android WebView does not consistently expose Android's Remove animations
+      // state through CSS prefers-reduced-motion. The production MainActivity bridge
+      // reads the genuine Android animation scales and mirrors that system state into
+      // SevenPerformance. Relaunch proves the release app consumes that native state.
       try(ActivityScenario<MainActivity> reducedScenario=ActivityScenario.launch(MainActivity.class)){
         WebView reducedWebView=webView(reducedScenario);
-        waitFor(reducedWebView,"Boolean(window.SevenPerformance&&SevenPerformance.state.ready&&window.SevenTheme&&document.getElementById('userInput'))");
-        js(reducedWebView,"(()=>{document.documentElement.lang='en';document.documentElement.dir='ltr';document.body.dir='ltr';SevenTheme.setPreference('night');if(window.SevenPerformance)SevenPerformance.reconsiderTier(null,{forceUpgrade:true});return true})()");
+        waitFor(reducedWebView,"Boolean(window.SevenPerformance&&SevenPerformance.state.ready&&window.SevenTheme&&window.SevenMotion&&SevenMotion.state.ready&&document.getElementById('userInput'))");
+        js(reducedWebView,"(()=>{document.documentElement.lang='en';document.documentElement.dir='ltr';document.body.dir='ltr';SevenTheme.setPreference('night');return true})()");
         waitFor(reducedWebView,"document.documentElement.dir==='ltr'&&document.documentElement.dataset.sevenTheme==='night'");
-        waitFor(reducedWebView,"Boolean(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches&&window.SevenPerformance&&SevenPerformance.state.reducedMotion===true&&document.documentElement.dataset.sevenReducedMotion==='1')");
+        waitFor(reducedWebView,"Boolean(window.__sevenAndroidMotion&&__sevenAndroidMotion.source==='ANDROID_GLOBAL_ANIMATION_SCALES'&&__sevenAndroidMotion.reducedMotion===true&&window.SevenPerformance&&SevenPerformance.state.reducedMotion===true&&document.documentElement.dataset.sevenReducedMotion==='1'&&window.SevenMotion&&SevenMotion.allow('ambient')===false)");
         Thread.sleep(120);shot("reduced-motion");
       }
     } finally {
