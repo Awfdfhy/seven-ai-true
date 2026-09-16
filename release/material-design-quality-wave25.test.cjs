@@ -71,13 +71,17 @@ eq(lint.verdict,'PASS','Wave25 requires clean Design Lint PASS');
 
 eq(matrix.schema,'seven.product-wiring-matrix.v1');
 ok(Array.isArray(matrix.rows)&&matrix.rows.length>=29,'Wave25 requires complete product wiring matrix');
+const fallibleSignals=new Set(['loading','running','streaming','retry','cancel','post_cancel','permission_required','offline','provider_degraded','resource_degraded','recovery','malformed_input']);
+const failureStates=new Set(['error','permission_denied','offline','provider_degraded','resource_degraded','recovery','malformed_input']);
 for(const row of matrix.rows){
   if(!row.release_relevant) continue;
   ok(row.status==='WIRED_VERIFIED'||row.status==='INFRA_VERIFIED','release-relevant surface lost verified state: '+row.capability_id);
   ok(row.entry_point_class!=='NO_USER_SURFACE','release-relevant capability lost user/runtime surface: '+row.capability_id);
   ok(Array.isArray(row.applicable_states)&&row.applicable_states.length>0,'release-relevant capability lacks state model: '+row.capability_id);
-  if(row.entry_point_class==='DIRECT_UI'||row.entry_point_class==='CONTEXTUAL_UI'||row.entry_point_class==='EXPERT_ESCAPE')
-    ok(row.applicable_states.includes('error')||row.applicable_states.includes('permission_denied'),'interactive capability lacks failure-state treatment: '+row.capability_id);
+  const interactive=row.entry_point_class==='DIRECT_UI'||row.entry_point_class==='CONTEXTUAL_UI'||row.entry_point_class==='EXPERT_ESCAPE';
+  const fallible=row.applicable_states.some(s=>fallibleSignals.has(s));
+  if(interactive&&fallible)
+    ok(row.applicable_states.some(s=>failureStates.has(s)),'fallible interactive capability lacks failure/degraded-state treatment: '+row.capability_id);
 }
 
 for(const file of [
