@@ -12,10 +12,13 @@ const src=fs.readFileSync(modulePath,'utf8');
 new vm.Script(src,{filename:'seven-product-screens-v1.js'});
 for(const token of ['2026.09-product-screens-v1','--seven-product-screens-v1','seven-spaces-v1','seven-context-v1','seven-research-v1','seven-code-v1','seven-world-v1','seven-tools-v1','seven-library-v1','seven-intelligence-v1','seven-evolution-v1','seven-you-v1','prefers-reduced-motion'])if(!src.includes(token))throw new Error(`Product suite contract missing ${token}`);
 if(src.includes('backdrop-filter')||src.includes('filter:blur('))throw new Error('Product suite introduced expensive always-on blur');
+const stateSync=fs.readFileSync(path.join(dir,'studio-page-state-sync.js'),'utf8');
+new vm.Script(stateSync,{filename:'studio-page-state-sync.js'});
+if(!stateSync.includes('2026.09-page-state-sync-v2'))throw new Error('Cross-page state sync v2 missing');
 const index=fs.readFileSync(path.join(dir,'index.html'),'utf8');
-if(!index.includes('./seven-product-screens-v1.js'))throw new Error('Product suite is not wired');
+if(!index.includes('./seven-product-screens-v1.js')||!index.includes('./studio-page-state-sync.js'))throw new Error('Product suite/state sync is not wired');
 const sw=fs.readFileSync(path.join(dir,'sw.js'),'utf8');
-if(!sw.includes('./seven-product-screens-v1.js')||!sw.includes('seven-design-studio-v21'))throw new Error('Product suite is not in current Studio cache');
+if(!sw.includes('./seven-product-screens-v1.js')||!sw.includes('./studio-page-state-sync.js')||!sw.includes('seven-design-studio-v22'))throw new Error('Product suite is not in current Studio cache');
 
 const pages=[
   ['seven-spaces-v1','spaces'],['seven-context-v1','context'],['seven-research-v1','research'],['seven-code-v1','code'],['seven-world-v1','world'],['seven-tools-v1','tools'],['seven-library-v1','library'],['seven-intelligence-v1','intelligence'],['seven-evolution-v1','evolution'],['seven-you-v1','you']
@@ -66,23 +69,32 @@ const server=http.createServer((req,res)=>{
   if(primaryTargets.length)throw new Error(`Product suite has undersized primary touch targets: ${JSON.stringify(primaryTargets.slice(0,5))}`);
 
   await page.locator('#themeBtn').click();
+  await canvas.locator('body.seven-day').waitFor({timeout:3000});
   for(const id of ['seven-spaces-v1','seven-world-v1','seven-you-v1']){
     await selector.selectOption(id);
-    const bg=await canvas.locator('[data-seven-product-suite="2026.09-product-screens-v1"]').evaluate(el=>getComputedStyle(el).backgroundImage);
+    await canvas.locator('body.seven-day[data-seven-page-state-sync="2026.09-page-state-sync-v2"]').waitFor({timeout:3000});
+    const rootEl=canvas.locator('[data-seven-product-suite="2026.09-product-screens-v1"]');
+    await rootEl.waitFor({timeout:3000});
+    const bg=await rootEl.evaluate(el=>getComputedStyle(el).backgroundImage);
     if(!bg.includes('gradient'))throw new Error(`${id}: Day mode lost designed background`);
   }
   await page.locator('#themeBtn').click();
+  await canvas.locator('body:not(.seven-day)').waitFor({timeout:3000});
+
   await page.locator('#dirBtn').click();
   await selector.selectOption('seven-code-v1');
-  if((await canvas.locator('body').getAttribute('dir'))!=='rtl')throw new Error('Product suite RTL propagation failed');
+  await canvas.locator('body.seven-rtl[dir="rtl"][data-seven-page-state-sync="2026.09-page-state-sync-v2"]').waitFor({timeout:3000});
   if((await canvas.locator('.svx-editor pre').evaluate(el=>getComputedStyle(el).direction))!=='ltr')throw new Error('Code editor must remain LTR under RTL');
   await page.locator('#dirBtn').click();
+  await canvas.locator('body[dir="ltr"]:not(.seven-rtl)').waitFor({timeout:3000});
 
   await page.locator('#deviceSelect').selectOption('320');
   await page.setViewportSize({width:320,height:760});
   for(const [id,screen] of pages){
     await selector.selectOption(id);
-    const g=await canvas.locator(`[data-seven-product-screen="${screen}"]`).evaluate(el=>{const d=el.ownerDocument.documentElement;return{sw:d.scrollWidth,cw:d.clientWidth};});
+    const rootEl=canvas.locator(`[data-seven-product-screen="${screen}"]`);
+    await rootEl.waitFor({timeout:3000});
+    const g=await rootEl.evaluate(el=>{const d=el.ownerDocument.documentElement;return{sw:d.scrollWidth,cw:d.clientWidth};});
     if(g.sw>g.cw+1)throw new Error(`${screen}: visible horizontal overflow at 320px ${g.sw}/${g.cw}`);
   }
 
