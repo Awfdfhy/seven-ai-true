@@ -1,8 +1,16 @@
 (() => {
   'use strict';
 
-  const VERSION='2026.09-page-state-sync-v2';
+  const VERSION='2026.09-page-state-sync-v3';
   const SETTINGS_KEY='seven-design-studio-settings-v1';
+  const PRODUCT_THEME_MARKER='--seven-product-theme-fallback-v1';
+  const PRODUCT_THEME_CSS=`
+:root{${PRODUCT_THEME_MARKER}:1}
+.svx-screen[data-seven-product-suite="2026.09-product-screens-v1"]{background-color:#07101f!important;background-image:radial-gradient(74% 30% at 103% -5%,rgba(65,102,245,.12),transparent 67%),linear-gradient(180deg,#081426,#07101f 52%,#050b16)!important}
+body.seven-day .svx-screen[data-seven-product-suite="2026.09-product-screens-v1"]{background-color:#f5f8fc!important;background-image:radial-gradient(70% 28% at 100% -4%,rgba(65,102,245,.055),transparent 66%),linear-gradient(180deg,#fbfcfe,#f5f8fc 55%,#eef3f8)!important}
+body.seven-lite .svx-screen[data-seven-product-suite="2026.09-product-screens-v1"]{background-color:#07101f!important;background-image:none!important}
+body.seven-day.seven-lite .svx-screen[data-seven-product-suite="2026.09-product-screens-v1"]{background-color:#f5f8fc!important;background-image:none!important}
+`;
 
   function readStored(){
     try{return JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')||{};}catch(_){return {};}
@@ -33,6 +41,13 @@
     };
   }
 
+  function ensureProductThemeCss(editor){
+    try{
+      const css=String(editor?.getCss?.()||'');
+      if(!css.includes(PRODUCT_THEME_MARKER))editor?.addStyle?.(PRODUCT_THEME_CSS);
+    }catch(_){}
+  }
+
   function applyBody(body,s){
     if(!body)return false;
     body.classList.toggle('seven-day',s.theme==='day');
@@ -49,6 +64,7 @@
 
   function apply(editor){
     try{
+      ensureProductThemeCss(editor);
       const s=readSettings();
       const body=editor?.Canvas?.getBody?.();
       const frameBody=editor?.Canvas?.getFrameEl?.()?.contentDocument?.body;
