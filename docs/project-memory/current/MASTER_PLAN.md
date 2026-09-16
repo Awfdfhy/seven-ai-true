@@ -16,6 +16,7 @@ Seven AI is an Android-first, user-owned AI platform designed to feel like one c
 - Heavy systems and visuals should be lazy/on-demand where practical.
 - Reduced Motion, performance tiers, accessibility, Arabic/RTL and phone ergonomics are product requirements.
 - Speed and smoothness are system-wide requirements, but optimization may remove waste only, never required correctness, verification or safety.
+- Final UI quality is a release requirement, not decoration: a functionally correct but visibly generic, inconsistent, janky or cheap UI cannot pass final visual freeze.
 
 ## Core Architecture
 Seven Cognitive Runtime v4.2 hardened direction:
@@ -50,6 +51,13 @@ Coverage includes complete product UI/workspaces, raster/vector assets, logo/ico
 
 Architecture saturation does **not** mean the final UI is implemented or visually frozen.
 
+### Premium Materials & Design Quality Gate
+`FINAL_UI_MATERIALS_AND_DESIGN_QUALITY_PLAN.md` is mandatory before Final UI freeze, Final E2E and Final Seven. It defines Seven's governed M0–M5 material architecture, Fancy Material rules, Full/Balanced/Lite material governor, Day/Night pairing, design-quality constitution, anti-cheapness review, Design Lint expansion, Android/performance evidence and final material freeze criteria.
+
+Fancy materials are intentional and scarce rather than universal glass effects. Typography, spacing, geometry, hierarchy, interaction/state quality and Seven identity remain premium even when expensive effects are reduced. Material quality may adapt to device capability but must never remove functionality, correctness, accessibility or essential state communication.
+
+At Final UI Completion, every user-relevant capability must trace through a discoverable product surface and real runtime wiring. UI completion therefore means both complete capability usability and release-level design quality, not merely the presence of controls.
+
 ## Design Genome & Identity Tournament
 Seven uses a candidate-portfolio approach rather than copying ChatGPT, Claude or Material. Candidate DNA includes Orbit Thread, Seven Cut, Evidence Rail, Focus Halo and State Node concepts, with competing families tested before adoption.
 
@@ -61,7 +69,7 @@ Immediate order:
 2. **Design Genome Runtime**: converge legacy token families into one governed Seven token system and add Design Lint.
 3. **Logo & Identity Tournament**: generate, test, reduce and select the strongest identity family.
 
-Subsequent waves cover Global UI; Coding/Research/RPG surfaces; generated/typed UI; Motion; Arabic/RTL; accessibility; mobile performance; Android certification; and final Visual Red Team + implementation-level 2/2 saturation.
+Subsequent waves cover Global UI; Coding/Research/RPG surfaces; generated/typed UI; Motion; Arabic/RTL; accessibility; mobile performance; Android certification; final capability-to-product wiring; Premium Materials & Design Quality; and final Visual Red Team + implementation-level 2/2 saturation.
 
 ## Tool Fabric 2.0
 Tool Fabric has expanded through Waves 01–19 around canonical tool contracts, SchemaGuard, MCP/interoperability, SearchBroker and broader capability normalization. `CAPABILITY_REGISTRY.md` remains the canonical inventory. Tool selection, schemas, permissions, side effects, provenance, idempotency, verification, adapter isolation and lazy discovery remain governed rather than exposed as an unstructured tool pile.
@@ -73,6 +81,7 @@ Goal: maximum practical canon fidelity without false certainty. Canon Graph, sou
 - `main`: protected baseline
 - `seven-v4.2-hardening`: hardened architecture branch
 - `seven-beta-ui-v1`: active visual/Beta development branch
+- `ultimate-polish-v1`: active Ultimate Polish implementation branch
 - protected PRs remain unmerged until explicit approval
 
 ## Current Checkpoint
@@ -85,8 +94,10 @@ Visual architecture: saturated 2/2. Visual implementation: started, not finished
 4. Apply the selected genome across Global UI and specialist workspaces.
 5. Complete Motion, RTL/Arabic, accessibility and performance waves.
 6. Complete Android visual certification.
-7. Run Visual Red Team and implementation-level saturation.
-8. Continue capability-by-capability double Ultimate Polish plus cross-cutting Speeding & Smoothness work.
+7. Complete capability-to-product UI wiring and the mandatory Premium Materials & Design Quality Gate.
+8. Run Visual Red Team and implementation-level saturation.
+9. Continue capability-by-capability double Ultimate Polish plus cross-cutting Speeding & Smoothness work.
+10. Run Final E2E, release hardening and exact release-candidate verification before Final Seven.
 
 ## Rule for Future Changes
 Major architecture, roadmap, safety, brand, capability, polish-protocol or implementation-status changes must update GitHub Project Memory in the same development cycle.
