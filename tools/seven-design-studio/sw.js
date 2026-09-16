@@ -1,4 +1,5 @@
 const CACHE='seven-design-studio-v23';
+// Cache migration lineage: seven-design-studio-v22
 const LOCAL=['./','./index.html','./studio.css','./studio-preview-polish.css','./studio-bridge.js','./studio.js','./studio-page-state-sync.js','./studio-preview-behavior.js','./home-launchpad-v4.js','./seven-mark-polish.js','./home-synthesis-kick.js','./home-completion-v5.js','./home-capability-catalog-v1.js','./home-visual-polish-v1.js','./home-visual-polish-v2.js','./home-visual-polish-v3.js','./home-visual-polish-v4.js','./home-visual-polish-a11y-v1.js','./chat-ui-v1.js','./seven-product-screens-v1.js','./mobile-polish.css','./mobile-polish.js','./manifest.webmanifest','./seven-design-icon.svg'];
 const REMOTE=[
   'https://unpkg.com/grapesjs@0.23.6/dist/css/grapes.min.css',
