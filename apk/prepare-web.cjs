@@ -22,5 +22,6 @@ fs.mkdirSync(WWW,{recursive:true});
 fs.copyFileSync(SRC,path.join(WWW,'index.html'));
 copyDir(path.join(DIST,'vendor'),path.join(WWW,'vendor'));
 copyDir(path.join(DIST,'workspaces'),path.join(WWW,'workspaces'));
-fs.writeFileSync(path.join(WWW,'seven-packaging.json'),JSON.stringify({format:'seven-android-web-payload',version:2,lazyWorkspaces:true},null,2));
+copyDir(path.join(DIST,'brand'),path.join(WWW,'brand'));
+fs.writeFileSync(path.join(WWW,'seven-packaging.json'),JSON.stringify({format:'seven-android-web-payload',version:3,lazyWorkspaces:true,adaptiveBrand:true},null,2));
 console.log('android web payload: PASS');
