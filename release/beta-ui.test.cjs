@@ -13,10 +13,10 @@ const {build}=require('./build-release.cjs');
   const dist=path.dirname(built.output);
   const server=http.createServer((req,res)=>{
     const pathname=new URL(req.url,'http://127.0.0.1').pathname;
-    if(pathname.startsWith('/vendor/')){
+    if(pathname.startsWith('/vendor/')||pathname.startsWith('/brand/')){
       const file=path.resolve(dist,'.'+pathname);
       if(!file.startsWith(path.resolve(dist)+path.sep)||!fs.existsSync(file)){res.statusCode=404;res.end('not found');return;}
-      res.setHeader('Content-Type',file.endsWith('.mjs')?'text/javascript; charset=utf-8':'application/octet-stream');
+      res.setHeader('Content-Type',file.endsWith('.js')||file.endsWith('.mjs')?'text/javascript; charset=utf-8':file.endsWith('.svg')?'image/svg+xml':'application/octet-stream');
       fs.createReadStream(file).pipe(res);return;
     }
     res.setHeader('Content-Type','text/html; charset=utf-8');res.end(html);
