@@ -39,7 +39,7 @@ eq(r.verdict,'FAIL');ok(r.findings.some(x=>x.rule==='UNKNOWN_SIGNATURE_PRIMITIVE
 
 const root=path.resolve(__dirname,'..');
 const live=lintFiles(['release/seven-final.css','release/beta-ui.css'],{root});
-eq(live.counts.fail,0,'current release CSS must have zero Design Lint hard failures');ok(['PASS','WARN'].includes(live.verdict));
+eq(live.counts.fail,0,'current release CSS must have zero Design Lint hard failures');eq(live.counts.warn,0,'current release CSS must have zero Design Lint warnings');eq(live.verdict,'PASS','current release CSS Design Lint must be clean PASS');
 eq(live.reports.length,2);
 for(const report of live.reports){ok(report.coverage&&report.coverage.seal);ok(report.coverage.sourceSha256.length===64);}
 const beta=live.reports.find(x=>x.sourceId==='release/beta-ui.css');ok(beta.coverage.adapted.includes('--sb-bg'));ok(beta.coverage.adapted.includes('--sb-a'));ok(beta.coverage.adapted.includes('--sb-mode'));
