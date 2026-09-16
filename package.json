@@ -7,7 +7,7 @@
   "scripts": {
     "test": "node all.cjs",
     "build:web": "node release/build-release.cjs && node apk/prepare-web.cjs",
-    "android:generate": "npm run build:web && node apk/prepare-assets.cjs && rm -rf android && npx --no-install cap add android && npx --no-install cap sync android && node apk/materialize-android-assets.cjs && node apk/patch-android.cjs && node apk/materialize-native-platform.cjs && node apk/harden-native-platform.cjs && node apk/materialize-android-visual-test.cjs",
+    "android:generate": "npm run build:web && node apk/prepare-assets.cjs && rm -rf android && npx --no-install cap add android && npx --no-install cap sync android && node apk/materialize-android-assets.cjs && node apk/patch-android.cjs && node apk/materialize-native-platform.cjs && node apk/materialize-android-motion-bridge.cjs && node apk/harden-native-platform.cjs && node apk/materialize-android-visual-test.cjs",
     "android:verify": "node apk/verify-apk.cjs"
   },
   "dependencies": {
