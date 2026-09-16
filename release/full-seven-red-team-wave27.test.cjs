@@ -140,7 +140,11 @@ for(const [label,re,dirs] of invariantEvidence){
 }
 
 const staticAudit=read('release/static-audit.cjs');
-for(const token of ['100000','65536','8388608'])ok(staticAudit.includes(token),`static release budget disappeared: ${token}`);
+ok(staticAudit.includes('if(layerBytes>100000)'), 'startup release-layer budget guard disappeared');
+ok(staticAudit.includes('const lazyWorkspaceBudgetBytes=160000'), 'lazy workspace package budget guard disappeared');
+ok(staticAudit.includes('const apkStaticBudgetBytes=8*1024*1024'), 'static APK budget guard disappeared');
+ok(staticAudit.includes("built.pdfLoadMode!=='lazy-local'"),'lazy-local PDF invariant disappeared');
+ok(staticAudit.includes("built.workspaceLoadMode!=='lazy-local'"),'lazy-local workspace invariant disappeared');
 ok(exists('release/mobile-performance-browser.test.cjs'),'browser performance proof missing');
 ok(exists('release/device-release-evidence.test.cjs'),'device release evidence proof missing');
 ok(exists('release/android-visual-certification.test.cjs'),'Android visual certification proof missing');
