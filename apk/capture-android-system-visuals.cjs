@@ -60,32 +60,38 @@ function ensureSevenOnHome(){
   if(!node)throw Error("Seven could not be placed and verified on launcher workspace");
   return{xml,node,context:"home"};
 }
-function apkListing(apk){return run("unzip",["-l",apk]).stdout}
+function versionParts(v){return String(v).split(/[^0-9]+/).filter(Boolean).map(Number)}
+function compareVersions(a,b){const x=versionParts(a),y=versionParts(b),n=Math.max(x.length,y.length);for(let i=0;i<n;i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return String(a).localeCompare(String(b))}
+function latestBuildTool(name){
+  const sdk=process.env.ANDROID_HOME||process.env.ANDROID_SDK_ROOT;if(!sdk)throw Error("ANDROID_HOME/ANDROID_SDK_ROOT required for exact APK resource witness");
+  const root=path.join(sdk,"build-tools");if(!fs.existsSync(root))throw Error(`Android build-tools unavailable at ${root}`);
+  const versions=fs.readdirSync(root,{withFileTypes:true}).filter(x=>x.isDirectory()).map(x=>x.name).sort(compareVersions).reverse();
+  for(const v of versions){const p=path.join(root,v,name);if(fs.existsSync(p))return p}
+  throw Error(`${name} unavailable in Android build-tools`);
+}
+function apkResources(apk){const aapt=latestBuildTool("aapt"),out=run(aapt,["dump","resources",apk],{timeout:30000}).stdout;if(!out||!out.includes(APP_ID))throw Error("exact APK resource table unavailable");return out}
+function resourcePresent(table,type,name){return new RegExp(`(?:${APP_ID.replace(/\./g,"\\.")}:)?${type}/${name}(?=[:\\s])`).test(table)}
 function requireResourceWitness(apk,scenario,api){
-  const l=apkListing(apk),hash=()=>shaBytes(Buffer.from(l));
-  const legacyRaster=/res\/mipmap-[^/\s]+\/ic_launcher\.(?:png|webp)/.test(l);
-  const adaptiveXml=/res\/mipmap-anydpi-v26\/ic_launcher\.xml/.test(l);
-  const themedXml=/res\/mipmap-anydpi-v33\/ic_launcher\.xml/.test(l);
-  const monoRaster=/res\/mipmap-[^/\s]+\/ic_launcher_monochrome\.(?:png|webp)/.test(l);
-  const splashRaster=/res\/drawable(?:-[^/\s]+)?\/splash\.(?:png|webp)/.test(l);
+  const table=apkResources(apk),hash=()=>shaBytes(Buffer.from(table));
+  const launcher=resourcePresent(table,"mipmap","ic_launcher"),foreground=resourcePresent(table,"mipmap","ic_launcher_foreground"),background=resourcePresent(table,"color","seven_launcher_background"),mono=resourcePresent(table,"mipmap","ic_launcher_monochrome"),splash=resourcePresent(table,"drawable","splash");
   if(scenario==="launcher-legacy"){
     if(api>=26)throw Error("legacy launcher proof requires pre-API26 platform");
-    if(!legacyRaster)throw Error("legacy raster launcher resource missing from exact APK");
-    return{class:"legacy-raster-pre-v26",witnessHash:hash()};
+    if(!launcher)throw Error("legacy launcher resource identity missing from exact APK table");
+    return{class:"legacy-raster-pre-v26",witnessHash:hash(),resourceTable:"aapt"};
   }
   if(scenario==="launcher-adaptive"){
     if(api<26)throw Error("adaptive launcher proof requires API26+");
-    if(!adaptiveXml)throw Error("adaptive launcher resource missing from exact APK");
-    return{class:"adaptive-v26",witnessHash:hash()};
+    if(!launcher||!foreground||!background)throw Error(`adaptive launcher resources missing from exact APK table (launcher=${launcher},foreground=${foreground},background=${background})`);
+    return{class:"adaptive-v26",witnessHash:hash(),resourceTable:"aapt"};
   }
   if(scenario==="launcher-themed"){
     if(api<33)throw Error("themed launcher proof requires API33+");
-    if(!themedXml||!monoRaster)throw Error("monochrome themed launcher resources missing from exact APK");
-    return{class:"monochrome-themed",witnessHash:hash()};
+    if(!launcher||!foreground||!background||!mono)throw Error(`themed launcher resources missing from exact APK table (launcher=${launcher},foreground=${foreground},background=${background},mono=${mono})`);
+    return{class:"monochrome-themed",witnessHash:hash(),resourceTable:"aapt"};
   }
   if(scenario==="splash"){
-    if(!splashRaster)throw Error("splash resource missing from exact APK");
-    return{class:"system-starting-window",witnessHash:hash()};
+    if(!splash)throw Error("splash resource identity missing from exact APK table");
+    return{class:"system-starting-window",witnessHash:hash(),resourceTable:"aapt"};
   }
   throw Error(`unsupported system scenario:${scenario}`);
 }
@@ -137,4 +143,4 @@ function main(env=process.env){
   console.log(`Android system visual evidence: PASS (${profileId}: ${scenarios.join(", ")})`);
 }
 if(require.main===module){try{main()}catch(e){console.error("Android system visual evidence: FAIL",e.message);process.exit(1)}}
-module.exports=Object.freeze({attrs,parseNodes,parseBounds,sevenNode,appsNode,requireResourceWitness,themedState,homeComponent,main});
+module.exports=Object.freeze({attrs,parseNodes,parseBounds,sevenNode,appsNode,versionParts,compareVersions,latestBuildTool,apkResources,resourcePresent,requireResourceWitness,themedState,homeComponent,main});
