@@ -1,47 +1,94 @@
 (() => {
   'use strict';
 
-  const VERSION='2026.09-page-state-sync-v1';
+  const VERSION='2026.09-page-state-sync-v2';
   const SETTINGS_KEY='seven-design-studio-settings-v1';
 
+  function readStored(){
+    try{return JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')||{};}catch(_){return {};}
+  }
+
   function readSettings(){
-    let stored={};
-    try{stored=JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')||{};}catch(_){}
-    const themeText=(document.getElementById('themeBtn')?.textContent||'').trim().toLowerCase();
-    const dirText=(document.getElementById('dirBtn')?.textContent||'').trim().toLowerCase();
-    const densityText=(document.getElementById('densityBtn')?.textContent||'').trim().toLowerCase();
+    const stored=readStored();
+    const themeBtn=document.getElementById('themeBtn');
+    const dirBtn=document.getElementById('dirBtn');
+    const densityBtn=document.getElementById('densityBtn');
+    const themeText=(themeBtn?.textContent||'').trim().toLowerCase();
+    const dirText=(dirBtn?.textContent||'').trim().toLowerCase();
+    const densityText=(densityBtn?.textContent||'').trim().toLowerCase();
+
+    // The live Studio controls are authoritative during interaction. Persisted
+    // settings are only a fallback because storage can trail the click that
+    // immediately precedes a GrapesJS page switch.
+    const theme=themeText==='day'?'day':themeText==='night'?'night':(stored.theme||'night');
+    const dir=dirText==='rtl'?'rtl':dirText==='ltr'?'ltr':(stored.dir||'ltr');
+    const density=['full','balanced','lite'].includes(densityText)?densityText:(stored.density||'balanced');
+
     return {
-      theme: stored.theme || (themeText==='day'?'day':'night'),
-      dir: stored.dir || (dirText==='rtl'?'rtl':'ltr'),
-      density: stored.density || densityText || 'balanced',
-      largeText: !!stored.largeText,
-      reduced: !!stored.reduced
+      theme,
+      dir,
+      density,
+      largeText:!!stored.largeText,
+      reduced:!!stored.reduced
     };
+  }
+
+  function applyBody(body,s){
+    if(!body)return false;
+    body.classList.toggle('seven-day',s.theme==='day');
+    body.classList.toggle('seven-rtl',s.dir==='rtl');
+    body.classList.toggle('seven-large',s.largeText);
+    body.classList.toggle('seven-lite',s.density==='lite');
+    body.classList.toggle('seven-reduced',s.reduced);
+    body.setAttribute('dir',s.dir);
+    body.setAttribute('data-seven-page-state-sync',VERSION);
+    body.setAttribute('data-seven-theme',s.theme);
+    body.setAttribute('data-seven-density',s.density);
+    return true;
   }
 
   function apply(editor){
     try{
-      const body=editor?.Canvas?.getBody?.();
-      if(!body)return false;
       const s=readSettings();
-      body.classList.toggle('seven-day',s.theme==='day');
-      body.classList.toggle('seven-rtl',s.dir==='rtl');
-      body.classList.toggle('seven-large',s.largeText);
-      body.classList.toggle('seven-lite',s.density==='lite');
-      body.classList.toggle('seven-reduced',s.reduced);
-      body.setAttribute('dir',s.dir);
-      body.setAttribute('data-seven-page-state-sync',VERSION);
-      return true;
+      const body=editor?.Canvas?.getBody?.();
+      const frameBody=editor?.Canvas?.getFrameEl?.()?.contentDocument?.body;
+      let applied=applyBody(body,s);
+      if(frameBody&&frameBody!==body)applied=applyBody(frameBody,s)||applied;
+      return applied;
     }catch(_){return false;}
   }
 
   function install(editor){
     if(!editor||editor.__sevenPageStateSyncInstalled)return;
     editor.__sevenPageStateSyncInstalled=true;
-    const sync=()=>{apply(editor);setTimeout(()=>apply(editor),35);setTimeout(()=>apply(editor),140);};
-    for(const event of ['load','project:load','storage:end:load','page:select'])editor.on(event,sync);
-    for(const id of ['themeBtn','dirBtn','densityBtn'])document.getElementById(id)?.addEventListener('click',()=>setTimeout(sync,0));
-    setTimeout(sync,120);setTimeout(sync,700);
+
+    const sync=()=>{
+      apply(editor);
+      queueMicrotask(()=>apply(editor));
+      requestAnimationFrame(()=>{
+        apply(editor);
+        requestAnimationFrame(()=>apply(editor));
+      });
+      for(const delay of [0,32,120,360])setTimeout(()=>apply(editor),delay);
+    };
+
+    editor.__sevenSyncPageState=sync;
+    window.__sevenSyncPageState=sync;
+
+    for(const event of ['load','project:load','storage:end:load','page:select','canvas:frame:load'])editor.on(event,sync);
+
+    // Delegation keeps working even when the quick screen selector is created
+    // after this module. The handler runs after the selector's own change
+    // handler, so the newly selected page receives state in the same event.
+    document.addEventListener('change',event=>{
+      if(event.target?.id==='sevenScreenQuick'||event.target?.id==='deviceSelect')sync();
+    });
+    document.addEventListener('click',event=>{
+      if(['themeBtn','dirBtn','densityBtn'].includes(event.target?.closest?.('button')?.id))sync();
+    });
+
+    setTimeout(sync,120);
+    setTimeout(sync,700);
     window.dispatchEvent(new CustomEvent('seven-page-state-sync-installed',{detail:{version:VERSION}}));
   }
 
