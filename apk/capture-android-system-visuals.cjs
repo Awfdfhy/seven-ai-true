@@ -62,12 +62,31 @@ function ensureSevenOnHome(){
 }
 function apkListing(apk){return run("unzip",["-l",apk]).stdout}
 function requireResourceWitness(apk,scenario,api){
-  const l=apkListing(apk);
-  if(!/res\/mipmap-[^/\s]+\/ic_launcher\.png/.test(l))throw Error("legacy raster launcher resource missing from exact APK");
-  if(scenario==="launcher-legacy"){if(api>=26)throw Error("legacy launcher proof requires pre-API26 platform");return{class:"legacy-raster-pre-v26",witnessHash:shaBytes(Buffer.from(l))}}
-  if(scenario==="launcher-adaptive"){if(api<26)throw Error("adaptive launcher proof requires API26+");if(!/res\/mipmap-anydpi-v26\/ic_launcher\.xml/.test(l))throw Error("adaptive launcher resource missing from exact APK");return{class:"adaptive-v26",witnessHash:shaBytes(Buffer.from(l))}}
-  if(scenario==="launcher-themed"){if(api<33)throw Error("themed launcher proof requires API33+");if(!/res\/drawable\/ic_launcher_monochrome\.xml/.test(l))throw Error("monochrome themed resource missing from exact APK");return{class:"monochrome-themed",witnessHash:shaBytes(Buffer.from(l))}}
-  if(scenario==="splash"){if(!/res\/drawable\/splash\.png/.test(l))throw Error("splash resource missing from exact APK");return{class:"system-starting-window",witnessHash:shaBytes(Buffer.from(l))}}
+  const l=apkListing(apk),hash=()=>shaBytes(Buffer.from(l));
+  const legacyRaster=/res\/mipmap-[^/\s]+\/ic_launcher\.(?:png|webp)/.test(l);
+  const adaptiveXml=/res\/mipmap-anydpi-v26\/ic_launcher\.xml/.test(l);
+  const themedXml=/res\/mipmap-anydpi-v33\/ic_launcher\.xml/.test(l);
+  const monoRaster=/res\/mipmap-[^/\s]+\/ic_launcher_monochrome\.(?:png|webp)/.test(l);
+  const splashRaster=/res\/drawable(?:-[^/\s]+)?\/splash\.(?:png|webp)/.test(l);
+  if(scenario==="launcher-legacy"){
+    if(api>=26)throw Error("legacy launcher proof requires pre-API26 platform");
+    if(!legacyRaster)throw Error("legacy raster launcher resource missing from exact APK");
+    return{class:"legacy-raster-pre-v26",witnessHash:hash()};
+  }
+  if(scenario==="launcher-adaptive"){
+    if(api<26)throw Error("adaptive launcher proof requires API26+");
+    if(!adaptiveXml)throw Error("adaptive launcher resource missing from exact APK");
+    return{class:"adaptive-v26",witnessHash:hash()};
+  }
+  if(scenario==="launcher-themed"){
+    if(api<33)throw Error("themed launcher proof requires API33+");
+    if(!themedXml||!monoRaster)throw Error("monochrome themed launcher resources missing from exact APK");
+    return{class:"monochrome-themed",witnessHash:hash()};
+  }
+  if(scenario==="splash"){
+    if(!splashRaster)throw Error("splash resource missing from exact APK");
+    return{class:"system-starting-window",witnessHash:hash()};
+  }
   throw Error(`unsupported system scenario:${scenario}`);
 }
 function themedState(authority){
