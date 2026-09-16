@@ -66,7 +66,11 @@ const {build}=require('./build-release.cjs');
     ok(settings.routing&&settings.routingOptions>0,'Free Model Routing control is not reachable');
     ok(settings.fallback&&settings.status,'fallback/status model controls are not reachable');
 
-    await page.evaluate(()=>{if(typeof closeSettings==='function')closeSettings();});
+    await page.evaluate(()=>{
+      if(typeof closeSettings==='function')closeSettings();
+      const onboarding=document.getElementById('nameModal');
+      if(onboarding)onboarding.style.display='none';
+    });
     await page.locator('.seven-beta-status').click();
     await page.waitForFunction(()=>window.SevenWorkspaces&&document.querySelector('.seven-ws-launcher'),{timeout:5000});
     const launcher=await page.evaluate(()=>({
