@@ -5,17 +5,13 @@ fs.mkdirSync(testDir,{recursive:true});
 const source=`package ai.seven.app;
 
 import static org.junit.Assert.*;
-import android.content.Context;
-import android.graphics.Bitmap;
 import android.os.ParcelFileDescriptor;
 import android.webkit.WebView;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -25,6 +21,7 @@ import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
 public class SevenVisualEvidenceTest {
+  private static final String EVIDENCE_ROOT="/data/local/tmp/seven-visual";
   private String js(WebView webView,String code) throws Exception {
     CountDownLatch latch=new CountDownLatch(1);
     AtomicReference<String> value=new AtomicReference<>();
@@ -48,19 +45,15 @@ public class SevenVisualEvidenceTest {
     String safe=value!=null&&value.matches("[0-9]+(?:\\\\.[0-9]+)?")?value:"1";
     shell("settings put global "+key+" "+safe);
   }
-  private File evidenceDir() {
-    Context testContext=InstrumentationRegistry.getInstrumentation().getContext();
-    File root=new File(testContext.getFilesDir(),"seven-visual");
-    assertTrue("internal evidence directory unavailable",root.exists()||root.mkdirs());
-    return root;
+  private void resetEvidenceRoot() throws Exception {
+    String marker=shell("rm -rf "+EVIDENCE_ROOT+" && mkdir -p "+EVIDENCE_ROOT+" && echo READY");
+    assertEquals("shell evidence staging unavailable","READY",marker);
   }
   private void shot(String name) throws Exception {
-    Bitmap bitmap=InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();
-    assertNotNull("device screenshot unavailable",bitmap);
-    File out=new File(evidenceDir(),name+".png");
-    try(FileOutputStream stream=new FileOutputStream(out)){ assertTrue("PNG compression failed",bitmap.compress(Bitmap.CompressFormat.PNG,100,stream)); }
-    assertTrue("captured screenshot is empty",out.isFile()&&out.length()>128);
-    bitmap.recycle();
+    assertTrue("invalid evidence screenshot name",name!=null&&name.matches("[a-z0-9-]+"));
+    String out=EVIDENCE_ROOT+"/"+name+".png";
+    String bytes=shell("screencap -p "+out+" && wc -c < "+out);
+    assertTrue("captured screenshot is empty",bytes.matches("[0-9]+")&&Long.parseLong(bytes)>128L);
   }
   private void theme(WebView webView,String value) throws Exception {
     js(webView,"(()=>{SevenTheme.setPreference('"+value+"');return true})()");
@@ -78,9 +71,7 @@ public class SevenVisualEvidenceTest {
   }
   @Test
   public void captureReleaseVisualStates() throws Exception {
-    File root=evidenceDir();
-    File[] files=root.listFiles();
-    if(files!=null)for(File f:files)assertTrue("stale evidence cleanup failed: "+f.getName(),f.delete());
+    resetEvidenceRoot();
     try(ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)){
       AtomicReference<WebView> ref=new AtomicReference<>();
       scenario.onActivity(a -> ref.set(a.getBridge().getWebView()));
@@ -121,54 +112,5 @@ public class SevenVisualEvidenceTest {
   }
 }
 `;
-const provider=`package ai.seven.app;
-
-import android.content.ContentProvider;
-import android.content.ContentValues;
-import android.database.Cursor;
-import android.net.Uri;
-import android.os.Binder;
-import android.os.ParcelFileDescriptor;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-
-public final class SevenEvidenceProvider extends ContentProvider {
-  private static final int SHELL_UID=2000;
-  @Override public boolean onCreate(){ return true; }
-  @Override public String getType(Uri uri){ return "image/png"; }
-  @Override public Cursor query(Uri uri,String[] projection,String selection,String[] selectionArgs,String sortOrder){ return null; }
-  @Override public Uri insert(Uri uri,ContentValues values){ throw new UnsupportedOperationException("read only"); }
-  @Override public int delete(Uri uri,String selection,String[] selectionArgs){ throw new UnsupportedOperationException("read only"); }
-  @Override public int update(Uri uri,ContentValues values,String selection,String[] selectionArgs){ throw new UnsupportedOperationException("read only"); }
-  @Override public ParcelFileDescriptor openFile(Uri uri,String mode) throws FileNotFoundException {
-    if(Binder.getCallingUid()!=SHELL_UID)throw new SecurityException("shell-only evidence provider");
-    if(!"r".equals(mode))throw new FileNotFoundException("evidence provider is read only");
-    String name=uri.getLastPathSegment();
-    if(name==null||!name.matches("[a-z0-9-]+\\\\.png"))throw new FileNotFoundException("invalid evidence filename");
-    try {
-      File root=new File(getContext().getFilesDir(),"seven-visual").getCanonicalFile();
-      File file=new File(root,name).getCanonicalFile();
-      if(!file.getPath().startsWith(root.getPath()+File.separator)||!file.isFile())throw new FileNotFoundException("evidence file unavailable");
-      return ParcelFileDescriptor.open(file,ParcelFileDescriptor.MODE_READ_ONLY);
-    } catch(IOException e){
-      FileNotFoundException failure=new FileNotFoundException("evidence path resolution failed");failure.initCause(e);throw failure;
-    }
-  }
-}
-`;
-const manifest=`<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-  <application>
-    <provider
-      android:name="ai.seven.app.SevenEvidenceProvider"
-      android:authorities="ai.seven.app.test.sevenevidence"
-      android:exported="true"
-      android:grantUriPermissions="false" />
-  </application>
-</manifest>
-`;
 fs.writeFileSync(path.join(testDir,"SevenVisualEvidenceTest.java"),source);
-fs.writeFileSync(path.join(testDir,"SevenEvidenceProvider.java"),provider);
-fs.writeFileSync(path.join(testRoot,"AndroidManifest.xml"),manifest);
 console.log("android visual instrumentation materialization: PASS");
