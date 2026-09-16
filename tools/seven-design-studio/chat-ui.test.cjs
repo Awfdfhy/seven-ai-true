@@ -14,7 +14,7 @@ if(src.includes('backdrop-filter')||src.includes('filter:blur('))throw new Error
 const index=fs.readFileSync(path.join(dir,'index.html'),'utf8');
 if(!index.includes('./chat-ui-v1.js'))throw new Error('Chat UI is not wired into Design Studio');
 const sw=fs.readFileSync(path.join(dir,'sw.js'),'utf8');
-if(!sw.includes('./chat-ui-v1.js')||!sw.includes('seven-design-studio-v21'))throw new Error('Chat UI is not in current offline shell cache');
+if(!sw.includes('./chat-ui-v1.js')||!sw.includes('seven-design-studio-v22'))throw new Error('Chat UI is not in current offline shell cache');
 
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.svg':'image/svg+xml'};
 const server=http.createServer((req,res)=>{
@@ -62,14 +62,17 @@ const server=http.createServer((req,res)=>{
   if(!/Researching/.test(trace)||!/sources checked/.test(trace))throw new Error('Chat task trace lost semantic text');
 
   await page.locator('#themeBtn').click();
+  await canvas.locator('body.seven-day').waitFor({timeout:3000});
   const day=await chat.evaluate(el=>({bg:getComputedStyle(el).backgroundImage,color:getComputedStyle(el).color}));
   if(!day.bg.includes('gradient')||!day.color)throw new Error('Day chat variant failed');
   await page.locator('#themeBtn').click();
+  await canvas.locator('body:not(.seven-day)').waitFor({timeout:3000});
   await page.locator('#dirBtn').click();
-  if((await canvas.locator('body').getAttribute('dir'))!=='rtl')throw new Error('Chat RTL propagation failed');
+  await canvas.locator('body[dir="rtl"]').waitFor({timeout:3000});
   const codeDir=await canvas.locator('.svchat-code pre').evaluate(el=>getComputedStyle(el).direction);
   if(codeDir!=='ltr')throw new Error(`Code did not stay LTR in RTL mode: ${codeDir}`);
   await page.locator('#dirBtn').click();
+  await canvas.locator('body[dir="ltr"]').waitFor({timeout:3000});
 
   await page.locator('#deviceSelect').selectOption('320');
   await page.setViewportSize({width:320,height:760});
