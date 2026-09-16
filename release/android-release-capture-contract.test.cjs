@@ -2,10 +2,11 @@
 const assert=require("assert/strict"),fs=require("fs"),path=require("path");
 const ROOT=path.resolve(__dirname,"..");let n=0;const ok=(v,m)=>{assert.ok(v,m);n++},match=(v,re,m)=>{assert.match(v,re,m);n++};
 const pkg=JSON.parse(fs.readFileSync(path.join(ROOT,"package.json"),"utf8")),wf=fs.readFileSync(path.join(ROOT,".github","workflows","android-apk.yml"),"utf8"),mat=fs.readFileSync(path.join(ROOT,"apk","materialize-android-visual-test.cjs"),"utf8"),cap=fs.readFileSync(path.join(ROOT,"apk","capture-android-release-profile.cjs"),"utf8"),id=fs.readFileSync(path.join(__dirname,"android-ci-release-artifact.cjs"),"utf8"),merge=fs.readFileSync(path.join(__dirname,"merge-android-visual-evidence.cjs"),"utf8");
-match(pkg.scripts["android:generate"],/materialize-android-visual-test\.cjs/);match(wf,/assembleRelease/);match(wf,/assembleDebugAndroidTest/);match(wf,/apksigner/);match(wf,/api36-modern/);match(wf,/api28-compact/);match(wf,/merge-android-visual-evidence\.cjs/);
+match(pkg.scripts["android:generate"],/materialize-android-visual-test\.cjs/);match(wf,/:app:assembleRelease/);match(wf,/:app:assembleDebugAndroidTest/);match(wf,/apksigner/);match(wf,/api36-modern/);match(wf,/api28-compact/);match(wf,/merge-android-visual-evidence\.cjs/);
+ok(!/(?:^|\s)assembleDebugAndroidTest(?:\s|\\)/m.test(wf.replace(/:app:assembleDebugAndroidTest/g,"")),"root-level AndroidTest assembly must stay disabled to avoid unrelated plugin test graphs");
 match(mat,/UiAutomation\(\)\.takeScreenshot|UiAutomation\(\).*takeScreenshot|UiAutomation.*takeScreenshot/);match(mat,/theme\(webView,"day"\)/);match(mat,/theme\(webView,"night"\)/);match(mat,/SevenWorkspaces\.open/);match(mat,/ar-IQ/);match(mat,/reducedMotion=true/);
 for(const s of ["chat-day","chat-night","coding","research","rpg","arabic-rtl","reduced-motion"])match(cap,new RegExp(`scenario:"${s}"`));
 ok(!/scenario:"launcher-/.test(cap),"in-app collector must not fabricate launcher scenarios");ok(!/scenario:"splash"/.test(cap),"in-app collector must not fabricate splash evidence");
 match(cap,/GENUINE_RELEASE_APP_DEVICE_CAPTURES_FOR_IN_APP_STATES_ONLY_NO_LAUNCHER_OR_SPLASH_CLAIM/);match(id,/RELEASE_VARIANT_CI_SIGNED_NOT_STORE_PRODUCTION_SIGNING/);match(merge,/PARTIAL_RELEASE_DEVICE_EVIDENCE_ONLY/);
 ok(!mat.includes("seven_ai-final.html"),"visual materializer must not touch protected source");ok(!cap.includes("seven_ai-final.html"),"capture collector must not touch protected source");
-console.log(`Android Release Capture Contract: PASS (${n} assertions; release evidence stays fail-closed)`);
+console.log(`Android Release Capture Contract: PASS (${n} assertions; app-scoped test assembly, release evidence stays fail-closed)`);
