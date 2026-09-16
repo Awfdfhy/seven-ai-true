@@ -262,6 +262,62 @@ function homeScreenTab(xml) {
   const ids = nodes.filter(n => /(?:^|:id\/)(?:home_screen_tab(?:_text)?|secondary_tab(?:_text)?)$/i.test(n["resource-id"] || "") && /home/i.test(nodeText(n)));
   return ids.find(n => n.clickable === "true") || ids[0] || null;
 }
+function wallpaperStyleEntry(xml) {
+  const nodes = parseNodes(xml).filter(n => parseBounds(n.bounds));
+  const exact = nodes.filter(n => /^wallpaper\s*(?:&|and)\s*style$/i.test(nodeText(n)));
+  if (exact.length) return exact.find(n => n.clickable === "true") || exact[0];
+  const loose = nodes.filter(n => /wallpaper.*style/i.test(nodeText(n)));
+  return loose.find(n => n.clickable === "true") || loose[0] || null;
+}
+function customizationSurfaceVisible(xml) {
+  if (themedUiState(xml) || homeScreenTab(xml)) return true;
+  return parseNodes(xml).some(n => /wallpaper\s*(?:&|and)\s*style/i.test(nodeText(n)) && /(?:wallpaper|customization|picker)/i.test(n["resource-id"] || ""));
+}
+function openCustomizationFromLauncher() {
+  const m = wm();
+  const points = [[.50, .56], [.50, .46], [.25, .58], [.75, .58], [.50, .68]];
+  let last = "";
+  for (let attempt = 0; attempt < points.length; attempt++) {
+    home();
+    const [fx, fy] = points[attempt];
+    const x = Math.round(m.widthPx * fx), y = Math.round(m.heightPx * fy);
+    adb("shell", "input", "swipe", String(x), String(y), String(x), String(y), "1250");
+    sleep(850);
+    const menuXml = dumpUi();
+    last = menuXml;
+    const entry = wallpaperStyleEntry(menuXml);
+    if (!entry) continue;
+    const menuHash = shaBytes(Buffer.from(menuXml));
+    const bounds = tapNode(entry, "Wallpaper & style launcher menu entry");
+    sleep(1500);
+    const after = dumpUi();
+    last = after;
+    if (customizationSurfaceVisible(after) || /(?:wallpaper|customization|picker)/i.test(foreground())) {
+      return {
+        method: "launcher-long-press",
+        attempt: attempt + 1,
+        press: { x, y, durationMs: 1250 },
+        entry: nodeText(entry),
+        entryBounds: bounds,
+        menuUiHash: menuHash,
+        afterUiHash: shaBytes(Buffer.from(after))
+      };
+    }
+  }
+  throw Error(`genuine launcher long-press did not expose/open Wallpaper & style; foreground=${foreground()}; ui=${visibleUiSummary(last)}`);
+}
+function ensureCustomizationSurface() {
+  let xml = dumpUi();
+  if (customizationSurfaceVisible(xml)) {
+    return { method: "set-wallpaper-action", uiHash: shaBytes(Buffer.from(xml)) };
+  }
+  sleep(500);
+  xml = dumpUi();
+  if (customizationSurfaceVisible(xml)) {
+    return { method: "set-wallpaper-action-delayed", uiHash: shaBytes(Buffer.from(xml)) };
+  }
+  return openCustomizationFromLauncher();
+}
 function selectHomeScreen() {
   let last = "";
   for (let pass = 0; pass < 6; pass++) {
@@ -306,6 +362,8 @@ function enableThemedViaSystemUi() {
   sleep(1300);
   const resolver = traverseResolverIfPresent();
   sleep(500);
+  const entry = ensureCustomizationSurface();
+  sleep(500);
   const homeSelection = selectHomeScreen();
   let found = findThemedControl();
   const beforeHash = shaBytes(Buffer.from(found.xml));
@@ -323,6 +381,7 @@ function enableThemedViaSystemUi() {
     action: SET_WALLPAPER,
     launchHash: shaBytes(Buffer.from(String(launch.stdout || ""))),
     resolver,
+    entry,
     homeSelection,
     label: nodeText(found.state.label),
     toggleResourceId: found.state.toggle?.["resource-id"] || null,
