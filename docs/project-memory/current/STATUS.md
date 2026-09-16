@@ -6,7 +6,8 @@
 ## Ultimate Polish Execution
 **Completed-wave count:** `22 / ≤30`  
 **Sequentially closed:** `Mega-Waves 01–22` ✅  
-**Current frontier:** `Final Repair Sweep → remaining pre-release stages`
+**Final Repair Sweep:** `PASS` ✅  
+**Current frontier:** `Final UI Completion + Product Wiring`
 
 The campaign ceiling is **30 Mega-Waves maximum**, not a quota.
 
@@ -34,41 +35,49 @@ The campaign ceiling is **30 Mega-Waves maximum**, not a quota.
 - Mega-Wave 21 — Mobile Performance → `PASS_FOUNDATION` ✅ (`HOST_STATIC_AND_BROWSER_PERFORMANCE_GUARD`)
 - Mega-Wave 22 — Android Visual Certification → `PASS_FOUNDATION` ✅ (`11/11_GENUINE_RELEASE_DEVICE_SCENARIOS`)
 
-## Wave 22 exact closure evidence
-Certification commit: `e710af569a8d944b4548636c7a34a18b469ae45b`.
+## Wave 22 authoritative closure evidence
+Original certification commit: `e710af569a8d944b4548636c7a34a18b469ae45b`.
 
 - Seven AI tests run `35129290230` completed `SUCCESS` with all `113` suites green.
 - Seven Android APK run `35129290418` completed `SUCCESS`.
-- API 33 compact release profile passed seven in-app scenarios plus adaptive launcher.
-- API 36 modern release profile passed seven in-app scenarios, genuine Reduced Motion, genuine Pixel Launcher placement, themed launcher and splash.
-- API 24 legacy launcher evidence passed.
+- API 33 compact, API 36 modern and API 24 legacy contexts all passed their required release-device evidence.
 - Final merge: `PASS (11/11 scenarios; missing none)`.
 - Canonical Android visual certification: `PASS (11/11 genuine release-device scenarios)`.
 
 Canonical record: `WAVE_22_ANDROID_VISUAL_CERTIFICATION_CLOSURE.md`.
 
-## Current exact regression/performance baseline
-On the Wave 22 certification head:
-- startup `99804 / 100000` bytes
-- lazy workspace `64183 / 65536` bytes
-- static APK estimate `3718964 / 8388608` bytes
-- static warnings `0`
-- production dependency vulnerabilities `0`
+## Final Repair Sweep closure
+The deferred earlier-wave debt was repaired without weakening validators. Exact repaired implementation baseline:
+`9f3e65b76a1b24ba4ff2b4b1468b7834540a10cb`.
 
-The CI release APK is `4,994,759` bytes with SHA-256 `ce05c42163731e6ee4cdf218aedcd8fecea5c62cff3ead13dee6bb9eea97b753`. It is a CI release variant signed with the CI debug certificate, not Play/store production signing.
+Exact same-head evidence:
+- Seven AI tests run `35134482425`: `SUCCESS`, all `113` suites PASS.
+- Seven Android APK run `35134482390`: `SUCCESS`.
+- Design Genome: `143` assertions PASS.
+- Design Lint: `38` assertions PASS, `0` warnings, `53` informational findings.
+- Global UI Contract: `41` assertions PASS, `0` warnings.
+- Accessibility Contract: `30` assertions PASS, `0` warnings.
+- Mobile Performance Browser: `38` assertions PASS.
+- Mobile Performance Contract: `35` assertions PASS.
+- startup `99804 / 100000` bytes.
+- lazy workspace `64183 / 65536` bytes.
+- static APK estimate `3718964 / 8388608` bytes.
+- static warnings `0`.
+- dependency audit: production `0`, full graph `0`, dev/tooling-only `0` vulnerabilities.
+- protected source integrity: PASS.
+- Android 16 WebView instrumentation: PASS.
+- API 33 adaptive launcher: PASS.
+- API 36 themed launcher + splash: PASS; splash witness selected real frame `11` with `85.4%` exact-theme background.
+- API 24 genuine legacy launcher: PASS.
+- current-head Android matrix: `PASS (11/11 scenarios; missing none)`.
+- canonical current-head line: `Wave 22 Android visual certification: PASS (11/11 genuine release-device scenarios)`.
 
-## Final repair sweep
-Earlier-wave warning/debt repair is now active. Known targets on the certification baseline:
-- Wave 13 Design Lint: `7` warnings.
-- Wave 15 Global UI contract: `1` warning.
-- Wave 20 Accessibility contract: `1` warning.
-- stale Wave 21 performance figures in older documentation.
-- three dev/tooling-only dependency audit findings; production dependency gate remains clean.
+The current-head CI release APK is `4,994,799` bytes with SHA-256 `1c4ace838f44d640996ded4900df6930cb3c880773ca006650fbd45f7ec69318`. It remains a CI release variant signed with the CI debug certificate, not Play/store production signing.
 
-Warnings must be removed by real implementation cleanup, not by weakening validators or relabeling evidence.
+Historical Wave 13/15/20/21 closure measurements remain preserved as historical evidence; their deferred warning/documentation debt is now resolved by the repaired current baseline rather than retroactively rewriting old runs.
 
 ## Current truth boundary
-Foundation closure is not Final Seven. Remaining release work includes final Capability Registry → UI/Product Wiring, materials/design-quality saturation, E2E and Full Red Team, repair/regression, Android final QA / physical-device gates where required, exact RC and Final Verification.
+The Final Repair Sweep is closed, but this is not Final Seven. Remaining release work includes final Capability Registry → UI/Product Wiring, materials/design-quality saturation, Visual Red Team, final E2E + Full Seven Red Team, any newly discovered repair/regression work, Android final QA / physical-device gates where required, exact RC and Final Verification.
 
 ## Protected Source
 `seven_ai-final.html` remains `658133` bytes at Git blob `3e8dfa8e7da7124e16504140eb9631c10cabf053`.
@@ -76,4 +85,4 @@ Foundation closure is not Final Seven. Remaining release work includes final Cap
 Do not modify it without explicit user authorization. Do not merge this branch to `main` or another protected branch without explicit user approval.
 
 ## Immediate Next Work
-Remove the known Wave 13 / 15 / 20 warning debt without weakening gates, re-run the complete suite, then continue into final Product Wiring and launch hardening.
+Begin `Final UI Completion + Product Wiring`: reconcile the final Capability Registry with real user entry points and runtime wiring, then prove every release-scope capability has a usable, truth-preserving product path before design saturation and final red-team stages.
