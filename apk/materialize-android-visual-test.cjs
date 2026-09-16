@@ -50,6 +50,11 @@ public class SevenVisualEvidenceTest {
     String out=EVIDENCE_ROOT+"/"+name+".png";
     shell("screencap -p "+out);
   }
+  private WebView webView(ActivityScenario<MainActivity> scenario) {
+    AtomicReference<WebView> ref=new AtomicReference<>();
+    scenario.onActivity(a -> ref.set(a.getBridge().getWebView()));
+    WebView webView=ref.get();assertNotNull(webView);return webView;
+  }
   private void theme(WebView webView,String value) throws Exception {
     js(webView,"(()=>{SevenTheme.setPreference('"+value+"');return true})()");
     waitFor(webView,"document.documentElement.dataset.sevenTheme==='"+value+"'");
@@ -66,42 +71,48 @@ public class SevenVisualEvidenceTest {
   }
   @Test
   public void captureReleaseVisualStates() throws Exception {
-    try(ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)){
-      AtomicReference<WebView> ref=new AtomicReference<>();
-      scenario.onActivity(a -> ref.set(a.getBridge().getWebView()));
-      WebView webView=ref.get();assertNotNull(webView);
-      waitFor(webView,"Boolean(window.SevenPerformance&&SevenPerformance.state.ready&&window.SevenTheme&&document.getElementById('userInput'))");
+    String oldWindow=shell("settings get global window_animation_scale");
+    String oldTransition=shell("settings get global transition_animation_scale");
+    String oldAnimator=shell("settings get global animator_duration_scale");
+    try {
+      try(ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)){
+        WebView webView=webView(scenario);
+        waitFor(webView,"Boolean(window.SevenPerformance&&SevenPerformance.state.ready&&window.SevenTheme&&document.getElementById('userInput'))");
 
-      theme(webView,"day");shot("chat-day");
-      theme(webView,"night");shot("chat-night");
+        theme(webView,"day");shot("chat-day");
+        theme(webView,"night");shot("chat-night");
 
-      ensureWorkspaces(webView);
-      workspace(webView,"coding");shot("coding");
-      workspace(webView,"research");shot("research");
-      workspace(webView,"rpg");shot("rpg");
+        ensureWorkspaces(webView);
+        workspace(webView,"coding");shot("coding");
+        workspace(webView,"research");shot("research");
+        workspace(webView,"rpg");shot("rpg");
 
-      js(webView,"(()=>{SevenWorkspaces.close();document.documentElement.lang='ar-IQ';document.documentElement.dir='rtl';document.body.dir='rtl';return true})()");
-      waitFor(webView,"document.documentElement.dir==='rtl'&&document.documentElement.lang==='ar-IQ'&&getComputedStyle(document.documentElement).direction==='rtl'");
-      Thread.sleep(120);shot("arabic-rtl");
-
-      js(webView,"(()=>{document.documentElement.lang='en';document.documentElement.dir='ltr';document.body.dir='ltr';SevenTheme.setPreference('night');return true})()");
-      waitFor(webView,"document.documentElement.dir==='ltr'&&document.documentElement.dataset.sevenTheme==='night'");
-      String oldWindow=shell("settings get global window_animation_scale");
-      String oldTransition=shell("settings get global transition_animation_scale");
-      String oldAnimator=shell("settings get global animator_duration_scale");
-      try {
-        shell("settings put global window_animation_scale 0");
-        shell("settings put global transition_animation_scale 0");
-        shell("settings put global animator_duration_scale 0");
-        Thread.sleep(700);
-        js(webView,"(()=>{if(window.SevenPerformance)SevenPerformance.reconsiderTier(null,{forceUpgrade:true});return true})()");
-        waitFor(webView,"Boolean(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches&&window.SevenPerformance&&SevenPerformance.state.reducedMotion===true&&document.documentElement.dataset.sevenReducedMotion==='1')");
-        Thread.sleep(120);shot("reduced-motion");
-      } finally {
-        restoreScale("window_animation_scale",oldWindow);
-        restoreScale("transition_animation_scale",oldTransition);
-        restoreScale("animator_duration_scale",oldAnimator);
+        js(webView,"(()=>{SevenWorkspaces.close();document.documentElement.lang='ar-IQ';document.documentElement.dir='rtl';document.body.dir='rtl';return true})()");
+        waitFor(webView,"document.documentElement.dir==='rtl'&&document.documentElement.lang==='ar-IQ'&&getComputedStyle(document.documentElement).direction==='rtl'");
+        Thread.sleep(120);shot("arabic-rtl");
       }
+
+      shell("settings put global window_animation_scale 0");
+      shell("settings put global transition_animation_scale 0");
+      shell("settings put global animator_duration_scale 0");
+      Thread.sleep(700);
+
+      // Android 16 WebView does not reliably dispatch a live prefers-reduced-motion
+      // media-query change to an already-running WebView. Relaunch after the real
+      // device animation scales are disabled so the fresh WebView observes the
+      // system state instead of fabricating a browser-only override.
+      try(ActivityScenario<MainActivity> reducedScenario=ActivityScenario.launch(MainActivity.class)){
+        WebView reducedWebView=webView(reducedScenario);
+        waitFor(reducedWebView,"Boolean(window.SevenPerformance&&SevenPerformance.state.ready&&window.SevenTheme&&document.getElementById('userInput'))");
+        js(reducedWebView,"(()=>{document.documentElement.lang='en';document.documentElement.dir='ltr';document.body.dir='ltr';SevenTheme.setPreference('night');if(window.SevenPerformance)SevenPerformance.reconsiderTier(null,{forceUpgrade:true});return true})()");
+        waitFor(reducedWebView,"document.documentElement.dir==='ltr'&&document.documentElement.dataset.sevenTheme==='night'");
+        waitFor(reducedWebView,"Boolean(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches&&window.SevenPerformance&&SevenPerformance.state.reducedMotion===true&&document.documentElement.dataset.sevenReducedMotion==='1')");
+        Thread.sleep(120);shot("reduced-motion");
+      }
+    } finally {
+      restoreScale("window_animation_scale",oldWindow);
+      restoreScale("transition_animation_scale",oldTransition);
+      restoreScale("animator_duration_scale",oldAnimator);
     }
   }
 }
