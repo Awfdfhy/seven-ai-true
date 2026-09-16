@@ -10,16 +10,18 @@ const {build,OUTPUT,MARK,THEME_BOOT}=require('./build-release.cjs');
   const html=fs.readFileSync(OUTPUT,'utf8');
   const dist=path.dirname(OUTPUT);
   assert.ok(html.includes(MARK));
+  assert.ok(built.brandFiles.some(x=>x.path==='brand/seven-day-white.svg'));
+  assert.ok(built.brandFiles.some(x=>x.path==='brand/seven-night-black.svg'));
   const releaseAssets=['seven-final.css','beta-ui.css','canon-simulator.js','world-runtime.js','research-runtime.js','performance-runtime.js','control-runtime.js','control-bridge.js','execution-bridge.js','pdf-runtime.js','motion-runtime.js','ui-runtime.js','beta-ui-runtime.js'];
   const releaseLayerBytes=releaseAssets.reduce((n,name)=>n+fs.statSync(path.join(__dirname,name)).size,0)+Buffer.byteLength(THEME_BOOT);
   assert.ok(releaseLayerBytes<100000,`release layer unexpectedly heavy: ${releaseLayerBytes} bytes`);
 
   const server=http.createServer((req,res)=>{
     const pathname=new URL(req.url,'http://127.0.0.1').pathname;
-    if(pathname.startsWith('/vendor/')||pathname.startsWith('/workspaces/')){
+    if(pathname.startsWith('/vendor/')||pathname.startsWith('/workspaces/')||pathname.startsWith('/brand/')){
       const file=path.resolve(dist,'.'+pathname);
       if(!file.startsWith(path.resolve(dist)+path.sep)||!fs.existsSync(file)){res.statusCode=404;res.end('not found');return;}
-      res.setHeader('Content-Type',file.endsWith('.js')||file.endsWith('.mjs')?'text/javascript; charset=utf-8':file.endsWith('.css')?'text/css; charset=utf-8':'application/octet-stream');
+      res.setHeader('Content-Type',file.endsWith('.js')||file.endsWith('.mjs')?'text/javascript; charset=utf-8':file.endsWith('.css')?'text/css; charset=utf-8':file.endsWith('.svg')?'image/svg+xml':'application/octet-stream');
       fs.createReadStream(file).pipe(res);return;
     }
     res.setHeader('Content-Type','text/html; charset=utf-8');res.end(html);
