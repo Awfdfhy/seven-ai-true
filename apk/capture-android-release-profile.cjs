@@ -10,6 +10,9 @@ const SHOTS=Object.freeze([
   {scenario:"arabic-rtl",file:"arabic-rtl.png",locale:"ar-IQ",direction:"rtl",theme:"night",reducedMotion:false},
   {scenario:"reduced-motion",file:"reduced-motion.png",locale:"en-US",direction:"ltr",theme:"night",reducedMotion:true}
 ]);
+const DEFAULT_RELEASE_APK="android/app/build/outputs/apk/release/app-release.apk";
+const DEFAULT_TEST_APK="android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk";
+const DEFAULT_BUILD_IDENTITY="evidence/android/build-identity.json";
 function req(v,n){const s=String(v??"").trim();if(!s)throw Error(`${n} required`);return s}
 function run(cmd,args,{allow=false,encoding="utf8"}={}){const r=spawnSync(cmd,args,{encoding,maxBuffer:16*1024*1024});if(!allow&&(r.error||r.status!==0))throw Error(`${cmd} ${args.join(" ")} failed: ${r.error?.message||r.stderr||r.stdout}`);return r}
 function adb(...args){return run("adb",args)}
@@ -19,6 +22,7 @@ function pngSize(p){const b=fs.readFileSync(p);if(b.length<24||b.toString("hex",
 function lastPair(s){const m=[...String(s).matchAll(/(\d+)\s*x\s*(\d+)/g)];if(!m.length)throw Error("wm size unavailable");const x=m[m.length-1];return[Number(x[1]),Number(x[2])]}
 function lastNumber(s){const m=[...String(s).matchAll(/(\d+)/g)];if(!m.length)throw Error("numeric device metric unavailable");return Number(m[m.length-1][1])}
 function writeJson(p,v){fs.mkdirSync(path.dirname(p),{recursive:true});fs.writeFileSync(p,JSON.stringify(v,null,2)+"\n")}
+function inferProfileId(env=process.env){const explicit=String(env.SEVEN_ANDROID_PROFILE_ID||"").trim();if(explicit)return explicit;const api=Number(textProp("ro.build.version.sdk"));if(api===28)return"api28-compact";if(api===36)return"api36-modern";if(Number.isInteger(api)&&api>0)return`api${api}-device`;throw Error("cannot infer Android profile id")}
 function captureProfile({apk,testApk,build,profileId,outDir,runId="local",environmentType="EMULATOR"}){
   if(!android.verifyBuildIdentity(build))throw Error("verified release build identity required");
   apk=path.resolve(req(apk,"apk"));testApk=path.resolve(req(testApk,"testApk"));outDir=path.resolve(req(outDir,"outDir"));profileId=req(profileId,"profileId");
@@ -38,8 +42,8 @@ function captureProfile({apk,testApk,build,profileId,outDir,runId="local",enviro
   writeJson(path.join(outDir,"profile-evidence.json"),evidence);console.log(`Android release profile: PASS (${profileId}, ${captures.length} genuine in-app scenarios, ${Math.round(device.widthDp)}dp API ${device.apiLevel})`);return evidence;
 }
 function main(env=process.env){
-  const build=JSON.parse(fs.readFileSync(path.resolve(req(env.SEVEN_ANDROID_BUILD_IDENTITY,"SEVEN_ANDROID_BUILD_IDENTITY")),"utf8"));
-  return captureProfile({apk:env.SEVEN_RELEASE_APK,testApk:env.SEVEN_ANDROID_TEST_APK||"android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk",build,profileId:env.SEVEN_ANDROID_PROFILE_ID,outDir:env.SEVEN_ANDROID_PROFILE_OUT,runId:env.GITHUB_RUN_ID||"local",environmentType:env.SEVEN_ANDROID_ENVIRONMENT||"EMULATOR"});
+  const profileId=inferProfileId(env),buildPath=path.resolve(env.SEVEN_ANDROID_BUILD_IDENTITY||DEFAULT_BUILD_IDENTITY),build=JSON.parse(fs.readFileSync(buildPath,"utf8"));
+  return captureProfile({apk:env.SEVEN_RELEASE_APK||DEFAULT_RELEASE_APK,testApk:env.SEVEN_ANDROID_TEST_APK||DEFAULT_TEST_APK,build,profileId,outDir:env.SEVEN_ANDROID_PROFILE_OUT||`evidence/android/profiles/${profileId}`,runId:env.GITHUB_RUN_ID||"local",environmentType:env.SEVEN_ANDROID_ENVIRONMENT||"EMULATOR"});
 }
 if(require.main===module){try{main()}catch(e){console.error("Android release profile: FAIL",e.message);process.exit(1)}}
-module.exports=Object.freeze({SHOTS,fileHash,pngSize,lastPair,lastNumber,captureProfile,main});
+module.exports=Object.freeze({SHOTS,DEFAULT_RELEASE_APK,DEFAULT_TEST_APK,DEFAULT_BUILD_IDENTITY,fileHash,pngSize,lastPair,lastNumber,inferProfileId,captureProfile,main});
