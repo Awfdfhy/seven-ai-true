@@ -179,7 +179,8 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: |
             SEVEN_ANDROID_PROFILE_ID=api36-modern node apk/capture-android-release-profile.cjs
-            SEVEN_ANDROID_PROFILE_ID=api36-modern SEVEN_SYSTEM_SCENARIOS=launcher-themed,splash node apk/capture-android-system-visuals.cjs
+            SEVEN_ANDROID_PROFILE_ID=api36-modern node apk/capture-android-themed-launcher-ui.cjs
+            SEVEN_ANDROID_PROFILE_ID=api36-modern SEVEN_SYSTEM_SCENARIOS=splash node apk/capture-android-system-visuals.cjs
 
       - name: Capture API 24 genuine legacy-launcher evidence
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
