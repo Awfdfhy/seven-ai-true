@@ -145,12 +145,12 @@ jobs:
           script: |
             adb shell wm size 1080x2160
             adb shell wm density 480
-            SEVEN_RELEASE_APK=android/app/build/outputs/apk/release/app-release.apk \
-            SEVEN_ANDROID_TEST_APK=android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk \
-            SEVEN_ANDROID_BUILD_IDENTITY=evidence/android/build-identity.json \
-            SEVEN_ANDROID_PROFILE_ID=api28-compact \
-            SEVEN_ANDROID_PROFILE_OUT=evidence/android/profiles/api28-compact \
-            SEVEN_ANDROID_ENVIRONMENT=EMULATOR \
+            export SEVEN_RELEASE_APK=android/app/build/outputs/apk/release/app-release.apk
+            export SEVEN_ANDROID_TEST_APK=android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+            export SEVEN_ANDROID_BUILD_IDENTITY=evidence/android/build-identity.json
+            export SEVEN_ANDROID_PROFILE_ID=api28-compact
+            export SEVEN_ANDROID_PROFILE_OUT=evidence/android/profiles/api28-compact
+            export SEVEN_ANDROID_ENVIRONMENT=EMULATOR
             node apk/capture-android-release-profile.cjs
 
       - name: Capture modern API 36 signed-release in-app visual evidence
@@ -163,12 +163,12 @@ jobs:
           disable-animations: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: |
-            SEVEN_RELEASE_APK=android/app/build/outputs/apk/release/app-release.apk \
-            SEVEN_ANDROID_TEST_APK=android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk \
-            SEVEN_ANDROID_BUILD_IDENTITY=evidence/android/build-identity.json \
-            SEVEN_ANDROID_PROFILE_ID=api36-modern \
-            SEVEN_ANDROID_PROFILE_OUT=evidence/android/profiles/api36-modern \
-            SEVEN_ANDROID_ENVIRONMENT=EMULATOR \
+            export SEVEN_RELEASE_APK=android/app/build/outputs/apk/release/app-release.apk
+            export SEVEN_ANDROID_TEST_APK=android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+            export SEVEN_ANDROID_BUILD_IDENTITY=evidence/android/build-identity.json
+            export SEVEN_ANDROID_PROFILE_ID=api36-modern
+            export SEVEN_ANDROID_PROFILE_OUT=evidence/android/profiles/api36-modern
+            export SEVEN_ANDROID_ENVIRONMENT=EMULATOR
             node apk/capture-android-release-profile.cjs
 
       - name: Merge release-device visual evidence without laundering missing system contexts

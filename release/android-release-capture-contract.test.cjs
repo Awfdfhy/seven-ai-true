@@ -7,6 +7,8 @@ ok(!/(?:^|\s)assembleDebugAndroidTest(?:\s|\\)/m.test(wf.replace(/:app:assembleD
 match(wf,/android\.testInstrumentationRunnerArguments\.class=ai\.seven\.app\.SevenSmokeTest/,"debug WebView smoke must select only SevenSmokeTest so release visual capture cannot contaminate the smoke gate");
 match(wf,/awk -F': ' '\/certificate SHA-256 digest\//,"CI release identity must parse modern apksigner certificate output");
 ok(!wf.includes("Signer #1 certificate SHA-256 digest"),"signer parsing must not depend on the obsolete Signer #1 prefix");
+match(wf,/export SEVEN_RELEASE_APK=android\/app\/build\/outputs\/apk\/release\/app-release\.apk/,"emulator-runner profile capture must export release APK path inside its per-line shell execution model");
+ok(!/SEVEN_RELEASE_APK=[^\n]*\\\s*\n\s*SEVEN_ANDROID_TEST_APK/.test(wf),"emulator-runner script must not use shell line-continuation env assignment because each script line is executed independently");
 match(mat,/UiAutomation\(\)\.takeScreenshot|UiAutomation\(\).*takeScreenshot|UiAutomation.*takeScreenshot/);match(mat,/theme\(webView,"day"\)/);match(mat,/theme\(webView,"night"\)/);match(mat,/SevenWorkspaces\.open/);match(mat,/ar-IQ/);
 match(mat,/settings put global window_animation_scale 0/);match(mat,/settings put global transition_animation_scale 0/);match(mat,/settings put global animator_duration_scale 0/);match(mat,/prefers-reduced-motion: reduce/);match(mat,/SevenPerformance\.reconsiderTier/);match(mat,/shot\("reduced-motion"\)/);
 ok(!/SevenPerformance\.state\.reducedMotion\s*=\s*true/.test(mat),"Reduced Motion evidence must come from Android/WebView preference state, not direct runtime mutation");
@@ -16,4 +18,4 @@ ok(!/deviceIdentityHash:android\.hash\(\{profileId/.test(cap),"device identity m
 ok(!/scenario:"launcher-/.test(cap),"in-app collector must not fabricate launcher scenarios");ok(!/scenario:"splash"/.test(cap),"in-app collector must not fabricate splash evidence");
 match(cap,/GENUINE_RELEASE_APP_DEVICE_CAPTURES_FOR_IN_APP_STATES_ONLY_NO_LAUNCHER_OR_SPLASH_CLAIM/);match(id,/RELEASE_VARIANT_CI_SIGNED_NOT_STORE_PRODUCTION_SIGNING/);match(merge,/PARTIAL_RELEASE_DEVICE_EVIDENCE_ONLY/);
 ok(!mat.includes("seven_ai-final.html"),"visual materializer must not touch protected source");ok(!cap.includes("seven_ai-final.html"),"capture collector must not touch protected source");
-console.log(`Android Release Capture Contract: PASS (${n} assertions; smoke isolated, release evidence stays fail-closed, Reduced Motion cannot be forged)`);
+console.log(`Android Release Capture Contract: PASS (${n} assertions; smoke isolated, runner env robust, release evidence stays fail-closed, Reduced Motion cannot be forged)`);
