@@ -2,6 +2,9 @@
 
 const { spawnSync } = require("child_process");
 
+const UI_DUMP_ATTEMPTS = 12;
+const UI_DUMP_RETRY_MS = 350;
+
 function run(args, { allow = false, timeout = 20000 } = {}) {
   const r = spawnSync("adb", args, { encoding: "utf8", maxBuffer: 8 * 1024 * 1024, timeout });
   if (!allow && (r.error || r.status !== 0)) {
@@ -29,20 +32,36 @@ function bounds(s) {
   return { x1, y1, x2, y2, cx: Math.round((x1 + x2) / 2), cy: Math.round((y1 + y2) / 2) };
 }
 function text(n) { return `${n.text || ""} ${n["content-desc"] || ""}`.trim(); }
-function dumpUi() {
-  const remote = "/data/local/tmp/seven-launcher-home.xml";
-  adb("shell", "uiautomator", "dump", remote);
-  const r = run(["exec-out", "cat", remote]);
-  if (!r.stdout.includes("<hierarchy")) throw Error("launcher UI hierarchy unavailable");
-  return r.stdout;
-}
-function summary(xml) {
-  return nodes(xml).map(n => text(n)).filter(Boolean).filter((x, i, a) => a.indexOf(x) === i).slice(0, 35).join(" | ");
-}
 function foreground() {
   const r = run(["shell", "dumpsys", "activity", "activities"], { allow: true, timeout: 12000 });
   return String(r.stdout || "").split(/\r?\n/).map(x => x.trim())
     .filter(x => /mResumedActivity|topResumedActivity|ResumedActivity/.test(x)).slice(0, 4).join(" ; ") || "<unknown>";
+}
+function dumpUi() {
+  const remote = "/data/local/tmp/seven-launcher-home.xml";
+  const failures = [];
+  for (let attempt = 1; attempt <= UI_DUMP_ATTEMPTS; attempt++) {
+    run(["wait-for-device"], { allow: true, timeout: 12000 });
+    run(["shell", "rm", "-f", remote], { allow: true, timeout: 5000 });
+    const dumped = run(["shell", "uiautomator", "dump", "--compressed", remote], { allow: true, timeout: 12000 });
+    const read = run(["exec-out", "cat", remote], { allow: true, timeout: 8000 });
+    const xml = String(read.stdout || "");
+    if (dumped.status === 0 && read.status === 0 && xml.includes("<hierarchy")) return xml;
+    failures.push({
+      attempt,
+      dumpStatus: dumped.status,
+      readStatus: read.status,
+      dumpError: String(dumped.error?.message || dumped.stderr || dumped.stdout || "").trim().slice(0, 180),
+      readError: String(read.error?.message || read.stderr || "").trim().slice(0, 180)
+    });
+    // Pixel Launcher may still be settling after instrumentation or first boot.
+    // Keep retries bounded and observe only the genuine system UI hierarchy.
+    if (attempt < UI_DUMP_ATTEMPTS) sleep(UI_DUMP_RETRY_MS);
+  }
+  throw Error(`launcher UI hierarchy unavailable after ${UI_DUMP_ATTEMPTS} bounded retries; foreground=${foreground()}; attempts=${JSON.stringify(failures)}`);
+}
+function summary(xml) {
+  return nodes(xml).map(n => text(n)).filter(Boolean).filter((x, i, a) => a.indexOf(x) === i).slice(0, 35).join(" | ");
 }
 function screenSize() {
   const raw = adb("shell", "wm", "size").stdout;
@@ -55,16 +74,22 @@ function sevenNode(xml) {
   return nodes(xml).find(n => /(^|\s)Seven(\s|$)/i.test(text(n)) && bounds(n.bounds)) || null;
 }
 function home() {
+  run(["wait-for-device"], { allow: false, timeout: 12000 });
+  run(["shell", "input", "keyevent", "KEYCODE_WAKEUP"], { allow: true, timeout: 5000 });
+  run(["shell", "wm", "dismiss-keyguard"], { allow: true, timeout: 5000 });
   adb("shell", "input", "keyevent", "KEYCODE_HOME");
-  sleep(850);
+  sleep(1000);
 }
 function openAllApps() {
   home();
+  // Prove the home surface is queryable before entering All Apps. This absorbs
+  // first-boot/instrumentation handoff latency without replacing real UI input.
+  dumpUi();
   const size = screenSize();
   adb("shell", "input", "swipe",
     String(Math.round(size.width * 0.50)), String(Math.round(size.height * 0.84)),
     String(Math.round(size.width * 0.50)), String(Math.round(size.height * 0.22)), "500");
-  sleep(1000);
+  sleep(1100);
 }
 function findSevenInAllApps() {
   const size = screenSize();
