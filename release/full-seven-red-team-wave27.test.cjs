@@ -24,12 +24,10 @@ ok(evolutionTests.length>=10,'evolution verification surface unexpectedly collap
 ok(hardeningTests.length>=10,'hardening verification surface unexpectedly collapsed');
 eq(suiteSet.size,suiteUniverse.length,'duplicate suite identity detected');
 
-// The canonical runner must discover every test family rather than maintaining an easy-to-forget allowlist.
 const runner=read('all.cjs');
-for(const token of ["readdirSync(evolutionDir)","readdirSync(releaseDir)","readdirSync(hardeningDir)","endsWith('.test.cjs')","release/static-audit.cjs","release/release-verify.cjs","eval','harness.cjs","memory.cjs","runtime-smoke.cjs","verify.cjs"])
+for(const token of ["readdirSync(evolutionDir)","readdirSync(releaseDir)","readdirSync(hardeningDir)","endsWith('.test.cjs')","static-audit.cjs","release-verify.cjs","'eval','harness.cjs'","memory.cjs","runtime-smoke.cjs","verify.cjs"])
   ok(runner.includes(token),`canonical test runner lost ${token}`);
 
-// Every new wave guard must itself be mandatory in the normal test run.
 for(const rel of [
   'release/product-wiring-contract.test.cjs',
   'release/material-design-quality-wave25.test.cjs',
@@ -39,7 +37,6 @@ for(const rel of [
   'release/release-readiness.test.cjs'
 ]) ok(suiteSet.has(rel),`mandatory release gate missing from canonical suite discovery: ${rel}`);
 
-// Cross-system coverage. This is deliberately family-based so file refactors cannot silently delete a whole safety layer.
 const allTestNames=suiteUniverse.join('\n').toLowerCase();
 const families={
   product:/product-wiring/,
@@ -69,7 +66,6 @@ const families={
 };
 for(const [family,re] of Object.entries(families))ok(re.test(allTestNames),`Full Seven Red Team lost ${family} test-family coverage`);
 
-// Product truth must remain fail-closed.
 const matrix=JSON.parse(read('docs/project-memory/current/PRODUCT_WIRING_MATRIX.json'));
 eq(matrix.schema,'seven.product-wiring-matrix.v1');
 eq(matrix.version,2);
@@ -99,7 +95,6 @@ for(const partialId of ['vision.live_multimodal_input','projects.persistent_full
   ok(row&&row.release_relevant===false&&row.entry_point_class==='NO_USER_SURFACE'&&row.status==='NOT_RELEASE_RELEVANT',`partial subsystem was over-promoted: ${partialId}`);
 }
 
-// Exact source and release-boundary integrity.
 const source=fs.readFileSync(p('seven_ai-final.html'));
 const blob=crypto.createHash('sha1').update(Buffer.from(`blob ${source.length}\0`)).update(source).digest('hex');
 eq(source.length,658133,'protected source byte size changed');
@@ -114,7 +109,6 @@ for(const [kind,deps] of Object.entries({dependencies:pkg.dependencies||{},devDe
 }
 ok(Object.keys(pkg.dependencies||{}).length<=4,'production dependency surface expanded unexpectedly');
 
-// Release workflows must stay least-privilege and pin third-party actions by commit SHA.
 for(const wf of ['.github/workflows/seven-tests.yml','.github/workflows/android-apk.yml']){
   const yml=read(wf);
   ok(/permissions:\s*\n\s*contents:\s*read/m.test(yml),`${wf} lost read-only contents permission`);
@@ -124,7 +118,6 @@ for(const wf of ['.github/workflows/seven-tests.yml','.github/workflows/android-
   ok(!/pull_request_target\s*:/i.test(yml),`${wf} must not use pull_request_target for this release gate`);
 }
 
-// Permanent invariants across subsystem boundaries.
 const invariantEvidence=[
   ['authority conservation',/authority|permission/i,['hardening','evolution']],
   ['side-effect uncertainty',/side.?effect|effect/i,['hardening','release']],
@@ -146,14 +139,12 @@ for(const [label,re,dirs] of invariantEvidence){
   ok(found,`Full Seven Red Team lost invariant evidence: ${label}`);
 }
 
-// Static release budgets are explicit and the source of truth stays executable.
 const staticAudit=read('release/static-audit.cjs');
 for(const token of ['100000','65536','8388608'])ok(staticAudit.includes(token),`static release budget disappeared: ${token}`);
 ok(exists('release/mobile-performance-browser.test.cjs'),'browser performance proof missing');
 ok(exists('release/device-release-evidence.test.cjs'),'device release evidence proof missing');
 ok(exists('release/android-visual-certification.test.cjs'),'Android visual certification proof missing');
 
-// No gate may silently redefine store signing / physical-device truth.
 const status=read('docs/project-memory/current/STATUS.md');
 ok(/store-production signing|store production signing|Play\/store production signing/i.test(status),'status lost store-signing truth boundary');
 ok(/physical-device/i.test(status),'status lost physical-device truth boundary');
