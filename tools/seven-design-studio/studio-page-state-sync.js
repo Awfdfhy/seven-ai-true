@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const VERSION='2026.09-page-state-sync-v3';
+  const VERSION='2026.09-page-state-sync-v2';
   const SETTINGS_KEY='seven-design-studio-settings-v1';
   const PRODUCT_THEME_MARKER='--seven-product-theme-fallback-v1';
   const PRODUCT_THEME_CSS=`
@@ -25,9 +25,6 @@ body.seven-day.seven-lite .svx-screen[data-seven-product-suite="2026.09-product-
     const dirText=(dirBtn?.textContent||'').trim().toLowerCase();
     const densityText=(densityBtn?.textContent||'').trim().toLowerCase();
 
-    // The live Studio controls are authoritative during interaction. Persisted
-    // settings are only a fallback because storage can trail the click that
-    // immediately precedes a GrapesJS page switch.
     const theme=themeText==='day'?'day':themeText==='night'?'night':(stored.theme||'night');
     const dir=dirText==='rtl'?'rtl':dirText==='ltr'?'ltr':(stored.dir||'ltr');
     const density=['full','balanced','lite'].includes(densityText)?densityText:(stored.density||'balanced');
@@ -93,9 +90,6 @@ body.seven-day.seven-lite .svx-screen[data-seven-product-suite="2026.09-product-
 
     for(const event of ['load','project:load','storage:end:load','page:select','canvas:frame:load'])editor.on(event,sync);
 
-    // Delegation keeps working even when the quick screen selector is created
-    // after this module. The handler runs after the selector's own change
-    // handler, so the newly selected page receives state in the same event.
     document.addEventListener('change',event=>{
       if(event.target?.id==='sevenScreenQuick'||event.target?.id==='deviceSelect')sync();
     });
