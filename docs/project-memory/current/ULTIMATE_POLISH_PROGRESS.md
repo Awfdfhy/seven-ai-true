@@ -9,9 +9,9 @@
 - Protected source reference: `658133` bytes, Git blob `3e8dfa8e7da7124e16504140eb9631c10cabf053`
 - Protected-branch law: do not merge to `main` or another protected branch without explicit user approval.
 - Final Repair Sweep: **`PASS`** and remains the practical Wave-23-equivalent repair checkpoint without retroactively renumbering its historical record.
-- Verified numbered closures after Wave 22: **Wave 24 = PASS**, **Wave 26 = PASS**.
-- Wave 25 remains the next open numbered closure and must be completed before the campaign can truthfully claim sequential `01–26` closure.
-- Current work order requested by the user: close Wave 25, preserve Wave 24/26 evidence, then execute Wave 27.
+- Verified numbered closures after Wave 22: **Wave 24 = PASS**, **Wave 25 = PASS**, **Wave 26 = PASS**, **Wave 27 = PASS**.
+- Numbered campaign sequence is now truthfully closed through **Wave 27** with evidence-backed gates.
+- Current frontier: **exact Release Candidate + Final Verification**, subject to remaining physical-device/store-signing truth boundaries.
 
 ## Closed Mega-Waves 01–22
 - **01 — Speed + Smoothness Foundation:** `PASS_FOUNDATION` ✅
@@ -88,10 +88,23 @@ Exact same-commit CI:
 
 Therefore **Wave 24 = PASS**. The successful Android run clears the prior Wave-24 CI blocker.
 
-## Mega-Wave 25 — Premium Materials + Design Quality Saturation — OPEN
-The repository already contains strong prerequisite layers: Design Genome, Design Lint, Global UI, Motion, RTL, Accessibility, Mobile Performance, visual evidence and the mandatory materials/design-quality plan referenced by `MASTER_PLAN.md`.
+## Mega-Wave 25 — Premium Materials + Design Quality Saturation — PASS
+Wave 25 adds a dedicated cross-cutting materials/design-quality release gate without equating heavier effects with higher quality.
 
-However, Wave 25 is **not yet counted as PASS** until a dedicated cross-cutting materials/design-quality closure gate is added, exercised in CI, and documented without claiming expensive effects as quality by themselves. The gate must preserve Full/Balanced/Lite behavior, Reduced Motion, accessibility, Arabic/RTL, Android resource discipline and protected-source integrity.
+Final verified evidence head:
+`9b88301acecd15df8251e4c12e4e620a8749c510`
+
+Same-head CI evidence:
+- Seven AI tests run `35157763115`: `SUCCESS`.
+- `all test suites: PASS (118 suites)`.
+- Wave 25 Materials + Design Quality Gate: `PASS (182 assertions; 29 capability bindings; 10 governed backdrop-filter declarations; Design Lint PASS)`.
+- Full/Balanced/Lite material governance remains enforced.
+- Reduced Motion, accessibility, Arabic/RTL, mobile-performance budgets, product wiring and protected-source integrity remain mandatory dependencies of the gate.
+- Design Lint: `PASS (38 assertions; 0 warnings; 53 info)`.
+- Mobile Performance Contract: `PASS (35 assertions; 99804/100000 startup, 64183/65536 lazy workspace)`.
+- static audit: `PASS (3718964/8388608 static APK bytes; 0 warnings)`.
+
+Therefore **Wave 25 = PASS**.
 
 ## Mega-Wave 26 — Visual Red Team — PASS
 Implementation commit:
@@ -116,9 +129,43 @@ Exact same-commit CI:
 
 Therefore **Wave 26 = PASS**.
 
+## Mega-Wave 27 — Final E2E + Full Seven Red Team — PASS
+Wave 27 adds a fail-closed whole-product gate spanning release, evolution and hardening suites rather than UI-only evidence.
+
+Final verified evidence head:
+`9b88301acecd15df8251e4c12e4e620a8749c510`
+
+Exact same-head web CI:
+- Seven AI tests run `35157763115`: `SUCCESS`.
+- `all test suites: PASS (118 suites)`.
+- Wave 27 Full Seven Red Team + E2E Gate: `PASS (515 assertions; 118 canonical suites; 29 capability bindings; manifest 9b6b12fa1bb948301a09d1f471fc38674a63f383bd168dd2f765776845a56a9c)`.
+- Product Wiring Contract: `PASS (661 assertions; 29 capability bindings; 23 state classes)`.
+- Wave 26 Visual Red Team Gate remains PASS on the same head.
+- Release Readiness + Saturation Gate: `PASS (33 assertions; exact release identity, evidence-class floors, freshness, independence, Saturation 2/2)`.
+- source integrity lock: `PASS (658133 bytes, 3e8dfa8e7da7124e16504140eb9631c10cabf053)`.
+- dependency audit: production `0`, full graph `0`, dev/tooling-only `0` vulnerabilities.
+
+Exact same-head Android CI:
+- Seven Android APK run `35157763167`: `SUCCESS`.
+- Android lint, unit tests, debug APK, release test APK and signed CI release APK: PASS.
+- debug/release package verification: PASS.
+- signer parity: PASS.
+- exact CI release identity seal: PASS.
+- Android 16 WebView smoke: PASS.
+- API 33 compact release-app + adaptive launcher: PASS.
+- API 36 modern release-app + themed launcher + splash: PASS.
+- API 24 genuine legacy launcher: PASS.
+- Android release visual evidence: `PASS (11/11 scenarios; missing none)`.
+- Canonical Android visual certification: `PASS (11/11 genuine release-device scenarios)`.
+- APK verification after device tests: PASS.
+- CI release APK: `4,994,799` bytes, SHA-256 `15733bc60715ab7faffae798a8c5b8f23b9014b9dbd33c208398c0c02317f8c1`.
+- Signing truth remains `CI-signed`, not Play/store production signing.
+
+Therefore **Wave 27 = PASS**.
+
 ## Current truth boundary
-This is still not Final Seven. Wave 25 must be closed before claiming sequential closure through Wave 26. After that, the next requested stage is Wave 27, expected to cover the next post-Visual-Red-Team release-hardening scope from the Master Plan, including final E2E / Full Seven Red Team preparation or execution as evidence permits.
+The numbered Ultimate Polish sequence is now evidence-backed through **Wave 27**. This is still not the same claim as public/store-ready Final Seven.
 
-Physical-device/store-signing truth remains separate from emulator/device-farm CI evidence. CI-signed release variants are not Play/store production signing.
+The remaining frontier from `MASTER_PLAN.md` is **exact Release Candidate + Final Verification** and any real repair discovered there. Physical-device/store-production signing remains a separate truth boundary. CI emulator/device evidence and CI signing do not imply Play/store production signing.
 
-`seven_ai-final.html` remains protected. No merge to `main` or another protected branch is authorized without explicit user approval.
+`seven_ai-final.html` remains protected and unchanged. No merge to `main` or another protected branch is authorized without explicit user approval.
