@@ -8,6 +8,7 @@ const SOURCE=path.join(ROOT,'seven_ai-final.html');
 const DIST_DIR=path.join(ROOT,'dist');
 const OUTPUT=path.join(DIST_DIR,'seven_ai-release.html');
 const WORKSPACE_DIR=path.join(__dirname,'workspaces');
+const BRAND_DIR=path.join(__dirname,'brand');
 const MARK='SEVEN_FINAL_RELEASE_LAYER_V1';
 const THEME_BOOT=`<script id="seven-theme-boot">!function(){var h=document.documentElement,p='auto',n=(new Date).getHours();try{p=localStorage.getItem('theme')||'auto'}catch(e){}p=p==='light'?'day':p==='dark'?'night':p;var t=p==='day'||p==='night'?p:n>=6&&n<18?'day':'night';h.dataset.sevenTheme=t;h.dataset.sevenThemePreference=p;h.classList.add('seven-beta-ui');var m=document.getElementById('seven-theme-color');if(m)m.content=t==='day'?'#f7f6fb':'#0f0d1d'}()</script>`;
 
@@ -68,10 +69,12 @@ function build(){
   fs.writeFileSync(OUTPUT,html);
   const workspaceOut=path.join(DIST_DIR,'workspaces');fs.rmSync(workspaceOut,{recursive:true,force:true});
   const workspaceFiles=copyDir(WORKSPACE_DIR,workspaceOut),workspaceBytes=workspaceFiles.reduce((n,x)=>n+x.bytes,0);
-  const result={output:OUTPUT,bytes:Buffer.byteLength(html),sourceBytes:fs.statSync(SOURCE).size,fingerprint,pdf,pdfLoadMode:'lazy-local',themeBootBytes:Buffer.byteLength(THEME_BOOT),workspaceLoadMode:'lazy-local',workspaceDigest,workspaceBytes,workspaceFiles};
-  fs.writeFileSync(path.join(DIST_DIR,'release-manifest.json'),JSON.stringify({format:'seven-release-manifest',version:12,builtAt:new Date().toISOString(),...result},null,2));
+  const brandOut=path.join(DIST_DIR,'brand');fs.rmSync(brandOut,{recursive:true,force:true});
+  const brandFiles=copyDir(BRAND_DIR,brandOut),brandBytes=brandFiles.reduce((n,x)=>n+x.bytes,0);
+  const result={output:OUTPUT,bytes:Buffer.byteLength(html),sourceBytes:fs.statSync(SOURCE).size,fingerprint,pdf,pdfLoadMode:'lazy-local',themeBootBytes:Buffer.byteLength(THEME_BOOT),workspaceLoadMode:'lazy-local',workspaceDigest,workspaceBytes,workspaceFiles,brandBytes,brandFiles};
+  fs.writeFileSync(path.join(DIST_DIR,'release-manifest.json'),JSON.stringify({format:'seven-release-manifest',version:13,builtAt:new Date().toISOString(),...result},null,2));
   return result;
 }
 
-if(require.main===module){const r=build();console.log(`release build: PASS (${r.bytes} bytes, ${r.fingerprint}, local lazy PDF ${r.pdf.bytes} bytes, lazy workspaces ${r.workspaceBytes} bytes, theme boot ${r.themeBootBytes} bytes)`);}
+if(require.main===module){const r=build();console.log(`release build: PASS (${r.bytes} bytes, ${r.fingerprint}, local lazy PDF ${r.pdf.bytes} bytes, lazy workspaces ${r.workspaceBytes} bytes, brand ${r.brandBytes} bytes, theme boot ${r.themeBootBytes} bytes)`);}
 module.exports={build,OUTPUT,MARK,THEME_BOOT,injectBeforeLast};
