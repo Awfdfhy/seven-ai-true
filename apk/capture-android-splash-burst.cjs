@@ -1,5 +1,5 @@
 "use strict";
-const fs=require("fs"),path=require("path"),crypto=require("crypto"),sharp=require("sharp"),{spawnSync}=require("child_process");
+const fs=require("fs"),path=require("path"),crypto=require("crypto"),sharp=require("sharp"),{spawnSync,spawn}=require("child_process");
 const android=require("../release/android-visual-certification.cjs");
 const profile=require("./capture-android-release-profile.cjs");
 const systemVisuals=require("./capture-android-system-visuals.cjs");
@@ -83,27 +83,17 @@ async function writeFramePng(frame,outPath){
   await sharp(rgbaPixels(frame),{raw:{width:frame.width,height:frame.height,channels:4}}).png({compressionLevel:9}).toFile(outPath);
   const png=fs.readFileSync(outPath);return{width:frame.width,height:frame.height,sha256:shaBytes(png)};
 }
-function readRemoteText(remote){
-  const r=run("adb",["exec-out","cat",remote],{allow:true,encoding:"utf8",timeout:6000,maxBuffer:2*1024*1024});
-  return r.status===0?String(r.stdout||"").trim():"";
-}
 function launchColdWithForcedIcon(){
-  const remote="/data/local/tmp/seven-splash-launch.txt";
-  run("adb",["shell","rm","-f",remote],{allow:true});
   adb("shell","am","force-stop",APP_ID);home();
-  const command=`am start -W -n ${ACTIVITY} --splashscreen-show-icon > ${remote} 2>&1`;
-  const starter=run("adb",["shell","sh","-c",`(${command}) >/dev/null 2>&1 &`],{allow:true,timeout:5000});
-  if(starter.error||starter.status!==0)throw Error(`Android cold splash launch could not start: ${starter.error?.message||starter.stderr||starter.stdout}`);
-  return remote;
+  // Launch from the host without any Android-shell metacharacters. The adb child runs
+  // independently while this process performs synchronous frame grabs, so the very
+  // short TYPE_APPLICATION_STARTING window can be sampled instead of awaited away.
+  const starter=spawn("adb",["shell","am","start","-W","-n",ACTIVITY,"--splashscreen-show-icon"],{stdio:["ignore","ignore","ignore"]});
+  if(!starter.pid)throw Error("Android cold splash launch process unavailable");
+  return starter;
 }
-function waitForLaunch(remote){
-  let out="";
-  for(let i=0;i<50;i++){
-    out=readRemoteText(remote);
-    if(/Status:\s*ok/i.test(out)&&new RegExp(APP_ID.replace(/\./g,"\\."),"i").test(out))return out;
-    sleep(100);
-  }
-  throw Error(`Android forced-icon launch did not complete cleanly: ${out||"<no output>"}`);
+function stopStarter(starter){
+  try{if(starter&&starter.exitCode===null&&!starter.killed)starter.kill()}catch{}
 }
 function requireResumed(){
   let last="";
@@ -128,27 +118,28 @@ async function captureSplash({apk,build,profileId,outDir,runId}){
   adb("install","-r",apk);
   run("adb",["shell","am","clear-debug-app"],{allow:true});
   const baseline=captureRaw(),baselineHash=shaBytes(Buffer.concat([Buffer.from(`${baseline.width}x${baseline.height}:${baseline.format}:`),baseline.pixels]));
-  const launchRemote=launchColdWithForcedIcon();
-  const started=Date.now(),frames=[];
+  const starter=launchColdWithForcedIcon(),started=Date.now(),frames=[];
   let best=null;
-  for(let i=0;i<CAPTURE_FRAMES;i++){
-    const frame=captureRaw(),sig=splashSignature(frame),frameHash=shaBytes(Buffer.concat([Buffer.from(`${frame.width}x${frame.height}:${frame.format}:`),frame.pixels]));
-    const item={index:i,elapsedMs:Date.now()-started,frameHash,signature:sig};frames.push(item);
-    if(frameHash!==baselineHash&&(!best||sig.score>best.signature.score))best={frame,item,signature:sig};
-    if(sig.pass&&frameHash!==baselineHash){best={frame,item,signature:sig};break}
-  }
-  const launchOutput=waitForLaunch(launchRemote);requireResumed();
+  try{
+    for(let i=0;i<CAPTURE_FRAMES;i++){
+      const frame=captureRaw(),sig=splashSignature(frame),frameHash=shaBytes(Buffer.concat([Buffer.from(`${frame.width}x${frame.height}:${frame.format}:`),frame.pixels]));
+      const item={index:i,elapsedMs:Date.now()-started,frameHash,signature:sig};frames.push(item);
+      if(frameHash!==baselineHash&&(!best||sig.score>best.signature.score))best={frame,item,signature:sig};
+      if(sig.pass&&frameHash!==baselineHash){best={frame,item,signature:sig};break}
+    }
+    requireResumed();
+  }finally{stopStarter(starter)}
   if(!best||!best.signature.pass){
-    const top=frames.sort((a,b)=>b.signature.score-a.signature.score).slice(0,5);
+    const top=[...frames].sort((a,b)=>b.signature.score-a.signature.score).slice(0,5);
     throw Error(`genuine Android splash frame not found in adb screencap burst; top=${JSON.stringify(top)}`);
   }
   const outPath=path.join(outDir,"system-screenshots","splash.png"),shot=await writeFramePng(best.frame,outPath);
   const witness={
     kind:"android-system-splash-transient-frame",
     source:"adb-raw-screencap-burst",
-    requestedBy:"am start -W --splashscreen-show-icon",
-    launchStatus:"ok",
-    launchOutputHash:shaBytes(Buffer.from(launchOutput)),
+    requestedBy:`adb shell am start -W -n ${ACTIVITY} --splashscreen-show-icon`,
+    launchTransport:"HOST_SPAWN_NO_REMOTE_SHELL_METACHARACTERS",
+    postCaptureActivityState:"RESUMED_MAIN_ACTIVITY",
     baselineFrameHash:baselineHash,
     selectedFrameHash:best.item.frameHash,
     selectedFrameIndex:best.item.index,
