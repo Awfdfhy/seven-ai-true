@@ -19,6 +19,13 @@ const bridge=`
 
   private boolean sevenAndroidReducedMotionEnabled() {
     try {
+      // Public Android animation authority on API 26+. This is more robust than
+      // relying solely on direct Settings.Global reads on newer Android releases.
+      if(android.os.Build.VERSION.SDK_INT>=android.os.Build.VERSION_CODES.O && !android.animation.ValueAnimator.areAnimatorsEnabled()) return true;
+    } catch(Exception ignored) {}
+    try {
+      // Keep the exact global-scale witness as the compatibility path, including
+      // API 24/25 where ValueAnimator.areAnimatorsEnabled() is unavailable.
       android.content.ContentResolver resolver=getContentResolver();
       float window=android.provider.Settings.Global.getFloat(resolver,android.provider.Settings.Global.WINDOW_ANIMATION_SCALE,1f);
       float transition=android.provider.Settings.Global.getFloat(resolver,android.provider.Settings.Global.TRANSITION_ANIMATION_SCALE,1f);
