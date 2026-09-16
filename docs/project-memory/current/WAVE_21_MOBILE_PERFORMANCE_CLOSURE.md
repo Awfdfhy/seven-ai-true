@@ -8,7 +8,7 @@ Exact implementation evidence baseline: `5d630b73cbfb3df9dd8a35c243257379dcc33d4
 ## Closure decision
 Mega-Wave 21 is formally closed at HOST/static/browser mobile-performance foundation level.
 
-The current foundation already enforces the project’s Android-first performance laws without weakening correctness: startup and lazy-workspace budgets, PDF/workspace lazy loading, no speculative background work, Lite tier, Reduced Motion and bounded responsive behavior. No extra hot-path implementation was justified, especially with only 242 startup bytes of remaining headroom.
+The foundation enforces the project’s Android-first performance laws without weakening correctness: startup and lazy-workspace budgets, PDF/workspace lazy loading, no speculative background work, Lite tier, Reduced Motion and bounded responsive behavior.
 
 ## Verified foundation
 - startup budget cap `100000` bytes with reserve enforcement;
@@ -23,16 +23,16 @@ The current foundation already enforces the project’s Android-first performanc
 - closing a workspace restores Chat cleanly;
 - HOST timing observations are recorded but explicitly cannot self-promote into physical-device latency certification.
 
-## Exact evidence
+## Historical exact evidence
 GitHub Actions run `35044211876` / Seven AI tests #1785 completed `SUCCESS` on exact implementation head `5d630b73cbfb3df9dd8a35c243257379dcc33d45`.
 
-Relevant results:
+Historical closure results:
 - Mobile Performance Browser: `PASS (38 assertions)`;
 - Mobile Performance Contract: PASS;
 - observed HOST launcher time: `104.6ms`;
 - observed HOST Coding-workspace time: `19.3ms`;
 - static audit: `PASS`;
-- startup `99758 / 100000` bytes, leaving `242` bytes of hot-path headroom;
+- startup `99758 / 100000` bytes, leaving `242` bytes of hot-path headroom at that historical commit;
 - lazy workspace `63855 / 65536` bytes;
 - static APK estimate `3718590 / 8388608` bytes;
 - static warnings `0`;
@@ -41,10 +41,34 @@ Relevant results:
 - production dependency audit: `0` vulnerabilities;
 - protected source integrity: PASS.
 
-## Truth boundary
-This closure is `HOST_STATIC_AND_BROWSER_PERFORMANCE_GUARD_NOT_ANDROID_DEVICE_BENCHMARK`. It does not claim real-phone startup latency, RAM peak, frame-tail/jank, battery, thermal or long-session certification. Those require later Android/release device evidence.
+These numbers remain valid historical measurements for the original Wave 21 closure and are not rewritten retroactively.
 
-The 242-byte startup margin is a hard warning: subsequent work should remain lazy/build-time/native where practical or first recover startup bytes.
+## Post-closure current performance baseline
+The Final Repair Sweep re-ran the complete performance gates after later Wave 22 and warning/dependency repairs.
+
+Exact repaired implementation baseline: `9f3e65b76a1b24ba4ff2b4b1468b7834540a10cb`.
+
+Evidence:
+- Seven AI tests run `35134482425`: `SUCCESS`, all `113` suites PASS;
+- Seven Android APK run `35134482390`: `SUCCESS`;
+- Mobile Performance Browser: `PASS (38 assertions)`;
+- Mobile Performance Contract: `PASS (35 assertions)`;
+- current startup `99804 / 100000` bytes, leaving `196` bytes under the cap while still passing reserve enforcement;
+- current lazy workspace `64183 / 65536` bytes;
+- current static APK estimate `3718964 / 8388608` bytes;
+- current static warnings `0`;
+- production dependency audit `0` vulnerabilities;
+- full dependency graph `0` vulnerabilities;
+- Android 16 release WebView instrumentation PASS;
+- API 24 / 33 / 36 release-device visual matrix remains `PASS (11/11 genuine release-device scenarios)`;
+- protected source integrity remains PASS.
+
+This resolves the documentation drift: `99758` is the original Wave 21 closure measurement, while `99804` is the later repaired current baseline. Both are tied to their exact commits/runs.
+
+## Truth boundary
+This closure remains `HOST_STATIC_AND_BROWSER_PERFORMANCE_GUARD_NOT_ANDROID_DEVICE_BENCHMARK`. Neither the historical nor current static/browser measurements claim real-phone startup latency, RAM peak, frame-tail/jank, battery, thermal or long-session certification. Those require later physical-device/release QA evidence where mandated.
+
+The current `196`-byte startup margin remains a hard engineering constraint. Subsequent work should remain lazy/build-time/native where practical or recover startup bytes before adding hot-path payload.
 
 ## Accounting
-After Wave 21: completed Mega-Waves `21 / ≤30`; sequentially closed `01–21`. Next planned visual implementation Wave: Mega-Wave 22 — Android Visual Certification.
+Wave 21 remains historically closed as Mega-Wave 21. Its performance documentation is now reconciled by the Final Repair Sweep; current campaign frontier is Final UI Completion + Product Wiring.
