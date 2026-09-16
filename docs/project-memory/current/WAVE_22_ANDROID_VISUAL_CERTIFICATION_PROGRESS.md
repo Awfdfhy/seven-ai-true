@@ -5,12 +5,14 @@ Branch: `ultimate-polish-v1`
 Sequential campaign frontier: Mega-Wave 22
 
 ## Current truth
-The Android Visual Certification runtime and its fail-closed unit contract are implemented, but Wave 22 is **not yet closable** because the repository does not currently contain genuine `RELEASE_BUILD_DEVICE` visual evidence for the required matrix.
+The Android Visual Certification runtime and its fail-closed unit contract are implemented, and the Android CI path has now been extended to produce a **signed CI RELEASE variant**, seal its exact artifact identity, and attempt genuine release-device capture on two emulator profiles.
 
-The existing Android GitHub Actions workflow is valuable build/emulator evidence, but it currently builds and instruments the **debug** APK. It does not produce the exact release-build/device capture receipts required by `release/android-visual-certification.cjs`.
+Wave 22 is **not yet closed**. The new implementation must first pass GitHub Actions on its exact commit, and even on success it intentionally does not claim the four system-context scenarios that are not yet harvested reliably by CI: launcher adaptive, launcher themed, launcher legacy, and splash.
+
+The previous Seven AI tests run `35044815241` / #1795 completed `SUCCESS` on commit `6215383aaf01e17c333bc5920435c0af9cd319b5`. That proves the pre-existing Wave 22 contract and project baseline were green before this CI expansion; it is not evidence for the new release-device capture implementation.
 
 ## Existing certification machinery
-`release/android-visual-certification.cjs` already enforces:
+`release/android-visual-certification.cjs` enforces:
 - exact `RELEASE` build identity bound to branch, commit, application id, version, artifact SHA-256, candidate identity and export receipt;
 - sealed release-device proofs for `EMULATOR`, `PHYSICAL_DEVICE` or `DEVICE_FARM` environments;
 - exact screenshot SHA-256 and dimensions;
@@ -20,7 +22,7 @@ The existing Android GitHub Actions workflow is valuable build/emulator evidence
 - exact build/device binding and duplicate-evidence rejection;
 - no tier promotion from HOST/unit fixtures to release-device evidence.
 
-Required scenarios are:
+Required scenarios remain:
 1. `launcher-adaptive`
 2. `launcher-themed`
 3. `launcher-legacy`
@@ -33,36 +35,74 @@ Required scenarios are:
 10. `arabic-rtl`
 11. `reduced-motion`
 
-`release/android-visual-certification.test.cjs` proves the contract logic with explicitly synthetic unit fixtures. Those fixtures are not release-device proof and must not be relabeled.
+`release/android-visual-certification.test.cjs` proves contract logic with explicitly synthetic fixtures only. Those fixtures remain non-release evidence.
 
-## Current Android workflow evidence
-`.github/workflows/android-apk.yml` currently:
-- regenerates the Capacitor Android project;
-- runs the full Seven pre-APK release gate;
-- runs Android lint and unit tests;
-- builds `assembleDebug`;
-- runs Android 16 / API 36 emulator instrumentation against the debug build;
-- verifies APK packaging again after device tests;
-- uploads the installable debug APK.
+## Wave 22 implementation added in this pass
+The Android pipeline now includes the following fail-closed machinery:
 
-That evidence proves Android build/emulator integration for its exact debug identity. It does **not** satisfy Wave 22's release visual certification contract.
+- `release/android-ci-release-artifact.cjs`
+  - seals the exact signed CI release APK SHA-256;
+  - binds branch, commit, app id, version and signer certificate SHA-256;
+  - creates candidate, export and Android visual build identity receipts;
+  - explicitly marks the signing boundary as `CI_DEBUG_KEY_RELEASE_VARIANT`, not Play/store production signing.
 
-## Exact missing evidence before closure
-Wave 22 remains blocked until the project can produce, for one exact release artifact identity:
-- an installable `RELEASE` APK/AAB identity and SHA-256;
-- at least two distinct genuine release-device profiles;
-- all 11 required scenario captures on the required device cohort without fabricated scenario labels;
-- genuine launcher adaptive/themed/legacy context evidence rather than an in-app imitation;
-- release splash and in-app Day/Night/specialist/Arabic/Reduced Motion captures;
-- sealed capture receipts bound to the exact release artifact and device proofs;
-- a certification result from `android.certify(...)` that is `PASS` rather than `INCONCLUSIVE` or `BLOCK`.
+- `apk/materialize-android-visual-test.cjs`
+  - creates a dedicated Android instrumentation visual collector without touching `seven_ai-final.html`;
+  - captures real device screenshots for Chat Day, Chat Night, Coding, Research, RPG, Arabic RTL and Reduced Motion release-app states.
 
-Physical-device inclusion is valuable but not required by the visual-certification contract itself if two genuine release emulator/device-farm profiles satisfy the matrix. Physical-device performance and TalkBack claims remain separate later release gates.
+- `apk/capture-android-release-profile.cjs`
+  - installs the exact release APK and instrumentation APK on the emulator;
+  - executes the visual collector;
+  - pulls PNGs from the Android device;
+  - hashes actual screenshot bytes;
+  - derives API level, model, density and viewport metrics from the device;
+  - emits a sealed `RELEASE_BUILD_DEVICE` device proof and capture receipts bound to the exact build identity.
 
-## Why the Wave is intentionally still open
-Closing Wave 22 from HOST screenshots, debug instrumentation, synthetic receipts or copied fixture hashes would violate Seven's evidence-tier and authority rules. The correct state is therefore `IN_PROGRESS`, with the certification runtime ready and the missing release-device evidence explicit.
+- `release/merge-android-visual-evidence.cjs`
+  - merges independent device-profile evidence;
+  - runs the canonical `android.certify(...)` contract;
+  - refuses build identity drift or forged receipts;
+  - preserves `INCONCLUSIVE` when launcher/splash evidence is absent instead of laundering partial evidence into PASS.
 
-## Next implementation action
-The next safe implementation step is to extend Android CI/device capture so it can build an installable CI `RELEASE` artifact and harvest genuine device screenshots/metadata from at least two release-device profiles. The launcher-themed/legacy portions must be implemented as real system/device contexts rather than simulated HTML harnesses. If CI cannot provide those contexts reliably, they remain a release-device QA gate rather than being manufactured.
+- `.github/workflows/android-apk.yml`
+  - keeps the existing pre-APK gate and debug Android smoke;
+  - builds a signed `assembleRelease` APK with the CI debug certificate;
+  - verifies debug and release package contents;
+  - seals exact release identity from real APK bytes and signer certificate;
+  - runs release visual capture on a compact API 28 profile and a modern API 36 profile;
+  - merges the evidence and requires exactly seven genuine in-app scenarios while the four uncollected system scenarios remain explicitly missing;
+  - uploads the signed CI release APK and Wave 22 evidence bundle as Actions artifacts.
 
-Protected `seven_ai-final.html` remains untouched and no merge to `main` is authorized or performed.
+The added contract tests verify that partial in-app evidence cannot be promoted to a full Android visual PASS and that the collector does not fabricate launcher or splash receipts.
+
+## Evidence expected from the new CI run
+If the new Android workflow succeeds on its exact commit, it may legitimately establish:
+- one exact signed CI release APK identity;
+- two distinct `RELEASE_BUILD_DEVICE` emulator profiles;
+- a compact profile (`<=390dp`) and an API 33+ profile;
+- genuine device PNG/hash receipts for these seven scenarios:
+  - `chat-day`
+  - `chat-night`
+  - `coding`
+  - `research`
+  - `rpg`
+  - `arabic-rtl`
+  - `reduced-motion`
+
+That still yields `INCONCLUSIVE`, not `PASS`, until the remaining system-level visual contexts are collected truthfully.
+
+## Exact remaining evidence before Wave 22 closure
+Wave 22 still requires, for the same exact release identity or a later exact release candidate rerun:
+- genuine `launcher-adaptive` system-launcher evidence;
+- genuine `launcher-themed` evidence on a launcher/device that actually supports themed icons;
+- genuine `launcher-legacy` evidence in an appropriate legacy context;
+- genuine launch `splash` evidence;
+- a complete sealed matrix for all 11 scenarios;
+- canonical `android.certify(...)` verdict `PASS`.
+
+Physical-device inclusion remains valuable but is not required by this visual-certification contract if two genuine release emulator/device-farm profiles satisfy the matrix. Physical performance and TalkBack remain separate later release gates.
+
+## Why the Wave remains open
+HOST screenshots, debug instrumentation, synthetic receipts and copied fixture hashes remain insufficient. The new CI signing key is also explicitly a CI release-variant signing identity, not a claim of Play/store production signing. Evidence authority cannot be promoted by naming alone.
+
+Protected `seven_ai-final.html` remains untouched. No merge to `main` or another protected branch is authorized or performed.

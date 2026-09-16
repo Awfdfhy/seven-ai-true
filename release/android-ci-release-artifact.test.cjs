@@ -1,0 +1,13 @@
+"use strict";
+const assert=require("assert/strict"),fs=require("fs"),os=require("os"),path=require("path"),t=require("./android-ci-release-artifact.cjs");
+let n=0;const ok=(v,m)=>{assert.ok(v,m);n++},eq=(a,b,m)=>{assert.equal(a,b,m);n++},throws=(f,re,m)=>{assert.throws(f,re,m);n++};
+const H=x=>t.hash(x),C="a".repeat(40);
+const c=t.createCandidate({branch:"ultimate-polish-v1",commitSha:C,applicationId:"ai.seven.app",versionName:"1.0",versionCode:1,artifactSha256:H("apk"),signerCertSha256:H("signer"),sourceRef:"ci:1"});
+ok(t.verifyCandidate(c));eq(c.signingProfile,"CI_DEBUG_KEY_RELEASE_VARIANT");eq(c.claimBoundary,"RELEASE_VARIANT_CI_SIGNED_NOT_STORE_PRODUCTION_SIGNING");
+const e=t.createExportReceipt({candidate:c,exportedArtifactSha256:c.artifactSha256,sourceRef:"ci:1:export"});ok(t.verifyExportReceipt(e,c));throws(()=>t.createExportReceipt({candidate:c,exportedArtifactSha256:H("other"),sourceRef:"x"}),/hash drift/);
+const b=t.createBundle({candidate:c,exportReceipt:e});ok(t.verifyBundle(b));eq(b.build.buildType,"RELEASE");eq(b.build.artifactSha256,c.artifactSha256);eq(b.build.candidateSeal,c.seal);eq(b.build.exportReceiptSeal,e.seal);
+ok(!t.verifyBundle({...b,claimBoundary:"STORE_READY"}));throws(()=>t.createCandidate({...c,seal:undefined,commitSha:"bad"}),/hash identity/);
+const dir=fs.mkdtempSync(path.join(os.tmpdir(),"seven-ci-release-")),apk=path.join(dir,"seven.apk");fs.writeFileSync(apk,"real-bytes");
+const bundle=t.cli(["node","x","--apk",apk,"--out-dir",dir,"--branch","ultimate-polish-v1","--commit",C,"--version-name","1.0","--version-code","1","--signer",H("signer")],{GITHUB_RUN_ID:"42",GITHUB_RUN_ATTEMPT:"1"});
+ok(t.verifyBundle(bundle));eq(bundle.build.artifactSha256,t.fileHash(apk));for(const f of ["candidate.json","export-receipt.json","build-identity.json","build-bundle.json"])ok(fs.existsSync(path.join(dir,f)));
+console.log(`Android CI Release Artifact: PASS (${n} assertions; release identity is fail-closed and explicitly non-store-signing)`);

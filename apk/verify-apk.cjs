@@ -3,8 +3,9 @@ const path=require('path');
 const {spawnSync}=require('child_process');
 const assert=require('assert/strict');
 const ROOT=path.resolve(__dirname,'..');
-const APK=path.join(ROOT,'android','app','build','outputs','apk','debug','app-debug.apk');
-assert.ok(fs.existsSync(APK),'debug APK missing');
+const DEFAULT_APK=path.join(ROOT,'android','app','build','outputs','apk','debug','app-debug.apk');
+const APK=path.resolve(process.env.SEVEN_APK_PATH||process.argv[2]||DEFAULT_APK);
+assert.ok(fs.existsSync(APK),`APK missing: ${APK}`);
 const bytes=fs.statSync(APK).size;
 assert.ok(bytes<30*1024*1024,`APK too large: ${bytes}`);
 const listing=spawnSync('unzip',['-l',APK],{encoding:'utf8'});
@@ -16,4 +17,4 @@ const html=spawnSync('unzip',['-p',APK,'assets/public/index.html'],{encoding:'ut
 assert.equal(html.status,0,html.stderr);
 assert.ok(html.stdout.includes('SEVEN_FINAL_RELEASE_LAYER_V1'),'release marker missing from APK');
 assert.ok(!html.stdout.includes('cdnjs.cloudflare.com/ajax/libs/pdf.js'),'APK still references remote PDF runtime');
-console.log(`apk package gate: PASS (${bytes} bytes)`);
+console.log(`apk package gate: PASS (${path.basename(APK)}, ${bytes} bytes)`);

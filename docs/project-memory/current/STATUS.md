@@ -33,8 +33,10 @@ The campaign ceiling is **30 Mega-Waves maximum**, not a quota.
 - Mega-Wave 20 — Accessibility → `PASS_FOUNDATION` ✅ (`HOST_STRUCTURAL_ACCESSIBILITY`)
 - Mega-Wave 21 — Mobile Performance → `PASS_FOUNDATION` ✅ (`HOST_STATIC_AND_BROWSER_PERFORMANCE_GUARD`)
 
-## Wave 17 closure
-Wave 17 closed on exact implementation/evidence baseline `5d630b73cbfb3df9dd8a35c243257379dcc33d45`. GitHub Actions run `35044211876` / Seven AI tests #1785 completed `SUCCESS` with all `105` suites green, including Wave 17 Typed Generated UI Browser `PASS (63 assertions)`, the existing Generated UI browser/contract, Accessibility, Arabic/RTL, Motion and Mobile Performance suites. Canonical record: `WAVE_17_TYPED_GENERATED_UI_CLOSURE.md`.
+## Verified CI baseline
+Wave 17 closed on exact implementation/evidence baseline `5d630b73cbfb3df9dd8a35c243257379dcc33d45`. GitHub Actions run `35044211876` / Seven AI tests #1785 completed `SUCCESS` with all `105` suites green.
+
+The latest verified pre-Wave-22-CI-expansion run is `35044815241` / Seven AI tests #1795 on commit `6215383aaf01e17c333bc5920435c0af9cd319b5`, also `SUCCESS`. This is the baseline before the new signed-release/device-capture implementation and does not pre-certify that new implementation.
 
 ## Waves 18–21 closure truth
 Direct review found the already-implemented Motion, RTL, Accessibility and Mobile Performance foundations materially complete for HOST/browser foundation scope. No rewrite was performed merely to create activity.
@@ -47,13 +49,21 @@ Wave 20 Accessibility verifies landmarks/live state, accessible names/state, mod
 
 Wave 21 Mobile Performance verifies startup/lazy/APK budgets, zero static warnings, PDF/workspace lazy loading, no speculative background work, Lite/Reduced Motion governance, mobile no-overflow and bounded HOST responsiveness. Exact evidence in run #1785: Mobile Performance Browser `PASS (38 assertions)`, Mobile Performance Contract PASS, static audit PASS. Startup remains `99758 / 100000` bytes, lazy workspace `63855 / 65536`, static APK estimate `3718590 / 8388608`. Canonical record: `WAVE_21_MOBILE_PERFORMANCE_CLOSURE.md`.
 
+## Wave 22 implementation state
+Wave 22 now has implementation for a signed CI `RELEASE` variant, exact APK/signer/build identity sealing, two-profile Android emulator release capture, seven genuine in-app visual scenarios, evidence merging and fail-closed certification handling. The implementation is committed only on `ultimate-polish-v1`; its exact GitHub Actions run must succeed before any new evidence claim is admitted.
+
+The CI collector intentionally does **not** fabricate system launcher or splash evidence. Even after a successful run, Wave 22 remains open unless `launcher-adaptive`, `launcher-themed`, `launcher-legacy` and `splash` are captured as genuine system/device contexts and the canonical 11-scenario certification returns `PASS`.
+
+Canonical progress record: `WAVE_22_ANDROID_VISUAL_CERTIFICATION_PROGRESS.md`.
+
 ## Current truth boundary
 Foundation closure is not launch certification. In particular:
 - structural RTL foundation is not full Arabic copy localization/human linguistic certification;
 - HOST accessibility is not TalkBack/physical-device assistive-tech certification;
 - HOST/static performance guards are not physical-phone RAM/battery/thermal/frame-tail/latency certification;
 - browser visual evidence is not `RELEASE_BUILD_DEVICE` Android visual evidence;
-- final Capability Registry → UI entry-point/state wiring, Android QA, Release Candidate and launch hardening remain later stages.
+- a CI release variant signed with the CI debug certificate is not Play/store production signing;
+- final Capability Registry → UI entry-point/state wiring, Android QA, Release Candidate, E2E capability verification, Final Red Team and launch hardening remain later stages.
 
 ## Startup budget warning
 Latest exact verified release startup footprint: **`99758 / 100000` bytes**, leaving only **242 bytes** of hot-path headroom. Keep subsequent work lazy/build-time/native where practical or recover startup bytes before adding material hot-path payload.
@@ -64,4 +74,4 @@ Latest exact verified release startup footprint: **`99758 / 100000` bytes**, lea
 Do not modify it without explicit user authorization. Do not merge this branch to `main` or another protected branch without explicit user approval.
 
 ## Immediate Next Work
-**Mega-Wave 22 — Android Visual Certification** is the next sequential frontier. The fail-closed certification contract exists and requires exact RELEASE build identity, at least two distinct release device profiles, the required scenario matrix and non-HOST device capture evidence. Do not manufacture those receipts from unit fixtures or HOST screenshots.
+Run and repair the new Wave 22 signed-release Android workflow on its exact commit. Admit only evidence actually produced by that run. Then harvest the remaining genuine launcher adaptive/themed/legacy and splash contexts needed to move canonical `android.certify(...)` from truthful partial evidence to `PASS`. If a CI launcher cannot provide a required system context reliably, keep that context as an explicit release-device QA blocker rather than simulating it.
