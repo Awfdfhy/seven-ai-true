@@ -36,7 +36,9 @@ ok(android.includes("npx --no-install playwright install"),"Android workflow may
 ok(/branches:\s*\n(?:\s*-.*\n)*\s*- ultimate-polish-v1\b/.test(android),"Android workflow must exercise the active polish branch");
 ok(android.includes("- 'package-lock.json'"),"future dependency lock changes must retrigger Android verification");
 ok(android.includes("./gradlew --no-daemon lintDebug testDebugUnitTest assembleDebug"),"Android lint, unit test and APK build gate required");
-ok(android.includes(":app:connectedDebugAndroidTest"),"Android emulator instrumentation smoke gate required");
+ok(android.includes(":app:assembleReleaseAndroidTest"),"Android release instrumentation APK build gate required");
+ok(android.includes(":app:connectedReleaseAndroidTest"),"Android emulator release instrumentation smoke gate required");
+ok(android.includes("android.testInstrumentationRunnerArguments.class=ai.seven.app.SevenSmokeTest"),"Android smoke must remain isolated to SevenSmokeTest");
 ok(!pkg.devDependencies?.["@capacitor/assets"],"legacy @capacitor/assets tooling with nested native install script must stay removed");
 ok(pkg.scripts?.["android:generate"]?.includes("apk/materialize-android-assets.cjs"),"Android build must use Seven deterministic asset materializer");
 ok(pkg.scripts?.["android:generate"]?.includes("npx --no-install cap"),"Capacitor CLI must resolve only from installed dependency graph");
