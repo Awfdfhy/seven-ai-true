@@ -4,15 +4,19 @@ const fs=require("fs");
 const path=require("path");
 const ROOT=path.resolve(__dirname,"..");
 const generator=fs.readFileSync(path.join(ROOT,"apk","materialize-native-platform.cjs"),"utf8");
+const motionBridge=fs.readFileSync(path.join(ROOT,"apk","materialize-android-motion-bridge.cjs"),"utf8");
+const visual=fs.readFileSync(path.join(ROOT,"apk","materialize-android-visual-test.cjs"),"utf8");
 const hardener=fs.readFileSync(path.join(ROOT,"apk","harden-native-platform.cjs"),"utf8");
 const patch=fs.readFileSync(path.join(ROOT,"apk","patch-android.cjs"),"utf8");
 const pkg=JSON.parse(fs.readFileSync(path.join(ROOT,"package.json"),"utf8"));
 let n=0;const ok=(v,m)=>{assert.ok(v,m);n++};const no=(v,m)=>{assert.ok(!v,m);n++};
 
 ok(pkg.scripts["android:generate"].includes("materialize-native-platform.cjs"),"native platform materialization must be in Android generation path");
+ok(pkg.scripts["android:generate"].includes("materialize-android-motion-bridge.cjs"),"Android reduced-motion bridge must be in generation path");
 ok(pkg.scripts["android:generate"].includes("harden-native-platform.cjs"),"native permission hardening must be in Android generation path");
 ok(pkg.scripts["android:generate"].indexOf("cap add android")<pkg.scripts["android:generate"].indexOf("materialize-native-platform.cjs"),"native materialization must happen after Android project generation");
-ok(pkg.scripts["android:generate"].indexOf("materialize-native-platform.cjs")<pkg.scripts["android:generate"].indexOf("harden-native-platform.cjs"),"native permission hardening must run after materialization");
+ok(pkg.scripts["android:generate"].indexOf("materialize-native-platform.cjs")<pkg.scripts["android:generate"].indexOf("materialize-android-motion-bridge.cjs"),"motion bridge must extend the registered native MainActivity");
+ok(pkg.scripts["android:generate"].indexOf("materialize-android-motion-bridge.cjs")<pkg.scripts["android:generate"].indexOf("harden-native-platform.cjs"),"native permission hardening must run after motion bridge materialization");
 ok(generator.includes('@CapacitorPlugin(name="SevenPlatform")'),"SevenPlatform must be a real Capacitor plugin");
 ok(generator.includes("registerPlugin(SevenPlatformPlugin.class)"),"plugin must be registered in MainActivity");
 ok(generator.indexOf("registerPlugin(SevenPlatformPlugin.class)")<generator.indexOf("super.onCreate(savedInstanceState)"),"plugin must register before BridgeActivity creates its bridge");
@@ -51,6 +55,25 @@ ok(generator.includes('bytesRead'),"read result must expose exact progress");
 ok(generator.includes('bytesWritten'),"write result must expose exact progress");
 ok(generator.includes('dataBase64'),"binary-safe bridge transport must be explicit");
 
+ok(motionBridge.includes('SEVEN_ANDROID_REDUCED_MOTION_BRIDGE_V1'),"native reduced-motion bridge must have a stable marker");
+ok(motionBridge.includes('Settings.Global.WINDOW_ANIMATION_SCALE'),"bridge must read the real Android window animation scale");
+ok(motionBridge.includes('Settings.Global.TRANSITION_ANIMATION_SCALE'),"bridge must read the real Android transition animation scale");
+ok(motionBridge.includes('Settings.Global.ANIMATOR_DURATION_SCALE'),"bridge must read the real Android animator duration scale");
+ok(motionBridge.includes('window==0f&&transition==0f&&animator==0f'),"reduced motion must require genuine disabled Android animation scales");
+ok(motionBridge.includes("source:'ANDROID_GLOBAL_ANIMATION_SCALES'"),"WebView state must retain provenance to Android system animation scales");
+ok(motionBridge.includes('p.state.reducedMotion=nativeReduced||css'),"SevenPerformance must honor native reduction without discarding genuine CSS reduction");
+ok(motionBridge.includes('p.applyTier(p.state.tier)'),"native motion synchronization must refresh canonical DOM performance state");
+ok(motionBridge.includes('public void onResume()'),"Android system preference must be resynchronized on resume");
+no(motionBridge.includes('nativeReduced=true'),"bridge must never hard-code reduced motion as enabled");
+no(motionBridge.includes('matchMedia=function'),"bridge must not forge browser media-query APIs");
+
+ok(visual.includes('assertZeroScale("window_animation_scale")'),"visual evidence must verify the real Android window animation scale is zero");
+ok(visual.includes('assertZeroScale("transition_animation_scale")'),"visual evidence must verify the real Android transition animation scale is zero");
+ok(visual.includes('assertZeroScale("animator_duration_scale")'),"visual evidence must verify the real Android animator duration scale is zero");
+ok(visual.includes("__sevenAndroidMotion.source==='ANDROID_GLOBAL_ANIMATION_SCALES'"),"visual evidence must bind reduced-motion proof to native Android provenance");
+ok(visual.includes("SevenMotion.allow('ambient')===false"),"visual evidence must prove motion is actually suppressed");
+no(visual.includes("matchMedia('(prefers-reduced-motion: reduce)').matches&&window.SevenPerformance"),"release evidence must not require a WebView media-query behavior Android does not provide");
+
 ok(patch.includes("Capacitor.Plugins.SevenPlatform"),"Android WebView instrumentation must exercise the native bridge");
 ok(patch.includes("getCapabilities()"),"instrumentation must verify native capability handshake");
 ok(patch.includes("secureSet({key:k,value:v})"),"instrumentation must execute secure-store set through the JavaScript bridge");
@@ -59,4 +82,4 @@ ok(patch.includes("secureRemove({key:k})"),"instrumentation must clean its secur
 ok(patch.includes("secureStoreEncryptsAtRest"),"instrumentation must verify ciphertext-at-rest behavior");
 ok(patch.includes("assertFalse(\"secret must not be stored as plaintext\""),"plaintext leakage assertion must be present");
 
-console.log(`Android Native Platform Bridge: PASS (${n} assertions; Keystore + SAF + bridge instrumentation + lint-safe grants)`);
+console.log(`Android Native Platform Bridge: PASS (${n} assertions; Keystore + SAF + Android system reduced motion + bridge instrumentation + lint-safe grants)`);
