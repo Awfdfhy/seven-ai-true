@@ -74,10 +74,10 @@ jobs:
               -keyalg RSA -keysize 2048 -validity 10000
           fi
 
-      - name: Android lint, unit tests, debug test APK and signed release APK
+      - name: Android lint, unit tests, debug APK, release test APK and signed release APK
         working-directory: android
         run: |
-          ./gradlew --no-daemon lintDebug testDebugUnitTest assembleDebug :app:assembleDebugAndroidTest :app:assembleRelease \
+          ./gradlew --no-daemon lintDebug testDebugUnitTest assembleDebug :app:assembleReleaseAndroidTest :app:assembleRelease \
             -PsevenCiKeystore="$HOME/.android/debug.keystore" \
             -PsevenCiStorePass=android \
             -PsevenCiKeyAlias=androiddebugkey \
@@ -93,7 +93,7 @@ jobs:
           set -euo pipefail
           RELEASE_APK="android/app/build/outputs/apk/release/app-release.apk"
           DEBUG_APK="android/app/build/outputs/apk/debug/app-debug.apk"
-          TEST_APK="android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk"
+          TEST_APK="android/app/build/outputs/apk/androidTest/release/app-release-androidTest.apk"
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
           test -x "$APKSIGNER"
           cert_digest() {
@@ -106,7 +106,7 @@ jobs:
           test -n "$RELEASE_SIGNER"
           test "$RELEASE_SIGNER" = "$DEBUG_SIGNER"
           test "$RELEASE_SIGNER" = "$TEST_SIGNER"
-          echo "Android CI signer parity: PASS (release = debug = visual instrumentation)"
+          echo "Android CI signer parity: PASS (release = debug = release visual instrumentation)"
 
       - name: Seal exact CI release artifact identity
         run: |
@@ -142,7 +142,7 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Android 16 debug WebView integration smoke
+      - name: Android 16 release WebView integration smoke
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: 36
@@ -151,7 +151,14 @@ jobs:
           profile: pixel_6
           disable-animations: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: cd android && ./gradlew --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=ai.seven.app.SevenSmokeTest
+          script: |
+            cd android
+            ./gradlew --no-daemon :app:connectedReleaseAndroidTest \
+              -PsevenCiKeystore="$HOME/.android/debug.keystore" \
+              -PsevenCiStorePass=android \
+              -PsevenCiKeyAlias=androiddebugkey \
+              -PsevenCiKeyPass=android \
+              -Pandroid.testInstrumentationRunnerArguments.class=ai.seven.app.SevenSmokeTest
 
       - name: Capture compact API 28 signed-release in-app visual evidence
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0

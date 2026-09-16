@@ -33,7 +33,7 @@ if(!gradle.includes('android {'))throw new Error('generated Android app Gradle a
 if(!/buildTypes\s*\{\s*release\s*\{/.test(gradle))throw new Error('generated Android app Gradle release buildType missing');
 const signingPrelude=`def sevenCiKeystore = project.findProperty("sevenCiKeystore")\ndef sevenCiStorePass = project.findProperty("sevenCiStorePass")\ndef sevenCiKeyAlias = project.findProperty("sevenCiKeyAlias")\ndef sevenCiKeyPass = project.findProperty("sevenCiKeyPass")\n`;
 if(!gradle.includes('def sevenCiKeystore'))gradle=signingPrelude+gradle;
-gradle=gradle.replace('android {',`android {\n    signingConfigs {\n        if (sevenCiKeystore) {\n            sevenCi {\n                storeFile file(sevenCiKeystore)\n                storePassword sevenCiStorePass\n                keyAlias sevenCiKeyAlias\n                keyPassword sevenCiKeyPass\n            }\n        }\n    }`);
+gradle=gradle.replace('android {',`android {\n    if (sevenCiKeystore) {\n        testBuildType = "release"\n    }\n    signingConfigs {\n        if (sevenCiKeystore) {\n            sevenCi {\n                storeFile file(sevenCiKeystore)\n                storePassword sevenCiStorePass\n                keyAlias sevenCiKeyAlias\n                keyPassword sevenCiKeyPass\n            }\n        }\n    }`);
 gradle=gradle.replace(/buildTypes\s*\{\s*release\s*\{/,`buildTypes {\n        debug {\n            if (sevenCiKeystore) {\n                signingConfig signingConfigs.sevenCi\n            }\n        }\n        release {\n            if (sevenCiKeystore) {\n                signingConfig signingConfigs.sevenCi\n            }`);
 fs.writeFileSync(gradlePath,gradle);
 

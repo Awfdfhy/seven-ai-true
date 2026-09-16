@@ -11,7 +11,7 @@ const SHOTS=Object.freeze([
   {scenario:"reduced-motion",file:"reduced-motion.png",locale:"en-US",direction:"ltr",theme:"night",reducedMotion:true}
 ]);
 const DEFAULT_RELEASE_APK="android/app/build/outputs/apk/release/app-release.apk";
-const DEFAULT_TEST_APK="android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk";
+const DEFAULT_TEST_APK="android/app/build/outputs/apk/androidTest/release/app-release-androidTest.apk";
 const DEFAULT_BUILD_IDENTITY="evidence/android/build-identity.json";
 function req(v,n){const s=String(v??"").trim();if(!s)throw Error(`${n} required`);return s}
 function run(cmd,args,{allow=false,encoding="utf8"}={}){const r=spawnSync(cmd,args,{encoding,maxBuffer:16*1024*1024});if(!allow&&(r.error||r.status!==0))throw Error(`${cmd} ${args.join(" ")} failed: ${r.error?.message||r.stderr||r.stdout}`);return r}
