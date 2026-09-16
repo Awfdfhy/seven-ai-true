@@ -1,0 +1,58 @@
+{
+  "schema": "seven.final-design-quality.v1",
+  "version": 1,
+  "truth_boundary": "This is a release design contract, not a claim of subjective perfection. It freezes material roles only when automated structural/browser challenges and release-device visual evidence stay clean.",
+  "materials": [
+    {"id":"M0_CANVAS","token":"--seven-g-canvas","purpose":"page/application canvas","depth":0},
+    {"id":"M1_BASE","token":"--seven-g-surface","purpose":"primary panels and persistent surfaces","depth":1},
+    {"id":"M2_ELEVATED","token":"--seven-g-surface-raised","purpose":"selected rows, user bubbles and raised controls","depth":2},
+    {"id":"M3_FLOATING","selectors":[".modal-content",".composer"],"purpose":"temporary/floating interaction surfaces","depth":3},
+    {"id":"M4_FOCUS_INTELLIGENCE","selectors":[".composer:focus-within","button:focus-visible","[role=button]:focus-visible"],"purpose":"focus, active cognition and interaction clarity","depth":4},
+    {"id":"M5_HERO_IDENTITY","selectors":[".empty-logo",".seven-beta-status i",".topbar:after"],"purpose":"scarce identity/signature moments","depth":5}
+  ],
+  "adaptive_material_governor": {
+    "FULL": "Default tier may use bounded blur, glow, elevation and signature accents.",
+    "BALANCED": "Reduces expensive blur intensity while preserving hierarchy.",
+    "LITE": "Removes nonessential blur/shadow/glow decoration while preserving structure and meaning."
+  },
+  "quality_dimensions": [
+    "visual_hierarchy",
+    "typography",
+    "spacing",
+    "geometry",
+    "material_depth",
+    "day_night_sibling_coherence",
+    "focus_and_interaction_clarity",
+    "motion_governance",
+    "reduced_motion",
+    "accessibility",
+    "rtl_bidi",
+    "compact_mobile",
+    "long_content",
+    "specialist_consistency",
+    "state_legibility",
+    "performance_governance",
+    "identity_restraint",
+    "anti_cheapness"
+  ],
+  "anti_cheapness": {
+    "forbidden": [
+      "transition:all",
+      "unguarded_infinite_decorative_motion",
+      "gradient_everywhere",
+      "unbounded_blur",
+      "color_only_state_meaning",
+      "fake_glass_on_lite_tier",
+      "physical_left_right_layout_assumptions",
+      "horizontal_mobile_overflow"
+    ],
+    "principle": "Hierarchy, typography, spacing, geometry and restraint outrank decorative effects."
+  },
+  "freeze_policy": {
+    "required_challenge_rounds": 2,
+    "round_1": "Static/material/design-lint contract",
+    "round_2": "Real release browser state/viewport/theme/tier challenge",
+    "device_followup": "Exact Android release-device visual matrix must remain PASS after promotion.",
+    "allowed_terminal_state": ["PASS", "NO_MATERIAL_IMPROVEMENT"]
+  }
+}
