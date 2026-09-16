@@ -45,3 +45,5 @@ jobs:
         run: node tools/seven-design-studio/chat-ui.test.cjs
       - name: Run Seven product screen suite test
         run: node tools/seven-design-studio/product-screens.test.cjs
+      - name: Run Seven integrated UI V1 closure gate
+        run: node tools/seven-design-studio/ui-v1-closure.test.cjs
