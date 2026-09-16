@@ -49,7 +49,7 @@ button:focus-visible,[role="button"]:focus-visible,.room-item:focus-visible,.too
 
 /* Core layout polish */
 .sidebar{
-  border-right-color:var(--seven-border-soft)!important;
+  border-inline-end-color:var(--seven-border-soft)!important;
   box-shadow:10px 0 36px rgba(12,9,28,.035);
 }
 .sidebar-header{padding-top:max(14px,env(safe-area-inset-top))}
@@ -69,7 +69,7 @@ button:focus-visible,[role="button"]:focus-visible,.room-item:focus-visible,.too
 .room-item::before{
   content:"";
   position:absolute;
-  left:4px;
+  inset-inline-start:4px;
   top:25%;
   width:2px;
   height:50%;
@@ -127,7 +127,7 @@ button:focus-visible,[role="button"]:focus-visible,.room-item:focus-visible,.too
 .message.assistant[data-seven-ui-decorated="1"]::before{
   content:"";
   position:absolute;
-  left:8px;
+  inset-inline-start:8px;
   top:7px;
   bottom:7px;
   width:1px;
@@ -194,8 +194,8 @@ html[data-seven-busy="1"] .input-area button.send{opacity:.55}
 
 /* Message actions, sources and code */
 .search-sources{
-  border-left:2px solid color-mix(in srgb,var(--accent) 28%,transparent);
-  padding-left:12px!important;
+  border-inline-start:2px solid color-mix(in srgb,var(--accent) 28%,transparent);
+  padding-inline-start:12px!important;
   line-height:1.45;
 }
 .regenerate-btn{border-color:var(--seven-border-soft)!important;background:color-mix(in srgb,var(--surface) 80%,transparent)!important}
@@ -262,7 +262,7 @@ html[data-seven-busy="1"] .input-area button.send{opacity:.55}
   .topbar{padding-inline:12px!important;min-height:54px}
   .input-area{padding-inline:9px!important}
   .message{padding-inline:14px!important}
-  .message.assistant[data-seven-ui-decorated="1"]::before{left:5px}
+  .message.assistant[data-seven-ui-decorated="1"]::before{inset-inline-start:5px}
   .composer{border-radius:22px!important;padding:12px 12px 9px!important}
   .composer-row{gap:7px!important}
   button,.tool-btn,.topbar .icon-btn,.topbar .menu-toggle{min-height:40px}
