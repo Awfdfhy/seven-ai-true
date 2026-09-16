@@ -56,9 +56,9 @@ const server=http.createServer((req,res)=>{
     await rootEl.waitFor({timeout:6000});
     if((await rootEl.getAttribute('data-seven-product-suite'))!=='2026.09-product-screens-v1')throw new Error(`${screen}: suite marker missing`);
     if(await canvas.locator(required[screen]).count()<1)throw new Error(`${screen}: distinctive surface missing`);
-    const g=await rootEl.evaluate(el=>{const d=el.ownerDocument.documentElement;return{sw:d.scrollWidth,cw:d.clientWidth,minH:el.getBoundingClientRect().height};});
+    const g=await rootEl.evaluate(el=>{const d=el.ownerDocument.documentElement;return{sw:d.scrollWidth,cw:d.clientWidth,minH:el.getBoundingClientRect().height,vh:d.clientHeight};});
     if(g.sw>g.cw+1)throw new Error(`${screen}: visible horizontal overflow at 393px ${g.sw}/${g.cw}`);
-    if(g.minH<700)throw new Error(`${screen}: screen does not hold a full mobile canvas: ${g.minH}`);
+    if(g.minH<g.vh-1)throw new Error(`${screen}: screen does not hold embedded mobile viewport: height=${g.minH}, viewport=${g.vh}`);
   }
 
   await selector.selectOption('seven-tools-v1');
