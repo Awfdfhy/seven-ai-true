@@ -4,8 +4,8 @@
 `ultimate-polish-v1`
 
 ## Ultimate Polish Execution
-**Completed-wave count:** `16 / ≤30`  
-**Sequentially closed:** `Mega-Waves 01–16` ✅
+**Completed-wave count:** `17 / ≤30`  
+**Sequentially closed:** `Mega-Waves 01–17` ✅
 
 The campaign ceiling is **30 Mega-Waves maximum**, not a quota.
 
@@ -26,40 +26,31 @@ The campaign ceiling is **30 Mega-Waves maximum**, not a quota.
 - Mega-Wave 14 — Logo & Identity → `PASS_FOUNDATION` ✅ (`USER_APPROVED_FINAL_IDENTITY`)
 - Mega-Wave 15 — Global UI / Launcher & Home Experience → `PASS_FOUNDATION` ✅
 - Mega-Wave 16 — Specialist Workspaces: Coding / Research / RPG-Real Works → `PASS_FOUNDATION` ✅
+- Mega-Wave 17 — Typed / Generated UI → `PASS_FOUNDATION` ✅
 
-## Wave 14 final identity
-The product owner selected the existing Seven logo. Final frozen assets exist under `brand/final/` as `seven-day-white.svg`, `seven-night-black.svg` and `IDENTITY_FREEZE.md`. Day/morning uses the white Seven logo; Night uses the black Seven logo through the tested adaptive Day/Night runtime.
+## Recent closure truth
+Wave 16 is closed on exact interaction-evidence baseline `922beae1e2c10c55521b58fac77c2f45362c11e8`; GitHub Actions run `35043953704` / #1781 passed `104` suites including the `58`-assertion Wave 16 specialist browser matrix. Canonical record: `WAVE_16_SPECIALIST_WORKSPACES_CLOSURE.md`.
 
-Truth boundary: this does not claim independent originality/distinctiveness certification or physical `RELEASE_BUILD_DEVICE` certification. Canonical closure: `WAVE_14_LOGO_IDENTITY_CLOSURE.md`.
-
-## Wave 15 closure
-Wave 15 is closed as `PASS_FOUNDATION` on implementation baseline `a9e87877721fee94544e1ade932b2ff1b1334180` and GitHub Actions run `35042103467` / Seven AI tests #1769, where all `103` suites passed. Canonical closure: `WAVE_15_GLOBAL_UI_CLOSURE.md`.
-
-## Wave 16 closure
-Wave 16 is closed as `PASS_FOUNDATION` after direct interaction-level browser verification of all three specialist surfaces instead of relying only on their existence.
-
-Exact implementation/evidence baseline: `922beae1e2c10c55521b58fac77c2f45362c11e8`.
-
-GitHub Actions run `35043953704` / Seven AI tests #1781 completed `SUCCESS` with:
-- all test suites `PASS (104 suites)`;
-- Wave 16 Specialist Workspaces Browser `PASS (58 assertions)` across Coding, Research and RPG / Real Works;
-- Specialist UI Browser `PASS (29 assertions)` and Specialist UI Contract `PASS (26 assertions)`;
+Wave 17 is closed on exact implementation/evidence baseline `5d630b73cbfb3df9dd8a35c243257379dcc33d45`. GitHub Actions run `35044211876` / Seven AI tests #1785 completed `SUCCESS` with:
+- all test suites `PASS (105 suites)`;
+- Wave 17 Typed Generated UI Browser `PASS (63 assertions)`;
+- existing Typed Generated UI Browser `PASS (25 assertions)` and Contract `PASS (33 assertions)`;
 - Accessibility, Arabic/RTL, Motion and Mobile Performance browser/contracts green;
-- UI visual evidence `8/8 PASS`, `0 WARN`, `0 FAIL`, HOST/OBSERVE;
+- UI visual evidence `8/8 PASS`, HOST/OBSERVE;
 - startup `99758 / 100000` bytes and lazy workspace `63855 / 65536` bytes;
 - static APK estimate `3718590 / 8388608` bytes, `0` static warnings;
 - release verification PASS;
-- protected source integrity PASS at `658133` bytes / blob `3e8dfa8e7da7124e16504140eb9631c10cabf053`;
-- production dependency audit `0` vulnerabilities.
+- production dependency audit `0` vulnerabilities;
+- protected source integrity PASS at `658133` bytes / blob `3e8dfa8e7da7124e16504140eb9631c10cabf053`.
 
-Wave 16 verifies lazy isolation, real natural-language task entry, truth-boundary behavior, mobile/RTL/reduced-motion handling and no silent authority promotion. It does not claim shell/device-write authority, prose-to-evidence promotion, prose-to-canon commit authority, physical-device resource certification or final launch readiness.
+Wave 17 verifies a local lazy, typed, bounded, injection-safe generated UI substrate with symbolic action events, typed current form values, fail-closed schema/resource limits, lifecycle replacement/destroy, mobile/RTL handling and Reduced Motion. Generated UI remains presentation/interaction only and cannot manufacture permission, evidence or canon authority.
 
-Canonical closure: `WAVE_16_SPECIALIST_WORKSPACES_CLOSURE.md`.
+Canonical record: `WAVE_17_TYPED_GENERATED_UI_CLOSURE.md`.
 
 ## Current implementation truth
-Green foundations include cognitive/truth, memory/context, model/adaptive compute, tool/security/effects, judge/evals, coding/file tools, research, vision, RPG/story, Canon/Titles, visual evidence, Design Genome, final selected identity, Global UI, all three specialist workspaces, typed generated UI, motion governance, Arabic/RTL, accessibility, mobile-performance guards, Android native bridge, provider-adapter contracts, model-frontier qualification, acquisition/durable fabric and governed self-evolution foundations.
+Green foundations include cognitive/truth, memory/context, model/adaptive compute, tool/security/effects, judge/evals, coding/file tools, research, vision, RPG/story, Canon/Titles, visual evidence, Design Genome, final selected identity, Global UI, specialist workspaces, Typed/Generated UI, motion governance, Arabic/RTL, accessibility, mobile-performance guards, Android native bridge, provider-adapter contracts, model-frontier qualification, acquisition/durable fabric and governed self-evolution foundations.
 
-Foundation closure is not launch certification. Later work still includes the remaining planned Mega-Waves, live external integrations where required, physical-device evidence, final Capability Registry → UI product wiring, Android QA, Release Candidate and launch hardening.
+Foundation closure is not launch certification. Later work still includes remaining planned Mega-Waves, live external integrations where required, physical-device evidence, final Capability Registry → UI product wiring, Android QA, Release Candidate and launch hardening.
 
 ## Startup budget warning
 Latest exact verified release startup footprint: **`99758 / 100000` bytes**, leaving only **242 bytes** of hot-path headroom. Keep later work build-time/native/lazy where practical or recover startup bytes before adding material hot-path payload.
@@ -70,4 +61,4 @@ Latest exact verified release startup footprint: **`99758 / 100000` bytes**, lea
 Do not modify it without explicit user authorization. Do not merge this branch to `main` or another protected branch without explicit user approval.
 
 ## Immediate Next Work
-**Mega-Wave 17 — Typed / Generated UI** is the next planned unclosed visual implementation Wave. Reuse the already-green generated-UI foundation, close only real evidence/integration gaps, and preserve startup/resource constraints. Final UI Completion & Product Wiring remains reserved for the pre-release stage after system/runtime closures.
+**Mega-Wave 18 — Motion** is the next planned unclosed visual implementation Wave. Reuse the already-green motion foundation, inspect for real interaction/governance gaps, and avoid decorative payload or continuous background work. Final UI Completion & Product Wiring remains reserved for the pre-release stage after system/runtime closures.
