@@ -5,10 +5,14 @@
 ## Campaign
 - Branch: `ultimate-polish-v1`
 - User-set hard ceiling: **`≤30` Mega-Waves**. This is a maximum, not a target to consume.
-- Current counter: **`13 / ≤30`**
+- Completed-wave count: **`14 / ≤30`**
+- Sequential closure frontier: **Mega-Wave 14** (`IN_PROGRESS`)
+- Out-of-order closed Wave: **Mega-Wave 15** (`PASS_FOUNDATION`)
 - Protected source: `seven_ai-final.html`
 - Protected source reference: `658133` bytes, Git blob `3e8dfa8e7da7124e16504140eb9631c10cabf053`
 - Protected-branch law: do not merge to `main` or another protected branch without explicit user approval.
+
+The completed-wave count is not the same thing as the largest numerical Wave reached. Dependency-safe parallel work may close while an earlier Wave remains blocked on evidence. Wave 15 is such a case: it is formally closed, while Wave 14 remains the sequential frontier.
 
 ## Completed Mega-Waves
 
@@ -65,45 +69,58 @@ Pass A `2309a822c5d3d2bbf063c4e9d205d5cce3047ed2` + capture/test wiring `7504be4
 ### Mega-Wave 13 — Design Genome Runtime + Design Lint Foundation
 **Status:** `PASS_FOUNDATION`
 
-Pass A commit **`9a3b185eeaf959dcf39f75b1a9429ac7aff13319`** created executable/build-time Design Genome and Design Lint foundations:
-- canonical Day/Night + brand + Aurora + domain token semantics;
-- typography/spacing/shape/motion/touch roles;
-- formal Seven signature primitive contracts: Orbit Thread, Seven Cut, Evidence Rail, Focus Halo, State Node;
-- deterministic sealed Genome snapshots;
-- Genome Coverage Ledger;
-- compatibility adapters for existing `--sb-*` and `--seven-*` families;
-- lint for unsafe global transitions, continuous-motion guards, RTL physical-edge migration candidates, raw colors, unknown canonical tokens, unmapped legacy tokens and unknown signature primitives.
+Pass A commit `9a3b185eeaf959dcf39f75b1a9429ac7aff13319` created executable/build-time Design Genome and Design Lint foundations including canonical Day/Night, brand, Aurora, domain, typography, spacing, shape, motion and touch roles; formal signature primitives; deterministic Genome snapshots; migration coverage; compatibility adapters and design lint.
 
-Pass B commit **`72246f62c10babd201ec1ed0ef86119cf27d83e7`** hardened:
-- exact repository path/blob/commit/branch source identity;
-- single-commit/single-branch manifests;
-- traversal/weak-SHA/duplicate-source rejection;
-- monotonic token migration comparison;
-- no silent canonical/adapted coverage loss;
-- explicit approval for newly unmapped legacy tokens;
-- sealed migration receipts;
-- semantic primitive audits including non-color State Node meaning;
-- promotion requires manifest + PASS comparison + migration receipt + primitive audits.
+Pass B commit `72246f62c10babd201ec1ed0ef86119cf27d83e7` hardened exact source/branch/commit identity, monotonic migration coverage, sealed migration receipts and primitive-use audits.
 
-Final implementation run **`34892708588` / #1479: SUCCESS** end-to-end:
-- `all test suites: PASS (63 suites)`;
-- Design Genome: **141 assertions**;
-- Design Lint: **37 assertions**;
-- Design Genome Pass B: **35 assertions**;
-- current live CSS lint: **0 FAIL, 7 WARN, 54 INFO**;
-- live Visual Evidence still **8/8 PASS** in HOST/OBSERVE mode;
-- protected source integrity PASS;
-- static audit unchanged at **`99743 / 100000` startup bytes**, `34881` lazy workspace bytes, `3689533 / 8388608` static APK, `0` static warnings;
-- artifact **`10368050591`**, size `2180110`, SHA-256 **`f4ee05b5f40efc97c5eaffcb1e4bb7de8f94f7a060ebbb4203914f9c0735c4d1`**.
+Final implementation run `34892708588` / #1479: `SUCCESS` with `63` suites, Design Genome `141`, Design Lint `37`, Design Genome Pass B `35`, live Visual Evidence `8/8 PASS` HOST/OBSERVE, protected-source integrity PASS and static startup `99743 / 100000` bytes.
 
-Truth boundary: Wave 13 proves governed Design Genome + build-time drift/migration authority. It does **not** claim every existing CSS token has migrated, nor that the final logo/UI is complete. The `7 WARN / 54 INFO` findings remain explicit migration debt.
+Truth boundary: Wave 13 proves governed Design Genome + build-time drift/migration authority. It does not claim every existing CSS token has migrated, nor that final logo/UI is complete.
 
 Detailed closure: `WAVE_13_DESIGN_GENOME_CLOSURE.md`.
+
+### Mega-Wave 15 — Global UI / Launcher & Home Experience
+**Status:** `PASS_FOUNDATION`
+**Closure mode:** `OUT_OF_ORDER_DEPENDENCY_SAFE`
+
+Wave 15 was implemented in parallel while Wave 14 remained evidence-gated. It is now formally closed because its own executable host/browser/evidence contracts pass on the exact implementation baseline `a9e87877721fee94544e1ade932b2ff1b1334180`.
+
+Exact evidence: GitHub Actions run `35042103467` / Seven AI tests #1769 completed `SUCCESS` with:
+- all test suites `PASS (103 suites)`;
+- Global UI Browser `PASS (27 assertions)`;
+- Global UI Contract `PASS (40 assertions; live WARN, 1 warning)`;
+- Global UI Pass B `PASS (15 assertions)`;
+- UI visual evidence `8/8 PASS`, `0 WARN`, `0 FAIL`, HOST/OBSERVE;
+- adaptive theme browser tests `PASS (boundaries + persistence + adaptive logo)`;
+- Accessibility, Arabic/RTL, Motion, Specialist UI and Typed Generated UI host/browser contracts green;
+- Mobile Performance Contract `PASS`, startup `99758 / 100000` and lazy workspace `63855 / 65536` bytes;
+- static audit `PASS`, APK estimate `3718590 / 8388608` bytes, `0` static warnings;
+- protected source unchanged at `658133` bytes / blob `3e8dfa8e7da7124e16504140eb9631c10cabf053`;
+- production dependency audit `0` vulnerabilities.
+
+Exact release artifact: `10424749481`, size `3093829` bytes, SHA-256 `7d414a4a2318d772530142411ee3eed31e0ff051d63d249a46e70a2c53b6c3f0`.
+
+Truth boundary: this is a Global UI foundation closure. It does not claim physical-device certification, final Capability Registry → UI wiring, final Android QA, final release readiness or completion of Mega-Wave 14.
+
+Detailed closure: `WAVE_15_GLOBAL_UI_CLOSURE.md`.
+
+## Open Sequential Frontier
+
+### Mega-Wave 14 — Logo & Identity Tournament
+**Status:** `IN_PROGRESS`
+
+Wave 14 remains open despite green automated Logo Tournament contracts. Current implementation includes six real vector candidate families, a governed review pack, exact HOST render-evidence coverage, independent-review handoff/ingest and Brand Asset Contract checks.
+
+It cannot close until its own missing hard gates are supported by real evidence: genuine independent semantic/distinctiveness review, evidence-backed finalist/winner adjudication, final `brand/final/` winner exports, production Android consumption proof for that exact winner, `RELEASE_BUILD_DEVICE` adaptive/themed/legacy icon evidence and rollback-safe identity freeze.
+
+The current user-selected white-Day/black-Night in-app logo assets and adaptive theme runtime are valid product behavior, but they are not silently equivalent to a completed independent tournament freeze.
+
+Detailed progress: `WAVE_14_LOGO_TOURNAMENT_PROGRESS.md`.
 
 ## Model Frontier Research Snapshot
 `MODEL_FRONTIER_RESEARCH.md` records time-sensitive findings without promoting them into permanent architecture truth. Champion qualification remains evidence-driven and expiring.
 
-## Next Mega-Wave
-**Mega-Wave 14 — Logo & Identity Tournament.**
+## Next Closure Work
+**Mega-Wave 14 remains the sequential closure frontier.**
 
-Build the governed candidate asset/evidence pipeline, compare distinct families under the locked Visual Evaluation Constitution, verify monochrome silhouette, tiny-size identity, Android adaptive masks, Day/Night treatments, themed icon behavior, export integrity and anti-imitation. Production Android identity must not be replaced until a candidate wins with evidence and rollback remains possible.
+Do not manufacture the missing independent or release-device evidence merely to advance the counter. Dependency-safe later implementation may continue, but formal Wave completion must remain tied to each Wave's own closure contract.
