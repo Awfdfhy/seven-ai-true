@@ -79,20 +79,19 @@ const {build}=require('./build-release.cjs');
     for(const id of ['chat','coding','research','rpg'])ok(launcherIds.includes(id),'workspace launcher missing '+id);
 
     for(const kind of ['coding','research','rpg']){
-      if(!document){/* keeps this loop source-side deterministic */}
       if(await page.locator('.seven-ws-launcher').count()===0){
         await page.evaluate(()=>SevenWorkspaces.openLauncher());
         await page.waitForSelector('.seven-ws-launcher');
       }
       await page.locator(`.seven-ws-choice[data-ws="${kind}"]`).click();
       await page.waitForFunction(k=>window.SevenWorkspaces&&SevenWorkspaces.active()===k&&document.querySelector('.seven-workspace-root')?.dataset.sevenWorkspace===k,kind,{timeout:7000});
-      const state=await page.evaluate(k=>({
+      const state=await page.evaluate(()=>({
         active:SevenWorkspaces.active(),
         root:document.querySelector('.seven-workspace-root')?.dataset.sevenWorkspace,
         hidden:document.querySelector('.seven-workspace-root')?.hidden,
         chatHidden:document.getElementById('chat')?.hidden,
         specialist:document.querySelector('.seven-workspace-root')?.dataset.sevenSpecialist
-      }),kind);
+      }));
       ok(state.active===kind&&state.root===kind&&state.specialist===kind,kind+' workspace did not bind to its runtime');
       ok(state.hidden===false&&state.chatHidden===true,kind+' workspace did not own the specialist surface');
       await page.evaluate(()=>SevenWorkspaces.close());
