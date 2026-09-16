@@ -4,8 +4,8 @@
 `ultimate-polish-v1`
 
 ## Ultimate Polish Execution
-**Completed-wave count:** `15 / ≤30`  
-**Sequentially closed:** `Mega-Waves 01–15` ✅
+**Completed-wave count:** `16 / ≤30`  
+**Sequentially closed:** `Mega-Waves 01–16` ✅
 
 The campaign ceiling is **30 Mega-Waves maximum**, not a quota.
 
@@ -25,39 +25,39 @@ The campaign ceiling is **30 Mega-Waves maximum**, not a quota.
 - Mega-Wave 13 — Design Genome Runtime + Design Lint Foundation → `PASS_FOUNDATION` ✅
 - Mega-Wave 14 — Logo & Identity → `PASS_FOUNDATION` ✅ (`USER_APPROVED_FINAL_IDENTITY`)
 - Mega-Wave 15 — Global UI / Launcher & Home Experience → `PASS_FOUNDATION` ✅
+- Mega-Wave 16 — Specialist Workspaces: Coding / Research / RPG-Real Works → `PASS_FOUNDATION` ✅
 
 ## Wave 14 final identity
-The product owner explicitly selected the existing Seven logo and instructed the project to close Wave 14.
+The product owner selected the existing Seven logo. Final frozen assets exist under `brand/final/` as `seven-day-white.svg`, `seven-night-black.svg` and `IDENTITY_FREEZE.md`. Day/morning uses the white Seven logo; Night uses the black Seven logo through the tested adaptive Day/Night runtime.
 
-Final frozen assets now exist under `brand/final/`:
-- `seven-day-white.svg`
-- `seven-night-black.svg`
-- `IDENTITY_FREEZE.md`
-
-Current product behavior:
-- Day / morning → white Seven logo
-- Night → black Seven logo
-- automatic/adaptive switching uses the already-tested Seven Day/Night runtime.
-
-The previous logo tournament remains preserved as design/evidence/rollback material, but it no longer blocks the selected product identity.
-
-Truth boundary: Wave 14 closure does not claim independent originality/distinctiveness certification or physical `RELEASE_BUILD_DEVICE` certification. Those remain release-QA tasks.
-
-Canonical records:
-- `WAVE_14_LOGO_IDENTITY_CLOSURE.md`
-- `WAVE_14_LOGO_TOURNAMENT_PROGRESS.md`
+Truth boundary: this does not claim independent originality/distinctiveness certification or physical `RELEASE_BUILD_DEVICE` certification. Canonical closure: `WAVE_14_LOGO_IDENTITY_CLOSURE.md`.
 
 ## Wave 15 closure
-Wave 15 is closed as `PASS_FOUNDATION` on exact implementation baseline `a9e87877721fee94544e1ade932b2ff1b1334180`.
+Wave 15 is closed as `PASS_FOUNDATION` on implementation baseline `a9e87877721fee94544e1ade932b2ff1b1334180` and GitHub Actions run `35042103467` / Seven AI tests #1769, where all `103` suites passed. Canonical closure: `WAVE_15_GLOBAL_UI_CLOSURE.md`.
 
-GitHub Actions run `35042103467` / Seven AI tests #1769 completed `SUCCESS` with all `103` suites green, including Global UI, adaptive theme/logo, Accessibility, Arabic/RTL, Motion, Specialist UI, Generated UI, Mobile Performance and release verification.
+## Wave 16 closure
+Wave 16 is closed as `PASS_FOUNDATION` after direct interaction-level browser verification of all three specialist surfaces instead of relying only on their existence.
 
-Exact release artifact from that evidence run: `10424749481`, SHA-256 `7d414a4a2318d772530142411ee3eed31e0ff051d63d249a46e70a2c53b6c3f0`.
+Exact implementation/evidence baseline: `922beae1e2c10c55521b58fac77c2f45362c11e8`.
 
-Canonical record: `WAVE_15_GLOBAL_UI_CLOSURE.md`.
+GitHub Actions run `35043953704` / Seven AI tests #1781 completed `SUCCESS` with:
+- all test suites `PASS (104 suites)`;
+- Wave 16 Specialist Workspaces Browser `PASS (58 assertions)` across Coding, Research and RPG / Real Works;
+- Specialist UI Browser `PASS (29 assertions)` and Specialist UI Contract `PASS (26 assertions)`;
+- Accessibility, Arabic/RTL, Motion and Mobile Performance browser/contracts green;
+- UI visual evidence `8/8 PASS`, `0 WARN`, `0 FAIL`, HOST/OBSERVE;
+- startup `99758 / 100000` bytes and lazy workspace `63855 / 65536` bytes;
+- static APK estimate `3718590 / 8388608` bytes, `0` static warnings;
+- release verification PASS;
+- protected source integrity PASS at `658133` bytes / blob `3e8dfa8e7da7124e16504140eb9631c10cabf053`;
+- production dependency audit `0` vulnerabilities.
+
+Wave 16 verifies lazy isolation, real natural-language task entry, truth-boundary behavior, mobile/RTL/reduced-motion handling and no silent authority promotion. It does not claim shell/device-write authority, prose-to-evidence promotion, prose-to-canon commit authority, physical-device resource certification or final launch readiness.
+
+Canonical closure: `WAVE_16_SPECIALIST_WORKSPACES_CLOSURE.md`.
 
 ## Current implementation truth
-Green foundations already include cognitive/truth, memory/context, model/adaptive compute, tool/security/effects, judge/evals, coding/file tools, research, vision, RPG/story, Canon/Titles, visual evidence, Design Genome, final selected identity, Global UI, specialist surfaces, typed generated UI, motion governance, Arabic/RTL, accessibility, mobile-performance guards, Android native bridge, provider-adapter contracts, model-frontier qualification, acquisition/durable fabric and governed self-evolution foundations.
+Green foundations include cognitive/truth, memory/context, model/adaptive compute, tool/security/effects, judge/evals, coding/file tools, research, vision, RPG/story, Canon/Titles, visual evidence, Design Genome, final selected identity, Global UI, all three specialist workspaces, typed generated UI, motion governance, Arabic/RTL, accessibility, mobile-performance guards, Android native bridge, provider-adapter contracts, model-frontier qualification, acquisition/durable fabric and governed self-evolution foundations.
 
 Foundation closure is not launch certification. Later work still includes the remaining planned Mega-Waves, live external integrations where required, physical-device evidence, final Capability Registry → UI product wiring, Android QA, Release Candidate and launch hardening.
 
@@ -70,4 +70,4 @@ Latest exact verified release startup footprint: **`99758 / 100000` bytes**, lea
 Do not modify it without explicit user authorization. Do not merge this branch to `main` or another protected branch without explicit user approval.
 
 ## Immediate Next Work
-Wave 14 and Wave 15 are closed. Read `MASTER_PLAN.md`, `DECISIONS.md` and `CAPABILITY_REGISTRY.md`, then continue from the next planned unclosed Mega-Wave. Final UI Completion & Product Wiring stays reserved for the pre-release stage after the system/runtime closures.
+**Mega-Wave 17 — Typed / Generated UI** is the next planned unclosed visual implementation Wave. Reuse the already-green generated-UI foundation, close only real evidence/integration gaps, and preserve startup/resource constraints. Final UI Completion & Product Wiring remains reserved for the pre-release stage after system/runtime closures.
