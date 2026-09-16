@@ -7,12 +7,16 @@ const source=`package ai.seven.app;
 import static org.junit.Assert.*;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.os.ParcelFileDescriptor;
 import android.webkit.WebView;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -31,6 +35,18 @@ public class SevenVisualEvidenceTest {
   private void waitFor(WebView webView,String code) throws Exception {
     for(int i=0;i<100;i++){ if("true".equals(js(webView,code)))return; Thread.sleep(200); }
     fail("Seven visual state did not become ready: "+code);
+  }
+  private String shell(String command) throws Exception {
+    ParcelFileDescriptor pfd=InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand(command);
+    try(FileInputStream in=new FileInputStream(pfd.getFileDescriptor());ByteArrayOutputStream out=new ByteArrayOutputStream()){
+      byte[] buffer=new byte[2048];
+      for(int n;(n=in.read(buffer))!=-1;)out.write(buffer,0,n);
+      return out.toString(StandardCharsets.UTF_8.name()).trim();
+    } finally { pfd.close(); }
+  }
+  private void restoreScale(String key,String value) throws Exception {
+    String safe=value!=null&&value.matches("[0-9]+(?:\\\\.[0-9]+)?")?value:"1";
+    shell("settings put global "+key+" "+safe);
   }
   private void shot(String name) throws Exception {
     Bitmap bitmap=InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();
@@ -77,12 +93,27 @@ public class SevenVisualEvidenceTest {
       workspace(webView,"rpg");shot("rpg");
 
       js(webView,"(()=>{SevenWorkspaces.close();document.documentElement.lang='ar-IQ';document.documentElement.dir='rtl';document.body.dir='rtl';return true})()");
-      waitFor(webView,"document.documentElement.dir==='rtl'&&document.documentElement.lang==='ar-IQ'");
+      waitFor(webView,"document.documentElement.dir==='rtl'&&document.documentElement.lang==='ar-IQ'&&getComputedStyle(document.documentElement).direction==='rtl'");
       Thread.sleep(120);shot("arabic-rtl");
 
-      js(webView,"(()=>{document.documentElement.lang='en';document.documentElement.dir='ltr';document.body.dir='ltr';if(window.SevenPerformance)SevenPerformance.state.reducedMotion=true;document.documentElement.dataset.sevenReducedMotion='1';return true})()");
-      waitFor(webView,"Boolean(window.SevenPerformance&&SevenPerformance.state.reducedMotion===true&&document.documentElement.dataset.sevenReducedMotion==='1')");
-      Thread.sleep(120);shot("reduced-motion");
+      js(webView,"(()=>{document.documentElement.lang='en';document.documentElement.dir='ltr';document.body.dir='ltr';SevenTheme.setPreference('night');return true})()");
+      waitFor(webView,"document.documentElement.dir==='ltr'&&document.documentElement.dataset.sevenTheme==='night'");
+      String oldWindow=shell("settings get global window_animation_scale");
+      String oldTransition=shell("settings get global transition_animation_scale");
+      String oldAnimator=shell("settings get global animator_duration_scale");
+      try {
+        shell("settings put global window_animation_scale 0");
+        shell("settings put global transition_animation_scale 0");
+        shell("settings put global animator_duration_scale 0");
+        Thread.sleep(700);
+        js(webView,"(()=>{if(window.SevenPerformance)SevenPerformance.reconsiderTier(null,{forceUpgrade:true});return true})()");
+        waitFor(webView,"Boolean(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches&&window.SevenPerformance&&SevenPerformance.state.reducedMotion===true&&document.documentElement.dataset.sevenReducedMotion==='1')");
+        Thread.sleep(120);shot("reduced-motion");
+      } finally {
+        restoreScale("window_animation_scale",oldWindow);
+        restoreScale("transition_animation_scale",oldTransition);
+        restoreScale("animator_duration_scale",oldAnimator);
+      }
     }
   }
 }
