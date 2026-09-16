@@ -1,7 +1,7 @@
 "use strict";
 const crypto=require("crypto");const VERSION="1.0.0",H40=/^[0-9a-f]{40}$/i;
 function arr(v){return Array.isArray(v)?v:[]}function stable(v){if(Array.isArray(v))return v.map(stable);if(v&&typeof v==="object"){const o={};for(const k of Object.keys(v).sort())if(v[k]!==undefined)o[k]=stable(v[k]);return o}return v}function hash(v){return crypto.createHash("sha256").update(JSON.stringify(stable(v))).digest("hex")}function seal(b){return Object.freeze({...b,seal:hash(b)})}function verify(x,s){if(!x||x.schema!==s||!/^[0-9a-f]{64}$/i.test(String(x.seal||"")))return false;const{seal:q,...b}=x;return q===hash(b)}
-function audit({betaRuntime="",hubRuntime="",betaCss="",hubCss="",generatedJs=""}={}){const fail=[],warn=[],info=[],need=(v,id)=>(v?info:fail).push(id),note=(v,id)=>(v?info:warn).push(id);
+function audit({betaRuntime="",hubRuntime="",betaCss="",hubCss="",generatedJs=""}={}){const fail=[],warn=[],info=[],need=(v,id)=>(v?info:fail).push(id);
  need(betaRuntime.includes("role','navigation'")&&betaRuntime.includes("role','banner'")&&betaRuntime.includes("role','group'"),"landmarks:global");
  need(betaRuntime.includes("aria-live','polite'"),"status:live-region");
  need(hubRuntime.includes("setAttribute('role','dialog')")&&hubRuntime.includes("setAttribute('aria-modal','true')"),"dialog:semantics");
@@ -15,7 +15,7 @@ function audit({betaRuntime="",hubRuntime="",betaCss="",hubCss="",generatedJs=""
  need(/prefers-reduced-motion:reduce/.test(betaCss)&&/prefers-reduced-motion:reduce/.test(hubCss),"motion:reduced");
  need(!/tabindex=["']-1["'][^>]*data-ws/i.test(hubRuntime),"keyboard:no-disabled-workspace-choices");
  need(generatedJs.includes("aria-label")||generatedJs.includes("label"),"generated:naming-support");
- note(!/aria-label','Seven navigation'/.test(betaRuntime)&&!/aria-label','Seven workspaces'/.test(hubRuntime),"locale:accessible-names-localized");
+ need(betaRuntime.includes("Q('Seven navigation','تنقل Seven')")&&betaRuntime.includes("Q('Message composer','محرر الرسالة')"),"locale:accessible-names-localized");
  const b={schema:"seven.accessibility-audit.v1",version:VERSION,status:fail.length?"FAIL":warn.length?"WARN":"PASS",fail:[...new Set(fail)].sort(),warn:[...new Set(warn)].sort(),info:[...new Set(info)].sort(),truthBoundary:"STRUCTURAL_HOST_ACCESSIBILITY_NOT_ASSISTIVE_TECH_DEVICE_CERTIFICATION"};return seal(b)}
 function verifyAudit(x){return verify(x,"seven.accessibility-audit.v1")}
 function manifest({branch,commitSha,audit:a,sources}={}){branch=String(branch||"").trim();commitSha=String(commitSha||"").trim();if(!branch)throw Error("branch required");if(!H40.test(commitSha))throw Error("commitSha invalid");if(!verifyAudit(a)||a.status==="FAIL")throw Error("non-failing verified accessibility audit required");const seen=new Set(),rows=[];for(const x of arr(sources)){const p=String(x.path||"");if(!p||p.startsWith("/")||p.includes("..")||seen.has(p))throw Error("invalid or duplicate source path");seen.add(p);const c=String(x.content??"");rows.push({path:p,bytes:Buffer.byteLength(c),sha256:crypto.createHash("sha256").update(c).digest("hex")})}for(const p of ["release/beta-ui-runtime.js","release/beta-ui.css","release/workspaces/hub.js","release/workspaces/hub.css"])if(!seen.has(p))throw Error(`missing source:${p}`);return seal({schema:"seven.accessibility-manifest.v1",version:VERSION,branch,commitSha:commitSha.toLowerCase(),auditSeal:a.seal,sources:rows.sort((x,y)=>x.path.localeCompare(y.path)),claim:"HOST_STRUCTURAL_ACCESSIBILITY"})}
