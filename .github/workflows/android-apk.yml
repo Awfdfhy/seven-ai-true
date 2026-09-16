@@ -77,7 +77,7 @@ jobs:
       - name: Android lint, unit tests, debug test APK and signed release APK
         working-directory: android
         run: |
-          ./gradlew --no-daemon lintDebug testDebugUnitTest assembleDebug assembleDebugAndroidTest assembleRelease \
+          ./gradlew --no-daemon lintDebug testDebugUnitTest assembleDebug :app:assembleDebugAndroidTest :app:assembleRelease \
             -Pandroid.injected.signing.store.file="$HOME/.android/debug.keystore" \
             -Pandroid.injected.signing.store.password=android \
             -Pandroid.injected.signing.key.alias=androiddebugkey \
