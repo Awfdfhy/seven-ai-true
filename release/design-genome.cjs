@@ -35,7 +35,7 @@ const SIGNATURE_PRIMITIVES=Object.freeze({
 });
 
 const LEGACY_ADAPTERS=Object.freeze({
-  '--sb-bg':'color.canvas','--sb-s':'color.surface','--sb-s2':'color.surfaceRaised','--sb-t':'color.text','--sb-m':'color.muted','--sb-a':'color.brand','--sb-a2':'color.brandAlt',
+  '--sb-bg':'color.canvas','--sb-s':'color.surface','--sb-s2':'color.surfaceRaised','--sb-t':'color.text','--sb-m':'color.muted','--sb-a':'color.brand','--sb-a2':'color.brandAlt','--sb-b':'effect.borderSubtle',
   '--sb-mode':'color.aurora.primary','--sb-mode2':'color.aurora.secondary','--sb-rate':'motion.auroraRate','--sb-ao':'effect.auroraOpacity',
   '--bg':'color.canvas','--surface':'color.surface','--surface2':'color.surfaceRaised','--text':'color.text','--muted':'color.muted','--accent':'color.brand',
   '--seven-motion-instant':'motion.instant','--seven-motion-fast':'motion.fast','--seven-motion-standard':'motion.standard','--seven-motion-deliberate':'motion.deliberate','--seven-motion-signature':'motion.signature',
