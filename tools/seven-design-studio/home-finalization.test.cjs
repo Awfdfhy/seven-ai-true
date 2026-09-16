@@ -15,7 +15,7 @@ for(const token of ['2026.09-visual-polish-v4-final','--seven-home-visual-polish
 const index=fs.readFileSync(path.join(dir,'index.html'),'utf8');
 if(!index.includes('./home-visual-polish-v4.js'))throw new Error('Final polish v4 not wired');
 const sw=fs.readFileSync(path.join(dir,'sw.js'),'utf8');
-if(!sw.includes('./home-visual-polish-v4.js')||!sw.includes("seven-design-studio-v21"))throw new Error('Final polish v4 not cached in current Studio generation');
+if(!sw.includes('./home-visual-polish-v4.js')||!sw.includes("seven-design-studio-v22"))throw new Error('Final polish v4 not cached in current Studio generation');
 
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.svg':'image/svg+xml'};
 const server=http.createServer((req,res)=>{
