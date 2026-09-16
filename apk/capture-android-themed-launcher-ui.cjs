@@ -40,7 +40,7 @@ function parseNodes(xml) {
 function parseBounds(s) {
   const m = String(s || "").match(/^\[(\d+),(\d+)\]\[(\d+),(\d+)\]$/);
   if (!m) return null;
-  const x1 = +m[1], y1 = +m[2], x2 = +m[3], y2 = +m[4];
+  const x1 = +m[1], y1 = +m[2], y2 = +m[4], x2 = +m[3];
   if (x2 <= x1 || y2 <= y1) return null;
   return {
     x1, y1, x2, y2,
@@ -208,7 +208,16 @@ function resolverState(xml) {
   return { active: true, target: target || null, once: once || null, always: always || null };
 }
 function traverseResolverIfPresent() {
-  const proof = { encountered: false, target: null, targetBounds: null, confirmation: null, beforeUiHash: null, afterUiHash: null };
+  const proof = {
+    encountered: false,
+    target: null,
+    targetBounds: null,
+    confirmation: null,
+    beforeUiHash: null,
+    afterUiHash: null,
+    fallbackRequired: false,
+    fallbackReason: null
+  };
   let last = "";
   for (let pass = 0; pass < 7; pass++) {
     const xml = dumpUi();
@@ -238,7 +247,18 @@ function traverseResolverIfPresent() {
     }
     throw Error(`Android resolver could not select genuine Wallpaper & style target; foreground=${foreground()}; ui=${visibleUiSummary(xml)}`);
   }
-  throw Error(`Android resolver did not exit after selecting Wallpaper & style; foreground=${foreground()}; ui=${visibleUiSummary(last)}`);
+
+  // Some Android 16 Google Play emulator builds keep ResolverActivity alive even
+  // after a real target + "Just once" tap. Do not fabricate success and do not
+  // mutate resolver state through hidden settings. Record that exact UI failure,
+  // return to the genuine launcher, then let the caller enter Wallpaper & style
+  // through Pixel Launcher's visible long-press menu.
+  proof.afterUiHash = shaBytes(Buffer.from(last));
+  proof.fallbackRequired = true;
+  proof.fallbackReason = "resolver-confirmation-did-not-exit";
+  home();
+  sleep(600);
+  return proof;
 }
 function themedUiState(xml) {
   const nodes = parseNodes(xml);
