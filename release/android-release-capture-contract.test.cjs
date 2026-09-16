@@ -1,12 +1,17 @@
 "use strict";
 const assert=require("assert/strict"),fs=require("fs"),path=require("path");
 const ROOT=path.resolve(__dirname,"..");let n=0;const ok=(v,m)=>{assert.ok(v,m);n++},match=(v,re,m)=>{assert.match(v,re,m);n++};
-const pkg=JSON.parse(fs.readFileSync(path.join(ROOT,"package.json"),"utf8")),wf=fs.readFileSync(path.join(ROOT,".github","workflows","android-apk.yml"),"utf8"),mat=fs.readFileSync(path.join(ROOT,"apk","materialize-android-visual-test.cjs"),"utf8"),cap=fs.readFileSync(path.join(ROOT,"apk","capture-android-release-profile.cjs"),"utf8"),id=fs.readFileSync(path.join(__dirname,"android-ci-release-artifact.cjs"),"utf8"),merge=fs.readFileSync(path.join(__dirname,"merge-android-visual-evidence.cjs"),"utf8");
+const pkg=JSON.parse(fs.readFileSync(path.join(ROOT,"package.json"),"utf8")),wf=fs.readFileSync(path.join(ROOT,".github","workflows","android-apk.yml"),"utf8"),patch=fs.readFileSync(path.join(ROOT,"apk","patch-android.cjs"),"utf8"),mat=fs.readFileSync(path.join(ROOT,"apk","materialize-android-visual-test.cjs"),"utf8"),cap=fs.readFileSync(path.join(ROOT,"apk","capture-android-release-profile.cjs"),"utf8"),id=fs.readFileSync(path.join(__dirname,"android-ci-release-artifact.cjs"),"utf8"),merge=fs.readFileSync(path.join(__dirname,"merge-android-visual-evidence.cjs"),"utf8");
 match(pkg.scripts["android:generate"],/materialize-android-visual-test\.cjs/);match(wf,/:app:assembleRelease/);match(wf,/:app:assembleDebugAndroidTest/);match(wf,/apksigner/);match(wf,/api36-modern/);match(wf,/api28-compact/);match(wf,/merge-android-visual-evidence\.cjs/);
 ok(!/(?:^|\s)assembleDebugAndroidTest(?:\s|\\)/m.test(wf.replace(/:app:assembleDebugAndroidTest/g,"")),"root-level AndroidTest assembly must stay disabled to avoid unrelated plugin test graphs");
 match(wf,/android\.testInstrumentationRunnerArguments\.class=ai\.seven\.app\.SevenSmokeTest/,"debug WebView smoke must select only SevenSmokeTest so release visual capture cannot contaminate the smoke gate");
 match(wf,/awk -F': ' '\/certificate SHA-256 digest\//,"CI release identity must parse modern apksigner certificate output");
 ok(!wf.includes("Signer #1 certificate SHA-256 digest"),"signer parsing must not depend on the obsolete Signer #1 prefix");
+match(patch,/def sevenCiKeystore = project\.findProperty\("sevenCiKeystore"\)/,"generated Gradle must accept an explicit CI keystore without embedding credentials");
+match(patch,/signingConfig signingConfigs\.sevenCi/g,"generated debug and release build types must share the explicit CI signing identity");
+match(wf,/-PsevenCiKeystore="\$HOME\/\.android\/debug\.keystore"/,"CI build must opt into explicit generated-project signing");
+ok(!wf.includes("android.injected.signing"),"CI must not mix AGP injected signing with the explicit test/release signing contract");
+match(wf,/Verify CI signer parity for release instrumentation/);match(wf,/test "\$RELEASE_SIGNER" = "\$DEBUG_SIGNER"/);match(wf,/test "\$RELEASE_SIGNER" = "\$TEST_SIGNER"/);
 match(cap,/DEFAULT_RELEASE_APK="android\/app\/build\/outputs\/apk\/release\/app-release\.apk"/,"capture runner must have a deterministic release APK fallback because emulator-runner may execute script lines independently");
 match(cap,/DEFAULT_BUILD_IDENTITY="evidence\/android\/build-identity\.json"/,"capture runner must have a deterministic build-identity fallback");
 match(cap,/function inferProfileId/);match(cap,/api===28\)return"api28-compact"/);match(cap,/api===36\)return"api36-modern"/);
@@ -19,5 +24,5 @@ for(const s of ["chat-day","chat-night","coding","research","rpg","arabic-rtl","
 ok(!/deviceIdentityHash:android\.hash\(\{profileId/.test(cap),"device identity must derive from observed device facts, not a caller-supplied profile label");
 ok(!/scenario:"launcher-/.test(cap),"in-app collector must not fabricate launcher scenarios");ok(!/scenario:"splash"/.test(cap),"in-app collector must not fabricate splash evidence");
 match(cap,/GENUINE_RELEASE_APP_DEVICE_CAPTURES_FOR_IN_APP_STATES_ONLY_NO_LAUNCHER_OR_SPLASH_CLAIM/);match(id,/RELEASE_VARIANT_CI_SIGNED_NOT_STORE_PRODUCTION_SIGNING/);match(merge,/PARTIAL_RELEASE_DEVICE_EVIDENCE_ONLY/);
-ok(!mat.includes("seven_ai-final.html"),"visual materializer must not touch protected source");ok(!cap.includes("seven_ai-final.html"),"capture collector must not touch protected source");
-console.log(`Android Release Capture Contract: PASS (${n} assertions; smoke isolated, runner env fail-safe, release evidence stays fail-closed, Reduced Motion cannot be forged)`);
+ok(!patch.includes("seven_ai-final.html"),"Android shell patch must not touch protected source");ok(!mat.includes("seven_ai-final.html"),"visual materializer must not touch protected source");ok(!cap.includes("seven_ai-final.html"),"capture collector must not touch protected source");
+console.log(`Android Release Capture Contract: PASS (${n} assertions; signer parity fail-closed, smoke isolated, runner env fail-safe, release evidence stays truthful)`);

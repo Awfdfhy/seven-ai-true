@@ -20,6 +20,23 @@ xml=xml.replace(/<activity\b([^>]*android:name="\.MainActivity"[^>]*)>/,(_,attrs
 });
 fs.writeFileSync(manifestPath,xml);
 
+// The generated project is ephemeral. For CI release-device evidence only, make
+// the application debug/release variants and AndroidTest APK use one explicit
+// deterministic signing identity. Android instrumentation will correctly reject
+// a test APK whose certificate differs from the installed release target.
+// No credential is embedded here: CI provides the keystore and test-only values
+// as Gradle properties, and normal local generation retains Capacitor defaults.
+const gradlePath=path.join(ANDROID,'app','build.gradle');
+if(!fs.existsSync(gradlePath))throw new Error('generated Android app Gradle file missing');
+let gradle=fs.readFileSync(gradlePath,'utf8');
+if(!gradle.includes('android {'))throw new Error('generated Android app Gradle android block missing');
+if(!/buildTypes\s*\{\s*release\s*\{/.test(gradle))throw new Error('generated Android app Gradle release buildType missing');
+const signingPrelude=`def sevenCiKeystore = project.findProperty("sevenCiKeystore")\ndef sevenCiStorePass = project.findProperty("sevenCiStorePass")\ndef sevenCiKeyAlias = project.findProperty("sevenCiKeyAlias")\ndef sevenCiKeyPass = project.findProperty("sevenCiKeyPass")\n`;
+if(!gradle.includes('def sevenCiKeystore'))gradle=signingPrelude+gradle;
+gradle=gradle.replace('android {',`android {\n    signingConfigs {\n        if (sevenCiKeystore) {\n            sevenCi {\n                storeFile file(sevenCiKeystore)\n                storePassword sevenCiStorePass\n                keyAlias sevenCiKeyAlias\n                keyPassword sevenCiKeyPass\n            }\n        }\n    }`);
+gradle=gradle.replace(/buildTypes\s*\{\s*release\s*\{/,`buildTypes {\n        debug {\n            if (sevenCiKeystore) {\n                signingConfig signingConfigs.sevenCi\n            }\n        }\n        release {\n            if (sevenCiKeystore) {\n                signingConfig signingConfigs.sevenCi\n            }`);
+fs.writeFileSync(gradlePath,gradle);
+
 // Capacitor generates a sample instrumentation test bound to its template
 // package. It is not a Seven test and must not ship or gate our Android run.
 const templateTest=path.join(ANDROID,'app','src','androidTest','java','com','getcapacitor','myapp','ExampleInstrumentedTest.java');
