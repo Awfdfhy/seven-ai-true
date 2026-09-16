@@ -1,5 +1,5 @@
 const fs=require("fs"),path=require("path");
-const ROOT=path.resolve(__dirname,".."),ANDROID=path.join(ROOT,"android"),testDir=path.join(ANDROID,"app","src","androidTest","java","ai","seven","app");
+const ROOT=path.resolve(__dirname,".."),ANDROID=path.join(ROOT,"android"),testRoot=path.join(ANDROID,"app","src","androidTest"),testDir=path.join(testRoot,"java","ai","seven","app");
 if(!fs.existsSync(ANDROID))throw Error("generated Android project missing");
 fs.mkdirSync(testDir,{recursive:true});
 const source=`package ai.seven.app;
@@ -121,5 +121,54 @@ public class SevenVisualEvidenceTest {
   }
 }
 `;
+const provider=`package ai.seven.app;
+
+import android.content.ContentProvider;
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.net.Uri;
+import android.os.Binder;
+import android.os.ParcelFileDescriptor;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+
+public final class SevenEvidenceProvider extends ContentProvider {
+  private static final int SHELL_UID=2000;
+  @Override public boolean onCreate(){ return true; }
+  @Override public String getType(Uri uri){ return "image/png"; }
+  @Override public Cursor query(Uri uri,String[] projection,String selection,String[] selectionArgs,String sortOrder){ return null; }
+  @Override public Uri insert(Uri uri,ContentValues values){ throw new UnsupportedOperationException("read only"); }
+  @Override public int delete(Uri uri,String selection,String[] selectionArgs){ throw new UnsupportedOperationException("read only"); }
+  @Override public int update(Uri uri,ContentValues values,String selection,String[] selectionArgs){ throw new UnsupportedOperationException("read only"); }
+  @Override public ParcelFileDescriptor openFile(Uri uri,String mode) throws FileNotFoundException {
+    if(Binder.getCallingUid()!=SHELL_UID)throw new SecurityException("shell-only evidence provider");
+    if(!"r".equals(mode))throw new FileNotFoundException("evidence provider is read only");
+    String name=uri.getLastPathSegment();
+    if(name==null||!name.matches("[a-z0-9-]+\\\\.png"))throw new FileNotFoundException("invalid evidence filename");
+    try {
+      File root=new File(getContext().getFilesDir(),"seven-visual").getCanonicalFile();
+      File file=new File(root,name).getCanonicalFile();
+      if(!file.getPath().startsWith(root.getPath()+File.separator)||!file.isFile())throw new FileNotFoundException("evidence file unavailable");
+      return ParcelFileDescriptor.open(file,ParcelFileDescriptor.MODE_READ_ONLY);
+    } catch(IOException e){
+      FileNotFoundException failure=new FileNotFoundException("evidence path resolution failed");failure.initCause(e);throw failure;
+    }
+  }
+}
+`;
+const manifest=`<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application>
+    <provider
+      android:name="ai.seven.app.SevenEvidenceProvider"
+      android:authorities="ai.seven.app.test.sevenevidence"
+      android:exported="true"
+      android:grantUriPermissions="false" />
+  </application>
+</manifest>
+`;
 fs.writeFileSync(path.join(testDir,"SevenVisualEvidenceTest.java"),source);
+fs.writeFileSync(path.join(testDir,"SevenEvidenceProvider.java"),provider);
+fs.writeFileSync(path.join(testRoot,"AndroidManifest.xml"),manifest);
 console.log("android visual instrumentation materialization: PASS");

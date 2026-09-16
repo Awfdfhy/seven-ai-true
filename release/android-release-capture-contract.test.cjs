@@ -13,6 +13,7 @@ ok(!wf.includes("Signer #1 certificate SHA-256 digest"),"signer parsing must not
 match(patch,/def sevenCiKeystore = project\.findProperty\("sevenCiKeystore"\)/,"generated Gradle must accept an explicit CI keystore without embedding credentials");
 match(patch,/if \(sevenCiKeystore\) \{\\n        testBuildType = \"release\"/,"release AndroidTest selection must be conditional on the explicit CI signing path");
 match(patch,/signingConfig signingConfigs\.sevenCi/g,"generated debug and release build types must share the explicit CI signing identity");
+ok(!/debuggable|isDebuggable\s*=\s*true/.test(patch),"visual evidence must never make the release target debuggable to export test evidence");
 match(wf,/-PsevenCiKeystore="\$HOME\/\.android\/debug\.keystore"/,"CI build must opt into explicit generated-project signing");
 ok(!wf.includes("android.injected.signing"),"CI must not mix AGP injected signing with the explicit test/release signing contract");
 match(wf,/Verify CI signer parity for release instrumentation/);match(wf,/test "\$RELEASE_SIGNER" = "\$DEBUG_SIGNER"/);match(wf,/test "\$RELEASE_SIGNER" = "\$TEST_SIGNER"/);
@@ -25,8 +26,15 @@ match(cap,/SEVEN_ANDROID_PROFILE_OUT\|\|`evidence\/android\/profiles\/\$\{profil
 match(mat,/UiAutomation\(\)\.takeScreenshot|UiAutomation\(\).*takeScreenshot|UiAutomation.*takeScreenshot/);match(mat,/theme\(webView,"day"\)/);match(mat,/theme\(webView,"night"\)/);match(mat,/SevenWorkspaces\.open/);match(mat,/ar-IQ/);
 match(mat,/testContext\.getFilesDir\(\)/,"visual evidence staging must use instrumentation-private storage so API 28 does not depend on external storage availability");
 ok(!mat.includes("getExternalFilesDir"),"visual evidence staging must not regress to nullable external files storage");
-match(cap,/"exec-out","run-as",TEST_PACKAGE,"cat"/,"host collector must export private visual evidence through run-as without changing screenshot bytes");
-match(cap,/runAs\("rm","-rf","files\/seven-visual"\)/,"private evidence staging must be cleared before capture");
+match(mat,/class SevenEvidenceProvider extends ContentProvider/,"test-only provider must own evidence export without requiring debuggability");
+match(mat,/Binder\.getCallingUid\(\)!=SHELL_UID/,"evidence provider must reject callers other than Android shell");
+match(mat,/ParcelFileDescriptor\.MODE_READ_ONLY/,"evidence provider must be read only");
+match(mat,/getCanonicalFile\(\)/,"evidence provider must canonicalize the private evidence path");
+match(mat,/android:authorities="ai\.seven\.app\.test\.sevenevidence"/,"AndroidTest manifest must expose only the dedicated evidence authority");
+match(mat,/android:grantUriPermissions="false"/,"evidence provider must not grant arbitrary URI permissions");
+match(cap,/EVIDENCE_AUTHORITY="ai\.seven\.app\.test\.sevenevidence"/,"collector and AndroidTest provider must share an exact authority");
+match(cap,/"exec-out","content","read","--uri",uri/,"host collector must export private visual evidence through the shell-only test provider without changing screenshot bytes");
+ok(!cap.includes("run-as"),"collector must not require a debuggable release-bound AndroidTest package");
 ok(!cap.includes("/sdcard/Android/data/ai.seven.app.test/files/seven-visual"),"collector must not depend on external test-app storage");
 match(mat,/settings put global window_animation_scale 0/);match(mat,/settings put global transition_animation_scale 0/);match(mat,/settings put global animator_duration_scale 0/);match(mat,/prefers-reduced-motion: reduce/);match(mat,/SevenPerformance\.reconsiderTier/);match(mat,/shot\("reduced-motion"\)/);
 ok(!/SevenPerformance\.state\.reducedMotion\s*=\s*true/.test(mat),"Reduced Motion evidence must come from Android/WebView preference state, not direct runtime mutation");
@@ -36,4 +44,4 @@ ok(!/deviceIdentityHash:android\.hash\(\{profileId/.test(cap),"device identity m
 ok(!/scenario:"launcher-/.test(cap),"in-app collector must not fabricate launcher scenarios");ok(!/scenario:"splash"/.test(cap),"in-app collector must not fabricate splash evidence");
 match(cap,/GENUINE_RELEASE_APP_DEVICE_CAPTURES_FOR_IN_APP_STATES_ONLY_NO_LAUNCHER_OR_SPLASH_CLAIM/);match(id,/RELEASE_VARIANT_CI_SIGNED_NOT_STORE_PRODUCTION_SIGNING/);match(merge,/PARTIAL_RELEASE_DEVICE_EVIDENCE_ONLY/);
 ok(!patch.includes("seven_ai-final.html"),"Android shell patch must not touch protected source");ok(!mat.includes("seven_ai-final.html"),"visual materializer must not touch protected source");ok(!cap.includes("seven_ai-final.html"),"capture collector must not touch protected source");
-console.log(`Android Release Capture Contract: PASS (${n} assertions; release-variant instrumentation, private evidence export, signer parity and truthful visual evidence)`);
+console.log(`Android Release Capture Contract: PASS (${n} assertions; release-variant instrumentation, shell-only private evidence export, signer parity and truthful visual evidence)`);
