@@ -106,24 +106,41 @@ function enableThemed(launcherPackage){
 }
 function screenHost(outPath){const r=spawnSync("adb",["exec-out","screencap","-p"],{encoding:null,maxBuffer:32*1024*1024});if(r.error||r.status!==0)throw Error(`system screencap failed: ${r.error?.message||r.stderr}`);const dim=pngSizeBuffer(r.stdout);fs.mkdirSync(path.dirname(outPath),{recursive:true});fs.writeFileSync(outPath,r.stdout);return{...dim,sha256:shaBytes(r.stdout)}}
 function splashCapture(outPath){
-  const remotePng="/data/local/tmp/seven-splash.png",remoteWitness="/data/local/tmp/seven-splash-window.txt";
-  run("adb",["shell","rm","-f",remotePng,remoteWitness],{allow:true});adb("shell","am","force-stop",APP_ID);home();
-  // Android 12+ starting windows can live for only a few frames. Poll the compositor
-  // first because its layer list is both faster and closer to what was actually drawn;
-  // retain WindowManager as an independent compatibility witness for older releases.
+  const remotePng="/data/local/tmp/seven-splash.png",remoteWitness="/data/local/tmp/seven-splash-window.txt",captureControl="ANDROID_SHELL_WAIT_FOR_DEBUGGER_TRANSIENT_FREEZE";
+  run("adb",["shell","rm","-f",remotePng,remoteWitness],{allow:true});
+  // Freeze the exact non-debuggable RELEASE process before its first app frame so the
+  // transient Android starting window can be observed without modifying APK bytes or app UI.
+  // This is a capture-clock control only. It is always cleared before a normal relaunch proof.
+  run("adb",["shell","am","clear-debug-app"],{allow:true});
+  const freeze=run("adb",["shell","am","set-debug-app","-w",APP_ID],{allow:true});
+  if(freeze.error||freeze.status!==0)throw Error(`Android splash capture freeze unavailable: ${freeze.error?.message||freeze.stderr||freeze.stdout}`);
+  adb("shell","am","force-stop",APP_ID);home();
   const expr=`(Splash Screen|Starting Window|Starting).*${APP_ID.replace(/\./g,"\\.")}|${APP_ID.replace(/\./g,"\\.")}.*(Splash|Starting)`;
   const loop=`i=0; while [ $i -lt 480 ]; do S="$(dumpsys SurfaceFlinger --list 2>/dev/null)"; M="$(printf '%s\\n' "$S" | grep -Ei '${expr}' | head -n 8)"; if [ -n "$M" ]; then { printf 'source=SurfaceFlinger\\n'; printf '%s\\n' "$M"; } > ${remoteWitness}; screencap -p ${remotePng} && exit 0; fi; if [ $((i%12)) -eq 0 ]; then W="$(dumpsys window windows 2>/dev/null)"; M="$(printf '%s\\n' "$W" | grep -Ei '${expr}' | head -n 8)"; if [ -n "$M" ]; then { printf 'source=WindowManager\\n'; printf '%s\\n' "$M"; } > ${remoteWitness}; screencap -p ${remotePng} && exit 0; fi; fi; i=$((i+1)); done; exit 7`;
-  const monitor=spawn("adb",["shell","sh","-c",loop],{stdio:"ignore"});sleep(40);
-  run("adb",["shell","am","start","-n",ACTIVITY],{allow:false,timeout:8000});
-  let ready=false;for(let i=0;i<200;i++){const r=run("adb",["shell","test","-s",remotePng],{allow:true});if(r.status===0){ready=true;break}sleep(50)}
-  if(!ready){try{monitor.kill()}catch{}throw Error("genuine Android splash/starting-window compositor witness was not observed")}
-  const png=spawnSync("adb",["exec-out","cat",remotePng],{encoding:null,maxBuffer:32*1024*1024}),wit=spawnSync("adb",["exec-out","cat",remoteWitness],{encoding:"utf8",maxBuffer:2*1024*1024});
-  if(png.error||png.status!==0||wit.error||wit.status!==0)throw Error("splash evidence export failed");
-  const witness=String(wit.stdout||"").trim(),source=/^source=(SurfaceFlinger|WindowManager)$/m.exec(witness)?.[1];
-  if(!source||!new RegExp(`(?:Splash Screen|Starting Window|Starting).*${APP_ID.replace(/\./g,"\\.")}|${APP_ID.replace(/\./g,"\\.")}.*(?:Splash|Starting)`,"i").test(witness))throw Error("splash compositor/window witness text invalid");
-  const dim=pngSizeBuffer(png.stdout);fs.mkdirSync(path.dirname(outPath),{recursive:true});fs.writeFileSync(outPath,png.stdout);
-  sleep(700);const windows=adb("shell","dumpsys","window","windows").stdout;if(!windows.includes(APP_ID))throw Error("app did not become foreground after witnessed splash");
-  return{...dim,sha256:shaBytes(png.stdout),witness,witnessSource:source,witnessHash:shaBytes(Buffer.from(witness))};
+  let monitor=null,captured=null;
+  try{
+    monitor=spawn("adb",["shell","sh","-c",loop],{stdio:"ignore"});sleep(40);
+    run("adb",["shell","am","start","-n",ACTIVITY,"--splashscreen-show-icon"],{allow:false,timeout:8000});
+    let ready=false;for(let i=0;i<240;i++){const r=run("adb",["shell","test","-s",remotePng],{allow:true});if(r.status===0){ready=true;break}sleep(50)}
+    if(!ready)throw Error("genuine Android splash/starting-window compositor witness was not observed under bounded transient freeze");
+    const png=spawnSync("adb",["exec-out","cat",remotePng],{encoding:null,maxBuffer:32*1024*1024}),wit=spawnSync("adb",["exec-out","cat",remoteWitness],{encoding:"utf8",maxBuffer:2*1024*1024});
+    if(png.error||png.status!==0||wit.error||wit.status!==0)throw Error("splash evidence export failed");
+    const rawWitness=String(wit.stdout||"").trim(),source=/^source=(SurfaceFlinger|WindowManager)$/m.exec(rawWitness)?.[1];
+    if(!source||!new RegExp(`(?:Splash Screen|Starting Window|Starting).*${APP_ID.replace(/\./g,"\\.")}|${APP_ID.replace(/\./g,"\\.")}.*(?:Splash|Starting)`,"i").test(rawWitness))throw Error("splash compositor/window witness text invalid");
+    const witness=`captureControl=${captureControl}\n${rawWitness}`,dim=pngSizeBuffer(png.stdout);fs.mkdirSync(path.dirname(outPath),{recursive:true});fs.writeFileSync(outPath,png.stdout);
+    captured={...dim,sha256:shaBytes(png.stdout),witness,witnessSource:source,witnessHash:shaBytes(Buffer.from(witness)),captureControl};
+  }finally{
+    try{if(monitor)monitor.kill()}catch{}
+    const clear=run("adb",["shell","am","clear-debug-app"],{allow:true});
+    if(clear.error||clear.status!==0)throw Error(`Android splash capture cleanup failed: ${clear.error?.message||clear.stderr||clear.stdout}`);
+  }
+  if(!captured)throw Error("Android splash capture did not produce evidence");
+  // Re-launch normally after clearing the capture clock control. This prevents a frozen
+  // debug-wait state from being mistaken for a healthy release launch.
+  adb("shell","am","force-stop",APP_ID);run("adb",["shell","am","start","-n",ACTIVITY],{allow:false,timeout:8000});
+  let resumed=false,last="";for(let i=0;i<30;i++){last=adb("shell","dumpsys","activity","activities").stdout;if(new RegExp(`(?:mResumedActivity|topResumedActivity|ResumedActivity)[^\\n]*${APP_ID.replace(/\./g,"\\.")}[^\\n]*MainActivity`,"i").test(last)){resumed=true;break}sleep(200)}
+  if(!resumed)throw Error(`app did not normally resume after witnessed splash; activity=${String(last).split(/\r?\n/).filter(x=>/ResumedActivity|mResumedActivity|topResumedActivity/.test(x)).slice(0,4).join(" ; ")||"<unknown>"}`);
+  return captured;
 }
 function loadEvidence(outDir,build,profileId,runId){
   const p=path.join(outDir,"profile-evidence.json");
