@@ -153,10 +153,10 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: cd android && ./gradlew --no-daemon :app:connectedReleaseAndroidTest -PsevenCiKeystore="$HOME/.android/debug.keystore" -PsevenCiStorePass=android -PsevenCiKeyAlias=androiddebugkey -PsevenCiKeyPass=android -Pandroid.testInstrumentationRunnerArguments.class=ai.seven.app.SevenSmokeTest
 
-      - name: Capture compact API 28 signed-release in-app visual evidence
+      - name: Capture compact API 33 release-app plus adaptive-launcher evidence
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
-          api-level: 28
+          api-level: 33
           arch: x86_64
           target: default
           profile: pixel_2
@@ -165,9 +165,10 @@ jobs:
           script: |
             adb shell wm size 1080x2160
             adb shell wm density 480
-            node apk/capture-android-release-profile.cjs
+            SEVEN_ANDROID_PROFILE_ID=api33-compact node apk/capture-android-release-profile.cjs
+            SEVEN_ANDROID_PROFILE_ID=api33-compact SEVEN_SYSTEM_SCENARIOS=launcher-adaptive node apk/capture-android-system-visuals.cjs
 
-      - name: Capture modern API 36 signed-release in-app visual evidence
+      - name: Capture modern API 36 release-app themed-launcher and splash evidence
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: 36
@@ -176,23 +177,35 @@ jobs:
           profile: pixel_6
           disable-animations: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: node apk/capture-android-release-profile.cjs
+          script: |
+            SEVEN_ANDROID_PROFILE_ID=api36-modern node apk/capture-android-release-profile.cjs
+            SEVEN_ANDROID_PROFILE_ID=api36-modern SEVEN_SYSTEM_SCENARIOS=launcher-themed,splash node apk/capture-android-system-visuals.cjs
 
-      - name: Merge release-device visual evidence without laundering missing system contexts
+      - name: Capture API 24 genuine legacy-launcher evidence
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 24
+          arch: x86_64
+          target: default
+          profile: pixel_2
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: SEVEN_ANDROID_PROFILE_ID=api24-legacy SEVEN_SYSTEM_SCENARIOS=launcher-legacy node apk/capture-android-system-visuals.cjs
+
+      - name: Merge complete release-device Android visual matrix
         run: |
           node release/merge-android-visual-evidence.cjs \
             --build evidence/android/build-identity.json \
-            --profile evidence/android/profiles/api28-compact/profile-evidence.json \
+            --profile evidence/android/profiles/api24-legacy/profile-evidence.json \
+            --profile evidence/android/profiles/api33-compact/profile-evidence.json \
             --profile evidence/android/profiles/api36-modern/profile-evidence.json \
             --out evidence/android/android-visual-certification.json
           node - <<'NODE'
           const fs=require('fs');
           const x=JSON.parse(fs.readFileSync('evidence/android/android-visual-certification.json','utf8'));
-          if(x.certification.verdict==='BLOCK')throw Error('visual evidence BLOCK');
-          const expected=['launcher-adaptive','launcher-themed','launcher-legacy','splash'];
-          for(const s of expected)if(!x.certification.missing.includes(s))throw Error('unexpectedly promoted uncollected system scenario: '+s);
-          if(x.certification.covered.length!==7)throw Error('expected seven genuine in-app release scenarios');
-          console.log('Wave 22 CI evidence checkpoint: truthful INCONCLUSIVE with 7/11 genuine scenarios');
+          if(x.certification.verdict!=='PASS')throw Error(`Wave 22 Android visual certification is ${x.certification.verdict}: missing=${x.certification.missing.join(',')} failures=${x.certification.failures.join(',')}`);
+          if(x.certification.covered.length!==11||x.certification.missing.length!==0)throw Error('complete 11-scenario Android visual matrix required');
+          console.log('Wave 22 Android visual certification: PASS (11/11 genuine release-device scenarios)');
           NODE
 
       - name: Verify APK again after device tests
