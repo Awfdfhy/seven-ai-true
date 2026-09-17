@@ -6,7 +6,9 @@ const ROOT=path.resolve(__dirname,'..');
 const sourceHtml=fs.readFileSync(path.join(ROOT,'seven_ai-final.html'),'utf8');
 const built=build();
 const html=fs.readFileSync(built.output,'utf8');
-const assetNames=['seven-final.css','beta-ui.css','canon-simulator.js','world-runtime.js','research-runtime.js','performance-runtime.js','control-runtime.js','control-bridge.js','execution-bridge.js','pdf-runtime.js','motion-runtime.js','ui-runtime.js','beta-ui-runtime.js'];
+// Only hot release-layer assets belong in this startup audit. Canon + World are RPG-only
+// lazy workspace runtimes; attachments are hot and therefore must be counted here.
+const assetNames=['seven-final.css','beta-ui.css','research-runtime.js','performance-runtime.js','control-runtime.js','control-bridge.js','execution-bridge.js','pdf-runtime.js','motion-runtime.js','ui-runtime.js','attachment-runtime.js','beta-ui-runtime.js'];
 const assets=assetNames.map(name=>({name,bytes:fs.statSync(path.join(__dirname,name)).size}));
 const workspaceAssets=(built.workspaceFiles||[]).map(x=>({...x,text:fs.readFileSync(path.join(ROOT,'dist',x.path),'utf8')}));
 const issues=[];const warnings=[];const apkBlockers=[];
@@ -42,11 +44,11 @@ if(staticPackageBytes>apkStaticBudgetBytes)issue('apk-static-asset-budget-exceed
 if(fs.statSync(path.join(ROOT,'seven_ai-final.html')).size>900000)warn('monolith-size-high',fs.statSync(path.join(ROOT,'seven_ai-final.html')).size);
 if(built.pdfLoadMode!=='lazy-local')issue('pdf-load-mode-not-lazy-local',built.pdfLoadMode);
 if(built.workspaceLoadMode!=='lazy-local')issue('workspace-load-mode-not-lazy-local',built.workspaceLoadMode);
-const report={format:'seven-static-audit',version:13,sourceBytes:Buffer.byteLength(sourceHtml),builtHtmlBytes:built.bytes,releaseLayerBytes:layerBytes,themeBootBytes:built.themeBootBytes,pdfVendorBytes:built.pdf.bytes,pdfLoadMode:built.pdfLoadMode,lazyWorkspaceBytes:built.workspaceBytes,lazyWorkspaceBudgetBytes,workspaceLoadMode:built.workspaceLoadMode,workspaceFiles:workspaceAssets.map(({text,...x})=>x),staticPackageBytes,apkStaticBudgetBytes,assets,issues,warnings,apkReadiness:{ready:apkBlockers.length===0,blockers:apkBlockers}};
+const report={format:'seven-static-audit',version:14,sourceBytes:Buffer.byteLength(sourceHtml),builtHtmlBytes:built.bytes,releaseLayerBytes:layerBytes,themeBootBytes:built.themeBootBytes,pdfVendorBytes:built.pdf.bytes,pdfLoadMode:built.pdfLoadMode,lazyWorkspaceBytes:built.workspaceBytes,lazyWorkspaceBudgetBytes,workspaceLoadMode:built.workspaceLoadMode,workspaceFiles:workspaceAssets.map(({text,...x})=>x),staticPackageBytes,apkStaticBudgetBytes,assets,issues,warnings,apkReadiness:{ready:apkBlockers.length===0,blockers:apkBlockers}};
 fs.mkdirSync(path.join(ROOT,'dist'),{recursive:true});
 fs.writeFileSync(path.join(ROOT,'dist','static-audit.json'),JSON.stringify(report,null,2));
 if(warnings.length)for(const w of warnings)console.log('AUDIT WARN',w.code,JSON.stringify(w.detail));
 if(apkBlockers.length)for(const b of apkBlockers)console.log('APK BLOCKER',b.code,JSON.stringify(b.detail));
 assert.deepEqual(issues,[],`static audit failed: ${JSON.stringify(issues)}`);
 assert.equal(apkBlockers.length,0,`APK packaging blockers remain: ${JSON.stringify(apkBlockers)}`);
-console.log(`static audit: PASS (${layerBytes} startup bytes, ${built.workspaceBytes} lazy workspace bytes, ${staticPackageBytes}/${apkStaticBudgetBytes} static APK bytes, lazy-local PDF/workspaces, ${warnings.length} warnings)`);
+console.log(`static audit: PASS (${layerBytes} hot release-layer bytes, ${built.workspaceBytes} lazy workspace bytes, ${staticPackageBytes}/${apkStaticBudgetBytes} static APK bytes, lazy-local PDF/workspaces, ${warnings.length} warnings)`);
