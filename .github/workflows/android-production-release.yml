@@ -1,0 +1,137 @@
+name: Seven Play-ready Android Bundle
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  play-ready-bundle:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout exact requested head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Node 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Java 21
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Require production upload-key secrets without printing them
+        env:
+          KEYSTORE_B64: ${{ secrets.SEVEN_UPLOAD_KEYSTORE_B64 }}
+          STORE_PASSWORD: ${{ secrets.SEVEN_UPLOAD_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.SEVEN_UPLOAD_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.SEVEN_UPLOAD_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_B64"
+          test -n "$STORE_PASSWORD"
+          test -n "$KEY_ALIAS"
+          test -n "$KEY_PASSWORD"
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/seven-upload.jks"
+          chmod 600 "$RUNNER_TEMP/seven-upload.jks"
+          keytool -list -keystore "$RUNNER_TEMP/seven-upload.jks" -alias "$KEY_ALIAS" -storepass "$STORE_PASSWORD" >/dev/null
+
+      - name: Install dependencies and re-run complete Seven gate
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          npm audit --json > /tmp/seven-audit-full.json || true
+          npm audit --omit=dev --json > /tmp/seven-audit-prod.json || true
+          node release/dependency-audit-gate.cjs /tmp/seven-audit-full.json /tmp/seven-audit-prod.json release/dependency-audit-summary.json
+          npx --no-install playwright install --with-deps --only-shell chromium
+          node all.cjs
+
+      - name: Generate Android project and install production signing lane
+        run: |
+          npm run android:generate
+          node apk/patch-production-signing.cjs
+
+      - name: Build upload-key signed release AAB and APK
+        working-directory: android
+        env:
+          STORE_PASSWORD: ${{ secrets.SEVEN_UPLOAD_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.SEVEN_UPLOAD_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.SEVEN_UPLOAD_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          ./gradlew --no-daemon :app:bundleRelease :app:assembleRelease \
+            -PsevenReleaseKeystore="$RUNNER_TEMP/seven-upload.jks" \
+            -PsevenReleaseStorePass="$STORE_PASSWORD" \
+            -PsevenReleaseKeyAlias="$KEY_ALIAS" \
+            -PsevenReleaseKeyPass="$KEY_PASSWORD"
+
+      - name: Verify signed AAB, APK, identity and upload-key parity
+        env:
+          STORE_PASSWORD: ${{ secrets.SEVEN_UPLOAD_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.SEVEN_UPLOAD_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          AAB="android/app/build/outputs/bundle/release/app-release.aab"
+          APK="android/app/build/outputs/apk/release/app-release.apk"
+          test -s "$AAB"
+          test -s "$APK"
+          jarsigner -verify -strict -certs "$AAB" >/dev/null
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
+          "$APKSIGNER" verify --verbose --print-certs "$APK" >/dev/null
+          KEY_SHA256="$(keytool -list -v -keystore "$RUNNER_TEMP/seven-upload.jks" -alias "$KEY_ALIAS" -storepass "$STORE_PASSWORD" | awk -F': ' '/SHA256:/{gsub(":","",$2);gsub(/[[:space:]]/,"",$2);print tolower($2);exit}')"
+          APK_SHA256="$("$APKSIGNER" verify --print-certs "$APK" | awk -F': ' '/certificate SHA-256 digest/ {print tolower($NF); exit}' | tr -d ':[:space:]')"
+          test -n "$KEY_SHA256"
+          test "$KEY_SHA256" = "$APK_SHA256"
+          BADGING="$("$AAPT" dump badging "$APK" | head -n 1)"
+          APPLICATION_ID="$(printf '%s\n' "$BADGING" | sed -n "s/package: name='\([^']*\)'.*/\1/p")"
+          VERSION_NAME="$(printf '%s\n' "$BADGING" | sed -n "s/.*versionName='\([^']*\)'.*/\1/p")"
+          VERSION_CODE="$(printf '%s\n' "$BADGING" | sed -n "s/.*versionCode='\([^']*\)'.*/\1/p")"
+          test "$APPLICATION_ID" = "ai.seven.app"
+          test -n "$VERSION_NAME"
+          test -n "$VERSION_CODE"
+          node release/production-release-proof.cjs \
+            --bundle "$AAB" \
+            --apk "$APK" \
+            --out evidence/android/production-release-proof.json \
+            --branch "$GITHUB_REF_NAME" \
+            --commit "$GITHUB_SHA" \
+            --source-ref "github-actions:${GITHUB_RUN_ID}:${GITHUB_RUN_ATTEMPT}:play-ready" \
+            --application-id "$APPLICATION_ID" \
+            --version-name "$VERSION_NAME" \
+            --version-code "$VERSION_CODE" \
+            --signer "$KEY_SHA256"
+
+      - name: Upload Play-ready AAB
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: seven-play-ready-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          archive: false
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload upload-key signed APK
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: seven-upload-key-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          archive: false
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload sealed production release proof
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: seven-upload-key-release-proof
+          path: evidence/android/production-release-proof.json
+          archive: false
+          if-no-files-found: error
+          retention-days: 14
