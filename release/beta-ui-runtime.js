@@ -12,7 +12,7 @@ const MODE={
 const A={chat:'idle',think:'thinking',search:'research',research:'research'};
 const V={idle:'Ready',thinking:'Thinking',research:'Research',coding:'Coding',rpg:'RPG',success:'Verified',warning:'Warning',error:'Error'};
 const N='idle thinking research coding rpg success warning error'.split(' ');
-const S={ready:false,version:'1.6.0-beta.1',mode:'chat',theme:'night',themePreference:'auto',aurora:'idle',auroraIntensity:'low',modeOpen:false,stopStrategy:'adaptive',messageObserver:null};
+const S={ready:false,version:'1.5.0-beta.1',mode:'chat',theme:'night',themePreference:'auto',aurora:'idle',auroraIntensity:'low',modeOpen:false,stopStrategy:'adaptive',messageObserver:null};
 let J;
 function f(){try{const p=localStorage.getItem('theme');return p==='light'?'day':p==='dark'?'night':/^(auto|day|night)$/.test(p||'')?p:'auto'}catch(e){return'auto'}}
 function g(p=f(),h=(new Date).getHours()){return p==='day'||p==='night'?p:h>=6&&h<18?'day':'night'}
