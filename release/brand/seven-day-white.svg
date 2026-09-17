@@ -2,7 +2,7 @@
   <defs>
     <linearGradient id="sevenDay" x1="18" y1="24" x2="89" y2="86" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#32BECF"/>
-      <stop offset="0.42" stop-color="#087BFF"/>
+      <stop offset="0.42" stop-color="#4166F5"/>
       <stop offset="0.72" stop-color="#263CFF"/>
       <stop offset="1" stop-color="#8265DC"/>
     </linearGradient>
