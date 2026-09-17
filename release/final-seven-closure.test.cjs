@@ -1,0 +1,25 @@
+const assert=require('assert/strict'),fs=require('fs'),path=require('path');
+const exact=require('./exact-rc-seal.cjs'),finalGate=require('./final-seven-closure.cjs');
+const ROOT=path.resolve(__dirname,'..'),read=(p)=>fs.readFileSync(path.join(ROOT,p),'utf8');
+let n=0;const ok=(v,m)=>{assert.ok(v,m);n++},eq=(a,b,m)=>{assert.equal(a,b,m);n++};
+const body={schema:'seven.final-seven-closure.v1',version:'1.0.0',verdict:'PASS',branch:'ultimate-polish-v1',commitSha:'1'.repeat(40),rcLabel:'seven-rc-111111111111',artifact:{kind:'APK',sha256:'a'.repeat(64),bytes:4994799,versionName:'1.0',versionCode:1},coverage:{canonicalSuites:120,suiteManifestSha256:'b'.repeat(64),androidScenarioCount:11,androidScenarios:['arabic-rtl','chat-day','chat-night','coding','launcher-adaptive','launcher-legacy','launcher-themed','reduced-motion','research','rpg','splash'],physicalDeviceIncluded:false},protectedSource:{path:'seven_ai-final.html',bytes:658133,gitBlobSha1:'3e8dfa8e7da7124e16504140eb9631c10cabf053'},signing:{profile:'CI_DEBUG_KEY_RELEASE_VARIANT',signerCertSha256:'c'.repeat(64),claimBoundary:'RELEASE_VARIANT_CI_SIGNED_NOT_STORE_PRODUCTION_SIGNING'},references:{workflowSha256:'d'.repeat(64),finalGateSha256:'e'.repeat(64),finalContractSha256:'f'.repeat(64),statusSha256:'0'.repeat(64),finalClosureDocSha256:'1'.repeat(64),exactRcSeal:'2'.repeat(64),visualCertificationSeal:'3'.repeat(64),dependencyAuditSeal:'4'.repeat(64)},sourceRef:'github-actions:1:1:final-seven',claimBoundary:finalGate.CLAIM};
+const closure={...body,seal:exact.hash(body)};
+ok(finalGate.verifyClosure(closure),'sealed final closure must verify');
+ok(finalGate.verifyClosure(closure,{branch:'ultimate-polish-v1',commitSha:'1'.repeat(40),artifactSha256:'a'.repeat(64),artifactBytes:4994799,rcLabel:'seven-rc-111111111111'}),'expected exact identity must verify');
+ok(!finalGate.verifyClosure({...closure,verdict:'BLOCK'}),'verdict tamper must fail');
+ok(!finalGate.verifyClosure({...closure,commitSha:'2'.repeat(40)}),'commit tamper must fail');
+ok(!finalGate.verifyClosure({...closure,artifact:{...closure.artifact,bytes:1}}),'artifact tamper must fail');
+ok(!finalGate.verifyClosure({...closure,coverage:{...closure.coverage,canonicalSuites:119}}),'suite floor regression must fail');
+ok(!finalGate.verifyClosure({...closure,coverage:{...closure.coverage,physicalDeviceIncluded:true}}),'physical-device truth drift must fail');
+assert.throws(()=>finalGate.createClosure({}),/branch required/);n++;
+const src=read('release/final-seven-closure.cjs');
+for(const token of ['exact.verifyExactRc','android.verifyCertification','audit.verifySummary','exact.fileHash(apkPath)','canonicalSuites<120','FINAL_SEVEN_CI_RC_VERIFIED_NOT_STORE_PRODUCTION_SIGNED_NO_PHYSICAL_DEVICE_CLAIM'])ok(src.includes(token),`final closure lost ${token}`);
+const wf=read('.github/workflows/android-apk.yml');
+for(const token of ['Merge complete release-device Android visual matrix','Verify APK again after device tests','Final Seven exact-RC verification and closure','release/final-seven-closure.cjs','evidence/android/final-seven-closure.json','Upload Wave 22 release-device evidence bundle'])ok(wf.includes(token),`workflow lost ${token}`);
+ok(wf.indexOf('Merge complete release-device Android visual matrix')<wf.indexOf('Verify APK again after device tests'),'matrix must precede final APK re-verification');
+ok(wf.indexOf('Verify APK again after device tests')<wf.indexOf('Final Seven exact-RC verification and closure'),'final closure must run after post-device APK re-verification');
+ok(wf.indexOf('Final Seven exact-RC verification and closure')<wf.indexOf('Upload Wave 22 release-device evidence bundle'),'closure must be persisted before evidence upload');
+const status=read('docs/project-memory/current/STATUS.md'),doc=read('docs/project-memory/current/FINAL_SEVEN_CLOSURE.md');
+for(const text of [status,doc]){ok(text.includes('3e8dfa8e7da7124e16504140eb9631c10cabf053'),'protected source boundary missing');ok(/not (Play\/store|store-production)|not Play Store|not store-production/i.test(text),'store-signing truth boundary missing');ok(/do not merge|No merge/i.test(text),'protected branch law missing')}
+eq(fs.statSync(path.join(ROOT,'seven_ai-final.html')).size,658133);eq(exact.gitBlobSha1(path.join(ROOT,'seven_ai-final.html')),'3e8dfa8e7da7124e16504140eb9631c10cabf053');
+console.log(`Final Seven Closure Contract: PASS (${n} assertions; same-head exact-RC closure is fail-closed)`);
