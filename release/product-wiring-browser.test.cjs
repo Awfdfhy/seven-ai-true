@@ -96,10 +96,13 @@ const {build}=require('./build-release.cjs');
         root:document.querySelector('.seven-workspace-root')?.dataset.sevenWorkspace,
         hidden:document.querySelector('.seven-workspace-root')?.hidden,
         chatHidden:document.getElementById('chat')?.hidden,
+        inputHidden:document.querySelector('.input-area')?.hidden,
+        rpgBar:!!document.querySelector('.seven-rpg-chatbar'),
         specialist:document.querySelector('.seven-workspace-root')?.dataset.sevenSpecialist
       }));
       ok(state.active===kind&&state.root===kind&&state.specialist===kind,kind+' workspace did not bind to its runtime');
-      ok(state.hidden===false&&state.chatHidden===true,kind+' workspace did not own the specialist surface');
+      if(kind==='rpg')ok(state.hidden===true&&state.chatHidden===false&&state.inputHidden===false&&state.rpgBar,'RPG must remain a chat-first surface');
+      else ok(state.hidden===false&&state.chatHidden===true,kind+' workspace did not own the specialist surface');
       await page.evaluate(()=>SevenWorkspaces.close());
       await page.waitForFunction(()=>SevenWorkspaces.active()==='chat');
     }
