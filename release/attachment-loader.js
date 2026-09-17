@@ -1,7 +1,7 @@
 (function(r){
 'use strict';
 if(!r||!r.document)return;
-var d=r.document,S={version:'1.0.1-beta.1',loading:null};
+var d=r.document,S={version:'1.1.0',loading:null};
 function ready(){return r.SevenAttachments&&typeof r.SevenAttachments.boot==='function'}
 function load(){
   if(ready())return Promise.resolve(r.SevenAttachments);
@@ -16,17 +16,17 @@ function load(){
   return S.loading;
 }
 function triggerFrom(node){return node&&node.closest?node.closest('[data-seven-attach-trigger],.composer-tools .tool-btn:not(.toggle)'):null}
+function warm(ev){
+  if(ready())return;
+  var btn=triggerFrom(ev.target);if(!btn)return;
+  load().catch(function(){});
+}
 function click(ev){
   if(ready())return;
   var btn=triggerFrom(ev.target);if(!btn)return;
-  ev.preventDefault();ev.stopImmediatePropagation();
-  btn.setAttribute('aria-busy','true');
-  load().then(function(api){
-    btn.removeAttribute('aria-busy');
-    try{if(api&&typeof api.boot==='function')api.boot()}catch(_){}
-    var trigger=d.querySelector('[data-seven-attach-trigger]')||btn;
-    if(trigger&&typeof trigger.click==='function')trigger.click();
-  }).catch(function(){btn.removeAttribute('aria-busy')});
+  /* Never cancel the trusted click. The native input must remain inside the
+     original Android user activation. Runtime loading is only warmed here. */
+  load().catch(function(){});
 }
 function paste(ev){
   if(ready())return;
@@ -38,6 +38,8 @@ function drag(ev){
   var types=ev.dataTransfer&&ev.dataTransfer.types;if(!types)return;
   try{if(Array.prototype.indexOf.call(types,'Files')>=0)load().catch(function(){})}catch(_){}
 }
+d.addEventListener('pointerdown',warm,true);
+d.addEventListener('touchstart',warm,{capture:true,passive:true});
 d.addEventListener('click',click,true);d.addEventListener('paste',paste,true);d.addEventListener('dragenter',drag,true);
 r.SevenAttachmentLoader={version:S.version,state:S,load:load};
 })(typeof globalThis!='undefined'?globalThis:this);
