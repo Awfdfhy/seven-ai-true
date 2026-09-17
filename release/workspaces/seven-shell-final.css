@@ -38,6 +38,8 @@ html[data-seven-shell-final="1"] .seven-ws-row[data-active="true"],html[data-sev
 html[data-seven-shell-final="1"] .seven-ws-btn,html[data-seven-shell-final="1"] .seven-ws-icon-btn,html[data-seven-shell-final="1"] .seven-ws-close{border-color:var(--seven-final-line)!important;border-radius:11px!important;background:var(--seven-final-raised)!important}
 html[data-seven-shell-final="1"] .seven-ws-btn.primary{border:0!important;background:linear-gradient(135deg,var(--sb-mode,#6d5cff),var(--sb-mode2,#8e78ff))!important}
 html[data-seven-shell-final="1"] .seven-rpg-hero:after{opacity:.55}
+html[data-seven-shell-final="1"] .seven-rpg-chatbar{position:relative;z-index:56}
+html[data-seven-shell-final="1"] .seven-rpg-chatbar+.input-area .composer{margin-top:0!important}
 html[data-seven-shell-final="1"] .room-item button{transition:none!important}
 html[data-seven-shell-final="1"] .topbar,html[data-seven-shell-final="1"] .sidebar,html[data-seven-shell-final="1"] .composer{contain:layout style}
 html[data-seven-shell-final="1"] .seven-shell-backdrop{backdrop-filter:none!important}
