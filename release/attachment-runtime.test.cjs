@@ -1,7 +1,6 @@
 "use strict";
 const assert=require("assert/strict"),fs=require("fs"),path=require("path");
 const {build}=require("./build-release.cjs");
-const ROOT=path.resolve(__dirname,"..");
 const built=build();
 const html=fs.readFileSync(built.output,"utf8");
 const runtime=fs.readFileSync(path.join(__dirname,"attachment-runtime.js"),"utf8");
@@ -13,15 +12,26 @@ assert.ok(html.includes('title="Attach photos or files"'),"release attach contro
 assert.ok(html.includes('<label>Attachments and knowledge files</label>'),"settings attachment label was not upgraded");
 assert.ok(html.includes('window.SevenAttachments.extractForKnowledge'),"knowledge loader is not routed through attachment classifier");
 assert.ok(!html.includes('accept=".txt,.pdf"'),"legacy txt/pdf-only accept filter survived release packaging");
+assert.match(runtime,/version:'1\.2\.0-beta\.1'/,"attachment runtime version was not advanced with the UX contract");
 assert.match(runtime,/data-seven-attach=["']?photos|dataset\.sevenAttach='photos'/,"Photos attachment route missing");
 assert.match(runtime,/data-seven-attach=["']?files|dataset\.sevenAttach='files'/,"Files attachment route missing");
+assert.match(runtime,/kind==='photos'\?'image\/\*':'\*\/\*'/,"Photos route must prefer the Android image picker while Files remains universal");
 assert.match(runtime,/attachment_metadata_/,"binary metadata safety path missing");
 assert.match(runtime,/MAX_TEXT_BYTES=8\*1024\*1024/,"mobile text extraction guard missing");
+assert.match(runtime,/addEventListener\('paste'/,"clipboard file ingestion path missing");
+assert.match(runtime,/addEventListener\('drop'/,"drag-and-drop file ingestion path missing");
+assert.match(runtime,/ingestFiles:applyFiles/,"programmatic attachment ingestion API missing");
+assert.match(runtime,/seven-attachment-style/,"attachment UI style contract missing");
+assert.match(runtime,/seven-attachment-chip-icon/,"typed attachment chip affordance missing");
+assert.match(runtime,/Binary format kept as an attachment/,"unsupported binary files must not be decoded as fake text");
 for(const svg of [night,day]){
   assert.match(svg,/<linearGradient/,"brand gradient missing");
   assert.match(svg,/#32BECF/i,"cyan identity stop missing");
+  assert.match(svg,/#4166F5/i,"blue identity stop missing");
   assert.match(svg,/#8265DC/i,"violet identity stop missing");
   assert.match(svg,/viewBox="0 0 108 108"/,"adaptive logo canvas changed");
 }
+assert.match(night,/#0A1022/i,"night logo surface missing");
+assert.match(day,/#F4F6FB/i,"day logo surface missing");
 assert.notEqual(night,day,"day and night logo assets must remain distinct");
 console.log("Universal attachments + refreshed Seven logo: PASS");
