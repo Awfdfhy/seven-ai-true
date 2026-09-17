@@ -70,7 +70,7 @@ function copyDir(src,dst){
 }
 function writeLazyRuntime(dst,name,source){
   const data=Buffer.from(compactJs(source));
-  const file=path.join(dst,name);fs.writeFileSync(file,data);
+  const file=path.join(dst,name);fs.mkdirSync(dst,{recursive:true});fs.writeFileSync(file,data);
   return {path:path.relative(DIST_DIR,file).replace(/\\/g,'/'),bytes:data.length,sha256:crypto.createHash('sha256').update(data).digest('hex')};
 }
 function build(){
@@ -90,7 +90,7 @@ function build(){
   html=replaceRequired(html,'accept=".txt,.pdf" multiple','accept="*/*" multiple','universal attachment accept');
   html=replaceRequired(html,'<label>Knowledge files (.txt or .pdf — no page limit)</label>','<label>Attachments and knowledge files</label>','attachment settings label');
   const oldExtraction=`const text = lowerName.endsWith(".pdf")\n                        ? await extractPdfText(file)\n                        : await readTextFile(file);\n                    const artifact = createKnowledgeArtifact(file, text, targetRoomId, {\n                        method: lowerName.endsWith(".pdf") ? "pdfjs_text" : "text_file"\n                    });`;
-  const newExtraction=`const attachmentExtraction = window.SevenAttachments && typeof window.SevenAttachments.extractForKnowledge === "function"\n                        ? await window.SevenAttachments.extractForKnowledge(file, extractPdfText, readTextFile)\n                        : { text: lowerName.endsWith(".pdf") ? await extractPdfText(file) : await readTextFile(file), method: lowerName.endsWith(".pdf") ? "pdfjs_text" : "text_file" };\n                    const text = attachmentExtraction.text;\n                    const artifact = createKnowledgeArtifact(file, text, targetRoomId, {\n                        method: attachmentExtraction.method\n                    });`;
+  const newExtraction=`if (!window.SevenAttachments && window.SevenAttachmentLoader && typeof window.SevenAttachmentLoader.load === "function") {\n                        await window.SevenAttachmentLoader.load();\n                    }\n                    const attachmentExtraction = window.SevenAttachments && typeof window.SevenAttachments.extractForKnowledge === "function"\n                        ? await window.SevenAttachments.extractForKnowledge(file, extractPdfText, readTextFile)\n                        : { text: lowerName.endsWith(".pdf") ? await extractPdfText(file) : await readTextFile(file), method: lowerName.endsWith(".pdf") ? "pdfjs_text" : "text_file" };\n                    const text = attachmentExtraction.text;\n                    const artifact = createKnowledgeArtifact(file, text, targetRoomId, {\n                        method: attachmentExtraction.method\n                    });`;
   html=replaceRequired(html,oldExtraction,newExtraction,'attachment extraction bridge');
   const css=compactCss(read('seven-final.css'));
   const betaCss=compactCss(read('beta-ui.css'));
@@ -105,19 +105,22 @@ function build(){
   const motion=compactJs(read('motion-runtime.js')).replace(/<\/script/gi,'<\\/script');
   const ui=compactJs(read('ui-runtime.js')).replace(/<\/script/gi,'<\\/script');
   const attachments=compactJs(read('attachment-runtime.js')).replace(/<\/script/gi,'<\\/script');
+  const attachmentLoader=compactJs(read('attachment-loader.js')).replace(/<\/script/gi,'<\\/script');
   const betaUi=compactJs(read('beta-ui-runtime.js')).replace(/<\/script/gi,'<\\/script');
   const workspaceSource=fs.existsSync(WORKSPACE_DIR)?fs.readdirSync(WORKSPACE_DIR).sort().map(name=>fs.readFileSync(path.join(WORKSPACE_DIR,name))).join(''):'';
   const workspaceDigest=digest(workspaceSource+canon+world);
+  const attachmentDigest=digest(attachments);
   const brandSource=fs.existsSync(BRAND_DIR)?fs.readdirSync(BRAND_DIR).sort().map(name=>fs.readFileSync(path.join(BRAND_DIR,name))).join(''):'';
   const brandDigest=digest(brandSource);
-  const fingerprint=digest(css+betaCss+research+performance+control+bridge+execution+pdfRuntime+motion+ui+attachments+betaUi+THEME_BOOT+pdf.version+workspaceDigest+brandDigest);
-  const startupBytes=[css,betaCss,research,performance,control,bridge,execution,pdfRuntime,motion,ui,betaUi].reduce((n,x)=>n+Buffer.byteLength(x),0)+Buffer.byteLength(THEME_BOOT);
+  const fingerprint=digest(css+betaCss+research+performance+control+bridge+execution+pdfRuntime+motion+ui+attachmentLoader+attachmentDigest+betaUi+THEME_BOOT+pdf.version+workspaceDigest+brandDigest);
+  const startupBytes=[css,betaCss,research,performance,control,bridge,execution,pdfRuntime,motion,ui,attachmentLoader,betaUi].reduce((n,x)=>n+Buffer.byteLength(x),0)+Buffer.byteLength(THEME_BOOT);
   const head=`\n<!-- ${MARK}:${fingerprint} -->\n<meta id="seven-theme-color" name="theme-color" content="#0f0d1d">\n${THEME_BOOT}\n<style id="seven-final-style">${css}</style>\n<style id="seven-beta-ui-style">${betaCss}</style>\n`;
-  const body=`\n<script id="seven-research-runtime">${research}</script>\n<script id="seven-performance-runtime">${performance}</script>\n<script id="seven-control-runtime">${control}</script>\n<script id="seven-control-bridge">${bridge}</script>\n<script id="seven-execution-bridge">${execution}</script>\n<script id="seven-pdf-runtime">${pdfRuntime}</script>\n<script id="seven-motion-runtime">${motion}</script>\n<script id="seven-ui-runtime">${ui}</script>\n<script id="seven-attachment-runtime">${attachments}</script>\n<script id="seven-beta-ui-runtime">${betaUi}</script>\n<script id="seven-brand-runtime" src="./brand/runtime.js"></script>\n<!-- /${MARK}:${fingerprint} -->\n`;
+  const body=`\n<script id="seven-research-runtime">${research}</script>\n<script id="seven-performance-runtime">${performance}</script>\n<script id="seven-control-runtime">${control}</script>\n<script id="seven-control-bridge">${bridge}</script>\n<script id="seven-execution-bridge">${execution}</script>\n<script id="seven-pdf-runtime">${pdfRuntime}</script>\n<script id="seven-motion-runtime">${motion}</script>\n<script id="seven-ui-runtime">${ui}</script>\n<script id="seven-attachment-loader">${attachmentLoader}</script>\n<script id="seven-beta-ui-runtime">${betaUi}</script>\n<script id="seven-brand-runtime" src="./brand/runtime.js"></script>\n<!-- /${MARK}:${fingerprint} -->\n`;
   html=injectBeforeLast(html,'</head>',head);
   html=injectBeforeLast(html,'</body>',body);
   fs.mkdirSync(DIST_DIR,{recursive:true});
   fs.writeFileSync(OUTPUT,html);
+  const attachmentFile=writeLazyRuntime(DIST_DIR,'attachment-runtime.js',attachments);
   const workspaceOut=path.join(DIST_DIR,'workspaces');fs.rmSync(workspaceOut,{recursive:true,force:true});
   const workspaceFiles=copyDir(WORKSPACE_DIR,workspaceOut);
   workspaceFiles.push(writeLazyRuntime(workspaceOut,'canon-simulator.js',canon));
@@ -129,10 +132,10 @@ function build(){
   const workspacePathBytes=Math.max.apply(null,paths);
   const brandOut=path.join(DIST_DIR,'brand');fs.rmSync(brandOut,{recursive:true,force:true});
   const brandFiles=copyDir(BRAND_DIR,brandOut),brandBytes=brandFiles.reduce((n,x)=>n+x.bytes,0);
-  const result={output:OUTPUT,bytes:Buffer.byteLength(html),sourceBytes:fs.statSync(SOURCE).size,fingerprint,pdf,pdfLoadMode:'lazy-local',themeBootBytes:Buffer.byteLength(THEME_BOOT),startupBytes,workspaceLoadMode:'lazy-local',workspaceDigest,workspaceBytes,workspacePathBytes,workspaceFiles,brandDigest,brandBytes,brandFiles};
-  fs.writeFileSync(path.join(DIST_DIR,'release-manifest.json'),JSON.stringify({format:'seven-release-manifest',version:15,builtAt:new Date().toISOString(),...result},null,2));
+  const result={output:OUTPUT,bytes:Buffer.byteLength(html),sourceBytes:fs.statSync(SOURCE).size,fingerprint,pdf,pdfLoadMode:'lazy-local',themeBootBytes:Buffer.byteLength(THEME_BOOT),startupBytes,attachmentLoadMode:'lazy-local',attachmentDigest,attachmentRuntimeBytes:attachmentFile.bytes,attachmentFile,workspaceLoadMode:'lazy-local',workspaceDigest,workspaceBytes,workspacePathBytes,workspaceFiles,brandDigest,brandBytes,brandFiles};
+  fs.writeFileSync(path.join(DIST_DIR,'release-manifest.json'),JSON.stringify({format:'seven-release-manifest',version:16,builtAt:new Date().toISOString(),...result},null,2));
   return result;
 }
 
-if(require.main===module){const r=build();console.log(`release build: PASS (${r.bytes} bytes, ${r.fingerprint}, startup ${r.startupBytes} bytes, local lazy PDF ${r.pdf.bytes} bytes, lazy workspace path ${r.workspacePathBytes} bytes, all workspace assets ${r.workspaceBytes} bytes, brand ${r.brandBytes} bytes, theme boot ${r.themeBootBytes} bytes)`);}
+if(require.main===module){const r=build();console.log(`release build: PASS (${r.bytes} bytes, ${r.fingerprint}, startup ${r.startupBytes} bytes, local lazy PDF ${r.pdf.bytes} bytes, lazy attachments ${r.attachmentRuntimeBytes} bytes, lazy workspace path ${r.workspacePathBytes} bytes, all workspace assets ${r.workspaceBytes} bytes, brand ${r.brandBytes} bytes, theme boot ${r.themeBootBytes} bytes)`);}
 module.exports={build,OUTPUT,MARK,THEME_BOOT,injectBeforeLast,compactCss,compactJs};
