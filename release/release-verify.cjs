@@ -4,12 +4,16 @@ const path=require('path');
 const http=require('http');
 const assert=require('assert/strict');
 const {build,OUTPUT,MARK}=require('./build-release.cjs');
+const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
 
 (async()=>{
   const built=build();
+  const frontier=patchFile(OUTPUT);
   const html=fs.readFileSync(OUTPUT,'utf8');
   const dist=path.dirname(OUTPUT);
   assert.ok(html.includes(MARK));
+  assert.ok(html.includes(`id:"${MODEL_ID}"`),'verified release must include the frontier free model');
+  assert.equal(frontier.model,MODEL_ID);
   assert.ok(built.brandFiles.some(x=>x.path==='brand/seven-day-white.svg'));
   assert.ok(built.brandFiles.some(x=>x.path==='brand/seven-night-black.svg'));
   const releaseLayerBytes=built.startupBytes;
@@ -59,5 +63,5 @@ const {build,OUTPUT,MARK}=require('./build-release.cjs');
       await page.close();
     });
   }finally{await browser.close();server.close();}
-  console.log(`release verification: PASS (${results.length} checks, ${releaseLayerBytes} startup bytes; PDF/attachments/workspaces lazy-local)`);
+  console.log(`release verification: PASS (${results.length} checks, ${releaseLayerBytes} startup bytes; frontier=${MODEL_ID}; PDF/attachments/workspaces lazy-local)`);
 })().catch(e=>{console.error(e);process.exit(1)});
