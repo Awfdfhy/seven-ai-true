@@ -8,10 +8,12 @@ const {build}=require("./build-release.cjs");
   const built=build(),html=fs.readFileSync(built.output,"utf8"),dist=path.dirname(built.output);
   const server=http.createServer((req,res)=>{
     const pathname=new URL(req.url,"http://127.0.0.1").pathname;
-    if(pathname.startsWith("/vendor/")||pathname.startsWith("/brand/")||pathname==="/attachment-runtime.js"){
+    const isAsset=pathname.startsWith("/vendor/")||pathname.startsWith("/brand/")||pathname.startsWith("/workspaces/")||pathname==="/attachment-runtime.js";
+    if(isAsset){
       const file=path.resolve(dist,"."+pathname);
       if(!file.startsWith(path.resolve(dist)+path.sep)||!fs.existsSync(file)){res.statusCode=404;res.end("not found");return;}
-      res.setHeader("Content-Type",file.endsWith(".svg")?"image/svg+xml":file.endsWith(".js")||file.endsWith(".mjs")?"text/javascript; charset=utf-8":"application/octet-stream");
+      const type=file.endsWith(".svg")?"image/svg+xml":file.endsWith(".css")?"text/css; charset=utf-8":file.endsWith(".js")||file.endsWith(".mjs")?"text/javascript; charset=utf-8":"application/octet-stream";
+      res.setHeader("Content-Type",type);
       fs.createReadStream(file).pipe(res);return;
     }
     res.setHeader("Content-Type","text/html; charset=utf-8");res.end(html);
