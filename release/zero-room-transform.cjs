@@ -16,14 +16,14 @@ function applyZeroRoomTransform(html){
 function disablePlaceholderFacade(file){
  if(!fs.existsSync(file))throw new Error('zero-room workspace asset missing');
  let js=fs.readFileSync(file,'utf8');
- const active=(js.match(/installZeroRoomFacade\(\);/g)||[]).length;
- const disabled=(js.match(/void 0;/g)||[]).length;
- if(active===0){
-   if(disabled<2)throw new Error('zero-room placeholder facade call sites changed');
-   return 0;
- }
- if(active<2)throw new Error('zero-room placeholder facade call sites changed');
- js=js.replace(/installZeroRoomFacade\(\);/g,'void 0;');
+ const marker='/* SEVEN_TRUE_ZERO_ROOM_FACADE_DISABLED */';
+ const callRe=/installZeroRoomFacade\(\)(?!\s*\{)/g;
+ const active=(js.match(callRe)||[]).length;
+ const disabled=(js.match(/\/\* SEVEN_TRUE_ZERO_ROOM_FACADE_DISABLED \*\//g)||[]).length;
+ const total=active+disabled;
+ if(total!==2)throw new Error('zero-room placeholder facade call sites changed');
+ if(active===0)return 0;
+ js=js.replace(callRe,marker+'void 0');
  fs.writeFileSync(file,js);
  return active;
 }
