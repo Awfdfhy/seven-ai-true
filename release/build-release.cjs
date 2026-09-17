@@ -15,9 +15,18 @@ const THEME_BOOT=`<script id="seven-theme-boot">!function(){var h=document.docum
 function read(name){return fs.readFileSync(path.join(__dirname,name),'utf8');}
 function digest(value){return crypto.createHash('sha256').update(value).digest('hex').slice(0,16);}
 function compactJs(value){
-  value=String(value);
-  if(value.includes('`'))return value;
-  return value.split(/\r?\n/).map(line=>line.trim()).filter(Boolean).join('\n');
+  value=String(value);let inTemplate=false;
+  return value.split(/\r?\n/).map(line=>{
+    let escaped=false,quotes='',ticks=0;
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(escaped){escaped=false;continue;}
+      if(c==='\\'){escaped=true;continue;}
+      if(!inTemplate&&(c==='"'||c==="'")){if(!quotes)quotes=c;else if(quotes===c)quotes='';continue;}
+      if(!quotes&&c==='`'){ticks++;inTemplate=!inTemplate;}
+    }
+    return (inTemplate||ticks%2===1)?line:line.trim();
+  }).filter(line=>inTemplate||line.length>0).join('\n');
 }
 function compactCss(value){
   value=String(value);let out='',quote='',comment=false,space=false;
@@ -52,6 +61,7 @@ function copyDir(src,dst){
     if(e.isDirectory())out.push(...copyDir(a,b));else{
       let data=fs.readFileSync(a);
       if(e.name.endsWith('.css'))data=Buffer.from(compactCss(data.toString('utf8')));
+      else if(e.name.endsWith('.js'))data=Buffer.from(compactJs(data.toString('utf8')));
       fs.writeFileSync(b,data);
       out.push({path:path.relative(DIST_DIR,b).replace(/\\/g,'/'),bytes:data.length,sha256:crypto.createHash('sha256').update(data).digest('hex')});
     }
