@@ -45,6 +45,12 @@ function build(){
   const pdfGuard=/if\s*\(!window\.pdfjsLib\)\s*\{\s*throw\s+new\s+Error\(["']PDF reader is still loading — try again in a moment\.["']\);\s*\}/m;
   if(!pdfGuard.test(html))throw new Error('release packaging could not find PDF lazy-load guard');
   html=html.replace(pdfGuard,`if (!window.pdfjsLib && window.SevenPdf && typeof window.SevenPdf.load === "function") {\n                await window.SevenPdf.load();\n            }\n            if (!window.pdfjsLib) {\n                throw new Error("PDF reader could not be loaded.");\n            }`);
+  html=replaceRequired(html,'title="Add a .txt or .pdf file to the AI\'s knowledge" aria-label="Attach a file"','title="Attach photos or files" aria-label="Attach photos or files"','attachment button label');
+  html=replaceRequired(html,'accept=".txt,.pdf" multiple','accept="*/*" multiple','universal attachment accept');
+  html=replaceRequired(html,'<label>Knowledge files (.txt or .pdf — no page limit)</label>','<label>Attachments and knowledge files</label>','attachment settings label');
+  const oldExtraction=`const text = lowerName.endsWith(".pdf")\n                        ? await extractPdfText(file)\n                        : await readTextFile(file);\n                    const artifact = createKnowledgeArtifact(file, text, targetRoomId, {\n                        method: lowerName.endsWith(".pdf") ? "pdfjs_text" : "text_file"\n                    });`;
+  const newExtraction=`const attachmentExtraction = window.SevenAttachments && typeof window.SevenAttachments.extractForKnowledge === "function"\n                        ? await window.SevenAttachments.extractForKnowledge(file, extractPdfText, readTextFile)\n                        : { text: lowerName.endsWith(".pdf") ? await extractPdfText(file) : await readTextFile(file), method: lowerName.endsWith(".pdf") ? "pdfjs_text" : "text_file" };\n                    const text = attachmentExtraction.text;\n                    const artifact = createKnowledgeArtifact(file, text, targetRoomId, {\n                        method: attachmentExtraction.method\n                    });`;
+  html=replaceRequired(html,oldExtraction,newExtraction,'attachment extraction bridge');
   const css=read('seven-final.css');
   const betaCss=read('beta-ui.css');
   const canon=read('canon-simulator.js').replace(/<\/script/gi,'<\\/script');
@@ -57,14 +63,15 @@ function build(){
   const pdfRuntime=read('pdf-runtime.js').replace(/<\/script/gi,'<\\/script');
   const motion=read('motion-runtime.js').replace(/<\/script/gi,'<\\/script');
   const ui=read('ui-runtime.js').replace(/<\/script/gi,'<\\/script');
+  const attachments=read('attachment-runtime.js').replace(/<\/script/gi,'<\\/script');
   const betaUi=read('beta-ui-runtime.js').replace(/<\/script/gi,'<\\/script');
   const workspaceSource=fs.existsSync(WORKSPACE_DIR)?fs.readdirSync(WORKSPACE_DIR).sort().map(name=>fs.readFileSync(path.join(WORKSPACE_DIR,name))).join(''):'';
   const workspaceDigest=digest(workspaceSource);
   const brandSource=fs.existsSync(BRAND_DIR)?fs.readdirSync(BRAND_DIR).sort().map(name=>fs.readFileSync(path.join(BRAND_DIR,name))).join(''):'';
   const brandDigest=digest(brandSource);
-  const fingerprint=digest(css+betaCss+canon+world+research+performance+control+bridge+execution+pdfRuntime+motion+ui+betaUi+THEME_BOOT+pdf.version+workspaceDigest+brandDigest);
+  const fingerprint=digest(css+betaCss+canon+world+research+performance+control+bridge+execution+pdfRuntime+motion+ui+attachments+betaUi+THEME_BOOT+pdf.version+workspaceDigest+brandDigest);
   const head=`\n<!-- ${MARK}:${fingerprint} -->\n<meta id="seven-theme-color" name="theme-color" content="#0f0d1d">\n${THEME_BOOT}\n<style id="seven-final-style">${css}</style>\n<style id="seven-beta-ui-style">${betaCss}</style>\n`;
-  const body=`\n<script id="seven-canon-runtime">${canon}</script>\n<script id="seven-world-runtime">${world}</script>\n<script id="seven-research-runtime">${research}</script>\n<script id="seven-performance-runtime">${performance}</script>\n<script id="seven-control-runtime">${control}</script>\n<script id="seven-control-bridge">${bridge}</script>\n<script id="seven-execution-bridge">${execution}</script>\n<script id="seven-pdf-runtime">${pdfRuntime}</script>\n<script id="seven-motion-runtime">${motion}</script>\n<script id="seven-ui-runtime">${ui}</script>\n<script id="seven-beta-ui-runtime">${betaUi}</script>\n<script id="seven-brand-runtime" src="./brand/runtime.js"></script>\n<!-- /${MARK}:${fingerprint} -->\n`;
+  const body=`\n<script id="seven-canon-runtime">${canon}</script>\n<script id="seven-world-runtime">${world}</script>\n<script id="seven-research-runtime">${research}</script>\n<script id="seven-performance-runtime">${performance}</script>\n<script id="seven-control-runtime">${control}</script>\n<script id="seven-control-bridge">${bridge}</script>\n<script id="seven-execution-bridge">${execution}</script>\n<script id="seven-pdf-runtime">${pdfRuntime}</script>\n<script id="seven-motion-runtime">${motion}</script>\n<script id="seven-ui-runtime">${ui}</script>\n<script id="seven-attachment-runtime">${attachments}</script>\n<script id="seven-beta-ui-runtime">${betaUi}</script>\n<script id="seven-brand-runtime" src="./brand/runtime.js"></script>\n<!-- /${MARK}:${fingerprint} -->\n`;
   html=injectBeforeLast(html,'</head>',head);
   html=injectBeforeLast(html,'</body>',body);
   fs.mkdirSync(DIST_DIR,{recursive:true});
@@ -74,7 +81,7 @@ function build(){
   const brandOut=path.join(DIST_DIR,'brand');fs.rmSync(brandOut,{recursive:true,force:true});
   const brandFiles=copyDir(BRAND_DIR,brandOut),brandBytes=brandFiles.reduce((n,x)=>n+x.bytes,0);
   const result={output:OUTPUT,bytes:Buffer.byteLength(html),sourceBytes:fs.statSync(SOURCE).size,fingerprint,pdf,pdfLoadMode:'lazy-local',themeBootBytes:Buffer.byteLength(THEME_BOOT),workspaceLoadMode:'lazy-local',workspaceDigest,workspaceBytes,workspaceFiles,brandDigest,brandBytes,brandFiles};
-  fs.writeFileSync(path.join(DIST_DIR,'release-manifest.json'),JSON.stringify({format:'seven-release-manifest',version:13,builtAt:new Date().toISOString(),...result},null,2));
+  fs.writeFileSync(path.join(DIST_DIR,'release-manifest.json'),JSON.stringify({format:'seven-release-manifest',version:14,builtAt:new Date().toISOString(),...result},null,2));
   return result;
 }
 
