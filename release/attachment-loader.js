@@ -1,7 +1,7 @@
 (function(r){
 'use strict';
 if(!r||!r.document)return;
-var d=r.document,S={version:'1.1.0',loading:null};
+var d=r.document,S={version:'1.2.0',loading:null,replaying:false};
 function ready(){return r.SevenAttachments&&typeof r.SevenAttachments.boot==='function'}
 function load(){
   if(ready())return Promise.resolve(r.SevenAttachments);
@@ -22,11 +22,20 @@ function warm(ev){
   load().catch(function(){});
 }
 function click(ev){
-  if(ready())return;
+  if(ready()||S.replaying)return;
   var btn=triggerFrom(ev.target);if(!btn)return;
-  /* Never cancel the trusted click. The native input must remain inside the
-     original Android user activation. Runtime loading is only warmed here. */
-  load().catch(function(){});
+  /* A cold paperclip tap only opens Seven's attachment menu. It must not
+     attempt to open the native file picker after an async boundary. Consume
+     this cold click, finish the lazy boot, then replay only the menu trigger.
+     The subsequent Photos/Files tap remains a fresh trusted user gesture and
+     opens #fileInput synchronously inside attachment-runtime.js. */
+  ev.preventDefault();ev.stopPropagation();
+  load().then(function(){
+    var live=d.querySelector('[data-seven-attach-trigger]')||btn;
+    if(!live||!live.isConnected)return;
+    S.replaying=true;
+    try{live.click()}finally{S.replaying=false}
+  }).catch(function(){});
 }
 function paste(ev){
   if(ready())return;
