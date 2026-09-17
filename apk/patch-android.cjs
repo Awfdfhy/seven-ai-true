@@ -83,12 +83,14 @@ public class SevenSmokeTest {
       scenario.onActivity(a -> ref.set(a.getBridge().getWebView()));
       WebView webView=ref.get();
       assertNotNull(webView);
-      waitFor(webView,"Boolean(window.SevenPerformance&&SevenPerformance.state.ready&&window.SevenCanon&&window.SevenMotion&&SevenMotion.state.ready&&window.SevenPdf)");
+      waitFor(webView,"Boolean(window.SevenPerformance&&SevenPerformance.state.ready&&window.SevenMotion&&SevenMotion.state.ready&&window.SevenPdf&&window.SevenBetaUI&&SevenBetaUI.state.ready)");
       waitFor(webView,"Boolean(typeof roomPersistence!=='undefined'&&roomPersistence.status().ready)");
       assertEquals("true",js(webView,"location.origin==='https://localhost'"));
       assertEquals("true",js(webView,"Boolean(document.getElementById('userInput'))"));
       assertEquals("true",js(webView,"document.documentElement.scrollWidth<=document.documentElement.clientWidth+2"));
       assertEquals("true",js(webView,"SevenPdf.loaded===false"));
+      assertEquals("true",js(webView,"typeof window.SevenCanon==='undefined'&&typeof window.SevenWorld==='undefined'"));
+      assertEquals("true",js(webView,"Boolean(window.SevenAttachmentLoader)&&typeof window.SevenAttachments==='undefined'"));
       assertEquals("true",js(webView,"(()=>{const e=document.getElementById('userInput');e.focus();return document.activeElement===e})()"));
       assertEquals("true",js(webView,"Boolean(window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.SevenPlatform)"));
       assertEquals("true",js(webView,"(()=>{window.__sevenNativeCaps='pending';const p=Capacitor.Plugins.SevenPlatform;p.getCapabilities().then(x=>window.__sevenNativeCaps=(x.secureStore&&x.androidKeystore&&x.saf&&x.chunkedIO&&!x.broadStoragePermission)?'ok':'bad').catch(()=>window.__sevenNativeCaps='error');return true})()"));
