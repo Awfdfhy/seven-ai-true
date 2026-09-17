@@ -16,11 +16,16 @@ function applyZeroRoomTransform(html){
 function disablePlaceholderFacade(file){
  if(!fs.existsSync(file))throw new Error('zero-room workspace asset missing');
  let js=fs.readFileSync(file,'utf8');
- const before=(js.match(/installZeroRoomFacade\(\);/g)||[]).length;
- if(before<2)throw new Error('zero-room placeholder facade call sites changed');
+ const active=(js.match(/installZeroRoomFacade\(\);/g)||[]).length;
+ const disabled=(js.match(/void 0;/g)||[]).length;
+ if(active===0){
+   if(disabled<2)throw new Error('zero-room placeholder facade call sites changed');
+   return 0;
+ }
+ if(active<2)throw new Error('zero-room placeholder facade call sites changed');
  js=js.replace(/installZeroRoomFacade\(\);/g,'void 0;');
  fs.writeFileSync(file,js);
- return before;
+ return active;
 }
 function transformFile(file){
  const before=fs.readFileSync(file,'utf8'),after=applyZeroRoomTransform(before);fs.writeFileSync(file,after);
