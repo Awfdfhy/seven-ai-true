@@ -3,7 +3,7 @@ const fs=require('fs');
 const path=require('path');
 const http=require('http');
 const assert=require('assert/strict');
-const {build,OUTPUT,MARK,THEME_BOOT}=require('./build-release.cjs');
+const {build,OUTPUT,MARK}=require('./build-release.cjs');
 
 (async()=>{
   const built=build();
@@ -12,13 +12,18 @@ const {build,OUTPUT,MARK,THEME_BOOT}=require('./build-release.cjs');
   assert.ok(html.includes(MARK));
   assert.ok(built.brandFiles.some(x=>x.path==='brand/seven-day-white.svg'));
   assert.ok(built.brandFiles.some(x=>x.path==='brand/seven-night-black.svg'));
-  const releaseAssets=['seven-final.css','beta-ui.css','canon-simulator.js','world-runtime.js','research-runtime.js','performance-runtime.js','control-runtime.js','control-bridge.js','execution-bridge.js','pdf-runtime.js','motion-runtime.js','ui-runtime.js','beta-ui-runtime.js'];
-  const releaseLayerBytes=releaseAssets.reduce((n,name)=>n+fs.statSync(path.join(__dirname,name)).size,0)+Buffer.byteLength(THEME_BOOT);
+  const releaseLayerBytes=built.startupBytes;
   assert.ok(releaseLayerBytes<100000,`release layer unexpectedly heavy: ${releaseLayerBytes} bytes`);
+  assert.equal(built.pdfLoadMode,'lazy-local');
+  assert.equal(built.attachmentLoadMode,'lazy-local');
+  assert.equal(built.workspaceLoadMode,'lazy-local');
+  assert.ok(html.includes('id="seven-attachment-loader"'));
+  assert.ok(!html.includes('id="seven-attachment-runtime"'));
+  assert.ok(!html.includes('id="seven-canon-runtime"')&&!html.includes('id="seven-world-runtime"'));
 
   const server=http.createServer((req,res)=>{
     const pathname=new URL(req.url,'http://127.0.0.1').pathname;
-    if(pathname.startsWith('/vendor/')||pathname.startsWith('/workspaces/')||pathname.startsWith('/brand/')){
+    if(pathname.startsWith('/vendor/')||pathname.startsWith('/workspaces/')||pathname.startsWith('/brand/')||pathname==='/attachment-runtime.js'){
       const file=path.resolve(dist,'.'+pathname);
       if(!file.startsWith(path.resolve(dist)+path.sep)||!fs.existsSync(file)){res.statusCode=404;res.end('not found');return;}
       res.setHeader('Content-Type',file.endsWith('.js')||file.endsWith('.mjs')?'text/javascript; charset=utf-8':file.endsWith('.css')?'text/css; charset=utf-8':file.endsWith('.svg')?'image/svg+xml':'application/octet-stream');
@@ -37,6 +42,8 @@ const {build,OUTPUT,MARK,THEME_BOOT}=require('./build-release.cjs');
       await page.goto(origin,{waitUntil:'domcontentloaded'});
       await page.waitForFunction(()=>window.SevenRuntime&&window.SevenControl&&window.SevenBridge&&window.SevenExecution&&window.SevenBetaUI);
       assert.equal(await page.evaluate(()=>document.documentElement.dataset.sevenControl),'v4.3');
+      assert.equal(await page.evaluate(()=>!!window.SevenAttachmentLoader),true);
+      assert.equal(await page.evaluate(()=>!!window.SevenAttachments),false);
       await page.close();
     });
     await test('workspace assets are lazy and loadable',async()=>{
@@ -52,5 +59,5 @@ const {build,OUTPUT,MARK,THEME_BOOT}=require('./build-release.cjs');
       await page.close();
     });
   }finally{await browser.close();server.close();}
-  console.log(`release verification: PASS (${results.length} checks, ${releaseLayerBytes} startup bytes)`);
+  console.log(`release verification: PASS (${results.length} checks, ${releaseLayerBytes} startup bytes; PDF/attachments/workspaces lazy-local)`);
 })().catch(e=>{console.error(e);process.exit(1)});
