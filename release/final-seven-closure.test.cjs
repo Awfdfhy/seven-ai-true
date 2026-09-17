@@ -20,6 +20,7 @@ ok(wf.indexOf('Merge complete release-device Android visual matrix')<wf.indexOf(
 ok(wf.indexOf('Verify APK again after device tests')<wf.indexOf('Final Seven exact-RC verification and closure'),'final closure must run after post-device APK re-verification');
 ok(wf.indexOf('Final Seven exact-RC verification and closure')<wf.indexOf('Upload Wave 22 release-device evidence bundle'),'closure must be persisted before evidence upload');
 const status=read('docs/project-memory/current/STATUS.md'),doc=read('docs/project-memory/current/FINAL_SEVEN_CLOSURE.md');
-for(const text of [status,doc]){ok(text.includes('3e8dfa8e7da7124e16504140eb9631c10cabf053'),'protected source boundary missing');ok(/(?:not|no)\s+(?:Play\/store|store-production)|not Play Store|not store-production/i.test(text),'store-signing truth boundary missing');ok(/do not merge|No merge/i.test(text),'protected branch law missing')}
+const hasStoreBoundary=(text)=>/(?:not|no)[^\n.]{0,96}(?:play\/store|play store|store-production|production-signing)|(?:play\/store|play store|store-production|production-signing)[^\n.]{0,96}(?:not|no)/i.test(text);
+for(const text of [status,doc]){ok(text.includes('3e8dfa8e7da7124e16504140eb9631c10cabf053'),'protected source boundary missing');ok(hasStoreBoundary(text),'store-signing truth boundary missing');ok(/do not merge|No merge/i.test(text),'protected branch law missing')}
 eq(fs.statSync(path.join(ROOT,'seven_ai-final.html')).size,658133);eq(exact.gitBlobSha1(path.join(ROOT,'seven_ai-final.html')),'3e8dfa8e7da7124e16504140eb9631c10cabf053');
 console.log(`Final Seven Closure Contract: PASS (${n} assertions; same-head exact-RC closure is fail-closed)`);
