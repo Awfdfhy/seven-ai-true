@@ -12,6 +12,7 @@ const browserFiles=[
   "release/pdf-runtime.js",
   "release/motion-runtime.js",
   "release/ui-runtime.js",
+  "release/attachment-runtime.js",
   "release/beta-ui-runtime.js",
   "release/workspaces/hub.js",
   "release/workspaces/coding.js",
