@@ -41,12 +41,14 @@ const {build}=require('./build-release.cjs');
       search:!!document.getElementById('searchToggle'),
       file:!!document.getElementById('fileInput'),
       accept:document.getElementById('fileInput')?.getAttribute('accept')||'',
+      attachments:!!window.SevenAttachments,
       composerState:document.querySelector('.composer')?.dataset.sevenComposerState||'',
       sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth
     }));
     ok(core.input&&core.send&&core.stop,'chat send/stop path is missing');
     ok(core.think&&core.search&&core.file,'primary composer tools are missing');
-    ok(core.accept.includes('.txt')&&core.accept.includes('.pdf'),'knowledge input must advertise TXT and PDF');
+    ok(core.accept==='*/*','knowledge input must advertise universal file selection');
+    ok(core.attachments,'universal attachment runtime must be wired into the composer');
     ok(core.composerState==='ready','composer must initialize ready');
     ok(core.sw<=core.cw+2,'mobile core surface overflows horizontally');
 
