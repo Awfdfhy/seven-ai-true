@@ -5,28 +5,58 @@ const path = require("path");
 
 const ROOT = path.resolve(__dirname, "..");
 const CONFIG = path.join(ROOT, "capacitor.config.json");
-const CAPTURE = path.join(__dirname, "capture-android-system-visuals.cjs");
 
 const config = JSON.parse(fs.readFileSync(CONFIG, "utf8"));
 const label = String(config.appName || "").trim();
 if (!label) throw new Error("capacitor appName is required");
 
 const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-let source = fs.readFileSync(CAPTURE, "utf8");
+const targets = [
+  {
+    file: "capture-android-system-visuals.cjs",
+    replacements: [
+      ['return /(^|\\s)Seven(\\s|$)/i.test(t)&&parseBounds(n.bounds)', `return /(^|\\s)${escaped}(\\s|$)/i.test(t)&&parseBounds(n.bounds)`]
+    ]
+  },
+  {
+    file: "prepare-pixel-launcher-home.cjs",
+    replacements: [
+      ['/(^|\\s)Seven(\\s|$)/i.test(text(n))', `/(^|\\s)${escaped}(\\s|$)/i.test(text(n))`]
+    ]
+  },
+  {
+    file: "capture-android-themed-launcher-ui.cjs",
+    replacements: [
+      ['/(^|\\s)Seven(\\s|$)/i.test(nodeText(n))', `/(^|\\s)${escaped}(\\s|$)/i.test(nodeText(n))`]
+    ]
+  },
+  {
+    file: "capture-android-legacy-launcher-ui.cjs",
+    replacements: [
+      ['/(^|\\s)Seven(?:\\s|$)/i.test(text(n))', `/(^|\\s)${escaped}(?:\\s|$)/i.test(text(n))`],
+      ['query:"Seven"', `query:${JSON.stringify(label)}`],
+      ['"input","text","Seven"', `"input","text",${JSON.stringify(label)}`]
+    ]
+  }
+];
 
-const oldMatcher = 'return /(^|\\s)Seven(\\s|$)/i.test(t)&&parseBounds(n.bounds)';
-const newMatcher = `return /(^|\\s)${escaped}(\\s|$)/i.test(t)&&parseBounds(n.bounds)`;
-
-if (source.includes(newMatcher)) {
-  console.log(`Android launcher label contract: PASS (${label}; already synchronized)`);
-  process.exit(0);
+let changed = 0;
+for (const target of targets) {
+  const file = path.join(__dirname, target.file);
+  let source = fs.readFileSync(file, "utf8");
+  let touched = false;
+  for (const [oldText, newText] of target.replacements) {
+    if (source.includes(newText)) continue;
+    if (!source.includes(oldText)) {
+      throw new Error(`${target.file} launcher label contract drifted; refusing blind rewrite`);
+    }
+    source = source.replace(oldText, newText);
+    touched = true;
+  }
+  if (touched) {
+    fs.writeFileSync(file, source);
+    changed++;
+  }
 }
-if (!source.includes(oldMatcher)) {
-  throw new Error("launcher label matcher drifted; refusing blind rewrite");
-}
 
-source = source.replace(oldMatcher, newMatcher)
-  .replace(/Seven launcher node not found in genuine system launcher/g, `${label} launcher node not found in genuine system launcher`)
-  .replace(/Seven could not be placed and verified on launcher workspace/g, `${label} could not be placed and verified on launcher workspace`);
-fs.writeFileSync(CAPTURE, source);
-console.log(`Android launcher label contract: PASS (${label})`);
+console.log(`Android launcher label contract: PASS (${label}; synchronized ${changed}/${targets.length} launcher capture files)`);
