@@ -20,8 +20,8 @@ function click(ev){
   if(ready())return;
   var btn=triggerFrom(ev.target);if(!btn)return;
   ev.preventDefault();ev.stopImmediatePropagation();
-  load().then(function(){btn.click()}).catch(function(){btn.removeAttribute('aria-busy')});
   btn.setAttribute('aria-busy','true');
+  load().then(function(){btn.removeAttribute('aria-busy');btn.click()}).catch(function(){btn.removeAttribute('aria-busy')});
 }
 function paste(ev){
   if(ready())return;
