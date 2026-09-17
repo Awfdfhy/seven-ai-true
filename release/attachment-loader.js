@@ -1,7 +1,7 @@
 (function(r){
 'use strict';
 if(!r||!r.document)return;
-var d=r.document,S={version:'1.0.0-beta.1',loading:null};
+var d=r.document,S={version:'1.0.1-beta.1',loading:null};
 function ready(){return r.SevenAttachments&&typeof r.SevenAttachments.boot==='function'}
 function load(){
   if(ready())return Promise.resolve(r.SevenAttachments);
@@ -21,7 +21,12 @@ function click(ev){
   var btn=triggerFrom(ev.target);if(!btn)return;
   ev.preventDefault();ev.stopImmediatePropagation();
   btn.setAttribute('aria-busy','true');
-  load().then(function(){btn.removeAttribute('aria-busy');btn.click()}).catch(function(){btn.removeAttribute('aria-busy')});
+  load().then(function(api){
+    btn.removeAttribute('aria-busy');
+    try{if(api&&typeof api.boot==='function')api.boot()}catch(_){}
+    var trigger=d.querySelector('[data-seven-attach-trigger]')||btn;
+    if(trigger&&typeof trigger.click==='function')trigger.click();
+  }).catch(function(){btn.removeAttribute('aria-busy')});
 }
 function paste(ev){
   if(ready())return;
