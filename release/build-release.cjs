@@ -68,6 +68,11 @@ function copyDir(src,dst){
   }
   return out;
 }
+function writeLazyRuntime(dst,name,source){
+  const data=Buffer.from(compactJs(source));
+  const file=path.join(dst,name);fs.writeFileSync(file,data);
+  return {path:path.relative(DIST_DIR,file).replace(/\\/g,'/'),bytes:data.length,sha256:crypto.createHash('sha256').update(data).digest('hex')};
+}
 function build(){
   let html=fs.readFileSync(SOURCE,'utf8');
   if(html.includes(MARK))throw new Error('release layer already present in source; refuse double injection');
@@ -89,8 +94,8 @@ function build(){
   html=replaceRequired(html,oldExtraction,newExtraction,'attachment extraction bridge');
   const css=compactCss(read('seven-final.css'));
   const betaCss=compactCss(read('beta-ui.css'));
-  const canon=compactJs(read('canon-simulator.js')).replace(/<\/script/gi,'<\\/script');
-  const world=compactJs(read('world-runtime.js')).replace(/<\/script/gi,'<\\/script');
+  const canon=compactJs(read('canon-simulator.js'));
+  const world=compactJs(read('world-runtime.js'));
   const research=compactJs(read('research-runtime.js')).replace(/<\/script/gi,'<\\/script');
   const performance=compactJs(read('performance-runtime.js')).replace(/<\/script/gi,'<\\/script');
   const control=compactJs(read('control-runtime.js')).replace(/<\/script/gi,'<\\/script');
@@ -102,25 +107,32 @@ function build(){
   const attachments=compactJs(read('attachment-runtime.js')).replace(/<\/script/gi,'<\\/script');
   const betaUi=compactJs(read('beta-ui-runtime.js')).replace(/<\/script/gi,'<\\/script');
   const workspaceSource=fs.existsSync(WORKSPACE_DIR)?fs.readdirSync(WORKSPACE_DIR).sort().map(name=>fs.readFileSync(path.join(WORKSPACE_DIR,name))).join(''):'';
-  const workspaceDigest=digest(workspaceSource);
+  const workspaceDigest=digest(workspaceSource+canon+world);
   const brandSource=fs.existsSync(BRAND_DIR)?fs.readdirSync(BRAND_DIR).sort().map(name=>fs.readFileSync(path.join(BRAND_DIR,name))).join(''):'';
   const brandDigest=digest(brandSource);
-  const fingerprint=digest(css+betaCss+canon+world+research+performance+control+bridge+execution+pdfRuntime+motion+ui+attachments+betaUi+THEME_BOOT+pdf.version+workspaceDigest+brandDigest);
-  const startupBytes=[css,betaCss,canon,world,research,performance,control,bridge,execution,pdfRuntime,motion,ui,betaUi].reduce((n,x)=>n+Buffer.byteLength(x),0)+Buffer.byteLength(THEME_BOOT);
+  const fingerprint=digest(css+betaCss+research+performance+control+bridge+execution+pdfRuntime+motion+ui+attachments+betaUi+THEME_BOOT+pdf.version+workspaceDigest+brandDigest);
+  const startupBytes=[css,betaCss,research,performance,control,bridge,execution,pdfRuntime,motion,ui,betaUi].reduce((n,x)=>n+Buffer.byteLength(x),0)+Buffer.byteLength(THEME_BOOT);
   const head=`\n<!-- ${MARK}:${fingerprint} -->\n<meta id="seven-theme-color" name="theme-color" content="#0f0d1d">\n${THEME_BOOT}\n<style id="seven-final-style">${css}</style>\n<style id="seven-beta-ui-style">${betaCss}</style>\n`;
-  const body=`\n<script id="seven-canon-runtime">${canon}</script>\n<script id="seven-world-runtime">${world}</script>\n<script id="seven-research-runtime">${research}</script>\n<script id="seven-performance-runtime">${performance}</script>\n<script id="seven-control-runtime">${control}</script>\n<script id="seven-control-bridge">${bridge}</script>\n<script id="seven-execution-bridge">${execution}</script>\n<script id="seven-pdf-runtime">${pdfRuntime}</script>\n<script id="seven-motion-runtime">${motion}</script>\n<script id="seven-ui-runtime">${ui}</script>\n<script id="seven-attachment-runtime">${attachments}</script>\n<script id="seven-beta-ui-runtime">${betaUi}</script>\n<script id="seven-brand-runtime" src="./brand/runtime.js"></script>\n<!-- /${MARK}:${fingerprint} -->\n`;
+  const body=`\n<script id="seven-research-runtime">${research}</script>\n<script id="seven-performance-runtime">${performance}</script>\n<script id="seven-control-runtime">${control}</script>\n<script id="seven-control-bridge">${bridge}</script>\n<script id="seven-execution-bridge">${execution}</script>\n<script id="seven-pdf-runtime">${pdfRuntime}</script>\n<script id="seven-motion-runtime">${motion}</script>\n<script id="seven-ui-runtime">${ui}</script>\n<script id="seven-attachment-runtime">${attachments}</script>\n<script id="seven-beta-ui-runtime">${betaUi}</script>\n<script id="seven-brand-runtime" src="./brand/runtime.js"></script>\n<!-- /${MARK}:${fingerprint} -->\n`;
   html=injectBeforeLast(html,'</head>',head);
   html=injectBeforeLast(html,'</body>',body);
   fs.mkdirSync(DIST_DIR,{recursive:true});
   fs.writeFileSync(OUTPUT,html);
   const workspaceOut=path.join(DIST_DIR,'workspaces');fs.rmSync(workspaceOut,{recursive:true,force:true});
-  const workspaceFiles=copyDir(WORKSPACE_DIR,workspaceOut),workspaceBytes=workspaceFiles.reduce((n,x)=>n+x.bytes,0);
+  const workspaceFiles=copyDir(WORKSPACE_DIR,workspaceOut);
+  workspaceFiles.push(writeLazyRuntime(workspaceOut,'canon-simulator.js',canon));
+  workspaceFiles.push(writeLazyRuntime(workspaceOut,'world-runtime.js',world));
+  const workspaceBytes=workspaceFiles.reduce((n,x)=>n+x.bytes,0);
+  const byName=Object.fromEntries(workspaceFiles.map(x=>[path.basename(x.path),x.bytes]));
+  const base=(byName['hub.js']||0)+(byName['hub.css']||0)+(byName['rtl.css']||0);
+  const paths=[base+(byName['coding.js']||0),base+(byName['research.js']||0),base+(byName['rpg.js']||0)+(byName['canon-simulator.js']||0)+(byName['world-runtime.js']||0),base+(byName['generated-ui.js']||0)+(byName['generated-ui.css']||0)];
+  const workspacePathBytes=Math.max.apply(null,paths);
   const brandOut=path.join(DIST_DIR,'brand');fs.rmSync(brandOut,{recursive:true,force:true});
   const brandFiles=copyDir(BRAND_DIR,brandOut),brandBytes=brandFiles.reduce((n,x)=>n+x.bytes,0);
-  const result={output:OUTPUT,bytes:Buffer.byteLength(html),sourceBytes:fs.statSync(SOURCE).size,fingerprint,pdf,pdfLoadMode:'lazy-local',themeBootBytes:Buffer.byteLength(THEME_BOOT),startupBytes,workspaceLoadMode:'lazy-local',workspaceDigest,workspaceBytes,workspaceFiles,brandDigest,brandBytes,brandFiles};
-  fs.writeFileSync(path.join(DIST_DIR,'release-manifest.json'),JSON.stringify({format:'seven-release-manifest',version:14,builtAt:new Date().toISOString(),...result},null,2));
+  const result={output:OUTPUT,bytes:Buffer.byteLength(html),sourceBytes:fs.statSync(SOURCE).size,fingerprint,pdf,pdfLoadMode:'lazy-local',themeBootBytes:Buffer.byteLength(THEME_BOOT),startupBytes,workspaceLoadMode:'lazy-local',workspaceDigest,workspaceBytes,workspacePathBytes,workspaceFiles,brandDigest,brandBytes,brandFiles};
+  fs.writeFileSync(path.join(DIST_DIR,'release-manifest.json'),JSON.stringify({format:'seven-release-manifest',version:15,builtAt:new Date().toISOString(),...result},null,2));
   return result;
 }
 
-if(require.main===module){const r=build();console.log(`release build: PASS (${r.bytes} bytes, ${r.fingerprint}, startup ${r.startupBytes} bytes, local lazy PDF ${r.pdf.bytes} bytes, lazy workspaces ${r.workspaceBytes} bytes, brand ${r.brandBytes} bytes, theme boot ${r.themeBootBytes} bytes)`);}
+if(require.main===module){const r=build();console.log(`release build: PASS (${r.bytes} bytes, ${r.fingerprint}, startup ${r.startupBytes} bytes, local lazy PDF ${r.pdf.bytes} bytes, lazy workspace path ${r.workspacePathBytes} bytes, all workspace assets ${r.workspaceBytes} bytes, brand ${r.brandBytes} bytes, theme boot ${r.themeBootBytes} bytes)`);}
 module.exports={build,OUTPUT,MARK,THEME_BOOT,injectBeforeLast,compactCss,compactJs};
