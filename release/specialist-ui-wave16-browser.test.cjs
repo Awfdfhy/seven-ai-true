@@ -75,15 +75,15 @@ const {chromium}=require("playwright"),http=require("http"),fs=require("fs"),pat
     }
     {
       const {c,p,errors,traffic}=await fresh();await openWorkspace(p,"rpg");
-      ok(traffic.some(x=>x.endsWith("/workspaces/rpg.js")));ok(!traffic.some(x=>x.endsWith("/workspaces/coding.js")||x.endsWith("/workspaces/research.js")));
-      eq(await p.textContent(".seven-ws-head h1"),"RPG / Real Works");ok(/does not auto-commit canon|truth boundary/i.test(await p.textContent("[data-rpg-notice]")));
+      ok(traffic.some(x=>x.endsWith("/workspaces/rpg.js")));ok(traffic.some(x=>x.endsWith("/workspaces/canon-simulator.js")));ok(traffic.some(x=>x.endsWith("/workspaces/world-runtime.js")));ok(!traffic.some(x=>x.endsWith("/workspaces/coding.js")||x.endsWith("/workspaces/research.js")));
+      const surface=await p.evaluate(()=>({bar:!!document.querySelector('.seven-rpg-chatbar'),chatHidden:document.getElementById('chat')?.hidden,inputHidden:document.querySelector('.input-area')?.hidden,rootHidden:document.querySelector('.seven-workspace-root')?.hidden}));
+      ok(surface.bar&&surface.chatHidden===false&&surface.inputHidden===false&&surface.rootHidden===true,JSON.stringify(surface));
       const before=await p.evaluate(()=>SevenRpgWorkspace.snapshot());eq(before.work,null);eq(before.canonPack,null);
       const blocked=await p.evaluate(()=>({beat:SevenRpgWorkspace.commitVerifiedBeat({verified:false}),canon:SevenRpgWorkspace.applyVerifiedDelta({}, {verified:false})}));
       eq(blocked.beat.reason,"verification-required");eq(blocked.canon.reason,"verification-required");
-      await p.evaluate(()=>{window.__wave16Rpg=[];window.sendMessage=async()=>{__wave16Rpg.push(document.getElementById('userInput').value)}});
-      await p.fill("[data-rpg-action]","I inspect the room and wait");await p.click("[data-rpg-send]");await p.waitForFunction(()=>window.__wave16Rpg.length===1);eq((await p.evaluate(()=>__wave16Rpg))[0],"I inspect the room and wait");
+      await p.click("[data-rpg-title-toggle]");await p.click("[data-title-record]");ok(/Load a Real Works pack/i.test(await p.textContent("[data-rpg-notice]")));
+      const autoBlocked=await p.evaluate(()=>SevenRpgWorkspace.autoTitle({kind:'episode',name:'Too early',boundary:false,confidence:1}));eq(autoBlocked.reason,'not-a-story-boundary');
       const after=await p.evaluate(()=>SevenRpgWorkspace.snapshot());eq(after.work,null);eq(after.canonPack,null);
-      await p.click("[data-title-record]");ok(/Load a Real Works pack/i.test(await p.textContent("[data-rpg-notice]")));ok(/Your action stays yours/i.test(await p.getAttribute("[data-rpg-action]","placeholder")));
       await mobileRtl(p);eq(errors.length,0,errors.join("\n"));await c.close();
     }
     {
@@ -91,6 +91,6 @@ const {chromium}=require("playwright"),http=require("http"),fs=require("fs"),pat
       for(const kind of ["coding","research","rpg"]){const dur=await p.evaluate(k=>getComputedStyle(document.querySelector(`[data-ws="${k}"]`)).transitionDuration,kind);ok(dur==="0s"||parseFloat(dur)<=.001,`${kind}:${dur}`)}
       await c.close();
     }
-    console.log(`Wave 16 Specialist Workspaces Browser: PASS (${n} assertions; Coding + Research + RPG interaction, lazy isolation, truth boundaries, mobile/RTL/reduced-motion)`);
+    console.log(`Wave 16 Specialist Workspaces Browser: PASS (${n} assertions; Coding + Research + chat-first RPG interaction, lazy isolation, truth boundaries, mobile/RTL/reduced-motion)`);
   }finally{await browser.close();await new Promise(r=>server.close(r))}
 })().catch(e=>{console.error(e);process.exit(1)});
