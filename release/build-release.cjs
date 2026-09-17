@@ -14,6 +14,27 @@ const THEME_BOOT=`<script id="seven-theme-boot">!function(){var h=document.docum
 
 function read(name){return fs.readFileSync(path.join(__dirname,name),'utf8');}
 function digest(value){return crypto.createHash('sha256').update(value).digest('hex').slice(0,16);}
+function compactJs(value){
+  value=String(value);
+  if(value.includes('`'))return value;
+  return value.split(/\r?\n/).map(line=>line.trim()).filter(Boolean).join('\n');
+}
+function compactCss(value){
+  value=String(value);let out='',quote='',comment=false,space=false;
+  const tight='{}:;,>+~';
+  for(let i=0;i<value.length;i++){
+    const c=value[i],n=value[i+1];
+    if(comment){if(c==='*'&&n==='/'){comment=false;i++;}continue;}
+    if(quote){out+=c;if(c==='\\'&&i+1<value.length){out+=value[++i];continue;}if(c===quote)quote='';continue;}
+    if(c==='/'&&n==='*'){comment=true;i++;continue;}
+    if(c==='"'||c==="'"){if(space&&out&&tight.indexOf(out[out.length-1])<0)out+=' ';space=false;quote=c;out+=c;continue;}
+    if(/\s/.test(c)){space=true;continue;}
+    if(tight.indexOf(c)>=0){if(out.endsWith(' '))out=out.slice(0,-1);space=false;out+=c;continue;}
+    if(space&&out&&tight.indexOf(out[out.length-1])<0)out+=' ';
+    space=false;out+=c;
+  }
+  return out.trim();
+}
 function injectBeforeLast(html,needle,payload){
   const index=html.toLowerCase().lastIndexOf(needle.toLowerCase());
   if(index<0)throw new Error('source HTML missing '+needle);
@@ -28,7 +49,12 @@ function copyDir(src,dst){
   fs.mkdirSync(dst,{recursive:true});const out=[];
   for(const e of fs.readdirSync(src,{withFileTypes:true}).sort((a,b)=>a.name.localeCompare(b.name))){
     const a=path.join(src,e.name),b=path.join(dst,e.name);
-    if(e.isDirectory())out.push(...copyDir(a,b));else{fs.copyFileSync(a,b);out.push({path:path.relative(DIST_DIR,b).replace(/\\/g,'/'),bytes:fs.statSync(a).size,sha256:crypto.createHash('sha256').update(fs.readFileSync(a)).digest('hex')});}
+    if(e.isDirectory())out.push(...copyDir(a,b));else{
+      let data=fs.readFileSync(a);
+      if(e.name.endsWith('.css'))data=Buffer.from(compactCss(data.toString('utf8')));
+      fs.writeFileSync(b,data);
+      out.push({path:path.relative(DIST_DIR,b).replace(/\\/g,'/'),bytes:data.length,sha256:crypto.createHash('sha256').update(data).digest('hex')});
+    }
   }
   return out;
 }
@@ -51,25 +77,26 @@ function build(){
   const oldExtraction=`const text = lowerName.endsWith(".pdf")\n                        ? await extractPdfText(file)\n                        : await readTextFile(file);\n                    const artifact = createKnowledgeArtifact(file, text, targetRoomId, {\n                        method: lowerName.endsWith(".pdf") ? "pdfjs_text" : "text_file"\n                    });`;
   const newExtraction=`const attachmentExtraction = window.SevenAttachments && typeof window.SevenAttachments.extractForKnowledge === "function"\n                        ? await window.SevenAttachments.extractForKnowledge(file, extractPdfText, readTextFile)\n                        : { text: lowerName.endsWith(".pdf") ? await extractPdfText(file) : await readTextFile(file), method: lowerName.endsWith(".pdf") ? "pdfjs_text" : "text_file" };\n                    const text = attachmentExtraction.text;\n                    const artifact = createKnowledgeArtifact(file, text, targetRoomId, {\n                        method: attachmentExtraction.method\n                    });`;
   html=replaceRequired(html,oldExtraction,newExtraction,'attachment extraction bridge');
-  const css=read('seven-final.css');
-  const betaCss=read('beta-ui.css');
-  const canon=read('canon-simulator.js').replace(/<\/script/gi,'<\\/script');
-  const world=read('world-runtime.js').replace(/<\/script/gi,'<\\/script');
-  const research=read('research-runtime.js').replace(/<\/script/gi,'<\\/script');
-  const performance=read('performance-runtime.js').replace(/<\/script/gi,'<\\/script');
-  const control=read('control-runtime.js').replace(/<\/script/gi,'<\\/script');
-  const bridge=read('control-bridge.js').replace(/<\/script/gi,'<\\/script');
-  const execution=read('execution-bridge.js').replace(/<\/script/gi,'<\\/script');
-  const pdfRuntime=read('pdf-runtime.js').replace(/<\/script/gi,'<\\/script');
-  const motion=read('motion-runtime.js').replace(/<\/script/gi,'<\\/script');
-  const ui=read('ui-runtime.js').replace(/<\/script/gi,'<\\/script');
-  const attachments=read('attachment-runtime.js').replace(/<\/script/gi,'<\\/script');
-  const betaUi=read('beta-ui-runtime.js').replace(/<\/script/gi,'<\\/script');
+  const css=compactCss(read('seven-final.css'));
+  const betaCss=compactCss(read('beta-ui.css'));
+  const canon=compactJs(read('canon-simulator.js')).replace(/<\/script/gi,'<\\/script');
+  const world=compactJs(read('world-runtime.js')).replace(/<\/script/gi,'<\\/script');
+  const research=compactJs(read('research-runtime.js')).replace(/<\/script/gi,'<\\/script');
+  const performance=compactJs(read('performance-runtime.js')).replace(/<\/script/gi,'<\\/script');
+  const control=compactJs(read('control-runtime.js')).replace(/<\/script/gi,'<\\/script');
+  const bridge=compactJs(read('control-bridge.js')).replace(/<\/script/gi,'<\\/script');
+  const execution=compactJs(read('execution-bridge.js')).replace(/<\/script/gi,'<\\/script');
+  const pdfRuntime=compactJs(read('pdf-runtime.js')).replace(/<\/script/gi,'<\\/script');
+  const motion=compactJs(read('motion-runtime.js')).replace(/<\/script/gi,'<\\/script');
+  const ui=compactJs(read('ui-runtime.js')).replace(/<\/script/gi,'<\\/script');
+  const attachments=compactJs(read('attachment-runtime.js')).replace(/<\/script/gi,'<\\/script');
+  const betaUi=compactJs(read('beta-ui-runtime.js')).replace(/<\/script/gi,'<\\/script');
   const workspaceSource=fs.existsSync(WORKSPACE_DIR)?fs.readdirSync(WORKSPACE_DIR).sort().map(name=>fs.readFileSync(path.join(WORKSPACE_DIR,name))).join(''):'';
   const workspaceDigest=digest(workspaceSource);
   const brandSource=fs.existsSync(BRAND_DIR)?fs.readdirSync(BRAND_DIR).sort().map(name=>fs.readFileSync(path.join(BRAND_DIR,name))).join(''):'';
   const brandDigest=digest(brandSource);
   const fingerprint=digest(css+betaCss+canon+world+research+performance+control+bridge+execution+pdfRuntime+motion+ui+attachments+betaUi+THEME_BOOT+pdf.version+workspaceDigest+brandDigest);
+  const startupBytes=[css,betaCss,canon,world,research,performance,control,bridge,execution,pdfRuntime,motion,ui,betaUi].reduce((n,x)=>n+Buffer.byteLength(x),0)+Buffer.byteLength(THEME_BOOT);
   const head=`\n<!-- ${MARK}:${fingerprint} -->\n<meta id="seven-theme-color" name="theme-color" content="#0f0d1d">\n${THEME_BOOT}\n<style id="seven-final-style">${css}</style>\n<style id="seven-beta-ui-style">${betaCss}</style>\n`;
   const body=`\n<script id="seven-canon-runtime">${canon}</script>\n<script id="seven-world-runtime">${world}</script>\n<script id="seven-research-runtime">${research}</script>\n<script id="seven-performance-runtime">${performance}</script>\n<script id="seven-control-runtime">${control}</script>\n<script id="seven-control-bridge">${bridge}</script>\n<script id="seven-execution-bridge">${execution}</script>\n<script id="seven-pdf-runtime">${pdfRuntime}</script>\n<script id="seven-motion-runtime">${motion}</script>\n<script id="seven-ui-runtime">${ui}</script>\n<script id="seven-attachment-runtime">${attachments}</script>\n<script id="seven-beta-ui-runtime">${betaUi}</script>\n<script id="seven-brand-runtime" src="./brand/runtime.js"></script>\n<!-- /${MARK}:${fingerprint} -->\n`;
   html=injectBeforeLast(html,'</head>',head);
@@ -80,10 +107,10 @@ function build(){
   const workspaceFiles=copyDir(WORKSPACE_DIR,workspaceOut),workspaceBytes=workspaceFiles.reduce((n,x)=>n+x.bytes,0);
   const brandOut=path.join(DIST_DIR,'brand');fs.rmSync(brandOut,{recursive:true,force:true});
   const brandFiles=copyDir(BRAND_DIR,brandOut),brandBytes=brandFiles.reduce((n,x)=>n+x.bytes,0);
-  const result={output:OUTPUT,bytes:Buffer.byteLength(html),sourceBytes:fs.statSync(SOURCE).size,fingerprint,pdf,pdfLoadMode:'lazy-local',themeBootBytes:Buffer.byteLength(THEME_BOOT),workspaceLoadMode:'lazy-local',workspaceDigest,workspaceBytes,workspaceFiles,brandDigest,brandBytes,brandFiles};
+  const result={output:OUTPUT,bytes:Buffer.byteLength(html),sourceBytes:fs.statSync(SOURCE).size,fingerprint,pdf,pdfLoadMode:'lazy-local',themeBootBytes:Buffer.byteLength(THEME_BOOT),startupBytes,workspaceLoadMode:'lazy-local',workspaceDigest,workspaceBytes,workspaceFiles,brandDigest,brandBytes,brandFiles};
   fs.writeFileSync(path.join(DIST_DIR,'release-manifest.json'),JSON.stringify({format:'seven-release-manifest',version:14,builtAt:new Date().toISOString(),...result},null,2));
   return result;
 }
 
-if(require.main===module){const r=build();console.log(`release build: PASS (${r.bytes} bytes, ${r.fingerprint}, local lazy PDF ${r.pdf.bytes} bytes, lazy workspaces ${r.workspaceBytes} bytes, brand ${r.brandBytes} bytes, theme boot ${r.themeBootBytes} bytes)`);}
-module.exports={build,OUTPUT,MARK,THEME_BOOT,injectBeforeLast};
+if(require.main===module){const r=build();console.log(`release build: PASS (${r.bytes} bytes, ${r.fingerprint}, startup ${r.startupBytes} bytes, local lazy PDF ${r.pdf.bytes} bytes, lazy workspaces ${r.workspaceBytes} bytes, brand ${r.brandBytes} bytes, theme boot ${r.themeBootBytes} bytes)`);}
+module.exports={build,OUTPUT,MARK,THEME_BOOT,injectBeforeLast,compactCss,compactJs};
