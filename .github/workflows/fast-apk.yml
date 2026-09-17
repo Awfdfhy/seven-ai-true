@@ -1,0 +1,64 @@
+name: Seven Fast APK
+
+on:
+  push:
+    branches:
+      - ultimate-polish-v1
+    paths:
+      - 'release/**'
+      - 'apk/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'capacitor.config.json'
+      - '.github/workflows/fast-apk.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Node 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Java 21
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install build dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Generate Android project
+        run: npm run android:generate
+      - name: Create deterministic signing key
+        run: |
+          mkdir -p "$HOME/.android"
+          keytool -genkeypair -v \
+            -keystore "$HOME/.android/debug.keystore" \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -dname "CN=Android Debug,O=Seven CI,C=US" \
+            -keyalg RSA -keysize 2048 -validity 10000
+      - name: Build signed release APK only
+        working-directory: android
+        run: |
+          ./gradlew --no-daemon :app:assembleRelease \
+            -PsevenCiKeystore="$HOME/.android/debug.keystore" \
+            -PsevenCiStorePass=android \
+            -PsevenCiKeyAlias=androiddebugkey \
+            -PsevenCiKeyPass=android
+      - name: Upload direct APK
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: seven-direct-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          archive: false
+          if-no-files-found: error
+          retention-days: 14
