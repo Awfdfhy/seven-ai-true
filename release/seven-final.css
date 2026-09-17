@@ -123,6 +123,13 @@ button:focus-visible,[role="button"]:focus-visible,.room-item:focus-visible,.too
   border:1px solid color-mix(in srgb,var(--accent) 12%,var(--border));
   box-shadow:0 4px 16px rgba(12,9,28,.035);
 }
+.message.user .bubble a{
+  color:inherit!important;
+  text-decoration:none!important;
+  pointer-events:none!important;
+  cursor:text!important;
+  -webkit-tap-highlight-color:transparent!important;
+}
 .message.assistant .bubble{max-width:100%}
 .message.assistant[data-seven-ui-decorated="1"]::before{
   content:"";
