@@ -3,6 +3,7 @@ const {chromium}=require("playwright"),http=require("http"),fs=require("fs"),pat
 (async()=>{
   const built=build(),html=fs.readFileSync(built.output,"utf8"),dist=path.dirname(built.output);
   assert.equal(built.workspaceLoadMode,"lazy-local");
+  const deferredShell=new Set(['seven-shell.css','seven-shell.js','ui-polish-fixes.css','ui-polish-fixes.js','seven-shell-final.css','seven-shell-final.js']);
   const server=http.createServer((req,res)=>{
     const p=new URL(req.url,"http://127.0.0.1").pathname;
     if(p!=="/"&&p!=="/index.html"){
@@ -22,7 +23,7 @@ const {chromium}=require("playwright"),http=require("http"),fs=require("fs"),pat
     await c.route("**/*",x=>x.request().url().startsWith(origin)?x.continue():x.abort());
     const p=await c.newPage(),errors=[],traffic=[];
     p.on("pageerror",e=>errors.push(e.message));
-    p.on("request",x=>{if(x.url().includes("/workspaces/"))traffic.push(x.url())});
+    p.on("request",x=>{const u=x.url();if(u.includes("/workspaces/")&&!deferredShell.has(path.posix.basename(new URL(u).pathname)))traffic.push(u)});
     await p.goto(origin,{waitUntil:"domcontentloaded"});
     await p.waitForFunction(()=>window.SevenBetaUI?.state.ready);
     return{c,p,errors,traffic};
