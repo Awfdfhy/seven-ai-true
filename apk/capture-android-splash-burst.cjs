@@ -10,6 +10,9 @@ const DEFAULT_APK="android/app/build/outputs/apk/release/app-release.apk";
 const DEFAULT_BUILD="evidence/android/build-identity.json";
 const SPLASH_RGB=Object.freeze([0x12,0x10,0x26]);
 const CAPTURE_FRAMES=30;
+const ADB_INSTALL_TIMEOUT_MS=60000;
+const ADB_READY_TIMEOUT_MS=20000;
+const ADB_INSTALL_ATTEMPTS=2;
 
 function run(cmd,args,{allow=false,encoding="utf8",timeout=20000,maxBuffer=64*1024*1024}={}){
   const r=spawnSync(cmd,args,{encoding,maxBuffer,timeout});
@@ -18,6 +21,32 @@ function run(cmd,args,{allow=false,encoding="utf8",timeout=20000,maxBuffer=64*10
 }
 function adb(...args){return run("adb",args)}
 function sleep(ms){Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,ms)}
+function resultText(r){return[r?.error?.code,r?.error?.message,r?.stderr,r?.stdout].filter(Boolean).map(String).join(" ")}
+function isRetryableAdbFailure(r){return /ETIMEDOUT|timed out|timeout|device offline|device .* not found|transport(?: error)?|connection reset|closed|cannot connect|daemon not running/i.test(resultText(r))}
+function waitForAdbReady({runCommand=run,sleepFn=sleep}={}){
+  let last=null;
+  for(let attempt=1;attempt<=4;attempt++){
+    last=runCommand("adb",["wait-for-device"],{allow:true,timeout:ADB_READY_TIMEOUT_MS});
+    if(!last?.error&&last?.status===0){
+      const boot=runCommand("adb",["shell","getprop","sys.boot_completed"],{allow:true,timeout:8000});
+      if(!boot?.error&&boot?.status===0&&String(boot.stdout||"").trim()==="1")return true;
+      last=boot;
+    }
+    if(attempt<4)sleepFn(400);
+  }
+  throw Error(`adb device readiness failed: ${resultText(last)||"device never reached boot-complete"}`);
+}
+function installExactApk(apk,{runCommand=run,sleepFn=sleep}={}){
+  let last=null;
+  for(let attempt=1;attempt<=ADB_INSTALL_ATTEMPTS;attempt++){
+    waitForAdbReady({runCommand,sleepFn});
+    last=runCommand("adb",["install","-r",apk],{allow:true,timeout:ADB_INSTALL_TIMEOUT_MS});
+    if(!last?.error&&last?.status===0&&/Success/i.test(String(last.stdout||"Success")))return{attempts:attempt};
+    if(!isRetryableAdbFailure(last)||attempt===ADB_INSTALL_ATTEMPTS)break;
+    sleepFn(750);
+  }
+  throw Error(`adb install -r ${apk} failed after bounded retry: ${resultText(last)||"unknown adb failure"}`);
+}
 function shaBytes(b){return crypto.createHash("sha256").update(b).digest("hex")}
 function fileHash(p){return shaBytes(fs.readFileSync(p))}
 function writeJson(p,v){fs.mkdirSync(path.dirname(p),{recursive:true});fs.writeFileSync(p,JSON.stringify(v,null,2)+"\n")}
@@ -115,7 +144,7 @@ function loadProfileEvidence(outDir,build){
 async function captureSplash({apk,build,profileId,outDir,runId}){
   const evidence=loadProfileEvidence(outDir,build),api=evidence.device.apiLevel;
   const resource=systemVisuals.requireResourceWitness(apk,"splash",api);
-  adb("install","-r",apk);
+  installExactApk(apk);
   run("adb",["shell","am","clear-debug-app"],{allow:true});
   const baseline=captureRaw(),baselineHash=shaBytes(Buffer.concat([Buffer.from(`${baseline.width}x${baseline.height}:${baseline.format}:`),baseline.pixels]));
   const starter=launchColdWithForcedIcon(),started=Date.now(),frames=[];
@@ -166,4 +195,4 @@ async function main(env=process.env){
   await captureSplash({apk,build,profileId,outDir,runId});
 }
 if(require.main===module)main().catch(e=>{console.error("Android splash burst evidence: FAIL",e.message);process.exit(1)});
-module.exports=Object.freeze({decodeRawScreencap,pixelRgb,splashSignature,rgbaPixels,captureSplash,main});
+module.exports=Object.freeze({ADB_INSTALL_TIMEOUT_MS,ADB_READY_TIMEOUT_MS,ADB_INSTALL_ATTEMPTS,decodeRawScreencap,pixelRgb,splashSignature,rgbaPixels,isRetryableAdbFailure,waitForAdbReady,installExactApk,captureSplash,main});
