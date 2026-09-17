@@ -11,7 +11,7 @@ const {build}=require('./build-release.cjs');
   const dist=path.dirname(built.output);
   const server=http.createServer((req,res)=>{
     const pathname=new URL(req.url,'http://127.0.0.1').pathname;
-    if(pathname.startsWith('/vendor/')||pathname.startsWith('/brand/')||pathname.startsWith('/workspaces/')){
+    if(pathname.startsWith('/vendor/')||pathname.startsWith('/brand/')||pathname.startsWith('/workspaces/')||pathname==='/attachment-runtime.js'){
       const file=path.resolve(dist,'.'+pathname);
       if(!file.startsWith(path.resolve(dist)+path.sep)||!fs.existsSync(file)){res.statusCode=404;res.end('not found');return;}
       const ext=path.extname(file);
@@ -41,26 +41,24 @@ const {build}=require('./build-release.cjs');
       search:!!document.getElementById('searchToggle'),
       file:!!document.getElementById('fileInput'),
       accept:document.getElementById('fileInput')?.getAttribute('accept')||'',
-      attachments:!!window.SevenAttachments,
+      attachmentLoader:!!window.SevenAttachmentLoader,
+      attachmentsHot:!!window.SevenAttachments,
       composerState:document.querySelector('.composer')?.dataset.sevenComposerState||'',
       sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth
     }));
     ok(core.input&&core.send&&core.stop,'chat send/stop path is missing');
     ok(core.think&&core.search&&core.file,'primary composer tools are missing');
     ok(core.accept==='*/*','knowledge input must advertise universal file selection');
-    ok(core.attachments,'universal attachment runtime must be wired into the composer');
+    ok(core.attachmentLoader&&!core.attachmentsHot,'universal attachments must be wired but remain lazy before intent');
     ok(core.composerState==='ready','composer must initialize ready');
     ok(core.sw<=core.cw+2,'mobile core surface overflows horizontally');
 
     await page.evaluate(()=>openSettings());
     await page.waitForFunction(()=>{const e=document.getElementById('modelSelect');if(!e)return false;const r=e.getBoundingClientRect();return r.width>0&&r.height>0;},{timeout:5000});
     const settings=await page.evaluate(()=>({
-      model:!!document.getElementById('modelSelect'),
-      modelOptions:document.getElementById('modelSelect')?.options.length||0,
-      routing:!!document.getElementById('routingModeSelect'),
-      routingOptions:document.getElementById('routingModeSelect')?.options.length||0,
-      fallback:!!document.getElementById('freeFallbackToggle'),
-      status:!!document.getElementById('freeModelStatus'),
+      model:!!document.getElementById('modelSelect'),modelOptions:document.getElementById('modelSelect')?.options.length||0,
+      routing:!!document.getElementById('routingModeSelect'),routingOptions:document.getElementById('routingModeSelect')?.options.length||0,
+      fallback:!!document.getElementById('freeFallbackToggle'),status:!!document.getElementById('freeModelStatus'),
       visibleModel:(()=>{const e=document.getElementById('modelSelect');const r=e&&e.getBoundingClientRect();return!!(r&&r.width>0&&r.height>0)})()
     }));
     ok(settings.model&&settings.visibleModel,'Preferred Model escape hatch is not reachable');
@@ -68,38 +66,19 @@ const {build}=require('./build-release.cjs');
     ok(settings.routing&&settings.routingOptions>0,'Free Model Routing control is not reachable');
     ok(settings.fallback&&settings.status,'fallback/status model controls are not reachable');
 
-    await page.evaluate(()=>{
-      if(typeof closeSettings==='function')closeSettings();
-      const onboarding=document.getElementById('nameModal');
-      if(onboarding)onboarding.style.display='none';
-    });
+    await page.evaluate(()=>{if(typeof closeSettings==='function')closeSettings();const onboarding=document.getElementById('nameModal');if(onboarding)onboarding.style.display='none';});
     await page.locator('.seven-beta-status').click();
     await page.waitForFunction(()=>window.SevenWorkspaces&&document.querySelector('.seven-ws-launcher'),{timeout:5000});
-    const launcher=await page.evaluate(()=>({
-      cards:[...document.querySelectorAll('.seven-ws-choice')].map(x=>({id:x.dataset.ws,text:x.textContent.trim()})),
-      modal:document.querySelector('.seven-ws-launcher')?.getAttribute('role'),
-      aria:document.querySelector('.seven-ws-launcher')?.getAttribute('aria-modal')
-    }));
+    const launcher=await page.evaluate(()=>({cards:[...document.querySelectorAll('.seven-ws-choice')].map(x=>({id:x.dataset.ws,text:x.textContent.trim()})),modal:document.querySelector('.seven-ws-launcher')?.getAttribute('role'),aria:document.querySelector('.seven-ws-launcher')?.getAttribute('aria-modal')}));
     const launcherIds=launcher.cards.map(x=>x.id);
     ok(launcher.modal==='dialog'&&launcher.aria==='true','workspace launcher must be a modal dialog');
     for(const id of ['chat','coding','research','rpg'])ok(launcherIds.includes(id),'workspace launcher missing '+id);
 
     for(const kind of ['coding','research','rpg']){
-      if(await page.locator('.seven-ws-launcher').count()===0){
-        await page.evaluate(()=>SevenWorkspaces.openLauncher());
-        await page.waitForSelector('.seven-ws-launcher');
-      }
+      if(await page.locator('.seven-ws-launcher').count()===0){await page.evaluate(()=>SevenWorkspaces.openLauncher());await page.waitForSelector('.seven-ws-launcher');}
       await page.locator(`.seven-ws-choice[data-ws="${kind}"]`).click();
       await page.waitForFunction(k=>window.SevenWorkspaces&&SevenWorkspaces.active()===k&&document.querySelector('.seven-workspace-root')?.dataset.sevenWorkspace===k,kind,{timeout:7000});
-      const state=await page.evaluate(()=>({
-        active:SevenWorkspaces.active(),
-        root:document.querySelector('.seven-workspace-root')?.dataset.sevenWorkspace,
-        hidden:document.querySelector('.seven-workspace-root')?.hidden,
-        chatHidden:document.getElementById('chat')?.hidden,
-        inputHidden:document.querySelector('.input-area')?.hidden,
-        rpgBar:!!document.querySelector('.seven-rpg-chatbar'),
-        specialist:document.querySelector('.seven-workspace-root')?.dataset.sevenSpecialist
-      }));
+      const state=await page.evaluate(()=>({active:SevenWorkspaces.active(),root:document.querySelector('.seven-workspace-root')?.dataset.sevenWorkspace,hidden:document.querySelector('.seven-workspace-root')?.hidden,chatHidden:document.getElementById('chat')?.hidden,inputHidden:document.querySelector('.input-area')?.hidden,rpgBar:!!document.querySelector('.seven-rpg-chatbar'),specialist:document.querySelector('.seven-workspace-root')?.dataset.sevenSpecialist}));
       if(kind==='rpg'){
         ok(state.active==='rpg'&&state.root==='rpg'&&state.rpgBar,'RPG workspace did not bind to its chat-first runtime');
         ok(state.hidden===true&&state.chatHidden===false&&state.inputHidden===false,'RPG must keep the normal chat and composer visible');
@@ -107,23 +86,15 @@ const {build}=require('./build-release.cjs');
         ok(state.active===kind&&state.root===kind&&state.specialist===kind,kind+' workspace did not bind to its runtime');
         ok(state.hidden===false&&state.chatHidden===true,kind+' workspace did not own the specialist surface');
       }
-      await page.evaluate(()=>SevenWorkspaces.close());
-      await page.waitForFunction(()=>SevenWorkspaces.active()==='chat');
+      await page.evaluate(()=>SevenWorkspaces.close());await page.waitForFunction(()=>SevenWorkspaces.active()==='chat');
     }
 
-    const finalState=await page.evaluate(()=>({
-      active:SevenWorkspaces.active(),
-      chatHidden:document.getElementById('chat')?.hidden,
-      rootHidden:document.querySelector('.seven-workspace-root')?.hidden,
-      sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth
-    }));
+    const finalState=await page.evaluate(()=>({active:SevenWorkspaces.active(),chatHidden:document.getElementById('chat')?.hidden,rootHidden:document.querySelector('.seven-workspace-root')?.hidden,attachmentsHot:!!window.SevenAttachments,sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth}));
     ok(finalState.active==='chat'&&finalState.chatHidden===false&&finalState.rootHidden===true,'workspace close must restore chat');
+    ok(finalState.attachmentsHot===false,'workspace navigation must not speculatively load attachment runtime');
     ok(finalState.sw<=finalState.cw+2,'mobile product surface overflows after workspace round trip');
     assert.deepEqual(errors,[],'browser product wiring emitted page errors');assertions++;
     await context.close();
-    console.log(`Product Wiring Browser: PASS (${assertions} assertions; chat/settings/coding/research/rpg mobile flows)`);
-  }finally{
-    await browser.close();
-    await new Promise(resolve=>server.close(resolve));
-  }
+    console.log(`Product Wiring Browser: PASS (${assertions} assertions; chat/settings/coding/research/rpg mobile flows; attachments lazy)`);
+  }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(err=>{console.error(err);process.exit(1)});
