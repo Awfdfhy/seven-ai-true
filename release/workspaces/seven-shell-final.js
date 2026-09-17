@@ -2,7 +2,7 @@
 'use strict';
 if(!r||!r.document)return;
 const d=r.document,$=s=>d.querySelector(s),qa=s=>Array.from(d.querySelectorAll(s));
-const S={version:'3.0.1',ready:false,observer:null,workspaceLoading:null,attachmentWarm:false,events:false};
+const S={version:'3.0.2',ready:false,observer:null,workspaceLoading:null,attachmentWarm:false,events:false};
 const AR=()=>/^ar\b/i.test(d.documentElement.lang||'');
 const T=(en,ar)=>AR()?ar:en;
 function visible(el){if(!el||el.hidden)return false;const c=r.getComputedStyle?r.getComputedStyle(el):null;return !c||c.display!=='none';}
@@ -59,7 +59,8 @@ function polishSettings(){
   qa('.settings-modal input,.settings-modal select,.settings-modal textarea,.settings-panel input,.settings-panel select,.settings-panel textarea,.modal input,.modal select,.modal textarea').forEach(x=>{if(!x.classList.contains('seven-shell-field'))x.classList.add('seven-shell-field')});
 }
 function polishWorkspaces(){qa('.seven-ws-launcher,.seven-workspace-root').forEach(x=>{if(x.dataset.sevenShellIntegrated!=='1')x.dataset.sevenShellIntegrated='1'});qa('.seven-ws-choice').forEach(x=>{if(x.getAttribute('data-seven-shell-card')!=='1')x.setAttribute('data-seven-shell-card','1')});}
-function installEvents(){if(S.events)return;S.events=true;d.addEventListener('pointerdown',e=>{if(e.target&&e.target.closest&&e.target.closest('.composer,[data-seven-attach-trigger]'))warmAttachments()},{capture:true,passive:true});d.addEventListener('focusin',e=>{if(e.target&&e.target.closest&&e.target.closest('.composer'))warmAttachments()},{passive:true});d.addEventListener('seven:workspacechange',()=>setTimeout(sync,0));d.addEventListener('seven:themechange',()=>setTimeout(sync,0));d.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='/'){e.preventDefault();const input=$('#userInput');input&&input.focus({preventScroll:false})}})}
+function isAttachIntentTarget(target){return !!(target&&target.closest&&target.closest('[data-seven-attach-trigger],.seven-shell-attach-trigger'));}
+function installEvents(){if(S.events)return;S.events=true;d.addEventListener('pointerdown',e=>{if(isAttachIntentTarget(e.target))warmAttachments()},{capture:true,passive:true});d.addEventListener('focusin',e=>{if(isAttachIntentTarget(e.target))warmAttachments()},{passive:true});d.addEventListener('seven:workspacechange',()=>setTimeout(sync,0));d.addEventListener('seven:themechange',()=>setTimeout(sync,0));d.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='/'){e.preventDefault();const input=$('#userInput');input&&input.focus({preventScroll:false})}})}
 let pending=false;function sync(){if(pending)return;pending=true;const run=()=>{pending=false;mark();cleanChrome();ensureNav();ensureWorkspaceChip();polishComposer();polishSettings();polishWorkspaces();ensureCodeCopy();syncNav()};if(typeof r.requestAnimationFrame==='function')r.requestAnimationFrame(run);else setTimeout(run,0)}
 function boot(){if(S.ready){sync();return S}mark();installEvents();sync();if(d.body&&!S.observer){S.observer=new MutationObserver(sync);S.observer.observe(d.body,{childList:true,subtree:true})}S.ready=true;d.dispatchEvent(new CustomEvent('seven:shellfinalready',{detail:{version:S.version}}));return S}
 d.readyState==='loading'?d.addEventListener('DOMContentLoaded',boot,{once:true}):boot();
