@@ -2,7 +2,7 @@
   'use strict';
   if(!root||!root.document)return;
   const doc=root.document;
-  const state={ready:false,version:'2.0.0',messageObserver:null,composerObserver:null};
+  const state={ready:false,version:'2.0.1',messageObserver:null,composerObserver:null,pendingMessages:new Set()};
   const raf=(key,fn)=>{
     const perf=root.SevenPerformance;
     if(perf&&typeof perf.batchFrame==='function')perf.batchFrame(key,fn);
@@ -21,6 +21,16 @@
     if(bubble){bubble.dataset.sevenBubble='1';bubble.dir='auto';}
     if(node.dataset.sevenUiDecorated)return;
     node.dataset.sevenUiDecorated='1';
+  }
+  function queueMessageNode(node){
+    if(!node||node.nodeType!==1)return;
+    if(node.matches&&node.matches('.message'))state.pendingMessages.add(node);
+    if(node.querySelectorAll)node.querySelectorAll('.message').forEach(x=>state.pendingMessages.add(x));
+  }
+  function flushMessages(){
+    const pending=[...state.pendingMessages];state.pendingMessages.clear();
+    for(const node of pending)decorateMessage(node);
+    syncComposer();syncToolState();
   }
   function syncToolState(){
     doc.querySelectorAll('.tool-btn.toggle').forEach(btn=>{
@@ -58,16 +68,10 @@
   }
   function watchMessages(){
     const chat=doc.getElementById('chat');if(!chat)return;
-    state.messageObserver=new MutationObserver(records=>raf('seven-ui-messages',()=>{
-      for(const record of records){
-        for(const node of record.addedNodes){
-          if(node.nodeType!==1)continue;
-          if(node.matches&&node.matches('.message'))decorateMessage(node);
-          if(node.querySelectorAll)node.querySelectorAll('.message').forEach(decorateMessage);
-        }
-      }
-      syncComposer();syncToolState();
-    }));
+    state.messageObserver=new MutationObserver(records=>{
+      for(const record of records)for(const node of record.addedNodes)queueMessageNode(node);
+      raf('seven-ui-messages',flushMessages);
+    });
     state.messageObserver.observe(chat,{childList:true,subtree:true});
   }
   function watchComposer(){
