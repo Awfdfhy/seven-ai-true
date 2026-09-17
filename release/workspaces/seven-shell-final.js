@@ -2,7 +2,7 @@
 'use strict';
 if(!r||!r.document)return;
 const d=r.document,$=s=>d.querySelector(s),qa=s=>Array.from(d.querySelectorAll(s));
-const S={version:'3.0.2',ready:false,observer:null,workspaceLoading:null,attachmentWarm:false,events:false};
+const S={version:'3.1.0',ready:false,observer:null,workspaceLoading:null,attachmentWarm:false,events:false};
 const AR=()=>/^ar\b/i.test(d.documentElement.lang||'');
 const T=(en,ar)=>AR()?ar:en;
 function visible(el){if(!el||el.hidden)return false;const c=r.getComputedStyle?r.getComputedStyle(el):null;return !c||c.display!=='none';}
@@ -51,6 +51,15 @@ function polishComposer(){
   const mode=$('.seven-mode-trigger');if(mode){const label=T('Response mode','نمط الإجابة');if(mode.getAttribute('aria-label')!==label)mode.setAttribute('aria-label',label);if(mode.title!==label)mode.title=label;}
   const send=$('#sendBtn,.input-area .send');if(send){const label=T('Send message','إرسال الرسالة');if(send.getAttribute('aria-label')!==label)send.setAttribute('aria-label',label);if(send.title!==label)send.title=label;}
 }
+function stripRpgTitles(){
+  if(!d.getElementById('seven-no-rpg-titles')){const s=d.createElement('style');s.id='seven-no-rpg-titles';s.textContent='[data-rpg-title-toggle],[data-rpg-current-title],[data-title-kind],[data-title-num],[data-title-name],[data-title-record],[data-title-preview],[data-rpg-titles]{display:none!important}';d.head.appendChild(s)}
+  const api=r.SevenRpgWorkspace;
+  if(api){
+    if(api.state&&api.state.worldSession&&Array.isArray(api.state.worldSession.titles)&&api.state.worldSession.titles.length)api.state.worldSession.titles.length=0;
+    if(!api.__titlesDisabled){api.__titlesDisabled=true;api.recordTitle=()=>({status:'BLOCKED',reason:'title-system-disabled'});api.autoTitle=()=>({status:'BLOCKED',reason:'title-system-disabled'})}
+  }
+  qa('[data-rpg-current-title]').forEach(x=>{x.hidden=true;x.textContent=''});
+}
 function copyText(text){text=String(text||'').trim();if(!text)return Promise.resolve(false);if(r.navigator&&r.navigator.clipboard&&r.navigator.clipboard.writeText)return r.navigator.clipboard.writeText(text).then(()=>true).catch(()=>fallback(text));return Promise.resolve(fallback(text));}
 function fallback(text){try{const a=d.createElement('textarea');a.value=text;a.style.cssText='position:fixed;opacity:0;pointer-events:none';d.body.appendChild(a);a.select();const ok=d.execCommand&&d.execCommand('copy');a.remove();return !!ok}catch(_){return false}}
 function ensureCodeCopy(){qa('#chat .message.assistant pre').forEach(pre=>{if(pre.dataset.sevenShellCopy==='1')return;pre.dataset.sevenShellCopy='1';const b=d.createElement('button');b.type='button';b.className='seven-shell-code-copy';b.setAttribute('aria-label',T('Copy code','نسخ الكود'));b.textContent=T('Copy','نسخ');b.onclick=async e=>{e.preventDefault();e.stopPropagation();const ok=await copyText(pre.innerText||pre.textContent);b.textContent=ok?T('Copied','تم النسخ'):T('Copy','نسخ');setTimeout(()=>{if(b.isConnected)b.textContent=T('Copy','نسخ')},1000)};pre.appendChild(b)})}
@@ -60,8 +69,8 @@ function polishSettings(){
 }
 function polishWorkspaces(){qa('.seven-ws-launcher,.seven-workspace-root').forEach(x=>{if(x.dataset.sevenShellIntegrated!=='1')x.dataset.sevenShellIntegrated='1'});qa('.seven-ws-choice').forEach(x=>{if(x.getAttribute('data-seven-shell-card')!=='1')x.setAttribute('data-seven-shell-card','1')});}
 function isAttachIntentTarget(target){return !!(target&&target.closest&&target.closest('[data-seven-attach-trigger],.seven-shell-attach-trigger'));}
-function installEvents(){if(S.events)return;S.events=true;d.addEventListener('pointerdown',e=>{if(isAttachIntentTarget(e.target))warmAttachments()},{capture:true,passive:true});d.addEventListener('focusin',e=>{if(isAttachIntentTarget(e.target))warmAttachments()},{passive:true});d.addEventListener('seven:workspacechange',()=>setTimeout(sync,0));d.addEventListener('seven:themechange',()=>setTimeout(sync,0));d.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='/'){e.preventDefault();const input=$('#userInput');input&&input.focus({preventScroll:false})}})}
-let pending=false;function sync(){if(pending)return;pending=true;const run=()=>{pending=false;mark();cleanChrome();ensureNav();ensureWorkspaceChip();polishComposer();polishSettings();polishWorkspaces();ensureCodeCopy();syncNav()};if(typeof r.requestAnimationFrame==='function')r.requestAnimationFrame(run);else setTimeout(run,0)}
+function installEvents(){if(S.events)return;S.events=true;d.addEventListener('pointerdown',e=>{if(isAttachIntentTarget(e.target))warmAttachments()},{capture:true,passive:true});d.addEventListener('focusin',e=>{if(isAttachIntentTarget(e.target))warmAttachments()},{passive:true});d.addEventListener('seven:workspacechange',()=>setTimeout(sync,0));d.addEventListener('seven:themechange',()=>setTimeout(sync,0));d.addEventListener('seven:rpg-title-recorded',e=>{if(e&&e.stopImmediatePropagation)e.stopImmediatePropagation();stripRpgTitles()},true);d.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='/'){e.preventDefault();const input=$('#userInput');input&&input.focus({preventScroll:false})}})}
+let pending=false;function sync(){if(pending)return;pending=true;const run=()=>{pending=false;mark();cleanChrome();ensureNav();ensureWorkspaceChip();polishComposer();polishSettings();polishWorkspaces();stripRpgTitles();ensureCodeCopy();syncNav()};if(typeof r.requestAnimationFrame==='function')r.requestAnimationFrame(run);else setTimeout(run,0)}
 function boot(){if(S.ready){sync();return S}mark();installEvents();sync();if(d.body&&!S.observer){S.observer=new MutationObserver(sync);S.observer.observe(d.body,{childList:true,subtree:true})}S.ready=true;d.dispatchEvent(new CustomEvent('seven:shellfinalready',{detail:{version:S.version}}));return S}
 d.readyState==='loading'?d.addEventListener('DOMContentLoaded',boot,{once:true}):boot();
 r.SevenShellFinal={version:S.version,state:S,boot,sync,openWorkspace,warmAttachments};
