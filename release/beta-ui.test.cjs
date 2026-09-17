@@ -69,6 +69,7 @@ const {build}=require('./build-release.cjs');
     await expectMode(()=>SevenBetaUI.setMode('research'),'research');
     await expectMode(()=>SevenBetaUI.setMode('search'),'search');
     await expectMode(()=>SevenBetaUI.setMode('chat'),'chat');
+    await page.evaluate(()=>{const modal=document.getElementById('nameModal');if(modal){modal.style.display='none';modal.setAttribute('aria-hidden','true')}});
     await page.click('.seven-mode-trigger');assert.equal(await page.getAttribute('.seven-mode-trigger','aria-expanded'),'true');assert.equal(await page.isVisible('.seven-mode-menu'),true);await page.keyboard.press('Escape');assert.equal(await page.getAttribute('.seven-mode-trigger','aria-expanded'),'false');
     const semantic=await page.evaluate(()=>['coding','rpg','success','warning','error'].map(x=>{SevenAurora.set(x,'high');return[x,SevenAurora.getState(),SevenAurora.getIntensity(),document.documentElement.dataset.sevenAurora,document.documentElement.dataset.sevenAuroraIntensity,getComputedStyle(document.documentElement).getPropertyValue('--sb-mode').trim(),document.querySelector('.seven-beta-status-label').textContent]}));
     assert.equal(new Set(semantic.map(x=>x[5])).size,5,'Aurora semantic states must have distinct signatures');for(const row of semantic){assert.deepEqual(row.slice(0,5),[row[0],row[0],'high',row[0],'high']);assert.ok(row[6])}
