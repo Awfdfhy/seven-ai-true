@@ -84,10 +84,10 @@ const {build}=require('./build-release.cjs');
 
     const android=await browser.newContext({viewport:{width:390,height:844},userAgent:'Mozilla/5.0 (Linux; Android 14; TECNO LH7n) AppleWebKit/537.36 Chrome/126 Mobile Safari/537.36'});
     await android.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
-    const ap=await android.newPage();const androidErrors=[];ap.on('pageerror',e=>androidErrors.push(e.message));await ap.goto(origin,{waitUntil:'domcontentloaded'});await ap.waitForFunction(()=>window.SevenBetaUI&&SevenBetaUI.state.ready);
+    const ap=await android.newPage();const androidErrors=[];ap.on('pageerror',e=>androidErrors.push(e.message));await ap.goto(origin,{waitUntil:'domcontentloaded'});await ap.waitForFunction(()=>window.SevenBetaUI&&SevenBetaUI.state.ready,{timeout:10000});
     const stopState=await ap.evaluate(()=>{const b=document.getElementById('stopBtn');b.style.display='inline-block';window.stopGeneration();return{patched:window.stopGeneration.sevenPatched===true,disabled:b.disabled,stopping:b.classList.contains('seven-stopping'),label:b.getAttribute('aria-label')}});
     assert.equal(stopState.patched,true);assert.equal(stopState.disabled,true);assert.equal(stopState.stopping,true);assert.match(stopState.label,/Stopping|الإيقاف/);assert.deepEqual(androidErrors,[]);
-    await ap.evaluate(()=>document.getElementById('stopBtn').style.display='none');await ap.waitForFunction(()=>!document.getElementById('stopBtn').disabled);await android.close();
+    await ap.evaluate(()=>document.getElementById('stopBtn').style.display='none');await ap.waitForFunction(()=>!document.getElementById('stopBtn').disabled,{timeout:3000});await android.close();
 
     const reduced=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});
     await reduced.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
