@@ -28,7 +28,7 @@ The terminal closure requires:
 - Android certification `11/11` with no missing/failing scenarios;
 - production and full dependency graph vulnerability gates clean;
 - release APK bytes and SHA-256 bound to the exact RC;
-- protected source still `658133` bytes at Git blob `3e8dfa8e7da7124e16504140eb9631c10cabf053`;
+- protected source still `669670` bytes at Git blob `8664cc2d5ba762c638a07f2a7f47f13f9eaabae4`;
 - no fabricated physical-device claim and no fabricated Play/store production signing or Play app signing claim.
 
 ## Production release lane
