@@ -82,8 +82,18 @@ const {chromium}=require("playwright"),http=require("http"),fs=require("fs"),pat
       const before=await p.evaluate(()=>SevenRpgWorkspace.snapshot());eq(before.work,null);eq(before.canonPack,null);
       const blocked=await p.evaluate(()=>({beat:SevenRpgWorkspace.commitVerifiedBeat({verified:false}),canon:SevenRpgWorkspace.applyVerifiedDelta({}, {verified:false})}));
       eq(blocked.beat.reason,"verification-required");eq(blocked.canon.reason,"verification-required");
-      await p.click("[data-rpg-title-toggle]");await p.click("[data-title-record]");ok(/Load a Real Works pack/i.test(await p.textContent("[data-rpg-notice]")));
-      const autoBlocked=await p.evaluate(()=>SevenRpgWorkspace.autoTitle({kind:'episode',name:'Too early',boundary:false,confidence:1}));eq(autoBlocked.reason,'not-a-story-boundary');
+      // Final Seven intentionally removed the RPG title UI after Wave 16. Verify the
+      // current product contract instead of trying to click controls that are hidden
+      // by seven-shell-final.js.
+      await p.waitForFunction(()=>window.SevenRpgWorkspace?.__titlesDisabled===true);
+      const titleContract=await p.evaluate(()=>({
+        toggle:getComputedStyle(document.querySelector('[data-rpg-title-toggle]')).display,
+        record:getComputedStyle(document.querySelector('[data-title-record]')).display,
+        manual:SevenRpgWorkspace.recordTitle('episode',{name:'Disabled'}),
+        automatic:SevenRpgWorkspace.autoTitle({kind:'episode',name:'Too early',boundary:false,confidence:1})
+      }));
+      eq(titleContract.toggle,'none');eq(titleContract.record,'none');
+      eq(titleContract.manual.reason,'title-system-disabled');eq(titleContract.automatic.reason,'title-system-disabled');
       const after=await p.evaluate(()=>SevenRpgWorkspace.snapshot());eq(after.work,null);eq(after.canonPack,null);
       await mobileRtl(p);eq(errors.length,0,errors.join("\n"));await c.close();
     }
