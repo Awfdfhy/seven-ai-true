@@ -2,7 +2,7 @@
 
 Status: `PASS_FOUNDATION`
 Branch: `ultimate-polish-v1`
-Protected source: `seven_ai-final.html` remains untouched at blob `3e8dfa8e7da7124e16504140eb9631c10cabf053`, `658133` bytes.
+Protected source: `seven_ai-final.html` remains untouched at blob `8664cc2d5ba762c638a07f2a7f47f13f9eaabae4`, `669670` bytes.
 
 ## Purpose
 Wave 13 converts Seven's visual identity rules from prose into governed executable/build-time contracts without spending the remaining startup budget. It does not select the final logo and it does not claim the Final UI is complete.

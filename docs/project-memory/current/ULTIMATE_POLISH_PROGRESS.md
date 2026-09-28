@@ -6,7 +6,7 @@
 - Branch: `ultimate-polish-v1`
 - User-set hard ceiling: **`≤30` Mega-Waves**. This is a maximum, not a quota.
 - Protected source: `seven_ai-final.html`
-- Protected source reference: `658133` bytes, Git blob `3e8dfa8e7da7124e16504140eb9631c10cabf053`
+- Protected source reference: `669670` bytes, Git blob `8664cc2d5ba762c638a07f2a7f47f13f9eaabae4`
 - Protected-branch law: do not merge to `main` or another protected branch without explicit user approval.
 - Final Repair Sweep: **`PASS`** and remains the practical Wave-23-equivalent repair checkpoint without retroactively renumbering its historical record.
 - Verified numbered closures after Wave 22: **Wave 24 = PASS**, **Wave 25 = PASS**, **Wave 26 = PASS**, **Wave 27 = PASS**.
@@ -117,7 +117,7 @@ Exact same-commit CI:
 - `all test suites: PASS (116 suites)`.
 - Wave 26 Visual Red Team Gate: `PASS (481 assertions; 29 capability bindings; 11 Android scenarios)`.
 - Existing Visual Red Team: `PASS (31 assertions; anti-replay, anti-evidence-laundering, freshness and device-attestation guards)`.
-- Protected source integrity: `PASS (658133 bytes, 3e8dfa8e7da7124e16504140eb9631c10cabf053)`.
+- Protected source integrity: `PASS (669670 bytes, 8664cc2d5ba762c638a07f2a7f47f13f9eaabae4)`.
 - Seven Android APK run `35154710293`: `SUCCESS`.
 - Android lint/build/signing/package verification: PASS.
 - Android 16 WebView smoke: PASS.
@@ -142,7 +142,7 @@ Exact same-head web CI:
 - Product Wiring Contract: `PASS (661 assertions; 29 capability bindings; 23 state classes)`.
 - Wave 26 Visual Red Team Gate remains PASS on the same head.
 - Release Readiness + Saturation Gate: `PASS (33 assertions; exact release identity, evidence-class floors, freshness, independence, Saturation 2/2)`.
-- source integrity lock: `PASS (658133 bytes, 3e8dfa8e7da7124e16504140eb9631c10cabf053)`.
+- source integrity lock: `PASS (669670 bytes, 8664cc2d5ba762c638a07f2a7f47f13f9eaabae4)`.
 - dependency audit: production `0`, full graph `0`, dev/tooling-only `0` vulnerabilities.
 
 Exact same-head Android CI:

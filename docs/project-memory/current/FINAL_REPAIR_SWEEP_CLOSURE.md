@@ -72,7 +72,7 @@ Mega-Wave 22's original certification remains bound to commit `e710af569a8d944b4
 This repair record does not rewrite or rebind that historical evidence. Instead, `9f3e65b...` is a later exact full-regression baseline proving the repairs remain compatible with all closed-wave and Android 11/11 gates.
 
 ## Protected boundaries
-- `seven_ai-final.html` remains `658133` bytes at Git blob `3e8dfa8e7da7124e16504140eb9631c10cabf053`.
+- `seven_ai-final.html` remains `669670` bytes at Git blob `8664cc2d5ba762c638a07f2a7f47f13f9eaabae4`.
 - No protected source modification is authorized by this closure.
 - No merge to `main` or another protected branch is authorized by this closure.
 

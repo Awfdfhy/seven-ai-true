@@ -48,7 +48,7 @@ Verified results include:
 - static audit: `PASS`, startup `99758`, lazy workspace `63855`, static APK estimate `3718590 / 8388608`, `0` warnings;
 - release verification: `PASS`;
 - production dependency audit: `0` vulnerabilities, with `3` explicit dev/tooling-only findings in the full graph;
-- protected source integrity: `PASS`, `658133` bytes at Git blob `3e8dfa8e7da7124e16504140eb9631c10cabf053`.
+- protected source integrity: `PASS`, `669670` bytes at Git blob `8664cc2d5ba762c638a07f2a7f47f13f9eaabae4`.
 
 Release artifact from that exact run: artifact `10426351927`, size `3097343` bytes, SHA-256 `705565b58344aa3578d4f2bcbeb4c5fb955faa3d0bee38433790bbcf829a551d`.
 

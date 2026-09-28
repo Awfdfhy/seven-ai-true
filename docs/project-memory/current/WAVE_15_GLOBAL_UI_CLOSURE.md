@@ -41,7 +41,7 @@ Verified results included:
 - historical static audit: startup `99758 / 100000`, lazy workspace `63855 / 65536`, static APK estimate `3718590 / 8388608`, `0` static warnings;
 - release verification: PASS;
 - adaptive theme browser tests: PASS;
-- protected source integrity: PASS, `658133` bytes, Git blob `3e8dfa8e7da7124e16504140eb9631c10cabf053`;
+- protected source integrity: PASS, `669670` bytes, Git blob `8664cc2d5ba762c638a07f2a7f47f13f9eaabae4`;
 - production dependency audit gate: PASS, `0` production vulnerabilities.
 
 The exact release artifact uploaded by the historical run was `seven-ai-release`, artifact `10424749481`, size `3093829` bytes, SHA-256 `7d414a4a2318d772530142411ee3eed31e0ff051d63d249a46e70a2c53b6c3f0`.

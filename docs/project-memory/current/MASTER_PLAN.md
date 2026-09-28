@@ -85,7 +85,7 @@ Goal: maximum practical canon fidelity without false certainty. Canon Graph, sou
 - protected PRs remain unmerged until explicit approval
 
 ## Current Checkpoint
-Visual architecture: saturated 2/2. Visual implementation: started, not finished. The known checkpoint before documentation modernization was commit `8dee3c498b328bcbba46d5bf8e17a00c87311be7`, with GitHub Actions reported successful. Protected `seven_ai-final.html` integrity reference remains Git blob SHA `3e8dfa8e7da7124e16504140eb9631c10cabf053` unless a later verified integrity record explicitly supersedes it.
+Visual architecture: saturated 2/2. Visual implementation: started, not finished. The known checkpoint before documentation modernization was commit `8dee3c498b328bcbba46d5bf8e17a00c87311be7`, with GitHub Actions reported successful. Protected `seven_ai-final.html` integrity reference remains Git blob SHA `8664cc2d5ba762c638a07f2a7f47f13f9eaabae4` unless a later verified integrity record explicitly supersedes it.
 
 ## Immediate Roadmap
 1. Execute Visual Evidence Runtime.

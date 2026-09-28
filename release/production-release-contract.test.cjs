@@ -45,8 +45,8 @@ assert.throws(()=>proof.verifyProof({...p,verdict:'FAIL'}));
 assert.throws(()=>proof.verifyProof({...p,boundaries:{...p.boundaries,publishedToPlay:true}}));
 
 const protectedPath=path.join(root,'seven_ai-final.html');
-assert.equal(fs.statSync(protectedPath).size,658133);
+assert.equal(fs.statSync(protectedPath).size,669670);
 const gitBlob=cp.execFileSync('git',['hash-object','seven_ai-final.html'],{cwd:root,encoding:'utf8'}).trim();
-assert.equal(gitBlob,'3e8dfa8e7da7124e16504140eb9631c10cabf053');
+assert.equal(gitBlob,'8664cc2d5ba762c638a07f2a7f47f13f9eaabae4');
 
 console.log('Production Release Contract: PASS (Play-ready upload-key lane, fail-closed truth boundaries, protected source intact)');

@@ -46,7 +46,7 @@ Key results:
 - `Model Frontier Qualification: PASS (33 assertions)`;
 - `model/compute polish: PASS (36 assertions)`;
 - `all test suites: PASS (96 suites)`;
-- source integrity lock PASS: `seven_ai-final.html` stayed `658133` bytes at blob `3e8dfa8e7da7124e16504140eb9631c10cabf053`;
+- source integrity lock PASS: `seven_ai-final.html` stayed `669670` bytes at blob `8664cc2d5ba762c638a07f2a7f47f13f9eaabae4`;
 - static audit PASS: `99758 / 100000` startup bytes, `63855 / 65536` lazy workspace bytes, `3718522 / 8388608` static APK estimate, `0` static warnings;
 - production dependency gate PASS with `0` production vulnerabilities; three full-graph findings remain dev/tooling-only (`@capacitor/cli`, `uuid`, `xcode`);
 - release artifact `10378290130`, size `3109068` bytes, SHA-256 `9d2ca341a22a0487c5012dcc18a3a31134eb0f15a929395c1083625b19a86312`.

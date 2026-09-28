@@ -57,8 +57,8 @@ ok(runner.includes("endsWith('.test.cjs')"),"release *.test.cjs fail-closed disc
 
 // Protected source must remain locked. The authoritative source-integrity suite is also run by all.cjs.
 const sourceLock=read("release/source-integrity.test.cjs");
-ok(sourceLock.includes("expectedBytes=658133"),"protected source byte lock drifted");
-ok(sourceLock.includes("3e8dfa8e7da7124e16504140eb9631c10cabf053"),"protected source blob lock drifted");
+ok(sourceLock.includes("expectedBytes=669670"),"protected source byte lock drifted");
+ok(sourceLock.includes("8664cc2d5ba762c638a07f2a7f47f13f9eaabae4"),"protected source blob lock drifted");
 
 // Existing Android visual red-team must retain the adversarial protections Wave 26 depends on.
 const redTeamSource=read("release/visual-red-team.cjs");

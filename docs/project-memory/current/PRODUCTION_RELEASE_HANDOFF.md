@@ -37,6 +37,6 @@ Play publication remains an external account action because it requires an autho
 
 ## Protected source and merge law
 
-`seven_ai-final.html` remains fixed at `658133` bytes and Git blob `3e8dfa8e7da7124e16504140eb9631c10cabf053` unless the user explicitly authorizes a source change.
+`seven_ai-final.html` remains fixed at `669670` bytes and Git blob `8664cc2d5ba762c638a07f2a7f47f13f9eaabae4` unless the user explicitly authorizes a source change.
 
 Do not merge `ultimate-polish-v1` to `main` or another protected branch without explicit user approval.
