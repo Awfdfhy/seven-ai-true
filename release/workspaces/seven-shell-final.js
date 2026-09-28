@@ -2,7 +2,7 @@
 'use strict';
 if(!r||!r.document)return;
 const d=r.document,$=s=>d.querySelector(s),qa=s=>Array.from(d.querySelectorAll(s));
-const S={version:'3.1.0',ready:false,observer:null,workspaceLoading:null,attachmentWarm:false,events:false};
+const S={version:'3.1.0',ready:false,observer:null,workspaceLoading:null,githubLoading:null,attachmentWarm:false,events:false};
 const AR=()=>/^ar\b/i.test(d.documentElement.lang||'');
 const T=(en,ar)=>AR()?ar:en;
 function visible(el){if(!el||el.hidden)return false;const c=r.getComputedStyle?r.getComputedStyle(el):null;return !c||c.display!=='none';}
@@ -25,6 +25,17 @@ function loadWorkspaces(){
     s=d.createElement('script');s.id='seven-workspaces-runtime';s.src='./workspaces/hub.js';s.onload=done;s.onerror=()=>reject(Error('Could not load workspaces'));d.head.appendChild(s);
   }).finally(()=>{S.workspaceLoading=null});
   return S.workspaceLoading;
+}
+function loadGithubSelfDev(){
+  if(r.SevenGitHubSelfDev)return Promise.resolve(r.SevenGitHubSelfDev);
+  if(S.githubLoading)return S.githubLoading;
+  S.githubLoading=new Promise((resolve,reject)=>{
+    let s=d.getElementById('seven-github-selfdev-runtime');
+    const done=()=>r.SevenGitHubSelfDev?resolve(r.SevenGitHubSelfDev):reject(Error('GitHub Self Dev runtime did not register'));
+    if(s){s.addEventListener('load',done,{once:true});setTimeout(()=>r.SevenGitHubSelfDev&&resolve(r.SevenGitHubSelfDev),0);return;}
+    s=d.createElement('script');s.id='seven-github-selfdev-runtime';s.src='./workspaces/github-self-dev.js';s.onload=done;s.onerror=()=>reject(Error('Could not load GitHub Self Dev'));d.head.appendChild(s);
+  }).finally(()=>{S.githubLoading=null});
+  return S.githubLoading;
 }
 async function openWorkspace(kind){
   kind=/^(chat|coding|research|rpg)$/.test(kind)?kind:'chat';
@@ -71,7 +82,7 @@ function polishWorkspaces(){qa('.seven-ws-launcher,.seven-workspace-root').forEa
 function isAttachIntentTarget(target){return !!(target&&target.closest&&target.closest('[data-seven-attach-trigger],.seven-shell-attach-trigger'));}
 function installEvents(){if(S.events)return;S.events=true;d.addEventListener('pointerdown',e=>{if(isAttachIntentTarget(e.target))warmAttachments()},{capture:true,passive:true});d.addEventListener('focusin',e=>{if(isAttachIntentTarget(e.target))warmAttachments()},{passive:true});d.addEventListener('seven:workspacechange',()=>setTimeout(sync,0));d.addEventListener('seven:themechange',()=>setTimeout(sync,0));d.addEventListener('seven:rpg-title-recorded',e=>{if(e&&e.stopImmediatePropagation)e.stopImmediatePropagation();stripRpgTitles()},true);d.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='/'){e.preventDefault();const input=$('#userInput');input&&input.focus({preventScroll:false})}})}
 let pending=false;function sync(){if(pending)return;pending=true;const run=()=>{pending=false;mark();cleanChrome();ensureNav();ensureWorkspaceChip();polishComposer();polishSettings();polishWorkspaces();stripRpgTitles();ensureCodeCopy();syncNav()};if(typeof r.requestAnimationFrame==='function')r.requestAnimationFrame(run);else setTimeout(run,0)}
-function boot(){if(S.ready){sync();return S}mark();installEvents();sync();if(d.body&&!S.observer){S.observer=new MutationObserver(sync);S.observer.observe(d.body,{childList:true,subtree:true})}S.ready=true;d.dispatchEvent(new CustomEvent('seven:shellfinalready',{detail:{version:S.version}}));return S}
+function boot(){if(S.ready){sync();loadGithubSelfDev().catch(()=>{});return S}mark();installEvents();sync();if(d.body&&!S.observer){S.observer=new MutationObserver(sync);S.observer.observe(d.body,{childList:true,subtree:true})}S.ready=true;loadGithubSelfDev().catch(()=>{});d.dispatchEvent(new CustomEvent('seven:shellfinalready',{detail:{version:S.version}}));return S}
 d.readyState==='loading'?d.addEventListener('DOMContentLoaded',boot,{once:true}):boot();
-r.SevenShellFinal={version:S.version,state:S,boot,sync,openWorkspace,warmAttachments};
+r.SevenShellFinal={version:S.version,state:S,boot,sync,openWorkspace,warmAttachments,loadGithubSelfDev};
 })(typeof globalThis!='undefined'?globalThis:this);
