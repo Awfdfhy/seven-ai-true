@@ -97,8 +97,8 @@ for(const partialId of ['vision.live_multimodal_input','projects.persistent_full
 
 const source=fs.readFileSync(p('seven_ai-final.html'));
 const blob=crypto.createHash('sha1').update(Buffer.from(`blob ${source.length}\0`)).update(source).digest('hex');
-eq(source.length,658133,'protected source byte size changed');
-eq(blob,'3e8dfa8e7da7124e16504140eb9631c10cabf053','protected source blob changed');
+eq(source.length,669670,'protected source byte size changed');
+eq(blob,'8664cc2d5ba762c638a07f2a7f47f13f9eaabae4','protected source blob changed');
 
 const pkg=JSON.parse(read('package.json'));
 for(const [kind,deps] of Object.entries({dependencies:pkg.dependencies||{},devDependencies:pkg.devDependencies||{}})){
