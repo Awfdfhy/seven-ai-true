@@ -1,0 +1,46 @@
+"use strict";
+const fs=require("fs");
+const path=require("path");
+const assert=require("assert/strict");
+const {build}=require("./build-release.cjs");
+const ROOT=path.resolve(__dirname,"..");
+const runtimePath=path.join(__dirname,"workspaces","github-self-dev.js");
+const shellPath=path.join(__dirname,"workspaces","seven-shell-final.js");
+const nativePath=path.join(ROOT,"apk","materialize-native-platform.cjs");
+const runtime=fs.readFileSync(runtimePath,"utf8");
+const shell=fs.readFileSync(shellPath,"utf8");
+const native=fs.readFileSync(nativePath,"utf8");
+
+assert.match(runtime,/Iv23lilyiGs3RQPZrPjq/);
+assert.match(runtime,/Awfdfhy\/seven-ai-true/);
+assert.match(runtime,/githubBeginDeviceFlow/);
+assert.match(runtime,/githubPollDeviceFlow/);
+assert.match(runtime,/githubJobLogs/);
+assert.match(runtime,/Autonomous Development/);
+assert.match(runtime,/autoMerge/);
+assert.match(runtime,/PROTECTED_PATHS/);
+assert.match(runtime,/release\\\/github-self-dev\\\.js/);
+assert.match(runtime,/apk\\\/materialize-native-platform\\\.cjs/);
+assert.doesNotMatch(runtime,/client_secret/i);
+assert.doesNotMatch(runtime,/github_pat_/i);
+assert.doesNotMatch(runtime,/ghp_[A-Za-z0-9]/);
+assert.doesNotMatch(runtime,/BEGIN (?:RSA )?PRIVATE KEY/);
+
+assert.match(shell,/github-self-dev\.js/);
+assert.match(shell,/SevenGitHubSelfDev/);
+assert.match(native,/githubBeginDeviceFlow/);
+assert.match(native,/githubPollDeviceFlow/);
+assert.match(native,/githubApi/);
+assert.match(native,/githubJobLogs/);
+assert.match(native,/github\.user_access_token/);
+assert.match(native,/AndroidKeyStore/);
+assert.match(native,/\/actions\/secrets/);
+assert.match(native,/\/collaborators/);
+assert.doesNotMatch(native,/Iv23lilyiGs3RQPZrPjq/);
+
+const built=build();
+assert.equal(built.workspaceLoadMode,"lazy-local");
+assert.ok(built.workspaceFiles.some(x=>x.path==="workspaces/github-self-dev.js"),"GitHub self-dev runtime must ship as a local workspace asset");
+const output=fs.readFileSync(built.output,"utf8");
+assert.match(output,/seven-ui-polish-loader/);
+console.log("GitHub Self Development contract: PASS");
