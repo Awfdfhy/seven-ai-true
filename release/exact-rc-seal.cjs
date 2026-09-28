@@ -92,7 +92,7 @@ function verifyExactRc(x,expected={}){
   if(x.signing?.claimBoundary!=="RELEASE_VARIANT_CI_SIGNED_NOT_STORE_PRODUCTION_SIGNING"||x.artifact?.kind!=="APK")return false;
   if(!Number.isInteger(x.artifact?.bytes)||x.artifact.bytes<=0||!Number.isInteger(x.coverage?.canonicalSuites)||x.coverage.canonicalSuites<100)return false;
   if(x.coverage?.androidScenarioCount!==android.SCENARIOS.length||!Array.isArray(x.coverage?.androidScenarios)||x.coverage.androidScenarios.length!==android.SCENARIOS.length||x.coverage.physicalDeviceIncluded!==false)return false;
-  if(x.protectedSource?.bytes!==658133||x.protectedSource?.gitBlobSha1!=="3e8dfa8e7da7124e16504140eb9631c10cabf053")return false;
+  if(x.protectedSource?.bytes!==669670||x.protectedSource?.gitBlobSha1!=="8664cc2d5ba762c638a07f2a7f47f13f9eaabae4")return false;
   const pairs=[["branch",x.branch],["commitSha",x.commitSha],["artifactSha256",x.artifact.sha256],["artifactBytes",x.artifact.bytes],["buildSeal",x.identity?.buildSeal],["candidateSeal",x.identity?.candidateSeal]];
   for(const[k,v]of pairs)if(expected[k]!==undefined&&expected[k]!==v)return false;
   return true;
