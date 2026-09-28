@@ -33,7 +33,7 @@ function loadGithubSelfDev(){
     let s=d.getElementById('seven-github-selfdev-runtime');
     const done=()=>r.SevenGitHubSelfDev?resolve(r.SevenGitHubSelfDev):reject(Error('GitHub Self Dev runtime did not register'));
     if(s){s.addEventListener('load',done,{once:true});setTimeout(()=>r.SevenGitHubSelfDev&&resolve(r.SevenGitHubSelfDev),0);return;}
-    s=d.createElement('script');s.id='seven-github-selfdev-runtime';s.src='./workspaces/github-self-dev.js';s.onload=done;s.onerror=()=>reject(Error('Could not load GitHub Self Dev'));d.head.appendChild(s);
+    s=d.createElement('script');s.id='seven-github-selfdev-runtime';s.src='./github-self-dev.js';s.onload=done;s.onerror=()=>reject(Error('Could not load GitHub Self Dev'));d.head.appendChild(s);
   }).finally(()=>{S.githubLoading=null});
   return S.githubLoading;
 }
