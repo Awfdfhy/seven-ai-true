@@ -69,6 +69,11 @@ function decodeBase64(value){
   const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
   return new TextDecoder().decode(bytes);
 }
+function encodeBase64(value){
+  const bytes=new TextEncoder().encode(String(value==null?"":value));let binary="";
+  for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));
+  return btoa(binary);
+}
 function safeJsonText(text){
   text=String(text||"").trim();
   const fenced=text.match(/\`\`\`(?:json)?\s*([\s\S]*?)\`\`\`/i);
@@ -160,17 +165,19 @@ async function createBlob(content){
 }
 async function atomicCommit(branch,files,message){
   if(!Array.isArray(files)||!files.length)throw new Error("No changes to commit.");
-  const head=await branchHead(branch),tree=[];
+  let latestSha=null;
   for(const file of files){
     const path=safeRepoPath(file.path);
     if(protectedPath(path))throw new Error("Autonomous edits are blocked for protected path: "+path);
-    const blob=await createBlob(file.content);
-    tree.push({path,mode:"100644",type:"blob",sha:blob.sha});
+    let existing=null;
+    try{existing=await readFile(path,branch)}catch(e){if(Number(e&&e.status)!==404)throw e}
+    const body={message:String(message||"Seven autonomous development")+" · "+path,content:encodeBase64(file.content),branch:String(branch)};
+    if(existing&&existing.sha)body.sha=existing.sha;
+    const row=await api("PUT",REPO_API+"/contents/"+path,body);
+    latestSha=row&&row.commit&&row.commit.sha||latestSha;
   }
-  const nextTree=await api("POST",REPO_API+"/git/trees",{base_tree:head.treeSha,tree});
-  const commit=await api("POST",REPO_API+"/git/commits",{message:String(message||"Seven autonomous development"),tree:nextTree.sha,parents:[head.sha]});
-  await api("PATCH",REPO_API+"/git/refs/heads/"+encodeURIComponent(branch),{sha:commit.sha,force:false});
-  return commit;
+  if(!latestSha)throw new Error("GitHub did not return a commit SHA.");
+  return {sha:latestSha,files:files.map(x=>x.path)};
 }
 function taskTokens(task){
   return [...new Set(String(task||"").toLowerCase().match(/[a-z0-9_.-]{3,}|[\u0600-\u06ff]{3,}/g)||[])].slice(0,32);
