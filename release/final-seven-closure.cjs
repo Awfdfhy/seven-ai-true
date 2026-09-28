@@ -19,7 +19,7 @@ function createClosure({rc,visual,dependencyAudit,apkPath,root,branch,commitSha,
   if(rc.coverage.physicalDeviceIncluded!==false)throw Error("final closure truth boundary drift: physical-device claim");
   if(rc.claimBoundary!=="EXACT_RC_CI_SIGNED_NOT_STORE_PRODUCTION_SIGNING_NO_PHYSICAL_DEVICE_CLAIM")throw Error("exact RC claim boundary drift");
   if(rc.signing?.claimBoundary!=="RELEASE_VARIANT_CI_SIGNED_NOT_STORE_PRODUCTION_SIGNING")throw Error("signing truth boundary drift");
-  if(rc.protectedSource?.bytes!==658133||rc.protectedSource?.gitBlobSha1!=="3e8dfa8e7da7124e16504140eb9631c10cabf053")throw Error("protected source identity drift");
+  if(rc.protectedSource?.bytes!==669670||rc.protectedSource?.gitBlobSha1!=="8664cc2d5ba762c638a07f2a7f47f13f9eaabae4")throw Error("protected source identity drift");
   if(!visual||visual.schema!=="seven.android-release-visual-evidence-merge.v1")throw Error("final closure Android visual evidence missing");
   const cert=visual.certification;
   if(!android.verifyCertification(cert)||cert.verdict!=="PASS"||cert.missing.length||cert.failures.length)throw Error("final closure Android visual certification not PASS");
@@ -51,7 +51,7 @@ function verifyClosure(x,expected={}){
   const{seal,...body}=x;if(seal!==exact.hash(body))return false;
   if(!H40.test(String(x.commitSha||""))||!H64.test(String(x.artifact?.sha256||""))||x.artifact?.kind!=="APK"||!Number.isInteger(x.artifact?.bytes)||x.artifact.bytes<=0)return false;
   if(!Number.isInteger(x.coverage?.canonicalSuites)||x.coverage.canonicalSuites<120||x.coverage?.androidScenarioCount!==11||!Array.isArray(x.coverage?.androidScenarios)||x.coverage.androidScenarios.length!==11||x.coverage.physicalDeviceIncluded!==false)return false;
-  if(x.protectedSource?.bytes!==658133||x.protectedSource?.gitBlobSha1!=="3e8dfa8e7da7124e16504140eb9631c10cabf053")return false;
+  if(x.protectedSource?.bytes!==669670||x.protectedSource?.gitBlobSha1!=="8664cc2d5ba762c638a07f2a7f47f13f9eaabae4")return false;
   if(x.signing?.claimBoundary!=="RELEASE_VARIANT_CI_SIGNED_NOT_STORE_PRODUCTION_SIGNING")return false;
   for(const[k,v]of [["branch",x.branch],["commitSha",x.commitSha],["artifactSha256",x.artifact.sha256],["artifactBytes",x.artifact.bytes],["rcLabel",x.rcLabel]])if(expected[k]!==undefined&&expected[k]!==v)return false;
   return true;
