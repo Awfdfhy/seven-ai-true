@@ -26,7 +26,7 @@ A sealed final artifact means: **Seven's CI release candidate on that exact comm
 It does **not** mean Play/store production signing, publication approval, or physical-device evidence. Those remain separate external release boundaries. The closure explicitly preserves `NO_PHYSICAL_DEVICE_CLAIM` and `NOT_STORE_PRODUCTION_SIGNED` semantics.
 
 ## Protected source and branch law
-`seven_ai-final.html` remains protected at `658133` bytes and Git blob `3e8dfa8e7da7124e16504140eb9631c10cabf053`.
+`seven_ai-final.html` remains protected at `669670` bytes and Git blob `8664cc2d5ba762c638a07f2a7f47f13f9eaabae4`.
 
 Do not modify that protected source without explicit authorization. Do not merge `ultimate-polish-v1` into `main` or another protected branch without explicit user approval.
 
