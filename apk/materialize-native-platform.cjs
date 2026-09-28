@@ -98,16 +98,35 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 /** Native Android boundary for secure secrets and user-authorized Storage Access Framework documents. */
 @CapacitorPlugin(name="SevenPlatform")
 public class SevenPlatformPlugin extends Plugin {
   private static final Pattern SAFE_KEY=Pattern.compile("[A-Za-z0-9._:-]{1,160}");
+  private static final Pattern GITHUB_CLIENT_ID=Pattern.compile("[A-Za-z0-9_-]{10,120}");
+  private static final Pattern GITHUB_METHOD=Pattern.compile("GET|POST|PUT|PATCH|DELETE");
+  private static final String GITHUB_API="https://api.github.com";
+  private static final String GITHUB_REPO="/repos/Awfdfhy/seven-ai-true";
+  private static final String GH_ACCESS="github.user_access_token";
+  private static final String GH_REFRESH="github.refresh_token";
+  private static final String GH_EXPIRES="github.access_expires_at";
+  private static final String GH_REFRESH_EXPIRES="github.refresh_expires_at";
   private static final int MAX_CHUNK=262144;
+  private static final int MAX_GITHUB_RESPONSE=2*1024*1024;
   private SevenSecureStore secure;
 
   @Override public void load(){secure=new SevenSecureStore(getContext());}
@@ -138,8 +157,89 @@ public class SevenPlatformPlugin extends Plugin {
 
   @PluginMethod public void getCapabilities(PluginCall call){
     JSObject ret=new JSObject();
-    ret.put("secureStore",true);ret.put("androidKeystore",true);ret.put("saf",true);ret.put("chunkedIO",true);ret.put("broadStoragePermission",false);ret.put("apiLevel",Build.VERSION.SDK_INT);ret.put("maxChunkBytes",MAX_CHUNK);
+    ret.put("secureStore",true);ret.put("androidKeystore",true);ret.put("saf",true);ret.put("chunkedIO",true);ret.put("githubDeviceFlow",true);ret.put("githubRepoApi",true);ret.put("broadStoragePermission",false);ret.put("apiLevel",Build.VERSION.SDK_INT);ret.put("maxChunkBytes",MAX_CHUNK);
     call.resolve(ret);
+  }
+
+  private String githubClientId(PluginCall call){
+    String id=call.getString("clientId");
+    if(id==null||!GITHUB_CLIENT_ID.matcher(id).matches())throw new IllegalArgumentException("invalid GitHub client id");
+    return id;
+  }
+  private static String enc(String value)throws Exception{return URLEncoder.encode(value,StandardCharsets.UTF_8.name());}
+  private static String readUtf8(InputStream in,int limit)throws Exception{
+    if(in==null)return "";
+    ByteArrayOutputStream out=new ByteArrayOutputStream();byte[] buf=new byte[8192];int total=0,n;
+    while((n=in.read(buf))>=0){if(n==0)continue;int take=Math.min(n,Math.max(0,limit-total));if(take>0)out.write(buf,0,take);total+=n;if(total>=limit)break;}
+    return out.toString(StandardCharsets.UTF_8.name());
+  }
+  private JSONObject postGithubForm(String endpoint,Map<String,String> params)throws Exception{
+    StringBuilder body=new StringBuilder();for(Map.Entry<String,String> e:params.entrySet()){if(body.length()>0)body.append('&');body.append(enc(e.getKey())).append('=').append(enc(e.getValue()));}
+    byte[] bytes=body.toString().getBytes(StandardCharsets.UTF_8);
+    HttpURLConnection c=(HttpURLConnection)new URL(endpoint).openConnection();c.setRequestMethod("POST");c.setConnectTimeout(15000);c.setReadTimeout(30000);c.setDoOutput(true);c.setInstanceFollowRedirects(true);
+    c.setRequestProperty("Accept","application/json");c.setRequestProperty("Content-Type","application/x-www-form-urlencoded");c.setRequestProperty("User-Agent","seven.ai");
+    try(OutputStream out=c.getOutputStream()){out.write(bytes);}
+    int status=c.getResponseCode();String raw=readUtf8(status>=200&&status<400?c.getInputStream():c.getErrorStream(),MAX_GITHUB_RESPONSE);
+    JSONObject json=raw.isEmpty()?new JSONObject():new JSONObject(raw);json.put("_httpStatus",status);return json;
+  }
+  private void storeGithubToken(JSONObject json)throws Exception{
+    String access=json.optString("access_token","");if(access.isEmpty())throw new IllegalStateException("GitHub access token missing");
+    secure.put(GH_ACCESS,access);
+    long now=System.currentTimeMillis(),expires=json.optLong("expires_in",0);if(expires>0)secure.put(GH_EXPIRES,String.valueOf(now+expires*1000L));else secure.remove(GH_EXPIRES);
+    String refresh=json.optString("refresh_token","");if(!refresh.isEmpty())secure.put(GH_REFRESH,refresh);
+    long refreshExpires=json.optLong("refresh_token_expires_in",0);if(refreshExpires>0)secure.put(GH_REFRESH_EXPIRES,String.valueOf(now+refreshExpires*1000L));
+  }
+  private String ensureGithubToken(String clientId)throws Exception{
+    String access=secure.get(GH_ACCESS);String expRaw=secure.get(GH_EXPIRES);long exp=0;try{if(expRaw!=null)exp=Long.parseLong(expRaw);}catch(Exception ignored){}
+    if(access!=null&&!access.isEmpty()&&(exp==0||System.currentTimeMillis()<exp-300000L))return access;
+    String refresh=secure.get(GH_REFRESH);if(refresh==null||refresh.isEmpty()){if(access!=null&&!access.isEmpty())return access;throw new IllegalStateException("GitHub is not connected");}
+    Map<String,String> p=new LinkedHashMap<>();p.put("client_id",clientId);p.put("grant_type","refresh_token");p.put("refresh_token",refresh);
+    JSONObject json=postGithubForm("https://github.com/login/oauth/access_token",p);if(json.has("error"))throw new IllegalStateException("GitHub token refresh failed: "+json.optString("error"));
+    storeGithubToken(json);return secure.get(GH_ACCESS);
+  }
+  private boolean allowedGithubPath(String path,String method){
+    if(path==null||path.contains("://")||path.contains(".."))return false;
+    if("/user".equals(path))return "GET".equals(method);
+    if(!path.startsWith(GITHUB_REPO))return false;
+    String lower=path.toLowerCase();
+    String[] blocked={"/actions/secrets","/dependabot/secrets","/codespaces/secrets","/hooks","/collaborators","/deploy_keys","/environments","/actions/permissions","/rulesets","/protection"};
+    for(String part:blocked)if(lower.contains(part))return false;
+    return true;
+  }
+  private JSObject githubApiOnce(String clientId,String method,String path,String bodyJson)throws Exception{
+    if(!GITHUB_METHOD.matcher(method).matches()||!allowedGithubPath(path,method))throw new SecurityException("GitHub path or method is outside Seven's repository-development boundary");
+    String token=ensureGithubToken(clientId);
+    HttpURLConnection c=(HttpURLConnection)new URL(GITHUB_API+path).openConnection();c.setRequestMethod(method);c.setConnectTimeout(15000);c.setReadTimeout(45000);c.setInstanceFollowRedirects(true);
+    c.setRequestProperty("Accept","application/vnd.github+json");c.setRequestProperty("Authorization","Bearer "+token);c.setRequestProperty("X-GitHub-Api-Version","2026-03-10");c.setRequestProperty("User-Agent","seven.ai");
+    if(bodyJson!=null&&!"GET".equals(method)&&!"DELETE".equals(method)){byte[] bytes=bodyJson.getBytes(StandardCharsets.UTF_8);c.setDoOutput(true);c.setRequestProperty("Content-Type","application/json; charset=utf-8");try(OutputStream out=c.getOutputStream()){out.write(bytes);}}
+    int status=c.getResponseCode();String raw=readUtf8(status>=200&&status<400?c.getInputStream():c.getErrorStream(),MAX_GITHUB_RESPONSE);
+    JSObject ret=new JSObject();ret.put("status",status);ret.put("ok",status>=200&&status<300);ret.put("body",raw);String perms=c.getHeaderField("X-Accepted-GitHub-Permissions");if(perms!=null)ret.put("acceptedPermissions",perms);String remain=c.getHeaderField("X-RateLimit-Remaining");if(remain!=null)ret.put("rateLimitRemaining",remain);return ret;
+  }
+
+  @PluginMethod public void githubBeginDeviceFlow(PluginCall call){
+    final String clientId;try{clientId=githubClientId(call);}catch(Exception e){call.reject("Invalid GitHub client id","SEVEN_GITHUB_INPUT",e);return;}
+    new Thread(()->{try{Map<String,String> p=new LinkedHashMap<>();p.put("client_id",clientId);JSONObject json=postGithubForm("https://github.com/login/device/code",p);if(json.has("error"))throw new IllegalStateException(json.optString("error"));JSObject ret=new JSObject();ret.put("deviceCode",json.getString("device_code"));ret.put("userCode",json.getString("user_code"));ret.put("verificationUri",json.optString("verification_uri","https://github.com/login/device"));ret.put("expiresIn",json.optInt("expires_in",900));ret.put("interval",json.optInt("interval",5));call.resolve(ret);}catch(Exception e){call.reject("GitHub device authorization could not start","SEVEN_GITHUB_DEVICE",e);}},"seven-github-device").start();
+  }
+  @PluginMethod public void githubPollDeviceFlow(PluginCall call){
+    final String clientId,deviceCode;try{clientId=githubClientId(call);deviceCode=call.getString("deviceCode");if(deviceCode==null||deviceCode.length()<20)throw new IllegalArgumentException("deviceCode required");}catch(Exception e){call.reject("Invalid GitHub device flow input","SEVEN_GITHUB_INPUT",e);return;}
+    new Thread(()->{try{Map<String,String> p=new LinkedHashMap<>();p.put("client_id",clientId);p.put("device_code",deviceCode);p.put("grant_type","urn:ietf:params:oauth:grant-type:device_code");JSONObject json=postGithubForm("https://github.com/login/oauth/access_token",p);JSObject ret=new JSObject();if(json.has("access_token")){storeGithubToken(json);ret.put("authorized",true);ret.put("expiresIn",json.optLong("expires_in",0));ret.put("refreshTokenPresent",json.has("refresh_token"));}else{ret.put("authorized",false);ret.put("error",json.optString("error","authorization_pending"));ret.put("interval",json.optInt("interval",0));}call.resolve(ret);}catch(Exception e){call.reject("GitHub device authorization polling failed","SEVEN_GITHUB_DEVICE",e);}},"seven-github-device-poll").start();
+  }
+  @PluginMethod public void githubOpenDevicePage(PluginCall call){
+    try{Intent i=new Intent(Intent.ACTION_VIEW,Uri.parse("https://github.com/login/device"));i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);getContext().startActivity(i);call.resolve();}catch(Exception e){call.reject("Could not open GitHub device page","SEVEN_GITHUB_BROWSER",e);}
+  }
+  @PluginMethod public void githubApi(PluginCall call){
+    final String clientId,method,path,body;try{clientId=githubClientId(call);method=call.getString("method","GET").toUpperCase();path=call.getString("path");body=call.getString("bodyJson");if(path==null)throw new IllegalArgumentException("path required");}catch(Exception e){call.reject("Invalid GitHub API request","SEVEN_GITHUB_INPUT",e);return;}
+    new Thread(()->{try{JSObject ret=githubApiOnce(clientId,method,path,body);call.resolve(ret);}catch(Exception e){call.reject("GitHub API request failed","SEVEN_GITHUB_API",e);}},"seven-github-api").start();
+  }
+  @PluginMethod public void githubJobLogs(PluginCall call){
+    final String clientId;final Long jobId;try{clientId=githubClientId(call);jobId=call.getLong("jobId");if(jobId==null||jobId<=0)throw new IllegalArgumentException("jobId required");}catch(Exception e){call.reject("Invalid GitHub job id","SEVEN_GITHUB_INPUT",e);return;}
+    new Thread(()->{try{String token=ensureGithubToken(clientId),path=GITHUB_REPO+"/actions/jobs/"+jobId+"/logs";HttpURLConnection c=(HttpURLConnection)new URL(GITHUB_API+path).openConnection();c.setRequestMethod("GET");c.setConnectTimeout(15000);c.setReadTimeout(45000);c.setInstanceFollowRedirects(true);c.setRequestProperty("Authorization","Bearer "+token);c.setRequestProperty("Accept","application/vnd.github+json");c.setRequestProperty("X-GitHub-Api-Version","2026-03-10");c.setRequestProperty("User-Agent","seven.ai");int status=c.getResponseCode();if(status<200||status>=300)throw new IllegalStateException("job logs status "+status);ByteArrayOutputStream text=new ByteArrayOutputStream();try(ZipInputStream zin=new ZipInputStream(c.getInputStream())){ZipEntry entry;byte[] buf=new byte[8192];while((entry=zin.getNextEntry())!=null&&text.size()<MAX_GITHUB_RESPONSE){int n;while((n=zin.read(buf))>0&&text.size()<MAX_GITHUB_RESPONSE)text.write(buf,0,Math.min(n,MAX_GITHUB_RESPONSE-text.size()));text.write('\n');zin.closeEntry();}}String out=text.toString(StandardCharsets.UTF_8.name());if(out.length()>180000)out=out.substring(out.length()-180000);JSObject ret=new JSObject();ret.put("status",status);ret.put("logs",out);call.resolve(ret);}catch(Exception e){call.reject("GitHub job logs could not be read","SEVEN_GITHUB_LOGS",e);}},"seven-github-logs").start();
+  }
+  @PluginMethod public void githubConnectionState(PluginCall call){
+    try{JSObject ret=new JSObject();ret.put("connected",secure.get(GH_ACCESS)!=null||secure.get(GH_REFRESH)!=null);String exp=secure.get(GH_EXPIRES);if(exp!=null)ret.put("expiresAt",exp);call.resolve(ret);}catch(Exception e){call.reject("GitHub connection state unavailable","SEVEN_GITHUB_STATE",e);}
+  }
+  @PluginMethod public void githubDisconnect(PluginCall call){
+    try{secure.remove(GH_ACCESS);secure.remove(GH_REFRESH);secure.remove(GH_EXPIRES);secure.remove(GH_REFRESH_EXPIRES);call.resolve();}catch(Exception e){call.reject("GitHub disconnect failed","SEVEN_GITHUB_STATE",e);}
   }
 
   @PluginMethod public void secureSet(PluginCall call){
