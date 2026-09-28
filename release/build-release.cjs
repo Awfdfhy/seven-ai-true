@@ -114,7 +114,7 @@ function build(){
   const attachmentDigest=digest(attachments);
   const brandSource=fs.existsSync(BRAND_DIR)?fs.readdirSync(BRAND_DIR).sort().map(name=>fs.readFileSync(path.join(BRAND_DIR,name))).join(''):'';
   const brandDigest=digest(brandSource);
-  const fingerprint=digest(css+betaCss+research+performance+control+bridge+execution+pdfRuntime+motion+ui+attachmentLoader+attachmentDigest+betaUi+uiPolishLoader+THEME_BOOT+pdf.version+workspaceDigest+brandDigest);
+  const fingerprint=digest(css+betaCss+research+performance+control+bridge+execution+pdfRuntime+motion+ui+attachmentLoader+attachmentDigest+betaUi+uiPolishLoader+githubSelfDev+THEME_BOOT+pdf.version+workspaceDigest+brandDigest);
   const startupBytes=[css,betaCss,research,performance,control,bridge,execution,pdfRuntime,motion,ui,attachmentLoader,betaUi,uiPolishLoader].reduce((n,x)=>n+Buffer.byteLength(x),0)+Buffer.byteLength(THEME_BOOT);
   const head=`\n<!-- ${MARK}:${fingerprint} -->\n<meta id="seven-theme-color" name="theme-color" content="#0f0d1d">\n${THEME_BOOT}\n<style id="seven-final-style">${css}</style>\n<style id="seven-beta-ui-style">${betaCss}</style>\n`;
   const body=`\n<script id="seven-research-runtime">${research}</script>\n<script id="seven-performance-runtime">${performance}</script>\n<script id="seven-control-runtime">${control}</script>\n<script id="seven-control-bridge">${bridge}</script>\n<script id="seven-execution-bridge">${execution}</script>\n<script id="seven-pdf-runtime">${pdfRuntime}</script>\n<script id="seven-motion-runtime">${motion}</script>\n<script id="seven-ui-runtime">${ui}</script>\n<script id="seven-attachment-loader">${attachmentLoader}</script>\n<script id="seven-beta-ui-runtime">${betaUi}</script>\n<script id="seven-ui-polish-loader">${uiPolishLoader}</script>\n<script id="seven-brand-runtime" src="./brand/runtime.js"></script>\n<!-- /${MARK}:${fingerprint} -->\n`;
@@ -123,6 +123,7 @@ function build(){
   fs.mkdirSync(DIST_DIR,{recursive:true});
   fs.writeFileSync(OUTPUT,html);
   const attachmentFile=writeLazyRuntime(DIST_DIR,'attachment-runtime.js',attachments);
+  const githubSelfDevFile=writeLazyRuntime(DIST_DIR,'github-self-dev.js',githubSelfDev);
   const workspaceOut=path.join(DIST_DIR,'workspaces');fs.rmSync(workspaceOut,{recursive:true,force:true});
   const workspaceFiles=copyDir(WORKSPACE_DIR,workspaceOut);
   workspaceFiles.push(writeLazyRuntime(workspaceOut,'canon-simulator.js',canon));
@@ -134,7 +135,7 @@ function build(){
   const workspacePathBytes=Math.max.apply(null,paths);
   const brandOut=path.join(DIST_DIR,'brand');fs.rmSync(brandOut,{recursive:true,force:true});
   const brandFiles=copyDir(BRAND_DIR,brandOut),brandBytes=brandFiles.reduce((n,x)=>n+x.bytes,0);
-  const result={output:OUTPUT,bytes:Buffer.byteLength(html),sourceBytes:fs.statSync(SOURCE).size,fingerprint,pdf,pdfLoadMode:'lazy-local',themeBootBytes:Buffer.byteLength(THEME_BOOT),startupBytes,attachmentLoadMode:'lazy-local',attachmentDigest,attachmentRuntimeBytes:attachmentFile.bytes,attachmentFile,workspaceLoadMode:'lazy-local',workspaceDigest,workspaceBytes,workspacePathBytes,workspaceFiles,brandDigest,brandBytes,brandFiles};
+  const result={output:OUTPUT,bytes:Buffer.byteLength(html),sourceBytes:fs.statSync(SOURCE).size,fingerprint,pdf,pdfLoadMode:'lazy-local',themeBootBytes:Buffer.byteLength(THEME_BOOT),startupBytes,attachmentLoadMode:'lazy-local',attachmentDigest,attachmentRuntimeBytes:attachmentFile.bytes,attachmentFile,githubSelfDevLoadMode:'lazy-local',githubSelfDevRuntimeBytes:githubSelfDevFile.bytes,githubSelfDevFile,workspaceLoadMode:'lazy-local',workspaceDigest,workspaceBytes,workspacePathBytes,workspaceFiles,brandDigest,brandBytes,brandFiles};
   fs.writeFileSync(path.join(DIST_DIR,'release-manifest.json'),JSON.stringify({format:'seven-release-manifest',version:16,builtAt:new Date().toISOString(),...result},null,2));
   return result;
 }
