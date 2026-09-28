@@ -104,7 +104,7 @@ async function connect(){
   try{
     const p=plugin();
     const flow=await p.githubBeginDeviceFlow({clientId:CLIENT_ID});
-    S.device={deviceCode:flow.deviceCode,userCode:flow.userCode,verificationUri:flow.verificationUri||"https://github.com/login/device",expiresAt:Date.now()+Number(flow.expiresIn||900)*1000,interval:Math.max(5,Number(flow.interval||5))};
+    S.device={deviceCode:flow.deviceCode,userCode:flow.userCode,verificationUri:flow.verificationUri||"",expiresAt:Date.now()+Number(flow.expiresIn||900)*1000,interval:Math.max(5,Number(flow.interval||5))};
     render();
     try{await p.githubOpenDevicePage()}catch(_){}
     pushLog("Enter code "+S.device.userCode+" on GitHub to authorize Seven.","action");
