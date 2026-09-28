@@ -689,6 +689,22 @@
             <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerGeminiEnabled" style="width:auto;margin:0;"> Google Gemini free tier</label>
             <input type="password" id="geminiApiKeyInput" placeholder="Gemini API key">
 
+            <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerKiloEnabled" style="width:auto;margin:0;"> Kilo Code free pool (no API key, opt-in)</label>
+
+            <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerLlm7Enabled" style="width:auto;margin:0;"> LLM7.io anonymous/free tier (opt-in)</label>
+            <input type="password" id="llm7TokenInput" placeholder="LLM7 free token (optional)">
+
+            <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerAionEnabled" style="width:auto;margin:0;"> Aion Labs permanent free tier</label>
+            <input type="password" id="aionApiKeyInput" placeholder="Aion Labs API key">
+
+            <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerMistralEnabled" style="width:auto;margin:0;"> Mistral free mode</label>
+            <input type="password" id="mistralApiKeyInput" placeholder="Mistral API key">
+
+            <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerZaiEnabled" style="width:auto;margin:0;"> Z.AI / GLM permanent free models</label>
+            <input type="password" id="zaiApiKeyInput" placeholder="Z.AI API key">
+
+            <div style="font-size:0.78em;color:var(--muted);margin-top:-8px;margin-bottom:15px;line-height:1.45;">Anonymous providers stay OFF until you explicitly enable them. Kilo needs no key; LLM7 can run anonymously or use an optional free token.</div>
+
             <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerCloudflareEnabled" style="width:auto;margin:0;"> Cloudflare free allocation (explicit opt-in)</label>
             <input type="password" id="cloudflareApiTokenInput" placeholder="Cloudflare API token">
             <input type="text" id="cloudflareAccountIdInput" placeholder="Cloudflare Account ID">
@@ -758,11 +774,15 @@
         let NVIDIA_API_KEY = localStorage.getItem('nvidia_api_key') || "";
         let OPENROUTER_API_KEY = localStorage.getItem('openrouter_api_key') || "";
         let GEMINI_API_KEY = localStorage.getItem('gemini_api_key') || "";
+        let LLM7_API_TOKEN = localStorage.getItem('llm7_api_token') || "";
+        let AION_API_KEY = localStorage.getItem('aion_api_key') || "";
+        let MISTRAL_API_KEY = localStorage.getItem('mistral_api_key') || "";
+        let ZAI_API_KEY = localStorage.getItem('zai_api_key') || "";
         let CLOUDFLARE_API_TOKEN = localStorage.getItem('cloudflare_api_token') || "";
         let CLOUDFLARE_ACCOUNT_ID = localStorage.getItem('cloudflare_account_id') || "";
 
         const FREE_MODEL_FABRIC_CONTRACT = Object.freeze({
-            version: 1,
+            version: 2,
             policy: "strict-free-only",
             invariants: Object.freeze([
                 "Never intentionally invoke a model that is known to require payment.",
@@ -796,6 +816,31 @@
                 id: "gemini", name: "Gemini Free Tier", kind: "free_tier", priority: 92,
                 chatUrl: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
                 modelsUrl: "https://generativelanguage.googleapis.com/v1beta/openai/models"
+            }),
+            kilo: Object.freeze({
+                id: "kilo", name: "Kilo Code Free", kind: "anonymous_free", priority: 96,
+                chatUrl: "https://api.kilo.ai/api/gateway/chat/completions",
+                modelsUrl: null, credentialOptional: true, defaultEnabled: false
+            }),
+            llm7: Object.freeze({
+                id: "llm7", name: "LLM7.io Free", kind: "anonymous_free", priority: 82,
+                chatUrl: "https://api.llm7.io/v1/chat/completions",
+                modelsUrl: null, credentialOptional: true, defaultEnabled: false
+            }),
+            aion: Object.freeze({
+                id: "aion", name: "Aion Labs Free", kind: "permanent_free_tier", priority: 70,
+                chatUrl: "https://api.aionlabs.ai/v1/chat/completions",
+                modelsUrl: "https://api.aionlabs.ai/v1/models"
+            }),
+            mistral: Object.freeze({
+                id: "mistral", name: "Mistral Free Mode", kind: "free_mode", priority: 88,
+                chatUrl: "https://api.mistral.ai/v1/chat/completions",
+                modelsUrl: "https://api.mistral.ai/v1/models"
+            }),
+            zai: Object.freeze({
+                id: "zai", name: "Z.AI Free Models", kind: "permanent_free_models", priority: 86,
+                chatUrl: "https://api.z.ai/api/paas/v4/chat/completions",
+                modelsUrl: "https://api.z.ai/api/paas/v4/models"
             }),
             cloudflare: Object.freeze({
                 id: "cloudflare", name: "Cloudflare Workers AI", kind: "free_allocation", priority: 55,
@@ -839,6 +884,28 @@
             Object.freeze({ provider:"gemini", id:"gemini-3.7-flash", label:"Gemini 3.7 Flash", free:true, freeBasis:"free_tier", contextWindow:1048576, maxTokens:65536, effort:null, defaultEffort:null, quality:98, speed:86, tasks:{general:98,coding:99,reasoning:98,research:96,planning:99}, capabilities:{stream:true,tools:true,vision:true,structured:true} }),
             Object.freeze({ provider:"gemini", id:"gemini-3.6-flash", label:"Gemini 3.6 Flash", free:true, freeBasis:"free_tier", contextWindow:1048576, maxTokens:65536, effort:null, defaultEffort:null, quality:96, speed:90, tasks:{general:96,coding:97,reasoning:96,research:95,planning:97}, capabilities:{stream:true,tools:true,vision:true,structured:true} }),
             Object.freeze({ provider:"gemini", id:"gemini-3.5-flash", label:"Gemini 3.5 Flash", free:true, freeBasis:"free_tier", contextWindow:1048576, maxTokens:65536, effort:null, defaultEffort:null, quality:94, speed:92, tasks:{general:95,coding:95,reasoning:94,research:94,planning:95}, capabilities:{stream:true,tools:true,vision:true,structured:true} }),
+
+            // Awesome Free LLM APIs pack: verified permanent/free-mode routes.
+            // Anonymous routes require an explicit user opt-in before Seven can send prompts.
+            Object.freeze({ provider:"kilo", id:"kilo-auto/free", label:"Kilo Auto Free", free:true, freeBasis:"anonymous_free_pool", contextWindow:131072, maxTokens:16384, effort:null, defaultEffort:null, quality:90, speed:84, tasks:{general:91,coding:93,reasoning:90,research:87,planning:91}, capabilities:{stream:true,tools:false,vision:false,structured:false}, requiresExplicitEnable:true }),
+
+            Object.freeze({ provider:"llm7", id:"gpt-oss:20b", label:"LLM7 GPT-OSS 20B", free:true, freeBasis:"anonymous_free_tier", contextWindow:131072, maxTokens:16384, effort:null, defaultEffort:null, quality:80, speed:84, tasks:{general:82,coding:84,reasoning:82,research:77,planning:81}, capabilities:{stream:true,tools:false,vision:false,structured:false}, requiresExplicitEnable:true }),
+            Object.freeze({ provider:"llm7", id:"mistral-Nemo-Instruct-2407", label:"LLM7 Mistral Nemo", free:true, freeBasis:"anonymous_free_tier", contextWindow:131072, maxTokens:16384, effort:null, defaultEffort:null, quality:76, speed:88, tasks:{general:79,coding:77,reasoning:75,research:75,planning:77}, capabilities:{stream:true,tools:false,vision:false,structured:false}, requiresExplicitEnable:true }),
+            Object.freeze({ provider:"llm7", id:"minimax-m2.7", label:"LLM7 MiniMax M2.7", free:true, freeBasis:"anonymous_free_tier", contextWindow:180000, maxTokens:16384, effort:null, defaultEffort:null, quality:89, speed:76, tasks:{general:90,coding:90,reasoning:94,research:88,planning:92}, capabilities:{stream:true,tools:false,vision:false,structured:false}, requiresExplicitEnable:true }),
+
+            Object.freeze({ provider:"aion", id:"aion-labs/aion-3.0", label:"Aion 3.0", free:true, freeBasis:"permanent_free_tier", contextWindow:131072, maxTokens:32768, effort:null, defaultEffort:null, quality:86, speed:74, tasks:{general:85,coding:78,reasoning:88,research:80,planning:86}, capabilities:{stream:true,tools:false,vision:false,structured:false} }),
+            Object.freeze({ provider:"aion", id:"aion-labs/aion-3.0-mini", label:"Aion 3.0 Mini", free:true, freeBasis:"permanent_free_tier", contextWindow:131072, maxTokens:32768, effort:null, defaultEffort:null, quality:80, speed:88, tasks:{general:81,coding:75,reasoning:82,research:76,planning:80}, capabilities:{stream:true,tools:false,vision:false,structured:false} }),
+            Object.freeze({ provider:"aion", id:"aion-labs/aion-2.0", label:"Aion 2.0", free:true, freeBasis:"permanent_free_tier", contextWindow:131072, maxTokens:32768, effort:null, defaultEffort:null, quality:79, speed:80, tasks:{general:80,coding:73,reasoning:83,research:75,planning:80}, capabilities:{stream:true,tools:false,vision:false,structured:false} }),
+            Object.freeze({ provider:"aion", id:"aion-labs/aion-rp-llama-3.1-8b", label:"Aion RP Llama 3.1 8B", free:true, freeBasis:"permanent_free_tier", contextWindow:32768, maxTokens:32768, effort:null, defaultEffort:null, quality:75, speed:92, tasks:{general:78,coding:65,reasoning:70,research:67,planning:72}, capabilities:{stream:true,tools:false,vision:false,structured:false} }),
+
+            Object.freeze({ provider:"mistral", id:"mistral-small-latest", label:"Mistral Small 4", free:true, freeBasis:"free_mode_credit", contextWindow:262144, maxTokens:32768, effort:null, defaultEffort:null, quality:93, speed:88, tasks:{general:94,coding:96,reasoning:94,research:91,planning:95}, capabilities:{stream:true,tools:true,vision:true,structured:true} }),
+            Object.freeze({ provider:"mistral", id:"mistral-medium-latest", label:"Mistral Medium 3.5", free:true, freeBasis:"free_mode_credit", contextWindow:262144, maxTokens:32768, effort:null, defaultEffort:null, quality:96, speed:76, tasks:{general:96,coding:98,reasoning:97,research:95,planning:98}, capabilities:{stream:true,tools:true,vision:true,structured:true} }),
+            Object.freeze({ provider:"mistral", id:"mistral-large-latest", label:"Mistral Large 3", free:true, freeBasis:"free_mode_credit", contextWindow:262144, maxTokens:32768, effort:null, defaultEffort:null, quality:96, speed:72, tasks:{general:97,coding:96,reasoning:96,research:96,planning:97}, capabilities:{stream:true,tools:true,vision:true,structured:true} }),
+            Object.freeze({ provider:"mistral", id:"codestral-latest", label:"Codestral", free:true, freeBasis:"free_mode_credit", contextWindow:131072, maxTokens:16384, effort:null, defaultEffort:null, quality:92, speed:86, tasks:{general:80,coding:99,reasoning:88,research:82,planning:90}, capabilities:{stream:true,tools:true,vision:false,structured:true} }),
+            Object.freeze({ provider:"mistral", id:"ministral-14b-latest", label:"Ministral 3 14B", free:true, freeBasis:"free_mode_credit", contextWindow:262144, maxTokens:16384, effort:null, defaultEffort:null, quality:84, speed:94, tasks:{general:86,coding:88,reasoning:85,research:82,planning:86}, capabilities:{stream:true,tools:true,vision:true,structured:true} }),
+
+            Object.freeze({ provider:"zai", id:"glm-4.7-flash", label:"GLM 4.7 Flash", free:true, freeBasis:"permanent_free_model", contextWindow:200000, maxTokens:65536, effort:null, defaultEffort:null, quality:92, speed:88, tasks:{general:92,coding:94,reasoning:95,research:90,planning:94}, capabilities:{stream:true,tools:true,vision:false,structured:true} }),
+            Object.freeze({ provider:"zai", id:"glm-4.6v-flash", label:"GLM 4.6V Flash", free:true, freeBasis:"permanent_free_model", contextWindow:131072, maxTokens:32768, effort:null, defaultEffort:null, quality:89, speed:88, tasks:{general:90,coding:90,reasoning:91,research:88,planning:90}, capabilities:{stream:true,tools:true,vision:true,structured:true} }),
 
             // Cloudflare grants 10k free Neurons/day, but these models have a
             // non-zero unit price. Strict auto-routing therefore keeps this
@@ -953,8 +1020,10 @@
         let freeFallbackEnabled = localStorage.getItem(FREE_FALLBACK_KEY) !== "0";
 
         function isFreeProviderEnabled(providerId) {
-            if (!FREE_PROVIDER_REGISTRY[providerId]) return false;
+            const provider = FREE_PROVIDER_REGISTRY[providerId];
+            if (!provider) return false;
             if (Object.prototype.hasOwnProperty.call(freeProviderPrefs, providerId)) return freeProviderPrefs[providerId] === true;
+            if (typeof provider.defaultEnabled === "boolean") return provider.defaultEnabled;
             // Cloudflare can bill past its daily free allocation on paid
             // accounts, so strict-free mode requires explicit opt-in.
             return providerId !== "cloudflare";
@@ -966,13 +1035,19 @@
                 case "nvidia": return NVIDIA_API_KEY;
                 case "openrouter": return OPENROUTER_API_KEY;
                 case "gemini": return GEMINI_API_KEY;
+                case "llm7": return LLM7_API_TOKEN;
+                case "aion": return AION_API_KEY;
+                case "mistral": return MISTRAL_API_KEY;
+                case "zai": return ZAI_API_KEY;
+                case "kilo": return "";
                 case "cloudflare": return CLOUDFLARE_API_TOKEN && CLOUDFLARE_ACCOUNT_ID ? CLOUDFLARE_API_TOKEN : "";
                 default: return "";
             }
         }
 
         function isFreeProviderConfigured(providerId) {
-            return isFreeProviderEnabled(providerId) && !!getFreeProviderCredential(providerId);
+            const provider = FREE_PROVIDER_REGISTRY[providerId];
+            return !!provider && isFreeProviderEnabled(providerId) && (provider.credentialOptional === true || !!getFreeProviderCredential(providerId));
         }
 
         function hasAnyConfiguredFreeProvider() {
@@ -1823,6 +1898,11 @@
                 nvidia: document.getElementById("providerNvidiaEnabled").checked,
                 openrouter: document.getElementById("providerOpenrouterEnabled").checked,
                 gemini: document.getElementById("providerGeminiEnabled").checked,
+                kilo: document.getElementById("providerKiloEnabled").checked,
+                llm7: document.getElementById("providerLlm7Enabled").checked,
+                aion: document.getElementById("providerAionEnabled").checked,
+                mistral: document.getElementById("providerMistralEnabled").checked,
+                zai: document.getElementById("providerZaiEnabled").checked,
                 cloudflare: document.getElementById("providerCloudflareEnabled").checked
             };
         }
@@ -1833,6 +1913,10 @@
             document.getElementById("nvidiaApiKeyInput").value = NVIDIA_API_KEY;
             document.getElementById("openrouterApiKeyInput").value = OPENROUTER_API_KEY;
             document.getElementById("geminiApiKeyInput").value = GEMINI_API_KEY;
+            document.getElementById("llm7TokenInput").value = LLM7_API_TOKEN;
+            document.getElementById("aionApiKeyInput").value = AION_API_KEY;
+            document.getElementById("mistralApiKeyInput").value = MISTRAL_API_KEY;
+            document.getElementById("zaiApiKeyInput").value = ZAI_API_KEY;
             document.getElementById("cloudflareApiTokenInput").value = CLOUDFLARE_API_TOKEN;
             document.getElementById("cloudflareAccountIdInput").value = CLOUDFLARE_ACCOUNT_ID;
             for (const id of Object.keys(FREE_PROVIDER_REGISTRY)) {
@@ -1860,11 +1944,15 @@
         async function refreshFreeModelCatalogFromSettings() {
             renderFreeModelFabricStatus("Refreshing verified-free catalog…");
             // Use unsaved fields too, so a newly pasted key can be tested before Save.
-            const previous = { groq:GROQ_API_KEY, nvidia:NVIDIA_API_KEY, openrouter:OPENROUTER_API_KEY, gemini:GEMINI_API_KEY, cloudflare:CLOUDFLARE_API_TOKEN, account:CLOUDFLARE_ACCOUNT_ID, prefs:freeProviderPrefs };
+            const previous = { groq:GROQ_API_KEY, nvidia:NVIDIA_API_KEY, openrouter:OPENROUTER_API_KEY, gemini:GEMINI_API_KEY, llm7:LLM7_API_TOKEN, aion:AION_API_KEY, mistral:MISTRAL_API_KEY, zai:ZAI_API_KEY, cloudflare:CLOUDFLARE_API_TOKEN, account:CLOUDFLARE_ACCOUNT_ID, prefs:freeProviderPrefs };
             GROQ_API_KEY = document.getElementById("apiKeyInput").value.trim();
             NVIDIA_API_KEY = document.getElementById("nvidiaApiKeyInput").value.trim();
             OPENROUTER_API_KEY = document.getElementById("openrouterApiKeyInput").value.trim();
             GEMINI_API_KEY = document.getElementById("geminiApiKeyInput").value.trim();
+            LLM7_API_TOKEN = document.getElementById("llm7TokenInput").value.trim();
+            AION_API_KEY = document.getElementById("aionApiKeyInput").value.trim();
+            MISTRAL_API_KEY = document.getElementById("mistralApiKeyInput").value.trim();
+            ZAI_API_KEY = document.getElementById("zaiApiKeyInput").value.trim();
             CLOUDFLARE_API_TOKEN = document.getElementById("cloudflareApiTokenInput").value.trim();
             CLOUDFLARE_ACCOUNT_ID = document.getElementById("cloudflareAccountIdInput").value.trim();
             freeProviderPrefs = readProviderPrefsFromSettings();
@@ -1875,7 +1963,7 @@
             } catch (e) {
                 renderFreeModelFabricStatus("Refresh failed safely: " + sanitizeDiscoveredText(e && e.message, "unknown error"));
             } finally {
-                GROQ_API_KEY=previous.groq; NVIDIA_API_KEY=previous.nvidia; OPENROUTER_API_KEY=previous.openrouter; GEMINI_API_KEY=previous.gemini; CLOUDFLARE_API_TOKEN=previous.cloudflare; CLOUDFLARE_ACCOUNT_ID=previous.account; freeProviderPrefs=previous.prefs;
+                GROQ_API_KEY=previous.groq; NVIDIA_API_KEY=previous.nvidia; OPENROUTER_API_KEY=previous.openrouter; GEMINI_API_KEY=previous.gemini; LLM7_API_TOKEN=previous.llm7; AION_API_KEY=previous.aion; MISTRAL_API_KEY=previous.mistral; ZAI_API_KEY=previous.zai; CLOUDFLARE_API_TOKEN=previous.cloudflare; CLOUDFLARE_ACCOUNT_ID=previous.account; freeProviderPrefs=previous.prefs;
             }
         }
 
@@ -1884,12 +1972,20 @@
             NVIDIA_API_KEY = document.getElementById("nvidiaApiKeyInput").value.trim();
             OPENROUTER_API_KEY = document.getElementById("openrouterApiKeyInput").value.trim();
             GEMINI_API_KEY = document.getElementById("geminiApiKeyInput").value.trim();
+            LLM7_API_TOKEN = document.getElementById("llm7TokenInput").value.trim();
+            AION_API_KEY = document.getElementById("aionApiKeyInput").value.trim();
+            MISTRAL_API_KEY = document.getElementById("mistralApiKeyInput").value.trim();
+            ZAI_API_KEY = document.getElementById("zaiApiKeyInput").value.trim();
             CLOUDFLARE_API_TOKEN = document.getElementById("cloudflareApiTokenInput").value.trim();
             CLOUDFLARE_ACCOUNT_ID = document.getElementById("cloudflareAccountIdInput").value.trim();
             localStorage.setItem('groq_api_key', GROQ_API_KEY);
             localStorage.setItem('nvidia_api_key', NVIDIA_API_KEY);
             localStorage.setItem('openrouter_api_key', OPENROUTER_API_KEY);
             localStorage.setItem('gemini_api_key', GEMINI_API_KEY);
+            localStorage.setItem('llm7_api_token', LLM7_API_TOKEN);
+            localStorage.setItem('aion_api_key', AION_API_KEY);
+            localStorage.setItem('mistral_api_key', MISTRAL_API_KEY);
+            localStorage.setItem('zai_api_key', ZAI_API_KEY);
             localStorage.setItem('cloudflare_api_token', CLOUDFLARE_API_TOKEN);
             localStorage.setItem('cloudflare_account_id', CLOUDFLARE_ACCOUNT_ID);
 
@@ -2335,7 +2431,7 @@
         }
 
         async function discoverSeedProviderAvailability(providerId) {
-            if (!["groq","nvidia","gemini"].includes(providerId) || !isFreeProviderConfigured(providerId)) return [];
+            if (!["groq","nvidia","gemini","aion","mistral","zai"].includes(providerId) || !isFreeProviderConfigured(providerId)) return [];
             const rows = await fetchProviderModelList(providerId);
             quarantineUnknownModels(providerId, rows);
             const byId = new Map();
@@ -2366,7 +2462,7 @@
             }
             const jobs = [];
             if (isFreeProviderConfigured("openrouter")) jobs.push(["openrouter", discoverOpenRouterFreeModels()]);
-            for (const id of ["groq","nvidia","gemini"]) if (isFreeProviderConfigured(id)) jobs.push([id, discoverSeedProviderAvailability(id)]);
+            for (const id of ["groq","nvidia","gemini","aion","mistral","zai"]) if (isFreeProviderConfigured(id)) jobs.push([id, discoverSeedProviderAvailability(id)]);
             const results = await Promise.allSettled(jobs.map(x=>x[1]));
             const next = [];
             const errors = [];
