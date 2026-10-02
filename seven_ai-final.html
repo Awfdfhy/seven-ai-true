@@ -5110,7 +5110,7 @@
             const sourcesDiv = document.createElement("div");
             sourcesDiv.className = "search-sources";
             const limitedCoverage=sources.length>0&&sources.every(source=>["knowledge_sources_only","limited_capability","general_web_degraded"].includes(source?.capability));
-            sourcesDiv.appendChild(document.createTextNode(limitedCoverage?"Sources (limited/degraded coverage):":"Sources:"));
+            sourcesDiv.appendChild(document.createTextNode(limitedCoverage?"Sources (limited search coverage / degraded capability):":"Sources:"));
             const list = document.createElement("ul");
             for (const source of sources) {
                 const href = safeHttpUrl(source && source.url);
