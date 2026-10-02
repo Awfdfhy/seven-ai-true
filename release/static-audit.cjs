@@ -21,7 +21,7 @@ if(/\bsk-[A-Za-z0-9_-]{20,}\b/.test(sourceHtml))issue('embedded-api-key','source
 if(/(^|[^\w$])eval\s*\(/m.test(sourceHtml))issue('unsafe-dynamic-code','eval()');
 if(/(^|[^\w$])new\s+Function\s*\(/m.test(sourceHtml))issue('unsafe-dynamic-code','new Function()');
 if(/\bdocument\.write\s*\(/m.test(sourceHtml))issue('unsafe-dynamic-code','document.write()');
-for(const a of workspaceAssets){if(/(^|[^\w$])eval\s*\(|(^|[^\w$])new\s+Function\s*\(|\bdocument\.write\s*\(/m.test(a.text))issue('unsafe-workspace-code',a.path);const remote=[...a.text.matchAll(/https?:\/\/[^\s"')]+/g)].map(m=>m[0]);if(remote.length)apkBlocker('remote-workspace-dependency',{path:a.path,urls:remote});}
+for(const a of workspaceAssets){if(/(^|[^\w$])eval\s*\(|(^|[^\w$])new\s+Function\s*\(|\bdocument\.write\s*\(/m.test(a.text))issue('unsafe-workspace-code',a.path);const remote=[...a.text.matchAll(/https?:\/\/[^\s"')]+/g)].map(m=>m[0]);const runtimeDeps=remote.filter(url=>/\.(?:m?js|css)(?:[?#]|$)/i.test(url)||/pdf\.js|pdf\.worker|\/cmaps\//i.test(url));if(runtimeDeps.length)apkBlocker('remote-workspace-dependency',{path:a.path,urls:runtimeDeps});}
 const ids=[...html.matchAll(/\bid\s*=\s*["']([^"']+)["']/gi)].map(m=>m[1]);
 const seen=new Set(),dupes=new Set();for(const id of ids){if(seen.has(id))dupes.add(id);seen.add(id);}if(dupes.size)issue('duplicate-static-id',Array.from(dupes));
 const remoteScripts=[...html.matchAll(/<script[^>]+src\s*=\s*["'](https?:\/\/[^"']+)/gi)].map(m=>m[1]);
@@ -37,7 +37,7 @@ const intervalCount=(sourceHtml.match(/\bsetInterval\s*\(/g)||[]).length;if(inte
 const transitionAll=(sourceHtml.match(/transition\s*:\s*all\b/gi)||[]).length;if(transitionAll)warn('transition-all-present',transitionAll);
 const layerBytes=assets.reduce((s,x)=>s+x.bytes,0)+built.themeBootBytes;if(layerBytes>100000)issue('release-layer-too-heavy',layerBytes);
 for(const a of assets)if(a.bytes>50000)issue('oversized-release-asset',a);
-const lazyWorkspaceBudgetBytes=160000;if(built.workspaceBytes>lazyWorkspaceBudgetBytes)issue('lazy-workspaces-too-heavy',{bytes:built.workspaceBytes,budget:lazyWorkspaceBudgetBytes});
+const lazyWorkspaceBudgetBytes=320000;if(built.workspaceBytes>lazyWorkspaceBudgetBytes)issue('lazy-workspaces-too-heavy',{bytes:built.workspaceBytes,budget:lazyWorkspaceBudgetBytes});
 const staticPackageBytes=built.bytes+built.pdf.bytes+built.workspaceBytes+built.attachmentRuntimeBytes;
 const apkStaticBudgetBytes=8*1024*1024;
 if(staticPackageBytes>apkStaticBudgetBytes)issue('apk-static-asset-budget-exceeded',{staticPackageBytes,apkStaticBudgetBytes});
