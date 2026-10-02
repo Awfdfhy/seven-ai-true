@@ -4545,7 +4545,18 @@
                 runtime.stats.pageCacheHits++;
                 return applyCachedPageReadV2(candidate,runtime.readMemo.get(key));
             }
-            const cached=getSearchCacheEntryV2(searchPageCacheV2,key);
+            let cached=null;
+            const pageEntry=searchPageCacheV2.get(key);
+            if(pageEntry){
+                const now=Date.now();
+                const requestedTtl=searchPageCacheTtlV2(intent);
+                if(pageEntry.expiresAt>now && now-(pageEntry.createdAt||0)<=requestedTtl){
+                    pageEntry.lastUsedAt=now;
+                    cached=cloneSearchCacheValueV2(pageEntry.value);
+                }else{
+                    searchPageCacheV2.delete(key);
+                }
+            }
             if(cached!==null){
                 runtime.stats.pageCacheHits++;
                 runtime.readMemo.set(key,cached);
@@ -5326,6 +5337,14 @@
             gatewayConfigured:isSearchGatewayConfiguredV2,
             normalizeGatewayUrl:normalizeSearchGatewayUrlV2,
             cacheSnapshot:safeSearchCacheSnapshotV2,
+            cachePolicy:()=>({
+                currentQueryTtlMs:SEARCH_CACHE_V2.currentQueryTtlMs,
+                evergreenQueryTtlMs:SEARCH_CACHE_V2.evergreenQueryTtlMs,
+                currentPageTtlMs:SEARCH_CACHE_V2.currentPageTtlMs,
+                evergreenPageTtlMs:SEARCH_CACHE_V2.evergreenPageTtlMs,
+                queryMaxEntries:SEARCH_CACHE_V2.queryMaxEntries,
+                pageMaxEntries:SEARCH_CACHE_V2.pageMaxEntries
+            }),
             clearCache:clearSearchCacheV2,
             snapshot:()=>lastSearchV2Diagnostics?JSON.parse(JSON.stringify(lastSearchV2Diagnostics)):null
         });
