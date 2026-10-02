@@ -1,7 +1,7 @@
 # Seven Web Search Overhaul v2 — Deep Architecture Plan
 
 Date: 2026-10-02
-Status: ACTIVE — Batch 1 merged; Android gate pending
+Status: ACTIVE — Batches 1–5 COMPLETE; Batch 6 Query Intelligence in implementation
 Parent roadmap: ../SEVEN_POLISH_ROADMAP.md
 
 ## Why this overhaul exists
@@ -755,3 +755,12 @@ Search v2 is complete only when:
 - Android workflow: Seven Android APK #288 — pending
 - Implemented: Search v2 contracts, Arabic/current intent analysis, bounded query planning, parallel DDG + EN/AR Wikipedia retrieval, canonical URL dedupe, source ranking, explicit read states, bounded context, source metadata UI, and truthful limited-search capability label.
 - Still intentionally missing: general web index gateway, arbitrary page reader, freshness dates from general sources, evidence/claim matrix, contradiction/gap loop.
+
+## Implementation status — 2026-10-02
+
+- Batch 1 — normalized multi-source retrieval: COMPLETE (`25576802d6e786ff522ea93eb36df492ed132a63`, Android #288 PASS)
+- Batch 2 — General Web Gateway + Reader: COMPLETE (`5f6536937852ae3769959784c607101e752438c6`)
+- Batch 3 — Evidence, Citations & Freshness: COMPLETE (`94654c98b2813bca057477c5457ad00222f1784b`)
+- Batch 4 — Gap/Follow-up/Conflict: COMPLETE (`e64eac106ac8cd34a58f746b9403671c9b77b4bf` + final diagnostics `ca5db8f5ce4500493203549f37b7016371e98962`)
+- Batch 5 — Cache, Stage UI & Quality Evaluation: COMPLETE (PR #36, `71b7d93fe1b89254266dc81c927c0950a97d2520`, browser #2282 PASS, Android #293 PASS)
+- Batch 6 — Query Intelligence + Primary Source Discovery: IN IMPLEMENTATION. Plan: `WEB_SEARCH_QUERY_INTELLIGENCE_BATCH6.md`.
