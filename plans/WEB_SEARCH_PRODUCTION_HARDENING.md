@@ -63,8 +63,8 @@ GitHub secrets:
 - `CLOUDFLARE_ACCOUNT_ID`
 - optional `GATEWAY_CLIENT_KEY`
 
-GitHub repository variable:
-- `SEARCH_GATEWAY_URL` — deployed HTTPS Worker URL
+Optional GitHub repository variable:
+- `SEARCH_GATEWAY_URL` — existing/custom HTTPS Worker URL override. New Wrangler deployments are auto-discovered by CI.
 
 Search-provider credentials such as Brave/Serper remain Worker-side Cloudflare secrets.
 
@@ -85,7 +85,7 @@ Production workflow run #2 validated the Search Gateway successfully.
 Deployment readiness result:
 - Cloudflare deploy step: SKIPPED
 - reason: `CLOUDFLARE_API_TOKEN` and/or `CLOUDFLARE_ACCOUNT_ID` are not configured as GitHub repository secrets
-- live Search Quality step: SKIPPED
-- reason: repository variable `SEARCH_GATEWAY_URL` is not configured
+- live Search Quality step: SKIPPED in the observed run because there was neither a configured endpoint nor a deployment URL
+- the workflow was subsequently hardened to auto-discover the newly deployed `workers.dev` URL, so `SEARCH_GATEWAY_URL` is no longer required for a first deployment
 
-This is an external deployment-configuration blocker, not a Search v2 code/test failure. Once those settings exist, the same workflow will execute deployment and the strict live gate automatically on the next relevant `main` push or manual dispatch.
+This is an external deployment-configuration blocker, not a Search v2 code/test failure. The remaining required repository configuration is Cloudflare deployment authentication. Once it exists, the workflow can deploy and immediately run the strict live gate on the discovered endpoint.
