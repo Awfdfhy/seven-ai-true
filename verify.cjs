@@ -624,20 +624,24 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   });
   assert.equal(r.id,'S1');assert.ok(r.meta.includes('Read'));assert.ok(r.meta.includes('documentation'));assert.ok(r.meta.includes('current'));assert.ok(r.meta.includes('2026-10-02'));
  });
- await test('search source metadata survives room render without storing page bodies',async()=>{
+ await test('search source metadata survives room normalization and render without storing page bodies',async()=>{
   const r=await page.evaluate(()=>{
     const old=currentRoom,id='citation-room-'+Date.now();
-    rooms[id]=createEmptyRoom();roomTitles[id]='Citation room';
-    rooms[id].history.push({role:'user',content:'question'});
-    rooms[id].history.push({role:'assistant',content:'Answer [S1]',searchSources:serializeSearchSourcesForHistoryV2([{id:'S1',title:'Source',url:'https://source.example',engine:'gateway_brave',readState:'read_success',sourceType:'documentation',freshnessClass:'recent',capability:'general_web'}])});
+    const raw={history:[
+      {role:'user',content:'question'},
+      {role:'assistant',content:'Answer [S1]',searchSources:serializeSearchSourcesForHistoryV2([{id:'S1',title:'Source',url:'https://source.example',engine:'gateway_brave',readState:'read_success',sourceType:'documentation',freshnessClass:'recent',capability:'general_web'}])}
+    ],knowledge:'',pinned:'',summary:'',knowledgeFiles:[]};
+    const normalized=normalizeRoom(raw,id);
+    rooms[id]=normalized;roomTitles[id]='Citation room';
     currentRoom=id;renderChatHistory();
     const linked=!!document.querySelector('#chat a.inline-source-citation');
     const card=!!document.querySelector('#chat .search-source-id');
-    const serialized=JSON.stringify(rooms[id].history[1].searchSources);
+    const persisted=Array.isArray(normalized.history[1].searchSources)&&normalized.history[1].searchSources[0]?.id==='S1';
+    const serialized=JSON.stringify(normalized.history[1].searchSources);
     delete rooms[id];delete roomTitles[id];currentRoom=old;renderChatHistory();
-    return {linked,card,containsBody:/Evidence one|General article body|full page/i.test(serialized)};
+    return {linked,card,persisted,containsBody:/Evidence one|General article body|full page/i.test(serialized)};
   });
-  assert.equal(r.linked,true);assert.equal(r.card,true);assert.equal(r.containsBody,false);
+  assert.equal(r.linked,true);assert.equal(r.card,true);assert.equal(r.persisted,true);assert.equal(r.containsBody,false);
  });
  await test('web search diagnostics expose freshness/source distributions without evidence bodies',async()=>{
   const r=await page.evaluate(async()=>{
