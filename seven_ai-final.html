@@ -13067,9 +13067,139 @@
             function readRuns(){try{const raw=localStorage.getItem(runKey);if(raw===null)return {version:2,objects:[],events:[]};const b=JSON.parse(raw);if(!b||b.version!==2||!Array.isArray(b.objects)||!Array.isArray(b.events)||b.objects.some(x=>!x||typeof x.id!=='string')||b.events.some(e=>!e||typeof e.id!=='string'))throw Error('INVALID_RUNTIME_RUNS');return b}catch{throw Error('INVALID_RUNTIME_RUNS')}}
             function research(sources=[]){const ss=sources.filter(s=>/^https?:\/\//i.test(s.url)).map((s,i)=>({id:`src-${i}`,title:s.title||s.url,url:s.url,quality:/wikipedia|docs|github|arxiv|\.gov|\.edu/i.test(s.url)?'high':'medium',publishedAt:s.publishedAt||null,provenance:lineage('web_adapter','source_normalize',[s.url])}));const claims=ss.map(s=>({id:`claim-${s.id}`,text:s.title,sourceRefs:[s.id],provenance:lineage('research','claim_extract',[s.id])}));const status=ss.length?'INCONCLUSIVE':'FAIL';return {version:1,status,sources:ss,claims,evidenceMatrix:claims,citationLock:ss.map(s=>s.id),provenance:lineage('research','envelope_build')}}
             function codingMap(files=[]){const out=[];for(const f of files){const path=safePath(f.path);if(out.some(x=>x.path===path))throw Error('duplicate path');out.push({id:`file-${hash(path)}`,path,content:String(f.content||''),fingerprint:hash(f.content||''),provenance:lineage('workspace','repo_map',[path])})}return {version:1,files:out,provenance:lineage('coding','repo_map')}}
+            // Coding Transaction v1 — deterministic stale-safe mutation gate.
+            // This layer never performs a repository/network write itself.
+            const CODING_TRANSACTION_V1=Object.freeze({
+                version:1,
+                operations:Object.freeze(["create","update","delete"]),
+                maxFiles:64,
+                maxContentChars:2*1024*1024,
+                protectedPatterns:Object.freeze([
+                    /(^|\/)(\.env(?:\.|$)|credentials?(?:\.|$)|secrets?(?:\.|$))/i,
+                    /(^|\/)(private-signing|signing|keystore)(\/|$)/i,
+                    /\.(?:jks|keystore|p12|pfx|pem|key)$/i,
+                    /(^|\/)\.github\/workflows\/.*\.(?:ya?ml)$/i
+                ])
+            });
+            function codingPathProtectionV1(path){
+                let safe;try{safe=safePath(path)}catch(_){return {safe:false,protected:true,reason:"unsafe_path"}}
+                const protectedPath=CODING_TRANSACTION_V1.protectedPatterns.some(pattern=>pattern.test(safe));
+                return {safe:true,protected:protectedPath,reason:protectedPath?"protected_path":null,path:safe};
+            }
+            function codingFileSnapshotV1(file){
+                if(!file||typeof file!=="object"||Array.isArray(file))return null;
+                let path;try{path=safePath(file.path)}catch(_){return null}
+                const exists=file.exists!==false;
+                const content=exists?String(file.content??""):"";
+                return Object.freeze({
+                    path,exists,
+                    contentFingerprint:hash(content),
+                    blobSha:typeof file.blobSha==="string"&&file.blobSha?file.blobSha:null,
+                    contentLength:content.length
+                });
+            }
+            function codingSnapshotV1(input){
+                const src=input&&typeof input==="object"&&!Array.isArray(input)?input:{};
+                const files=Array.isArray(src.files)?src.files:[];
+                if(files.length>CODING_TRANSACTION_V1.maxFiles)return null;
+                const seen=new Set(),out=[];
+                for(const file of files){
+                    const snap=codingFileSnapshotV1(file);if(!snap||seen.has(snap.path))return null;
+                    seen.add(snap.path);out.push(snap);
+                }
+                out.sort((a,b)=>a.path.localeCompare(b.path));
+                return Object.freeze({
+                    version:1,
+                    repository:String(src.repository||"").slice(0,240),
+                    branch:String(src.branch||"").slice(0,240),
+                    headSha:typeof src.headSha==="string"&&src.headSha?src.headSha:null,
+                    files:Object.freeze(out),
+                    fingerprint:hash(JSON.stringify(out.map(x=>[x.path,x.exists,x.contentFingerprint,x.blobSha])))
+                });
+            }
+            function createCodingTransactionV1(input){
+                const src=input&&typeof input==="object"&&!Array.isArray(input)?input:{};
+                const base=src.base&&src.base.version===1?src.base:codingSnapshotV1(src.base);
+                if(!base||!base.repository||!base.branch||!base.headSha)return {ok:false,status:"INVALID",code:"invalid_base_snapshot"};
+                const ops=Array.isArray(src.operations)?src.operations:[];
+                if(!ops.length||ops.length>CODING_TRANSACTION_V1.maxFiles)return {ok:false,status:"INVALID",code:"invalid_operation_count"};
+                const baseByPath=new Map(base.files.map(x=>[x.path,x])),seen=new Set(),normalized=[];
+                let totalChars=0;
+                for(const raw of ops){
+                    if(!raw||typeof raw!=="object"||!CODING_TRANSACTION_V1.operations.includes(raw.type))return {ok:false,status:"INVALID",code:"invalid_operation"};
+                    const protection=codingPathProtectionV1(raw.path);
+                    if(!protection.safe)return {ok:false,status:"INVALID",code:"unsafe_path"};
+                    if(protection.protected&&src.allowProtected!==true)return {ok:false,status:"BLOCKED",code:"protected_path",path:protection.path};
+                    if(seen.has(protection.path))return {ok:false,status:"INVALID",code:"duplicate_path",path:protection.path};
+                    seen.add(protection.path);
+                    const before=baseByPath.get(protection.path)||null;
+                    if(raw.type==="create"&&before&&before.exists)return {ok:false,status:"STALE",code:"create_target_exists",path:protection.path};
+                    if((raw.type==="update"||raw.type==="delete")&&(!before||!before.exists))return {ok:false,status:"STALE",code:"target_missing",path:protection.path};
+                    const content=raw.type==="delete"?null:String(raw.content??"");
+                    if(content!==null){totalChars+=content.length;if(totalChars>CODING_TRANSACTION_V1.maxContentChars)return {ok:false,status:"BLOCKED",code:"transaction_too_large"}}
+                    normalized.push(Object.freeze({
+                        type:raw.type,path:protection.path,
+                        expectedFingerprint:before?before.contentFingerprint:null,
+                        expectedBlobSha:before?before.blobSha:null,
+                        nextFingerprint:content===null?null:hash(content),
+                        content
+                    }));
+                }
+                normalized.sort((a,b)=>a.path.localeCompare(b.path));
+                const txCore={
+                    version:1,repository:base.repository,branch:base.branch,baseHeadSha:base.headSha,
+                    baseFingerprint:base.fingerprint,
+                    operations:normalized,
+                    operationFingerprint:hash(JSON.stringify(normalized.map(x=>[x.type,x.path,x.expectedFingerprint,x.expectedBlobSha,x.nextFingerprint])))
+                };
+                return {ok:true,status:"PLANNED",transaction:Object.freeze(txCore)};
+            }
+            function preflightCodingTransactionV1(transaction,currentInput){
+                if(!transaction||transaction.version!==1||!Array.isArray(transaction.operations))return {ok:false,status:"INVALID",code:"invalid_transaction"};
+                const current=currentInput&&currentInput.version===1?currentInput:codingSnapshotV1(currentInput);
+                if(!current)return {ok:false,status:"INVALID",code:"invalid_current_snapshot"};
+                if(current.repository!==transaction.repository||current.branch!==transaction.branch)return {ok:false,status:"STALE",code:"target_changed"};
+                if(current.headSha!==transaction.baseHeadSha)return {ok:false,status:"STALE",code:"head_changed",expectedHeadSha:transaction.baseHeadSha,currentHeadSha:current.headSha};
+                const currentByPath=new Map(current.files.map(x=>[x.path,x]));
+                const stale=[];
+                for(const op of transaction.operations){
+                    const nowFile=currentByPath.get(op.path)||null;
+                    if(op.type==="create"){
+                        if(nowFile&&nowFile.exists)stale.push({path:op.path,reason:"create_target_exists"});
+                    }else if(!nowFile||!nowFile.exists){
+                        stale.push({path:op.path,reason:"target_missing"});
+                    }else if(nowFile.contentFingerprint!==op.expectedFingerprint||(op.expectedBlobSha&&nowFile.blobSha!==op.expectedBlobSha)){
+                        stale.push({path:op.path,reason:"content_changed"});
+                    }
+                }
+                if(stale.length)return {ok:false,status:"STALE",code:"stale_targets",stale};
+                return {ok:true,status:"READY",code:null,operationFingerprint:transaction.operationFingerprint};
+            }
+            function codingRollbackDescriptorV1(transaction,result){
+                if(!transaction||transaction.version!==1)return null;
+                const createdSha=result&&typeof result.createdSha==="string"?result.createdSha:null;
+                return Object.freeze({
+                    version:1,repository:transaction.repository,branch:transaction.branch,
+                    restoreHeadSha:transaction.baseHeadSha,revertFromSha:createdSha,
+                    paths:transaction.operations.map(x=>x.path),
+                    strategy:"explicit_restore_commit",
+                    fingerprint:hash([transaction.repository,transaction.branch,transaction.baseHeadSha,createdSha||"",transaction.operationFingerprint].join("|"))
+                });
+            }
+            function codingTransactionDiagnosticsV1(value){
+                const tx=value&&value.transaction?value.transaction:value;
+                if(!tx||tx.version!==1)return null;
+                return {
+                    version:1,repository:tx.repository,branch:tx.branch,baseHeadSha:tx.baseHeadSha,
+                    operationCount:Array.isArray(tx.operations)?tx.operations.length:0,
+                    paths:Array.isArray(tx.operations)?tx.operations.map(x=>x.path):[],
+                    operationTypes:Array.isArray(tx.operations)?tx.operations.map(x=>x.type):[],
+                    operationFingerprint:tx.operationFingerprint||null
+                };
+            }
             function readOutcomes(){try{const raw=localStorage.getItem(outcomeKey);if(raw===null)return {version:1,rows:[]};const b=JSON.parse(raw);if(!b||b.version!==1||!Array.isArray(b.rows)||b.rows.some(x=>!x||typeof x.taskFingerprint!=='string'||typeof x.model!=='string'||typeof x.success!=='boolean'||!x.provenance))throw Error('INVALID_RUNTIME_OUTCOMES');return b}catch{throw Error('INVALID_RUNTIME_OUTCOMES')}}
             function modelOutcome(o){try{if(!o||typeof o!=='object')return false;const row={taskFingerprint:hash(o.task||o.taskFingerprint||''),taskType:String(o.taskType||'unknown'),difficulty:String(o.difficulty||'unknown'),model:String(o.model||'unknown'),success:!!o.success,latencyMs:Number(o.latencyMs)||0,verificationScore:Number(o.verificationScore)||0,timestamp:now(),provenance:lineage('local','outcome_record')};const b=readOutcomes();b.rows=b.rows.concat(row).slice(-400);return storage.set(outcomeKey,JSON.stringify(b));}catch{return false}}
-            return Object.freeze({version:V,createMemory,commitMemory,readMemory,permissionGrant,issuePermissionGrant,revokePermissionGrant,canAuthorize,createWorkspace,contextAction,embed,cosine,classify,registerTools,gateTool,runLedger,readRuns,research,codingMap,modelOutcome,readOutcomes,lineage,hash});
+            return Object.freeze({version:V,createMemory,commitMemory,readMemory,permissionGrant,issuePermissionGrant,revokePermissionGrant,canAuthorize,createWorkspace,contextAction,embed,cosine,classify,registerTools,gateTool,runLedger,readRuns,research,codingMap,codingSnapshotV1,createCodingTransactionV1,preflightCodingTransactionV1,codingRollbackDescriptorV1,codingTransactionDiagnosticsV1,modelOutcome,readOutcomes,lineage,hash});
         })();
 
         // Last-resort UI containment: an unexpected callback must not leave
