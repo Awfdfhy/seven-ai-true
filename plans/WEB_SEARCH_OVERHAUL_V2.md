@@ -1,7 +1,7 @@
 # Seven Web Search Overhaul v2 — Deep Architecture Plan
 
 Date: 2026-10-02
-Status: ACTIVE — Batches 1–5 COMPLETE; Batch 6 Query Intelligence in implementation
+Status: ACTIVE — Batches 1–6 COMPLETE; Batch 7 Deep Research Integration in implementation
 Parent roadmap: ../SEVEN_POLISH_ROADMAP.md
 
 ## Why this overhaul exists
@@ -763,4 +763,5 @@ Search v2 is complete only when:
 - Batch 3 — Evidence, Citations & Freshness: COMPLETE (`94654c98b2813bca057477c5457ad00222f1784b`)
 - Batch 4 — Gap/Follow-up/Conflict: COMPLETE (`e64eac106ac8cd34a58f746b9403671c9b77b4bf` + final diagnostics `ca5db8f5ce4500493203549f37b7016371e98962`)
 - Batch 5 — Cache, Stage UI & Quality Evaluation: COMPLETE (PR #36, `71b7d93fe1b89254266dc81c927c0950a97d2520`, browser #2282 PASS, Android #293 PASS)
-- Batch 6 — Query Intelligence + Primary Source Discovery: IN IMPLEMENTATION. Plan: `WEB_SEARCH_QUERY_INTELLIGENCE_BATCH6.md`.
+- Batch 6 — Query Intelligence + Primary Source Discovery: COMPLETE (PR #37, `d072bda179df394c4568bf86a9402f392d8c82eb`, browser #2316 PASS, Android #294 PASS)
+- Batch 7 — Deep Research Integration: IN IMPLEMENTATION. Plan: `WEB_SEARCH_DEEP_RESEARCH_BATCH7.md`.
