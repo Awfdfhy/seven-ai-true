@@ -1,0 +1,46 @@
+# Seven AI Search Gateway
+
+This Worker provides the controlled transport required by Web Search v2 Batch 2.
+
+## Endpoints
+
+- `GET /health`
+- `POST /v1/search`
+- `POST /v1/read`
+
+The reader accepts only public HTTPS URLs and revalidates redirects. It blocks obvious loopback/private/link-local targets, strips executable/navigation HTML, limits response size, and never forwards client cookies/auth headers to target pages.
+
+## Search backends
+
+Preference order:
+
+1. Brave Search API — `BRAVE_SEARCH_API_KEY`
+2. Serper — `SERPER_API_KEY`
+3. custom SearxNG — `SEARXNG_BASE_URL`
+4. DuckDuckGo HTML fallback — no extra key, labeled `general_web_degraded`
+
+The DuckDuckGo HTML fallback is intentionally labeled degraded because it is not an official structured search API and can be rate-limited/changed upstream.
+
+## Client authentication
+
+For a personal deployment, set `GATEWAY_CLIENT_KEY` and put the same value in Seven's **Web Search Gateway** settings.
+
+This is a gateway access token, not a model key. Seven keeps it outside prompts, search diagnostics, conversation exports, and page-reader requests to third-party sites.
+
+## Deployment
+
+From this folder with Wrangler configured:
+
+```
+wrangler deploy
+```
+
+Then configure Seven with the resulting HTTPS Worker URL.
+
+Do not commit Cloudflare login credentials, API tokens, OTPs, search API keys, or the gateway client key.
+
+## Limits
+
+Batch 2 reads HTML/XHTML/plain text. PDF is truthfully returned as `unsupported` until a real PDF extraction transport is implemented.
+
+The Worker includes an in-isolate request counter, but production deployments should also use Cloudflare's account-level rate limiting/WAF controls for stronger abuse protection.
