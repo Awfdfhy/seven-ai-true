@@ -5300,7 +5300,7 @@
                 finalGapCodes:finalAssessment.gapCodes.slice(),
                 followUpCount:followUps.length,
                 followUpWaveCount:followUps.length?1:0,
-                followUpQueries:followUps.map(x=>x.text),
+                followUpQueries:followUps.map(x=>String(x.id||"").slice(0,24)),
                 followUpPurposes:followUps.map(x=>x.purpose),
                 sufficiencyScore:finalAssessment.score,
                 sufficient:finalAssessment.sufficient,
