@@ -4516,6 +4516,12 @@
                 link.rel = "noopener noreferrer";
                 link.textContent = source && source.title ? String(source.title) : href;
                 item.appendChild(link);
+                const meta=document.createElement("span");
+                meta.className="search-source-meta";
+                const stateLabel=source?.readState==="read_success"?"Read":(source?.readState==="snippet_only"?"Snippet only":String(source?.readState||"Discovered"));
+                const engineLabel=String(source?.engine||"web").replace("wikipedia_","Wikipedia ").replace("duckduckgo","DuckDuckGo");
+                meta.textContent=" · "+engineLabel+" · "+stateLabel;
+                item.appendChild(meta);
                 list.appendChild(item);
             }
             if (!list.children.length) return;
