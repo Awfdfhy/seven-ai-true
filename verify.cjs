@@ -457,7 +457,10 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
       if(s==='https://gateway.example/v1/search'){
         const body=JSON.parse(opts.body);
         if(opts.headers['X-Seven-Gateway-Key']!=='gateway-secret-fixture')throw new Error('missing key');
-        return {ok:true,json:async()=>({capability:'general_web',backend:'brave',results:[{title:'General Android source',url:'https://docs.example.com/android',snippet:'Search snippet',rank:1,sourceType:'documentation'}]})};
+        return {ok:true,json:async()=>({capability:'general_web',backend:'brave',results:[
+          {title:'General Android source',url:'https://docs.example.com/android',snippet:'Latest Android update API documentation',rank:1,sourceType:'documentation',publishedAt:new Date().toISOString()},
+          {title:'Android release notes',url:'https://release.example.com/android',snippet:'Latest Android update release notes',rank:2,sourceType:'official',publishedAt:new Date().toISOString()}
+        ]})};
       }
       if(s==='https://gateway.example/v1/read'){
         const body=JSON.parse(opts.body);
@@ -659,6 +662,176 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
     }finally{fetchWithTimeout=oldFetch;SEARCH_GATEWAY_URL=oldUrl;SEARCH_GATEWAY_KEY=oldKey;}
   });
   assert.ok(r.diag.evidenceCount>=1);assert.ok(r.diag.freshnessDistribution);assert.ok(r.diag.sourceTypeDistribution);assert.equal(r.containsBody,false);
+ });
+
+ await test('web search gap analysis accepts strong diverse read evidence',async()=>{
+  const r=await page.evaluate(()=>{
+    const items=[
+      {title:'Android API official documentation',url:'https://docs.example/android',snippet:'Android API official documentation reference',engine:'fixture',queryId:'q1',queryPriority:1,rank:1,language:'en',sourceType:'documentation',readState:'read_success'},
+      {title:'Android API platform guidance',url:'https://gov.example/android',snippet:'Android API official platform guidance documentation',engine:'fixture',queryId:'q1',queryPriority:.9,rank:2,language:'en',sourceType:'government',readState:'read_success'}
+    ];
+    const ev=SevenSearchV2.evidence(items,'Android API official documentation');
+    return SevenSearchV2.assess(ev,'Android API official documentation');
+  });
+  assert.equal(r.sufficient,true);assert.deepEqual(r.gapCodes,[]);assert.ok(r.score>=.62);assert.equal(r.independentHostCount,2);assert.equal(r.readCount,2);
+ });
+ await test('web search gap analysis identifies thin snippet-only evidence',async()=>{
+  const r=await page.evaluate(()=>{
+    const items=[{title:'One result',url:'https://one.example/a',snippet:'short answer',engine:'fixture',queryId:'q1',queryPriority:1,rank:1,language:'en',sourceType:'reference',readState:'snippet_only'}];
+    const ev=SevenSearchV2.evidence(items,'technical API answer');
+    return SevenSearchV2.assess(ev,'technical API answer');
+  });
+  assert.equal(r.sufficient,false);assert.ok(r.gapCodes.includes('too_few_sources'));assert.ok(r.gapCodes.includes('no_read_evidence'));assert.ok(r.gapCodes.includes('no_strong_source'));
+ });
+ await test('web search gap analysis flags stale evidence only for current questions',async()=>{
+  const r=await page.evaluate(()=>{
+    const old='2024-01-01T00:00:00Z';
+    const items=[
+      {title:'Android release old',url:'https://a.example/release',snippet:'Latest Android release information',engine:'fixture',queryId:'q1',queryPriority:1,rank:1,language:'en',sourceType:'documentation',readState:'read_success',publishedAt:old},
+      {title:'Android release archive',url:'https://b.example/release',snippet:'Latest Android release information archive',engine:'fixture',queryId:'q1',queryPriority:.9,rank:2,language:'en',sourceType:'official',readState:'read_success',publishedAt:old}
+    ];
+    const current=SevenSearchV2.assess(SevenSearchV2.evidence(items,'latest Android release today'),'latest Android release today');
+    const evergreen=SevenSearchV2.assess(SevenSearchV2.evidence(items,'Android release history'),'Android release history');
+    return {current,evergreen};
+  });
+  assert.ok(r.current.gapCodes.includes('stale_current_query'));assert.equal(r.evergreen.gapCodes.includes('stale_current_query'),false);
+ });
+ await test('web search follow-up planner is bounded and deduplicates initial query text',async()=>{
+  const r=await page.evaluate(()=>{
+    const question='latest Android API';
+    const intent=SevenSearchV2.analyze(question);
+    const assessment={gapCodes:['stale_current_query','no_strong_source','too_few_sources'],sufficient:false};
+    const first=question+' '+intent.currentYear+' latest official source';
+    const follow=SevenSearchV2.followUp(question,[],assessment,[{text:first}]);
+    return {follow,first};
+  });
+  assert.ok(r.follow.length<=2);assert.ok(r.follow.length>=1);assert.equal(r.follow.some(q=>q.text.toLowerCase()===r.first.toLowerCase()),false);assert.equal(new Set(r.follow.map(q=>q.text.toLowerCase())).size,r.follow.length);
+ });
+ await test('web search conflict signals flag material numeric disagreement but not near-equal values',async()=>{
+  const r=await page.evaluate(()=>{
+    const make=value=>[
+      {evidenceId:'E1',sourceId:'S1',title:'GPU benchmark RTX test',url:'https://a.example/gpu',excerpt:'GPU benchmark RTX test reaches '+value[0]+' fps sustained',engine:'x',queryId:'q1',readState:'read_success',sourceType:'specialist',language:'en',freshnessClass:'evergreen'},
+      {evidenceId:'E2',sourceId:'S2',title:'GPU benchmark RTX test',url:'https://b.example/gpu',excerpt:'GPU benchmark RTX test reaches '+value[1]+' fps sustained',engine:'y',queryId:'q1',readState:'read_success',sourceType:'specialist',language:'en',freshnessClass:'evergreen'}
+    ];
+    return {
+      different:SevenSearchV2.conflicts(make([60,90]),'GPU benchmark RTX test'),
+      near:SevenSearchV2.conflicts(make([60,61]),'GPU benchmark RTX test')
+    };
+  });
+  assert.ok(r.different.some(x=>x.code==='possible_numeric_disagreement'));assert.equal(r.near.some(x=>x.code==='possible_numeric_disagreement'),false);
+ });
+ await test('web search conflict context presents signals as caution, not authority',async()=>{
+  const r=await page.evaluate(()=>{
+    const evidence=[
+      {evidenceId:'E1',sourceId:'S1',title:'GPU benchmark RTX',url:'https://a.example',excerpt:'GPU benchmark RTX 60 fps',engine:'a',queryId:'q1',readState:'read_success',sourceType:'specialist',language:'en',freshnessClass:'evergreen'},
+      {evidenceId:'E2',sourceId:'S2',title:'GPU benchmark RTX',url:'https://b.example',excerpt:'GPU benchmark RTX 90 fps',engine:'b',queryId:'q1',readState:'read_success',sourceType:'specialist',language:'en',freshnessClass:'evergreen'}
+    ];
+    const assessment={gapCodes:[],score:.8};
+    const conflicts=[{code:'possible_numeric_disagreement',sources:['S1','S2'],unit:'fps'}];
+    return buildSearchContextTextV2(evidence,SevenSearchV2.analyze('GPU benchmark RTX'),assessment,conflicts);
+  });
+  assert.ok(r.includes('possible disagreement signals'));assert.ok(r.includes('Do not silently resolve'));assert.ok(r.includes('[S1]'));assert.ok(r.includes('[S2]'));
+ });
+ await test('web search insufficient first wave triggers exactly one bounded follow-up wave',async()=>{
+  const r=await page.evaluate(async()=>{
+    const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
+    SEARCH_GATEWAY_URL='';SEARCH_GATEWAY_KEY='';
+    let ddgCalls=0;
+    fetchWithTimeout=async url=>{
+      const s=String(url);
+      if(s.includes('api.duckduckgo.com')){
+        ddgCalls++;
+        const q=new URL(s).searchParams.get('q')||'';
+        if(q.includes('independent source'))return {ok:true,json:async()=>({Heading:'Second independent result',AbstractText:'coverage test independent source evidence',AbstractURL:'https://two.example/result',RelatedTopics:[]})};
+        return {ok:true,json:async()=>({Heading:'First result',AbstractText:'coverage test evidence',AbstractURL:'https://one.example/result',RelatedTopics:[]})};
+      }
+      if(s.includes('wikipedia.org'))return {ok:true,json:async()=>({query:{search:[]}})};
+      return {ok:false,json:async()=>({})};
+    };
+    try{
+      const out=await performWebSearchV2('coverage test');
+      return {ddgCalls,diag:out?.diagnostics,queries:out?.queries?.map(q=>q.text)||[],sources:out?.sources?.length||0};
+    }finally{fetchWithTimeout=oldFetch;SEARCH_GATEWAY_URL=oldUrl;SEARCH_GATEWAY_KEY=oldKey;}
+  });
+  assert.equal(r.diag.followUpWaveCount,1);assert.ok(r.diag.followUpCount>=1&&r.diag.followUpCount<=2);assert.equal(r.ddgCalls,1+r.diag.followUpCount);assert.ok(r.sources>=2);
+ });
+ await test('web search sufficient first wave avoids follow-up latency',async()=>{
+  const r=await page.evaluate(async()=>{
+    const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
+    SEARCH_GATEWAY_URL='https://gateway.example';SEARCH_GATEWAY_KEY='';
+    let searchCalls=0,readCalls=0;
+    fetchWithTimeout=async (url,opts)=>{
+      const s=String(url);
+      if(s==='https://gateway.example/v1/search'){
+        searchCalls++;
+        return {ok:true,json:async()=>({capability:'general_web',backend:'brave',results:[
+          {title:'Android API documentation',url:'https://docs.example/api',snippet:'Android API documentation official reference',rank:1,sourceType:'documentation'},
+          {title:'Android API official guide',url:'https://official.example/api',snippet:'Android API official documentation guide',rank:2,sourceType:'official'}
+        ]})};
+      }
+      if(s==='https://gateway.example/v1/read'){
+        readCalls++;
+        const body=JSON.parse(opts.body);
+        return {ok:true,json:async()=>({readState:'read_success',title:'Read page',text:'Android API official documentation guide reference with full details.',finalUrl:body.url,contentType:'text/html',injectionSuspected:false})};
+      }
+      if(s.includes('api.duckduckgo.com'))return {ok:true,json:async()=>({RelatedTopics:[]})};
+      if(s.includes('wikipedia.org'))return {ok:true,json:async()=>({query:{search:[]}})};
+      return {ok:false,json:async()=>({})};
+    };
+    try{
+      const out=await performWebSearchV2('Android API documentation');
+      return {searchCalls,readCalls,diag:out?.diagnostics};
+    }finally{fetchWithTimeout=oldFetch;SEARCH_GATEWAY_URL=oldUrl;SEARCH_GATEWAY_KEY=oldKey;}
+  });
+  assert.equal(r.diag.sufficient,true);assert.equal(r.diag.followUpWaveCount,0);assert.equal(r.diag.followUpCount,0);assert.equal(r.searchCalls,1);assert.equal(r.readCalls,2);
+ });
+ await test('web search follow-up preserves prior read state and does not reread same successful URL',async()=>{
+  const r=await page.evaluate(async()=>{
+    const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
+    SEARCH_GATEWAY_URL='https://gateway.example';SEARCH_GATEWAY_KEY='';
+    const reads={};
+    fetchWithTimeout=async (url,opts)=>{
+      const s=String(url);
+      if(s==='https://gateway.example/v1/search'){
+        const body=JSON.parse(opts.body);
+        const follow=String(body.query).includes('independent source');
+        return {ok:true,json:async()=>({capability:'general_web',backend:'brave',results:follow?[
+          {title:'Coverage first',url:'https://one.example/page',snippet:'coverage test evidence',rank:1,sourceType:'reference'},
+          {title:'Coverage second',url:'https://two.example/page',snippet:'coverage test independent source evidence',rank:2,sourceType:'reference'}
+        ]:[
+          {title:'Coverage first',url:'https://one.example/page',snippet:'coverage test evidence',rank:1,sourceType:'reference'}
+        ]})};
+      }
+      if(s==='https://gateway.example/v1/read'){
+        const body=JSON.parse(opts.body);reads[body.url]=(reads[body.url]||0)+1;
+        return {ok:true,json:async()=>({readState:'read_success',title:'Read',text:'coverage test evidence full article '+body.url,finalUrl:body.url,contentType:'text/html',injectionSuspected:false})};
+      }
+      if(s.includes('api.duckduckgo.com'))return {ok:true,json:async()=>({RelatedTopics:[]})};
+      if(s.includes('wikipedia.org'))return {ok:true,json:async()=>({query:{search:[]}})};
+      return {ok:false,json:async()=>({})};
+    };
+    try{
+      const out=await performWebSearchV2('coverage test');
+      return {reads,diag:out?.diagnostics,states:out?.sources?.map(x=>({url:x.url,state:x.readState}))};
+    }finally{fetchWithTimeout=oldFetch;SEARCH_GATEWAY_URL=oldUrl;SEARCH_GATEWAY_KEY=oldKey;}
+  });
+  assert.equal(r.diag.followUpWaveCount,1);assert.equal(r.reads['https://one.example/page'],1);assert.equal(r.reads['https://two.example/page'],1);assert.ok(r.states.every(x=>x.state==='read_success'||x.state==='read_partial'));
+ });
+ await test('web search empty evidence returns no fabricated context',async()=>{
+  const r=await page.evaluate(()=>buildSearchContextTextV2([],SevenSearchV2.analyze('nothing'),{gapCodes:['too_few_sources'],score:0},[]));
+  assert.equal(r,'');
+ });
+ await test('web search Batch 4 diagnostics remain metadata-only',async()=>{
+  const r=await page.evaluate(()=>{
+    const snap=SevenSearchV2.snapshot()||{};
+    const raw=JSON.stringify(snap);
+    return {
+      hasWave:Object.prototype.hasOwnProperty.call(snap,'followUpWaveCount'),
+      secret:/gsk_|sk-or-|nvapi-|AIza|Authorization|Bearer|gateway-secret/i.test(raw),
+      body:/full article https:\/\/|coverage test evidence full article/.test(raw)
+    };
+  });
+  assert.equal(r.hasWave,true);assert.equal(r.secret,false);assert.equal(r.body,false);
  });
  await browser.close();server.close();fs.writeFileSync(require('path').join(__dirname,'results.json'),JSON.stringify({results,liveProviderCalls:false},null,2));
 })().catch(e=>{console.error(e);server.close();process.exit(1)});
