@@ -1,7 +1,7 @@
 # Performance + Android Reliability — Detailed Execution Specification
 
 Date: 2026-10-02
-Status: IMPLEMENTATION READY
+Status: MERGED — Android main-branch release gate pending
 Parent roadmap: ../SEVEN_POLISH_ROADMAP.md
 
 ## Objective
@@ -125,3 +125,11 @@ This final 2.1 stage is complete only when:
 - the exact tested PR head is merged;
 - Android workflow on main completes successfully, including API 36 WebView emulator smoke;
 - the roadmap records emulator evidence accurately and does not call it a physical-device test.
+
+## Merge record
+
+- Implementation PR: #24
+- Tested head SHA: `ca751c3da2048ec8cc6214e1a38fb395967d69c6`
+- Browser CI run: Seven AI tests #2161 — PASS
+- Squash merge SHA: `7aae45341cea8b2b892f2ec0fdf5916892b29e2d`
+- Remaining gate: Android main workflow (lint + unit tests + APK build + package verification + API 36 WebView emulator smoke + final APK verification).
