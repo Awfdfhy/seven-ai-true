@@ -282,6 +282,93 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   if(r.max>2048)assert.ok(r.budget<r.max);else assert.equal(r.budget,r.max);
  });
 
+ await test('measured latency v2 keeps bounded valid route samples',async()=>{
+  const r=await page.evaluate(()=>{
+    SevenLatencyV2.clear();
+    const model={provider:'fixture',id:'latency-bounded'};
+    for(let i=0;i<30;i++)recordLatencySampleV2(model,{purpose:'deepThink',latencyTier:'low'},{success:true,totalMs:1000+i,firstTokenMs:100+i});
+    recordLatencySampleV2(model,{purpose:'deepThink',latencyTier:'low'},{success:true,totalMs:NaN,firstTokenMs:-5});
+    const snap=SevenLatencyV2.snapshot('fixture','latency-bounded','deepThink','low');
+    return snap;
+  });
+  assert.equal(r.samples,20);assert.equal(r.firstTokenSamples,20);assert.equal(r.successes,31);assert.ok(r.p50TotalMs>0);assert.ok(r.p90TotalMs>=r.p50TotalMs);
+ });
+ await test('measured latency v2 percentile and warm-up influence are deterministic',async()=>{
+  const r=await page.evaluate(()=>({
+    p50:SevenLatencyV2.percentile([100,200,300,400,500],.5),
+    p90:SevenLatencyV2.percentile([100,200,300,400,500],.9),
+    i2:SevenLatencyV2.influence(2),
+    i3:SevenLatencyV2.influence(3),
+    i6:SevenLatencyV2.influence(6)
+  }));
+  assert.equal(r.p50,300);assert.equal(r.p90,500);assert.equal(r.i2,0);assert.ok(r.i3>0&&r.i3<1);assert.equal(r.i6,1);
+ });
+ await test('measured latency v2 learned timeout uses p90 but obeys complexity bounds',async()=>{
+  const r=await page.evaluate(()=>{
+    SevenLatencyV2.clear();
+    const model={provider:'fixture',id:'timeout-fast'};
+    const fallback=SevenLatencyV2.timeout('fixture','timeout-fast','deepThink','low',25000);
+    for(let i=0;i<6;i++)recordLatencySampleV2(model,{purpose:'deepThink',latencyTier:'low'},{success:true,totalMs:3000+i*100});
+    const learned=SevenLatencyV2.timeout('fixture','timeout-fast','deepThink','low',25000);
+    const high=SevenLatencyV2.timeout('fixture','timeout-fast','deepThink','high',45000);
+    return {fallback,learned,high};
+  });
+  assert.equal(r.fallback,25000);assert.ok(r.learned>=8000&&r.learned<=25000);assert.ok(r.learned<r.fallback);assert.equal(r.high,45000);
+ });
+ await test('adaptive speed router v2 lets measured p90 break only near ties',async()=>{
+  const r=await page.evaluate(()=>{
+    SevenLatencyV2.clear();
+    const fast={provider:'fixture',id:'fast',free:true,contextWindow:131072,maxTokens:8192,quality:90,speed:80,tasks:{general:90,coding:90,reasoning:90,research:90,planning:90},capabilities:{stream:true,tools:true,structured:true},effort:['high']};
+    const slow={provider:'fixture',id:'slow',free:true,contextWindow:131072,maxTokens:8192,quality:90,speed:80,tasks:{general:90,coding:90,reasoning:90,research:90,planning:90},capabilities:{stream:true,tools:true,structured:true},effort:['high']};
+    for(let i=0;i<6;i++){
+      recordLatencySampleV2(fast,{purpose:'deepThink',latencyTier:'medium'},{success:true,totalMs:1800+i*50});
+      recordLatencySampleV2(slow,{purpose:'deepThink',latencyTier:'medium'},{success:true,totalMs:9000+i*100});
+    }
+    const ctx={version:3,taskWeights:{general:0,coding:0,reasoning:.8,research:0,planning:.2},intentWeights:{reasoning:.8},confidence:.8,complexity:'medium',latencyTier:'medium',latencyPriority:true,purpose:'deepThink',requiredContext:4096,preferSpeed:true,preferPrecision:true,preferTools:false,preferVision:false,requireTools:false,requireVision:false,requireStructured:false,requireStreaming:true};
+    return SevenModelIntelligenceV3.rank([slow,fast],ctx).map(x=>x.model.id);
+  });
+  assert.deepEqual(r,['fast','slow']);
+ });
+ await test('adaptive speed router v2 does not displace a clearly stronger reasoning model',async()=>{
+  const r=await page.evaluate(()=>{
+    SevenLatencyV2.clear();
+    const strong={provider:'fixture',id:'strong',free:true,contextWindow:131072,maxTokens:8192,quality:99,speed:70,tasks:{general:99,coding:99,reasoning:99,research:99,planning:99},capabilities:{stream:true,tools:true,structured:true},effort:['high']};
+    const weak={provider:'fixture',id:'weak',free:true,contextWindow:131072,maxTokens:8192,quality:70,speed:99,tasks:{general:70,coding:70,reasoning:70,research:70,planning:70},capabilities:{stream:true,tools:true,structured:true},effort:['high']};
+    for(let i=0;i<8;i++){
+      recordLatencySampleV2(strong,{purpose:'deepThink',latencyTier:'medium'},{success:true,totalMs:12000});
+      recordLatencySampleV2(weak,{purpose:'deepThink',latencyTier:'medium'},{success:true,totalMs:900});
+    }
+    const ctx={version:3,taskWeights:{general:0,coding:0,reasoning:.9,research:0,planning:.1},intentWeights:{reasoning:.9},confidence:.9,complexity:'medium',latencyTier:'medium',latencyPriority:true,purpose:'deepThink',requiredContext:4096,preferSpeed:true,preferPrecision:true,preferTools:false,preferVision:false,requireTools:false,requireVision:false,requireStructured:false,requireStreaming:true};
+    return SevenModelIntelligenceV3.rank([weak,strong],ctx).map(x=>({id:x.model.id,score:x.score}));
+  });
+  assert.equal(r[0].id,'strong');assert.ok(r[0].score-r[1].score>4);
+ });
+ await test('measured latency v2 records first-token only when it actually exists',async()=>{
+  const r=await page.evaluate(()=>{
+    SevenLatencyV2.clear();
+    const model={provider:'fixture',id:'first-token'};
+    recordLatencySampleV2(model,{purpose:'chat',latencyTier:'low'},{success:false,totalMs:5000,firstTokenMs:null});
+    recordLatencySampleV2(model,{purpose:'chat',latencyTier:'low'},{success:true,totalMs:2200,firstTokenMs:450});
+    const snap=SevenLatencyV2.snapshot('fixture','first-token','chat','low');
+    return snap;
+  });
+  assert.equal(r.samples,2);assert.equal(r.firstTokenSamples,1);assert.equal(r.p50FirstTokenMs,450);assert.equal(r.failures,1);assert.equal(r.successes,1);
+ });
+ await test('request normalization preserves latency tier for route-aware timeouts',async()=>{
+  const r=await page.evaluate(()=>normalizeRequestConfig({messages:[{role:'user',content:'x'}],purpose:'deepThink',model:currentModel,latencyPriority:true,latencyTier:'high',timeoutMs:45000,maxTokens:2048}));
+  assert.equal(r.latencyPriority,true);assert.equal(r.latencyTier,'high');assert.equal(r.timeoutMs,45000);
+ });
+ await test('measured latency v2 diagnostics contain no content or secret material',async()=>{
+  const r=await page.evaluate(()=>{
+    SevenLatencyV2.clear();
+    const model={provider:'groq',id:'safe-fixture'};
+    for(let i=0;i<4;i++)recordLatencySampleV2(model,{purpose:'deepThink',latencyTier:'medium'},{success:true,totalMs:2000+i*100});
+    const snap=SevenLatencyV2.snapshot('groq','safe-fixture','deepThink','medium');
+    const raw=JSON.stringify(snap);
+    return {raw,secret:/gsk_|sk-or-|nvapi-|AIza|Authorization|Bearer/i.test(raw),content:/prompt|response|message|conversation|reasoning brief/i.test(raw)};
+  });
+  assert.equal(r.secret,false);assert.equal(r.content,false);
+ });
  await test('web search v2 recognizes Arabic and current-information intent',async()=>{
   const r=await page.evaluate(()=>SevenSearchV2.analyze('ما هي أحدث تحديثات Android الآن؟'));
   assert.equal(r.language,'ar');assert.equal(r.timeSensitive,true);assert.equal(r.technical,true);
