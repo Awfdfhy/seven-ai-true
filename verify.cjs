@@ -748,7 +748,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
       if(s.includes('api.duckduckgo.com')){
         ddgCalls++;
         const q=new URL(s).searchParams.get('q')||'';
-        if(q.includes('independent source'))return {ok:true,json:async()=>({Heading:'Second independent result',AbstractText:'coverage test independent source evidence',AbstractURL:'https://two.example/result',RelatedTopics:[]})};
+        if(q.includes('official documentation'))return {ok:true,json:async()=>({Heading:'Second strong result',AbstractText:'coverage test official documentation evidence',AbstractURL:'https://two.example/result',RelatedTopics:[]})};
         return {ok:true,json:async()=>({Heading:'First result',AbstractText:'coverage test evidence',AbstractURL:'https://one.example/result',RelatedTopics:[]})};
       }
       if(s.includes('wikipedia.org'))return {ok:true,json:async()=>({query:{search:[]}})};
@@ -759,7 +759,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
       return {ddgCalls,diag:out?.diagnostics,queries:out?.queries?.map(q=>q.text)||[],sources:out?.sources?.length||0};
     }finally{fetchWithTimeout=oldFetch;SEARCH_GATEWAY_URL=oldUrl;SEARCH_GATEWAY_KEY=oldKey;}
   });
-  assert.equal(r.diag.followUpWaveCount,1);assert.ok(r.diag.followUpCount>=1&&r.diag.followUpCount<=2);assert.equal(r.ddgCalls,1+r.diag.followUpCount);assert.ok(r.sources>=2);
+  assert.equal(r.diag.followUpWaveCount,1);assert.ok(r.diag.followUpCount>=1&&r.diag.followUpCount<=2);assert.equal(r.ddgCalls,r.diag.queryCount);assert.ok(r.sources>=2);
  });
  await test('web search sufficient first wave avoids follow-up latency',async()=>{
   const r=await page.evaluate(async()=>{
