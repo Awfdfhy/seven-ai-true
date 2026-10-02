@@ -1,0 +1,89 @@
+name: Seven Search Gateway Production
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'cloudflare/search-gateway/**'
+      - 'eval/live-search-quality.mjs'
+      - '.github/workflows/search-gateway-production.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Validate Search Gateway
+        run: node cloudflare/search-gateway/search-gateway.test.mjs
+
+  deploy:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      SEVEN_SEARCH_GATEWAY_URL: ${{ vars.SEARCH_GATEWAY_URL }}
+      SEVEN_SEARCH_GATEWAY_KEY: ${{ secrets.GATEWAY_CLIENT_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Detect production deployment readiness
+        id: readiness
+        shell: bash
+        run: |
+          if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "cloudflare_ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "cloudflare_ready=false" >> "$GITHUB_OUTPUT"
+          fi
+          if [ -n "$SEVEN_SEARCH_GATEWAY_URL" ]; then
+            echo "live_ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "live_ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy Search Gateway to Cloudflare
+        if: steps.readiness.outputs.cloudflare_ready == 'true'
+        working-directory: cloudflare/search-gateway
+        run: npx --yes wrangler@4 deploy --config wrangler.toml
+
+      - name: Record missing Cloudflare deployment credentials
+        if: steps.readiness.outputs.cloudflare_ready != 'true'
+        run: |
+          echo "::warning::Production deploy skipped: CLOUDFLARE_API_TOKEN and/or CLOUDFLARE_ACCOUNT_ID are not configured as repository secrets."
+
+      - name: Run live Search Quality gate
+        if: steps.readiness.outputs.live_ready == 'true'
+        env:
+          SEVEN_SEARCH_LIVE_STRICT: '1'
+        run: node eval/live-search-quality.mjs
+
+      - name: Record missing live gateway URL
+        if: steps.readiness.outputs.live_ready != 'true'
+        run: |
+          echo "::warning::Live Search Quality gate skipped: repository variable SEARCH_GATEWAY_URL is not configured."
+
+      - name: Upload live Search Quality report
+        if: always() && steps.readiness.outputs.live_ready == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: seven-search-live-quality
+          path: eval/live-search-quality-report.json
+          if-no-files-found: warn
+          retention-days: 14
