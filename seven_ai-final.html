@@ -4246,13 +4246,7 @@
         // comes back empty, falls back to Wikipedia's full-text search API
         // (keyless, covers far more topics, returns article snippets).
         async function performWebSearch(query) {
-            const ddgResult = await searchDuckDuckGo(query);
-            if (ddgResult) return ddgResult;
-
-            const wikiResult = await searchWikipedia(query);
-            if (wikiResult) return wikiResult;
-
-            return null;
+            return performWebSearchV2(query);
         }
 
         // Wraps fetch with a timeout and forwards the active generation's
@@ -4320,6 +4314,295 @@
                 if (detach) detach();
             });
         }
+
+        // ---------- Web Search v2: normalized multi-source retrieval ----------
+        const SEARCH_V2 = Object.freeze({
+            version:2,
+            maxQueries:3,
+            maxCandidates:24,
+            maxContextSources:8,
+            maxContextChars:12000
+        });
+        let lastSearchV2Diagnostics=null;
+
+        function stripSearchHtmlV2(value){
+            return String(value||"")
+                .replace(/<script[\s\S]*?<\/script>/gi," ")
+                .replace(/<style[\s\S]*?<\/style>/gi," ")
+                .replace(/<[^>]+>/g," ")
+                .replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,"&")
+                .replace(/\s+/g," ").trim();
+        }
+
+        function containsArabicV2(text){
+            return /[\u0600-\u06FF]/.test(String(text||""));
+        }
+
+        function tokenizeSearchTextV2(text){
+            return String(text||"").toLowerCase()
+                .replace(/[^\p{L}\p{N}+#._-]+/gu," ")
+                .split(/\s+/).filter(x=>x.length>=2).slice(0,40);
+        }
+
+        function analyzeSearchIntentV2(question){
+            const text=String(question||"").trim();
+            const language=containsArabicV2(text)?"ar":"en";
+            const timeSensitive=/\b(latest|today|current|recent|news|update|updates|now|this week|this month|202[4-9])\b/i.test(text) ||
+                /أحدث|احدث|اليوم|حاليا|حاليًا|الآن|اخبار|أخبار|تحديث|تحديثات|هذا الأسبوع|هذا الشهر/.test(text);
+            const technical=/\b(api|sdk|code|javascript|python|android|webview|github|model|llm|gpu|cpu|linux|windows)\b/i.test(text) ||
+                /برمج|كود|اندرويد|أندرويد|نموذج|محاكي|معالج|كرت شاشة|جيتهاب/.test(text);
+            const comparison=/\b(vs\.?|versus|compare|comparison|better)\b/i.test(text) || /مقارنة|قارن|أفضل|افضل|أقوى|اقوى/.test(text);
+            return {version:2,question:text,language,timeSensitive,technical,comparison,currentYear:new Date().getFullYear()};
+        }
+
+        function planSearchQueriesV2(question){
+            const intent=analyzeSearchIntentV2(question);
+            const queries=[],seen=new Set();
+            const add=(text,purpose,language,priority)=>{
+                const clean=String(text||"").trim().replace(/\s+/g," ");
+                const key=clean.toLowerCase();
+                if(!clean||seen.has(key)||queries.length>=SEARCH_V2.maxQueries)return;
+                seen.add(key);
+                queries.push({id:"q"+(queries.length+1),text:clean,purpose,language:language||intent.language,priority:Number(priority)||1});
+            };
+            add(intent.question,"primary",intent.language,1);
+            if(intent.timeSensitive && !new RegExp("\\b"+intent.currentYear+"\\b").test(intent.question)){
+                add(intent.question+" "+intent.currentYear,"freshness",intent.language,.9);
+            }
+            if(intent.language==="ar"){
+                const latin=(intent.question.match(/[A-Za-z][A-Za-z0-9+._-]*/g)||[]).filter(x=>x.length>=2);
+                if(latin.length) add(latin.slice(0,8).join(" ")+(intent.timeSensitive?" "+intent.currentYear:""),"entity_english","en",.75);
+            }
+            return {intent,queries};
+        }
+
+        function canonicalSearchUrlV2(value){
+            try{
+                const u=new URL(String(value||""));
+                if(!["http:","https:"].includes(u.protocol))return null;
+                u.hash="";
+                const remove=[];
+                for(const key of u.searchParams.keys()){
+                    if(/^utm_/i.test(key)||["fbclid","gclid","ref","ref_src"].includes(key.toLowerCase()))remove.push(key);
+                }
+                remove.forEach(k=>u.searchParams.delete(k));
+                if(u.pathname.length>1)u.pathname=u.pathname.replace(/\/{2,}/g,"/").replace(/\/$/,"");
+                return u.href;
+            }catch(_){return null;}
+        }
+
+        function hashSearchStringV2(value){
+            const text=String(value||"");
+            let h=2166136261;
+            for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619);}
+            return (h>>>0).toString(36);
+        }
+
+        function normalizeSearchCandidateV2(raw){
+            if(!raw||typeof raw!=="object")return null;
+            const url=canonicalSearchUrlV2(raw.url);
+            if(!url)return null;
+            const title=stripSearchHtmlV2(raw.title||url).slice(0,240);
+            const snippet=stripSearchHtmlV2(raw.snippet||"").slice(0,4000);
+            const readState=["discovered","snippet_only","read_success","read_partial","blocked","unsupported","failed"].includes(raw.readState)?raw.readState:"snippet_only";
+            const engine=String(raw.engine||"unknown").slice(0,40);
+            const language=String(raw.language||"unknown").slice(0,12);
+            return {
+                id:String(raw.id||("s_"+hashSearchStringV2(url))).slice(0,80),
+                title,url,canonicalUrl:url,snippet,engine,
+                queryId:String(raw.queryId||"").slice(0,40),
+                queryPriority:Math.max(0,Math.min(1,Number(raw.queryPriority)||0)),
+                rank:Math.max(1,Number(raw.rank)||999),
+                language,
+                sourceType:String(raw.sourceType||"unknown").slice(0,40),
+                readState,
+                discoveredAt:Number(raw.discoveredAt)||Date.now(),
+                publishedAt:raw.publishedAt?String(raw.publishedAt).slice(0,64):null,
+                discoveredBy:Array.isArray(raw.discoveredBy)?raw.discoveredBy.slice(0,12):[engine+":"+String(raw.queryId||"")]
+            };
+        }
+
+        function readStateWeightV2(state){
+            if(state==="read_success")return 22;
+            if(state==="read_partial")return 14;
+            if(state==="snippet_only")return 7;
+            if(state==="discovered")return 3;
+            return -8;
+        }
+
+        function scoreSearchCandidateV2(candidate,intent){
+            const terms=tokenizeSearchTextV2(intent?.question||"");
+            const hay=new Set(tokenizeSearchTextV2((candidate.title||"")+" "+(candidate.snippet||"")));
+            const overlap=terms.length?terms.filter(t=>hay.has(t)).length/Math.min(terms.length,12):0;
+            let score=overlap*45+readStateWeightV2(candidate.readState)+candidate.queryPriority*10;
+            if(candidate.sourceType==="reference")score+=7;
+            if(candidate.language===intent?.language)score+=6;
+            if(candidate.engine.startsWith("wikipedia"))score+=3;
+            score+=Math.min(6,Math.max(0,(candidate.discoveredBy?.length||1)-1)*2);
+            score-=Math.min(8,Math.max(0,(candidate.rank||1)-1)*.8);
+            return Number(score.toFixed(3));
+        }
+
+        function dedupeSearchCandidatesV2(candidates,intent){
+            const map=new Map();
+            for(const raw of Array.isArray(candidates)?candidates:[]){
+                const c=normalizeSearchCandidateV2(raw);
+                if(!c)continue;
+                const titleKey=c.title.toLowerCase().replace(/[^\p{L}\p{N}]+/gu," ").trim();
+                let host="";
+                try{host=new URL(c.canonicalUrl).hostname.toLowerCase();}catch(_){}
+                let existing=map.get(c.canonicalUrl.toLowerCase());
+                if(!existing&&titleKey&&host){
+                    existing=[...map.values()].find(x=>x._titleKey===titleKey&&x._host===host);
+                }
+                if(existing){
+                    existing.discoveredBy=Array.from(new Set([...(existing.discoveredBy||[]),...(c.discoveredBy||[])])).slice(0,12);
+                    if(readStateWeightV2(c.readState)>readStateWeightV2(existing.readState)){
+                        existing.readState=c.readState;
+                        if(c.snippet)existing.snippet=c.snippet;
+                    }else if(!existing.snippet&&c.snippet)existing.snippet=c.snippet;
+                    existing.queryPriority=Math.max(existing.queryPriority,c.queryPriority);
+                }else{
+                    c._titleKey=titleKey;
+                    c._host=host;
+                    map.set(c.canonicalUrl.toLowerCase(),c);
+                }
+            }
+            return [...map.values()].map(c=>{
+                delete c._titleKey;
+                delete c._host;
+                c.score=scoreSearchCandidateV2(c,intent);
+                return c;
+            }).sort((a,b)=>b.score-a.score||a.rank-b.rank||a.title.localeCompare(b.title));
+        }
+
+        async function searchDuckDuckGoCandidatesV2(queryObj){
+            try{
+                const url="https://api.duckduckgo.com/?q="+encodeURIComponent(queryObj.text)+"&format=json&no_html=1&skip_disambig=1";
+                const res=await fetchWithTimeout(url,{},5000);
+                if(!res.ok)return [];
+                const data=await res.json(),out=[];
+                const push=(title,url,snippet,rank)=>{
+                    const c=normalizeSearchCandidateV2({
+                        title,url,snippet,rank,engine:"duckduckgo",
+                        queryId:queryObj.id,queryPriority:queryObj.priority,language:queryObj.language,
+                        sourceType:"reference",readState:"snippet_only",discoveredAt:Date.now()
+                    });
+                    if(c)out.push(c);
+                };
+                if(data.AbstractURL&&data.AbstractText)push(data.Heading||data.AbstractSource||"DuckDuckGo result",data.AbstractURL,data.AbstractText,1);
+                if(data.DefinitionURL&&data.Definition)push(data.DefinitionSource||"Definition",data.DefinitionURL,data.Definition,2);
+                const flat=[];
+                for(const topic of Array.isArray(data.RelatedTopics)?data.RelatedTopics:[]){
+                    if(Array.isArray(topic.Topics))flat.push(...topic.Topics);else flat.push(topic);
+                }
+                let rank=3;
+                for(const topic of flat.slice(0,8)){
+                    if(topic?.Text&&topic?.FirstURL)push(topic.Text.split(" - ")[0].slice(0,160),topic.FirstURL,topic.Text,rank++);
+                }
+                return out;
+            }catch(e){
+                if(e?.name==="AbortError"||e?.code==="REQUEST_TIMEOUT")return [];
+                console.warn("DDG v2 adapter failed",e);
+                return [];
+            }
+        }
+
+        async function searchWikipediaCandidatesV2(queryObj,lang){
+            const language=lang==="ar"?"ar":"en";
+            try{
+                const base="https://"+language+".wikipedia.org/w/api.php";
+                const searchUrl=base+"?action=query&list=search&srsearch="+encodeURIComponent(queryObj.text)+"&format=json&origin=*&srlimit=5";
+                const res=await fetchWithTimeout(searchUrl,{},6000);
+                if(!res.ok)return [];
+                const data=await res.json(),hits=data?.query?.search||[];
+                if(!hits.length)return [];
+                let topExtract="";
+                try{
+                    const extractUrl=base+"?action=query&prop=extracts&exintro=1&explaintext=1&titles="+encodeURIComponent(hits[0].title)+"&format=json&origin=*";
+                    const er=await fetchWithTimeout(extractUrl,{},6000);
+                    if(er.ok){
+                        const ed=await er.json(),pages=ed?.query?.pages||{},page=Object.values(pages)[0];
+                        if(page?.extract)topExtract=String(page.extract).slice(0,4000);
+                    }
+                }catch(_){}
+                return hits.map((hit,index)=>normalizeSearchCandidateV2({
+                    title:hit.title,
+                    url:"https://"+language+".wikipedia.org/wiki/"+encodeURIComponent(hit.title.replace(/ /g,"_")),
+                    snippet:index===0&&topExtract?topExtract:stripSearchHtmlV2(hit.snippet||""),
+                    rank:index+1,
+                    engine:"wikipedia_"+language,
+                    queryId:queryObj.id,queryPriority:queryObj.priority,language,
+                    sourceType:"reference",
+                    readState:index===0&&topExtract?"read_success":"snippet_only",
+                    discoveredAt:Date.now()
+                })).filter(Boolean);
+            }catch(e){
+                if(e?.name==="AbortError"||e?.code==="REQUEST_TIMEOUT")return [];
+                console.warn("Wikipedia "+language+" v2 adapter failed",e);
+                return [];
+            }
+        }
+
+        function buildSearchContextTextV2(candidates){
+            let text="";
+            const selected=(Array.isArray(candidates)?candidates:[]).slice(0,SEARCH_V2.maxContextSources);
+            for(let i=0;i<selected.length;i++){
+                const c=selected[i];
+                const block="[S"+(i+1)+"] "+c.title+"\nURL: "+c.url+"\nSource: "+c.engine+" • "+c.readState+"\nExcerpt: "+(c.snippet||"(no excerpt)")+"\n\n";
+                if(text.length+block.length>SEARCH_V2.maxContextChars){
+                    const remaining=SEARCH_V2.maxContextChars-text.length;
+                    if(remaining>120)text+=block.slice(0,remaining);
+                    break;
+                }
+                text+=block;
+            }
+            return text.trim();
+        }
+
+        async function performWebSearchV2(question){
+            const started=Date.now();
+            const plan=planSearchQueriesV2(question);
+            if(!plan.queries.length)return null;
+            const tasks=[];
+            for(const q of plan.queries){
+                tasks.push(searchDuckDuckGoCandidatesV2(q));
+                tasks.push(searchWikipediaCandidatesV2(q,"en"));
+                if(plan.intent.language==="ar")tasks.push(searchWikipediaCandidatesV2(q,"ar"));
+            }
+            const settled=await Promise.all(tasks.map(p=>Promise.resolve(p).catch(()=>[])));
+            const raw=settled.flat().filter(Boolean).slice(0,SEARCH_V2.maxCandidates*2);
+            const ranked=dedupeSearchCandidatesV2(raw,plan.intent).slice(0,SEARCH_V2.maxCandidates);
+            const contextText=buildSearchContextTextV2(ranked);
+            const sources=ranked.slice(0,SEARCH_V2.maxContextSources).map((c,index)=>({
+                id:"S"+(index+1),title:c.title,url:c.url,engine:c.engine,language:c.language,
+                readState:c.readState,sourceType:c.sourceType,score:c.score,queryId:c.queryId
+            }));
+            lastSearchV2Diagnostics={
+                version:2,status:contextText?"partial":"no_results",capability:"knowledge_sources_only",
+                language:plan.intent.language,timeSensitive:plan.intent.timeSensitive,
+                queryCount:plan.queries.length,rawCandidateCount:raw.length,uniqueCandidateCount:ranked.length,
+                readSuccessCount:ranked.filter(x=>x.readState==="read_success").length,
+                snippetOnlyCount:ranked.filter(x=>x.readState==="snippet_only").length,
+                engines:Array.from(new Set(ranked.map(x=>x.engine))).sort(),
+                elapsedMs:Math.max(0,Date.now()-started)
+            };
+            if(!contextText)return null;
+            return {
+                version:2,status:"partial",capability:"knowledge_sources_only",
+                intent:plan.intent,queries:plan.queries,contextText,sources,
+                diagnostics:Object.assign({},lastSearchV2Diagnostics)
+            };
+        }
+
+        window.SevenSearchV2=Object.freeze({
+            version:SEARCH_V2.version,
+            analyze:analyzeSearchIntentV2,
+            plan:planSearchQueriesV2,
+            normalize:normalizeSearchCandidateV2,
+            dedupe:(items,question)=>dedupeSearchCandidatesV2(items,analyzeSearchIntentV2(question||"")),
+            snapshot:()=>lastSearchV2Diagnostics?JSON.parse(JSON.stringify(lastSearchV2Diagnostics)):null
+        });
 
         async function searchDuckDuckGo(query) {
             try {
@@ -4452,6 +4735,12 @@
                 link.rel = "noopener noreferrer";
                 link.textContent = source && source.title ? String(source.title) : href;
                 item.appendChild(link);
+                const meta=document.createElement("span");
+                meta.className="search-source-meta";
+                const stateLabel=source?.readState==="read_success"?"Read":(source?.readState==="snippet_only"?"Snippet only":String(source?.readState||"Discovered"));
+                const engineLabel=String(source?.engine||"web").replace("wikipedia_","Wikipedia ").replace("duckduckgo","DuckDuckGo");
+                meta.textContent=" · "+engineLabel+" · "+stateLabel;
+                item.appendChild(meta);
                 list.appendChild(item);
             }
             if (!list.children.length) return;
