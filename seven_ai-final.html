@@ -1580,7 +1580,13 @@
             const history = Array.isArray(raw.history)
                 ? raw.history.filter(m => m && typeof m === "object" &&
                     ["user", "assistant", "system"].includes(m.role) && typeof m.content === "string")
-                    .map(m => ({ role: m.role, content: m.content }))
+                    .map(m => {
+                        const normalized={ role:m.role, content:m.content };
+                        if(m.role==="assistant"&&Array.isArray(m.searchSources)&&m.searchSources.length){
+                            normalized.searchSources=serializeSearchSourcesForHistoryV2(m.searchSources);
+                        }
+                        return normalized;
+                    })
                 : [];
             const legacyKnowledge = typeof raw.knowledge === "string" ? raw.knowledge : "";
             let knowledgeFiles = Array.isArray(raw.knowledgeFiles)
