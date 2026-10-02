@@ -48,6 +48,19 @@ jobs:
         run: node all.cjs
 
       - name: Generate native Android project
+        env:
+          SEVEN_EMBED_GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          SEVEN_EMBED_NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          SEVEN_EMBED_OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          SEVEN_EMBED_GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SEVEN_EMBED_LLM7_API_TOKEN: ${{ secrets.LLM7_API_TOKEN }}
+          SEVEN_EMBED_AION_API_KEY: ${{ secrets.AION_API_KEY }}
+          SEVEN_EMBED_MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          SEVEN_EMBED_ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
+          SEVEN_EMBED_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          SEVEN_EMBED_CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SEVEN_EMBED_SEARCH_GATEWAY_URL: ${{ vars.SEARCH_GATEWAY_URL }}
+          SEVEN_EMBED_SEARCH_GATEWAY_KEY: ${{ secrets.GATEWAY_CLIENT_KEY }}
         run: npm run android:generate
 
       - name: Android lint, unit tests and APK build
