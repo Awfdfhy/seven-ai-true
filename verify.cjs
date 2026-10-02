@@ -1027,7 +1027,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
     nav:SevenSearchV2.analyze('Open the official Android website').intentType,
     how:SevenSearchV2.analyze('How to configure Python asyncio timeout').intentType
   }));
-  assert.deepEqual(r,{tech:'technical',cmp:'comparison',academic:'academic',nav:'navigational',how:'technical'});
+  assert.deepEqual(r,{tech:'technical',cmp:'comparison',academic:'academic',nav:'navigational',how:'how_to'});
  });
  await test('web search batch6 technical plan asks for documentation coverage',async()=>{
   const r=await page.evaluate(()=>SevenSearchV2.plan('Android WebView API changes'));
