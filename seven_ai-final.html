@@ -5069,6 +5069,7 @@
                 initialGapCodes:initialAssessment.gapCodes.slice(),
                 finalGapCodes:finalAssessment.gapCodes.slice(),
                 followUpCount:followUps.length,
+                followUpWaveCount:followUps.length?1:0,
                 followUpPurposes:followUps.map(x=>x.purpose),
                 sufficiencyScore:finalAssessment.score,
                 sufficient:finalAssessment.sufficient,
