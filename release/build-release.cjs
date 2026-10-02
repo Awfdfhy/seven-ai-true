@@ -2,6 +2,7 @@ const fs=require('fs');
 const path=require('path');
 const crypto=require('crypto');
 const {vendorPdf}=require('./vendor-pdf.cjs');
+const {materializeRemakeAssets}=require('./materialize-remake-assets.cjs');
 
 const ROOT=path.resolve(__dirname,'..');
 const SOURCE=path.join(ROOT,'seven_ai-final.html');
@@ -103,6 +104,7 @@ function writeLazyRuntime(dst,name,source){
   return {path:path.relative(DIST_DIR,file).replace(/\\/g,'/'),bytes:data.length,sha256:crypto.createHash('sha256').update(data).digest('hex')};
 }
 function build(){
+  const remakeAssets=materializeRemakeAssets();
   let html=fs.readFileSync(SOURCE,'utf8');
   const embeddedCredentials=embeddedCredentialsFromEnv();
   if(html.includes(MARK))throw new Error('release layer already present in source; refuse double injection');
@@ -124,6 +126,7 @@ function build(){
   const oldExtraction=`const text = lowerName.endsWith(".pdf")\n                        ? await extractPdfText(file)\n                        : await readTextFile(file);\n                    const artifact = createKnowledgeArtifact(file, text, targetRoomId, {\n                        method: lowerName.endsWith(".pdf") ? "pdfjs_text" : "text_file"\n                    });`;
   const newExtraction=`if (!window.SevenAttachments && window.SevenAttachmentLoader && typeof window.SevenAttachmentLoader.load === "function") {\n                        await window.SevenAttachmentLoader.load();\n                    }\n                    const attachmentExtraction = window.SevenAttachments && typeof window.SevenAttachments.extractForKnowledge === "function"\n                        ? await window.SevenAttachments.extractForKnowledge(file, extractPdfText, readTextFile)\n                        : { text: lowerName.endsWith(".pdf") ? await extractPdfText(file) : await readTextFile(file), method: lowerName.endsWith(".pdf") ? "pdfjs_text" : "text_file" };\n                    const text = attachmentExtraction.text;\n                    const artifact = createKnowledgeArtifact(file, text, targetRoomId, {\n                        method: attachmentExtraction.method\n                    });`;
   html=replaceRequired(html,oldExtraction,newExtraction,'attachment extraction bridge');
+  if(!html.includes('id="seven-app"')) html=replaceRequired(html,'<div class="app">','<div id="seven-app" data-seven-remake="1">\n<div class="app">','Seven UI Remake app root');
   const css=compactCss(read('seven-final.css'));
   const betaCss=compactCss(read('beta-ui.css'));
   const canon=compactJs(read('canon-simulator.js'));
@@ -148,9 +151,10 @@ function build(){
   const brandDigest=digest(brandSource);
   const fingerprint=digest(css+betaCss+research+performance+control+bridge+execution+pdfRuntime+motion+ui+attachmentLoader+attachmentDigest+betaUi+uiPolishLoader+githubSelfDev+THEME_BOOT+pdf.version+workspaceDigest+brandDigest);
   const startupBytes=[css,betaCss,research,performance,control,bridge,execution,pdfRuntime,motion,ui,attachmentLoader,betaUi,uiPolishLoader].reduce((n,x)=>n+Buffer.byteLength(x),0)+Buffer.byteLength(THEME_BOOT);
-  const head=`\n<!-- ${MARK}:${fingerprint} -->\n${embeddedCredentialsScript()}<meta id="seven-theme-color" name="theme-color" content="#0f0d1d">\n${THEME_BOOT}\n<style id="seven-final-style">${css}</style>\n<style id="seven-beta-ui-style">${betaCss}</style>\n`;
-  const body=`\n<script id="seven-research-runtime">${research}</script>\n<script id="seven-performance-runtime">${performance}</script>\n<script id="seven-control-runtime">${control}</script>\n<script id="seven-control-bridge">${bridge}</script>\n<script id="seven-execution-bridge">${execution}</script>\n<script id="seven-pdf-runtime">${pdfRuntime}</script>\n<script id="seven-motion-runtime">${motion}</script>\n<script id="seven-ui-runtime">${ui}</script>\n<script id="seven-attachment-loader">${attachmentLoader}</script>\n<script id="seven-beta-ui-runtime">${betaUi}</script>\n<script id="seven-ui-polish-loader">${uiPolishLoader}</script>\n<script id="seven-brand-runtime" src="./brand/runtime.js"></script>\n<!-- /${MARK}:${fingerprint} -->\n`;
+  const head=`\n<!-- ${MARK}:${fingerprint} -->\n${embeddedCredentialsScript()}<meta id="seven-theme-color" name="theme-color" content="#0f0d1d">\n${THEME_BOOT}\n<style id="seven-final-style">${css}</style>\n<style id="seven-beta-ui-style">${betaCss}</style>\n<link rel="stylesheet" href="./workspaces/remake.css" id="seven-remake-style">\n<script id="seven-intelligence-runtime" src="./workspaces/intelligence.js"></script>\n`;
+  const body=`\n<script id="seven-research-runtime">${research}</script>\n<script id="seven-performance-runtime">${performance}</script>\n<script id="seven-control-runtime">${control}</script>\n<script id="seven-control-bridge">${bridge}</script>\n<script id="seven-execution-bridge">${execution}</script>\n<script id="seven-pdf-runtime">${pdfRuntime}</script>\n<script id="seven-motion-runtime">${motion}</script>\n<script id="seven-ui-runtime">${ui}</script>\n<script id="seven-attachment-loader">${attachmentLoader}</script>\n<script id="seven-beta-ui-runtime">${betaUi}</script>\n<script id="seven-ui-polish-loader">${uiPolishLoader}</script>\n<script id="seven-brand-runtime" src="./brand/runtime.js"></script>\n<script id="seven-remake-runtime" src="./workspaces/remake.js"></script>\n<!-- /${MARK}:${fingerprint} -->\n`;
   html=injectBeforeLast(html,'</head>',head);
+  html=injectBeforeLast(html,'</body>','\n</div><!-- /seven-app -->\n');
   html=injectBeforeLast(html,'</body>',body);
   fs.mkdirSync(DIST_DIR,{recursive:true});
   fs.writeFileSync(OUTPUT,html);
@@ -167,7 +171,7 @@ function build(){
   const workspacePathBytes=Math.max.apply(null,paths);
   const brandOut=path.join(DIST_DIR,'brand');fs.rmSync(brandOut,{recursive:true,force:true});
   const brandFiles=copyDir(BRAND_DIR,brandOut),brandBytes=brandFiles.reduce((n,x)=>n+x.bytes,0);
-  const result={output:OUTPUT,bytes:Buffer.byteLength(html),sourceBytes:fs.statSync(SOURCE).size,fingerprint,pdf,pdfLoadMode:'lazy-local',themeBootBytes:Buffer.byteLength(THEME_BOOT),startupBytes,embeddedCredentialNames:Object.keys(embeddedCredentials).sort(),attachmentLoadMode:'lazy-local',attachmentDigest,attachmentRuntimeBytes:attachmentFile.bytes,attachmentFile,githubSelfDevLoadMode:'lazy-local',githubSelfDevRuntimeBytes:githubSelfDevFile.bytes,githubSelfDevFile,workspaceLoadMode:'lazy-local',workspaceDigest,workspaceBytes,workspacePathBytes,workspaceFiles,brandDigest,brandBytes,brandFiles};
+  const result={output:OUTPUT,bytes:Buffer.byteLength(html),sourceBytes:fs.statSync(SOURCE).size,fingerprint,pdf,pdfLoadMode:'lazy-local',themeBootBytes:Buffer.byteLength(THEME_BOOT),startupBytes,remakeAssets,embeddedCredentialNames:Object.keys(embeddedCredentials).sort(),attachmentLoadMode:'lazy-local',attachmentDigest,attachmentRuntimeBytes:attachmentFile.bytes,attachmentFile,githubSelfDevLoadMode:'lazy-local',githubSelfDevRuntimeBytes:githubSelfDevFile.bytes,githubSelfDevFile,workspaceLoadMode:'lazy-local',workspaceDigest,workspaceBytes,workspacePathBytes,workspaceFiles,brandDigest,brandBytes,brandFiles};
   fs.writeFileSync(path.join(DIST_DIR,'release-manifest.json'),JSON.stringify({format:'seven-release-manifest',version:16,builtAt:new Date().toISOString(),...result},null,2));
   return result;
 }
