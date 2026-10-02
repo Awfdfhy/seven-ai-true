@@ -419,15 +419,17 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   });
   assert.ok(r.length<=12000);assert.equal(r.read,true);assert.equal(r.snippet,true);
  });
- await test('web search v2 source UI exposes adapter and read state',async()=>{
+ await test('web search v2 source UI exposes adapter, read state, and limited capability truth',async()=>{
   const r=await page.evaluate(()=>{
     const bubble=addMessage('assistant','fixture',{suppressScroll:true});
-    renderSearchSources(bubble,[{title:'Source',url:'https://example.com',engine:'wikipedia_ar',readState:'read_success'}]);
-    const meta=bubble.closest('.message').querySelector('.search-source-meta')?.textContent||'';
-    bubble.closest('.message').remove();
-    return meta;
+    renderSearchSources(bubble,[{title:'Source',url:'https://example.com',engine:'wikipedia_ar',readState:'read_success',capability:'knowledge_sources_only'}]);
+    const wrapper=bubble.closest('.message');
+    const meta=wrapper.querySelector('.search-source-meta')?.textContent||'';
+    const all=wrapper.querySelector('.search-sources')?.textContent||'';
+    wrapper.remove();
+    return {meta,all};
   });
-  assert.ok(r.includes('Wikipedia ar'));assert.ok(r.includes('Read'));
+  assert.ok(r.meta.includes('Wikipedia ar'));assert.ok(r.meta.includes('Read'));assert.ok(r.all.includes('limited search coverage'));
  });
  await test('web search v2 diagnostics avoid secrets and full page content',async()=>{
   const r=await page.evaluate(()=>{
