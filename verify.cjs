@@ -1116,5 +1116,108 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   });
   assert.ok(Array.isArray(r.snap.plannedCoverageKeys));assert.ok(Array.isArray(r.snap.coveredCoverageKeys));assert.equal(r.hasRaw,false);
  });
+
+ await test('deep research toggle is independent while controller implies web and Deep Think',async()=>{
+  const r=await page.evaluate(()=>{
+    const old={researchMode,searchMode,deepThinkMode};
+    researchMode=false;searchMode=false;deepThinkMode=false;
+    toggleResearchMode();
+    const toggled={researchMode,searchMode,deepThinkMode,active:document.getElementById('researchToggle')?.classList.contains('active')===true};
+    const plan=createCognitiveRequestPlan({text:'Research current Android WebView behavior',roomId:currentRoom,researchRequested:true,searchRequested:false,deepThinkRequested:false});
+    const task=createCognitiveTaskPlan(plan);
+    toggleResearchMode();
+    researchMode=old.researchMode;searchMode=old.searchMode;deepThinkMode=old.deepThinkMode;
+    document.getElementById('researchToggle')?.classList.toggle('active',researchMode);
+    return {toggled,plan:{research:plan.research,web:plan.web,deep:plan.deepThink,verification:plan.verificationDepth},steps:task.steps.map(x=>x.id)};
+  });
+  assert.deepEqual(r.toggled,{researchMode:true,searchMode:false,deepThinkMode:false,active:true});
+  assert.equal(r.plan.research.use,true);assert.equal(r.plan.web.use,true);assert.equal(r.plan.deep.use,true);assert.equal(r.plan.verification,'enhanced');
+  assert.ok(r.steps.includes('research'));assert.ok(!r.steps.includes('web'));assert.ok(r.steps.includes('deepThink'));
+ });
+ await test('deep research planner is deterministic complementary and bounded',async()=>{
+  const r=await page.evaluate(()=>{
+    const a=SevenDeepResearchV2.plan('Compare Android WebView and Chrome Custom Tabs for a current app');
+    const b=SevenDeepResearchV2.plan('Compare Android WebView and Chrome Custom Tabs for a current app');
+    return {same:JSON.stringify(a)===JSON.stringify(b),count:a.subquestions.length,ids:a.subquestions.map(x=>x.id),coverage:a.subquestions.map(x=>x.coverageKey)};
+  });
+  assert.equal(r.same,true);assert.ok(r.count>=2&&r.count<=5);assert.equal(new Set(r.ids).size,r.ids.length);assert.ok(new Set(r.coverage).size>=2);
+ });
+ await test('deep research aggregates duplicate sources while preserving subquestion provenance',async()=>{
+  const r=await page.evaluate(()=>{
+    const old=localStorage.getItem('sevenDeepResearchV2');
+    localStorage.removeItem('sevenDeepResearchV2');
+    const run=createDeepResearchRunV2('Research fixture',currentRoom);
+    const a=run.subquestions[0],b=run.subquestions[1]||{id:'rq2',coverageKey:'second'};
+    const evidence={evidence:[{evidenceId:'S1',title:'Fixture',url:'https://example.com/a?utm_source=x',excerpt:'first',sourceType:'documentation',readState:'read_success',freshnessClass:'current',relevanceScore:90,coverageKeys:['one'],engine:'gateway_fixture'}],conflicts:[],assessment:{gapCodes:[]},diagnostics:{queryCount:1,pagesAttempted:1}};
+    mergeResearchEvidenceV2(run,evidence,a);
+    mergeResearchEvidenceV2(run,{...evidence,evidence:[{...evidence.evidence[0],url:'https://example.com/a',excerpt:'longer independent fixture evidence',coverageKeys:['two'],engine:'wikipedia_en'}]},b);
+    const item=run.evidence[0];
+    const out={count:run.evidence.length,ids:item.subquestionIds.slice().sort(),coverage:item.coverageKeys.slice().sort(),engines:item.engines.slice().sort(),url:item.url};
+    if(old===null)localStorage.removeItem('sevenDeepResearchV2');else localStorage.setItem('sevenDeepResearchV2',old);
+    return out;
+  });
+  assert.equal(r.count,1);assert.ok(r.ids.includes('rq1'));assert.ok(r.ids.length>=2);assert.ok(r.coverage.includes('one'));assert.ok(r.coverage.includes('two'));assert.ok(r.engines.includes('gateway_fixture'));assert.ok(r.engines.includes('wikipedia_en'));assert.equal(r.url,'https://example.com/a');
+ });
+ await test('deep research execution builds bounded R-citation evidence and checkpoint',async()=>{
+  const r=await page.evaluate(async()=>{
+    const oldStore=localStorage.getItem('sevenDeepResearchV2'),oldSearch=performWebSearchV2,oldStop=stopRequested;
+    localStorage.removeItem('sevenDeepResearchV2');stopRequested=false;
+    let calls=0;
+    performWebSearchV2=async(q)=>{calls++;return {
+      version:2,status:'success',capability:'general_web',
+      evidence:[
+        {evidenceId:'S1',title:'Official '+calls,url:'https://example'+calls+'.com/doc',excerpt:'Evidence '+calls,sourceType:'documentation',readState:'read_success',freshnessClass:'current',relevanceScore:94,coverageKeys:['fixture'],engine:'gateway_fixture'},
+        {evidenceId:'S2',title:'Independent '+calls,url:'https://independent'+calls+'.org/report',excerpt:'Independent evidence '+calls,sourceType:'specialist',readState:'snippet_only',freshnessClass:'recent',relevanceScore:82,coverageKeys:['fixture2'],engine:'duckduckgo'}
+      ],
+      conflicts:[],assessment:{gapCodes:[],sufficient:true},diagnostics:{queryCount:1,pagesAttempted:1}
+    }};
+    try{
+      const out=await performDeepResearchV2('Research current WebView behavior',currentRoom,{});
+      const run=SevenDeepResearchV2.get(out.researchRunId),bundle=SevenDeepResearchV2.bundle(out.researchRunId);
+      return {calls,status:out.researchStatus,sourceIds:out.sources.map(x=>x.id),context:out.contextText,evidence:run.evidence.length,completed:run.completedSubquestionIds.length,bundleKeys:Object.keys(bundle),stored:localStorage.getItem('sevenDeepResearchV2')||''};
+    }finally{
+      performWebSearchV2=oldSearch;stopRequested=oldStop;
+      if(oldStore===null)localStorage.removeItem('sevenDeepResearchV2');else localStorage.setItem('sevenDeepResearchV2',oldStore);
+    }
+  });
+  assert.ok(r.calls>=1&&r.calls<=5);assert.ok(['SUFFICIENT','PARTIAL'].includes(r.status));assert.ok(r.sourceIds.length>0&&r.sourceIds.every(x=>/^R\d+$/.test(x)));assert.ok(r.context.includes('[R1]'));assert.ok(r.evidence<=30);assert.ok(r.completed<=10);assert.ok(r.bundleKeys.includes('evidence'));assert.ok(!/gsk_|sk-or-|nvapi-|AIza|Authorization|Bearer|chain-of-thought/i.test(r.stored));
+ });
+ await test('deep research resume rejects room or question mismatch',async()=>{
+  const r=await page.evaluate(async()=>{
+    const old=localStorage.getItem('sevenDeepResearchV2');
+    localStorage.removeItem('sevenDeepResearchV2');
+    const run=createDeepResearchRunV2('Exact resume question','room-a');
+    run.status='paused';checkpointDeepResearchRunV2(run);
+    const wrongRoom=await SevenDeepResearchV2.resume(run.id,'room-b','Exact resume question',{});
+    const wrongQuestion=await SevenDeepResearchV2.resume(run.id,'room-a','Different question',{});
+    if(old===null)localStorage.removeItem('sevenDeepResearchV2');else localStorage.setItem('sevenDeepResearchV2',old);
+    return {wrongRoom,wrongQuestion};
+  });
+  assert.equal(r.wrongRoom,null);assert.equal(r.wrongQuestion,null);
+ });
+ await test('deep research citations R# become links and source cards preserve R IDs',async()=>{
+  const r=await page.evaluate(()=>{
+    const bubble=addMessage('assistant','Claim [R1].',{suppressScroll:true});
+    const sources=[{id:'R1',title:'Research source',url:'https://example.com/r',engine:'gateway_fixture',readState:'read_success',sourceType:'documentation',freshnessClass:'current',capability:'deep_research'}];
+    linkSearchCitationMarkersV2(bubble,sources);renderSearchSources(bubble,sources);
+    const link=bubble.querySelector('a.inline-source-citation')?.textContent||'';
+    const sourceId=bubble.closest('.message').querySelector('.search-source-id')?.textContent||'';
+    bubble.closest('.message').remove();
+    return {link,sourceId};
+  });
+  assert.equal(r.link,'[R1]');assert.equal(r.sourceId,'R1');
+ });
+ await test('deep research toggle stays usable at 320px RTL',async()=>{
+  await page.setViewportSize({width:320,height:800});
+  const r=await page.evaluate(()=>{
+    document.documentElement.setAttribute('dir','rtl');
+    document.getElementById('sidebar').classList.add('collapsed');
+    const button=document.getElementById('researchToggle'),composer=document.querySelector('.composer');
+    const out={exists:!!button,visible:button.getBoundingClientRect().width>0&&button.getBoundingClientRect().height>0,composerFits:composer.scrollWidth<=composer.clientWidth+1,docFits:document.documentElement.scrollWidth<=window.innerWidth+1};
+    document.documentElement.setAttribute('dir','ltr');
+    return out;
+  });
+  assert.deepEqual(r,{exists:true,visible:true,composerFits:true,docFits:true});
+ });
  await browser.close();server.close();fs.writeFileSync(require('path').join(__dirname,'results.json'),JSON.stringify({results,liveProviderCalls:false},null,2));
 })().catch(e=>{console.error(e);server.close();process.exit(1)});
