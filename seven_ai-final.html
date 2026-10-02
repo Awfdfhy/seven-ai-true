@@ -4234,9 +4234,11 @@
                 const c=normalizeSearchCandidateV2(raw);
                 if(!c)continue;
                 const titleKey=c.title.toLowerCase().replace(/[^\p{L}\p{N}]+/gu," ").trim();
+                let host="";
+                try{host=new URL(c.canonicalUrl).hostname.toLowerCase();}catch(_){}
                 let existing=map.get(c.canonicalUrl.toLowerCase());
-                if(!existing&&titleKey){
-                    existing=[...map.values()].find(x=>x._titleKey===titleKey);
+                if(!existing&&titleKey&&host){
+                    existing=[...map.values()].find(x=>x._titleKey===titleKey&&x._host===host);
                 }
                 if(existing){
                     existing.discoveredBy=Array.from(new Set([...(existing.discoveredBy||[]),...(c.discoveredBy||[])])).slice(0,12);
@@ -4247,11 +4249,13 @@
                     existing.queryPriority=Math.max(existing.queryPriority,c.queryPriority);
                 }else{
                     c._titleKey=titleKey;
+                    c._host=host;
                     map.set(c.canonicalUrl.toLowerCase(),c);
                 }
             }
             return [...map.values()].map(c=>{
                 delete c._titleKey;
+                delete c._host;
                 c.score=scoreSearchCandidateV2(c,intent);
                 return c;
             }).sort((a,b)=>b.score-a.score||a.rank-b.rank||a.title.localeCompare(b.title));
