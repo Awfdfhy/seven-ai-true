@@ -1012,18 +1012,27 @@
         // ========== CONFIGURATION ==========
         // API credentials live only in this browser's localStorage. Seven's
         // Free Model Fabric never intentionally routes to a paid model.
-        let GROQ_API_KEY = localStorage.getItem('groq_api_key') || "";
-        let NVIDIA_API_KEY = localStorage.getItem('nvidia_api_key') || "";
-        let OPENROUTER_API_KEY = localStorage.getItem('openrouter_api_key') || "";
-        let GEMINI_API_KEY = localStorage.getItem('gemini_api_key') || "";
-        let LLM7_API_TOKEN = localStorage.getItem('llm7_api_token') || "";
-        let AION_API_KEY = localStorage.getItem('aion_api_key') || "";
-        let MISTRAL_API_KEY = localStorage.getItem('mistral_api_key') || "";
-        let ZAI_API_KEY = localStorage.getItem('zai_api_key') || "";
-        let CLOUDFLARE_API_TOKEN = localStorage.getItem('cloudflare_api_token') || "";
-        let CLOUDFLARE_ACCOUNT_ID = localStorage.getItem('cloudflare_account_id') || "";
-        let SEARCH_GATEWAY_URL = localStorage.getItem('search_gateway_url') || "";
-        let SEARCH_GATEWAY_KEY = localStorage.getItem('search_gateway_key') || "";
+        const SEVEN_EMBEDDED_CREDENTIALS = Object.freeze(
+            window.__SEVEN_EMBEDDED_CREDENTIALS && typeof window.__SEVEN_EMBEDDED_CREDENTIALS === "object"
+                ? window.__SEVEN_EMBEDDED_CREDENTIALS
+                : {}
+        );
+        const embeddedCredentialV1 = (name) => {
+            const value = SEVEN_EMBEDDED_CREDENTIALS[name];
+            return typeof value === "string" ? value : "";
+        };
+        let GROQ_API_KEY = localStorage.getItem('groq_api_key') || embeddedCredentialV1("GROQ_API_KEY") || "";
+        let NVIDIA_API_KEY = localStorage.getItem('nvidia_api_key') || embeddedCredentialV1("NVIDIA_API_KEY") || "";
+        let OPENROUTER_API_KEY = localStorage.getItem('openrouter_api_key') || embeddedCredentialV1("OPENROUTER_API_KEY") || "";
+        let GEMINI_API_KEY = localStorage.getItem('gemini_api_key') || embeddedCredentialV1("GEMINI_API_KEY") || "";
+        let LLM7_API_TOKEN = localStorage.getItem('llm7_api_token') || embeddedCredentialV1("LLM7_API_TOKEN") || "";
+        let AION_API_KEY = localStorage.getItem('aion_api_key') || embeddedCredentialV1("AION_API_KEY") || "";
+        let MISTRAL_API_KEY = localStorage.getItem('mistral_api_key') || embeddedCredentialV1("MISTRAL_API_KEY") || "";
+        let ZAI_API_KEY = localStorage.getItem('zai_api_key') || embeddedCredentialV1("ZAI_API_KEY") || "";
+        let CLOUDFLARE_API_TOKEN = localStorage.getItem('cloudflare_api_token') || embeddedCredentialV1("CLOUDFLARE_API_TOKEN") || "";
+        let CLOUDFLARE_ACCOUNT_ID = localStorage.getItem('cloudflare_account_id') || embeddedCredentialV1("CLOUDFLARE_ACCOUNT_ID") || "";
+        let SEARCH_GATEWAY_URL = localStorage.getItem('search_gateway_url') || embeddedCredentialV1("SEARCH_GATEWAY_URL") || "";
+        let SEARCH_GATEWAY_KEY = localStorage.getItem('search_gateway_key') || embeddedCredentialV1("SEARCH_GATEWAY_KEY") || "";
 
         const FREE_MODEL_FABRIC_CONTRACT = Object.freeze({
             version: 2,
