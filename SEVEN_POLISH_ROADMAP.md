@@ -59,7 +59,7 @@ Primary goal: make routing, provider health, explainability, memory boundaries, 
    - background/foreground restoration
    - process-death recovery where platform support exists
 
-### 2.2 — Deep Research Overhaul
+### 2.2 — Deep Research Overhaul ✅ COMPLETE
 Primary goal: turn Research into an auditable evidence workflow.
 
 Question → Plan → Subquestions → Queries → Search → Read → Evidence → Gaps → Follow-up → Contradictions → Cited Report
@@ -212,3 +212,5 @@ Completed:
 
 Current: **Batch 7 — Deep Research Integration**.
 
+
+- 2026-10-02: Deep Research 2.0 / Web Search v2 completed through Batch 7. Browser CI #2331 and Android APK #296 passed for `7fc0ac30d8ba4c67d3f44de96a1213ee0b1dcf9c`. Next roadmap stage: 2.3 Coding + Self-Development Hardening.
