@@ -15,7 +15,7 @@ The rule for this roadmap is: improve reliability, coherence, and user-visible t
 ### 2.1 — Intelligence & Reliability Polish
 Primary goal: make routing, provider health, explainability, memory boundaries, and long-session behavior trustworthy.
 
-1. Model Intelligence v3
+1. Model Intelligence v3 ✅ COMPLETE (merged via PR #20, 2026-10-02)
    - multi-intent request analysis
    - confidence-aware routing
    - workspace + request blended scoring
@@ -142,8 +142,8 @@ Routing, memory, research, coding, and world state must use runtime truth rather
 ## Immediate execution order
 
 Current priority:
-1. Model Intelligence v3
-2. Provider Health v2
+1. Model Intelligence v3 ✅ COMPLETE
+2. Provider Health v2 ← NEXT
 3. Memory Scope Hardening
 4. UI Simplification
 5. Android/Performance
@@ -155,3 +155,4 @@ The detailed execution specification for the current first item lives in:
 ## Change log
 
 - 2026-10-02: roadmap created; Model Intelligence v3 selected as first polish implementation.
+- 2026-10-02: Model Intelligence v3 implemented, CI passed, and PR #20 merged to main as `454c72ecab333938cc642b5ba0e63d27efc00f3e`. Provider Health v2 is next.
