@@ -1,7 +1,7 @@
 # Memory Scope Hardening — Detailed Execution Specification
 
 Date: 2026-10-02
-Status: IMPLEMENTATION READY
+Status: COMPLETE — merged to main via PR #22
 Parent roadmap: ../SEVEN_POLISH_ROADMAP.md
 
 ## Objective
@@ -161,3 +161,11 @@ Complete only when:
 - new writes have explicit domain semantics;
 - existing memory ledger/security behavior remains intact;
 - full CI is green before merge.
+
+## Completion record
+
+- Implementation PR: #22
+- Tested head SHA: `7f8f08371595743d951e6d80b9cb193d53ec1fa9`
+- CI run: Seven AI tests #2143 — PASS
+- Squash merge SHA: `44bbd88b9b1ce0c69a328d1d500b4e405c381589`
+- Result: scoped retrieval, relation isolation, evidence isolation, legacy-global compatibility, and existing memory gates all passed before merge.
