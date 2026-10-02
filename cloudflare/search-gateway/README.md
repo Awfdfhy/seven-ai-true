@@ -44,3 +44,18 @@ Do not commit Cloudflare login credentials, API tokens, OTPs, search API keys, o
 Batch 2 reads HTML/XHTML/plain text. PDF is truthfully returned as `unsupported` until a real PDF extraction transport is implemented.
 
 The Worker includes an in-isolate request counter, but production deployments should also use Cloudflare's account-level rate limiting/WAF controls for stronger abuse protection.
+
+
+## Production CI deployment
+
+The repository workflow `.github/workflows/search-gateway-production.yml` validates the Worker on every relevant `main` change and can deploy it when the repository has:
+
+- secret `CLOUDFLARE_API_TOKEN`
+- secret `CLOUDFLARE_ACCOUNT_ID`
+
+For the post-deploy live quality gate, also configure:
+
+- repository variable `SEARCH_GATEWAY_URL` with the deployed HTTPS Worker URL
+- optional secret `GATEWAY_CLIENT_KEY` when the Worker requires client authentication
+
+The live gate runs `npm run eval:search-live` and measures search success, host diversity, reader success, and p95 search/read latency. Search-provider secrets remain Worker-side Cloudflare secrets and must never be committed to the repository.
