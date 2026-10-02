@@ -1803,34 +1803,72 @@
         // Populates the Reasoning Effort dropdown and the Max Tokens ceiling
         // for whichever model is selected, so the UI can never let you pick a
         // reasoning level or token count the model doesn't actually support.
+
+        function latestModelPickerTextV3() {
+            const draft = document.getElementById("userInput")?.value?.trim();
+            if (draft) return draft;
+            try {
+                const history = rooms?.[currentRoom]?.history;
+                if (Array.isArray(history)) for (let i=history.length-1;i>=0;i--) {
+                    if (history[i]?.role==="user" && typeof history[i].content==="string" && history[i].content.trim()) return history[i].content.trim();
+                }
+            } catch (_) {}
+            return "";
+        }
+
+        function modelPickerContextV3() {
+            const text = latestModelPickerTextV3();
+            return buildModelRankingContextV3({
+                messages:text ? [{role:"user",content:text}] : [],
+                model:currentModel,
+                maxTokens:currentMaxTokens,
+                stream:true,
+                purpose:deepThinkMode ? "deepThink" : "chat",
+                searchRequested:searchMode === true,
+                deepThinkRequested:deepThinkMode === true
+            });
+        }
+
+        function formatModelReasonV3(row) {
+            const reasons = row && row.explanation && row.explanation.reasons ? row.explanation.reasons : [];
+            return reasons.slice(0,2).join(" • ");
+        }
+
+        // Picker and Auto Routing use the same v3 scoring primitive.
         function populateFreeModelSelect(selectedValue) {
             const select = document.getElementById("modelSelect");
             if (!select) return;
             const wanted = selectedValue || currentModel;
-            const catalog = getFreeModelCatalog().filter(m => m.free === true);
-            catalog.sort((a,b) => {
-                const pa = FREE_PROVIDER_REGISTRY[a.provider]?.priority || 0;
-                const pb = FREE_PROVIDER_REGISTRY[b.provider]?.priority || 0;
-                return pb - pa || b.quality - a.quality || a.label.localeCompare(b.label);
-            });
+            const all = getFreeModelCatalog().filter(m => m.free === true && isFreePriceProofFresh(m));
+            const ready = all.filter(m => isFreeProviderConfigured(m.provider) && (!m.requiresExplicitEnable || isFreeProviderEnabled(m.provider)));
+            const pool = ready.length ? ready : all;
+            const context = modelPickerContextV3();
+            const ranked = rankModelCandidatesV3(pool,context);
             select.innerHTML = "";
-            let lastProvider = null;
-            let group = null;
-            for (const model of catalog) {
-                if (model.provider !== lastProvider) {
-                    group = document.createElement("optgroup");
-                    group.label = providerDisplayName(model.provider);
-                    select.appendChild(group);
-                    lastProvider = model.provider;
-                }
-                const opt = document.createElement("option");
-                opt.value = freeModelSelectionKey(model.provider, model.id);
-                const dynamic = model.discovered ? " • discovered" : "";
-                opt.textContent = `${model.label} • ${Math.round(model.contextWindow/1024)}K ctx${dynamic}`;
+
+            const group = document.createElement("optgroup");
+            group.label = "Recommended for this request — strongest first";
+            ranked.forEach((row,index)=>{
+                const model=row.model;
+                const opt=document.createElement("option");
+                opt.value=freeModelSelectionKey(model.provider,model.id);
+                opt.dataset.rank=String(index+1);
+                opt.dataset.score=row.score.toFixed(2);
+                opt.dataset.confidence=context.confidence.toFixed(2);
+                const reason=formatModelReasonV3(row);
+                const dynamic=model.discovered ? " • discovered" : "";
+                opt.textContent="#" + (index+1) + " " + model.label + " • " + providerDisplayName(model.provider) + " • " + Math.round(model.contextWindow/1024) + "K ctx" + (reason ? " • "+reason : "") + dynamic;
                 group.appendChild(opt);
+            });
+            select.appendChild(group);
+            if ([...select.options].some(opt=>opt.value===wanted)) select.value=wanted;
+            if (!select.value && select.options.length) select.selectedIndex=0;
+
+            const status=document.getElementById("freeModelStatus");
+            if (status && ranked.length) {
+                const top=ranked[0], confidence=Math.round(context.confidence*100);
+                status.textContent="Recommended #1: " + top.model.label + " • " + (formatModelReasonV3(top) || "best metadata fit") + " • routing confidence " + confidence + "%. Auto Routing also considers cooldown, quota and near-tie continuity.";
             }
-            if (isValidFreeModelSelection(wanted)) select.value = wanted;
-            if (!select.value && select.options.length) select.selectedIndex = 0;
         }
 
         function renderFreeModelFabricStatus(message) {
@@ -2495,48 +2533,322 @@
             for (let i=messages.length-1;i>=0;i--) if (messages[i]?.role==="user" && typeof messages[i].content==="string") return messages[i].content;
             return "";
         }
-        function buildFreeRouteRequirements(config) {
-            const task = classifyCognitiveTask(latestUserText(config.messages));
-            let taskClass = task.taskClass === "empty" ? "general" : task.taskClass;
-            if (config.purpose === "deepThink") taskClass = "reasoning";
-            if (config.purpose === "title" || config.purpose === "summary") taskClass = "general";
-            const inputTokens = estimateRequestTokens(config.messages);
+
+        // ---------- Model Intelligence v3 ----------
+        const MODEL_INTELLIGENCE_V3 = Object.freeze({
+            version: 3,
+            hysteresisBaseMargin: 2.5,
+            lowConfidenceExtraMargin: 2.5,
+            maxExplanationReasons: 3
+        });
+
+        const MODEL_INTENT_TASK_MAP_V3 = Object.freeze({
+            general:     Object.freeze({general:1}),
+            coding:      Object.freeze({coding:.62,reasoning:.20,planning:.12,general:.06}),
+            reasoning:   Object.freeze({reasoning:.72,planning:.12,coding:.08,general:.08}),
+            research:    Object.freeze({research:.62,reasoning:.16,planning:.12,general:.10}),
+            current:     Object.freeze({research:.55,general:.18,reasoning:.12,planning:.10,coding:.05}),
+            planning:    Object.freeze({planning:.58,reasoning:.22,general:.10,coding:.06,research:.04}),
+            writing:     Object.freeze({general:.70,planning:.15,reasoning:.05,research:.05,coding:.05}),
+            translation: Object.freeze({general:.78,reasoning:.08,planning:.06,research:.05,coding:.03}),
+            summary:     Object.freeze({general:.45,research:.20,reasoning:.15,planning:.12,coding:.08}),
+            vision:      Object.freeze({general:.38,reasoning:.22,research:.16,planning:.14,coding:.10}),
+            toolUse:     Object.freeze({planning:.28,research:.24,coding:.22,reasoning:.16,general:.10}),
+            longContext: Object.freeze({general:.30,research:.24,reasoning:.18,planning:.16,coding:.12}),
+            rpg:         Object.freeze({planning:.42,general:.38,reasoning:.10,research:.06,coding:.04}),
+            fast:        Object.freeze({general:.55,reasoning:.13,planning:.12,research:.10,coding:.10}),
+            precision:   Object.freeze({reasoning:.34,research:.24,planning:.18,coding:.14,general:.10})
+        });
+
+        function clamp01V3(value) {
+            return Math.max(0, Math.min(1, Number(value) || 0));
+        }
+
+        function normalizeWeightsV3(input, keys) {
+            const out = {};
+            let total = 0;
+            for (const key of keys) {
+                const value = Math.max(0, Number(input && input[key]) || 0);
+                out[key] = value;
+                total += value;
+            }
+            if (total <= 0) {
+                out[keys[0]] = 1;
+                total = 1;
+            }
+            for (const key of keys) out[key] /= total;
+            return out;
+        }
+
+        function resolveWorkspaceV3(options) {
+            const explicit = typeof (options && options.workspace) === "string" ? options.workspace : "";
+            if (["chat","coding","research","rpg"].includes(explicit)) return explicit;
+            try {
+                const active = window.SevenWorkspaces && typeof window.SevenWorkspaces.active === "function"
+                    ? window.SevenWorkspaces.active() : "";
+                if (["chat","coding","research","rpg"].includes(active)) return active;
+            } catch (_) {}
+            return "chat";
+        }
+
+        function analyzeModelRequestV3(text, options) {
+            const opts = options && typeof options === "object" ? options : {};
+            const value = typeof text === "string" ? text.trim() : "";
+            const raw = { general:.18 };
+            const evidence = [];
+            const add = (id, amount, reason) => {
+                raw[id] = (raw[id] || 0) + Math.max(0, Number(amount) || 0);
+                if (reason) evidence.push(String(reason));
+            };
+
+            if (value.includes(String.fromCharCode(96,96,96)) || /\b(code|coding|bug|debug|refactor|implement|function|class|typescript|javascript|python|java|kotlin|rust|sql|regex|sdk|compile)\b/i.test(value) || /كود|برمج|برمجة|تصحيح|دالة|خطأ برمجي/.test(value)) add("coding",1.35,"coding");
+            if (/\b(calculate|equation|proof|derive|logic|theorem|math|algebra|geometry|probability|statistics|physics|chemistry|reason carefully)\b/i.test(value) || /احسب|معادلة|برهان|منطق|رياضيات|جبر|هندسة|احتمال|إحصاء|فيزياء|كيمياء|فكر بعناية/.test(value)) add("reasoning",1.35,"reasoning");
+            if (/\b(research|investigate|sources?|evidence|compare|comparison|paper|papers|citations?|study|studies)\b/i.test(value) || /بحث|ابحث|مصادر|مصدر|دليل|أدلة|قارن|مقارنة|دراسة|استشهاد/.test(value)) add("research",1.20,"research");
+            if (/\b(latest|current|today|recent|news|update|updates|this week|this month|price now|available now)\b/i.test(value) || /أحدث|احدث|حاليا|حاليًا|اليوم|أخبار|اخبار|تحديث|تحديثات|الآن/.test(value)) add("current",1.25,"freshness");
+            if (/\b(plan|planning|architecture|strategy|roadmap|design system|workflow|multi-step|steps|organize|organise)\b/i.test(value) || /خطة|تخطيط|معمار|معمارية|استراتيجية|خارطة طريق|سير عمل|خطوات|نظم|نظّم/.test(value)) add("planning",1.15,"planning");
+            if (/\b(write|draft|rewrite|essay|article|story|creative|brainstorm|script|dialogue|dialog|fiction)\b/i.test(value) || /اكتب|صياغة|أعد كتابة|اعد كتابة|مقال|قصة|إبداع|ابداع|عصف|سيناريو|حوار|رواية/.test(value)) add("writing",1.05,"writing");
+            if (/\b(translate|translation|into (arabic|english|french|spanish|japanese|korean|german))\b/i.test(value) || /ترجم|ترجمة|إلى العربية|الى العربية|إلى الإنجليزية|الى الانجليزية/.test(value)) add("translation",1.25,"translation");
+            if (/\b(summarize|summarise|summary|condense|tl;dr|key points)\b/i.test(value) || /لخص|لخّص|تلخيص|ملخص|الخلاصة|اختصر/.test(value)) add("summary",1.20,"summary");
+            if (/\b(image|photo|picture|screenshot|diagram|chart|visual|look at this|what is in this)\b/i.test(value) || /صورة|الصورة|صور|لقطة شاشة|سكرين|مخطط|رسم|انظر إلى|انظر لهذه/.test(value)) add("vision",1.25,"vision");
+            if (/\b(tool|tools|agent|execute|run command|terminal|shell|browser|worker|cloudflare|automation|deploy|commit|pull request|github|repository|ci)\b/i.test(value) || /أداة|اداة|أدوات|ادوات|وكيل|نفذ|تنفيذ|طرفية|تيرمنال|متصفح|كلاودفلير|جيتهاب|مستودع|انشر|كوميت/.test(value)) add("toolUse",1.10,"tools");
+            if (/\b(exact|precise|verify|verification|correctness|rigorous|strict|double-check|fact-check)\b/i.test(value) || /دقيق|بدقة|تحقق|تأكد|تاكد|صارم|راجع|تدقيق/.test(value)) add("precision",1.00,"precision");
+            if (/\b(quick|quickly|fast|brief|short answer|concise|one line)\b/i.test(value) || /سريع|بسرعة|باختصار|مختصر|إجابة قصيرة|اجابة قصيرة|سطر واحد/.test(value)) add("fast",1.00,"speed");
+
+            const inputTokens = Math.max(0, Number(opts.inputTokens) || estimateRequestTokens(opts.messages || [{role:"user",content:value}]));
+            if (value.length > 2500 || inputTokens > 3500 || opts.hasKnowledge === true) add("longContext",Math.min(1.45, .85 + inputTokens/30000),"context");
+            const workspace = resolveWorkspaceV3(opts);
+            if (workspace === "coding") add("coding",1.10,"workspace-coding");
+            if (workspace === "research") add("research",1.10,"workspace-research");
+            if (workspace === "rpg" || /\b(rpg|roleplay|character|canon|lore|worldbuilding|scene)\b/i.test(value) || /تقمص|شخصية|كانون|لور|عالم|مشهد|قصة تفاعلية/.test(value)) add("rpg",1.10,"rpg");
+
+            if (opts.searchRequested === true || (typeof searchMode !== "undefined" && searchMode === true)) add("current",.95,"search-mode");
+            if (opts.deepThinkRequested === true || (typeof deepThinkMode !== "undefined" && deepThinkMode === true)) { add("reasoning",.95,"deep-think"); add("precision",.65,"deep-think"); }
+            if (opts.purpose === "title") add("fast",1.35,"title");
+            if (opts.purpose === "summary") { add("summary",1.30,"summary-purpose"); add("fast",.55,"summary-speed"); }
+            if (opts.purpose === "deepThink") { add("reasoning",1.25,"deep-purpose"); add("precision",.85,"deep-purpose"); }
+            if (opts.purpose === "searchPlan") { add("research",1.05,"search-plan"); add("planning",.95,"search-plan"); }
+
+            const intentKeys = Object.keys(MODEL_INTENT_TASK_MAP_V3);
+            const intentWeights = normalizeWeightsV3(raw, intentKeys);
+            const sortedIntents = intentKeys.map(id=>({id,weight:intentWeights[id]})).sort((a,b)=>b.weight-a.weight || a.id.localeCompare(b.id));
+            const primary = sortedIntents[0] || {id:"general",weight:1};
+            const secondary = sortedIntents.slice(1,4).filter(x=>x.weight >= .08);
+
+            const taskRaw = {general:0,coding:0,reasoning:0,research:0,planning:0};
+            for (const [intentId, weight] of Object.entries(intentWeights)) {
+                const map = MODEL_INTENT_TASK_MAP_V3[intentId] || MODEL_INTENT_TASK_MAP_V3.general;
+                for (const key of Object.keys(taskRaw)) taskRaw[key] += (Number(map[key]) || 0) * weight;
+            }
+            const taskWeights = normalizeWeightsV3(taskRaw, ["general","coding","reasoning","research","planning"]);
+
+            const distinctSignals = new Set(evidence).size;
+            const margin = Math.max(0, primary.weight - ((sortedIntents[1] && sortedIntents[1].weight) || 0));
+            let confidence = .36 + Math.min(.24, distinctSignals * .035) + Math.min(.28, margin * 1.15);
+            if (!value) confidence = .30;
+            if (primary.id === "general" && distinctSignals === 0) confidence = Math.min(confidence,.42);
+            if (workspace !== "chat" && ["coding","research","rpg"].includes(primary.id)) confidence += .06;
+            confidence = Math.max(.30, Math.min(.97, confidence));
+
+            const coarse = classifyCognitiveTask(value);
+            let complexity = coarse.complexity;
+            if (sortedIntents.filter(x=>x.weight>=.12).length >= 3 || inputTokens > 12000) complexity = "high";
+            else if (complexity === "low" && sortedIntents.filter(x=>x.weight>=.12).length >= 2) complexity = "medium";
+
             return {
-                taskClass, complexity:task.complexity, inputTokens,
-                requiredContext: inputTokens + Math.min(config.maxTokens, 65536) + 2048,
-                preferSpeed: config.purpose === "title" || config.purpose === "summary",
-                requireStreaming: config.stream === true,
-                purpose: config.purpose
+                version:3,
+                workspace,
+                primaryIntent:primary.id,
+                secondaryIntents:secondary,
+                intentWeights,
+                taskWeights,
+                confidence,
+                complexity,
+                evidence:Array.from(new Set(evidence)).slice(0,12),
+                inputTokens,
+                preferSpeed:intentWeights.fast >= .16 || opts.purpose === "title",
+                preferPrecision:intentWeights.precision >= .12 || opts.purpose === "deepThink",
+                preferTools:intentWeights.toolUse >= .12 || intentWeights.current >= .18,
+                preferVision:intentWeights.vision >= .12,
+                requireTools:opts.requireTools === true,
+                requireVision:opts.requireVision === true || opts.hasVisionInput === true,
+                requireStructured:opts.requireStructured === true,
+                requireStreaming:opts.stream === true
             };
         }
+
+        function computeHealthSignalV3(model, now=Date.now()) {
+            const own = getFreeModelHealth(model.provider, model.id);
+            const provider = getFreeModelHealth(model.provider, "*");
+            const ownCooling = own.cooldownUntil > now;
+            const providerCooling = provider.cooldownUntil > now;
+            if (ownCooling || providerCooling) return {score:0,state:"cooldown",latencyMs:own.latencyMs||provider.latencyMs||0};
+
+            const decay = (at, halfLifeMs) => at > 0 ? Math.pow(.5, Math.max(0, now-at)/halfLifeMs) : 0;
+            const failRecency = decay(own.lastFailureAt, 30*60*1000);
+            const successRecency = decay(own.lastSuccessAt, 90*60*1000);
+            const providerFailRecency = decay(provider.lastFailureAt, 30*60*1000);
+            const effectiveSuccesses = own.successes * (.45 + .55*successRecency);
+            const effectiveFailures = own.failures * (.20 + .80*failRecency);
+            const reliability = (effectiveSuccesses + 3) / (effectiveSuccesses + effectiveFailures + 6);
+            let score = .62 + (reliability-.5)*.55 + Math.min(.08, own.successes*.006);
+            score -= Math.min(.25, failRecency * (.10 + Math.min(.15, own.failures*.025)));
+            score -= Math.min(.22, providerFailRecency * (.10 + Math.min(.12, provider.failures*.025)));
+            if ([401,403].includes(own.lastStatus) && failRecency > .25) score -= .18;
+            if (own.lastStatus === 429 && failRecency > .25) score -= .15;
+            score = clamp01V3(score);
+            return {score,state:score>=.72?"healthy":(score>=.50?"degraded":"poor"),latencyMs:own.latencyMs||provider.latencyMs||0};
+        }
+
         function isFreePriceProofFresh(model, now=Date.now()) {
             if (!model || model.free !== true) return false;
             if (model.provider === "openrouter" && model.discovered === true) {
-                return model.freeBasis === "zero_price" && model.id.endsWith(":free") && model.updatedAt > 0 && (now - model.updatedAt) <= FREE_DISCOVERY_TTL_MS * 2;
+                return model.freeBasis === "zero_price" &&
+                    model.id.endsWith(":free") &&
+                    model.updatedAt > 0 &&
+                    (now - model.updatedAt) <= FREE_DISCOVERY_TTL_MS * 2;
             }
             return true;
         }
-        function scoreFreeModelCandidate(model, req) {
-            if (!model || model.free !== true) return -Infinity;
-            const health = getFreeModelHealth(model.provider,model.id);
-            const taskScore = Number(model.tasks?.[req.taskClass] ?? model.tasks?.general ?? 70);
-            let score = taskScore * 0.58 + model.quality * 0.22 + model.speed * (req.preferSpeed ? 0.20 : 0.08);
-            score += (FREE_PROVIDER_REGISTRY[model.provider]?.priority || 0) * 0.06;
-            if (req.complexity === "high") score += model.quality * 0.08;
-            if (model.contextWindow >= req.requiredContext * 2) score += 3;
-            if (health.successes > 0) score += Math.min(4, Math.log2(health.successes+1));
-            if (health.failures > health.successes) score -= Math.min(8, health.failures-health.successes);
-            if (health.latencyMs && req.preferSpeed) score -= Math.min(8, health.latencyMs/2000);
+
+        function modelContextHeadroomScoreV3(model, requiredContext) {
+            const windowSize = Math.max(0, Number(model && model.contextWindow)||0);
+            if (windowSize < requiredContext) return -Infinity;
+            const ratio = Math.max(1, windowSize / Math.max(1,requiredContext));
+            return Math.max(50, Math.min(100, 50 + Math.log2(ratio)*16));
+        }
+
+        function modelCapabilityFitV3(model, context) {
+            const cap = (model && model.capabilities) || {};
+            if (context.requireStreaming && cap.stream === false) return {eligible:false,score:0,reasons:["streaming required"]};
+            if (context.requireVision && cap.vision !== true) return {eligible:false,score:0,reasons:["vision required"]};
+            if (context.requireTools && cap.tools !== true) return {eligible:false,score:0,reasons:["tools required"]};
+            if (context.requireStructured && cap.structured !== true) return {eligible:false,score:0,reasons:["structured output required"]};
+            let score = 55;
+            const reasons = [];
+            if (context.preferVision) { if (cap.vision === true) {score+=20;reasons.push("vision");} else score-=12; }
+            if (context.preferTools) { if (cap.tools === true) {score+=15;reasons.push("tools");} else score-=8; }
+            if (context.preferPrecision && cap.structured === true) {score+=8;reasons.push("structured");}
+            if ((context.intentWeights && context.intentWeights.reasoning) >= .16 && Array.isArray(model.effort) && model.effort.some(x=>["high","max"].includes(String(x).toLowerCase()))) {score+=7;reasons.push("reasoning effort");}
+            return {eligible:true,score:Math.max(0,Math.min(100,score)),reasons};
+        }
+
+        function buildModelRankingContextV3(config) {
+            const cfg = config && typeof config === "object" ? config : {};
+            const text = latestUserText(cfg.messages);
+            const analysis = analyzeModelRequestV3(text,{
+                messages:cfg.messages,
+                inputTokens:estimateRequestTokens(cfg.messages),
+                purpose:cfg.purpose,
+                stream:cfg.stream,
+                searchRequested:cfg.searchRequested,
+                deepThinkRequested:cfg.deepThinkRequested,
+                workspace:cfg.workspace,
+                hasKnowledge:cfg.hasKnowledge,
+                hasVisionInput:cfg.hasVisionInput,
+                requireVision:cfg.requireVision,
+                requireTools:cfg.requireTools,
+                requireStructured:cfg.requireStructured
+            });
+            const outputBudget = Math.max(256, Math.min(Number(cfg.maxTokens)||8192, 65536));
+            const requiredContext = analysis.inputTokens + outputBudget + 2048;
+            const topTask = (Object.entries(analysis.taskWeights).sort((a,b)=>b[1]-a[1])[0] || ["general"])[0];
+            return Object.assign({},analysis,{taskClass:topTask,requiredContext,outputBudget,purpose:cfg.purpose||"chat"});
+        }
+
+        function explainModelCandidateV3(model, context, parts) {
+            const taskLeaders = Object.entries(context.taskWeights||{}).sort((a,b)=>b[1]-a[1]).filter(x=>x[1]>=.14).slice(0,2).map(x=>x[0]);
+            const reasons = [];
+            if (taskLeaders.length) reasons.push("strong for "+taskLeaders.join(" + "));
+            if (parts.contextScore >= 82) reasons.push("large context headroom");
+            if (parts.capabilityReasons && parts.capabilityReasons.length) reasons.push(parts.capabilityReasons.slice(0,2).join(" + "));
+            if (parts.healthState === "healthy") reasons.push("healthy route");
+            if (context.preferSpeed && Number(model.speed)>=90) reasons.push("fast response");
+            return {
+                reasons:Array.from(new Set(reasons)).slice(0,MODEL_INTELLIGENCE_V3.maxExplanationReasons),
+                health:parts.healthState,
+                confidence:context.confidence,
+                continuity:"not_applicable"
+            };
+        }
+
+        function scoreModelCandidateV3(model, context) {
+            if (!model || model.free !== true) return {eligible:false,score:-Infinity,explanation:null,parts:null};
+            const contextScore = modelContextHeadroomScoreV3(model,context.requiredContext);
+            if (!Number.isFinite(contextScore)) return {eligible:false,score:-Infinity,explanation:null,parts:{reason:"context"}};
+            const capability = modelCapabilityFitV3(model,context);
+            if (!capability.eligible) return {eligible:false,score:-Infinity,explanation:null,parts:{reason:"capability"}};
+
+            let taskBlend = 0;
+            for (const [task,weight] of Object.entries(context.taskWeights||{})) {
+                taskBlend += Math.max(0,Math.min(100,Number((model.tasks && model.tasks[task]) != null ? model.tasks[task] : ((model.tasks && model.tasks.general) != null ? model.tasks.general : 70)))) * Math.max(0,Number(weight)||0);
+            }
+            const quality = Math.max(0,Math.min(100,Number(model.quality)||70));
+            const speed = Math.max(0,Math.min(100,Number(model.speed)||70));
+            const health = computeHealthSignalV3(model);
+            if (health.state === "cooldown") return {eligible:false,score:-Infinity,explanation:null,parts:{reason:"cooldown"}};
+
+            let score = taskBlend*.50 + quality*.21 + speed*(context.preferSpeed?.14:.06) +
+                contextScore*.07 + capability.score*.07 + (health.score*100)*.09;
+            score += ((FREE_PROVIDER_REGISTRY[model.provider] && FREE_PROVIDER_REGISTRY[model.provider].priority) || 0) * .025;
+            if (context.complexity === "high") score += Math.max(0,quality-88)*.06;
+            if (health.latencyMs && context.preferSpeed) score -= Math.min(7,health.latencyMs/2200);
+
             const softCap = FREE_PROVIDER_SOFT_DAILY_REQUESTS[model.provider];
             if (softCap) {
                 const usage = getFreeProviderUsage(model.provider);
                 const ratio = usage.requests / softCap;
-                if (ratio >= 0.8) score -= Math.min(18, (ratio - 0.8) * 50 + 4);
+                if (ratio >= .8) score -= Math.min(18,(ratio-.8)*50+4);
             }
-            return score;
+
+            score = Math.max(0,Math.min(100,score));
+            const parts = {taskBlend,quality,speed,contextScore,capabilityScore:capability.score,capabilityReasons:capability.reasons,healthScore:health.score,healthState:health.state};
+            return {eligible:true,score,parts,explanation:explainModelCandidateV3(model,context,parts)};
         }
+
+        function rankModelCandidatesV3(models, context) {
+            return (Array.isArray(models)?models:[]).map(model=>{
+                const result=scoreModelCandidateV3(model,context);
+                return Object.assign({model},result);
+            }).filter(x=>x.eligible).sort((a,b)=>b.score-a.score ||
+                (Number(b.model.quality)||0)-(Number(a.model.quality)||0) ||
+                (Number(b.model.contextWindow)||0)-(Number(a.model.contextWindow)||0) ||
+                String(a.model.label||a.model.id).localeCompare(String(b.model.label||b.model.id)));
+        }
+
+        function applyRoutingHysteresisV3(ranked, preferred, context) {
+            const rows = Array.isArray(ranked) ? ranked.slice() : [];
+            if (!preferred || rows.length < 2) return rows;
+            const index = rows.findIndex(x=>x.model.provider===preferred.provider && x.model.id===preferred.id);
+            if (index <= 0) return rows;
+            const current = rows[index], top = rows[0];
+            const margin = MODEL_INTELLIGENCE_V3.hysteresisBaseMargin + (1-clamp01V3(context.confidence))*MODEL_INTELLIGENCE_V3.lowConfidenceExtraMargin;
+            if (top.score-current.score > margin) return rows;
+            rows.splice(index,1);
+            current.explanation = Object.assign({},current.explanation,{
+                continuity:"kept_near_tie",
+                reasons:Array.from(new Set([].concat((current.explanation && current.explanation.reasons)||[],["kept current model: near tie"]))).slice(0,MODEL_INTELLIGENCE_V3.maxExplanationReasons)
+            });
+            rows.unshift(current);
+            return rows;
+        }
+
+        function buildFreeRouteRequirements(config) {
+            return buildModelRankingContextV3(config);
+        }
+
+        function scoreFreeModelCandidate(model, req) {
+            const context = req && req.version===3 ? req : Object.assign({
+                version:3,taskWeights:{general:1,coding:0,reasoning:0,research:0,planning:0},
+                intentWeights:{},confidence:.5,complexity:(req && req.complexity)||"low",
+                requiredContext:(req && req.requiredContext)||4096,preferSpeed:!!(req && req.preferSpeed),
+                preferPrecision:false,preferTools:false,preferVision:false,
+                requireTools:false,requireVision:false,requireStructured:false,requireStreaming:!!(req && req.requireStreaming)
+            },req||{});
+            return scoreModelCandidateV3(model,context).score;
+        }
+
         function buildFreeRouteCandidates(config) {
-            const req = buildFreeRouteRequirements(config);
+            const req = buildModelRankingContextV3(config);
             const now = Date.now();
             const catalog = getFreeModelCatalog().filter(model =>
                 model.free === true && isFreePriceProofFresh(model, now) && isFreeProviderConfigured(model.provider) &&
@@ -2545,22 +2857,41 @@
                 (!req.requireStreaming || model.capabilities?.stream !== false) &&
                 !isFreeModelCoolingDown(model,now)
             );
+            let ranked = rankModelCandidatesV3(catalog,req);
             const preferred = resolveFreeModelDescriptor(config.model);
-            const ranked = catalog.map(model=>({model,score:scoreFreeModelCandidate(model,req)})).sort((a,b)=>b.score-a.score).map(x=>x.model);
-            let ordered = ranked;
+
             if (currentRoutingMode === "manual") {
-                const preferredEligible = preferred && catalog.some(m=>m.provider===preferred.provider&&m.id===preferred.id);
-                if (preferredEligible) ordered = [preferred,...ranked.filter(m=>!(m.provider===preferred.provider&&m.id===preferred.id))];
-                else if (!freeFallbackEnabled) ordered = [];
+                const preferredIndex = preferred ? ranked.findIndex(x=>x.model.provider===preferred.provider&&x.model.id===preferred.id) : -1;
+                if (preferredIndex >= 0) {
+                    const row=ranked.splice(preferredIndex,1)[0];
+                    row.explanation=Object.assign({},row.explanation,{continuity:"manual_preference"});
+                    ranked.unshift(row);
+                } else if (!freeFallbackEnabled) ranked = [];
+            } else {
+                ranked = applyRoutingHysteresisV3(ranked,preferred,req);
             }
-            if (!freeFallbackEnabled) ordered = ordered.slice(0,1);
-            // Diversify early fallbacks so one provider outage does not burn the chain.
-            if (ordered.length > 2 && freeFallbackEnabled) {
-                const first=ordered[0], different=ordered.findIndex((m,i)=>i>0&&m.provider!==first.provider);
-                if (different>1) { const [m]=ordered.splice(different,1); ordered.splice(1,0,m); }
+
+            if (!freeFallbackEnabled) ranked = ranked.slice(0,1);
+            if (ranked.length > 2 && freeFallbackEnabled) {
+                const first=ranked[0], different=ranked.findIndex((row,i)=>i>0&&row.model.provider!==first.model.provider);
+                if (different>1) { const row=ranked.splice(different,1)[0]; ranked.splice(1,0,row); }
             }
-            return { requirements:req, candidates:ordered.slice(0,8) };
+            return {
+                requirements:req,
+                candidates:ranked.slice(0,8).map(x=>x.model),
+                ranking:ranked.slice(0,8).map(x=>({provider:x.model.provider,id:x.model.id,score:Number(x.score.toFixed(2)),explanation:x.explanation}))
+            };
         }
+
+        window.SevenModelIntelligenceV3 = Object.freeze({
+            version:3,
+            analyze:analyzeModelRequestV3,
+            context:buildModelRankingContextV3,
+            health:computeHealthSignalV3,
+            score:(model,context)=>scoreModelCandidateV3(model,context),
+            rank:(models,context)=>rankModelCandidatesV3(models,context),
+            hysteresis:applyRoutingHysteresisV3
+        });
 
         function buildCloudflareChatUrl() {
             return CLOUDFLARE_ACCOUNT_ID ? `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(CLOUDFLARE_ACCOUNT_ID)}/ai/v1/chat/completions` : "";
