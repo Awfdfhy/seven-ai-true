@@ -369,5 +369,73 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   });
   assert.equal(r.secret,false);assert.equal(r.content,false);
  });
+ await test('web search v2 recognizes Arabic and current-information intent',async()=>{
+  const r=await page.evaluate(()=>SevenSearchV2.analyze('ما هي أحدث تحديثات Android الآن؟'));
+  assert.equal(r.language,'ar');assert.equal(r.timeSensitive,true);assert.equal(r.technical,true);
+ });
+ await test('web search v2 query plan keeps Arabic primary and adds bounded freshness/entity variants',async()=>{
+  const r=await page.evaluate(()=>SevenSearchV2.plan('ما هي أحدث تحديثات Android؟'));
+  assert.equal(r.intent.language,'ar');assert.ok(r.queries.length>=2&&r.queries.length<=3);assert.equal(r.queries[0].language,'ar');assert.ok(r.queries.some(q=>q.purpose==='freshness'));assert.ok(r.queries.some(q=>q.language==='en'));
+ });
+ await test('web search v2 canonicalizes and deduplicates tracking variants',async()=>{
+  const r=await page.evaluate(()=>SevenSearchV2.dedupe([
+    {title:'Example',url:'https://example.com/a/?utm_source=x#part',snippet:'one',engine:'a',queryId:'q1',queryPriority:1,rank:1,language:'en',readState:'snippet_only'},
+    {title:'Example',url:'https://example.com/a?fbclid=123',snippet:'better text',engine:'b',queryId:'q2',queryPriority:.8,rank:2,language:'en',readState:'read_success'}
+  ],'Example'));
+  assert.equal(r.length,1);assert.equal(r[0].url,'https://example.com/a');assert.equal(r[0].readState,'read_success');assert.ok(r[0].discoveredBy.length>=2);
+ });
+ await test('web search v2 aggregates DDG and English/Arabic Wikipedia instead of fallback-only search',async()=>{
+  const r=await page.evaluate(async()=>{
+    const old=fetchWithTimeout;
+    fetchWithTimeout=async url=>{
+      const s=String(url);
+      const response=data=>({ok:true,json:async()=>data});
+      if(s.includes('api.duckduckgo.com')) return response({Heading:'Android',AbstractText:'DDG Android summary',AbstractURL:'https://example.com/android?utm_source=test',RelatedTopics:[]});
+      if(s.includes('en.wikipedia.org')&&s.includes('list=search')) return response({query:{search:[{title:'Android',snippet:'English wiki result'}]}});
+      if(s.includes('ar.wikipedia.org')&&s.includes('list=search')) return response({query:{search:[{title:'أندرويد',snippet:'نتيجة عربية'}]}});
+      if(s.includes('en.wikipedia.org')&&s.includes('prop=extracts')) return response({query:{pages:{1:{extract:'English Android full intro'}}}});
+      if(s.includes('ar.wikipedia.org')&&s.includes('prop=extracts')) return response({query:{pages:{1:{extract:'مقدمة أندرويد العربية'}}}});
+      return {ok:false,json:async()=>({})};
+    };
+    try{
+      const out=await performWebSearchV2('أحدث Android');
+      return {
+        capability:out?.capability,
+        engines:(out?.sources||[]).map(x=>x.engine),
+        states:(out?.sources||[]).map(x=>x.readState),
+        diagnostics:out?.diagnostics,
+        context:out?.contextText||''
+      };
+    }finally{fetchWithTimeout=old;}
+  });
+  assert.equal(r.capability,'knowledge_sources_only');assert.ok(r.engines.includes('duckduckgo'));assert.ok(r.engines.includes('wikipedia_en'));assert.ok(r.engines.includes('wikipedia_ar'));assert.ok(r.states.includes('read_success'));assert.ok(r.context.includes('[S1]'));assert.ok(r.diagnostics.uniqueCandidateCount>=3);
+ });
+ await test('web search v2 context is bounded and labels snippet versus read evidence',async()=>{
+  const r=await page.evaluate(()=>{
+    const items=[];
+    for(let i=0;i<20;i++)items.push(normalizeSearchCandidateV2({title:'T'+i,url:'https://example.com/'+i,snippet:'x'.repeat(3000),engine:'fixture',queryId:'q1',queryPriority:1,rank:i+1,language:'en',readState:i===0?'read_success':'snippet_only'}));
+    const text=buildSearchContextTextV2(items);
+    return {length:text.length,read:text.includes('read_success'),snippet:text.includes('snippet_only')};
+  });
+  assert.ok(r.length<=12000);assert.equal(r.read,true);assert.equal(r.snippet,true);
+ });
+ await test('web search v2 source UI exposes adapter and read state',async()=>{
+  const r=await page.evaluate(()=>{
+    const bubble=addMessage('assistant','fixture',{suppressScroll:true});
+    renderSearchSources(bubble,[{title:'Source',url:'https://example.com',engine:'wikipedia_ar',readState:'read_success'}]);
+    const meta=bubble.closest('.message').querySelector('.search-source-meta')?.textContent||'';
+    bubble.closest('.message').remove();
+    return meta;
+  });
+  assert.ok(r.includes('Wikipedia ar'));assert.ok(r.includes('Read'));
+ });
+ await test('web search v2 diagnostics avoid secrets and full page content',async()=>{
+  const r=await page.evaluate(()=>{
+    const snap=SevenSearchV2.snapshot();
+    const raw=JSON.stringify(snap||{});
+    return {secret:/gsk_|sk-or-|nvapi-|AIza|Authorization|Bearer/i.test(raw),full:/DDG Android summary|English Android full intro|مقدمة أندرويد العربية/.test(raw)};
+  });
+  assert.equal(r.secret,false);assert.equal(r.full,false);
+ });
  await browser.close();server.close();fs.writeFileSync(require('path').join(__dirname,'results.json'),JSON.stringify({results,liveProviderCalls:false},null,2));
 })().catch(e=>{console.error(e);server.close();process.exit(1)});
