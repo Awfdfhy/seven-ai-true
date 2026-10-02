@@ -1,8 +1,8 @@
 const fs=require("fs"),path=require("path");
-const ROOT=path.resolve(__dirname,".."),ANDROID=path.join(ROOT,"android"),testRoot=path.join(ANDROID,"app","src","androidTest"),testDir=path.join(testRoot,"java","ai","seven","app");
+const ROOT=path.resolve(__dirname,".."),ANDROID=path.join(ROOT,"android"),CONFIG=JSON.parse(fs.readFileSync(path.join(ROOT,"capacitor.config.json"),"utf8")),APP_ID=String(CONFIG.appId||"").trim(),testRoot=path.join(ANDROID,"app","src","androidTest"),testDir=path.join(testRoot,"java",...APP_ID.split("."));
 if(!fs.existsSync(ANDROID))throw Error("generated Android project missing");
 fs.mkdirSync(testDir,{recursive:true});
-const source=`package ai.seven.app;
+const source=`package ${APP_ID};
 
 import static org.junit.Assert.*;
 import android.os.ParcelFileDescriptor;
