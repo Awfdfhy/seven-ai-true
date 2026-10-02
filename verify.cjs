@@ -1299,5 +1299,41 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   });
   assert.equal(r.ok,true);assert.ok(r.filename.endsWith('.json'));assert.equal(r.hasEvidence,true);assert.equal(r.secret,false);
  });
+
+ await test('web search batch 8 evidence packing favors independent hosts',async()=>{
+  const r=await page.evaluate(()=>{
+    const items=[
+      {evidenceId:'S1',sourceId:'S1',title:'A1',url:'https://a.example/1',excerpt:'x',sourceType:'documentation',readState:'read_success',freshnessClass:'current',relevanceScore:90},
+      {evidenceId:'S2',sourceId:'S2',title:'A2',url:'https://a.example/2',excerpt:'x',sourceType:'documentation',readState:'read_success',freshnessClass:'current',relevanceScore:89},
+      {evidenceId:'S3',sourceId:'S3',title:'B',url:'https://b.example/1',excerpt:'x',sourceType:'reference',readState:'read_success',freshnessClass:'recent',relevanceScore:80}
+    ];
+    const out=SevenSearchV2.selectEvidence(items,'current API docs',2);
+    return {urls:out.selected.map(x=>x.url),hosts:out.hostDiversity,dropped:out.redundantEvidenceDropped};
+  });
+  assert.equal(r.urls.length,2);assert.equal(r.hosts,2);assert.ok(r.urls.some(x=>x.includes('b.example')));assert.equal(r.dropped,1);
+ });
+ await test('web search batch 8 freshness gate blocks stale-only current evidence',async()=>{
+  const r=await page.evaluate(()=>{
+    const items=[{freshnessClass:'stale'},{freshnessClass:'unknown'}];
+    return SevenSearchV2.freshnessGate({sufficient:true,score:.9,gapCodes:[]},items,'latest Android update today');
+  });
+  assert.equal(r.sufficient,false);assert.equal(r.freshnessGate,'stale_only');assert.ok(r.gapCodes.includes('stale_current_query'));assert.ok(r.score<=.6);
+ });
+ await test('web search batch 8 early stop refuses unresolved conflict or gap',async()=>{
+  const r=await page.evaluate(()=>({
+    good:SevenSearchV2.earlyStop({sufficient:true,gapCodes:[]},[],[{freshnessClass:'current'}],'evergreen fact'),
+    conflict:SevenSearchV2.earlyStop({sufficient:true,gapCodes:[]},[{code:'disagreement'}],[{freshnessClass:'current'}],'evergreen fact'),
+    gap:SevenSearchV2.earlyStop({sufficient:true,gapCodes:['missing_primary']},[],[{freshnessClass:'current'}],'evergreen fact')
+  }));
+  assert.equal(r.good.stop,true);assert.equal(r.conflict.stop,false);assert.equal(r.conflict.reason,'unresolved_conflict');assert.equal(r.gap.stop,false);
+ });
+ await test('web search batch 8 quality diagnostics contain metadata only',async()=>{
+  const r=await page.evaluate(()=>{
+    const snap=SevenSearchV2.snapshot()||{};
+    const raw=JSON.stringify(snap);
+    return {secret:/gsk_|sk-or-|nvapi-|AIza|Authorization|Bearer/i.test(raw),body:/UNTRUSTED WEB EVIDENCE|Evidence:\s/.test(raw)};
+  });
+  assert.equal(r.secret,false);assert.equal(r.body,false);
+ });
  await browser.close();server.close();fs.writeFileSync(require('path').join(__dirname,'results.json'),JSON.stringify({results,liveProviderCalls:false},null,2));
 })().catch(e=>{console.error(e);server.close();process.exit(1)});
