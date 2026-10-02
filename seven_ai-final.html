@@ -5462,6 +5462,74 @@
             return {raw,gatewayReports};
         }
 
+        // ---------- Web Search v2 Batch 8: evidence quality selection ----------
+        function evidenceHostV2(item){
+            try{return new URL(String(item?.url||"")).hostname.toLowerCase().replace(/^www\./,"");}catch(_){return "";}
+        }
+
+        function evidenceQualityScoreV2(item,intent){
+            const relevance=Math.max(0,Number(item?.relevanceScore)||0);
+            const read=readStateWeightV2(item?.readState);
+            const source=searchSourceTypeScoreV2(item?.sourceType,intent,Math.min(1,relevance/45));
+            const fresh=searchFreshnessScoreV2(item?.freshnessClass||"unknown",intent);
+            const injection=item?.injectionSuspected===true?-40:0;
+            return relevance+read+source+fresh+injection;
+        }
+
+        function selectDiverseSearchEvidenceV2(input,intent,limit=SEARCH_V2.maxContextSources){
+            const rows=(Array.isArray(input)?input:[]).filter(Boolean).map((item,index)=>({
+                item,index,host:evidenceHostV2(item),quality:evidenceQualityScoreV2(item,intent)
+            })).sort((a,b)=>b.quality-a.quality||a.index-b.index);
+            const selected=[],hostCounts=new Map(),typeCounts=new Map(),dropped=[];
+            const hardLimit=Math.max(1,Math.min(Number(limit)||SEARCH_V2.maxContextSources,SEARCH_V2.maxContextSources));
+            const add=row=>{
+                selected.push(row.item);
+                if(row.host)hostCounts.set(row.host,(hostCounts.get(row.host)||0)+1);
+                const type=String(row.item?.sourceType||"unknown");
+                typeCounts.set(type,(typeCounts.get(type)||0)+1);
+            };
+            for(const row of rows){
+                if(selected.length>=hardLimit)break;
+                if(row.host&&(hostCounts.get(row.host)||0)>0)continue;
+                add(row);
+            }
+            for(const row of rows){
+                if(selected.length>=hardLimit)break;
+                if(selected.includes(row.item))continue;
+                if(row.host&&(hostCounts.get(row.host)||0)>=2){dropped.push(row.item);continue;}
+                add(row);
+            }
+            for(const row of rows)if(!selected.includes(row.item)&&!dropped.includes(row.item))dropped.push(row.item);
+            return {
+                selected,
+                redundantEvidenceDropped:dropped.length,
+                hostDiversity:new Set(selected.map(evidenceHostV2).filter(Boolean)).size,
+                sourceTypeDiversity:new Set(selected.map(x=>String(x?.sourceType||"unknown"))).size
+            };
+        }
+
+        function assessFreshnessGateV2(assessment,evidence,intent){
+            const base=Object.assign({},assessment||{});
+            if(intent?.timeSensitive!==true)return base;
+            const rows=Array.isArray(evidence)?evidence:[];
+            const fresh=rows.filter(x=>x.freshnessClass==="current"||x.freshnessClass==="recent").length;
+            if(fresh>0)return base;
+            const gaps=Array.from(new Set([...(base.gapCodes||[]),"stale_current_query"]));
+            base.gapCodes=gaps;
+            base.sufficient=false;
+            base.score=Math.min(Number(base.score)||0,.6);
+            base.freshnessGate="stale_only";
+            return base;
+        }
+
+        function shouldEarlyStopSearchV2(assessment,conflicts,evidence,intent){
+            if(!assessment?.sufficient)return {stop:false,reason:"insufficient_evidence"};
+            if(Array.isArray(conflicts)&&conflicts.length)return {stop:false,reason:"unresolved_conflict"};
+            if(intent?.timeSensitive===true&&!Array.isArray(evidence))return {stop:false,reason:"freshness_unknown"};
+            if((assessment?.gapCodes||[]).length)return {stop:false,reason:"unresolved_gap"};
+            return {stop:true,reason:"evidence_sufficient"};
+        }
+
         function buildSearchContextTextV2(input,intent,assessment,conflicts){
             const evidence=(Array.isArray(input)&&input[0]?.evidenceId)?input:buildSearchEvidenceUnitsV2(input,intent||{});
             if(!evidence.length)return "";
@@ -5469,7 +5537,8 @@
             if(assessment?.gapCodes?.length)text+="Runtime search assessment: unresolved gaps="+assessment.gapCodes.join(",")+"; sufficiency="+assessment.score+".\n";
             if(Array.isArray(conflicts)&&conflicts.length)text+="Runtime search assessment: possible disagreement signals="+conflicts.map(x=>x.code+"("+x.sources.join("/")+")").join(",")+". Do not silently resolve these without supporting evidence.\n";
             text+="\n";
-            for(const item of evidence.slice(0,SEARCH_V2.maxContextSources)){
+            const packed=selectDiverseSearchEvidenceV2(evidence,intent,SEARCH_V2.maxContextSources);
+            for(const item of packed.selected){
                 const safety=item.injectionSuspected?" • injection-suspected":"";
                 const date=item.publishedAt?" • published "+item.publishedAt:"";
                 const block="["+item.sourceId+"] "+item.title+"\nURL: "+item.url+"\nSource: "+item.engine+" • "+item.sourceType+" • "+item.readState+" • freshness="+item.freshnessClass+date+safety+"\nEvidence: "+(item.excerpt||"(no excerpt)")+"\n\n";
@@ -5502,8 +5571,10 @@
 
             emitSearchStageV2(runtime,"checking","Checking evidence…",{pageCount:firstRead.pagesAttempted});
             let evidence=buildSearchEvidenceUnitsV2(ranked,plan.intent);
-            const initialAssessment=assessSearchEvidenceSufficiencyV2(evidence,plan.intent);
-            const followUps=initialAssessment.sufficient?[]:planSearchFollowUpV2(question,plan.intent,evidence,initialAssessment,plan.queries);
+            const initialAssessment=assessFreshnessGateV2(assessSearchEvidenceSufficiencyV2(evidence,plan.intent),evidence,plan.intent);
+            const initialConflicts=detectSearchConflictSignalsV2(evidence,plan.intent);
+            const earlyStop=shouldEarlyStopSearchV2(initialAssessment,initialConflicts,evidence,plan.intent);
+            const followUps=earlyStop.stop?[]:planSearchFollowUpV2(question,plan.intent,evidence,initialAssessment,plan.queries);
             let secondRead={pagesAttempted:0,pagesRead:0,pagesBlocked:0};
 
             if(followUps.length){
@@ -5518,8 +5589,9 @@
                 evidence=buildSearchEvidenceUnitsV2(ranked,plan.intent);
             }
 
-            const finalAssessment=assessSearchEvidenceSufficiencyV2(evidence,plan.intent);
+            const finalAssessment=assessFreshnessGateV2(assessSearchEvidenceSufficiencyV2(evidence,plan.intent),evidence,plan.intent);
             const conflicts=detectSearchConflictSignalsV2(evidence,plan.intent);
+            const qualityPack=selectDiverseSearchEvidenceV2(evidence,plan.intent,SEARCH_V2.maxContextSources);
 
             const gatewayConfigured=isSearchGatewayConfiguredV2();
             const successfulGateway=gatewayReports.filter(x=>x.ok&&x.candidates?.length);
@@ -5557,6 +5629,11 @@
                 queryCount:plan.queries.length+followUps.length,rawCandidateCount:raw.length,uniqueCandidateCount:ranked.length,
                 evidenceCount:evidence.length,initialEvidenceCount:initialAssessment.evidenceCount,finalEvidenceCount:finalAssessment.evidenceCount,
                 independentHostCount,
+                hostDiversity:qualityPack.hostDiversity,
+                sourceTypeDiversity:qualityPack.sourceTypeDiversity,
+                redundantEvidenceDropped:qualityPack.redundantEvidenceDropped,
+                staleEvidenceCount:evidence.filter(x=>x.freshnessClass==="stale"||x.freshnessClass==="older").length,
+                earlyStopReason:earlyStop.reason,
                 initialGapCodes:initialAssessment.gapCodes.slice(),
                 finalGapCodes:finalAssessment.gapCodes.slice(),
                 followUpCount:followUps.length,
@@ -5613,6 +5690,9 @@
             assess:(items,question)=>{const intent=analyzeSearchIntentV2(question||"");const evidence=(Array.isArray(items)&&items[0]?.evidenceId)?items:buildSearchEvidenceUnitsV2(dedupeSearchCandidatesV2(items,intent),intent);return assessSearchEvidenceSufficiencyV2(evidence,intent);},
             followUp:(question,evidence,assessment,initial)=>planSearchFollowUpV2(question,analyzeSearchIntentV2(question||""),evidence,assessment,initial||[]),
             conflicts:(items,question)=>{const intent=analyzeSearchIntentV2(question||"");const evidence=(Array.isArray(items)&&items[0]?.evidenceId)?items:buildSearchEvidenceUnitsV2(dedupeSearchCandidatesV2(items,intent),intent);return detectSearchConflictSignalsV2(evidence,intent);},
+            selectEvidence:(items,question,limit)=>selectDiverseSearchEvidenceV2(items,analyzeSearchIntentV2(question||""),limit),
+            freshnessGate:(assessment,items,question)=>assessFreshnessGateV2(assessment,items,analyzeSearchIntentV2(question||"")),
+            earlyStop:(assessment,conflicts,items,question)=>shouldEarlyStopSearchV2(assessment,conflicts,items,analyzeSearchIntentV2(question||"")),
             gatewayConfigured:isSearchGatewayConfiguredV2,
             normalizeGatewayUrl:normalizeSearchGatewayUrlV2,
             cacheSnapshot:safeSearchCacheSnapshotV2,
@@ -5850,7 +5930,8 @@
             text+="Research status: "+assessment.status+"; score="+assessment.score+"; unresolved gaps="+assessment.gaps.join(", ")+".\n";
             if(run.conflicts.length)text+="Unresolved conflict signals: "+run.conflicts.map(x=>x.code).join(", ")+". State disagreements instead of silently choosing a side.\n";
             text+="\n";
-            for(const item of run.evidence.slice(0,DEEP_RESEARCH_V2.maxContextEvidence)){
+            const researchPacked=selectDiverseSearchEvidenceV2(run.evidence,planDeepResearchV2(run.question).intent,DEEP_RESEARCH_V2.maxContextEvidence);
+            for(const item of researchPacked.selected){
                 const block="["+item.researchEvidenceId+"] "+item.title+"\nURL: "+item.url+"\nSource type: "+item.sourceType+" • "+item.readState+" • freshness="+item.freshnessClass+"\nCoverage: "+item.subquestionIds.join(", ")+"\nEvidence: "+(item.excerpt||"(no excerpt)")+"\n\n";
                 if(text.length+block.length>24000){const remain=24000-text.length;if(remain>180)text+=block.slice(0,remain);break;}
                 text+=block;
