@@ -581,6 +581,115 @@
 
     </style>
 
+
+    <style id="seven-settings-simplification">
+        #settingsModal .modal-content{
+            width:min(520px,calc(100vw - 24px));
+            max-width:520px;
+            max-height:min(88vh,780px);
+            overflow:auto;
+            overscroll-behavior:contain;
+            box-sizing:border-box;
+        }
+        #settingsModal .settings-core{
+            display:grid;
+            gap:10px;
+        }
+        #settingsModal .route-status-card{
+            border:1px solid var(--border);
+            border-radius:14px;
+            padding:12px;
+            margin:4px 0 12px;
+            background:var(--surface);
+            min-width:0;
+        }
+        #settingsModal .route-status-head{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:10px;
+            margin-bottom:6px;
+        }
+        #settingsModal .route-status-title{font-weight:700;font-size:.9rem}
+        #settingsModal .route-state-badge{
+            display:inline-flex;
+            align-items:center;
+            min-height:28px;
+            padding:2px 9px;
+            border:1px solid var(--border);
+            border-radius:999px;
+            font-size:.76rem;
+            font-weight:700;
+            white-space:nowrap;
+        }
+        #settingsModal .route-status-card[data-state="ready"] .route-state-badge{opacity:1}
+        #settingsModal .route-status-card[data-state="degraded"] .route-state-badge{font-weight:800}
+        #settingsModal .route-status-card[data-state="cooldown"] .route-state-badge{font-weight:800}
+        #settingsModal .route-status-card[data-state="blocked"] .route-state-badge{font-weight:800}
+        #settingsModal #freeModelStatus{
+            margin:0!important;
+            line-height:1.45;
+            overflow-wrap:anywhere;
+        }
+        #settingsModal .settings-section{
+            border:1px solid var(--border);
+            border-radius:14px;
+            margin-top:10px;
+            overflow:hidden;
+            background:var(--surface);
+        }
+        #settingsModal .settings-section>summary{
+            min-height:46px;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:12px;
+            padding:0 12px;
+            cursor:pointer;
+            font-weight:700;
+            list-style:none;
+            user-select:none;
+            outline:none;
+        }
+        #settingsModal .settings-section>summary::-webkit-details-marker{display:none}
+        #settingsModal .settings-section>summary::after{content:"›";font-size:1.25rem;transform:rotate(90deg);transition:transform .14s ease}
+        #settingsModal .settings-section[open]>summary::after{transform:rotate(-90deg)}
+        #settingsModal .settings-section>summary:focus-visible{box-shadow:inset 0 0 0 2px currentColor}
+        #settingsModal .settings-section-body{
+            border-top:1px solid var(--border);
+            padding:12px;
+        }
+        #settingsModal .settings-section-body>label:first-child{margin-top:0}
+        #settingsModal input:not([type="checkbox"]):not([type="range"]),
+        #settingsModal select,
+        #settingsModal textarea{box-sizing:border-box;max-width:100%}
+        #settingsModal select,
+        #settingsModal input[type="text"],
+        #settingsModal input[type="password"],
+        #settingsModal input[type="number"],
+        #settingsModal .settings-row button,
+        #settingsModal .modal-buttons button{min-height:44px}
+        #settingsModal .settings-row{flex-wrap:wrap}
+        #settingsModal .settings-row button{flex:1 1 130px}
+        #settingsModal .settings-helper{
+            font-size:.78em;
+            color:var(--muted);
+            line-height:1.45;
+            margin-top:-8px;
+            margin-bottom:12px;
+        }
+        [dir="rtl"] #settingsModal .route-status-head,
+        [dir="rtl"] #settingsModal .settings-section>summary{direction:rtl;text-align:start}
+        @media (max-width:360px){
+            #settingsModal .modal-content{width:calc(100vw - 12px);padding-left:12px;padding-right:12px}
+            #settingsModal .route-status-head{align-items:flex-start;flex-direction:column}
+            #settingsModal .route-state-badge{align-self:flex-start}
+            #settingsModal .settings-section-body{padding:10px}
+        }
+        @media (prefers-reduced-motion:reduce){
+            #settingsModal .settings-section>summary::after{transition:none}
+        }
+    </style>
 </head>
 <body>
     <!-- Sidebar -->
@@ -660,90 +769,109 @@
     <div class="modal" id="settingsModal" onclick="if(event.target === this) closeSettings();">
         <div class="modal-content">
             <h3><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px; margin-right:6px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</h3>
-            <label>Free Model Routing</label>
-            <select id="routingModeSelect" onchange="onRoutingModeChange()">
-                <option value="auto">Auto Free — Seven chooses the best free model</option>
-                <option value="manual">Manual — prefer the selected model</option>
-            </select>
-            <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-                <input type="checkbox" id="freeFallbackToggle" style="width:auto;margin:0;"> Free-only fallback when the preferred model/provider is unavailable
-            </label>
+            <div class="settings-core">
+                <label>Model Routing</label>
+                <select id="routingModeSelect" onchange="onRoutingModeChange()">
+                    <option value="auto">Auto Free — Seven chooses the best free model</option>
+                    <option value="manual">Manual — prefer the selected model</option>
+                </select>
 
-            <label>Preferred Model</label>
-            <select id="modelSelect" onchange="onModelChange()"></select>
-            <div id="freeModelStatus" style="font-size:0.78em;color:var(--muted);margin-top:-10px;margin-bottom:15px;line-height:1.45;">Free Model Fabric loading…</div>
-            <div class="settings-row">
-                <button type="button" onclick="refreshFreeModelCatalogFromSettings()">↻ Refresh Free Models</button>
+                <label>Preferred Model</label>
+                <select id="modelSelect" onchange="onModelChange()"></select>
+
+                <div id="routeStatusCard" class="route-status-card" data-state="ready" role="status" aria-live="polite" dir="auto">
+                    <div class="route-status-head">
+                        <span class="route-status-title">Routing status</span>
+                        <span id="routeStateBadge" class="route-state-badge">Ready</span>
+                    </div>
+                    <div id="freeModelStatus">Free Model Fabric loading…</div>
+                </div>
+
+                <label>Temperature</label>
+                <input type="range" id="temperatureRange" min="0" max="2" step="0.1" value="1" oninput="document.getElementById('tempValue').textContent=this.value">
+                <span id="tempValue">1</span>
+                <div class="settings-helper">0.1–0.3 = precise, factual. 1.0 = balanced. Higher values increase variation.</div>
+
+                <label>Reasoning Effort</label>
+                <select id="reasoningEffort"></select>
+                <div class="settings-helper" id="reasoningEffortNote">How hard the model thinks before answering. Higher = deeper and slower.</div>
+
+                <label id="maxTokensLabel">Max Tokens</label>
+                <input type="number" id="maxTokens" value="65536" min="100" max="65536">
+                <div class="settings-helper" id="maxTokensNote">Output ceiling for the preferred model. Auto routing reclamps per actual route.</div>
             </div>
 
-            <div style="font-weight:700;margin:14px 0 10px;">Free Providers</div>
-            <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerGroqEnabled" style="width:auto;margin:0;"> Groq free/developer tier</label>
-            <input type="password" id="apiKeyInput" placeholder="Groq API key (gsk_…)">
+            <details class="settings-section" id="providersSection">
+                <summary>Providers</summary>
+                <div class="settings-section-body">
+                    <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerGroqEnabled" style="width:auto;margin:0;"> Groq free/developer tier</label>
+                    <input type="password" id="apiKeyInput" placeholder="Groq API key">
 
-            <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerNvidiaEnabled" style="width:auto;margin:0;"> NVIDIA NIM free development endpoints</label>
-            <input type="password" id="nvidiaApiKeyInput" placeholder="NVIDIA API key (nvapi-…)">
+                    <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerNvidiaEnabled" style="width:auto;margin:0;"> NVIDIA NIM free development endpoints</label>
+                    <input type="password" id="nvidiaApiKeyInput" placeholder="NVIDIA API key">
 
-            <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerOpenrouterEnabled" style="width:auto;margin:0;"> OpenRouter zero-price models</label>
-            <input type="password" id="openrouterApiKeyInput" placeholder="OpenRouter API key (sk-or-…)">
+                    <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerOpenrouterEnabled" style="width:auto;margin:0;"> OpenRouter zero-price models</label>
+                    <input type="password" id="openrouterApiKeyInput" placeholder="OpenRouter API key">
 
-            <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerGeminiEnabled" style="width:auto;margin:0;"> Google Gemini free tier</label>
-            <input type="password" id="geminiApiKeyInput" placeholder="Gemini API key">
+                    <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerGeminiEnabled" style="width:auto;margin:0;"> Google Gemini free tier</label>
+                    <input type="password" id="geminiApiKeyInput" placeholder="Gemini API key">
 
-            <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerKiloEnabled" style="width:auto;margin:0;"> Kilo Code free pool (no API key, opt-in)</label>
+                    <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerKiloEnabled" style="width:auto;margin:0;"> Kilo Code free pool</label>
 
-            <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerLlm7Enabled" style="width:auto;margin:0;"> LLM7.io anonymous/free tier (opt-in)</label>
-            <input type="password" id="llm7TokenInput" placeholder="LLM7 free token (optional)">
+                    <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerLlm7Enabled" style="width:auto;margin:0;"> LLM7.io anonymous/free tier</label>
+                    <input type="password" id="llm7TokenInput" placeholder="LLM7 free token (optional)">
 
-            <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerAionEnabled" style="width:auto;margin:0;"> Aion Labs permanent free tier</label>
-            <input type="password" id="aionApiKeyInput" placeholder="Aion Labs API key">
+                    <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerAionEnabled" style="width:auto;margin:0;"> Aion Labs permanent free tier</label>
+                    <input type="password" id="aionApiKeyInput" placeholder="Aion Labs API key">
 
-            <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerMistralEnabled" style="width:auto;margin:0;"> Mistral free mode</label>
-            <input type="password" id="mistralApiKeyInput" placeholder="Mistral API key">
+                    <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerMistralEnabled" style="width:auto;margin:0;"> Mistral free mode</label>
+                    <input type="password" id="mistralApiKeyInput" placeholder="Mistral API key">
 
-            <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerZaiEnabled" style="width:auto;margin:0;"> Z.AI / GLM permanent free models</label>
-            <input type="password" id="zaiApiKeyInput" placeholder="Z.AI API key">
+                    <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerZaiEnabled" style="width:auto;margin:0;"> Z.AI / GLM permanent free models</label>
+                    <input type="password" id="zaiApiKeyInput" placeholder="Z.AI API key">
 
-            <div style="font-size:0.78em;color:var(--muted);margin-top:-8px;margin-bottom:15px;line-height:1.45;">Anonymous providers stay OFF until you explicitly enable them. Kilo needs no key; LLM7 can run anonymously or use an optional free token.</div>
+                    <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerCloudflareEnabled" style="width:auto;margin:0;"> Cloudflare free allocation</label>
+                    <input type="password" id="cloudflareApiTokenInput" placeholder="Cloudflare API token">
+                    <input type="text" id="cloudflareAccountIdInput" placeholder="Cloudflare Account ID">
 
-            <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerCloudflareEnabled" style="width:auto;margin:0;"> Cloudflare free allocation (explicit opt-in)</label>
-            <input type="password" id="cloudflareApiTokenInput" placeholder="Cloudflare API token">
-            <input type="text" id="cloudflareAccountIdInput" placeholder="Cloudflare Account ID">
-            <div style="font-size:0.78em;color:var(--muted);margin-top:-10px;margin-bottom:15px;line-height:1.45;">Strict-free safety: Seven never intentionally upgrades to a paid model. Cloudflare stays disabled unless you explicitly enable it because usage beyond its free allocation can be billable on paid accounts.</div>
-            <div style="font-size:0.78em;color:var(--muted);margin-top:-8px;margin-bottom:15px;line-height:1.45;">API credentials stay in this browser's localStorage and are never inserted into prompts, model-health telemetry, or room exports.</div>
-            <label>Temperature</label>
-            <input type="range" id="temperatureRange" min="0" max="2" step="0.1" value="1" oninput="document.getElementById('tempValue').textContent=this.value">
-            <span id="tempValue">1</span>
-            <div style="font-size:0.78em; color:var(--muted); margin-top:-10px; margin-bottom:15px;">0.1–0.3 = precise, factual. 1.0 = each model's own recommended default (best balance of quality and creativity). Above ~1.3 gets noticeably less coherent.</div>
-            <label>Reasoning Effort</label>
-            <select id="reasoningEffort"></select>
-            <div style="font-size:0.78em; color:var(--muted); margin-top:-10px; margin-bottom:15px;" id="reasoningEffortNote">How hard the model thinks before answering. Higher = deeper, slower, more thorough.</div>
-            <label id="maxTokensLabel">Max Tokens</label>
-            <input type="number" id="maxTokens" value="65536" min="100" max="65536">
-            <div style="font-size:0.78em; color:var(--muted); margin-top:-10px; margin-bottom:15px;" id="maxTokensNote">Set to this model's actual maximum output length — the highest Groq allows for it.</div>
-            <label>Pinned Notes / World Facts</label>
-            <textarea id="pinnedNotes" rows="4" placeholder="Enter important facts..."></textarea>
-            <label>Knowledge files (.txt or .pdf — no page limit)</label>
-            <div class="knowledge-status" id="knowledgeStatus">No knowledge files loaded.</div>
-            <div class="knowledge-file-list" id="knowledgeFileList"></div>
-            <div class="settings-row">
-                <button onclick="document.getElementById('fileInput').click()">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:5px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Add Files
-                </button>
-                <button onclick="clearKnowledge()">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:5px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Clear Knowledge
-                </button>
-            </div>
-            <div class="settings-row">
-                <button onclick="exportRooms()">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:5px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export
-                </button>
-                <button onclick="importRooms()">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:5px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Import
-                </button>
-                <button onclick="toggleTheme()">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:5px;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>Theme
-                </button>
-            </div>
+                    <div class="settings-helper">Provider credentials stay outside prompts, health telemetry, and room exports. Anonymous providers remain opt-in.</div>
+                </div>
+            </details>
+
+            <details class="settings-section" id="memoryDataSection">
+                <summary>Memory &amp; Data</summary>
+                <div class="settings-section-body">
+                    <label>Pinned Notes / World Facts</label>
+                    <textarea id="pinnedNotes" rows="4" placeholder="Enter important facts..."></textarea>
+
+                    <label>Knowledge files (.txt or .pdf)</label>
+                    <div class="knowledge-status" id="knowledgeStatus">No knowledge files loaded.</div>
+                    <div class="knowledge-file-list" id="knowledgeFileList"></div>
+                    <div class="settings-row">
+                        <button type="button" onclick="document.getElementById('fileInput').click()">Add Files</button>
+                        <button type="button" onclick="clearKnowledge()">Clear Knowledge</button>
+                    </div>
+                    <div class="settings-row">
+                        <button type="button" onclick="exportRooms()">Export</button>
+                        <button type="button" onclick="importRooms()">Import</button>
+                    </div>
+                </div>
+            </details>
+
+            <details class="settings-section" id="advancedSection">
+                <summary>Advanced</summary>
+                <div class="settings-section-body">
+                    <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+                        <input type="checkbox" id="freeFallbackToggle" style="width:auto;margin:0;"> Free-only fallback when the preferred model/provider is unavailable
+                    </label>
+                    <div class="settings-row">
+                        <button type="button" onclick="refreshFreeModelCatalogFromSettings()">Refresh Free Models</button>
+                        <button type="button" onclick="toggleTheme()">Theme</button>
+                    </div>
+                    <div class="settings-helper">Advanced controls are optional. Seven keeps paid fallback off and uses runtime health/cooldown information for automatic routing.</div>
+                </div>
+            </details>
+
             <div class="modal-buttons">
                 <button class="cancel" onclick="closeSettings()">Close</button>
                 <button class="save" onclick="saveSettings()">Save</button>
@@ -1867,13 +1995,36 @@
             const status=document.getElementById("freeModelStatus");
             if (status && ranked.length) {
                 const top=ranked[0], confidence=Math.round(context.confidence*100);
-                status.textContent="Recommended #1: " + top.model.label + " • " + (formatModelReasonV3(top) || "best metadata fit") + " • routing confidence " + confidence + "%. Auto Routing also considers cooldown, quota and near-tie continuity.";
+                status.textContent="Recommended #1: " + top.model.label + " • " + (formatModelReasonV3(top) || "best metadata fit") + " • confidence " + confidence + "%.";
+                updateRouteStatusUiV1();
             }
+        }
+
+        function getRouteUiStateV1() {
+            const configured=Object.keys(FREE_PROVIDER_REGISTRY).filter(isFreeProviderConfigured);
+            if (!configured.length) return {state:"blocked",label:"Blocked"};
+            const rows=configured.map(providerHealthSummaryV2);
+            const usable=rows.filter(x=>x.state!=="cooldown");
+            if (!usable.length) return {state:"cooldown",label:"Cooling down"};
+            if (rows.some(x=>x.state==="degraded"||x.state==="poor"||x.state==="cooldown"||x.quota?.state==="near_limit")) {
+                return {state:"degraded",label:"Degraded"};
+            }
+            return {state:"ready",label:"Ready"};
+        }
+
+        function updateRouteStatusUiV1() {
+            const state=getRouteUiStateV1();
+            const card=document.getElementById("routeStatusCard");
+            const badge=document.getElementById("routeStateBadge");
+            if(card)card.dataset.state=state.state;
+            if(badge)badge.textContent=state.label;
+            return state;
         }
 
         function renderFreeModelFabricStatus(message) {
             const el = document.getElementById("freeModelStatus");
             if (!el) return;
+            const routeState=updateRouteStatusUiV1();
             if (message) { el.textContent = message; return; }
             const catalog = getFreeModelCatalog().filter(m => m.free === true);
             const configured = Object.keys(FREE_PROVIDER_REGISTRY).filter(isFreeProviderConfigured);
@@ -1883,12 +2034,13 @@
             const cooling = healthRows.filter(x=>x.state==="cooldown").length;
             const degraded = healthRows.filter(x=>x.state==="degraded"||x.state==="poor").length;
             const quota = healthRows.filter(x=>x.quota?.state==="near_limit").length;
-            const healthText = cooling ? cooling+" provider"+(cooling===1?"":"s")+" cooling down" :
-                (degraded ? degraded+" provider"+(degraded===1?"":"s")+" degraded" : "provider health healthy");
-            const quotaText = quota ? " • "+quota+" provider"+(quota===1?"":"s")+" near soft limit" : "";
-            el.textContent = mode+" • "+catalog.length+" verified-free catalog entries ("+dynamicCount+" zero-price discovered) • "+
-                configured.length+" configured providers • "+healthText+quotaText+" • "+freeModelQuarantine.length+
-                " unproven models quarantined • paid fallback: OFF";
+            const details=[];
+            if(cooling)details.push(cooling+" cooling");
+            if(degraded)details.push(degraded+" degraded");
+            if(quota)details.push(quota+" near soft limit");
+            const healthText=details.length?details.join(" • "):"providers healthy";
+            el.textContent=mode+" • "+routeState.label+" • "+catalog.length+" verified-free models • "+configured.length+
+                " configured providers • "+healthText+" • paid fallback OFF";
         }
 
         // Populates reasoning/output controls from the registry rather than a
