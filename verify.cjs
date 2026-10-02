@@ -804,22 +804,22 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
         const body=JSON.parse(opts.body);
         const follow=String(body.query).includes('independent source');
         return {ok:true,json:async()=>({capability:'general_web',backend:'brave',results:follow?[
-          {title:'Coverage first',url:'https://one.example/page',snippet:'coverage test evidence',rank:1,sourceType:'reference'},
-          {title:'Coverage second',url:'https://two.example/page',snippet:'coverage test independent source evidence',rank:2,sourceType:'reference'}
+          {title:'Coverage first',url:'https://one.example/page',snippet:'Android API coverage evidence',rank:1,sourceType:'reference'},
+          {title:'Coverage second',url:'https://two.example/page',snippet:'Android API coverage independent source evidence',rank:2,sourceType:'reference'}
         ]:[
-          {title:'Coverage first',url:'https://one.example/page',snippet:'coverage test evidence',rank:1,sourceType:'reference'}
+          {title:'Coverage first',url:'https://one.example/page',snippet:'Android API coverage evidence',rank:1,sourceType:'reference'}
         ]})};
       }
       if(s==='https://gateway.example/v1/read'){
         const body=JSON.parse(opts.body);reads[body.url]=(reads[body.url]||0)+1;
-        return {ok:true,json:async()=>({readState:'read_success',title:'Read',text:'coverage test evidence full article '+body.url,finalUrl:body.url,contentType:'text/html',injectionSuspected:false})};
+        return {ok:true,json:async()=>({readState:'read_success',title:'Read',text:'Android API coverage evidence full article '+body.url,finalUrl:body.url,contentType:'text/html',injectionSuspected:false})};
       }
       if(s.includes('api.duckduckgo.com'))return {ok:true,json:async()=>({RelatedTopics:[]})};
       if(s.includes('wikipedia.org'))return {ok:true,json:async()=>({query:{search:[]}})};
       return {ok:false,json:async()=>({})};
     };
     try{
-      const out=await performWebSearchV2('coverage test');
+      const out=await performWebSearchV2('Android API coverage test');
       return {reads,diag:out?.diagnostics,states:out?.sources?.map(x=>({url:x.url,state:x.readState}))};
     }finally{fetchWithTimeout=oldFetch;SEARCH_GATEWAY_URL=oldUrl;SEARCH_GATEWAY_KEY=oldKey;}
   });
@@ -836,7 +836,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
     return {
       hasWave:Object.prototype.hasOwnProperty.call(snap,'followUpWaveCount'),
       secret:/gsk_|sk-or-|nvapi-|AIza|Authorization|Bearer|gateway-secret/i.test(raw),
-      body:/full article https:\/\/|coverage test evidence full article/.test(raw)
+      body:/full article https:\/\/|Android API coverage evidence full article/.test(raw)
     };
   });
   assert.equal(r.hasWave,true);assert.equal(r.secret,false);assert.equal(r.body,false);
