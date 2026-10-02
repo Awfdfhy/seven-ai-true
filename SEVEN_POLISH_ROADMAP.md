@@ -26,7 +26,7 @@ Primary goal: make routing, provider health, explainability, memory boundaries, 
    - one ranking source for picker and Auto Routing
    - deterministic tests
 
-2. Provider Health v2
+2. Provider Health v2 ✅ COMPLETE (merged via PR #21, 2026-10-02)
    - decayed success/failure signal
    - rolling latency
    - rate-limit/auth/server-failure distinction
@@ -143,8 +143,8 @@ Routing, memory, research, coding, and world state must use runtime truth rather
 
 Current priority:
 1. Model Intelligence v3 ✅ COMPLETE
-2. Provider Health v2 ← NEXT
-3. Memory Scope Hardening
+2. Provider Health v2 ✅ COMPLETE
+3. Memory Scope Hardening ← NEXT
 4. UI Simplification
 5. Android/Performance
 6. Deep Research 2.0
@@ -156,3 +156,4 @@ The detailed execution specification for the current first item lives in:
 
 - 2026-10-02: roadmap created; Model Intelligence v3 selected as first polish implementation.
 - 2026-10-02: Model Intelligence v3 implemented, CI passed, and PR #20 merged to main as `454c72ecab333938cc642b5ba0e63d27efc00f3e`. Provider Health v2 is next.
+- 2026-10-02: Provider Health v2 implemented, CI #2135 passed, and PR #21 merged to main as `cebd9f30d96b7dfaa23e0ff841bd7128f98f1233`. Memory Scope Hardening is next.
