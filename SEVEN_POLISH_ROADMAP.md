@@ -193,6 +193,16 @@ Android release gate: #286 PASS.
 
 Plan: `plans/WEB_SEARCH_OVERHAUL_V2.md`
 
-Current target: Batch 1 normalized multi-source retrieval, then General Web Search Gateway + Reader + evidence/citation pipeline.
+Completed:
+- Batch 1 — Multi-source retrieval ✅
+- Batch 2 — General Web Gateway + Reader ✅
+- Batch 3 — Evidence + Citations + Freshness ✅
+- Batch 4 — Gap Analysis + Follow-up + Conflict Signals ✅
+- Batch 5 — Performance Cache + Stage UI + Quality Evaluation ✅
+  - PR #36
+  - Browser #2281/#2282 PASS
+  - Android #293 PASS
+  - Merge `71b7d93fe1b89254266dc81c927c0950a97d2520`
 
-- Web Search Batch 1 merged via PR #28 at `25576802d6e786ff522ea93eb36df492ed132a63`; browser CI #2204/#2205 PASS. Android #288 pending. Next architecture phase after gate: General Web Search Gateway + Reader.
+Current: **Batch 6 — Query Intelligence + Primary Source Discovery**.
+
