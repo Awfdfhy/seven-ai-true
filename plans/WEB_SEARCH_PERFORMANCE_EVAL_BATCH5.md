@@ -1,7 +1,7 @@
 # Web Search v2 — Batch 5: Performance Cache, Stage UI & Quality Evaluation
 
 Date: 2026-10-02
-Status: IMPLEMENTATION READY
+Status: COMPLETE — browser CI + Android release gate passed
 Parent: WEB_SEARCH_OVERHAUL_V2.md
 
 ## Objective
@@ -176,3 +176,16 @@ Complete when:
 - cache contents remain memory-only and bounded;
 - deterministic quality corpus ships with the repository;
 - full browser CI and Android gate pass.
+
+## Completion record
+
+- Implementation PR: #36
+- Tested head SHA: `2fe29640544f08b377580c8d093a95020d053fc8`
+- Browser CI: Seven AI tests #2281 — PASS
+- Merge SHA: `71b7d93fe1b89254266dc81c927c0950a97d2520`
+- Main browser CI: #2282 — PASS
+- Android workflow: Seven Android APK #293 — PASS
+- Android run id: `36994615183`
+- API 36 / Android 16 WebView emulator smoke: PASS
+- Final APK verification + artifact upload: PASS
+- Evidence limitation: emulator evidence only; not a physical-device benchmark.
