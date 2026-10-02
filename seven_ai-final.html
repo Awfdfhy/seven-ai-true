@@ -3147,9 +3147,10 @@
             const key=latencyBucketKeyV2(model.provider,model.id,purpose,tier);
             const bucket=getLatencyBucketV2(model.provider,model.id,purpose,tier);
             const totalMs=Math.max(0,Number(outcome.totalMs)||0);
-            const firstTokenMs=Number(outcome.firstTokenMs);
+            const hasFirstToken=outcome.firstTokenMs !== null && outcome.firstTokenMs !== undefined && outcome.firstTokenMs !== "";
+            const firstTokenMs=hasFirstToken ? Number(outcome.firstTokenMs) : NaN;
             if (totalMs>0) bucket.totalSamples=boundedLatencyMetricSamplesV2([...(bucket.totalSamples||[]),totalMs]);
-            if (Number.isFinite(firstTokenMs)&&firstTokenMs>=0) {
+            if (hasFirstToken && Number.isFinite(firstTokenMs) && firstTokenMs>=0) {
                 bucket.firstTokenSamples=boundedLatencyMetricSamplesV2([...(bucket.firstTokenSamples||[]),firstTokenMs]);
             }
             if (outcome.success===true) bucket.successes++;
