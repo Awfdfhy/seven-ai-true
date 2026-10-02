@@ -8,6 +8,35 @@ const SOURCE=path.join(ROOT,'seven_ai-final.html');
 const DIST_DIR=path.join(ROOT,'dist');
 const OUTPUT=path.join(DIST_DIR,'seven_ai-release.html');
 const MARK='SEVEN_FINAL_RELEASE_LAYER_V1';
+const EMBEDDED_CREDENTIAL_ENV=Object.freeze({
+  GROQ_API_KEY:'SEVEN_EMBED_GROQ_API_KEY',
+  NVIDIA_API_KEY:'SEVEN_EMBED_NVIDIA_API_KEY',
+  OPENROUTER_API_KEY:'SEVEN_EMBED_OPENROUTER_API_KEY',
+  GEMINI_API_KEY:'SEVEN_EMBED_GEMINI_API_KEY',
+  LLM7_API_TOKEN:'SEVEN_EMBED_LLM7_API_TOKEN',
+  AION_API_KEY:'SEVEN_EMBED_AION_API_KEY',
+  MISTRAL_API_KEY:'SEVEN_EMBED_MISTRAL_API_KEY',
+  ZAI_API_KEY:'SEVEN_EMBED_ZAI_API_KEY',
+  CLOUDFLARE_API_TOKEN:'SEVEN_EMBED_CLOUDFLARE_API_TOKEN',
+  CLOUDFLARE_ACCOUNT_ID:'SEVEN_EMBED_CLOUDFLARE_ACCOUNT_ID',
+  SEARCH_GATEWAY_URL:'SEVEN_EMBED_SEARCH_GATEWAY_URL',
+  SEARCH_GATEWAY_KEY:'SEVEN_EMBED_SEARCH_GATEWAY_KEY'
+});
+
+function embeddedCredentialsFromEnv(env=process.env){
+  const out={};
+  for(const [runtimeName,envName] of Object.entries(EMBEDDED_CREDENTIAL_ENV)){
+    const value=typeof env[envName]==='string'?env[envName]:'';
+    if(value)out[runtimeName]=value;
+  }
+  return out;
+}
+
+function embeddedCredentialsScript(env=process.env){
+  const credentials=embeddedCredentialsFromEnv(env);
+  const json=JSON.stringify(credentials).replace(/</g,'\\u003c');
+  return `<script id="seven-embedded-credentials">window.__SEVEN_EMBEDDED_CREDENTIALS=Object.freeze(${json});</script>\n`;
+}
 
 function read(name){return fs.readFileSync(path.join(__dirname,name),'utf8');}
 function digest(value){return crypto.createHash('sha256').update(value).digest('hex').slice(0,16);}
@@ -42,16 +71,17 @@ function build(){
   const motion=read('motion-runtime.js').replace(/<\/script/gi,'<\\/script');
   const ui=read('ui-runtime.js').replace(/<\/script/gi,'<\\/script');
   const fingerprint=digest(css+canon+world+research+performance+pdfRuntime+motion+ui+pdf.version);
-  const head=`\n<!-- ${MARK}:${fingerprint} -->\n<meta name="theme-color" content="#121026">\n<style id="seven-final-style">${css}</style>\n`;
+  const embeddedCredentials=embeddedCredentialsFromEnv();
+  const head=`\n<!-- ${MARK}:${fingerprint} -->\n${embeddedCredentialsScript()}<meta name="theme-color" content="#121026">\n<style id="seven-final-style">${css}</style>\n`;
   const body=`\n<script id="seven-canon-runtime">${canon}</script>\n<script id="seven-world-runtime">${world}</script>\n<script id="seven-research-runtime">${research}</script>\n<script id="seven-performance-runtime">${performance}</script>\n<script id="seven-pdf-runtime">${pdfRuntime}</script>\n<script id="seven-motion-runtime">${motion}</script>\n<script id="seven-ui-runtime">${ui}</script>\n<!-- /${MARK}:${fingerprint} -->\n`;
   html=injectBeforeLast(html,'</head>',head);
   html=injectBeforeLast(html,'</body>',body);
   fs.mkdirSync(DIST_DIR,{recursive:true});
   fs.writeFileSync(OUTPUT,html);
-  const result={output:OUTPUT,bytes:Buffer.byteLength(html),sourceBytes:fs.statSync(SOURCE).size,fingerprint,pdf,pdfLoadMode:'lazy-local'};
+  const result={output:OUTPUT,bytes:Buffer.byteLength(html),sourceBytes:fs.statSync(SOURCE).size,fingerprint,pdf,pdfLoadMode:'lazy-local',embeddedCredentialNames:Object.keys(embeddedCredentials).sort()};
   fs.writeFileSync(path.join(DIST_DIR,'release-manifest.json'),JSON.stringify({format:'seven-release-manifest',version:6,builtAt:new Date().toISOString(),...result},null,2));
   return result;
 }
 
 if(require.main===module){const r=build();console.log(`release build: PASS (${r.bytes} bytes, ${r.fingerprint}, local lazy PDF ${r.pdf.bytes} bytes)`);}
-module.exports={build,OUTPUT,MARK,injectBeforeLast};
+module.exports={build,OUTPUT,MARK,injectBeforeLast,embeddedCredentialsFromEnv,embeddedCredentialsScript,EMBEDDED_CREDENTIAL_ENV};
