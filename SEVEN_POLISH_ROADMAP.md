@@ -210,7 +210,13 @@ Completed:
   - Android #294 PASS
   - Merge `d072bda179df394c4568bf86a9402f392d8c82eb`
 
-Current: **Batch 7 — Deep Research Integration**.
+- Batch 7 — Deep Research Integration ✅
+  - Browser #2331 PASS
+  - Android #296 PASS
+  - Runtime `1416d84a9198e3c2e2a841de1fb874d3ac9f314a`
+  - Verification/export `7fc0ac30d8ba4c67d3f44de96a1213ee0b1dcf9c`
+
+Current: **Batch 8 — Live Quality Hardening**. Plan: `plans/WEB_SEARCH_LIVE_QUALITY_BATCH8.md`.
 
 
 - 2026-10-02: Deep Research 2.0 / Web Search v2 completed through Batch 7. Browser CI #2331 and Android APK #296 passed for `7fc0ac30d8ba4c67d3f44de96a1213ee0b1dcf9c`. Next roadmap stage: 2.3 Coding + Self-Development Hardening.
