@@ -1338,5 +1338,58 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   ));
   assert.equal(r.stop,true);assert.equal(r.reason,'evidence_sufficient');
  });
+
+ await test('search quality v2 caps duplicate hosts and preserves independent corroboration',async()=>{
+  const r=await page.evaluate(()=>{
+    const items=[
+      {evidenceId:'E1',sourceId:'S1',title:'Official A',url:'https://same.example/a',excerpt:'Android official documentation support',sourceType:'documentation',readState:'read_success',freshnessClass:'current',relevanceScore:95,coverageKeys:['official']},
+      {evidenceId:'E2',sourceId:'S2',title:'Official B',url:'https://same.example/b',excerpt:'Android official documentation detail',sourceType:'documentation',readState:'read_success',freshnessClass:'current',relevanceScore:94,coverageKeys:['official']},
+      {evidenceId:'E3',sourceId:'S3',title:'Official C',url:'https://same.example/c',excerpt:'Android more detail',sourceType:'documentation',readState:'read_success',freshnessClass:'current',relevanceScore:93,coverageKeys:['official']},
+      {evidenceId:'E4',sourceId:'S4',title:'Independent',url:'https://independent.example/x',excerpt:'Independent Android verification',sourceType:'specialist',readState:'read_success',freshnessClass:'current',relevanceScore:80,coverageKeys:['independent']}
+    ];
+    const out=SevenSearchV2.select(items,'Android official documentation comparison',4);
+    return {hosts:out.selected.map(x=>new URL(x.url).hostname),diag:out.diagnostics};
+  });
+  assert.ok(r.hosts.includes('independent.example'));assert.ok(r.hosts.filter(x=>x==='same.example').length<=2);assert.ok(r.diag.redundantEvidenceDropped>=1);
+ });
+ await test('search quality v2 prefers strong documentation for technical intent',async()=>{
+  const r=await page.evaluate(()=>SevenSearchV2.select([
+    {evidenceId:'E1',sourceId:'S1',title:'Forum',url:'https://forum.example/a',excerpt:'Android API SDK code',sourceType:'community',readState:'read_success',freshnessClass:'current',relevanceScore:99,coverageKeys:['general']},
+    {evidenceId:'E2',sourceId:'S2',title:'Docs',url:'https://docs.example/a',excerpt:'Android API SDK official documentation',sourceType:'documentation',readState:'read_success',freshnessClass:'evergreen',relevanceScore:80,coverageKeys:['official']}
+  ],'Android API SDK documentation',2).selected.map(x=>x.title));
+  assert.equal(r[0],'Docs');
+ });
+ await test('search quality v2 freshness gate blocks stale-only current evidence',async()=>{
+  const r=await page.evaluate(()=>SevenSearchV2.earlyStop(
+    {sufficient:true,gapCodes:[]},[],
+    'latest Android update today',
+    [{freshnessClass:'stale'}]
+  ));
+  assert.equal(r.stop,false);assert.equal(r.reason,'freshness_required');
+ });
+ await test('search quality v2 unresolved conflict blocks early stop',async()=>{
+  const r=await page.evaluate(()=>SevenSearchV2.earlyStop(
+    {sufficient:true,gapCodes:[]},[{code:'possible_numeric_disagreement',sources:['S1','S2']}],
+    'Android performance',
+    [{freshnessClass:'evergreen'}]
+  ));
+  assert.equal(r.stop,false);assert.equal(r.reason,'unresolved_conflict');
+ });
+ await test('search quality v2 fully covered low-conflict evidence can early stop',async()=>{
+  const r=await page.evaluate(()=>SevenSearchV2.earlyStop(
+    {sufficient:true,gapCodes:[]},[],
+    'Android architecture',
+    [{freshnessClass:'evergreen'}]
+  ));
+  assert.equal(r.stop,true);assert.equal(r.reason,'evidence_sufficient');
+ });
+ await test('search quality v2 diagnostics contain only aggregate selection metadata',async()=>{
+  const r=await page.evaluate(()=>{
+    SevenSearchV2.select([{evidenceId:'E1',sourceId:'S1',title:'x',url:'https://a.example',excerpt:'SECRET_BODY',sourceType:'documentation',readState:'read_success',freshnessClass:'current',relevanceScore:90}], 'API docs', 1);
+    const raw=JSON.stringify(SevenSearchV2.quality()||{});
+    return {raw,secret:/SECRET_BODY|gsk_|sk-or-|Authorization|Bearer/.test(raw)};
+  });
+  assert.equal(r.secret,false);
+ });
  await browser.close();server.close();fs.writeFileSync(require('path').join(__dirname,'results.json'),JSON.stringify({results,liveProviderCalls:false},null,2));
 })().catch(e=>{console.error(e);server.close();process.exit(1)});
