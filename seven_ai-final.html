@@ -2417,7 +2417,7 @@
         async function refreshFreeModelCatalogFromSettings() {
             renderFreeModelFabricStatus("Refreshing verified-free catalog…");
             // Use unsaved fields too, so a newly pasted key can be tested before Save.
-            const previous = { groq:GROQ_API_KEY, nvidia:NVIDIA_API_KEY, openrouter:OPENROUTER_API_KEY, gemini:GEMINI_API_KEY, llm7:LLM7_API_TOKEN, aion:AION_API_KEY, mistral:MISTRAL_API_KEY, zai:ZAI_API_KEY, cloudflare:CLOUDFLARE_API_TOKEN, account:CLOUDFLARE_ACCOUNT_ID, prefs:freeProviderPrefs };
+            const previous = { groq:GROQ_API_KEY, nvidia:NVIDIA_API_KEY, openrouter:OPENROUTER_API_KEY, gemini:GEMINI_API_KEY, llm7:LLM7_API_TOKEN, aion:AION_API_KEY, mistral:MISTRAL_API_KEY, zai:ZAI_API_KEY, cloudflare:CLOUDFLARE_API_TOKEN, account:CLOUDFLARE_ACCOUNT_ID, searchGatewayUrl:SEARCH_GATEWAY_URL, searchGatewayKey:SEARCH_GATEWAY_KEY, prefs:freeProviderPrefs };
             GROQ_API_KEY = document.getElementById("apiKeyInput").value.trim();
             NVIDIA_API_KEY = document.getElementById("nvidiaApiKeyInput").value.trim();
             OPENROUTER_API_KEY = document.getElementById("openrouterApiKeyInput").value.trim();
@@ -2438,11 +2438,13 @@
             } catch (e) {
                 renderFreeModelFabricStatus("Refresh failed safely: " + sanitizeDiscoveredText(e && e.message, "unknown error"));
             } finally {
-                GROQ_API_KEY=previous.groq; NVIDIA_API_KEY=previous.nvidia; OPENROUTER_API_KEY=previous.openrouter; GEMINI_API_KEY=previous.gemini; LLM7_API_TOKEN=previous.llm7; AION_API_KEY=previous.aion; MISTRAL_API_KEY=previous.mistral; ZAI_API_KEY=previous.zai; CLOUDFLARE_API_TOKEN=previous.cloudflare; CLOUDFLARE_ACCOUNT_ID=previous.account; freeProviderPrefs=previous.prefs;
+                GROQ_API_KEY=previous.groq; NVIDIA_API_KEY=previous.nvidia; OPENROUTER_API_KEY=previous.openrouter; GEMINI_API_KEY=previous.gemini; LLM7_API_TOKEN=previous.llm7; AION_API_KEY=previous.aion; MISTRAL_API_KEY=previous.mistral; ZAI_API_KEY=previous.zai; CLOUDFLARE_API_TOKEN=previous.cloudflare; CLOUDFLARE_ACCOUNT_ID=previous.account; SEARCH_GATEWAY_URL=previous.searchGatewayUrl; SEARCH_GATEWAY_KEY=previous.searchGatewayKey; freeProviderPrefs=previous.prefs;
             }
         }
 
         function saveSettings() {
+            const previousSearchGatewayUrl=SEARCH_GATEWAY_URL;
+            const previousSearchGatewayKey=SEARCH_GATEWAY_KEY;
             GROQ_API_KEY = document.getElementById("apiKeyInput").value.trim();
             NVIDIA_API_KEY = document.getElementById("nvidiaApiKeyInput").value.trim();
             OPENROUTER_API_KEY = document.getElementById("openrouterApiKeyInput").value.trim();
@@ -2453,6 +2455,9 @@
             ZAI_API_KEY = document.getElementById("zaiApiKeyInput").value.trim();
             CLOUDFLARE_API_TOKEN = document.getElementById("cloudflareApiTokenInput").value.trim();
             CLOUDFLARE_ACCOUNT_ID = document.getElementById("cloudflareAccountIdInput").value.trim();
+            SEARCH_GATEWAY_URL = normalizeSearchGatewayUrlV2(document.getElementById("searchGatewayUrlInput").value) || "";
+            SEARCH_GATEWAY_KEY = document.getElementById("searchGatewayKeyInput").value.trim();
+            if(previousSearchGatewayUrl!==SEARCH_GATEWAY_URL||previousSearchGatewayKey!==SEARCH_GATEWAY_KEY)clearSearchCacheV2();
             localStorage.setItem('groq_api_key', GROQ_API_KEY);
             localStorage.setItem('nvidia_api_key', NVIDIA_API_KEY);
             localStorage.setItem('openrouter_api_key', OPENROUTER_API_KEY);
@@ -4294,8 +4299,8 @@
         // returns results for topics it has a summary/infobox for). If that
         // comes back empty, falls back to Wikipedia's full-text search API
         // (keyless, covers far more topics, returns article snippets).
-        async function performWebSearch(query) {
-            return performWebSearchV2(query);
+        async function performWebSearch(query, options) {
+            return performWebSearchV2(query, options);
         }
 
         // Wraps fetch with a timeout and forwards the active generation's
@@ -4377,6 +4382,193 @@
             maxFollowUpQueries:2,
             maxFollowUpPageReads:2
         });
+
+        const SEARCH_CACHE_V2 = Object.freeze({
+            schemaVersion:1,
+            queryMaxEntries:80,
+            pageMaxEntries:40,
+            currentQueryTtlMs:5*60*1000,
+            evergreenQueryTtlMs:30*60*1000,
+            currentPageTtlMs:15*60*1000,
+            evergreenPageTtlMs:2*60*60*1000
+        });
+        const searchQueryCacheV2=new Map();
+        const searchPageCacheV2=new Map();
+
+        function cloneSearchCacheValueV2(value){
+            if(value===undefined)return undefined;
+            try{return JSON.parse(JSON.stringify(value));}catch(_){return value;}
+        }
+
+        function searchCacheRecencyClassV2(intent){
+            return intent?.timeSensitive===true?"current":"evergreen";
+        }
+
+        function searchQueryCacheTtlV2(intent){
+            return intent?.timeSensitive===true?SEARCH_CACHE_V2.currentQueryTtlMs:SEARCH_CACHE_V2.evergreenQueryTtlMs;
+        }
+
+        function searchPageCacheTtlV2(intent){
+            return intent?.timeSensitive===true?SEARCH_CACHE_V2.currentPageTtlMs:SEARCH_CACHE_V2.evergreenPageTtlMs;
+        }
+
+        function normalizeSearchCacheQueryV2(value){
+            return String(value||"").trim().replace(/\s+/g," ").toLowerCase().slice(0,600);
+        }
+
+        function searchQueryCacheKeyV2(adapter,queryObj,intent){
+            return [
+                String(adapter||"unknown"),
+                normalizeSearchCacheQueryV2(queryObj?.text),
+                String(queryObj?.language||intent?.language||"unknown"),
+                searchCacheRecencyClassV2(intent)
+            ].join("\n");
+        }
+
+        function pruneSearchCacheMapV2(map,maxEntries){
+            const now=Date.now();
+            for(const [key,entry] of map){
+                if(!entry||entry.expiresAt<=now)map.delete(key);
+            }
+            if(map.size<=maxEntries)return;
+            const rows=[...map.entries()].sort((a,b)=>(a[1]?.lastUsedAt||0)-(b[1]?.lastUsedAt||0));
+            for(let i=0;i<rows.length-maxEntries;i++)map.delete(rows[i][0]);
+        }
+
+        function getSearchCacheEntryV2(map,key){
+            const entry=map.get(key);
+            if(!entry)return null;
+            const now=Date.now();
+            if(entry.expiresAt<=now){map.delete(key);return null;}
+            entry.lastUsedAt=now;
+            return cloneSearchCacheValueV2(entry.value);
+        }
+
+        function setSearchCacheEntryV2(map,key,value,ttlMs,maxEntries){
+            const now=Date.now();
+            map.set(key,{value:cloneSearchCacheValueV2(value),createdAt:now,lastUsedAt:now,expiresAt:now+Math.max(1000,Number(ttlMs)||1000)});
+            pruneSearchCacheMapV2(map,maxEntries);
+        }
+
+        function clearSearchCacheV2(){
+            searchQueryCacheV2.clear();
+            searchPageCacheV2.clear();
+        }
+
+        function safeSearchCacheSnapshotV2(){
+            pruneSearchCacheMapV2(searchQueryCacheV2,SEARCH_CACHE_V2.queryMaxEntries);
+            pruneSearchCacheMapV2(searchPageCacheV2,SEARCH_CACHE_V2.pageMaxEntries);
+            return {
+                schemaVersion:SEARCH_CACHE_V2.schemaVersion,
+                queryEntries:searchQueryCacheV2.size,
+                pageEntries:searchPageCacheV2.size,
+                queryMaxEntries:SEARCH_CACHE_V2.queryMaxEntries,
+                pageMaxEntries:SEARCH_CACHE_V2.pageMaxEntries
+            };
+        }
+
+        function createSearchRequestRuntimeV2(options){
+            const opts=options&&typeof options==="object"?options:{};
+            return {
+                queryMemo:new Map(),
+                readMemo:new Map(),
+                onStage:typeof opts.onStage==="function"?opts.onStage:null,
+                stats:{
+                    queryCacheHits:0,queryCacheMisses:0,pageCacheHits:0,pageCacheMisses:0,
+                    adapterRequests:0,networkSearchRequests:0,readerNetworkRequests:0,
+                    stageNames:[]
+                }
+            };
+        }
+
+        function emitSearchStageV2(runtime,name,message,counts){
+            if(!runtime)return;
+            const stageName=String(name||"").replace(/[^a-z0-9_-]/gi,"").slice(0,32);
+            if(!stageName)return;
+            runtime.stats.stageNames.push(stageName);
+            if(!runtime.onStage)return;
+            const payload={
+                name:stageName,
+                message:String(message||"").slice(0,120)
+            };
+            const safeCounts=counts&&typeof counts==="object"?counts:{};
+            if(Number.isFinite(Number(safeCounts.queryCount)))payload.queryCount=Math.max(0,Math.min(20,Number(safeCounts.queryCount)));
+            if(Number.isFinite(Number(safeCounts.pageCount)))payload.pageCount=Math.max(0,Math.min(20,Number(safeCounts.pageCount)));
+            try{runtime.onStage(payload);}catch(_){}
+        }
+
+        async function cachedSearchAdapterV2(adapter,queryObj,intent,runtime,loader){
+            if(!runtime)return loader();
+            runtime.stats.adapterRequests++;
+            const key=searchQueryCacheKeyV2(adapter,queryObj,intent);
+            if(runtime.queryMemo.has(key)){
+                runtime.stats.queryCacheHits++;
+                return cloneSearchCacheValueV2(runtime.queryMemo.get(key));
+            }
+            const cached=getSearchCacheEntryV2(searchQueryCacheV2,key);
+            if(cached!==null){
+                runtime.stats.queryCacheHits++;
+                runtime.queryMemo.set(key,cached);
+                return cloneSearchCacheValueV2(cached);
+            }
+            runtime.stats.queryCacheMisses++;
+            runtime.stats.networkSearchRequests++;
+            const value=await loader();
+            runtime.queryMemo.set(key,cloneSearchCacheValueV2(value));
+            setSearchCacheEntryV2(searchQueryCacheV2,key,value,searchQueryCacheTtlV2(intent),SEARCH_CACHE_V2.queryMaxEntries);
+            return value;
+        }
+
+        function searchPageCacheKeyV2(candidate){
+            return canonicalSearchUrlV2(candidate?.canonicalUrl||candidate?.url)||null;
+        }
+
+        function applyCachedPageReadV2(candidate,cached){
+            if(!candidate||!cached)return candidate;
+            return Object.assign({},candidate,{
+                title:cached.title||candidate.title,
+                url:cached.url||candidate.url,
+                canonicalUrl:cached.canonicalUrl||candidate.canonicalUrl,
+                snippet:cached.snippet||candidate.snippet,
+                readState:cached.readState||candidate.readState,
+                injectionSuspected:cached.injectionSuspected===true,
+                readerError:cached.readerError||null,
+                fetchedAt:cached.fetchedAt||candidate.fetchedAt||0
+            });
+        }
+
+        async function cachedPageReadV2(candidate,intent,runtime){
+            if(!runtime)return readSearchCandidateViaGatewayV2(candidate);
+            const key=searchPageCacheKeyV2(candidate);
+            if(!key)return candidate;
+            if(runtime.readMemo.has(key)){
+                runtime.stats.pageCacheHits++;
+                return applyCachedPageReadV2(candidate,runtime.readMemo.get(key));
+            }
+            const cached=getSearchCacheEntryV2(searchPageCacheV2,key);
+            if(cached!==null){
+                runtime.stats.pageCacheHits++;
+                runtime.readMemo.set(key,cached);
+                return applyCachedPageReadV2(candidate,cached);
+            }
+            runtime.stats.pageCacheMisses++;
+            runtime.stats.readerNetworkRequests++;
+            const read=await readSearchCandidateViaGatewayV2(candidate);
+            const safe={
+                title:read?.title||candidate.title,
+                url:read?.url||candidate.url,
+                canonicalUrl:read?.canonicalUrl||candidate.canonicalUrl,
+                snippet:String(read?.snippet||candidate.snippet||"").slice(0,12000),
+                readState:read?.readState||"failed",
+                injectionSuspected:read?.injectionSuspected===true,
+                readerError:typeof read?.readerError==="string"?read.readerError.slice(0,80):null,
+                fetchedAt:Number(read?.fetchedAt)||Date.now()
+            };
+            runtime.readMemo.set(key,safe);
+            setSearchCacheEntryV2(searchPageCacheV2,key,safe,searchPageCacheTtlV2(intent),SEARCH_CACHE_V2.pageMaxEntries);
+            return applyCachedPageReadV2(candidate,safe);
+        }
+
         let lastSearchV2Diagnostics=null;
 
         function normalizeSearchGatewayUrlV2(value){
@@ -4498,10 +4690,16 @@
                 let host="";
                 try{host=new URL(candidate.url).hostname.toLowerCase();}catch(_){}
                 if(!host||hosts.has(host))continue;
+                const key=searchPageCacheKeyV2(candidate);
+                if(key&&opts.runtime?.readMemo?.has(key)){
+                    // already read inside this request; keep it eligible so the cached
+                    // truth can be projected without another network call.
+                }
                 hosts.add(host);selected.push(candidate);
             }
             if(!selected.length)return {candidates:ranked,pagesAttempted:0,pagesRead:0,pagesBlocked:0};
-            const reads=await Promise.all(selected.map(item=>readSearchCandidateViaGatewayV2(item)));
+            emitSearchStageV2(opts.runtime,"reading","Reading "+selected.length+" source"+(selected.length===1?"":"s")+"…",{pageCount:selected.length});
+            const reads=await Promise.all(selected.map(item=>cachedPageReadV2(item,opts.intent||{},opts.runtime)));
             const map=new Map(reads.map(item=>[item.id,item]));
             const candidates=ranked.map(item=>map.get(item.id)||item);
             return {
@@ -4964,13 +5162,13 @@
             return [...dedup.values()].slice(0,8);
         }
 
-        async function runSearchWaveV2(queries,intent){
+        async function runSearchWaveV2(queries,intent,runtime){
             const tasks=[];
             for(const q of Array.isArray(queries)?queries:[]){
-                tasks.push(Promise.resolve(searchDuckDuckGoCandidatesV2(q)).then(candidates=>({kind:"local",candidates})));
-                tasks.push(Promise.resolve(searchWikipediaCandidatesV2(q,"en")).then(candidates=>({kind:"local",candidates})));
-                if(intent?.language==="ar")tasks.push(Promise.resolve(searchWikipediaCandidatesV2(q,"ar")).then(candidates=>({kind:"local",candidates})));
-                if(isSearchGatewayConfiguredV2())tasks.push(Promise.resolve(searchGatewayCandidatesV2(q,intent)).then(result=>({kind:"gateway",result})));
+                tasks.push(Promise.resolve(cachedSearchAdapterV2("duckduckgo",q,intent,runtime,()=>searchDuckDuckGoCandidatesV2(q))).then(candidates=>({kind:"local",candidates})));
+                tasks.push(Promise.resolve(cachedSearchAdapterV2("wikipedia_en",q,intent,runtime,()=>searchWikipediaCandidatesV2(q,"en"))).then(candidates=>({kind:"local",candidates})));
+                if(intent?.language==="ar")tasks.push(Promise.resolve(cachedSearchAdapterV2("wikipedia_ar",q,intent,runtime,()=>searchWikipediaCandidatesV2(q,"ar"))).then(candidates=>({kind:"local",candidates})));
+                if(isSearchGatewayConfiguredV2())tasks.push(Promise.resolve(cachedSearchAdapterV2("gateway",q,intent,runtime,()=>searchGatewayCandidatesV2(q,intent))).then(result=>({kind:"gateway",result})));
             }
             const settled=await Promise.all(tasks.map(p=>Promise.resolve(p).catch(error=>{
                 if(error?.name==="AbortError"&&activeAbortController?.signal?.aborted)throw error;
@@ -5008,31 +5206,36 @@
             return text.trim();
         }
 
-        async function performWebSearchV2(question){
+        async function performWebSearchV2(question,options){
             const started=Date.now();
+            const runtime=createSearchRequestRuntimeV2(options);
+            emitSearchStageV2(runtime,"planning","Planning search…",{queryCount:0});
             const plan=planSearchQueriesV2(question);
             if(!plan.queries.length)return null;
 
-            const firstWave=await runSearchWaveV2(plan.queries,plan.intent);
+            emitSearchStageV2(runtime,"searching","Searching "+plan.queries.length+" quer"+(plan.queries.length===1?"y":"ies")+"…",{queryCount:plan.queries.length});
+            const firstWave=await runSearchWaveV2(plan.queries,plan.intent,runtime);
             let raw=firstWave.raw.slice();
             const gatewayReports=firstWave.gatewayReports.slice();
 
             let ranked=dedupeSearchCandidatesV2(raw.slice(0,SEARCH_V2.maxCandidates*3),plan.intent).slice(0,SEARCH_V2.maxCandidates);
-            const firstRead=await readTopSearchCandidatesV2(ranked,{maxReads:SEARCH_V2.maxPageReads});
+            const firstRead=await readTopSearchCandidatesV2(ranked,{maxReads:SEARCH_V2.maxPageReads,intent:plan.intent,runtime});
             ranked=dedupeSearchCandidatesV2(firstRead.candidates,plan.intent).slice(0,SEARCH_V2.maxCandidates);
             let accumulatedCandidates=ranked.slice();
 
+            emitSearchStageV2(runtime,"checking","Checking evidence…",{pageCount:firstRead.pagesAttempted});
             let evidence=buildSearchEvidenceUnitsV2(ranked,plan.intent);
             const initialAssessment=assessSearchEvidenceSufficiencyV2(evidence,plan.intent);
             const followUps=initialAssessment.sufficient?[]:planSearchFollowUpV2(question,plan.intent,evidence,initialAssessment,plan.queries);
             let secondRead={pagesAttempted:0,pagesRead:0,pagesBlocked:0};
 
             if(followUps.length){
-                const followWave=await runSearchWaveV2(followUps,plan.intent);
+                emitSearchStageV2(runtime,"follow_up","Follow-up search…",{queryCount:followUps.length});
+                const followWave=await runSearchWaveV2(followUps,plan.intent,runtime);
                 raw.push(...followWave.raw);
                 gatewayReports.push(...followWave.gatewayReports);
                 accumulatedCandidates=dedupeSearchCandidatesV2([...accumulatedCandidates,...followWave.raw],plan.intent).slice(0,SEARCH_V2.maxCandidates);
-                secondRead=await readTopSearchCandidatesV2(accumulatedCandidates,{maxReads:SEARCH_V2.maxFollowUpPageReads});
+                secondRead=await readTopSearchCandidatesV2(accumulatedCandidates,{maxReads:SEARCH_V2.maxFollowUpPageReads,intent:plan.intent,runtime});
                 ranked=dedupeSearchCandidatesV2(secondRead.candidates,plan.intent).slice(0,SEARCH_V2.maxCandidates);
                 accumulatedCandidates=ranked.slice();
                 evidence=buildSearchEvidenceUnitsV2(ranked,plan.intent);
@@ -5055,14 +5258,14 @@
                 publishedAt:item.publishedAt||null,freshnessClass:item.freshnessClass,
                 injectionSuspected:item.injectionSuspected===true,capability
             }));
-            const freshnessDistribution={};
-            const sourceTypeDistribution={};
+            const freshnessDistribution={},sourceTypeDistribution={};
             for(const item of evidence){
                 freshnessDistribution[item.freshnessClass]=(freshnessDistribution[item.freshnessClass]||0)+1;
                 sourceTypeDistribution[item.sourceType]=(sourceTypeDistribution[item.sourceType]||0)+1;
             }
             const independentHostCount=new Set(evidence.map(searchCandidateHostV2).filter(Boolean)).size;
             const status=!contextText?"no_results":(capability==="general_web"&&finalAssessment.sufficient?"success":"partial");
+            emitSearchStageV2(runtime,"answering","Answering…",{pageCount:evidence.length});
             lastSearchV2Diagnostics={
                 version:2,status,capability,
                 language:plan.intent.language,timeSensitive:plan.intent.timeSensitive,
@@ -5089,6 +5292,14 @@
                 gatewayConfigured,
                 gatewayBackends:Array.from(new Set(gatewayReports.map(x=>x.backend).filter(Boolean))).sort(),
                 engines:Array.from(new Set(ranked.map(x=>x.engine))).sort(),
+                queryCacheHits:runtime.stats.queryCacheHits,
+                queryCacheMisses:runtime.stats.queryCacheMisses,
+                pageCacheHits:runtime.stats.pageCacheHits,
+                pageCacheMisses:runtime.stats.pageCacheMisses,
+                adapterRequests:runtime.stats.adapterRequests,
+                networkSearchRequests:runtime.stats.networkSearchRequests,
+                readerNetworkRequests:runtime.stats.readerNetworkRequests,
+                stageNames:runtime.stats.stageNames.slice(0,16),
                 elapsedMs:Math.max(0,Date.now()-started)
             };
             if(!contextText)return null;
@@ -5114,6 +5325,8 @@
             conflicts:(items,question)=>{const intent=analyzeSearchIntentV2(question||"");const evidence=(Array.isArray(items)&&items[0]?.evidenceId)?items:buildSearchEvidenceUnitsV2(dedupeSearchCandidatesV2(items,intent),intent);return detectSearchConflictSignalsV2(evidence,intent);},
             gatewayConfigured:isSearchGatewayConfiguredV2,
             normalizeGatewayUrl:normalizeSearchGatewayUrlV2,
+            cacheSnapshot:safeSearchCacheSnapshotV2,
+            clearCache:clearSearchCacheV2,
             snapshot:()=>lastSearchV2Diagnostics?JSON.parse(JSON.stringify(lastSearchV2Diagnostics)):null
         });
 
@@ -5725,9 +5938,14 @@
             const useWeb = plan ? plan.web.use === true : searchMode === true;
             let searchResult = null;
             if (useWeb) {
-                const statusBubble = currentRoom === roomId ? addMessage("system", "🔍 Searching the web...") : null;
+                const statusBubble = currentRoom === roomId ? addMessage("system", "🔍 Planning search…") : null;
+                const onSearchStage=statusBubble ? (stage)=>{
+                    if(!statusBubble.isConnected)return;
+                    const message=String(stage?.message||"Searching…").slice(0,120);
+                    statusBubble.textContent="🔍 "+message;
+                } : null;
                 try {
-                    searchResult = await performWebSearch(text);
+                    searchResult = await performWebSearch(text,{onStage:onSearchStage});
                 } catch (e) {
                     console.error("Web search failed", e);
                 }
