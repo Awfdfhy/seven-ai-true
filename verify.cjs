@@ -543,5 +543,118 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   });
   assert.equal(r.present,true);assert.equal(r.keyType,'password');
  });
+
+ await test('web search evidence freshness is query-relative',async()=>{
+  const r=await page.evaluate(()=>{
+    const now=Date.now();
+    const current=new Date(now-24*60*60*1000).toISOString();
+    const old=new Date(now-2*365*24*60*60*1000).toISOString();
+    return {
+      current:SevenSearchV2.freshness({publishedAt:current},'latest news today'),
+      stale:SevenSearchV2.freshness({publishedAt:old},'latest news today'),
+      evergreen:SevenSearchV2.freshness({publishedAt:old},'history of the web'),
+      unknown:SevenSearchV2.freshness({},'latest news today')
+    };
+  });
+  assert.equal(r.current,'current');assert.equal(r.stale,'stale');assert.equal(r.evergreen,'evergreen');assert.equal(r.unknown,'unknown');
+ });
+ await test('web search score parts deterministically sum to final candidate score',async()=>{
+  const r=await page.evaluate(()=>{
+    const item={title:'Android documentation',url:'https://developer.example/android',snippet:'Android API documentation current release',engine:'gateway_brave',queryId:'q1',queryPriority:1,rank:1,language:'en',sourceType:'documentation',readState:'read_success',publishedAt:new Date().toISOString(),discoveredBy:['a','b']};
+    const normalized=SevenSearchV2.normalize(item);
+    const parts=SevenSearchV2.scoreParts(normalized,'latest Android API documentation');
+    const total=Object.values(parts.parts).reduce((a,b)=>a+Number(b||0),0);
+    return {reported:parts.total,sum:Number(total.toFixed(3)),type:parts.parts.sourceType,freshness:parts.freshnessClass};
+  });
+  assert.equal(r.reported,r.sum);assert.ok(r.type>=10);assert.ok(['current','recent'].includes(r.freshness));
+ });
+ await test('web search evidence selection prefers independent hosts and stable IDs',async()=>{
+  const r=await page.evaluate(()=>{
+    const items=[
+      {title:'A1',url:'https://a.example/1',snippet:'alpha',engine:'x',queryId:'q1',queryPriority:1,rank:1,language:'en',sourceType:'documentation',readState:'read_success'},
+      {title:'A2',url:'https://a.example/2',snippet:'alpha two',engine:'x',queryId:'q1',queryPriority:1,rank:2,language:'en',sourceType:'documentation',readState:'read_success'},
+      {title:'B1',url:'https://b.example/1',snippet:'beta',engine:'x',queryId:'q1',queryPriority:.9,rank:3,language:'en',sourceType:'government',readState:'read_success'},
+      {title:'C1',url:'https://c.example/1',snippet:'gamma',engine:'x',queryId:'q1',queryPriority:.8,rank:4,language:'en',sourceType:'academic',readState:'snippet_only'}
+    ];
+    const ev=SevenSearchV2.evidence(items,'alpha beta gamma');
+    return {ids:ev.map(x=>x.sourceId),hosts:ev.map(x=>new URL(x.url).hostname),eids:ev.map(x=>x.evidenceId)};
+  });
+  assert.deepEqual(r.ids,['S1','S2','S3','S4']);assert.deepEqual(r.eids,['E1','E2','E3','E4']);assert.equal(new Set(r.hosts.slice(0,3)).size,3);
+ });
+ await test('web search evidence context and system prompt share exact citation IDs',async()=>{
+  const r=await page.evaluate(()=>{
+    const candidates=[
+      normalizeSearchCandidateV2({title:'Source One',url:'https://one.example/a',snippet:'Evidence one',engine:'fixture',queryId:'q1',queryPriority:1,rank:1,language:'en',sourceType:'documentation',readState:'read_success'}),
+      normalizeSearchCandidateV2({title:'Source Two',url:'https://two.example/a',snippet:'Evidence two',engine:'fixture',queryId:'q1',queryPriority:.9,rank:2,language:'en',sourceType:'reference',readState:'snippet_only'})
+    ];
+    const intent=analyzeSearchIntentV2('test evidence');
+    const ranked=dedupeSearchCandidatesV2(candidates,intent);
+    const evidence=buildSearchEvidenceUnitsV2(ranked,intent);
+    const context=buildSearchContextTextV2(evidence,intent);
+    const msgs=serializeContextSources([
+      createContextSource('policy','policy',{trustedInstructions:true,priority:100}),
+      createContextSource('web',context,{priority:50,provenance:'web'})
+    ],[]);
+    return {context,system:msgs[0].content,ids:evidence.map(x=>x.sourceId)};
+  });
+  assert.ok(r.context.includes('[S1]'));assert.ok(r.context.includes('[S2]'));assert.ok(r.system.includes('cite only the provided source IDs exactly like [S1]'));assert.deepEqual(r.ids,['S1','S2']);
+ });
+ await test('inline search citations link only known source IDs and skip code',async()=>{
+  const r=await page.evaluate(()=>{
+    const bubble=addMessage('assistant','Known [S1] unknown [S99] and `[S1]`',{suppressScroll:true});
+    bubble.innerHTML='<p>Known [S1] unknown [S99]</p><pre><code>[S1]</code></pre>';
+    const linked=linkSearchCitationMarkersV2(bubble,[{id:'S1',title:'One',url:'https://one.example',readState:'read_success'}]);
+    const links=[...bubble.querySelectorAll('a.inline-source-citation')].map(a=>({text:a.textContent,href:a.href,rel:a.rel}));
+    const code=bubble.querySelector('code').textContent;
+    const plain=bubble.textContent;
+    bubble.closest('.message').remove();
+    return {linked,links,code,plain};
+  });
+  assert.equal(r.linked,1);assert.equal(r.links.length,1);assert.equal(r.links[0].text,'[S1]');assert.ok(r.links[0].href.startsWith('https://one.example/'));assert.ok(r.links[0].rel.includes('noopener'));assert.equal(r.code,'[S1]');assert.ok(r.plain.includes('[S99]'));
+ });
+ await test('search source cards display stable ID, type, freshness and read state',async()=>{
+  const r=await page.evaluate(()=>{
+    const bubble=addMessage('assistant','fixture',{suppressScroll:true});
+    renderSearchSources(bubble,[{id:'S1',title:'Official docs',url:'https://docs.example',engine:'gateway_brave',readState:'read_success',sourceType:'documentation',freshnessClass:'current',publishedAt:'2026-10-02',capability:'general_web'}]);
+    const wrapper=bubble.closest('.message');
+    const id=wrapper.querySelector('.search-source-id')?.textContent||'';
+    const meta=wrapper.querySelector('.search-source-meta')?.textContent||'';
+    wrapper.remove();
+    return {id,meta};
+  });
+  assert.equal(r.id,'S1');assert.ok(r.meta.includes('Read'));assert.ok(r.meta.includes('documentation'));assert.ok(r.meta.includes('current'));assert.ok(r.meta.includes('2026-10-02'));
+ });
+ await test('search source metadata survives room render without storing page bodies',async()=>{
+  const r=await page.evaluate(()=>{
+    const old=currentRoom,id='citation-room-'+Date.now();
+    rooms[id]=createEmptyRoom();roomTitles[id]='Citation room';
+    rooms[id].history.push({role:'user',content:'question'});
+    rooms[id].history.push({role:'assistant',content:'Answer [S1]',searchSources:serializeSearchSourcesForHistoryV2([{id:'S1',title:'Source',url:'https://source.example',engine:'gateway_brave',readState:'read_success',sourceType:'documentation',freshnessClass:'recent',capability:'general_web'}])});
+    currentRoom=id;renderChatHistory();
+    const linked=!!document.querySelector('#chat a.inline-source-citation');
+    const card=!!document.querySelector('#chat .search-source-id');
+    const serialized=JSON.stringify(rooms[id].history[1].searchSources);
+    delete rooms[id];delete roomTitles[id];currentRoom=old;renderChatHistory();
+    return {linked,card,containsBody:/Evidence one|General article body|full page/i.test(serialized)};
+  });
+  assert.equal(r.linked,true);assert.equal(r.card,true);assert.equal(r.containsBody,false);
+ });
+ await test('web search diagnostics expose freshness/source distributions without evidence bodies',async()=>{
+  const r=await page.evaluate(async()=>{
+    const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
+    SEARCH_GATEWAY_URL='';SEARCH_GATEWAY_KEY='';
+    fetchWithTimeout=async url=>{
+      const s=String(url);
+      if(s.includes('api.duckduckgo.com'))return {ok:true,json:async()=>({Heading:'Diag',AbstractText:'Body fixture that should not enter diagnostics',AbstractURL:'https://example.com/diag',RelatedTopics:[]})};
+      return {ok:false,json:async()=>({})};
+    };
+    try{
+      const out=await performWebSearchV2('diagnostic query');
+      const raw=JSON.stringify(out?.diagnostics||{});
+      return {diag:out?.diagnostics,containsBody:raw.includes('Body fixture that should not enter diagnostics')};
+    }finally{fetchWithTimeout=oldFetch;SEARCH_GATEWAY_URL=oldUrl;SEARCH_GATEWAY_KEY=oldKey;}
+  });
+  assert.ok(r.diag.evidenceCount>=1);assert.ok(r.diag.freshnessDistribution);assert.ok(r.diag.sourceTypeDistribution);assert.equal(r.containsBody,false);
+ });
  await browser.close();server.close();fs.writeFileSync(require('path').join(__dirname,'results.json'),JSON.stringify({results,liveProviderCalls:false},null,2));
 })().catch(e=>{console.error(e);server.close();process.exit(1)});
