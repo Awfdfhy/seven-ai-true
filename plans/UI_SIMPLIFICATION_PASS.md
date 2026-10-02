@@ -1,7 +1,7 @@
 # UI Simplification Pass — Detailed Execution Specification
 
 Date: 2026-10-02
-Status: IMPLEMENTATION READY
+Status: COMPLETE — merged to main via PR #23
 Parent roadmap: ../SEVEN_POLISH_ROADMAP.md
 
 ## Objective
@@ -91,3 +91,11 @@ Use native semantic `<details>/<summary>` where practical:
 ## Acceptance criteria
 
 Complete when the default settings view exposes only normal-use controls, advanced/provider clutter is collapsed, routing health remains understandable, 320px/RTL tests pass, and no existing settings behavior regresses.
+
+## Completion record
+
+- Implementation PR: #23
+- Tested head SHA: `46b54408f285be9528da9e79fc6ad839b7956cc3`
+- CI run: Seven AI tests #2151 — PASS
+- Squash merge SHA: `a1bb2714721044dbb1db9afdfbbf9fe69728f12b`
+- Result: progressive disclosure, semantic route status, 320px fit, RTL behavior, and existing settings regression gates passed before merge.
