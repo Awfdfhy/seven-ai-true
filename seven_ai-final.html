@@ -770,6 +770,30 @@
             font-weight:800;
             font-size:.78em;
         }
+        .research-source-head{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:10px;
+            flex-wrap:wrap;
+            margin-bottom:4px;
+        }
+        .research-export-btn{
+            min-height:34px;
+            padding:4px 10px;
+            border:1px solid var(--border);
+            border-radius:999px;
+            background:var(--surface);
+            color:var(--text);
+            font:inherit;
+            font-size:.86em;
+            cursor:pointer;
+        }
+        .research-export-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+        @media(max-width:360px){
+            .research-source-head{align-items:flex-start;flex-direction:column}
+            .research-export-btn{width:100%}
+        }
     </style>
 </head>
 <body>
@@ -5835,13 +5859,68 @@
             return text.trim();
         }
 
+        function buildResearchVerificationBridgeV2(run){
+            const citationLock=(run?.evidence||[]).map(x=>String(x.researchEvidenceId||"")).filter(x=>/^R\d+$/.test(x)).slice(0,DEEP_RESEARCH_V2.maxEvidence);
+            const sourceRows=(run?.evidence||[]).map(item=>({
+                title:String(item.title||"").slice(0,240),
+                url:safeHttpUrl(item.url)||"",
+                publishedAt:item.publishedAt?String(item.publishedAt).slice(0,64):null
+            })).filter(x=>x.url);
+            let runtime="unavailable",claimCount=0,packagedStatus=null;
+            try{
+                let packaged=null;
+                if(window.SevenResearch&&typeof window.SevenResearch.research==="function"){
+                    packaged=window.SevenResearch.research(sourceRows);
+                    runtime="SevenResearch";
+                }else if(window.SevenRuntime&&typeof window.SevenRuntime.research==="function"){
+                    packaged=window.SevenRuntime.research(sourceRows);
+                    runtime="SevenRuntime";
+                }
+                if(packaged&&typeof packaged==="object"){
+                    claimCount=Array.isArray(packaged.claims)?packaged.claims.length:0;
+                    packagedStatus=typeof packaged.status==="string"?packaged.status.slice(0,40):null;
+                }
+            }catch(_){}
+            return {version:1,runtime,citationLock,claimCount,packagedStatus};
+        }
+
+        function verifyResearchReplyCitationsV2(reply,searchResult){
+            const sources=searchResult&&Array.isArray(searchResult.sources)?searchResult.sources:[];
+            const known=Array.from(new Set(sources.map(x=>String(x?.id||"")).filter(x=>/^R\d+$/.test(x))));
+            const cited=Array.from(new Set((String(reply||"").match(/\[R\d+\]/g)||[]).map(x=>x.slice(1,-1))));
+            const unknown=cited.filter(id=>!known.includes(id));
+            const used=cited.filter(id=>known.includes(id));
+            return {
+                version:1,
+                valid:unknown.length===0,
+                knownCount:known.length,
+                citedCount:used.length,
+                used,
+                unknown,
+                coverage:known.length?Number((used.length/known.length).toFixed(4)):0
+            };
+        }
+
+        function exportDeepResearchBundleV2(runId){
+            const bundle=deepResearchBundleV2(String(runId||""));
+            if(!bundle)return false;
+            try{
+                downloadJsonPayload(bundle,"seven_deep_research_"+String(runId||"run").replace(/[^a-zA-Z0-9_-]/g,"_")+".json");
+                return true;
+            }catch(error){
+                console.error("Deep Research export failed",error);
+                return false;
+            }
+        }
+
         function buildDeepResearchResultV2(run,plan,assessment){
             const contextText=buildDeepResearchContextV2(run,assessment);
             const sources=run.evidence.slice(0,DEEP_RESEARCH_V2.maxContextEvidence).map(item=>({
                 id:item.researchEvidenceId,title:item.title,url:item.url,engine:item.engines.join("+"),
                 language:plan.intent.language,readState:item.readState,sourceType:item.sourceType,
                 score:item.relevance,publishedAt:item.publishedAt,freshnessClass:item.freshnessClass,
-                injectionSuspected:item.injectionSuspected,capability:"deep_research"
+                injectionSuspected:item.injectionSuspected,capability:"deep_research",
+                researchRunId:run.id,researchStatus:assessment.status,researchScore:assessment.score
             }));
             return {
                 version:2,status:assessment.status==="SUFFICIENT"?"success":(assessment.status==="PARTIAL"?"partial":"inconclusive"),
@@ -5849,6 +5928,7 @@
                 researchRunId:run.id,researchStatus:assessment.status,
                 evidence:cloneResearchValueV2(run.evidence),conflicts:cloneResearchValueV2(run.conflicts),
                 assessment:{score:assessment.score,gapCodes:assessment.gaps.slice(),sufficient:assessment.status==="SUFFICIENT"},
+                verificationBridge:buildResearchVerificationBridgeV2(run),
                 diagnostics:cloneResearchValueV2(lastDeepResearchDiagnostics)
             };
         }
@@ -5946,6 +6026,9 @@
             resume:resumeDeepResearchV2,
             get:getDeepResearchRunV2,
             bundle:deepResearchBundleV2,
+            audit:verifyResearchReplyCitationsV2,
+            bridge:runId=>{const run=getDeepResearchRunV2(runId);return run?buildResearchVerificationBridgeV2(run):null;},
+            export:exportDeepResearchBundleV2,
             list:()=>loadDeepResearchStoreV2().runs.map(x=>({id:x.id,roomId:x.roomId,status:x.status,updatedAt:x.updatedAt,questionFingerprint:x.questionFingerprint})),
             snapshot:()=>lastDeepResearchDiagnostics?cloneResearchValueV2(lastDeepResearchDiagnostics):null
         });
@@ -6074,7 +6157,10 @@
                 sourceType:String(source?.sourceType||"unknown").slice(0,40),
                 publishedAt:source?.publishedAt?String(source.publishedAt).slice(0,64):null,
                 freshnessClass:String(source?.freshnessClass||"unknown").slice(0,24),
-                capability:String(source?.capability||"").slice(0,40)
+                capability:String(source?.capability||"").slice(0,40),
+                researchRunId:source?.researchRunId?String(source.researchRunId).slice(0,80):null,
+                researchStatus:source?.researchStatus?String(source.researchStatus).slice(0,32):null,
+                researchScore:Number.isFinite(Number(source?.researchScore))?Number(source.researchScore):null
             })).filter(source=>source.id&&source.url);
         }
 
@@ -6130,7 +6216,24 @@
             const sourcesDiv = document.createElement("div");
             sourcesDiv.className = "search-sources";
             const limitedCoverage=sources.length>0&&sources.every(source=>["knowledge_sources_only","limited_capability","general_web_degraded"].includes(source?.capability));
-            sourcesDiv.appendChild(document.createTextNode(limitedCoverage?"Sources (limited search coverage / degraded capability):":"Sources:"));
+            const researchSource=sources.find(source=>source?.capability==="deep_research"&&source?.researchRunId);
+            if(researchSource){
+                const head=document.createElement("div");
+                head.className="research-source-head";
+                const label=document.createElement("span");
+                const score=Number.isFinite(Number(researchSource.researchScore))?" · score "+Math.round(Number(researchSource.researchScore)):"";
+                label.textContent="Research evidence"+(researchSource.researchStatus?" · "+researchSource.researchStatus:"")+score+":";
+                head.appendChild(label);
+                const exportBtn=document.createElement("button");
+                exportBtn.type="button";
+                exportBtn.className="research-export-btn";
+                exportBtn.textContent="Export evidence";
+                exportBtn.onclick=()=>exportDeepResearchBundleV2(researchSource.researchRunId);
+                head.appendChild(exportBtn);
+                sourcesDiv.appendChild(head);
+            }else{
+                sourcesDiv.appendChild(document.createTextNode(limitedCoverage?"Sources (limited search coverage / degraded capability):":"Sources:"));
+            }
             const list = document.createElement("ul");
             for (const source of sources) {
                 const href = safeHttpUrl(source && source.url);
@@ -7665,6 +7768,26 @@
                 add("webEvidence", hasUsableSource ? "pass" : "warn", hasUsableSource ? "web_evidence_present" : "web_evidence_unavailable");
             } else {
                 add("webEvidence", "skip", "web_not_requested");
+            }
+
+            if (controllerValid && controllerPlan.research?.use) {
+                const citationAudit=verifyResearchReplyCitationsV2(opts.reply,opts.searchResult);
+                if(!citationAudit.valid){
+                    add("researchCitations","fail","research_unknown_citation");
+                }else if(citationAudit.knownCount>0&&citationAudit.citedCount===0){
+                    add("researchCitations","warn","research_citations_missing");
+                }else{
+                    add("researchCitations","pass","research_citations_known");
+                }
+                const evidenceStatus=String(opts.searchResult?.researchStatus||"");
+                if(evidenceStatus==="INCONCLUSIVE"){
+                    add("researchEvidenceState","warn","research_evidence_inconclusive");
+                }else{
+                    add("researchEvidenceState","pass","research_evidence_state_recorded");
+                }
+            }else{
+                add("researchCitations","skip","research_not_requested");
+                add("researchEvidenceState","skip","research_not_requested");
             }
 
             if (opts.executionRun !== undefined && opts.executionRun !== null) {
