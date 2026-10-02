@@ -1299,5 +1299,61 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   });
   assert.equal(r.ok,true);assert.ok(r.filename.endsWith('.json'));assert.equal(r.hasEvidence,true);assert.equal(r.secret,false);
  });
+
+ await test('coding transaction v1 rejects stale content and stale head atomically',async()=>{
+  const r=await page.evaluate(()=>{
+    const base=SevenRuntime.codingSnapshotV1({repository:'owner/repo',branch:'main',headSha:'aaa',files:[
+      {path:'a.js',content:'one',blobSha:'b1'},{path:'b.js',content:'two',blobSha:'b2'}
+    ]});
+    const planned=SevenRuntime.createCodingTransactionV1({base,operations:[
+      {type:'update',path:'a.js',content:'ONE'},{type:'update',path:'b.js',content:'TWO'}
+    ]});
+    const changed=SevenRuntime.codingSnapshotV1({repository:'owner/repo',branch:'main',headSha:'aaa',files:[
+      {path:'a.js',content:'changed',blobSha:'b3'},{path:'b.js',content:'two',blobSha:'b2'}
+    ]});
+    const staleContent=SevenRuntime.preflightCodingTransactionV1(planned.transaction,changed);
+    const changedHead=SevenRuntime.codingSnapshotV1({repository:'owner/repo',branch:'main',headSha:'bbb',files:[
+      {path:'a.js',content:'one',blobSha:'b1'},{path:'b.js',content:'two',blobSha:'b2'}
+    ]});
+    const staleHead=SevenRuntime.preflightCodingTransactionV1(planned.transaction,changedHead);
+    return {planned:planned.status,staleContent,staleHead};
+  });
+  assert.equal(r.planned,'PLANNED');assert.equal(r.staleContent.status,'STALE');assert.equal(r.staleContent.stale.length,1);assert.equal(r.staleHead.code,'head_changed');
+ });
+ await test('coding transaction v1 rejects duplicate unsafe and protected paths',async()=>{
+  const r=await page.evaluate(()=>{
+    const base=SevenRuntime.codingSnapshotV1({repository:'owner/repo',branch:'main',headSha:'aaa',files:[{path:'a.js',content:'x'}]});
+    return {
+      duplicate:SevenRuntime.createCodingTransactionV1({base,operations:[{type:'update',path:'a.js',content:'1'},{type:'update',path:'a.js',content:'2'}]}),
+      unsafe:SevenRuntime.createCodingTransactionV1({base,operations:[{type:'create',path:'../evil.js',content:'x'}]}),
+      protected:SevenRuntime.createCodingTransactionV1({base,operations:[{type:'create',path:'.env',content:'SECRET=x'}]})
+    };
+  });
+  assert.equal(r.duplicate.code,'duplicate_path');assert.equal(r.unsafe.code,'unsafe_path');assert.equal(r.protected.status,'BLOCKED');assert.equal(r.protected.code,'protected_path');
+ });
+ await test('coding transaction v1 valid create update delete reaches READY',async()=>{
+  const r=await page.evaluate(()=>{
+    const base=SevenRuntime.codingSnapshotV1({repository:'owner/repo',branch:'feature',headSha:'abc',files:[
+      {path:'update.js',content:'old',blobSha:'u1'},{path:'delete.js',content:'bye',blobSha:'d1'}
+    ]});
+    const planned=SevenRuntime.createCodingTransactionV1({base,operations:[
+      {type:'create',path:'new.js',content:'new'},{type:'update',path:'update.js',content:'updated'},{type:'delete',path:'delete.js'}
+    ]});
+    const ready=SevenRuntime.preflightCodingTransactionV1(planned.transaction,base);
+    const rollback=SevenRuntime.codingRollbackDescriptorV1(planned.transaction,{createdSha:'def'});
+    const diagnostics=SevenRuntime.codingTransactionDiagnosticsV1(planned);
+    return {planned:planned.status,ready,rollback,diagnostics,serialized:JSON.stringify(diagnostics)};
+  });
+  assert.equal(r.planned,'PLANNED');assert.equal(r.ready.status,'READY');assert.equal(r.rollback.restoreHeadSha,'abc');assert.equal(r.rollback.revertFromSha,'def');assert.equal(r.diagnostics.operationCount,3);assert.ok(!/updated|old|bye|SECRET=/.test(r.serialized));
+ });
+ await test('coding transaction v1 diagnostics expose metadata not file content',async()=>{
+  const r=await page.evaluate(()=>{
+    const secret='gsk_fixture_secret_value';
+    const base=SevenRuntime.codingSnapshotV1({repository:'owner/repo',branch:'main',headSha:'abc',files:[{path:'safe.txt',content:'old'}]});
+    const planned=SevenRuntime.createCodingTransactionV1({base,operations:[{type:'update',path:'safe.txt',content:secret}]});
+    return JSON.stringify(SevenRuntime.codingTransactionDiagnosticsV1(planned));
+  });
+  assert.ok(!r.includes('gsk_fixture_secret_value'));assert.ok(r.includes('safe.txt'));
+ });
  await browser.close();server.close();fs.writeFileSync(require('path').join(__dirname,'results.json'),JSON.stringify({results,liveProviderCalls:false},null,2));
 })().catch(e=>{console.error(e);server.close();process.exit(1)});
