@@ -4815,8 +4815,8 @@
             if(flags.comparison)return "comparison";
             if(/\b(official site|official website|homepage|go to|open site|website)\b/i.test(value)||/الموقع الرسمي|افتح الموقع|رابط الموقع/.test(value))return "navigational";
             if(/\b(paper|papers|journal|doi|arxiv|peer[- ]review|academic|study|studies)\b/i.test(value)||/بحث علمي|دراسة|دراسات|ورقة علمية|أكاديمي/.test(value))return "academic";
-            if(flags.technical)return "technical";
             if(/\b(how to|tutorial|guide|steps?)\b/i.test(value)||/كيف|طريقة|خطوات|شرح/.test(value))return "how_to";
+            if(flags.technical)return "technical";
             if(flags.timeSensitive)return "current_fact";
             if(/\b(price|specs?|specifications?|model|product|release)\b/i.test(value)||/سعر|مواصفات|منتج|إصدار|اصدار/.test(value))return "product_entity";
             if(/\b(explore|overview|tell me about|learn about)\b/i.test(value)||/نبذة|نظرة عامة|اشرح لي عن/.test(value))return "exploratory";
