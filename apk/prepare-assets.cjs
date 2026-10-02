@@ -1,10 +1,8 @@
 const fs=require('fs');
 const path=require('path');
 const sharp=require('sharp');
-const brand=require('../release/brand-asset-contract.cjs');
 const ROOT=path.resolve(__dirname,'..');
 const OUT=path.join(ROOT,'assets');
-const BRAND_MANIFEST=path.join(ROOT,'brand','final','brand-export.json');
 const CANONICAL_LAUNCHER=path.join(ROOT,'release','brand','seven-night-black.svg');
 
 function readCanonicalLauncherIcon(){
@@ -17,19 +15,11 @@ function readCanonicalLauncherIcon(){
   return {bytes,mode:'CANONICAL_SEVEN_GRADIENT',plan:null};
 }
 
-function readApprovedBrandIcon(){
-  if(!fs.existsSync(BRAND_MANIFEST))return null;
-  const manifest=brand.loadBrandExportManifest(BRAND_MANIFEST,{root:ROOT,requireFiles:true});
-  const item=brand.chooseBrandAsset(manifest,'MASTER_VECTOR');
-  const plan=brand.createConsumptionPlan({manifest,root:ROOT});
-  return {bytes:fs.readFileSync(path.join(ROOT,item.path)),mode:'APPROVED_BRAND_EXPORT',plan};
-}
-
 (async()=>{
   // Android launcher branding must never silently fall back to the legacy icon
   // embedded in the protected HTML. Until a final export manifest exists, the
   // canonical Seven gradient vector in release/brand is the authoritative icon.
-  const source=readApprovedBrandIcon()||readCanonicalLauncherIcon();
+  const source=readCanonicalLauncherIcon();
   fs.rmSync(OUT,{recursive:true,force:true});
   fs.mkdirSync(OUT,{recursive:true});
   await sharp(source.bytes,{density:384}).resize(1024,1024,{fit:'contain'}).png().toFile(path.join(OUT,'logo.png'));
