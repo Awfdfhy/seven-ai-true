@@ -1,0 +1,413 @@
+{
+  "version": 1,
+  "description": "Deterministic Web Search v2 quality fixtures. Synthetic evidence only; no live-web truth claims.",
+  "fixtures": [
+    {
+      "id": "current-factual",
+      "category": "current_factual",
+      "requiresFreshness": true,
+      "requiresPrimaryOrDocs": false,
+      "minimumHostDiversity": 2,
+      "expectedGapCodes": [],
+      "expectedConflictSignal": false,
+      "expectedReadStateClass": "read",
+      "evidence": [
+        {
+          "sourceId": "S1",
+          "url": "https://official.example/releases",
+          "sourceType": "official",
+          "freshnessClass": "current",
+          "readState": "read_success",
+          "excerpt": "Release 12 is current."
+        },
+        {
+          "sourceId": "S2",
+          "url": "https://news.example/release-12",
+          "sourceType": "specialist",
+          "freshnessClass": "recent",
+          "readState": "read_success",
+          "excerpt": "Release 12 launched this week."
+        }
+      ],
+      "citations": [
+        "S1",
+        "S2"
+      ]
+    },
+    {
+      "id": "arabic-current",
+      "category": "arabic_current_factual",
+      "requiresFreshness": true,
+      "requiresPrimaryOrDocs": false,
+      "minimumHostDiversity": 2,
+      "expectedGapCodes": [],
+      "expectedConflictSignal": false,
+      "expectedReadStateClass": "read",
+      "evidence": [
+        {
+          "sourceId": "S1",
+          "url": "https://official-ar.example/update",
+          "sourceType": "official",
+          "freshnessClass": "current",
+          "readState": "read_success",
+          "excerpt": "تحديث رسمي حديث."
+        },
+        {
+          "sourceId": "S2",
+          "url": "https://arabic-news.example/update",
+          "sourceType": "specialist",
+          "freshnessClass": "recent",
+          "readState": "read_partial",
+          "excerpt": "تغطية عربية مستقلة."
+        }
+      ],
+      "citations": [
+        "S1",
+        "S2"
+      ]
+    },
+    {
+      "id": "technical-docs",
+      "category": "technical_official_docs",
+      "requiresFreshness": false,
+      "requiresPrimaryOrDocs": true,
+      "minimumHostDiversity": 2,
+      "expectedGapCodes": [],
+      "expectedConflictSignal": false,
+      "expectedReadStateClass": "read",
+      "evidence": [
+        {
+          "sourceId": "S1",
+          "url": "https://docs.example/api",
+          "sourceType": "documentation",
+          "freshnessClass": "evergreen",
+          "readState": "read_success",
+          "excerpt": "Official API reference."
+        },
+        {
+          "sourceId": "S2",
+          "url": "https://developer.example/guide",
+          "sourceType": "official",
+          "freshnessClass": "evergreen",
+          "readState": "read_success",
+          "excerpt": "Official implementation guide."
+        }
+      ],
+      "citations": [
+        "S1"
+      ]
+    },
+    {
+      "id": "ambiguous-entity",
+      "category": "ambiguous_entity",
+      "requiresFreshness": false,
+      "requiresPrimaryOrDocs": false,
+      "minimumHostDiversity": 2,
+      "expectedGapCodes": [],
+      "expectedConflictSignal": false,
+      "expectedReadStateClass": "mixed",
+      "evidence": [
+        {
+          "sourceId": "S1",
+          "url": "https://reference.example/entity-a",
+          "sourceType": "reference",
+          "freshnessClass": "evergreen",
+          "readState": "read_success",
+          "excerpt": "Entity A definition."
+        },
+        {
+          "sourceId": "S2",
+          "url": "https://other.example/entity-b",
+          "sourceType": "reference",
+          "freshnessClass": "evergreen",
+          "readState": "snippet_only",
+          "excerpt": "Different entity with same name."
+        }
+      ],
+      "citations": [
+        "S1",
+        "S2"
+      ]
+    },
+    {
+      "id": "comparison",
+      "category": "comparison",
+      "requiresFreshness": false,
+      "requiresPrimaryOrDocs": false,
+      "minimumHostDiversity": 2,
+      "expectedGapCodes": [],
+      "expectedConflictSignal": false,
+      "expectedReadStateClass": "read",
+      "evidence": [
+        {
+          "sourceId": "S1",
+          "url": "https://vendor-a.example/specs",
+          "sourceType": "official",
+          "freshnessClass": "evergreen",
+          "readState": "read_success",
+          "excerpt": "Product A specifications."
+        },
+        {
+          "sourceId": "S2",
+          "url": "https://vendor-b.example/specs",
+          "sourceType": "official",
+          "freshnessClass": "evergreen",
+          "readState": "read_success",
+          "excerpt": "Product B specifications."
+        },
+        {
+          "sourceId": "S3",
+          "url": "https://lab.example/compare",
+          "sourceType": "specialist",
+          "freshnessClass": "recent",
+          "readState": "read_success",
+          "excerpt": "Independent comparison."
+        }
+      ],
+      "citations": [
+        "S1",
+        "S2",
+        "S3"
+      ]
+    },
+    {
+      "id": "recent-news",
+      "category": "recent_news",
+      "requiresFreshness": true,
+      "requiresPrimaryOrDocs": false,
+      "minimumHostDiversity": 2,
+      "expectedGapCodes": [],
+      "expectedConflictSignal": false,
+      "expectedReadStateClass": "read",
+      "evidence": [
+        {
+          "sourceId": "S1",
+          "url": "https://source.example/statement",
+          "sourceType": "primary",
+          "freshnessClass": "current",
+          "readState": "read_success",
+          "excerpt": "Primary statement published today."
+        },
+        {
+          "sourceId": "S2",
+          "url": "https://newsroom.example/story",
+          "sourceType": "specialist",
+          "freshnessClass": "current",
+          "readState": "read_success",
+          "excerpt": "Independent report."
+        }
+      ],
+      "citations": [
+        "S1",
+        "S2"
+      ]
+    },
+    {
+      "id": "historical-fact",
+      "category": "historical_fact",
+      "requiresFreshness": false,
+      "requiresPrimaryOrDocs": false,
+      "minimumHostDiversity": 2,
+      "expectedGapCodes": [],
+      "expectedConflictSignal": false,
+      "expectedReadStateClass": "read",
+      "evidence": [
+        {
+          "sourceId": "S1",
+          "url": "https://archive.example/document",
+          "sourceType": "primary",
+          "freshnessClass": "evergreen",
+          "readState": "read_success",
+          "excerpt": "Archived primary document."
+        },
+        {
+          "sourceId": "S2",
+          "url": "https://encyclopedia.example/topic",
+          "sourceType": "reference",
+          "freshnessClass": "evergreen",
+          "readState": "read_success",
+          "excerpt": "Reference overview."
+        }
+      ],
+      "citations": [
+        "S1"
+      ]
+    },
+    {
+      "id": "conflicting-reports",
+      "category": "conflicting_reports",
+      "requiresFreshness": true,
+      "requiresPrimaryOrDocs": false,
+      "minimumHostDiversity": 2,
+      "expectedGapCodes": [],
+      "expectedConflictSignal": true,
+      "expectedReadStateClass": "read",
+      "evidence": [
+        {
+          "sourceId": "S1",
+          "url": "https://report-a.example/item",
+          "sourceType": "specialist",
+          "freshnessClass": "current",
+          "readState": "read_success",
+          "excerpt": "Measured performance was 60 fps in the same test."
+        },
+        {
+          "sourceId": "S2",
+          "url": "https://report-b.example/item",
+          "sourceType": "specialist",
+          "freshnessClass": "current",
+          "readState": "read_success",
+          "excerpt": "Measured performance was 45 fps in the same test."
+        }
+      ],
+      "citations": [
+        "S1",
+        "S2"
+      ]
+    },
+    {
+      "id": "niche-topic",
+      "category": "niche_topic",
+      "requiresFreshness": false,
+      "requiresPrimaryOrDocs": false,
+      "minimumHostDiversity": 2,
+      "expectedGapCodes": [],
+      "expectedConflictSignal": false,
+      "expectedReadStateClass": "mixed",
+      "evidence": [
+        {
+          "sourceId": "S1",
+          "url": "https://specialist.example/niche",
+          "sourceType": "specialist",
+          "freshnessClass": "evergreen",
+          "readState": "read_success",
+          "excerpt": "Specialist niche material."
+        },
+        {
+          "sourceId": "S2",
+          "url": "https://community.example/niche",
+          "sourceType": "community",
+          "freshnessClass": "unknown",
+          "readState": "snippet_only",
+          "excerpt": "Community experience."
+        }
+      ],
+      "citations": [
+        "S1"
+      ]
+    },
+    {
+      "id": "arabic-source-sensitive",
+      "category": "arabic_source_sensitive",
+      "requiresFreshness": false,
+      "requiresPrimaryOrDocs": false,
+      "minimumHostDiversity": 2,
+      "expectedGapCodes": [],
+      "expectedConflictSignal": false,
+      "expectedReadStateClass": "read",
+      "evidence": [
+        {
+          "sourceId": "S1",
+          "url": "https://arabic-official.example/page",
+          "sourceType": "official",
+          "freshnessClass": "evergreen",
+          "readState": "read_success",
+          "excerpt": "مصدر عربي رسمي."
+        },
+        {
+          "sourceId": "S2",
+          "url": "https://arabic-reference.example/page",
+          "sourceType": "reference",
+          "freshnessClass": "evergreen",
+          "readState": "read_success",
+          "excerpt": "مرجع عربي مستقل."
+        }
+      ],
+      "citations": [
+        "S1",
+        "S2"
+      ]
+    },
+    {
+      "id": "blocked-reader",
+      "category": "blocked_reader",
+      "requiresFreshness": false,
+      "requiresPrimaryOrDocs": false,
+      "minimumHostDiversity": 2,
+      "expectedGapCodes": [
+        "no_read_evidence"
+      ],
+      "expectedConflictSignal": false,
+      "expectedReadStateClass": "snippet",
+      "evidence": [
+        {
+          "sourceId": "S1",
+          "url": "https://blocked.example/a",
+          "sourceType": "specialist",
+          "freshnessClass": "evergreen",
+          "readState": "blocked",
+          "excerpt": "Search snippet only."
+        },
+        {
+          "sourceId": "S2",
+          "url": "https://blocked2.example/b",
+          "sourceType": "reference",
+          "freshnessClass": "evergreen",
+          "readState": "snippet_only",
+          "excerpt": "Search snippet."
+        }
+      ],
+      "citations": [
+        "S2"
+      ]
+    },
+    {
+      "id": "no-useful-results",
+      "category": "no_useful_results",
+      "requiresFreshness": true,
+      "requiresPrimaryOrDocs": true,
+      "minimumHostDiversity": 2,
+      "expectedGapCodes": [
+        "too_few_sources",
+        "no_read_evidence",
+        "stale_current_query",
+        "no_strong_source"
+      ],
+      "expectedConflictSignal": false,
+      "expectedReadStateClass": "none",
+      "evidence": [],
+      "citations": []
+    },
+    {
+      "id": "duplicate-heavy-control",
+      "category": "evaluation_control_duplicate_heavy",
+      "requiresFreshness": false,
+      "requiresPrimaryOrDocs": false,
+      "minimumHostDiversity": 1,
+      "expectedGapCodes": [],
+      "expectedConflictSignal": false,
+      "expectedReadStateClass": "read",
+      "evidence": [
+        {
+          "sourceId": "S1",
+          "url": "https://dup.example/page?utm_source=a",
+          "sourceType": "reference",
+          "freshnessClass": "evergreen",
+          "readState": "read_success",
+          "excerpt": "Same item."
+        },
+        {
+          "sourceId": "S2",
+          "url": "https://dup.example/page?utm_source=b",
+          "sourceType": "reference",
+          "freshnessClass": "evergreen",
+          "readState": "read_success",
+          "excerpt": "Same item."
+        }
+      ],
+      "citations": [
+        "S1"
+      ]
+    }
+  ]
+}

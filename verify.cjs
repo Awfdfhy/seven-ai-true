@@ -450,6 +450,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  });
  await test('web search gateway joins the parallel pool and reader upgrades source state',async()=>{
   const r=await page.evaluate(async()=>{
+    SevenSearchV2.clearCache();
     const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
     SEARCH_GATEWAY_URL='https://gateway.example';SEARCH_GATEWAY_KEY='gateway-secret-fixture';
     fetchWithTimeout=async (url,opts)=>{
@@ -486,6 +487,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  });
  await test('web search gateway failure degrades truthfully to limited capability',async()=>{
   const r=await page.evaluate(async()=>{
+    SevenSearchV2.clearCache();
     const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
     SEARCH_GATEWAY_URL='https://gateway.example';SEARCH_GATEWAY_KEY='';
     fetchWithTimeout=async (url)=>{
@@ -503,6 +505,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  });
  await test('web search gateway reader failure stays explicit and preserves snippet evidence',async()=>{
   const r=await page.evaluate(async()=>{
+    SevenSearchV2.clearCache();
     const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
     SEARCH_GATEWAY_URL='https://gateway.example';SEARCH_GATEWAY_KEY='';
     fetchWithTimeout=async (url,opts)=>{
@@ -521,6 +524,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  });
  await test('web search gateway disabled preserves knowledge-sources-only behavior',async()=>{
   const r=await page.evaluate(async()=>{
+    SevenSearchV2.clearCache();
     const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
     SEARCH_GATEWAY_URL='';SEARCH_GATEWAY_KEY='should-not-be-used';
     fetchWithTimeout=async url=>{
@@ -648,6 +652,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  });
  await test('web search diagnostics expose freshness/source distributions without evidence bodies',async()=>{
   const r=await page.evaluate(async()=>{
+    SevenSearchV2.clearCache();
     const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
     SEARCH_GATEWAY_URL='';SEARCH_GATEWAY_KEY='';
     fetchWithTimeout=async url=>{
@@ -734,6 +739,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  });
  await test('web search insufficient first wave triggers exactly one bounded follow-up wave',async()=>{
   const r=await page.evaluate(async()=>{
+    SevenSearchV2.clearCache();
     const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
     SEARCH_GATEWAY_URL='';SEARCH_GATEWAY_KEY='';
     let ddgCalls=0;
@@ -757,6 +763,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  });
  await test('web search sufficient first wave avoids follow-up latency',async()=>{
   const r=await page.evaluate(async()=>{
+    SevenSearchV2.clearCache();
     const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
     SEARCH_GATEWAY_URL='https://gateway.example';SEARCH_GATEWAY_KEY='';
     let searchCalls=0,readCalls=0;
@@ -787,6 +794,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  });
  await test('web search follow-up preserves prior read state and does not reread same successful URL',async()=>{
   const r=await page.evaluate(async()=>{
+    SevenSearchV2.clearCache();
     const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
     SEARCH_GATEWAY_URL='https://gateway.example';SEARCH_GATEWAY_KEY='';
     const reads={};
@@ -834,6 +842,154 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   assert.equal(r.hasWave,true);assert.equal(r.secret,false);assert.equal(r.body,false);
  });
 
+ await test('web search Batch 5 cache policy keeps current TTL shorter than evergreen TTL',async()=>{
+  const r=await page.evaluate(()=>SevenSearchV2.cachePolicy());
+  assert.ok(r.currentQueryTtlMs<r.evergreenQueryTtlMs);assert.ok(r.currentPageTtlMs<r.evergreenPageTtlMs);assert.equal(r.queryMaxEntries,80);assert.equal(r.pageMaxEntries,40);
+ });
+ await test('web search Batch 5 repeated adapter query hits cache and avoids network',async()=>{
+  const r=await page.evaluate(async()=>{
+    SevenSearchV2.clearCache();
+    SevenSearchV2.clearCache();
+    const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
+    SEARCH_GATEWAY_URL='';SEARCH_GATEWAY_KEY='';
+    let calls=0;
+    fetchWithTimeout=async url=>{
+      calls++;
+      const s=String(url);
+      if(s.includes('api.duckduckgo.com'))return {ok:true,json:async()=>({Heading:'Cache Alpha',AbstractText:'cache alpha independent evidence',AbstractURL:'https://ddg.example/cache-alpha',RelatedTopics:[]})};
+      if(s.includes('wikipedia.org')&&s.includes('list=search'))return {ok:true,json:async()=>({query:{search:[{title:'Cache Alpha',snippet:'cache alpha reference evidence'}]}})};
+      if(s.includes('wikipedia.org')&&s.includes('prop=extracts'))return {ok:true,json:async()=>({query:{pages:{1:{extract:'Cache Alpha reference evidence full introduction'}}}})};
+      return {ok:false,json:async()=>({})};
+    };
+    try{
+      const first=await performWebSearchV2('cache alpha');
+      const afterFirst=calls;
+      const second=await performWebSearchV2('cache alpha');
+      return {afterFirst,afterSecond:calls,first:first?.diagnostics,second:second?.diagnostics,cache:SevenSearchV2.cacheSnapshot()};
+    }finally{fetchWithTimeout=oldFetch;SEARCH_GATEWAY_URL=oldUrl;SEARCH_GATEWAY_KEY=oldKey;SevenSearchV2.clearCache();}
+  });
+  assert.ok(r.afterFirst>=2);assert.equal(r.afterSecond,r.afterFirst);assert.ok(r.second.queryCacheHits>=2);assert.equal(r.second.networkSearchRequests,0);assert.ok(r.cache.queryEntries>=2);
+ });
+ await test('web search Batch 5 page cache prevents duplicate reader calls',async()=>{
+  const r=await page.evaluate(async()=>{
+    SevenSearchV2.clearCache();
+    SevenSearchV2.clearCache();
+    const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
+    SEARCH_GATEWAY_URL='https://gateway.example';SEARCH_GATEWAY_KEY='';
+    let readerCalls=0;
+    fetchWithTimeout=async (url,opts)=>{
+      const s=String(url);
+      if(s==='https://gateway.example/v1/search')return {ok:true,json:async()=>({capability:'general_web',backend:'fixture',results:[
+        {title:'Cache docs A',url:'https://docs-a.example/page',snippet:'cache docs official documentation reference',rank:1,sourceType:'documentation'},
+        {title:'Cache docs B',url:'https://docs-b.example/page',snippet:'cache docs official guide reference',rank:2,sourceType:'official'}
+      ]})};
+      if(s==='https://gateway.example/v1/read'){
+        readerCalls++;const body=JSON.parse(opts.body);
+        return {ok:true,json:async()=>({readState:'read_success',title:'Read',text:'cache docs official documentation reference full page',finalUrl:body.url,contentType:'text/html',injectionSuspected:false})};
+      }
+      if(s.includes('api.duckduckgo.com'))return {ok:true,json:async()=>({RelatedTopics:[]})};
+      if(s.includes('wikipedia.org'))return {ok:true,json:async()=>({query:{search:[]}})};
+      return {ok:false,json:async()=>({})};
+    };
+    try{
+      const first=await performWebSearchV2('cache docs');
+      const firstCalls=readerCalls;
+      const second=await performWebSearchV2('cache docs');
+      return {firstCalls,secondCalls:readerCalls,first:first?.diagnostics,second:second?.diagnostics,cache:SevenSearchV2.cacheSnapshot()};
+    }finally{fetchWithTimeout=oldFetch;SEARCH_GATEWAY_URL=oldUrl;SEARCH_GATEWAY_KEY=oldKey;SevenSearchV2.clearCache();}
+  });
+  assert.equal(r.firstCalls,2);assert.equal(r.secondCalls,r.firstCalls);assert.ok(r.second.pageCacheHits>=2);assert.equal(r.second.readerNetworkRequests,0);assert.ok(r.cache.pageEntries>=2);
+ });
+ await test('web search Batch 5 cache remains bounded under many unique searches',async()=>{
+  const r=await page.evaluate(async()=>{
+    SevenSearchV2.clearCache();
+    SevenSearchV2.clearCache();
+    const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
+    SEARCH_GATEWAY_URL='';SEARCH_GATEWAY_KEY='';
+    fetchWithTimeout=async url=>{
+      const s=String(url);
+      if(s.includes('api.duckduckgo.com'))return {ok:true,json:async()=>({RelatedTopics:[]})};
+      if(s.includes('wikipedia.org'))return {ok:true,json:async()=>({query:{search:[]}})};
+      return {ok:false,json:async()=>({})};
+    };
+    try{
+      for(let i=0;i<16;i++)await performWebSearchV2('bounded-cache-'+i);
+      return SevenSearchV2.cacheSnapshot();
+    }finally{fetchWithTimeout=oldFetch;SEARCH_GATEWAY_URL=oldUrl;SEARCH_GATEWAY_KEY=oldKey;SevenSearchV2.clearCache();}
+  });
+  assert.ok(r.queryEntries<=r.queryMaxEntries);assert.ok(r.pageEntries<=r.pageMaxEntries);
+ });
+ await test('web search Batch 5 sufficient search emits truthful stages without fake reading',async()=>{
+  const r=await page.evaluate(async()=>{
+    SevenSearchV2.clearCache();
+    SevenSearchV2.clearCache();
+    const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
+    SEARCH_GATEWAY_URL='';SEARCH_GATEWAY_KEY='';
+    const stages=[];
+    fetchWithTimeout=async url=>{
+      const s=String(url);
+      if(s.includes('api.duckduckgo.com'))return {ok:true,json:async()=>({Heading:'Stage Alpha',AbstractText:'stage alpha independent evidence',AbstractURL:'https://stage-a.example/item',RelatedTopics:[]})};
+      if(s.includes('wikipedia.org')&&s.includes('list=search'))return {ok:true,json:async()=>({query:{search:[{title:'Stage Alpha',snippet:'stage alpha reference evidence'}]}})};
+      if(s.includes('wikipedia.org')&&s.includes('prop=extracts'))return {ok:true,json:async()=>({query:{pages:{1:{extract:'Stage Alpha reference evidence full introduction'}}}})};
+      return {ok:false,json:async()=>({})};
+    };
+    try{
+      const out=await performWebSearchV2('stage alpha',{onStage:s=>stages.push(s)});
+      return {stages,diag:out?.diagnostics};
+    }finally{fetchWithTimeout=oldFetch;SEARCH_GATEWAY_URL=oldUrl;SEARCH_GATEWAY_KEY=oldKey;SevenSearchV2.clearCache();}
+  });
+  assert.deepEqual(r.stages.map(x=>x.name),['planning','searching','checking','answering']);assert.equal(r.stages.some(x=>x.name==='reading'),false);assert.equal(r.stages.some(x=>x.name==='follow_up'),false);
+ });
+ await test('web search Batch 5 follow-up stage appears only for insufficient evidence',async()=>{
+  const r=await page.evaluate(async()=>{
+    SevenSearchV2.clearCache();
+    SevenSearchV2.clearCache();
+    const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
+    SEARCH_GATEWAY_URL='';SEARCH_GATEWAY_KEY='';
+    const stages=[];
+    fetchWithTimeout=async url=>{
+      const s=String(url);
+      if(s.includes('api.duckduckgo.com')){
+        const q=new URL(s).searchParams.get('q')||'';
+        if(q.includes('independent source'))return {ok:true,json:async()=>({Heading:'Follow Two',AbstractText:'follow stage independent evidence',AbstractURL:'https://follow-two.example/page',RelatedTopics:[]})};
+        return {ok:true,json:async()=>({Heading:'Follow One',AbstractText:'follow stage evidence',AbstractURL:'https://follow-one.example/page',RelatedTopics:[]})};
+      }
+      if(s.includes('wikipedia.org'))return {ok:true,json:async()=>({query:{search:[]}})};
+      return {ok:false,json:async()=>({})};
+    };
+    try{
+      const out=await performWebSearchV2('follow stage',{onStage:s=>stages.push(s)});
+      return {names:stages.map(x=>x.name),diag:out?.diagnostics};
+    }finally{fetchWithTimeout=oldFetch;SEARCH_GATEWAY_URL=oldUrl;SEARCH_GATEWAY_KEY=oldKey;SevenSearchV2.clearCache();}
+  });
+  assert.ok(r.names.includes('follow_up'));assert.equal(r.diag.followUpWaveCount,1);assert.ok(r.names.indexOf('follow_up')>r.names.indexOf('checking'));
+ });
+ await test('web search Batch 5 stage payload never exposes query body source body or gateway key',async()=>{
+  const r=await page.evaluate(async()=>{
+    SevenSearchV2.clearCache();
+    SevenSearchV2.clearCache();
+    const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
+    SEARCH_GATEWAY_URL='';SEARCH_GATEWAY_KEY='gateway-secret-should-not-appear';
+    const stages=[];
+    fetchWithTimeout=async url=>{
+      const s=String(url);
+      if(s.includes('api.duckduckgo.com'))return {ok:true,json:async()=>({RelatedTopics:[]})};
+      if(s.includes('wikipedia.org'))return {ok:true,json:async()=>({query:{search:[]}})};
+      return {ok:false,json:async()=>({})};
+    };
+    try{
+      await performWebSearchV2('TOPSECRET_QUERY_123',{onStage:s=>stages.push(s)});
+      const raw=JSON.stringify(stages);
+      return {raw,diag:JSON.stringify(SevenSearchV2.snapshot()||{})};
+    }finally{fetchWithTimeout=oldFetch;SEARCH_GATEWAY_URL=oldUrl;SEARCH_GATEWAY_KEY=oldKey;SevenSearchV2.clearCache();}
+  });
+  assert.equal(r.raw.includes('TOPSECRET_QUERY_123'),false);assert.equal(r.raw.includes('gateway-secret-should-not-appear'),false);assert.equal(r.diag.includes('TOPSECRET_QUERY_123'),false);assert.equal(r.diag.includes('gateway-secret-should-not-appear'),false);
+ });
+ await test('web search Batch 5 cache diagnostics expose counts only',async()=>{
+  const r=await page.evaluate(()=>{const snap=SevenSearchV2.cacheSnapshot(),raw=JSON.stringify(snap);return {snap,raw};});
+  assert.ok(Object.keys(r.snap).every(k=>['schemaVersion','queryEntries','pageEntries','queryMaxEntries','pageMaxEntries'].includes(k)));assert.equal(/https?:|query|snippet|gateway-secret|api[_-]?key/i.test(r.raw.replace(/queryEntries|queryMaxEntries/g,'')),false);
+ });
+
  await test('web search Batch 4 polish flags explicit polarity disagreement conservatively',async()=>{
   const r=await page.evaluate(()=>SevenSearchV2.conflicts([
     {evidenceId:'E1',sourceId:'S1',title:'Feature support',url:'https://one.example/a',excerpt:'This feature is supported and available on Android.',engine:'a',queryId:'q1',readState:'read_success',sourceType:'documentation',language:'en',freshnessClass:'current'},
@@ -843,6 +999,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  });
  await test('web search Batch 4 polish exposes bounded follow-up query diagnostics',async()=>{
   const r=await page.evaluate(async()=>{
+    SevenSearchV2.clearCache();
     const oldRun=runSearchWaveV2,oldRead=readTopSearchCandidatesV2;let wave=0;
     runSearchWaveV2=async()=>{
       wave++;
@@ -857,7 +1014,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
     try{
       const out=await performWebSearchV2('coverage topic');
       return {queries:out.diagnostics.followUpQueries,count:out.diagnostics.followUpCount,waves:out.diagnostics.followUpWaveCount};
-    }finally{runSearchWaveV2=oldRun;readTopSearchCandidatesV2=oldRead;}
+    }finally{runSearchWaveV2=oldRun;readTopSearchCandidatesV2=oldRead;SevenSearchV2.clearCache();}
   });
   assert.ok(Array.isArray(r.queries));assert.equal(r.queries.length,r.count);assert.ok(r.queries.length<=2);assert.equal(r.waves,r.queries.length?1:0);
  });
