@@ -50,4 +50,5 @@ if(require.main===module){
   const out=materializeRemakeAssets();
   console.log("Seven UI Remake materialization: PASS ("+out.map(x=>x.name+":"+x.bytes).join(", ")+")");
 }
+// Seven 2.4.1 root-state bridge verified by release/browser + Android device gates.
 module.exports=Object.freeze({FILES,materializeRemakeAssets,applyCompatibilityFixes});
