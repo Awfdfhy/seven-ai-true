@@ -168,7 +168,7 @@ The detailed execution specification for the current first item lives in:
 
 ## Post-2.1 latency polish
 
-### Deep Think Speed Polish ⏳ MERGED, ANDROID GATE PENDING
+### Deep Think Speed Polish ✅ COMPLETE
 
 Purpose: reduce Send → final-answer latency without removing Deep Think's two-pass architecture or strongest supported reasoning effort.
 
@@ -176,4 +176,6 @@ Plan: `plans/DEEP_THINK_SPEED_POLISH.md`
 Implementation PR: #25
 Merge SHA: `f0e67e13731746e36483bb292202ebbdc0a7cc32`
 Browser CI: #2173 PASS
-Android release gate: #286 pending.
+Android release gate: #286 PASS.
+
+- 2026-10-02: Deep Think Speed Polish completed after Android gate #286 passed, including Android lint, unit tests, APK build/verification, API 36 WebView emulator smoke, and artifact upload. Next: measured latency optimization before any hedging/cache work.
