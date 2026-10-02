@@ -1,6 +1,6 @@
 "use strict";
 const fs=require("fs"),path=require("path");
-const ROOT=path.resolve(__dirname,".."),MAIN=path.join(ROOT,"android","app","src","main","java","ai","seven","app","MainActivity.java");
+const ROOT=path.resolve(__dirname,".."),CONFIG=JSON.parse(fs.readFileSync(path.join(ROOT,"capacitor.config.json"),"utf8")),APP_ID=String(CONFIG.appId||"").trim(),MAIN=path.join(ROOT,"android","app","src","main","java",...APP_ID.split("."),"MainActivity.java");
 if(!fs.existsSync(MAIN))throw new Error("generated MainActivity missing");
 let source=fs.readFileSync(MAIN,"utf8");
 if(!source.includes("registerPlugin(SevenPlatformPlugin.class)"))throw new Error("SevenPlatform registration missing; refusing blind Android motion bridge injection");
