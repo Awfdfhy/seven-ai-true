@@ -10,7 +10,9 @@
     "test": "node all.cjs",
     "build:web": "node release/build-release.cjs && node apk/prepare-web.cjs",
     "android:generate": "npm run build:web && node apk/prepare-assets.cjs && rm -rf android && npx cap add android && npx capacitor-assets generate --android --assetPath assets --iconBackgroundColor '#121026' --iconBackgroundColorDark '#121026' --splashBackgroundColor '#121026' --splashBackgroundColorDark '#121026' && node apk/patch-android.cjs && npx cap sync android",
-    "android:verify": "node apk/verify-apk.cjs"
+    "android:verify": "node apk/verify-apk.cjs",
+    "test:gateway": "node cloudflare/search-gateway/search-gateway.test.mjs",
+    "eval:search-live": "node eval/live-search-quality.mjs"
   },
   "dependencies": {
     "@capacitor/android": "8.5.1",
