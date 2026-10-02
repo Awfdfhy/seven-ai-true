@@ -4576,7 +4576,8 @@
             const contextText=buildSearchContextTextV2(ranked);
             const sources=ranked.slice(0,SEARCH_V2.maxContextSources).map((c,index)=>({
                 id:"S"+(index+1),title:c.title,url:c.url,engine:c.engine,language:c.language,
-                readState:c.readState,sourceType:c.sourceType,score:c.score,queryId:c.queryId
+                readState:c.readState,sourceType:c.sourceType,score:c.score,queryId:c.queryId,
+                capability:"knowledge_sources_only"
             }));
             lastSearchV2Diagnostics={
                 version:2,status:contextText?"partial":"no_results",capability:"knowledge_sources_only",
@@ -4723,7 +4724,8 @@
             if (!wrapper) return;
             const sourcesDiv = document.createElement("div");
             sourcesDiv.className = "search-sources";
-            sourcesDiv.appendChild(document.createTextNode("Sources:"));
+            const limitedCoverage=sources.length>0&&sources.every(source=>source?.capability==="knowledge_sources_only");
+            sourcesDiv.appendChild(document.createTextNode(limitedCoverage?"Sources (limited search coverage):":"Sources:"));
             const list = document.createElement("ul");
             for (const source of sources) {
                 const href = safeHttpUrl(source && source.url);
