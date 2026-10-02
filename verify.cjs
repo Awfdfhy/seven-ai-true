@@ -450,6 +450,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  });
  await test('web search gateway joins the parallel pool and reader upgrades source state',async()=>{
   const r=await page.evaluate(async()=>{
+    SevenSearchV2.clearCache();
     const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
     SEARCH_GATEWAY_URL='https://gateway.example';SEARCH_GATEWAY_KEY='gateway-secret-fixture';
     fetchWithTimeout=async (url,opts)=>{
@@ -486,6 +487,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  });
  await test('web search gateway failure degrades truthfully to limited capability',async()=>{
   const r=await page.evaluate(async()=>{
+    SevenSearchV2.clearCache();
     const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
     SEARCH_GATEWAY_URL='https://gateway.example';SEARCH_GATEWAY_KEY='';
     fetchWithTimeout=async (url)=>{
@@ -503,6 +505,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  });
  await test('web search gateway reader failure stays explicit and preserves snippet evidence',async()=>{
   const r=await page.evaluate(async()=>{
+    SevenSearchV2.clearCache();
     const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
     SEARCH_GATEWAY_URL='https://gateway.example';SEARCH_GATEWAY_KEY='';
     fetchWithTimeout=async (url,opts)=>{
@@ -521,6 +524,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  });
  await test('web search gateway disabled preserves knowledge-sources-only behavior',async()=>{
   const r=await page.evaluate(async()=>{
+    SevenSearchV2.clearCache();
     const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
     SEARCH_GATEWAY_URL='';SEARCH_GATEWAY_KEY='should-not-be-used';
     fetchWithTimeout=async url=>{
@@ -648,6 +652,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  });
  await test('web search diagnostics expose freshness/source distributions without evidence bodies',async()=>{
   const r=await page.evaluate(async()=>{
+    SevenSearchV2.clearCache();
     const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
     SEARCH_GATEWAY_URL='';SEARCH_GATEWAY_KEY='';
     fetchWithTimeout=async url=>{
@@ -734,6 +739,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  });
  await test('web search insufficient first wave triggers exactly one bounded follow-up wave',async()=>{
   const r=await page.evaluate(async()=>{
+    SevenSearchV2.clearCache();
     const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
     SEARCH_GATEWAY_URL='';SEARCH_GATEWAY_KEY='';
     let ddgCalls=0;
@@ -757,6 +763,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  });
  await test('web search sufficient first wave avoids follow-up latency',async()=>{
   const r=await page.evaluate(async()=>{
+    SevenSearchV2.clearCache();
     const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
     SEARCH_GATEWAY_URL='https://gateway.example';SEARCH_GATEWAY_KEY='';
     let searchCalls=0,readCalls=0;
@@ -787,6 +794,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  });
  await test('web search follow-up preserves prior read state and does not reread same successful URL',async()=>{
   const r=await page.evaluate(async()=>{
+    SevenSearchV2.clearCache();
     const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
     SEARCH_GATEWAY_URL='https://gateway.example';SEARCH_GATEWAY_KEY='';
     const reads={};
@@ -841,6 +849,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  await test('web search Batch 5 repeated adapter query hits cache and avoids network',async()=>{
   const r=await page.evaluate(async()=>{
     SevenSearchV2.clearCache();
+    SevenSearchV2.clearCache();
     const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
     SEARCH_GATEWAY_URL='';SEARCH_GATEWAY_KEY='';
     let calls=0;
@@ -863,6 +872,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  });
  await test('web search Batch 5 page cache prevents duplicate reader calls',async()=>{
   const r=await page.evaluate(async()=>{
+    SevenSearchV2.clearCache();
     SevenSearchV2.clearCache();
     const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
     SEARCH_GATEWAY_URL='https://gateway.example';SEARCH_GATEWAY_KEY='';
@@ -893,6 +903,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  await test('web search Batch 5 cache remains bounded under many unique searches',async()=>{
   const r=await page.evaluate(async()=>{
     SevenSearchV2.clearCache();
+    SevenSearchV2.clearCache();
     const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
     SEARCH_GATEWAY_URL='';SEARCH_GATEWAY_KEY='';
     fetchWithTimeout=async url=>{
@@ -910,6 +921,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  });
  await test('web search Batch 5 sufficient search emits truthful stages without fake reading',async()=>{
   const r=await page.evaluate(async()=>{
+    SevenSearchV2.clearCache();
     SevenSearchV2.clearCache();
     const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
     SEARCH_GATEWAY_URL='';SEARCH_GATEWAY_KEY='';
@@ -930,6 +942,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  });
  await test('web search Batch 5 follow-up stage appears only for insufficient evidence',async()=>{
   const r=await page.evaluate(async()=>{
+    SevenSearchV2.clearCache();
     SevenSearchV2.clearCache();
     const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
     SEARCH_GATEWAY_URL='';SEARCH_GATEWAY_KEY='';
@@ -953,6 +966,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  });
  await test('web search Batch 5 stage payload never exposes query body source body or gateway key',async()=>{
   const r=await page.evaluate(async()=>{
+    SevenSearchV2.clearCache();
     SevenSearchV2.clearCache();
     const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
     SEARCH_GATEWAY_URL='';SEARCH_GATEWAY_KEY='gateway-secret-should-not-appear';
