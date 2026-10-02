@@ -1,7 +1,7 @@
 # Web Search v2 — Batch 7: Deep Research Integration
 
 Date: 2026-10-02
-Status: IN IMPLEMENTATION
+Status: COMPLETE — browser CI #2331 PASS; Android APK #296 PASS
 Parent: WEB_SEARCH_OVERHAUL_V2.md
 Depends on: Batches 1–6 COMPLETE
 
@@ -372,3 +372,12 @@ Batch 7 is complete when:
 - final synthesis receives bounded auditable evidence with R# IDs;
 - incomplete evidence is represented truthfully;
 - browser and Android gates pass.
+
+## Completion record
+
+- Runtime implementation: `1416d84a9198e3c2e2a841de1fb874d3ac9f314a`
+- Verification/export completion: `7fc0ac30d8ba4c67d3f44de96a1213ee0b1dcf9c`
+- Browser CI: Seven AI tests #2331 — PASS
+- Android release gate: Seven Android APK #296 — PASS
+- Android evidence: lint, unit tests, APK build/verification, Android 16 / API 36 WebView smoke, final APK verification, artifact upload — PASS
+- Batch 7 acceptance criteria: COMPLETE
