@@ -16,17 +16,18 @@ function sha(b){return crypto.createHash("sha256").update(b).digest("hex");}
 function applyCompatibilityFixes(name,raw){
   let text=Buffer.isBuffer(raw)?raw.toString("utf8"):String(raw);
   if(name==="remake.css"){
-    const replacements=[
-      ['#seven-app[data-seven-theme="night"]','[data-seven-theme="night"] #seven-app'],
-      ['#seven-app[dir=rtl]','[dir=rtl] #seven-app'],
-      ['#seven-app[lang=ar]','[lang=ar] #seven-app'],
-      ['#seven-app[data-seven-shell-sidebar=open]','[data-seven-shell-sidebar=open] #seven-app'],
-      ['#seven-app body','#seven-app']
-    ];
-    for(const [from,to] of replacements){
-      if(!text.includes(from))throw new Error("Seven UI Remake compatibility anchor missing: "+from);
-      text=text.split(from).join(to);
-    }
+    if(!text.includes('#seven-app body'))throw new Error("Seven UI Remake body-scope anchor missing");
+    text=text.split('#seven-app body').join('#seven-app');
+  }
+  if(name==="remake.js"){
+    const bootAnchor="d.documentElement.lang=language;d.documentElement.dir=language==='ar'?'rtl':'ltr';r.SevenRemake={version:'2.0.0',update,openWorkspace,searchSettings,depthDialog,modeDialog,closeDialog,welcome,t:T};";
+    const bootFixed="d.documentElement.lang=language;d.documentElement.dir=language==='ar'?'rtl':'ltr';const appRoot=d.getElementById('seven-app');if(appRoot){appRoot.lang=language;appRoot.dir=d.documentElement.dir;appRoot.dataset.sevenTheme=r.SevenTheme?.getResolvedTheme?.()||d.documentElement.dataset.sevenTheme||'day';}r.SevenRemake={version:'2.0.1',update,openWorkspace,searchSettings,depthDialog,modeDialog,closeDialog,welcome,t:T};";
+    if(!text.includes(bootAnchor))throw new Error("Seven UI Remake root-state boot anchor missing");
+    text=text.replace(bootAnchor,bootFixed);
+    const eventAnchor="d.addEventListener('seven:workspacechange',()=>{update();localizeWorkspace()});d.addEventListener('seven:runprogress',()=>{update()});d.addEventListener('seven:intelligenceconfig',update);";
+    const eventFixed="d.addEventListener('seven:workspacechange',()=>{update();localizeWorkspace()});d.addEventListener('seven:runprogress',()=>{update()});d.addEventListener('seven:intelligenceconfig',update);d.addEventListener('seven:themechange',e=>{const root=d.getElementById('seven-app');if(root)root.dataset.sevenTheme=e?.detail?.theme||r.SevenTheme?.getResolvedTheme?.()||d.documentElement.dataset.sevenTheme||'day';update()});";
+    if(!text.includes(eventAnchor))throw new Error("Seven UI Remake theme event anchor missing");
+    text=text.replace(eventAnchor,eventFixed);
   }
   return Buffer.from(text);
 }
