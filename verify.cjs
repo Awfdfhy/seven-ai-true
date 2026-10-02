@@ -138,5 +138,46 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   const r=await page.evaluate(()=>{const model={provider:'groq',id:'delegate-v2-fixture'};const key=freeHealthKey(model.provider,model.id),old=freeModelHealth[key];freeModelHealth[key]=normalizeHealthRecordV2({successes:8,failures:0,lastSuccessAt:Date.now(),consecutiveSuccesses:3});const a=SevenModelIntelligenceV3.health(model),b=SevenProviderHealthV2.score(model.provider,model.id);if(old===undefined)delete freeModelHealth[key];else freeModelHealth[key]=old;return {a,b}});
   assert.deepEqual(r.a,r.b);
  });
+
+ await test('memory scope hardening writes ordinary memory as explicit global private',async()=>{
+  const r=await page.evaluate(()=>{const m=addMemory('Scope hardening global fixture '+Date.now());if(!m)return null;const out={scope:m.scope,scopeRef:m.scopeRef,access:m.access,visible:isMemoryVisibleInScope(m,normalizeMemoryScopeContext({allowGlobal:true}))};deleteMemory(m.id);return out});
+  assert.deepEqual(r,{scope:'user',scopeRef:'global',access:'private',visible:true});
+ });
+ await test('memory scope hardening isolates room memories',async()=>{
+  const r=await page.evaluate(()=>{const m=addScopedMemory('Room isolated memory '+Date.now(),'room','room-alpha');if(!m)return null;const a=isMemoryVisibleInScope(m,{roomId:'room-alpha'}),b=isMemoryVisibleInScope(m,{roomId:'room-beta'});deleteMemory(m.id);return {a,b,scope:m.scope,ref:m.scopeRef}});
+  assert.deepEqual(r,{a:true,b:false,scope:'conversation',ref:'room-alpha'});
+ });
+ await test('memory scope hardening isolates project and RPG memories',async()=>{
+  const r=await page.evaluate(()=>{const p=addScopedMemory('Project scoped fixture '+Date.now(),'project','project-one');const g=addScopedMemory('RPG scoped fixture '+Date.now(),'rpg','world-one');const out={p1:isMemoryVisibleInScope(p,{projectId:'project-one'}),p2:isMemoryVisibleInScope(p,{projectId:'project-two'}),g1:isMemoryVisibleInScope(g,{rpgId:'world-one'}),g2:isMemoryVisibleInScope(g,{rpgId:'world-two'}),rpgScope:g.scope};deleteMemory(p.id);deleteMemory(g.id);return out});
+  assert.deepEqual(r,{p1:true,p2:false,g1:true,g2:false,rpgScope:'rpg'});
+ });
+ await test('memory scope hardening permits same content in isolated scopes',async()=>{
+  const r=await page.evaluate(()=>{const content='Same scoped content '+Date.now();const a=addScopedMemory(content,'room','dup-room-a');const b=addScopedMemory(content,'room','dup-room-b');const ok=!!a&&!!b&&a.id!==b.id; if(a)deleteMemory(a.id);if(b)deleteMemory(b.id);return ok});
+  assert.equal(r,true);
+ });
+ await test('memory scope hardening excludes restricted memory by default',async()=>{
+  const r=await page.evaluate(()=>{const m=addMemoryRecord({content:'Restricted scoped fixture '+Date.now(),scope:'user',scopeRef:'global',access:'restricted'},{allowDuplicate:true});const hidden=isMemoryVisibleInScope(m,{allowGlobal:true}),allowed=isMemoryVisibleInScope(m,{allowGlobal:true,allowRestricted:true});deleteMemory(m.id);return {hidden,allowed}});
+  assert.deepEqual(r,{hidden:false,allowed:true});
+ });
+ await test('memory scope hardening keeps legacy unscoped canonical memory globally compatible',async()=>{
+  const r=await page.evaluate(()=>{const m=addMemoryRecord({content:'Legacy scope fixture '+Date.now(),scope:null,scopeRef:null,access:null},{allowDuplicate:true});const global=isMemoryVisibleInScope(m,{allowLegacyGlobal:true}),strict=isMemoryVisibleInScope(m,{allowLegacyGlobal:false});deleteMemory(m.id);return {global,strict}});
+  assert.deepEqual(r,{global:true,strict:false});
+ });
+ await test('memory scope hardening blocks relation expansion across rooms',async()=>{
+  const r=await page.evaluate(()=>{const stamp=Date.now();const secret=addMemoryRecord({content:'alpha relation secret '+stamp,scope:'conversation',scopeRef:'relation-room-b',access:'private'},{allowDuplicate:true});const anchor=addMemoryRecord({content:'alpha relation anchor '+stamp,scope:'conversation',scopeRef:'relation-room-a',access:'private',relations:[secret.id]},{allowDuplicate:true});const result=retrieveMemoryIntelligence('remember alpha relation anchor',5,{roomId:'relation-room-a'});const ids=result.memories.map(x=>x.id);deleteMemory(anchor.id);deleteMemory(secret.id);return {anchor:ids.includes(anchor.id),secret:ids.includes(secret.id),scoped:result.diagnostics.scopedEligible}});
+  assert.equal(r.anchor,true);assert.equal(r.secret,false);assert.ok(r.scoped>=1);
+ });
+ await test('memory scope hardening blocks evidence expansion across rooms',async()=>{
+  const r=await page.evaluate(()=>{const stamp=Date.now();const evidence=addMemoryRecord({content:'scope evidence hidden '+stamp,scope:'conversation',scopeRef:'evidence-room-b',access:'private'},{allowDuplicate:true});const owner=addMemoryRecord({content:'scope evidence owner '+stamp,scope:'conversation',scopeRef:'evidence-room-a',access:'private',evidenceRefs:[{type:'memory',relation:'supports',source:evidence.id}]},{allowDuplicate:true});const result=reconstructMemoryContext('remember scope evidence owner',{primaryLimit:3,evidenceLimit:6,scopeContext:{roomId:'evidence-room-a'}});const ids=result.items.map(x=>x.id);deleteMemory(owner.id);deleteMemory(evidence.id);return {owner:ids.includes(owner.id),evidence:ids.includes(evidence.id)}});
+  assert.equal(r.owner,true);assert.equal(r.evidence,false);
+ });
+ await test('memory scope hardening active chat context binds current room',async()=>{
+  const r=await page.evaluate(()=>{const ctx=getActiveMemoryScopeContext({roomId:'bound-room'});return {roomId:ctx.roomId,global:ctx.allowGlobal,shared:ctx.allowShared,restricted:ctx.allowRestricted}});
+  assert.deepEqual(r,{roomId:'bound-room',global:true,shared:false,restricted:false});
+ });
+ await test('memory scope metadata survives update and canonical backup validation',async()=>{
+  const r=await page.evaluate(()=>{const m=addScopedMemory('Scope export fixture '+Date.now(),'project','export-project');const updated=updateMemoryRecord(m.id,{content:m.content+' updated'});const payload=buildCanonicalBackupPayload();const valid=validateCanonicalBackupPayload(payload);const saved=payload.objects.memory.memories.find(x=>x.id===m.id);deleteMemory(m.id);return {updated:!!updated,valid:valid.valid,scope:saved&&saved.scope,ref:saved&&saved.scopeRef,access:saved&&saved.access}});
+  assert.deepEqual(r,{updated:true,valid:true,scope:'project',ref:'export-project',access:'private'});
+ });
  await browser.close();server.close();fs.writeFileSync(require('path').join(__dirname,'results.json'),JSON.stringify({results,liveProviderCalls:false},null,2));
 })().catch(e=>{console.error(e);server.close();process.exit(1)});
