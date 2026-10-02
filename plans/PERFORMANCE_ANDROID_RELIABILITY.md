@@ -1,7 +1,7 @@
 # Performance + Android Reliability — Detailed Execution Specification
 
 Date: 2026-10-02
-Status: MERGED — Android main-branch release gate pending
+Status: COMPLETE — browser CI + Android main-branch release gate passed
 Parent roadmap: ../SEVEN_POLISH_ROADMAP.md
 
 ## Objective
@@ -133,3 +133,21 @@ This final 2.1 stage is complete only when:
 - Browser CI run: Seven AI tests #2161 — PASS
 - Squash merge SHA: `7aae45341cea8b2b892f2ec0fdf5916892b29e2d`
 - Remaining gate: Android main workflow (lint + unit tests + APK build + package verification + API 36 WebView emulator smoke + final APK verification).
+
+## Android completion evidence
+
+- Main merge SHA: `7aae45341cea8b2b892f2ec0fdf5916892b29e2d`
+- Android workflow: Seven Android APK #285
+- Workflow run id: `36984019445`
+- Result: PASS
+- Pre-APK Seven release gate: PASS
+- Android lint + unit tests + debug APK build: PASS
+- Packaged APK verification: PASS
+- Android 16 / API 36 WebView emulator smoke test: PASS
+- Post-device APK verification: PASS
+- Installable APK artifact upload: PASS
+- Evidence limitation: emulator evidence only; this is not a physical-device test.
+
+## Final 2.1 status
+
+Performance + Android Reliability is complete. Together with Model Intelligence v3, Provider Health v2, Memory Scope Hardening, and UI Simplification, the Seven AI 2.1 Intelligence & Reliability Polish milestone is complete.
