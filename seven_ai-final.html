@@ -2699,6 +2699,17 @@
             return {score,state:score>=.72?"healthy":(score>=.50?"degraded":"poor"),latencyMs:own.latencyMs||provider.latencyMs||0};
         }
 
+        function isFreePriceProofFresh(model, now=Date.now()) {
+            if (!model || model.free !== true) return false;
+            if (model.provider === "openrouter" && model.discovered === true) {
+                return model.freeBasis === "zero_price" &&
+                    model.id.endsWith(":free") &&
+                    model.updatedAt > 0 &&
+                    (now - model.updatedAt) <= FREE_DISCOVERY_TTL_MS * 2;
+            }
+            return true;
+        }
+
         function modelContextHeadroomScoreV3(model, requiredContext) {
             const windowSize = Math.max(0, Number(model && model.contextWindow)||0);
             if (windowSize < requiredContext) return -Infinity;
