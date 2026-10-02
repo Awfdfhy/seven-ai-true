@@ -53,9 +53,10 @@ The repository workflow `.github/workflows/search-gateway-production.yml` valida
 - secret `CLOUDFLARE_API_TOKEN`
 - secret `CLOUDFLARE_ACCOUNT_ID`
 
-For the post-deploy live quality gate, also configure:
+For the post-deploy live quality gate:
 
-- repository variable `SEARCH_GATEWAY_URL` with the deployed HTTPS Worker URL
-- optional secret `GATEWAY_CLIENT_KEY` when the Worker requires client authentication
+- the workflow automatically extracts a newly deployed `workers.dev` HTTPS URL from Wrangler;
+- repository variable `SEARCH_GATEWAY_URL` is only an optional override for an existing/custom production endpoint;
+- optional secret `GATEWAY_CLIENT_KEY` is used when the Worker requires client authentication.
 
 The live gate runs `npm run eval:search-live` and measures search success, host diversity, reader success, and p95 search/read latency. Search-provider secrets remain Worker-side Cloudflare secrets and must never be committed to the repository.
