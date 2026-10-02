@@ -5485,7 +5485,10 @@
 
         async function performWebSearchV2(question,options){
             const started=Date.now();
-            const runtime=createSearchRequestRuntimeV2(options);
+            const opts=options&&typeof options==="object"?options:{};
+            const runtime=createSearchRequestRuntimeV2(opts);
+            const initialReadLimit=Math.max(0,Math.min(SEARCH_V2.maxPageReads,Number.isFinite(Number(opts.maxPageReads))?Number(opts.maxPageReads):SEARCH_V2.maxPageReads));
+            const followReadLimit=Math.max(0,Math.min(SEARCH_V2.maxFollowUpPageReads,Number.isFinite(Number(opts.maxFollowUpPageReads))?Number(opts.maxFollowUpPageReads):SEARCH_V2.maxFollowUpPageReads));
             emitSearchStageV2(runtime,"planning","Planning search…",{queryCount:0});
             const plan=planSearchQueriesV2(question);
             if(!plan.queries.length)return null;
@@ -5496,7 +5499,7 @@
             const gatewayReports=firstWave.gatewayReports.slice();
 
             let ranked=dedupeSearchCandidatesV2(raw.slice(0,SEARCH_V2.maxCandidates*3),plan.intent).slice(0,SEARCH_V2.maxCandidates);
-            const firstRead=await readTopSearchCandidatesV2(ranked,{maxReads:SEARCH_V2.maxPageReads,intent:plan.intent,runtime});
+            const firstRead=await readTopSearchCandidatesV2(ranked,{maxReads:initialReadLimit,intent:plan.intent,runtime});
             ranked=dedupeSearchCandidatesV2(firstRead.candidates,plan.intent).slice(0,SEARCH_V2.maxCandidates);
             let accumulatedCandidates=ranked.slice();
 
@@ -5512,7 +5515,7 @@
                 raw.push(...followWave.raw);
                 gatewayReports.push(...followWave.gatewayReports);
                 accumulatedCandidates=dedupeSearchCandidatesV2([...accumulatedCandidates,...followWave.raw],plan.intent).slice(0,SEARCH_V2.maxCandidates);
-                secondRead=await readTopSearchCandidatesV2(accumulatedCandidates,{maxReads:SEARCH_V2.maxFollowUpPageReads,intent:plan.intent,runtime});
+                secondRead=await readTopSearchCandidatesV2(accumulatedCandidates,{maxReads:followReadLimit,intent:plan.intent,runtime});
                 ranked=dedupeSearchCandidatesV2(secondRead.candidates,plan.intent).slice(0,SEARCH_V2.maxCandidates);
                 accumulatedCandidates=ranked.slice();
                 evidence=buildSearchEvidenceUnitsV2(ranked,plan.intent);
@@ -5924,6 +5927,7 @@
             }));
             return {
                 version:2,status:assessment.status==="SUFFICIENT"?"success":(assessment.status==="PARTIAL"?"partial":"inconclusive"),
+                terminalCode:assessment.status==="SUFFICIENT"?"COMPLETE":assessment.status,
                 capability:"deep_research",intent:plan.intent,contextText,sources,
                 researchRunId:run.id,researchStatus:assessment.status,
                 evidence:cloneResearchValueV2(run.evidence),conflicts:cloneResearchValueV2(run.conflicts),
@@ -5931,6 +5935,65 @@
                 verificationBridge:buildResearchVerificationBridgeV2(run),
                 diagnostics:cloneResearchValueV2(lastDeepResearchDiagnostics)
             };
+        }
+
+        function planAggregateResearchFollowUpV2(run,plan,assessment){
+            if(!run||!plan||!assessment||assessment.status==="SUFFICIENT")return [];
+            const remaining=Math.max(0,DEEP_RESEARCH_V2.maxTotalQuestions-(run.subquestions?.length||0));
+            if(!remaining)return [];
+            const out=[],seen=new Set((run.subquestions||[]).map(x=>String(x.text||"").toLowerCase()));
+            const add=(text,purpose,coverageKey,sourceNeed,priority)=>{
+                if(out.length>=Math.min(2,remaining))return;
+                const clean=String(text||"").trim().replace(/\s+/g," ");
+                const key=clean.toLowerCase();
+                if(!clean||seen.has(key))return;
+                seen.add(key);
+                out.push({
+                    id:"rf"+(out.length+1),
+                    text:clean,
+                    purpose,
+                    priority:Number(priority)||.8,
+                    coverageKey,
+                    sourceNeed,
+                    status:"planned"
+                });
+            };
+            const gaps=new Set(assessment.gaps||[]);
+            if(gaps.has("unresolved_conflict")) add(run.question+" verify conflicting claims using primary sources","conflict_followup","conflict_resolution","primary",.98);
+            if(gaps.has("freshness")) add(run.question+" latest official primary source "+plan.intent.currentYear,"freshness_followup","freshness_resolution","primary",.96);
+            if(gaps.has("source_diversity")) add(run.question+" independent corroboration from a different source","diversity_followup","independent_corroboration","independent",.9);
+            if(gaps.has("read_evidence")) add(run.question+" official documentation full source","read_followup","read_evidence","documentation",.88);
+            if(gaps.has("evidence_count")&&!out.length) add(run.question+" additional independent evidence","evidence_followup","additional_evidence","independent",.84);
+            return out.slice(0,Math.min(2,remaining));
+        }
+
+        async function executeResearchSubquestionV2(run,sub,emit){
+            if(stopRequested||activeAbortController?.signal?.aborted)throw new DOMException("Stopped","AbortError");
+            const remainingReads=Math.max(0,DEEP_RESEARCH_V2.maxPageReads-(run.diagnostics.pageCount||0));
+            if(remainingReads<=0)return false;
+            sub.status="running";
+            run.updatedAt=Date.now();
+            checkpointDeepResearchRunV2(run);
+            try{
+                const initialReads=Math.min(SEARCH_V2.maxPageReads,remainingReads);
+                const followReads=Math.min(SEARCH_V2.maxFollowUpPageReads,Math.max(0,remainingReads-initialReads));
+                const result=await performWebSearchV2(sub.text,{
+                    maxPageReads:initialReads,
+                    maxFollowUpPageReads:followReads,
+                    onStage:stage=>{
+                        if(stage?.name==="reading")emit("research_reading","Reading research sources…",{pageCount:stage.pageCount||0});
+                    }
+                });
+                if(result)mergeResearchEvidenceV2(run,result,sub);
+                sub.status=result?"completed":"failed";
+            }catch(error){
+                if(error?.name==="AbortError")throw error;
+                sub.status="failed";
+            }
+            if(sub.status==="completed"&&!run.completedSubquestionIds.includes(sub.id))run.completedSubquestionIds.push(sub.id);
+            run.updatedAt=Date.now();
+            checkpointDeepResearchRunV2(run);
+            return sub.status==="completed";
         }
 
         async function executeDeepResearchRunV2(run,options){
@@ -5945,24 +6008,34 @@
                     if(stopRequested||activeAbortController?.signal?.aborted)throw new DOMException("Stopped","AbortError");
                     if(Date.now()-started>=DEEP_RESEARCH_V2.maxElapsedMs)break;
                     if(run.diagnostics.pageCount>=DEEP_RESEARCH_V2.maxPageReads)break;
-                    sub.status="running";run.stage="researching";run.updatedAt=Date.now();checkpointDeepResearchRunV2(run);
+                    run.stage="researching";
                     emit("researching","Researching "+sub.id+" of "+run.subquestions.length+"…",{queryCount:run.completedSubquestionIds.length+1});
-                    try{
-                        const result=await performWebSearchV2(sub.text,{onStage:stage=>{
-                            if(stage?.name==="reading")emit("research_reading","Reading research sources…",{pageCount:stage.pageCount||0});
-                        }});
-                        if(result)mergeResearchEvidenceV2(run,result,sub);
-                        sub.status=result?"completed":"failed";
-                    }catch(error){
-                        if(error?.name==="AbortError")throw error;
-                        sub.status="failed";
-                    }
-                    if(sub.status==="completed")run.completedSubquestionIds.push(sub.id);
-                    run.updatedAt=Date.now();checkpointDeepResearchRunV2(run);
+                    await executeResearchSubquestionV2(run,sub,emit);
                 }
+
                 emit("research_checking","Checking gaps and conflicts…",{pageCount:run.evidence.length});
-                const assessment=assessDeepResearchV2(run,plan);
+                let assessment=assessDeepResearchV2(run,plan);
                 run.gaps=Array.from(new Set([...(run.gaps||[]),...assessment.gaps])).slice(0,16);
+
+                const followUps=(Date.now()-started<DEEP_RESEARCH_V2.maxElapsedMs && run.diagnostics.pageCount<DEEP_RESEARCH_V2.maxPageReads)
+                    ? planAggregateResearchFollowUpV2(run,plan,assessment) : [];
+                if(followUps.length){
+                    run.stage="follow_up";
+                    run.subquestions.push(...followUps);
+                    run.subquestions=run.subquestions.slice(0,DEEP_RESEARCH_V2.maxTotalQuestions);
+                    run.updatedAt=Date.now();
+                    checkpointDeepResearchRunV2(run);
+                    emit("research_follow_up","Follow-up research…",{queryCount:followUps.length});
+                    for(const sub of followUps){
+                        if(Date.now()-started>=DEEP_RESEARCH_V2.maxElapsedMs)break;
+                        if(run.diagnostics.pageCount>=DEEP_RESEARCH_V2.maxPageReads)break;
+                        await executeResearchSubquestionV2(run,sub,emit);
+                    }
+                    emit("research_checking","Re-checking gaps and conflicts…",{pageCount:run.evidence.length});
+                    assessment=assessDeepResearchV2(run,plan);
+                    run.gaps=Array.from(new Set(assessment.gaps)).slice(0,16);
+                }
+
                 run.status=assessment.status==="SUFFICIENT"?"completed":(assessment.status==="PARTIAL"?"completed":"inconclusive");
                 run.stage="synthesis";
                 run.updatedAt=Date.now();
@@ -5973,6 +6046,7 @@
                     completedSubquestions:run.completedSubquestionIds.length,evidenceCount:run.evidence.length,
                     uniqueHosts:assessment.hosts,readCount:assessment.readCount,conflictCount:run.conflicts.length,
                     gapCodes:assessment.gaps.slice(),queryCount:run.diagnostics.queryCount,pageCount:run.diagnostics.pageCount,
+                    followUpCount:run.subquestions.filter(x=>String(x.id||"").startsWith("rf")).length,
                     elapsedMs:run.diagnostics.elapsedMs,resumeCount:run.diagnostics.resumeCount
                 };
                 emit("research_synthesis","Synthesizing report…",{pageCount:run.evidence.length});
