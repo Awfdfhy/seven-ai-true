@@ -3,12 +3,15 @@ const fs=require("fs");
 const path=require("path");
 const ROOT=path.resolve(__dirname,"..");
 const ANDROID=path.join(ROOT,"android");
-const JAVA_DIR=path.join(ANDROID,"app","src","main","java","ai","seven","app");
+const CONFIG=JSON.parse(fs.readFileSync(path.join(ROOT,"capacitor.config.json"),"utf8"));
+const APP_ID=String(CONFIG.appId||"").trim();
+if(!/^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+$/.test(APP_ID))throw new Error("invalid Capacitor appId");
+const JAVA_DIR=path.join(ANDROID,"app","src","main","java",...APP_ID.split("."));
 const MAIN=path.join(JAVA_DIR,"MainActivity.java");
 if(!fs.existsSync(MAIN))throw new Error("generated MainActivity missing; run cap add android first");
 fs.mkdirSync(JAVA_DIR,{recursive:true});
 
-const secureStore=`package ai.seven.app;
+const secureStore=`package ${APP_ID};
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -81,7 +84,7 @@ public final class SevenSecureStore {
 }
 `;
 
-const plugin=`package ai.seven.app;
+const plugin=`package ${APP_ID};
 
 import android.app.Activity;
 import android.content.ContentResolver;
