@@ -204,5 +204,11 @@ Completed:
   - Android #293 PASS
   - Merge `71b7d93fe1b89254266dc81c927c0950a97d2520`
 
-Current: **Batch 6 — Query Intelligence + Primary Source Discovery**.
+- Batch 6 — Query Intelligence + Primary Source Discovery ✅
+  - PR #37
+  - Browser #2316 PASS
+  - Android #294 PASS
+  - Merge `d072bda179df394c4568bf86a9402f392d8c82eb`
+
+Current: **Batch 7 — Deep Research Integration**.
 
