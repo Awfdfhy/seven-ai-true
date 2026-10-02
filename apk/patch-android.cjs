@@ -2,6 +2,10 @@ const fs=require('fs');
 const path=require('path');
 const ROOT=path.resolve(__dirname,'..');
 const ANDROID=path.join(ROOT,'android');
+const CONFIG=JSON.parse(fs.readFileSync(path.join(ROOT,'capacitor.config.json'),'utf8'));
+const APP_ID=String(CONFIG.appId||'').trim();
+if(!/^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+$/.test(APP_ID))throw new Error('invalid Capacitor appId');
+const PACKAGE_PATH=APP_ID.split('.');
 const manifestPath=path.join(ANDROID,'app','src','main','AndroidManifest.xml');
 if(!fs.existsSync(manifestPath))throw new Error('generated Android manifest missing');
 let xml=fs.readFileSync(manifestPath,'utf8');
@@ -31,6 +35,8 @@ if(!fs.existsSync(gradlePath))throw new Error('generated Android app Gradle file
 let gradle=fs.readFileSync(gradlePath,'utf8');
 if(!gradle.includes('android {'))throw new Error('generated Android app Gradle android block missing');
 if(!/buildTypes\s*\{\s*release\s*\{/.test(gradle))throw new Error('generated Android app Gradle release buildType missing');
+if(!/versionCode\s+\d+/.test(gradle)||!/versionName\s+["'][^"']+["']/.test(gradle))throw new Error('generated Android version anchors missing');
+gradle=gradle.replace(/versionCode\s+\d+/,'versionCode 24').replace(/versionName\s+["'][^"']+["']/,'versionName "2.4.0-modern"');
 const signingPrelude=`def sevenCiKeystore = project.findProperty("sevenCiKeystore")\ndef sevenCiStorePass = project.findProperty("sevenCiStorePass")\ndef sevenCiKeyAlias = project.findProperty("sevenCiKeyAlias")\ndef sevenCiKeyPass = project.findProperty("sevenCiKeyPass")\n`;
 if(!gradle.includes('def sevenCiKeystore'))gradle=signingPrelude+gradle;
 gradle=gradle.replace('android {',`android {\n    if (sevenCiKeystore) {\n        testBuildType = "release"\n    }\n    signingConfigs {\n        if (sevenCiKeystore) {\n            sevenCi {\n                storeFile file(sevenCiKeystore)\n                storePassword sevenCiStorePass\n                keyAlias sevenCiKeyAlias\n                keyPassword sevenCiKeyPass\n            }\n        }\n    }`);
@@ -42,9 +48,9 @@ fs.writeFileSync(gradlePath,gradle);
 const templateTest=path.join(ANDROID,'app','src','androidTest','java','com','getcapacitor','myapp','ExampleInstrumentedTest.java');
 if(fs.existsSync(templateTest))fs.rmSync(templateTest,{force:true});
 
-const testDir=path.join(ANDROID,'app','src','androidTest','java','ai','seven','app');
+const testDir=path.join(ANDROID,'app','src','androidTest','java',...PACKAGE_PATH);
 fs.mkdirSync(testDir,{recursive:true});
-const test=`package ai.seven.app;
+const test=`package ${APP_ID};
 
 import static org.junit.Assert.*;
 import android.content.Context;
@@ -83,10 +89,11 @@ public class SevenSmokeTest {
       scenario.onActivity(a -> ref.set(a.getBridge().getWebView()));
       WebView webView=ref.get();
       assertNotNull(webView);
-      waitFor(webView,"Boolean(window.SevenPerformance&&SevenPerformance.state.ready&&window.SevenMotion&&SevenMotion.state.ready&&window.SevenPdf&&window.SevenBetaUI&&SevenBetaUI.state.ready)");
+      waitFor(webView,"Boolean(window.SevenPerformance&&SevenPerformance.state.ready&&window.SevenMotion&&SevenMotion.state.ready&&window.SevenPdf&&window.SevenBetaUI&&SevenBetaUI.state.ready&&window.SevenRemake&&window.SevenIntelligence)");
       waitFor(webView,"Boolean(typeof roomPersistence!=='undefined'&&roomPersistence.status().ready)");
       assertEquals("true",js(webView,"location.origin==='https://localhost'"));
       assertEquals("true",js(webView,"Boolean(document.getElementById('userInput'))"));
+      assertEquals("true",js(webView,"Boolean(document.querySelector('#seven-app[data-seven-remake=\\\"1\\"]'))"));
       assertEquals("true",js(webView,"document.documentElement.scrollWidth<=document.documentElement.clientWidth+2"));
       assertEquals("true",js(webView,"SevenPdf.loaded===false"));
       assertEquals("true",js(webView,"typeof window.SevenCanon==='undefined'&&typeof window.SevenWorld==='undefined'"));
@@ -103,6 +110,7 @@ public class SevenSmokeTest {
   @Test
   public void secureStoreEncryptsAtRest() throws Exception {
     Context context=InstrumentationRegistry.getInstrumentation().getTargetContext();
+    assertEquals("${APP_ID}",context.getPackageName());
     SevenSecureStore store=new SevenSecureStore(context);
     String key="ci.native."+System.nanoTime(),secret="seven-secret-"+System.nanoTime();
     try{
