@@ -439,5 +439,102 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   });
   assert.equal(r.secret,false);assert.equal(r.full,false);
  });
+
+ await test('web search gateway v2 accepts only credential-free HTTPS base URLs',async()=>{
+  const r=await page.evaluate(()=>({
+    good:normalizeSearchGatewayUrlV2('https://seven.example.workers.dev///'),
+    http:normalizeSearchGatewayUrlV2('http://seven.example.com'),
+    credential:normalizeSearchGatewayUrlV2('https://user:pass@seven.example.com'),
+    empty:normalizeSearchGatewayUrlV2('')
+  }));
+  assert.equal(r.good,'https://seven.example.workers.dev');assert.equal(r.http,null);assert.equal(r.credential,null);assert.equal(r.empty,null);
+ });
+ await test('web search gateway v2 health detects server capabilities without exposing credentials',async()=>{
+  const r=await page.evaluate(async()=>{
+    const old=fetchWithTimeout;
+    fetchWithTimeout=async()=>({ok:true,json:async()=>({ok:true,version:2,capabilities:{search:true,reader:true},backend:'brave'})});
+    try{
+      const health=await checkSearchGatewayV2('https://gateway.example.com',{force:true});
+      const raw=JSON.stringify(health);
+      return {health,secret:/api[_-]?key|token|authorization|bearer/i.test(raw)};
+    }finally{fetchWithTimeout=old;searchGatewayHealthCacheV2={url:'',checkedAt:0,value:null};}
+  });
+  assert.equal(r.health.ok,true);assert.equal(r.health.capabilities.search,true);assert.equal(r.health.capabilities.reader,true);assert.equal(r.health.backend,'brave');assert.equal(r.secret,false);
+ });
+ await test('web search gateway v2 joins general web retrieval and upgrades selected reads',async()=>{
+  const r=await page.evaluate(async()=>{
+    const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL;
+    SEARCH_GATEWAY_URL='https://gateway.example.com';
+    fetchWithTimeout=async(url,opts)=>{
+      const s=String(url);
+      const response=data=>({ok:true,status:200,json:async()=>data});
+      if(s.includes('/v1/search'))return response({version:2,backend:'brave',results:[
+        {title:'General A',url:'https://site-a.example/article',snippet:'general result A',sourceType:'web',rank:1},
+        {title:'General B',url:'https://site-b.example/article',snippet:'general result B',sourceType:'web',rank:2}
+      ]});
+      if(s.includes('/v1/read')){
+        const body=JSON.parse(opts.body);
+        return response({version:2,status:'read_success',url:body.url,title:'Read title',contentType:'text/html',text:'full article evidence '+body.url});
+      }
+      if(s.includes('api.duckduckgo.com'))return response({Heading:'DDG',AbstractText:'ddg evidence',AbstractURL:'https://ddg.example/a',RelatedTopics:[]});
+      if(s.includes('wikipedia.org')&&s.includes('list=search'))return response({query:{search:[]}});
+      return {ok:false,status:404,json:async()=>({})};
+    };
+    try{
+      const out=await performWebSearchV2('latest Android update');
+      return {capability:out.capability,engines:out.sources.map(x=>x.engine),states:out.sources.map(x=>x.readState),diag:out.diagnostics,context:out.contextText};
+    }finally{fetchWithTimeout=oldFetch;SEARCH_GATEWAY_URL=oldUrl;}
+  });
+  assert.equal(r.capability,'general_web_and_reader');assert.ok(r.engines.includes('gateway_general'));assert.ok(r.states.includes('read_success'));assert.ok(r.diag.readerAttempts<=3);assert.ok(r.diag.readerSuccesses>=1);assert.ok(r.context.includes('full article evidence'));
+ });
+ await test('web search gateway v2 failure preserves knowledge fallback truthfully',async()=>{
+  const r=await page.evaluate(async()=>{
+    const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL;
+    SEARCH_GATEWAY_URL='https://gateway.example.com';
+    fetchWithTimeout=async(url)=>{
+      const s=String(url),response=data=>({ok:true,status:200,json:async()=>data});
+      if(s.includes('/v1/search'))return {ok:false,status:503,json:async()=>({error:'down'})};
+      if(s.includes('api.duckduckgo.com'))return response({Heading:'Fallback',AbstractText:'fallback evidence',AbstractURL:'https://fallback.example/a',RelatedTopics:[]});
+      if(s.includes('wikipedia.org')&&s.includes('list=search'))return response({query:{search:[]}});
+      return {ok:false,status:404,json:async()=>({})};
+    };
+    try{
+      const out=await performWebSearchV2('ordinary lookup');
+      return {capability:out.capability,status:out.status,sources:out.sources.length,diag:out.diagnostics};
+    }finally{fetchWithTimeout=oldFetch;SEARCH_GATEWAY_URL=oldUrl;}
+  });
+  assert.equal(r.capability,'gateway_degraded');assert.equal(r.status,'partial');assert.ok(r.sources>=1);assert.equal(r.diag.gatewaySearchSuccesses,0);
+ });
+ await test('web search gateway v2 reader is bounded to three top general sources',async()=>{
+  const r=await page.evaluate(async()=>{
+    const old=readGeneralWebCandidateV2;let calls=0;
+    readGeneralWebCandidateV2=async candidate=>{calls++;return {ok:true,candidate:Object.assign({},candidate,{readState:'read_success'})}};
+    try{
+      const rows=Array.from({length:8},(_,i)=>({engine:'gateway_general',readState:'snippet_only',url:'https://example.com/'+i,title:'T'+i}));
+      const out=await readTopGeneralWebCandidatesV2(rows,3);
+      return {calls,attempts:out.attempts,successes:out.successes,read:out.candidates.filter(x=>x.readState==='read_success').length};
+    }finally{readGeneralWebCandidateV2=old;}
+  });
+  assert.equal(r.calls,3);assert.equal(r.attempts,3);assert.equal(r.successes,3);assert.equal(r.read,3);
+ });
+ await test('web search gateway v2 diagnostics remain metadata-only',async()=>{
+  const r=await page.evaluate(()=>{
+    const snap=SevenSearchV2.snapshot()||{};
+    const raw=JSON.stringify(snap);
+    return {secret:/gsk_|sk-or-|nvapi-|AIza|authorization|bearer|api[_-]?key/i.test(raw),content:/full article evidence|fallback evidence|conversation|prompt/i.test(raw)};
+  });
+  assert.equal(r.secret,false);assert.equal(r.content,false);
+ });
+ await test('web search gateway URL setting stores no search provider secret',async()=>{
+  const r=await page.evaluate(()=>{
+    const raw='https://gateway.example.com/';
+    const normalized=normalizeSearchGatewayUrlV2(raw);
+    localStorage.setItem(SEARCH_GATEWAY_URL_KEY,normalized);
+    const saved=localStorage.getItem(SEARCH_GATEWAY_URL_KEY);
+    localStorage.removeItem(SEARCH_GATEWAY_URL_KEY);
+    return {saved,looksSecret:/key|token|secret|bearer/i.test(saved||'')};
+  });
+  assert.equal(r.saved,'https://gateway.example.com');assert.equal(r.looksSecret,false);
+ });
  await browser.close();server.close();fs.writeFileSync(require('path').join(__dirname,'results.json'),JSON.stringify({results,liveProviderCalls:false},null,2));
 })().catch(e=>{console.error(e);server.close();process.exit(1)});

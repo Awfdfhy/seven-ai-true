@@ -926,6 +926,12 @@
                         <button type="button" onclick="refreshFreeModelCatalogFromSettings()">Refresh Free Models</button>
                         <button type="button" onclick="toggleTheme()">Theme</button>
                     </div>
+                    <label for="searchGatewayUrlInput">Web Search Gateway URL</label>
+                    <input type="text" id="searchGatewayUrlInput" inputmode="url" autocomplete="off" placeholder="https://seven-search.example.workers.dev">
+                    <div class="settings-row">
+                        <button type="button" onclick="testSearchGatewayFromSettingsV2()">Test Search Gateway</button>
+                    </div>
+                    <div class="settings-helper" id="searchGatewayStatus">Optional. Enables general-web search + safe page reading. No search API key is stored in Seven.</div>
                     <div class="settings-helper">Advanced controls are optional. Seven keeps paid fallback off and uses runtime health/cooldown information for automatic routing.</div>
                 </div>
             </details>
@@ -966,6 +972,8 @@
         let ZAI_API_KEY = localStorage.getItem('zai_api_key') || "";
         let CLOUDFLARE_API_TOKEN = localStorage.getItem('cloudflare_api_token') || "";
         let CLOUDFLARE_ACCOUNT_ID = localStorage.getItem('cloudflare_account_id') || "";
+        const SEARCH_GATEWAY_URL_KEY = "seven_search_gateway_url_v2";
+        let SEARCH_GATEWAY_URL = localStorage.getItem(SEARCH_GATEWAY_URL_KEY) || "";
 
         const FREE_MODEL_FABRIC_CONTRACT = Object.freeze({
             version: 2,
@@ -2347,6 +2355,8 @@
             document.getElementById("zaiApiKeyInput").value = ZAI_API_KEY;
             document.getElementById("cloudflareApiTokenInput").value = CLOUDFLARE_API_TOKEN;
             document.getElementById("cloudflareAccountIdInput").value = CLOUDFLARE_ACCOUNT_ID;
+            document.getElementById("searchGatewayUrlInput").value = SEARCH_GATEWAY_URL;
+            renderSearchGatewayStatusV2();
             for (const id of Object.keys(FREE_PROVIDER_REGISTRY)) {
                 const box = document.getElementById("provider" + id.charAt(0).toUpperCase() + id.slice(1) + "Enabled");
                 if (box) box.checked = isFreeProviderEnabled(id);
@@ -2383,6 +2393,8 @@
             ZAI_API_KEY = document.getElementById("zaiApiKeyInput").value.trim();
             CLOUDFLARE_API_TOKEN = document.getElementById("cloudflareApiTokenInput").value.trim();
             CLOUDFLARE_ACCOUNT_ID = document.getElementById("cloudflareAccountIdInput").value.trim();
+            const rawSearchGatewayUrl = document.getElementById("searchGatewayUrlInput").value.trim();
+            SEARCH_GATEWAY_URL = normalizeSearchGatewayUrlV2(rawSearchGatewayUrl) || "";
             freeProviderPrefs = readProviderPrefsFromSettings();
             try {
                 const report = await refreshFreeModelCatalog({ force:true });
@@ -2416,6 +2428,7 @@
             localStorage.setItem('zai_api_key', ZAI_API_KEY);
             localStorage.setItem('cloudflare_api_token', CLOUDFLARE_API_TOKEN);
             localStorage.setItem('cloudflare_account_id', CLOUDFLARE_ACCOUNT_ID);
+            localStorage.setItem(SEARCH_GATEWAY_URL_KEY, SEARCH_GATEWAY_URL);
 
             freeProviderPrefs = readProviderPrefsFromSettings();
             currentRoutingMode = document.getElementById("routingModeSelect").value === "manual" ? "manual" : "auto";
@@ -4325,6 +4338,174 @@
         });
         let lastSearchV2Diagnostics=null;
 
+        let searchGatewayHealthCacheV2={url:"",checkedAt:0,value:null};
+
+        function normalizeSearchGatewayUrlV2(value){
+            const raw=String(value||"").trim();
+            if(!raw)return null;
+            try{
+                const u=new URL(raw);
+                if(u.protocol!=="https:"||u.username||u.password)return null;
+                u.hash="";u.search="";
+                u.pathname=u.pathname.replace(/\/+$/,"");
+                return u.href.replace(/\/$/,"");
+            }catch(_){return null;}
+        }
+
+        function getSearchGatewayUrlV2(){
+            return normalizeSearchGatewayUrlV2(SEARCH_GATEWAY_URL);
+        }
+
+        function searchGatewayStatusElementV2(){
+            return document.getElementById("searchGatewayStatus");
+        }
+
+        function renderSearchGatewayStatusV2(message){
+            const el=searchGatewayStatusElementV2();
+            if(!el)return;
+            if(message){el.textContent=message;return;}
+            const base=getSearchGatewayUrlV2();
+            const cached=searchGatewayHealthCacheV2.value;
+            if(!base){el.textContent="Optional. Configure an HTTPS gateway to enable general-web search and safe page reading.";return;}
+            if(cached&&searchGatewayHealthCacheV2.url===base){
+                const caps=cached.capabilities||{};
+                el.textContent="Gateway: "+(cached.ok?"ready":"unavailable")+" • search "+(caps.search?"on":"off")+" • reader "+(caps.reader?"on":"off")+" • backend "+String(cached.backend||"none");
+                return;
+            }
+            el.textContent="Gateway configured • not tested yet.";
+        }
+
+        async function fetchSearchGatewayV2(base,path,options,timeoutMs){
+            const root=normalizeSearchGatewayUrlV2(base);
+            if(!root)throw new Error("invalid_search_gateway_url");
+            const target=root+path;
+            return fetchWithTimeout(target,options||{},timeoutMs||6500);
+        }
+
+        async function checkSearchGatewayV2(base=getSearchGatewayUrlV2(),options){
+            const root=normalizeSearchGatewayUrlV2(base);
+            if(!root)return {ok:false,configured:false,capabilities:{search:false,reader:false},backend:"none"};
+            const force=options?.force===true;
+            if(!force&&searchGatewayHealthCacheV2.url===root&&searchGatewayHealthCacheV2.value&&Date.now()-searchGatewayHealthCacheV2.checkedAt<5*60*1000){
+                return Object.assign({},searchGatewayHealthCacheV2.value);
+            }
+            let value={ok:false,configured:true,capabilities:{search:false,reader:false},backend:"none"};
+            try{
+                const res=await fetchSearchGatewayV2(root,"/health",{method:"GET"},3500);
+                if(res.ok){
+                    const data=await res.json();
+                    value={
+                        ok:data?.ok===true,
+                        configured:true,
+                        version:Number(data?.version)||0,
+                        capabilities:{search:data?.capabilities?.search===true,reader:data?.capabilities?.reader===true},
+                        backend:String(data?.backend||"none").slice(0,40)
+                    };
+                }
+            }catch(_){}
+            searchGatewayHealthCacheV2={url:root,checkedAt:Date.now(),value};
+            return Object.assign({},value);
+        }
+
+        async function testSearchGatewayFromSettingsV2(){
+            const raw=document.getElementById("searchGatewayUrlInput")?.value||"";
+            const base=normalizeSearchGatewayUrlV2(raw);
+            if(!base){renderSearchGatewayStatusV2(raw.trim()?"Gateway URL must be valid HTTPS.":"Enter a gateway URL first.");return;}
+            renderSearchGatewayStatusV2("Testing gateway…");
+            const result=await checkSearchGatewayV2(base,{force:true});
+            if(!result.ok){renderSearchGatewayStatusV2("Gateway unavailable or rejected the request.");return;}
+            renderSearchGatewayStatusV2("Gateway ready • search "+(result.capabilities.search?"on":"off")+" • reader "+(result.capabilities.reader?"on":"off")+" • backend "+result.backend);
+        }
+
+        function freshnessForSearchIntentV2(intent,question){
+            if(!intent?.timeSensitive)return null;
+            const text=String(question||"").toLowerCase();
+            if(/today|now|اليوم|الآن|حاليا|حاليًا/.test(text))return "pd";
+            if(/this week|week|أسبوع|الاسبوع|الأسبوع|latest|recent|أحدث|احدث/.test(text))return "pw";
+            if(/this month|month|شهر|هذا الشهر/.test(text))return "pm";
+            return "pm";
+        }
+
+        async function searchGeneralWebGatewayV2(queryObj,intent){
+            const base=getSearchGatewayUrlV2();
+            if(!base)return {configured:false,ok:false,backend:"none",candidates:[]};
+            try{
+                const res=await fetchSearchGatewayV2(base,"/v1/search",{
+                    method:"POST",
+                    headers:{"content-type":"application/json"},
+                    body:JSON.stringify({
+                        query:queryObj.text,
+                        language:queryObj.language||intent?.language||"en",
+                        freshness:freshnessForSearchIntentV2(intent,queryObj.text),
+                        maxResults:10
+                    })
+                },7000);
+                if(!res.ok)return {configured:true,ok:false,backend:"unknown",status:res.status,candidates:[]};
+                const data=await res.json();
+                const backend=String(data?.backend||"gateway").slice(0,40);
+                const candidates=(Array.isArray(data?.results)?data.results:[]).map((item,index)=>normalizeSearchCandidateV2({
+                    title:item?.title,
+                    url:item?.url,
+                    snippet:item?.snippet,
+                    publishedAt:item?.publishedAt||null,
+                    rank:Number(item?.rank)||index+1,
+                    engine:"gateway_general",
+                    queryId:queryObj.id,
+                    queryPriority:queryObj.priority,
+                    language:queryObj.language||intent?.language||"unknown",
+                    sourceType:item?.sourceType||"web",
+                    readState:"snippet_only",
+                    discoveredAt:Date.now(),
+                    discoveredBy:["gateway:"+backend+":"+queryObj.id]
+                })).filter(Boolean);
+                return {configured:true,ok:true,backend,candidates};
+            }catch(e){
+                if(e?.name==="AbortError")throw e;
+                return {configured:true,ok:false,backend:"unknown",candidates:[]};
+            }
+        }
+
+        async function readGeneralWebCandidateV2(candidate){
+            const base=getSearchGatewayUrlV2();
+            if(!base||!candidate?.url)return {ok:false,candidate};
+            try{
+                const res=await fetchSearchGatewayV2(base,"/v1/read",{
+                    method:"POST",
+                    headers:{"content-type":"application/json"},
+                    body:JSON.stringify({url:candidate.url})
+                },8500);
+                if(!res.ok)return {ok:false,candidate};
+                const data=await res.json();
+                if(!["read_success","read_partial"].includes(data?.status)||typeof data?.text!=="string"||!data.text.trim()){
+                    return {ok:false,candidate};
+                }
+                const next=Object.assign({},candidate,{
+                    title:stripSearchHtmlV2(data.title||candidate.title||candidate.url).slice(0,240),
+                    snippet:stripSearchHtmlV2(data.text).slice(0,6000),
+                    readState:data.status,
+                    canonicalUrl:canonicalSearchUrlV2(data.url||candidate.url)||candidate.canonicalUrl,
+                    url:canonicalSearchUrlV2(data.url||candidate.url)||candidate.url
+                });
+                return {ok:true,candidate:next};
+            }catch(e){
+                if(e?.name==="AbortError")throw e;
+                return {ok:false,candidate};
+            }
+        }
+
+        async function readTopGeneralWebCandidatesV2(ranked,maxReads=3){
+            const rows=(Array.isArray(ranked)?ranked:[]).slice();
+            const targets=rows.map((c,index)=>({c,index})).filter(x=>x.c.engine==="gateway_general"&&x.c.readState==="snippet_only").slice(0,Math.max(0,Math.min(3,maxReads)));
+            if(!targets.length)return {candidates:rows,attempts:0,successes:0};
+            const results=await Promise.all(targets.map(x=>readGeneralWebCandidateV2(x.c).then(r=>({index:x.index,result:r}))));
+            let successes=0;
+            for(const item of results){
+                if(item.result?.ok){rows[item.index]=item.result.candidate;successes++;}
+            }
+            return {candidates:rows,attempts:targets.length,successes};
+        }
+
+
         function stripSearchHtmlV2(value){
             return String(value||"")
                 .replace(/<script[\s\S]*?<\/script>/gi," ")
@@ -4564,34 +4745,76 @@
             const started=Date.now();
             const plan=planSearchQueriesV2(question);
             if(!plan.queries.length)return null;
+
             const tasks=[];
             for(const q of plan.queries){
-                tasks.push(searchDuckDuckGoCandidatesV2(q));
-                tasks.push(searchWikipediaCandidatesV2(q,"en"));
-                if(plan.intent.language==="ar")tasks.push(searchWikipediaCandidatesV2(q,"ar"));
+                tasks.push(searchDuckDuckGoCandidatesV2(q).then(candidates=>({kind:"knowledge",ok:true,candidates})).catch(()=>({kind:"knowledge",ok:false,candidates:[]})));
+                tasks.push(searchWikipediaCandidatesV2(q,"en").then(candidates=>({kind:"knowledge",ok:true,candidates})).catch(()=>({kind:"knowledge",ok:false,candidates:[]})));
+                if(plan.intent.language==="ar"){
+                    tasks.push(searchWikipediaCandidatesV2(q,"ar").then(candidates=>({kind:"knowledge",ok:true,candidates})).catch(()=>({kind:"knowledge",ok:false,candidates:[]})));
+                }
+                if(getSearchGatewayUrlV2()){
+                    tasks.push(searchGeneralWebGatewayV2(q,plan.intent).then(result=>Object.assign({kind:"gateway"},result)));
+                }
             }
-            const settled=await Promise.all(tasks.map(p=>Promise.resolve(p).catch(()=>[])));
-            const raw=settled.flat().filter(Boolean).slice(0,SEARCH_V2.maxCandidates*2);
-            const ranked=dedupeSearchCandidatesV2(raw,plan.intent).slice(0,SEARCH_V2.maxCandidates);
+
+            const settled=await Promise.all(tasks);
+            const gatewayRows=settled.filter(x=>x.kind==="gateway");
+            const gatewayConfigured=!!getSearchGatewayUrlV2();
+            const gatewaySearchSuccesses=gatewayRows.filter(x=>x.ok).length;
+            const gatewayBackend=(gatewayRows.find(x=>x.ok&&x.backend)?.backend)||"none";
+            const raw=settled.flatMap(x=>Array.isArray(x.candidates)?x.candidates:[]).filter(Boolean).slice(0,SEARCH_V2.maxCandidates*3);
+
+            let ranked=dedupeSearchCandidatesV2(raw,plan.intent).slice(0,SEARCH_V2.maxCandidates);
+            let readerAttempts=0,readerSuccesses=0;
+            if(gatewaySearchSuccesses>0){
+                const read=await readTopGeneralWebCandidatesV2(ranked,3);
+                readerAttempts=read.attempts;
+                readerSuccesses=read.successes;
+                ranked=dedupeSearchCandidatesV2(read.candidates,plan.intent).slice(0,SEARCH_V2.maxCandidates);
+            }
+
+            let capability="knowledge_sources_only";
+            if(gatewaySearchSuccesses>0)capability=readerSuccesses>0?"general_web_and_reader":"general_web_search";
+            else if(gatewayConfigured)capability="gateway_degraded";
+
             const contextText=buildSearchContextTextV2(ranked);
             const sources=ranked.slice(0,SEARCH_V2.maxContextSources).map((c,index)=>({
                 id:"S"+(index+1),title:c.title,url:c.url,engine:c.engine,language:c.language,
                 readState:c.readState,sourceType:c.sourceType,score:c.score,queryId:c.queryId,
-                capability:"knowledge_sources_only"
+                publishedAt:c.publishedAt||null,capability
             }));
+
             lastSearchV2Diagnostics={
-                version:2,status:contextText?"partial":"no_results",capability:"knowledge_sources_only",
-                language:plan.intent.language,timeSensitive:plan.intent.timeSensitive,
-                queryCount:plan.queries.length,rawCandidateCount:raw.length,uniqueCandidateCount:ranked.length,
+                version:2,
+                status:contextText?(gatewayConfigured&&gatewaySearchSuccesses===0?"partial":"success"):"no_results",
+                capability,
+                gatewayConfigured,
+                gatewaySearchAttempts:gatewayRows.length,
+                gatewaySearchSuccesses,
+                gatewayBackend,
+                readerAttempts,
+                readerSuccesses,
+                language:plan.intent.language,
+                timeSensitive:plan.intent.timeSensitive,
+                queryCount:plan.queries.length,
+                rawCandidateCount:raw.length,
+                uniqueCandidateCount:ranked.length,
                 readSuccessCount:ranked.filter(x=>x.readState==="read_success").length,
+                readPartialCount:ranked.filter(x=>x.readState==="read_partial").length,
                 snippetOnlyCount:ranked.filter(x=>x.readState==="snippet_only").length,
                 engines:Array.from(new Set(ranked.map(x=>x.engine))).sort(),
                 elapsedMs:Math.max(0,Date.now()-started)
             };
             if(!contextText)return null;
             return {
-                version:2,status:"partial",capability:"knowledge_sources_only",
-                intent:plan.intent,queries:plan.queries,contextText,sources,
+                version:2,
+                status:lastSearchV2Diagnostics.status,
+                capability,
+                intent:plan.intent,
+                queries:plan.queries,
+                contextText,
+                sources,
                 diagnostics:Object.assign({},lastSearchV2Diagnostics)
             };
         }
@@ -4602,6 +4825,8 @@
             plan:planSearchQueriesV2,
             normalize:normalizeSearchCandidateV2,
             dedupe:(items,question)=>dedupeSearchCandidatesV2(items,analyzeSearchIntentV2(question||"")),
+            gatewayUrl:()=>getSearchGatewayUrlV2(),
+            gatewayHealth:(force=false)=>checkSearchGatewayV2(getSearchGatewayUrlV2(),{force}),
             snapshot:()=>lastSearchV2Diagnostics?JSON.parse(JSON.stringify(lastSearchV2Diagnostics)):null
         });
 
@@ -4724,8 +4949,9 @@
             if (!wrapper) return;
             const sourcesDiv = document.createElement("div");
             sourcesDiv.className = "search-sources";
-            const limitedCoverage=sources.length>0&&sources.every(source=>source?.capability==="knowledge_sources_only");
-            sourcesDiv.appendChild(document.createTextNode(limitedCoverage?"Sources (limited search coverage):":"Sources:"));
+            const limitedCoverage=sources.length>0&&sources.every(source=>["knowledge_sources_only","gateway_degraded"].includes(source?.capability));
+            const gatewayDegraded=sources.length>0&&sources.some(source=>source?.capability==="gateway_degraded");
+            sourcesDiv.appendChild(document.createTextNode(gatewayDegraded?"Sources (web gateway unavailable; fallback coverage):":(limitedCoverage?"Sources (limited search coverage):":"Sources:")));
             const list = document.createElement("ul");
             for (const source of sources) {
                 const href = safeHttpUrl(source && source.url);
@@ -4740,7 +4966,7 @@
                 const meta=document.createElement("span");
                 meta.className="search-source-meta";
                 const stateLabel=source?.readState==="read_success"?"Read":(source?.readState==="snippet_only"?"Snippet only":String(source?.readState||"Discovered"));
-                const engineLabel=String(source?.engine||"web").replace("wikipedia_","Wikipedia ").replace("duckduckgo","DuckDuckGo");
+                const engineLabel=String(source?.engine||"web").replace("wikipedia_","Wikipedia ").replace("duckduckgo","DuckDuckGo").replace("gateway_general","Web Gateway");
                 meta.textContent=" · "+engineLabel+" · "+stateLabel;
                 item.appendChild(meta);
                 list.appendChild(item);
