@@ -165,3 +165,15 @@ The detailed execution specification for the current first item lives in:
 - 2026-10-02: Performance + Android Reliability browser implementation passed CI #2161 and PR #24 merged to main as `7aae45341cea8b2b892f2ec0fdf5916892b29e2d`. Android main-branch release gate is pending before 2.1 is marked complete.
 
 - 2026-10-02: Android main-branch release gate #285 PASSED for merge `7aae45341cea8b2b892f2ec0fdf5916892b29e2d`: pre-APK Seven gate, Android lint, unit tests, APK build, packaged APK verification, Android 16 WebView emulator smoke, final APK verification, and artifact upload all succeeded. Seven AI 2.1 Intelligence & Reliability Polish is COMPLETE. Deep Research 2.0 is next.
+
+## Post-2.1 latency polish
+
+### Deep Think Speed Polish ⏳ MERGED, ANDROID GATE PENDING
+
+Purpose: reduce Send → final-answer latency without removing Deep Think's two-pass architecture or strongest supported reasoning effort.
+
+Plan: `plans/DEEP_THINK_SPEED_POLISH.md`
+Implementation PR: #25
+Merge SHA: `f0e67e13731746e36483bb292202ebbdc0a7cc32`
+Browser CI: #2173 PASS
+Android release gate: #286 pending.
