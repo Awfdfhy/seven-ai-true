@@ -3771,40 +3771,159 @@
             }
         }
 
+        // ---------- Deep Think Speed Polish ----------
+        const DEEP_THINK_SPEED_POLICY = Object.freeze({
+            version: 1,
+            budgets: Object.freeze({ low: 2048, medium: 4096, high: 8192, veryHigh: 12288 }),
+            timeouts: Object.freeze({ low: 25000, medium: 35000, high: 45000, veryHigh: 55000 })
+        });
+
+        let activeDeepThinkPerformance = null;
+        let lastDeepThinkPerformance = null;
+
+        function nowPerformanceMsV1() {
+            try {
+                if (typeof performance !== "undefined" && typeof performance.now === "function") return performance.now();
+            } catch (_) {}
+            return Date.now();
+        }
+
+        function latestUserMessageTextV1(messages) {
+            if (!Array.isArray(messages)) return "";
+            for (let i=messages.length-1;i>=0;i--) {
+                const item=messages[i];
+                if (item && item.role==="user" && typeof item.content==="string") return item.content;
+            }
+            return "";
+        }
+
+        function deepThinkPolicyForRequest(messages, model=currentModel) {
+            const latest=latestUserMessageTextV1(messages);
+            const coarse=classifyCognitiveTask(latest);
+            const estimatedInput=estimateRequestTokens(messages);
+            const researchHeavy=coarse.signals.includes("research") || coarse.taskClass==="research";
+            const veryLong=estimatedInput>12000 || latest.length>8000;
+            let tier=coarse.complexity;
+            if (tier!=="low"&&tier!=="medium"&&tier!=="high") tier="medium";
+            if (veryLong || (tier==="high"&&researchHeavy)) tier="veryHigh";
+            const limits=modelLimits(model);
+            const requested=DEEP_THINK_SPEED_POLICY.budgets[tier];
+            return {
+                version:1,
+                tier,
+                hiddenMaxTokens:Math.max(512,Math.min(limits.maxTokens,requested)),
+                timeoutMs:DEEP_THINK_SPEED_POLICY.timeouts[tier],
+                estimatedInputTokens:estimatedInput,
+                strongestEffort:getReasoningEffort(model,"deepThink")
+            };
+        }
+
+        function beginDeepThinkPerformanceV1(roomId) {
+            activeDeepThinkPerformance={
+                version:1,
+                roomId:String(roomId||""),
+                status:"running",
+                startedAt:nowPerformanceMsV1(),
+                contextMs:null,
+                deepThinkMs:null,
+                finalFirstTokenMs:null,
+                finalTotalMs:null,
+                totalMs:null,
+                hiddenBudget:null,
+                timeoutMs:null,
+                complexity:null,
+                deepRoute:null,
+                finalRoute:null,
+                deepAttempts:null,
+                finalAttempts:null
+            };
+            return activeDeepThinkPerformance;
+        }
+
+        function finishDeepThinkPerformanceV1(status) {
+            if (!activeDeepThinkPerformance) return null;
+            activeDeepThinkPerformance.status=status||"completed";
+            activeDeepThinkPerformance.totalMs=Math.max(0,Math.round(nowPerformanceMsV1()-activeDeepThinkPerformance.startedAt));
+            lastDeepThinkPerformance=Object.assign({},activeDeepThinkPerformance);
+            activeDeepThinkPerformance=null;
+            return lastDeepThinkPerformance;
+        }
+
+        function safeDeepThinkPerformanceSnapshotV1() {
+            const src=activeDeepThinkPerformance||lastDeepThinkPerformance;
+            if(!src)return null;
+            return {
+                version:src.version,
+                status:src.status,
+                contextMs:src.contextMs,
+                deepThinkMs:src.deepThinkMs,
+                finalFirstTokenMs:src.finalFirstTokenMs,
+                finalTotalMs:src.finalTotalMs,
+                totalMs:src.totalMs,
+                hiddenBudget:src.hiddenBudget,
+                timeoutMs:src.timeoutMs,
+                complexity:src.complexity,
+                deepRoute:src.deepRoute?Object.assign({},src.deepRoute):null,
+                finalRoute:src.finalRoute?Object.assign({},src.finalRoute):null,
+                deepAttempts:src.deepAttempts,
+                finalAttempts:src.finalAttempts
+            };
+        }
+
+        window.SevenDeepThinkPerformance=Object.freeze({
+            version:1,
+            policy:(messages,model)=>deepThinkPolicyForRequest(messages,model),
+            snapshot:safeDeepThinkPerformanceSnapshotV1
+        });
+
         async function runDeepThink(messages, model = currentModel) {
+            const policy=deepThinkPolicyForRequest(messages,model);
+            if(activeDeepThinkPerformance){
+                activeDeepThinkPerformance.hiddenBudget=policy.hiddenMaxTokens;
+                activeDeepThinkPerformance.timeoutMs=policy.timeoutMs;
+                activeDeepThinkPerformance.complexity=policy.tier;
+            }
+
             const reasoningMessages = [
                 {
                     role: "system",
-                    content: "You are in an internal reasoning phase, not replying to the user yet. " +
-                        "Thoroughly analyze the user's latest message and the full conversation so far. " +
-                        "Break the problem into its parts. Consider multiple angles and possible approaches. " +
-                        "Identify assumptions, edge cases, and potential mistakes. Work through the logic " +
-                        "step by step, checking your own reasoning as you go. Be as thorough and rigorous " +
-                        "as possible. Do not address the user directly or write a final answer here — this " +
-                        "is scratch reasoning only, to be used to inform the real answer afterward."
+                    content: "Perform the internal reasoning pass for the final answer. " +
+                        "Do not write a user-facing answer and do not narrate private chain-of-thought. " +
+                        "Return only a compact decision brief containing: the goal, important constraints and assumptions, " +
+                        "the chosen approach, critical edge cases, uncertainties, and checks the final answer should satisfy. " +
+                        "Be rigorous but concise. Preserve all useful conclusions while avoiding repetitive prose."
                 },
                 ...messages.filter(m => m.role !== "system")
             ];
 
-            // Deep Think's whole purpose is maximum reasoning quality, so
-            // this pass always forces the model's strongest reasoning
-            // level and its full token ceiling, regardless of the
-            // Settings values used for the normal reply.
+            const started=nowPerformanceMsV1();
             const reasoningData = await requestAI({
                 messages: reasoningMessages,
                 temperature: 0.2,
-                maxTokens: modelLimits(model).maxTokens,
+                maxTokens: policy.hiddenMaxTokens,
                 purpose: "deepThink",
-                model: model
+                model: model,
+                latencyPriority: true,
+                timeoutMs: policy.timeoutMs
             });
             if (stopRequested) throw new DOMException("Stopped", "AbortError");
-            const reasoning = reasoningData.choices[0].message.content;
+            if(activeDeepThinkPerformance){
+                activeDeepThinkPerformance.deepThinkMs=Math.max(0,Math.round(nowPerformanceMsV1()-started));
+                const route=reasoningData&&reasoningData._sevenRoute;
+                if(route){
+                    activeDeepThinkPerformance.deepRoute={provider:route.provider,model:route.model};
+                    activeDeepThinkPerformance.deepAttempts=route.attempts||1;
+                }
+            }
+
+            const reasoning = reasoningData?.choices?.[0]?.message?.content;
+            if(typeof reasoning!=="string") throw new Error("Deep Think reasoning pass returned an invalid response.");
 
             const finalMessages = messages.map(m => ({ ...m }));
             finalMessages.push({
                 role: "system",
-                content: "Internal reasoning you worked through before answering (do not repeat it verbatim, " +
-                    "use it to inform a clear, well-considered final answer):\n\n" + reasoning
+                content: "Use this compact internal decision brief to improve the final answer. Do not quote it or expose private reasoning. " +
+                    "Apply its conclusions, constraints, edge cases, uncertainty notes, and checks:\n\n" + reasoning
             });
             return finalMessages;
         }
