@@ -4926,6 +4926,14 @@
             return common;
         }
 
+        function searchPolarityV2(text){
+            const value=String(text||"").toLowerCase();
+            const negative=/\b(no|cannot|can't|does not|doesn't|not\s+(?:available|supported|compatible|working)|unsupported|incompatible|disabled)\b|لا يمكن|لا يدعم|غير متاح|لا يعمل|غير متوافق|معطل|مُعطل/.test(value);
+            if(negative)return -1;
+            const positive=/\b(yes|can|available|supported|compatible|works?|enabled)\b|نعم|يمكن|يدعم|متاح|يعمل|متوافق|مفعل|مُفعل/.test(value);
+            return positive?1:0;
+        }
+
         function detectSearchConflictSignalsV2(evidence,intent){
             const rows=Array.isArray(evidence)?evidence.filter(Boolean):[];
             const signals=[];
@@ -4952,6 +4960,11 @@
                                 break;
                             }
                         }
+                    }
+                    const polarityA=searchPolarityV2((a.title||"")+" "+(a.excerpt||""));
+                    const polarityB=searchPolarityV2((b.title||"")+" "+(b.excerpt||""));
+                    if(polarityA!==0&&polarityB!==0&&polarityA!==polarityB){
+                        signals.push({code:"possible_polarity_disagreement",sources:[a.sourceId,b.sourceId],subject:"polarity"});
                     }
                     if(signals.length>=8)return signals;
                 }
@@ -5073,6 +5086,7 @@
                 finalGapCodes:finalAssessment.gapCodes.slice(),
                 followUpCount:followUps.length,
                 followUpWaveCount:followUps.length?1:0,
+                followUpQueries:followUps.map(x=>x.text),
                 followUpPurposes:followUps.map(x=>x.purpose),
                 sufficiencyScore:finalAssessment.score,
                 sufficient:finalAssessment.sufficient,

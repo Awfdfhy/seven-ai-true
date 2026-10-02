@@ -833,5 +833,33 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   });
   assert.equal(r.hasWave,true);assert.equal(r.secret,false);assert.equal(r.body,false);
  });
+
+ await test('web search Batch 4 polish flags explicit polarity disagreement conservatively',async()=>{
+  const r=await page.evaluate(()=>SevenSearchV2.conflicts([
+    {evidenceId:'E1',sourceId:'S1',title:'Feature support',url:'https://one.example/a',excerpt:'This feature is supported and available on Android.',engine:'a',queryId:'q1',readState:'read_success',sourceType:'documentation',language:'en',freshnessClass:'current'},
+    {evidenceId:'E2',sourceId:'S2',title:'Feature support',url:'https://two.example/a',excerpt:'This feature is not available and unsupported on Android.',engine:'b',queryId:'q1',readState:'read_success',sourceType:'documentation',language:'en',freshnessClass:'current'}
+  ],'latest Android feature support'));
+  assert.ok(r.some(x=>x.code==='possible_polarity_disagreement'));assert.ok(r.every(x=>Array.isArray(x.sources)&&x.sources.length===2));
+ });
+ await test('web search Batch 4 polish exposes bounded follow-up query diagnostics',async()=>{
+  const r=await page.evaluate(async()=>{
+    const oldRun=runSearchWaveV2,oldRead=readTopSearchCandidatesV2;let wave=0;
+    runSearchWaveV2=async()=>{
+      wave++;
+      const raw=wave===1?[
+        normalizeSearchCandidateV2({title:'Weak',url:'https://weak.example/a',snippet:'coverage topic',engine:'fixture',queryId:'q1',queryPriority:1,rank:1,language:'en',sourceType:'reference',readState:'snippet_only'})
+      ]:[
+        normalizeSearchCandidateV2({title:'Independent',url:'https://independent.example/a',snippet:'coverage topic independent source',engine:'fixture',queryId:'fq1',queryPriority:.8,rank:1,language:'en',sourceType:'reference',readState:'read_success'})
+      ];
+      return {raw,gatewayReports:[]};
+    };
+    readTopSearchCandidatesV2=async rows=>({candidates:rows,pagesAttempted:0,pagesRead:0,pagesBlocked:0});
+    try{
+      const out=await performWebSearchV2('coverage topic');
+      return {queries:out.diagnostics.followUpQueries,count:out.diagnostics.followUpCount,waves:out.diagnostics.followUpWaveCount};
+    }finally{runSearchWaveV2=oldRun;readTopSearchCandidatesV2=oldRead;}
+  });
+  assert.ok(Array.isArray(r.queries));assert.equal(r.queries.length,r.count);assert.ok(r.queries.length<=2);assert.equal(r.waves,r.queries.length?1:0);
+ });
  await browser.close();server.close();fs.writeFileSync(require('path').join(__dirname,'results.json'),JSON.stringify({results,liveProviderCalls:false},null,2));
 })().catch(e=>{console.error(e);server.close();process.exit(1)});
