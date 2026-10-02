@@ -1362,5 +1362,103 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   });
   assert.ok(r.total>=r.initial);assert.ok(r.total<=10);assert.ok(r.followIds.length<=2);assert.ok(r.calls<=10);assert.ok((r.diag?.followUpCount||0)<=2);
  });
+
+ await test('Search Batch 8 Arabic normalization removes diacritics without losing Latin entities',async()=>{
+  const r=await page.evaluate(()=>({
+    normalized:SevenSearchV2.normalizeArabic('أَنْدْرُويد Android API'),
+    tokens:tokenizeSearchTextV2('أَنْدْرُويد Android API')
+  }));
+  assert.ok(!/[\u064B-\u065F]/.test(r.normalized));assert.ok(r.normalized.includes('Android'));assert.ok(r.tokens.includes('android'));assert.ok(r.tokens.includes('api'));
+ });
+ await test('Search Batch 8 SEO penalty is bounded and penalizes thin keyword-stuffed results',async()=>{
+  const r=await page.evaluate(()=>({
+    clean:searchSeoPenaltyV2({title:'Android official documentation',snippet:'A sufficiently detailed technical snippet describing the official Android API behavior and requirements.'}),
+    spam:searchSeoPenaltyV2({title:'BEST BEST BEST cheap sale Android',snippet:'click'})
+  }));
+  assert.ok(r.clean>=-2);assert.ok(r.spam<r.clean);assert.ok(r.spam>=-12);
+ });
+ await test('Search Batch 8 reader priority prefers authoritative current evidence over raw rank',async()=>{
+  const r=await page.evaluate(()=>{
+    const intent=SevenSearchV2.analyze('latest Android API update today');
+    const docs={title:'Docs',url:'https://docs.example.com/api',snippet:'official API details',sourceType:'documentation',publishedAt:new Date().toISOString(),score:70,sourceTypeHint:'documentation'};
+    const forum={title:'Forum',url:'https://forum.example.com/post',snippet:'community API discussion',sourceType:'community',publishedAt:null,score:95};
+    return {docs:readerPriorityScoreV2(docs,intent),forum:readerPriorityScoreV2(forum,intent)};
+  });
+  assert.ok(r.docs>r.forum);
+ });
+ await test('Search Batch 8 diverse evidence prevents one host from crowding the context',async()=>{
+  const r=await page.evaluate(()=>SevenSearchV2.selectEvidence([
+    {evidenceId:'E1',sourceId:'S1',title:'A1',url:'https://same.example/a',excerpt:'Android docs',sourceType:'documentation',readState:'read_success',freshnessClass:'evergreen',relevanceScore:95,coverageKeys:['docs']},
+    {evidenceId:'E2',sourceId:'S2',title:'A2',url:'https://same.example/b',excerpt:'Android docs more',sourceType:'documentation',readState:'read_success',freshnessClass:'evergreen',relevanceScore:94,coverageKeys:['docs']},
+    {evidenceId:'E3',sourceId:'S3',title:'A3',url:'https://same.example/c',excerpt:'Android docs repeated',sourceType:'documentation',readState:'read_success',freshnessClass:'evergreen',relevanceScore:93,coverageKeys:['docs']},
+    {evidenceId:'E4',sourceId:'S4',title:'Independent',url:'https://independent.example/report',excerpt:'independent Android evidence',sourceType:'specialist',readState:'read_success',freshnessClass:'evergreen',relevanceScore:80,coverageKeys:['independent']}
+  ],'Android API official documentation',4));
+  const hosts=r.selected.map(x=>new URL(x.url).hostname);assert.ok(hosts.includes('independent.example'));assert.ok(hosts.filter(x=>x==='same.example').length<=2);assert.ok(r.diagnostics.redundantEvidenceDropped>=1);
+ });
+ await test('Search Batch 8 stale or unknown-only current evidence cannot early stop',async()=>{
+  const r=await page.evaluate(()=>({
+    stale:SevenSearchV2.earlyStop({sufficient:true,gapCodes:[]},[],'latest Android update today',[{freshnessClass:'stale'}]),
+    unknown:SevenSearchV2.earlyStop({sufficient:true,gapCodes:[]},[],'latest Android update today',[{freshnessClass:'unknown'}])
+  }));
+  assert.equal(r.stale.stop,false);assert.equal(r.stale.reason,'freshness_required');assert.equal(r.unknown.stop,false);assert.equal(r.unknown.reason,'freshness_required');
+ });
+ await test('Search Batch 8 unresolved conflict blocks early stop',async()=>{
+  const r=await page.evaluate(()=>SevenSearchV2.earlyStop(
+    {sufficient:true,gapCodes:[]},[{code:'possible_numeric_disagreement',sources:['S1','S2']}],
+    'Android performance',[{freshnessClass:'evergreen'}]
+  ));
+  assert.equal(r.stop,false);assert.equal(r.reason,'unresolved_conflict');
+ });
+ await test('Search Batch 8 authority gap triggers at most one authority-targeted follow-up',async()=>{
+  const r=await page.evaluate(()=>{
+    const q='Android API SDK behavior';
+    const intent=SevenSearchV2.analyze(q);
+    const evidence=[
+      {evidenceId:'E1',sourceId:'S1',title:'Forum',url:'https://forum.example/a',excerpt:'Android API SDK behavior',sourceType:'community',readState:'read_success',freshnessClass:'evergreen'},
+      {evidenceId:'E2',sourceId:'S2',title:'Blog',url:'https://blog.example/a',excerpt:'Android API SDK details',sourceType:'specialist',readState:'read_success',freshnessClass:'evergreen'}
+    ];
+    const assessment=assessSearchEvidenceSufficiencyV2(evidence,intent);
+    const follow=SevenSearchV2.followUp(q,evidence,assessment,[]);
+    return {gaps:assessment.gapCodes,follow};
+  });
+  assert.ok(r.gaps.includes('missing_authority_source')||r.gaps.includes('no_strong_source'));
+  const authority=r.follow.filter(x=>x.purpose==='authority_gap');assert.ok(authority.length<=1);assert.ok(authority.length===1);assert.ok(['documentation','primary'].includes(authority[0].sourceTypeHint));
+ });
+ await test('Search Batch 8 normal Search citation audit rejects invented and unusable S ids',async()=>{
+  const r=await page.evaluate(()=>{
+    const result={sources:[
+      {id:'S1',url:'https://example.com/1',readState:'read_success'},
+      {id:'S2',url:'https://example.com/2',readState:'blocked'}
+    ]};
+    return {
+      good:SevenSearchV2.auditCitations('Claim [S1].',result),
+      unknown:SevenSearchV2.auditCitations('Claim [S9].',result),
+      blocked:SevenSearchV2.auditCitations('Claim [S2].',result)
+    };
+  });
+  assert.equal(r.good.valid,true);assert.equal(r.unknown.valid,false);assert.deepEqual(r.unknown.unknown,['S9']);assert.equal(r.blocked.valid,false);assert.deepEqual(r.blocked.unusable,['S2']);
+ });
+ await test('Search Batch 8 backend health stores only aggregate metadata',async()=>{
+  const r=await page.evaluate(()=>{
+    const old=localStorage.getItem('sevenSearchBackendHealthV2');
+    searchBackendHealthV2={};
+    recordSearchBackendHealthV2('fixture','search','success',1200,false);
+    recordSearchBackendHealthV2('fixture','read','blocked',800,false);
+    const snap=SevenSearchV2.backendHealth(),raw=JSON.stringify(snap);
+    if(old===null)localStorage.removeItem('sevenSearchBackendHealthV2');else localStorage.setItem('sevenSearchBackendHealthV2',old);
+    return {snap,secret:/gsk_|sk-or-|nvapi-|AIza|Authorization|Bearer/i.test(raw),content:/query|page body|prompt|response/i.test(raw)};
+  });
+  assert.equal(r.snap.fixture.searchSuccess,1);assert.equal(r.snap.fixture.readBlocked,1);assert.equal(r.secret,false);assert.equal(r.content,false);
+ });
+ await test('Search Batch 8 quality evaluator returns decomposed metrics without making its own live calls',async()=>{
+  const r=await page.evaluate(async()=>SevenSearchQualityV2.evaluate(
+    [{id:'fixture',question:'latest Android'}],
+    async()=>({sources:[
+      {url:'https://official.example/a',sourceType:'official',freshnessClass:'current',readState:'read_success'},
+      {url:'https://independent.example/b',sourceType:'news',freshnessClass:'recent',readState:'snippet_only'}
+    ],conflicts:[],assessment:{sufficient:true}})
+  ));
+  assert.equal(r.length,1);assert.equal(r[0].success,true);assert.equal(r[0].uniqueHosts,2);assert.equal(r[0].authorityPresent,true);assert.equal(r[0].freshPresent,true);assert.equal(r[0].readCount,1);assert.equal(r[0].snippetOnlyCount,1);
+ });
  await browser.close();server.close();fs.writeFileSync(require('path').join(__dirname,'results.json'),JSON.stringify({results,liveProviderCalls:false},null,2));
 })().catch(e=>{console.error(e);server.close();process.exit(1)});

@@ -4618,6 +4618,73 @@
         }
 
         let lastSearchV2Diagnostics=null;
+        const SEARCH_BACKEND_HEALTH_KEY_V2="sevenSearchBackendHealthV2";
+        const SEARCH_BACKEND_HEALTH_V2=Object.freeze({version:2,maxSamples:20,maxBackends:16});
+        let searchBackendHealthV2={};
+
+        function loadSearchBackendHealthV2(){
+            try{
+                const value=JSON.parse(localStorage.getItem(SEARCH_BACKEND_HEALTH_KEY_V2)||"{}");
+                return value&&typeof value==="object"&&!Array.isArray(value)?value:{};
+            }catch(_){return {};}
+        }
+        searchBackendHealthV2=loadSearchBackendHealthV2();
+
+        function boundedSearchHealthSamplesV2(value){
+            return (Array.isArray(value)?value:[]).map(Number).filter(x=>Number.isFinite(x)&&x>=0&&x<=120000).slice(-SEARCH_BACKEND_HEALTH_V2.maxSamples);
+        }
+        function normalizeSearchBackendHealthRowV2(raw){
+            const src=raw&&typeof raw==="object"?raw:{};
+            return {
+                searchSuccess:Math.max(0,Number(src.searchSuccess)||0),searchFailure:Math.max(0,Number(src.searchFailure)||0),
+                emptyResults:Math.max(0,Number(src.emptyResults)||0),readSuccess:Math.max(0,Number(src.readSuccess)||0),
+                readBlocked:Math.max(0,Number(src.readBlocked)||0),readFailure:Math.max(0,Number(src.readFailure)||0),
+                searchLatencyMs:boundedSearchHealthSamplesV2(src.searchLatencyMs),readLatencyMs:boundedSearchHealthSamplesV2(src.readLatencyMs),
+                updatedAt:Math.max(0,Number(src.updatedAt)||0)
+            };
+        }
+        function saveSearchBackendHealthV2(){
+            try{
+                const rows=Object.entries(searchBackendHealthV2).map(([k,v])=>[String(k).slice(0,60),normalizeSearchBackendHealthRowV2(v)])
+                    .sort((a,b)=>b[1].updatedAt-a[1].updatedAt).slice(0,SEARCH_BACKEND_HEALTH_V2.maxBackends);
+                searchBackendHealthV2=Object.fromEntries(rows);
+                localStorage.setItem(SEARCH_BACKEND_HEALTH_KEY_V2,JSON.stringify(searchBackendHealthV2));
+            }catch(_){}
+        }
+        function recordSearchBackendHealthV2(backend,kind,outcome,latencyMs,empty){
+            const key=String(backend||"gateway").replace(/[^a-z0-9_.-]/gi,"_").slice(0,60)||"gateway";
+            const row=normalizeSearchBackendHealthRowV2(searchBackendHealthV2[key]);
+            const latency=Math.max(0,Number(latencyMs)||0);
+            if(kind==="search"){
+                if(outcome==="success")row.searchSuccess++;else row.searchFailure++;
+                if(empty===true)row.emptyResults++;
+                if(latency)row.searchLatencyMs=boundedSearchHealthSamplesV2([...row.searchLatencyMs,latency]);
+            }else{
+                if(outcome==="success")row.readSuccess++;else if(outcome==="blocked")row.readBlocked++;else row.readFailure++;
+                if(latency)row.readLatencyMs=boundedSearchHealthSamplesV2([...row.readLatencyMs,latency]);
+            }
+            row.updatedAt=Date.now();searchBackendHealthV2[key]=row;saveSearchBackendHealthV2();
+        }
+        function searchHealthPercentileV2(samples,q){
+            const list=boundedSearchHealthSamplesV2(samples).sort((a,b)=>a-b);
+            if(!list.length)return 0;
+            return Math.round(list[Math.max(0,Math.min(list.length-1,Math.ceil((list.length-1)*q)))]);
+        }
+        function safeSearchBackendHealthSnapshotV2(){
+            const out={};
+            for(const [backend,raw] of Object.entries(searchBackendHealthV2)){
+                const row=normalizeSearchBackendHealthRowV2(raw);
+                out[backend]={
+                    searchSuccess:row.searchSuccess,searchFailure:row.searchFailure,emptyResults:row.emptyResults,
+                    readSuccess:row.readSuccess,readBlocked:row.readBlocked,readFailure:row.readFailure,
+                    searchP50Ms:searchHealthPercentileV2(row.searchLatencyMs,.5),searchP90Ms:searchHealthPercentileV2(row.searchLatencyMs,.9),
+                    readP50Ms:searchHealthPercentileV2(row.readLatencyMs,.5),readP90Ms:searchHealthPercentileV2(row.readLatencyMs,.9),
+                    updatedAt:row.updatedAt
+                };
+            }
+            return out;
+        }
+
 
         function normalizeSearchGatewayUrlV2(value){
             try{
@@ -4659,6 +4726,7 @@
         async function searchGatewayCandidatesV2(queryObj,intent){
             const base=normalizeSearchGatewayUrlV2(SEARCH_GATEWAY_URL);
             if(!base)return {ok:false,configured:false,candidates:[],capability:null,backend:null};
+            const started=Date.now();
             try{
                 const response=await fetchWithTimeout(base+"/v1/search",{
                     method:"POST",
@@ -4672,7 +4740,7 @@
                         maxResults:8
                     })
                 },SEARCH_V2.gatewaySearchTimeoutMs);
-                if(!response.ok)return {ok:false,configured:true,candidates:[],capability:null,backend:null,status:response.status};
+                if(!response.ok){recordSearchBackendHealthV2("gateway","search","failure",Date.now()-started,false);return {ok:false,configured:true,candidates:[],capability:null,backend:null,status:response.status};}
                 const data=await response.json();
                 const backend=String(data?.backend||"unknown").slice(0,40);
                 const capability=["general_web","general_web_degraded"].includes(data?.capability)?data.capability:"general_web_degraded";
@@ -4691,9 +4759,11 @@
                     publishedAt:item?.publishedAt||null,
                     discoveredAt:Date.now()
                 })).filter(Boolean);
+                recordSearchBackendHealthV2(backend||"gateway","search","success",Date.now()-started,candidates.length===0);
                 return {ok:true,configured:true,candidates,capability,backend};
             }catch(error){
                 if(error?.name==="AbortError"&&activeAbortController?.signal?.aborted)throw error;
+                recordSearchBackendHealthV2("gateway","search","failure",Date.now()-started,false);
                 return {ok:false,configured:true,candidates:[],capability:null,backend:null,error:String(error?.code||error?.message||"gateway_failed").slice(0,80)};
             }
         }
@@ -4701,6 +4771,8 @@
         async function readSearchCandidateViaGatewayV2(candidate){
             const base=normalizeSearchGatewayUrlV2(SEARCH_GATEWAY_URL);
             if(!base||!candidate?.url)return candidate;
+            const started=Date.now();
+            const backend=String(candidate?.engine||"gateway").startsWith("gateway_")?String(candidate.engine).slice(8):"gateway";
             try{
                 const response=await fetchWithTimeout(base+"/v1/read",{
                     method:"POST",
@@ -4709,11 +4781,10 @@
                 },SEARCH_V2.gatewayReadTimeoutMs);
                 let data=null;
                 try{data=await response.json();}catch(_){}
-                if(!data||typeof data!=="object"){
-                    return Object.assign({},candidate,{readState:"failed",readerError:"invalid_reader_response"});
-                }
+                if(!data||typeof data!=="object"){recordSearchBackendHealthV2(backend,"read","failure",Date.now()-started,false);return Object.assign({},candidate,{readState:"failed",readerError:"invalid_reader_response"});}
                 const state=["read_success","read_partial","blocked","unsupported","failed"].includes(data.readState)?data.readState:(response.ok?"failed":"blocked");
                 const text=typeof data.text==="string"?stripSearchHtmlV2(data.text).slice(0,12000):"";
+                recordSearchBackendHealthV2(backend,"read",(state==="read_success"||state==="read_partial")?"success":(state==="blocked"||state==="unsupported"?"blocked":"failure"),Date.now()-started,false);
                 return Object.assign({},candidate,{
                     title:(typeof data.title==="string"&&data.title.trim())?stripSearchHtmlV2(data.title).slice(0,240):candidate.title,
                     url:canonicalSearchUrlV2(data.finalUrl)||candidate.url,
@@ -4726,8 +4797,18 @@
                 });
             }catch(error){
                 if(error?.name==="AbortError"&&activeAbortController?.signal?.aborted)throw error;
+                recordSearchBackendHealthV2(backend,"read","failure",Date.now()-started,false);
                 return Object.assign({},candidate,{readState:"failed",readerError:String(error?.code||"reader_failed").slice(0,80)});
             }
+        }
+
+        function readerPriorityScoreV2(candidate,intent){
+            const type=String(candidate?.sourceType||"unknown");
+            const authority=["official","primary","government","documentation","academic"].includes(type)?24:(type==="news"||type==="specialist"?12:4);
+            const freshness=classifySearchFreshnessV2(candidate,intent);
+            const freshnessBoost=intent?.timeSensitive?(freshness==="current"?20:(freshness==="recent"?14:(freshness==="unknown"?-4:-10))):0;
+            const hint=candidate?.sourceTypeHint&&candidate.sourceTypeHint===type?8:0;
+            return Math.max(0,Math.min(100,Number(candidate?.score)||0))+authority+freshnessBoost+hint+searchSeoPenaltyV2(candidate);
         }
 
         async function readTopSearchCandidatesV2(ranked,options){
@@ -4735,7 +4816,8 @@
             const maxReads=Math.max(0,Math.min(SEARCH_V2.maxPageReads+SEARCH_V2.maxFollowUpPageReads,Number(opts.maxReads)||SEARCH_V2.maxPageReads));
             if(!isSearchGatewayConfiguredV2()||maxReads<=0)return {candidates:ranked,pagesAttempted:0,pagesRead:0,pagesBlocked:0};
             const selected=[],hosts=new Set();
-            for(const candidate of ranked){
+            const prioritized=(Array.isArray(ranked)?ranked:[]).slice().sort((a,b)=>readerPriorityScoreV2(b,opts.intent||{})-readerPriorityScoreV2(a,opts.intent||{})||Number(b?.score||0)-Number(a?.score||0));
+            for(const candidate of prioritized){
                 if(selected.length>=maxReads)break;
                 if(candidate.readState!=="snippet_only")continue;
                 let host="";
@@ -4774,8 +4856,21 @@
             return /[\u0600-\u06FF]/.test(String(text||""));
         }
 
+        function normalizeArabicSearchTextV2(value){
+            return String(value||"").normalize("NFKC")
+                .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g,"")
+                .replace(/\u0640/g,"")
+                .replace(/[أإآٱ]/g,"ا")
+                .replace(/ى/g,"ي");
+        }
+
+        function normalizeSearchTokenTextV2(text){
+            const value=String(text||"").normalize("NFKC").toLowerCase();
+            return containsArabicV2(value)?normalizeArabicSearchTextV2(value):value;
+        }
+
         function tokenizeSearchTextV2(text){
-            return String(text||"").toLowerCase()
+            return normalizeSearchTokenTextV2(text)
                 .replace(/[^\p{L}\p{N}+#._-]+/gu," ")
                 .split(/\s+/).filter(x=>x.length>=2).slice(0,40);
         }
@@ -5000,7 +5095,7 @@
         }
 
         const SEARCH_SOURCE_TYPES_V2=new Set([
-            "government","academic","documentation","official","primary","reference",
+            "government","academic","documentation","official","primary","reference","news",
             "specialist","community","social","commercial","unknown"
         ]);
 
@@ -5101,7 +5196,7 @@
             }else if(kind==="academic"){
                 score=({academic:15,primary:12,government:9,official:8,documentation:7,reference:6,specialist:4,community:1})[t]||0;
             }else if(kind==="news"||kind==="current_fact"){
-                score=({primary:14,government:13,official:11,specialist:7,documentation:5,academic:5,reference:2,community:1,commercial:-2})[t]||0;
+                score=({primary:14,government:13,official:11,news:9,specialist:7,documentation:5,academic:5,reference:2,community:1,commercial:-2})[t]||0;
             }else if(kind==="comparison"){
                 score=({official:9,documentation:9,specialist:9,primary:8,government:7,academic:7,reference:5,community:3,commercial:-1})[t]||0;
             }else if(kind==="how_to"){
@@ -5114,6 +5209,23 @@
             // Authority never rescues a result that barely matches the question.
             if(Number(relevance)<.08)score=Math.min(score,2);
             return score;
+        }
+
+        function searchSeoPenaltyV2(candidate){
+            const titleTokens=tokenizeSearchTextV2(candidate?.title||"");
+            const counts=new Map();
+            for(const token of titleTokens)counts.set(token,(counts.get(token)||0)+1);
+            const maxRepeat=Math.max(0,...counts.values());
+            const snippetLength=String(candidate?.snippet||"").trim().length;
+            const titleLength=String(candidate?.title||"").trim().length;
+            const clickbait=(String(candidate?.title||"").toLowerCase().match(/\b(best|top|cheap|sale|coupon|click|must see|shocking)\b/g)||[]).length;
+            let penalty=0;
+            if(maxRepeat>=3)penalty-=Math.min(5,(maxRepeat-2)*2);
+            if(snippetLength<35)penalty-=4;
+            else if(snippetLength<70)penalty-=2;
+            if(titleLength>180)penalty-=2;
+            if(clickbait>=2)penalty-=2;
+            return Math.max(-12,Math.min(0,penalty));
         }
 
         function scoreSearchCandidatePartsV2(candidate,intent){
@@ -5129,6 +5241,7 @@
                 language:candidate.language===intent?.language?6:0,
                 freshness:searchFreshnessScoreV2(freshness,intent),
                 corroboration:Math.min(6,Math.max(0,(candidate.discoveredBy?.length||1)-1)*2),
+                seoPenalty:searchSeoPenaltyV2(candidate),
                 rankPenalty:-Math.min(8,Math.max(0,(candidate.rank||1)-1)*.8)
             };
             const total=Object.values(parts).reduce((sum,value)=>sum+(Number(value)||0),0);
@@ -5249,44 +5362,79 @@
             try{return new URL(candidate?.url||"").hostname.toLowerCase();}catch(_){return "";}
         }
 
+        // ---------- Web Search v2 Batch 8: evidence precision + diversity ----------
+        const SEARCH_QUALITY_V2=Object.freeze({
+            version:2,maxContextPerHost:2,
+            strongTypes:new Set(["official","primary","government","documentation","academic"])
+        });
+        let lastSearchQualityV2=null;
+        function evidenceHostV2(item){try{return new URL(String(item?.url||"")).hostname.toLowerCase().replace(/^www\./,"");}catch(_){return "";}}
+        function evidenceQualityPartsV2(item,intent){
+            const sourceType=String(item?.sourceType||"unknown"),readState=String(item?.readState||"snippet_only");
+            const freshness=String(item?.freshnessClass||classifySearchFreshnessV2(item,intent||{}));
+            const lexical=Math.max(0,Math.min(100,Number(item?.relevanceScore??item?.score)||0));
+            const sourceAppropriateness=SEARCH_QUALITY_V2.strongTypes.has(sourceType)?100:(sourceType==="news"||sourceType==="specialist"?78:(sourceType==="reference"?66:(sourceType==="community"?58:50)));
+            const readQuality=readState==="read_success"?100:(readState==="read_partial"?78:(readState==="snippet_only"?48:20));
+            const freshnessQuality=freshness==="current"?100:(freshness==="recent"?88:(freshness==="evergreen"?80:(freshness==="stale"?18:52)));
+            const needsAuthority=Array.isArray(intent?.sourceNeeds)&&intent.sourceNeeds.some(x=>/official|documentation|primary|academic|institutional/.test(String(x)));
+            const authorityBonus=needsAuthority&&SEARCH_QUALITY_V2.strongTypes.has(sourceType)?14:0;
+            const injectionPenalty=item?.injectionSuspected===true?35:0;
+            const total=Math.max(0,Math.min(100,lexical*.42+sourceAppropriateness*.2+readQuality*.18+freshnessQuality*.2+authorityBonus-injectionPenalty));
+            return {lexical:Number(lexical.toFixed(2)),sourceAppropriateness,readQuality,freshnessQuality,authorityBonus,injectionPenalty,total:Number(total.toFixed(2))};
+        }
+        function rerankEvidencePrecisionV2(evidence,intent){
+            return (Array.isArray(evidence)?evidence:[]).map(item=>{const parts=evidenceQualityPartsV2(item,intent);return Object.assign({},item,{precisionScore:parts.total,qualityParts:parts});})
+                .sort((a,b)=>b.precisionScore-a.precisionScore||(Number(b.relevanceScore)||0)-(Number(a.relevanceScore)||0)||String(a.title||"").localeCompare(String(b.title||"")));
+        }
+        function selectDiverseEvidenceV2(evidence,intent,limit,options){
+            const opts=options&&typeof options==="object"?options:{},rows=rerankEvidencePrecisionV2(evidence,intent);
+            const max=Math.max(1,Math.min(30,Number(limit)||SEARCH_V2.maxContextSources)),selected=[],ids=new Set(),hostCounts=new Map(),covered=new Set();
+            let redundantEvidenceDropped=0;
+            const idOf=item=>String(item?.researchEvidenceId||item?.evidenceId||item?.sourceId||item?.url||"");
+            const canTake=item=>{const host=evidenceHostV2(item);return !host||(hostCounts.get(host)||0)<SEARCH_QUALITY_V2.maxContextPerHost;};
+            const take=item=>{const id=idOf(item);if(!item||!id||ids.has(id)||selected.length>=max||!canTake(item))return false;selected.push(item);ids.add(id);const host=evidenceHostV2(item);if(host)hostCounts.set(host,(hostCounts.get(host)||0)+1);for(const key of item.coverageKeys||[])covered.add(key);return true;};
+            const conflictIds=new Set((opts.conflicts||[]).flatMap(x=>Array.isArray(x?.sources)?x.sources:[]));
+            const coverageKeys=Array.from(new Set((opts.coverageKeys||rows.flatMap(x=>x.coverageKeys||[])).filter(Boolean))).slice(0,12);
+            const authorityNeeded=Array.isArray(intent?.sourceNeeds)&&intent.sourceNeeds.some(x=>/official|documentation|primary|academic|institutional/.test(String(x)));
+            if(authorityNeeded)take(rows.find(x=>SEARCH_QUALITY_V2.strongTypes.has(x.sourceType)));
+            if(intent?.timeSensitive)take(rows.find(x=>x.freshnessClass==="current"||x.freshnessClass==="recent"));
+            for(const row of rows)if(conflictIds.has(row.sourceId)||conflictIds.has(row.evidenceId)||conflictIds.has(row.researchEvidenceId))take(row);
+            for(const key of coverageKeys){if(selected.length>=max)break;take(rows.find(x=>!ids.has(idOf(x))&&(x.coverageKeys||[]).includes(key)&&canTake(x)));}
+            for(const row of rows){if(selected.length>=max)break;if(ids.has(idOf(row)))continue;if(!canTake(row)){redundantEvidenceDropped++;continue;}take(row);}
+            for(const row of rows)if(!ids.has(idOf(row)))redundantEvidenceDropped++;
+            return {selected,diagnostics:{
+                redundantEvidenceDropped,hostDiversity:new Set(selected.map(evidenceHostV2).filter(Boolean)).size,
+                sourceTypeDiversity:new Set(selected.map(x=>String(x.sourceType||"unknown"))).size,selectedCount:selected.length,
+                authorityPresent:selected.some(x=>SEARCH_QUALITY_V2.strongTypes.has(x.sourceType)),
+                freshPresent:selected.some(x=>x.freshnessClass==="current"||x.freshnessClass==="recent"),coveredCoverageKeys:Array.from(covered)
+            }};
+        }
+        function currentFreshnessGateV2(evidence,intent){
+            const rows=Array.isArray(evidence)?evidence:[],freshCount=rows.filter(x=>x.freshnessClass==="current"||x.freshnessClass==="recent").length;
+            const staleCount=rows.filter(x=>x.freshnessClass==="stale"||x.freshnessClass==="older").length,unknownCount=rows.filter(x=>!x.freshnessClass||x.freshnessClass==="unknown").length;
+            return {required:intent?.timeSensitive===true,freshCount,staleCount,unknownCount,passes:intent?.timeSensitive!==true||freshCount>0};
+        }
+        function searchEarlyStopDecisionV2(assessment,conflicts,intent,evidence){
+            const freshness=currentFreshnessGateV2(evidence,intent);
+            if(!assessment?.sufficient)return {stop:false,reason:"insufficient_evidence"};
+            if(!freshness.passes)return {stop:false,reason:"freshness_required"};
+            if(Array.isArray(conflicts)&&conflicts.length)return {stop:false,reason:"unresolved_conflict"};
+            if((assessment?.gapCodes||[]).length)return {stop:false,reason:"unresolved_gap"};
+            return {stop:true,reason:"evidence_sufficient"};
+        }
         function buildSearchEvidenceUnitsV2(candidates,intent){
-            const rows=Array.isArray(candidates)?candidates.filter(Boolean):[];
-            const selected=[],seenIds=new Set(),seenHosts=new Set();
-            const diversityTarget=Math.min(4,SEARCH_V2.maxContextSources);
-
-            for(const candidate of rows){
-                if(selected.length>=diversityTarget)break;
-                const host=searchCandidateHostV2(candidate);
-                if(host&&seenHosts.has(host))continue;
-                selected.push(candidate);seenIds.add(candidate.id);
-                if(host)seenHosts.add(host);
-            }
-            for(const candidate of rows){
-                if(selected.length>=SEARCH_V2.maxContextSources)break;
-                if(seenIds.has(candidate.id))continue;
-                selected.push(candidate);seenIds.add(candidate.id);
-            }
-
-            return selected.map((candidate,index)=>({
-                evidenceId:"E"+(index+1),
-                sourceId:"S"+(index+1),
-                title:candidate.title,
-                url:candidate.url,
-                excerpt:candidate.snippet||"",
-                engine:candidate.engine,
-                queryId:candidate.queryId,
-                queryPurpose:candidate.queryPurpose||"primary",
-                coverageKeys:Array.isArray(candidate.coverageKeys)?candidate.coverageKeys.slice(0,8):[],
-                readState:candidate.readState,
-                sourceType:candidate.sourceType,
-                language:candidate.language,
-                publishedAt:candidate.publishedAt||null,
-                freshnessClass:candidate.freshnessClass||classifySearchFreshnessV2(candidate,intent),
-                relevanceScore:Number(candidate.score)||0,
+            const rows=(Array.isArray(candidates)?candidates:[]).filter(Boolean).map((candidate,index)=>({
+                evidenceId:"E"+(index+1),sourceId:"S"+(index+1),title:candidate.title,url:candidate.url,excerpt:candidate.snippet||"",engine:candidate.engine,
+                queryId:candidate.queryId,queryPurpose:candidate.queryPurpose||"primary",coverageKeys:Array.isArray(candidate.coverageKeys)?candidate.coverageKeys.slice(0,8):[],
+                readState:candidate.readState,sourceType:candidate.sourceType,language:candidate.language,publishedAt:candidate.publishedAt||null,
+                freshnessClass:candidate.freshnessClass||classifySearchFreshnessV2(candidate,intent),relevanceScore:Number(candidate.score)||0,
                 scoreParts:candidate.scoreParts?Object.assign({},candidate.scoreParts):scoreSearchCandidatePartsV2(candidate,intent).parts,
-                injectionSuspected:candidate.injectionSuspected===true,
-                extractedAt:candidate.fetchedAt||candidate.discoveredAt||Date.now()
+                injectionSuspected:candidate.injectionSuspected===true,extractedAt:candidate.fetchedAt||candidate.discoveredAt||Date.now()
             }));
+            const selection=selectDiverseEvidenceV2(rows,intent,SEARCH_V2.maxContextSources,{coverageKeys:rows.flatMap(x=>x.coverageKeys||[])});
+            const selected=selection.selected.map((item,index)=>Object.assign({},item,{evidenceId:"E"+(index+1),sourceId:"S"+(index+1)}));
+            lastSearchQualityV2=Object.assign({},selection.diagnostics,{freshness:currentFreshnessGateV2(selected,intent)});
+            return selected;
         }
 
         function searchEvidenceCoverageV2(evidence,intent){
@@ -5305,6 +5453,8 @@
             const readCount=rows.filter(x=>x.readState==="read_success"||x.readState==="read_partial").length;
             const freshCount=rows.filter(x=>x.freshnessClass==="current"||x.freshnessClass==="recent").length;
             const strongCount=rows.filter(x=>["official","primary","government","documentation","academic"].includes(x.sourceType)).length;
+            const authorityNeeded=Array.isArray(intent?.sourceNeeds)&&intent.sourceNeeds.some(x=>/official|documentation|primary|academic|institutional/.test(String(x)));
+            const authorityCount=rows.filter(x=>["official","primary","government","documentation","academic"].includes(x.sourceType)).length;
             const coverage=searchEvidenceCoverageV2(rows,intent);
             const gaps=[];
             if(rows.length<2)gaps.push("too_few_sources");
@@ -5312,6 +5462,7 @@
             if(readCount===0)gaps.push("no_read_evidence");
             if(intent?.timeSensitive===true&&freshCount===0)gaps.push("stale_current_query");
             if(intent?.technical===true&&strongCount===0)gaps.push("no_strong_source");
+            if(authorityNeeded&&authorityCount===0)gaps.push("missing_authority_source");
             if(coverage<.3)gaps.push("weak_query_coverage");
             let score=1;
             const penalties={
@@ -5320,6 +5471,7 @@
                 no_read_evidence:.12,
                 stale_current_query:.25,
                 no_strong_source:.18,
+                missing_authority_source:.18,
                 weak_query_coverage:.18
             };
             for(const gap of gaps)score-=penalties[gap]||.1;
@@ -5331,7 +5483,7 @@
                 gapCodes:gaps,
                 evidenceCount:rows.length,
                 independentHostCount:hosts.size,
-                readCount,freshCount,strongCount,
+                readCount,freshCount,strongCount,authorityCount,
                 coverage:Number(coverage.toFixed(3))
             };
         }
@@ -5340,20 +5492,19 @@
             const out=[],seen=new Set((Array.isArray(initialQueries)?initialQueries:[]).map(q=>String(q?.text||"").trim().toLowerCase()).filter(Boolean));
             const language=intent?.language||"en";
             const base=String(question||"").trim();
-            const add=(text,purpose)=>{
+            const add=(text,purpose,meta={})=>{
                 const clean=String(text||"").trim().replace(/\s+/g," ");
                 const key=clean.toLowerCase();
                 if(!clean||seen.has(key)||out.length>=SEARCH_V2.maxFollowUpQueries)return;
                 seen.add(key);
-                out.push({id:"fq"+(out.length+1),text:clean,purpose,language,priority:.86});
+                out.push({id:"fq"+(out.length+1),text:clean,purpose,language,priority:.86,sourceTypeHint:meta.sourceTypeHint||null,domainHint:meta.domainHint||null,recencyHint:meta.recencyHint||searchRecencyHintV2(intent),coverageKey:String(meta.coverageKey||purpose).slice(0,60)});
             };
             const gaps=new Set(assessment?.gapCodes||[]);
             if(gaps.has("stale_current_query")){
                 add(base+" "+(intent?.currentYear||new Date().getFullYear())+(language==="ar"?" أحدث مصدر رسمي":" latest official source"),"freshness_gap");
             }
-            if(gaps.has("no_strong_source")){
-                add(base+(language==="ar"?" التوثيق الرسمي":" official documentation"),"strong_source_gap");
-            }
+            if(gaps.has("unresolved_conflict"))add(base+(language==="ar"?" تحقق من الادعاءات المتعارضة من مصدر أولي":" verify conflicting claims primary source"),"conflict_gap",{sourceTypeHint:"primary",coverageKey:"conflict_resolution"});
+            if(gaps.has("missing_authority_source")||gaps.has("no_strong_source"))add(base+(language==="ar"?" المصدر الرسمي أو التوثيق":" official documentation primary source"),"authority_gap",{sourceTypeHint:intent?.technical?"documentation":"primary",coverageKey:"authority"});
             if((gaps.has("too_few_sources")||gaps.has("low_host_diversity")||gaps.has("weak_query_coverage"))&&out.length<SEARCH_V2.maxFollowUpQueries){
                 add(base+(language==="ar"?" مصدر مستقل":" independent source"),"coverage_gap");
             }
@@ -5469,7 +5620,8 @@
             if(assessment?.gapCodes?.length)text+="Runtime search assessment: unresolved gaps="+assessment.gapCodes.join(",")+"; sufficiency="+assessment.score+".\n";
             if(Array.isArray(conflicts)&&conflicts.length)text+="Runtime search assessment: possible disagreement signals="+conflicts.map(x=>x.code+"("+x.sources.join("/")+")").join(",")+". Do not silently resolve these without supporting evidence.\n";
             text+="\n";
-            for(const item of evidence.slice(0,SEARCH_V2.maxContextSources)){
+            const packedEvidence=selectDiverseEvidenceV2(evidence,intent,SEARCH_V2.maxContextSources,{conflicts,coverageKeys:evidence.flatMap(x=>x.coverageKeys||[])}).selected;
+            for(const item of packedEvidence){
                 const safety=item.injectionSuspected?" • injection-suspected":"";
                 const date=item.publishedAt?" • published "+item.publishedAt:"";
                 const block="["+item.sourceId+"] "+item.title+"\nURL: "+item.url+"\nSource: "+item.engine+" • "+item.sourceType+" • "+item.readState+" • freshness="+item.freshnessClass+date+safety+"\nEvidence: "+(item.excerpt||"(no excerpt)")+"\n\n";
@@ -5506,7 +5658,10 @@
             emitSearchStageV2(runtime,"checking","Checking evidence…",{pageCount:firstRead.pagesAttempted});
             let evidence=buildSearchEvidenceUnitsV2(ranked,plan.intent);
             const initialAssessment=assessSearchEvidenceSufficiencyV2(evidence,plan.intent);
-            const followUps=initialAssessment.sufficient?[]:planSearchFollowUpV2(question,plan.intent,evidence,initialAssessment,plan.queries);
+            const initialConflicts=detectSearchConflictSignalsV2(evidence,plan.intent);
+            const initialDecision=searchEarlyStopDecisionV2(initialAssessment,initialConflicts,plan.intent,evidence);
+            const followAssessment=initialConflicts.length?Object.assign({},initialAssessment,{sufficient:false,gapCodes:Array.from(new Set([...(initialAssessment.gapCodes||[]),"unresolved_conflict"]))}):initialAssessment;
+            const followUps=initialDecision.stop?[]:planSearchFollowUpV2(question,plan.intent,evidence,followAssessment,plan.queries);
             let secondRead={pagesAttempted:0,pagesRead:0,pagesBlocked:0};
 
             if(followUps.length){
@@ -5523,6 +5678,8 @@
 
             const finalAssessment=assessSearchEvidenceSufficiencyV2(evidence,plan.intent);
             const conflicts=detectSearchConflictSignalsV2(evidence,plan.intent);
+            const finalDecision=searchEarlyStopDecisionV2(finalAssessment,conflicts,plan.intent,evidence);
+            const qualityPack=selectDiverseEvidenceV2(evidence,plan.intent,SEARCH_V2.maxContextSources,{conflicts,coverageKeys:evidence.flatMap(x=>x.coverageKeys||[])});
 
             const gatewayConfigured=isSearchGatewayConfiguredV2();
             const successfulGateway=gatewayReports.filter(x=>x.ok&&x.candidates?.length);
@@ -5560,6 +5717,12 @@
                 queryCount:plan.queries.length+followUps.length,rawCandidateCount:raw.length,uniqueCandidateCount:ranked.length,
                 evidenceCount:evidence.length,initialEvidenceCount:initialAssessment.evidenceCount,finalEvidenceCount:finalAssessment.evidenceCount,
                 independentHostCount,
+                hostDiversity:qualityPack.diagnostics.hostDiversity,sourceTypeDiversity:qualityPack.diagnostics.sourceTypeDiversity,
+                redundantEvidenceDropped:qualityPack.diagnostics.redundantEvidenceDropped,authorityPresent:qualityPack.diagnostics.authorityPresent,
+                freshEvidencePresent:qualityPack.diagnostics.freshPresent,
+                staleEvidenceCount:evidence.filter(x=>x.freshnessClass==="stale"||x.freshnessClass==="older").length,
+                unknownDateCount:evidence.filter(x=>!x.freshnessClass||x.freshnessClass==="unknown").length,
+                earlyStopReason:initialDecision.reason,finalStopReason:finalDecision.reason,
                 initialGapCodes:initialAssessment.gapCodes.slice(),
                 finalGapCodes:finalAssessment.gapCodes.slice(),
                 followUpCount:followUps.length,
@@ -5628,8 +5791,39 @@
                 pageMaxEntries:SEARCH_CACHE_V2.pageMaxEntries
             }),
             clearCache:clearSearchCacheV2,
-            snapshot:()=>lastSearchV2Diagnostics?JSON.parse(JSON.stringify(lastSearchV2Diagnostics)):null
+            snapshot:()=>lastSearchV2Diagnostics?JSON.parse(JSON.stringify(lastSearchV2Diagnostics)):null,
+            quality:()=>lastSearchQualityV2?JSON.parse(JSON.stringify(lastSearchQualityV2)):null,
+            backendHealth:()=>safeSearchBackendHealthSnapshotV2(),
+            normalizeArabic:normalizeArabicSearchTextV2,
+            rerankEvidence:(items,question)=>rerankEvidencePrecisionV2(items,analyzeSearchIntentV2(question||"")),
+            selectEvidence:(items,question,limit)=>selectDiverseEvidenceV2(items,analyzeSearchIntentV2(question||""),limit||SEARCH_V2.maxContextSources),
+            earlyStop:(assessment,conflicts,question,evidence)=>searchEarlyStopDecisionV2(assessment,conflicts,analyzeSearchIntentV2(question||""),evidence||[]),
+            auditCitations:verifySearchReplyCitationsV2
         });
+
+        async function runSearchQualityEvaluationV2(fixtures,executor){
+            if(!Array.isArray(fixtures)||typeof executor!=="function")return [];
+            const rows=[];
+            for(const fixture of fixtures.slice(0,20)){
+                const question=String(fixture?.question||"").trim();if(!question)continue;
+                const started=Date.now();let result=null,error=null;
+                try{result=await executor(question,fixture);}catch(e){error=String(e?.code||e?.name||"evaluation_failed").slice(0,60);}
+                const sources=Array.isArray(result?.sources)?result.sources:[];
+                const hosts=new Set(sources.map(x=>{try{return new URL(x.url).hostname.toLowerCase();}catch(_){return "";}}).filter(Boolean));
+                rows.push({
+                    id:String(fixture?.id||("fixture_"+(rows.length+1))).slice(0,80),success:!!result&&!error,error,
+                    sourceCount:sources.length,uniqueHosts:hosts.size,
+                    authorityPresent:sources.some(x=>["official","primary","government","documentation","academic"].includes(x.sourceType)),
+                    freshPresent:sources.some(x=>x.freshnessClass==="current"||x.freshnessClass==="recent"),
+                    readCount:sources.filter(x=>x.readState==="read_success"||x.readState==="read_partial").length,
+                    snippetOnlyCount:sources.filter(x=>x.readState==="snippet_only").length,
+                    conflictCount:Array.isArray(result?.conflicts)?result.conflicts.length:0,sufficient:result?.assessment?.sufficient===true,
+                    elapsedMs:Math.max(0,Date.now()-started)
+                });
+            }
+            return rows;
+        }
+        window.SevenSearchQualityV2=Object.freeze({version:2,evaluate:runSearchQualityEvaluationV2,backendHealth:()=>safeSearchBackendHealthSnapshotV2(),quality:()=>lastSearchQualityV2?JSON.parse(JSON.stringify(lastSearchQualityV2)):null});
 
         // ---------- Web Search v2 Batch 7: Deep Research Integration ----------
         const DEEP_RESEARCH_V2_KEY="sevenDeepResearchV2";
@@ -5853,7 +6047,9 @@
             text+="Research status: "+assessment.status+"; score="+assessment.score+"; unresolved gaps="+assessment.gaps.join(", ")+".\n";
             if(run.conflicts.length)text+="Unresolved conflict signals: "+run.conflicts.map(x=>x.code).join(", ")+". State disagreements instead of silently choosing a side.\n";
             text+="\n";
-            for(const item of run.evidence.slice(0,DEEP_RESEARCH_V2.maxContextEvidence)){
+            const researchIntent=planDeepResearchV2(run.question).intent;
+            const packedResearchEvidence=selectDiverseEvidenceV2(run.evidence,researchIntent,DEEP_RESEARCH_V2.maxContextEvidence,{conflicts:run.conflicts,coverageKeys:run.evidence.flatMap(x=>x.coverageKeys||[])}).selected;
+            for(const item of packedResearchEvidence){
                 const block="["+item.researchEvidenceId+"] "+item.title+"\nURL: "+item.url+"\nSource type: "+item.sourceType+" • "+item.readState+" • freshness="+item.freshnessClass+"\nCoverage: "+item.subquestionIds.join(", ")+"\nEvidence: "+(item.excerpt||"(no excerpt)")+"\n\n";
                 if(text.length+block.length>24000){const remain=24000-text.length;if(remain>180)text+=block.slice(0,remain);break;}
                 text+=block;
@@ -5885,6 +6081,16 @@
                 }
             }catch(_){}
             return {version:1,runtime,citationLock,claimCount,packagedStatus};
+        }
+
+        function verifySearchReplyCitationsV2(reply,searchResult){
+            const sources=searchResult&&Array.isArray(searchResult.sources)?searchResult.sources:[];
+            const byId=new Map(sources.map(x=>[String(x?.id||""),x]).filter(x=>/^S\d+$/.test(x[0])));
+            const cited=Array.from(new Set((String(reply||"").match(/\[S\d+\]/g)||[]).map(x=>x.slice(1,-1))));
+            const unknown=cited.filter(id=>!byId.has(id));
+            const unusable=cited.filter(id=>{const source=byId.get(id);return source&&["blocked","failed","unsupported"].includes(String(source.readState||""));});
+            const used=cited.filter(id=>byId.has(id)&&!unusable.includes(id));
+            return {version:1,valid:unknown.length===0&&unusable.length===0,knownCount:byId.size,citedCount:used.length,used,unknown,unusable};
         }
 
         function verifyResearchReplyCitationsV2(reply,searchResult){
@@ -7843,6 +8049,12 @@
             } else {
                 add("webEvidence", "skip", "web_not_requested");
             }
+            if(controllerValid&&controllerPlan.web.use&&!controllerPlan.research?.use){
+                const audit=verifySearchReplyCitationsV2(opts.reply,opts.searchResult);
+                if(!audit.valid)add("webCitations","fail",audit.unknown.length?"web_unknown_citation":"web_unusable_citation");
+                else if(audit.knownCount>0&&audit.citedCount===0)add("webCitations","warn","web_citations_missing");
+                else add("webCitations","pass","web_citations_known");
+            }else add("webCitations","skip",controllerPlan?.research?.use?"research_citation_gate":"web_not_requested");
 
             if (controllerValid && controllerPlan.research?.use) {
                 const citationAudit=verifyResearchReplyCitationsV2(opts.reply,opts.searchResult);
