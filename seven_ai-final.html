@@ -5805,6 +5805,11 @@
             let bubble = null;
             let streamStarted = false;
             let activeExecutionStep = null;
+            const deepPerf = controllerPlan.deepThink.use ? beginDeepThinkPerformanceV1(roomId) : null;
+            if (controllerPlan.deepThink.use && currentRoom === roomId) {
+                bubble = addMessage("assistant", "");
+                bubble.innerHTML = '<span class="typing-dots" aria-label="Preparing context"><span></span><span></span><span></span></span> <span>Preparing context…</span>';
+            }
             try {
                 if (executionRunId && hasPlanStep("memory")) {
                     activeExecutionStep = "memory";
@@ -5814,7 +5819,9 @@
                     activeExecutionStep = "web";
                     checkpointLiveExecution(executionRunId, "web", "running");
                 }
+                const contextStarted = deepPerf ? nowPerformanceMsV1() : 0;
                 const { messages, searchResult } = await buildContext(room, text, roomId, controllerPlan);
+                if (deepPerf) deepPerf.contextMs = Math.max(0, Math.round(nowPerformanceMsV1() - contextStarted));
                 if (executionRunId && hasPlanStep("memory")) checkpointLiveExecution(executionRunId, "memory", "passed", { resultRef: "memory:context" });
                 if (executionRunId && hasPlanStep("web")) checkpointLiveExecution(executionRunId, "web", "passed", { resultRef: searchResult ? "web:results" : "web:none" });
                 if (executionRunId) {
@@ -5830,25 +5837,24 @@
                         activeExecutionStep = "deepThink";
                         checkpointLiveExecution(executionRunId, "deepThink", "running");
                     }
-                    const thinkBubble = currentRoom === roomId ? addMessage("system", "🧠 Thinking deeply...") : null;
-                    try {
-                        finalMessages = await runDeepThink(messages, controllerPlan.model.id);
-                        if (executionRunId) checkpointLiveExecution(executionRunId, "deepThink", "passed", { resultRef: "reasoning:completed" });
-                    } finally {
-                        if (thinkBubble) thinkBubble.closest(".message")?.remove();
+                    if (bubble && bubble.isConnected) {
+                        bubble.innerHTML = '<span class="typing-dots" aria-label="Reasoning"><span></span><span></span><span></span></span> <span>Reasoning…</span>';
                     }
+                    finalMessages = await runDeepThink(messages, controllerPlan.model.id);
+                    if (executionRunId) checkpointLiveExecution(executionRunId, "deepThink", "passed", { resultRef: "reasoning:completed" });
                     if (stopRequested) throw new DOMException("Stopped", "AbortError");
                 }
 
                 if (currentRoom === roomId) {
-                    bubble = addMessage("assistant", "");
-                    bubble.innerHTML = '<span class="typing-dots"><span></span><span></span><span></span></span>';
+                    if (!bubble || !bubble.isConnected) bubble = addMessage("assistant", "");
+                    bubble.innerHTML = '<span class="typing-dots" aria-label="Answering"><span></span><span></span><span></span></span> <span>Answering…</span>';
                 }
 
                 if (executionRunId) {
                     activeExecutionStep = "generate";
                     checkpointLiveExecution(executionRunId, "generate", "running");
                 }
+                const finalStarted = deepPerf ? nowPerformanceMsV1() : 0;
                 const data = await requestAI({
                     messages: finalMessages,
                     temperature: currentTemperature,
@@ -5858,10 +5864,24 @@
                     stream: true,
                     onToken: (partialText) => {
                         if (!bubble || !bubble.isConnected) return;
-                        if (!streamStarted) { streamStarted = true; bubble.innerHTML = ""; }
+                        if (!streamStarted) {
+                            streamStarted = true;
+                            bubble.innerHTML = "";
+                            if (deepPerf && deepPerf.finalFirstTokenMs === null) {
+                                deepPerf.finalFirstTokenMs = Math.max(0, Math.round(nowPerformanceMsV1() - finalStarted));
+                            }
+                        }
                         scheduleStreamingBubbleUpdate(bubble,partialText);
                     }
                 });
+                if (deepPerf) {
+                    deepPerf.finalTotalMs = Math.max(0, Math.round(nowPerformanceMsV1() - finalStarted));
+                    const finalRoute = data && data._sevenRoute;
+                    if (finalRoute) {
+                        deepPerf.finalRoute = { provider: finalRoute.provider, model: finalRoute.model };
+                        deepPerf.finalAttempts = finalRoute.attempts || 1;
+                    }
+                }
                 if (stopRequested) throw new DOMException("Stopped", "AbortError");
                 if (rooms[roomId] !== room) {
                     if (executionRunId && activeExecutionStep) checkpointLiveExecution(executionRunId, activeExecutionStep, "cancelled", { errorCode: "room_replaced" });
@@ -5922,6 +5942,7 @@
                     checkpointLiveExecution(executionRunId, "result", "passed", { resultRef: "conversation:" + roomId + ":final" });
                     activeExecutionStep = null;
                 }
+                if (deepPerf && activeDeepThinkPerformance) finishDeepThinkPerformanceV1("completed");
 
                 await autoSummarizeIfNeeded(roomId);
                 if (wasFirstExchange) {
@@ -5929,6 +5950,9 @@
                 }
             } catch (error) {
                 cancelStreamingBubbleUpdate(false);
+                if (deepPerf && activeDeepThinkPerformance) {
+                    finishDeepThinkPerformanceV1((error?.name === "AbortError" || stopRequested) ? "cancelled" : "failed");
+                }
                 if (executionRunId) {
                     const aborted = error?.name === "AbortError" || stopRequested;
                     // More than one independent step may be running while buildContext
