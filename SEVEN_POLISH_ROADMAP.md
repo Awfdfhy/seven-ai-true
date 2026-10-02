@@ -50,7 +50,7 @@ Primary goal: make routing, provider health, explainability, memory boundaries, 
    - clear Ready / Degraded / Blocked states
    - mobile-first touch and RTL review
 
-5. Performance + Android Reliability
+5. Performance + Android Reliability ⏳ MERGED, ANDROID GATE PENDING (PR #24, 2026-10-02)
    - long-chat rendering
    - streaming DOM pressure
    - IndexedDB contention
@@ -161,3 +161,5 @@ The detailed execution specification for the current first item lives in:
 - 2026-10-02: Memory Scope Hardening implemented, CI #2143 passed, and PR #22 merged to main as `44bbd88b9b1ce0c69a328d1d500b4e405c381589`. UI Simplification is next.
 
 - 2026-10-02: UI Simplification implemented, CI #2151 passed, and PR #23 merged to main as `a1bb2714721044dbb1db9afdfbbf9fe69728f12b`. Performance + Android Reliability is the final 2.1 polish stage.
+
+- 2026-10-02: Performance + Android Reliability browser implementation passed CI #2161 and PR #24 merged to main as `7aae45341cea8b2b892f2ec0fdf5916892b29e2d`. Android main-branch release gate is pending before 2.1 is marked complete.
