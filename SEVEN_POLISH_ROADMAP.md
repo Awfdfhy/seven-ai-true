@@ -35,7 +35,7 @@ Primary goal: make routing, provider health, explainability, memory boundaries, 
    - quota pressure
    - structured diagnostics
 
-3. Memory Scope Hardening
+3. Memory Scope Hardening ✅ COMPLETE (merged via PR #22, 2026-10-02)
    - global / room / project / RPG scopes
    - provenance
    - explicit cross-scope sharing
@@ -144,8 +144,8 @@ Routing, memory, research, coding, and world state must use runtime truth rather
 Current priority:
 1. Model Intelligence v3 ✅ COMPLETE
 2. Provider Health v2 ✅ COMPLETE
-3. Memory Scope Hardening ← NEXT
-4. UI Simplification
+3. Memory Scope Hardening ✅ COMPLETE
+4. UI Simplification ← NEXT
 5. Android/Performance
 6. Deep Research 2.0
 
@@ -157,3 +157,5 @@ The detailed execution specification for the current first item lives in:
 - 2026-10-02: roadmap created; Model Intelligence v3 selected as first polish implementation.
 - 2026-10-02: Model Intelligence v3 implemented, CI passed, and PR #20 merged to main as `454c72ecab333938cc642b5ba0e63d27efc00f3e`. Provider Health v2 is next.
 - 2026-10-02: Provider Health v2 implemented, CI #2135 passed, and PR #21 merged to main as `cebd9f30d96b7dfaa23e0ff841bd7128f98f1233`. Memory Scope Hardening is next.
+
+- 2026-10-02: Memory Scope Hardening implemented, CI #2143 passed, and PR #22 merged to main as `44bbd88b9b1ce0c69a328d1d500b4e405c381589`. UI Simplification is next.
