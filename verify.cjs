@@ -1219,5 +1219,85 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   });
   assert.deepEqual(r,{exists:true,visible:true,composerFits:true,docFits:true});
  });
+
+ await test('deep research citation audit allows known R ids and rejects invented R ids',async()=>{
+  const r=await page.evaluate(()=>{
+    const result={sources:[{id:'R1',url:'https://example.com/1'},{id:'R2',url:'https://example.com/2'}]};
+    return {
+      known:SevenDeepResearchV2.audit('Supported [R1] and [R2].',result),
+      unknown:SevenDeepResearchV2.audit('Invented [R9].',result),
+      missing:SevenDeepResearchV2.audit('No citations here.',result)
+    };
+  });
+  assert.equal(r.known.valid,true);assert.equal(r.known.citedCount,2);assert.equal(r.unknown.valid,false);assert.deepEqual(r.unknown.unknown,['R9']);assert.equal(r.missing.citedCount,0);
+ });
+ await test('deep research verification gate fails unknown citations and warns missing citations',async()=>{
+  const r=await page.evaluate(()=>{
+    const controller=createCognitiveRequestPlan({text:'Research fixture',roomId:currentRoom,researchRequested:true,searchRequested:false,deepThinkRequested:false});
+    const task=createCognitiveTaskPlan(controller);
+    const searchResult={researchStatus:'PARTIAL',sources:[{id:'R1',title:'Fixture',url:'https://example.com',capability:'deep_research'}]};
+    const base={controllerPlan:controller,taskPlan:task,messages:[{role:'system',content:'system'},{role:'user',content:'Research fixture'}],searchResult,executionRun:null,roomValid:true,stopped:false};
+    const good=createVerificationResult({...base,reply:'Claim [R1].'});
+    const bad=createVerificationResult({...base,reply:'Claim [R9].'});
+    const missing=createVerificationResult({...base,reply:'Claim without citation.'});
+    return {
+      good:{outcome:good.outcome,codes:good.checks.filter(x=>x.id==='researchCitations')},
+      bad:{outcome:bad.outcome,fail:bad.failureCodes},
+      missing:{outcome:missing.outcome,warn:missing.warningCodes}
+    };
+  });
+  assert.equal(r.good.outcome,'pass');assert.equal(r.good.codes[0].code,'research_citations_known');
+  assert.equal(r.bad.outcome,'fail');assert.ok(r.bad.fail.includes('research_unknown_citation'));
+  assert.equal(r.missing.outcome,'pass');assert.ok(r.missing.warn.includes('research_citations_missing'));
+ });
+ await test('deep research bridge exposes citation lock without source bodies or secrets',async()=>{
+  const r=await page.evaluate(()=>{
+    const old=localStorage.getItem('sevenDeepResearchV2');
+    localStorage.removeItem('sevenDeepResearchV2');
+    const run=createDeepResearchRunV2('Bridge fixture',currentRoom);
+    run.evidence=[sanitizeResearchEvidenceV2({researchEvidenceId:'R1',title:'Official docs',url:'https://example.com/docs',excerpt:'PRIVATE FULL BODY SHOULD NOT APPEAR',sourceType:'documentation',readState:'read_success',freshnessClass:'current',engines:['gateway_fixture']})];
+    checkpointDeepResearchRunV2(run);
+    const bridge=SevenDeepResearchV2.bridge(run.id),raw=JSON.stringify(bridge);
+    if(old===null)localStorage.removeItem('sevenDeepResearchV2');else localStorage.setItem('sevenDeepResearchV2',old);
+    return {bridge,secret:/gsk_|sk-or-|nvapi-|AIza|Authorization|Bearer/i.test(raw),body:raw.includes('PRIVATE FULL BODY SHOULD NOT APPEAR')};
+  });
+  assert.deepEqual(r.bridge.citationLock,['R1']);assert.equal(r.secret,false);assert.equal(r.body,false);assert.ok(['SevenRuntime','SevenResearch','unavailable'].includes(r.bridge.runtime));
+ });
+ await test('deep research history serialization preserves run metadata for later export',async()=>{
+  const r=await page.evaluate(()=>serializeSearchSourcesForHistoryV2([{id:'R1',title:'Source',url:'https://example.com',engine:'fixture',readState:'read_success',sourceType:'documentation',freshnessClass:'current',capability:'deep_research',researchRunId:'dr_fixture',researchStatus:'SUFFICIENT',researchScore:88}])[0]);
+  assert.equal(r.researchRunId,'dr_fixture');assert.equal(r.researchStatus,'SUFFICIENT');assert.equal(r.researchScore,88);
+ });
+ await test('deep research source UI renders evidence header and export control',async()=>{
+  const r=await page.evaluate(()=>{
+    const bubble=addMessage('assistant','Report [R1].',{suppressScroll:true});
+    const sources=[{id:'R1',title:'Research source',url:'https://example.com/r',engine:'gateway_fixture',readState:'read_success',sourceType:'documentation',freshnessClass:'current',capability:'deep_research',researchRunId:'dr_fixture',researchStatus:'PARTIAL',researchScore:67}];
+    renderSearchSources(bubble,sources);
+    const wrapper=bubble.closest('.message'),button=wrapper.querySelector('.research-export-btn'),head=wrapper.querySelector('.research-source-head')?.textContent||'';
+    const out={button:button?.textContent||'',head,width:button?.getBoundingClientRect().width||0};
+    wrapper.remove();
+    return out;
+  });
+  assert.equal(r.button,'Export evidence');assert.ok(r.head.includes('PARTIAL'));assert.ok(r.head.includes('67'));assert.ok(r.width>0);
+ });
+ await test('deep research export emits bounded safe bundle through canonical JSON downloader',async()=>{
+  const r=await page.evaluate(()=>{
+    const oldStore=localStorage.getItem('sevenDeepResearchV2'),oldDownload=downloadJsonPayload;
+    localStorage.removeItem('sevenDeepResearchV2');
+    const run=createDeepResearchRunV2('Export fixture',currentRoom);
+    run.evidence=[sanitizeResearchEvidenceV2({researchEvidenceId:'R1',title:'Source',url:'https://example.com/a',excerpt:'bounded excerpt',sourceType:'official',readState:'read_success',freshnessClass:'current',engines:['gateway']})];
+    checkpointDeepResearchRunV2(run);
+    let captured=null;
+    downloadJsonPayload=(payload,filename)=>{captured={payload,filename};};
+    try{
+      const ok=SevenDeepResearchV2.export(run.id);
+      const raw=JSON.stringify(captured||{});
+      return {ok,filename:captured?.filename||'',hasEvidence:Array.isArray(captured?.payload?.evidence),secret:/gsk_|sk-or-|nvapi-|AIza|Authorization|Bearer|chain-of-thought/i.test(raw)};
+    }finally{
+      downloadJsonPayload=oldDownload;
+      if(oldStore===null)localStorage.removeItem('sevenDeepResearchV2');else localStorage.setItem('sevenDeepResearchV2',oldStore);
+    }
+  });
+  assert.equal(r.ok,true);assert.ok(r.filename.endsWith('.json'));assert.equal(r.hasEvidence,true);assert.equal(r.secret,false);
+ });
  await browser.close();server.close();fs.writeFileSync(require('path').join(__dirname,'results.json'),JSON.stringify({results,liveProviderCalls:false},null,2));
 })().catch(e=>{console.error(e);server.close();process.exit(1)});
