@@ -52,35 +52,52 @@ jobs:
           else
             echo "cloudflare_ready=false" >> "$GITHUB_OUTPUT"
           fi
-          if [ -n "$SEVEN_SEARCH_GATEWAY_URL" ]; then
-            echo "live_ready=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "live_ready=false" >> "$GITHUB_OUTPUT"
-          fi
 
       - name: Deploy Search Gateway to Cloudflare
+        id: deploy
         if: steps.readiness.outputs.cloudflare_ready == 'true'
         working-directory: cloudflare/search-gateway
-        run: npx --yes wrangler@4 deploy --config wrangler.toml
+        shell: bash
+        run: |
+          set -o pipefail
+          OUTPUT="$(npx --yes wrangler@4 deploy --config wrangler.toml 2>&1 | tee /tmp/seven-wrangler-deploy.log)"
+          URL="$(printf '%s\n' "$OUTPUT" | grep -Eo 'https://[A-Za-z0-9.-]+\.workers\.dev' | tail -n 1 || true)"
+          echo "gateway_url=$URL" >> "$GITHUB_OUTPUT"
 
       - name: Record missing Cloudflare deployment credentials
         if: steps.readiness.outputs.cloudflare_ready != 'true'
         run: |
           echo "::warning::Production deploy skipped: CLOUDFLARE_API_TOKEN and/or CLOUDFLARE_ACCOUNT_ID are not configured as repository secrets."
 
-      - name: Run live Search Quality gate
-        if: steps.readiness.outputs.live_ready == 'true'
+      - name: Resolve live Search Gateway endpoint
+        id: live
+        shell: bash
         env:
+          DEPLOYED_GATEWAY_URL: ${{ steps.deploy.outputs.gateway_url }}
+        run: |
+          URL="$SEVEN_SEARCH_GATEWAY_URL"
+          if [ -z "$URL" ]; then URL="$DEPLOYED_GATEWAY_URL"; fi
+          if [[ "$URL" == https://* ]]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "gateway_url=$URL" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run live Search Quality gate
+        if: steps.live.outputs.ready == 'true'
+        env:
+          SEVEN_SEARCH_GATEWAY_URL: ${{ steps.live.outputs.gateway_url }}
           SEVEN_SEARCH_LIVE_STRICT: '1'
         run: node eval/live-search-quality.mjs
 
       - name: Record missing live gateway URL
-        if: steps.readiness.outputs.live_ready != 'true'
+        if: steps.live.outputs.ready != 'true'
         run: |
-          echo "::warning::Live Search Quality gate skipped: repository variable SEARCH_GATEWAY_URL is not configured."
+          echo "::warning::Live Search Quality gate skipped: no configured or newly deployed HTTPS gateway URL is available."
 
       - name: Upload live Search Quality report
-        if: always() && steps.readiness.outputs.live_ready == 'true'
+        if: always() && steps.live.outputs.ready == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: seven-search-live-quality
