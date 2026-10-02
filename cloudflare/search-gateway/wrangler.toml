@@ -1,0 +1,18 @@
+name = "seven-ai-search-gateway"
+main = "worker.mjs"
+compatibility_date = "2026-10-01"
+
+[vars]
+ALLOWED_ORIGIN = "*"
+RATE_LIMIT_PER_MINUTE = "60"
+
+# Optional secrets/configuration are added with Wrangler/Cloudflare, never committed:
+# wrangler secret put GATEWAY_CLIENT_KEY
+# wrangler secret put BRAVE_SEARCH_API_KEY
+# wrangler secret put SERPER_API_KEY
+#
+# Optional zero-key/custom backend:
+# wrangler secret put SEARXNG_BASE_URL
+#
+# Search backend order:
+# Brave -> Serper -> SearxNG -> DuckDuckGo HTML degraded fallback
