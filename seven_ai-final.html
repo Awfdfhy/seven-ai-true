@@ -3073,6 +3073,183 @@
             retryAfter:parseRetryAfterMsV2
         });
 
+        // ---------- Measured Latency Optimization v2 ----------
+        const LATENCY_V2_KEY = "sevenLatencyV2";
+        const LATENCY_V2 = Object.freeze({
+            schemaVersion: 2,
+            maxBuckets: 120,
+            maxSamples: 20,
+            fullInfluenceSamples: 6,
+            minimumInfluenceSamples: 3,
+            nearTieScoreMargin: 4
+        });
+
+        function latencyBucketKeyV2(provider, model, purpose, tier) {
+            return [String(provider||""), String(model||""), String(purpose||"chat"), String(tier||"medium")].join("\n");
+        }
+
+        function boundedLatencyMetricSamplesV2(value) {
+            return (Array.isArray(value) ? value : [])
+                .map(Number)
+                .filter(x => Number.isFinite(x) && x >= 0 && x <= 10 * 60 * 1000)
+                .slice(-LATENCY_V2.maxSamples);
+        }
+
+        function normalizeLatencyBucketV2(raw, fallback) {
+            const src = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+            const fb = fallback && typeof fallback === "object" ? fallback : {};
+            return {
+                schemaVersion: LATENCY_V2.schemaVersion,
+                provider: String(src.provider || fb.provider || "").slice(0,80),
+                model: String(src.model || fb.model || "").slice(0,180),
+                purpose: String(src.purpose || fb.purpose || "chat").slice(0,40),
+                tier: ["low","medium","high","veryHigh"].includes(src.tier || fb.tier) ? String(src.tier || fb.tier) : "medium",
+                totalSamples: boundedLatencyMetricSamplesV2(src.totalSamples),
+                firstTokenSamples: boundedLatencyMetricSamplesV2(src.firstTokenSamples),
+                successes: Math.max(0, Number(src.successes)||0),
+                failures: Math.max(0, Number(src.failures)||0),
+                lastUpdatedAt: Math.max(0, Number(src.lastUpdatedAt)||0)
+            };
+        }
+
+        function loadLatencyStoreV2() {
+            try {
+                const parsed = JSON.parse(localStorage.getItem(LATENCY_V2_KEY) || "{}");
+                return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+            } catch (_) { return {}; }
+        }
+
+        let latencyStoreV2 = loadLatencyStoreV2();
+
+        function getLatencyBucketV2(provider, model, purpose, tier) {
+            const fallback={provider,model,purpose,tier};
+            return normalizeLatencyBucketV2(latencyStoreV2[latencyBucketKeyV2(provider,model,purpose,tier)] || {}, fallback);
+        }
+
+        function saveLatencyStoreV2() {
+            try {
+                const rows = Object.entries(latencyStoreV2).map(([key,value]) => {
+                    const bucket=normalizeLatencyBucketV2(value);
+                    return {key,bucket,touched:bucket.lastUpdatedAt};
+                }).filter(x=>x.bucket.provider&&x.bucket.model)
+                  .sort((a,b)=>b.touched-a.touched)
+                  .slice(0,LATENCY_V2.maxBuckets);
+                latencyStoreV2=Object.fromEntries(rows.map(x=>[x.key,x.bucket]));
+                localStorage.setItem(LATENCY_V2_KEY,JSON.stringify(latencyStoreV2));
+            } catch (_) {}
+        }
+
+        function recordLatencySampleV2(model, config, outcome) {
+            if (!model || !config || !outcome) return null;
+            const purpose=String(config.purpose||"chat");
+            const tier=["low","medium","high","veryHigh"].includes(config.latencyTier) ? config.latencyTier :
+                (["low","medium","high"].includes(config.complexity) ? config.complexity : "medium");
+            const key=latencyBucketKeyV2(model.provider,model.id,purpose,tier);
+            const bucket=getLatencyBucketV2(model.provider,model.id,purpose,tier);
+            const totalMs=Math.max(0,Number(outcome.totalMs)||0);
+            const firstTokenMs=Number(outcome.firstTokenMs);
+            if (totalMs>0) bucket.totalSamples=boundedLatencyMetricSamplesV2([...(bucket.totalSamples||[]),totalMs]);
+            if (Number.isFinite(firstTokenMs)&&firstTokenMs>=0) {
+                bucket.firstTokenSamples=boundedLatencyMetricSamplesV2([...(bucket.firstTokenSamples||[]),firstTokenMs]);
+            }
+            if (outcome.success===true) bucket.successes++;
+            else if (outcome.success===false) bucket.failures++;
+            bucket.lastUpdatedAt=Date.now();
+            latencyStoreV2[key]=bucket;
+            saveLatencyStoreV2();
+            return bucket;
+        }
+
+        function percentileLatencyV2(samples, q) {
+            const list=boundedLatencyMetricSamplesV2(samples).sort((a,b)=>a-b);
+            if(!list.length)return 0;
+            const pos=Math.max(0,Math.min(list.length-1,Math.ceil((list.length-1)*Math.max(0,Math.min(1,Number(q)||0)))));
+            return Math.round(list[pos]);
+        }
+
+        function latencyInfluenceWeightV2(sampleCount) {
+            const n=Math.max(0,Number(sampleCount)||0);
+            if(n<LATENCY_V2.minimumInfluenceSamples)return 0;
+            if(n>=LATENCY_V2.fullInfluenceSamples)return 1;
+            return (n-LATENCY_V2.minimumInfluenceSamples+1)/(LATENCY_V2.fullInfluenceSamples-LATENCY_V2.minimumInfluenceSamples+1);
+        }
+
+        function latencySnapshotV2(provider, model, purpose, tier) {
+            const bucket=getLatencyBucketV2(provider,model,purpose,tier);
+            return {
+                schemaVersion:LATENCY_V2.schemaVersion,
+                provider:bucket.provider,
+                model:bucket.model,
+                purpose:bucket.purpose,
+                tier:bucket.tier,
+                samples:bucket.totalSamples.length,
+                firstTokenSamples:bucket.firstTokenSamples.length,
+                p50TotalMs:percentileLatencyV2(bucket.totalSamples,.50),
+                p90TotalMs:percentileLatencyV2(bucket.totalSamples,.90),
+                p50FirstTokenMs:percentileLatencyV2(bucket.firstTokenSamples,.50),
+                p90FirstTokenMs:percentileLatencyV2(bucket.firstTokenSamples,.90),
+                successes:bucket.successes,
+                failures:bucket.failures,
+                lastUpdatedAt:bucket.lastUpdatedAt,
+                influence:Number(latencyInfluenceWeightV2(bucket.totalSamples.length).toFixed(3))
+            };
+        }
+
+        function measuredLatencyForCandidateV2(model, context) {
+            const purpose=String(context?.purpose||"chat");
+            const tier=["low","medium","high","veryHigh"].includes(context?.latencyTier) ? context.latencyTier :
+                (["low","medium","high"].includes(context?.complexity) ? context.complexity : "medium");
+            return latencySnapshotV2(model.provider,model.id,purpose,tier);
+        }
+
+        function compareMeasuredLatencyNearTieV2(a,b,context) {
+            if (!context?.latencyPriority) return 0;
+            const sa=measuredLatencyForCandidateV2(a.model,context);
+            const sb=measuredLatencyForCandidateV2(b.model,context);
+            if(sa.influence<=0&&sb.influence<=0)return 0;
+            const aTail=sa.p90TotalMs>0?sa.p90TotalMs:Infinity;
+            const bTail=sb.p90TotalMs>0?sb.p90TotalMs:Infinity;
+            if(aTail===bTail)return 0;
+            if(!Number.isFinite(aTail))return 1;
+            if(!Number.isFinite(bTail))return -1;
+            const confidence=Math.min(sa.influence||0,sb.influence||0);
+            if(confidence<=0)return 0;
+            return aTail-bTail;
+        }
+
+        function latencyTimeoutBoundsV2(tier) {
+            switch(tier){
+                case "low": return {min:8000,max:25000};
+                case "high": return {min:15000,max:45000};
+                case "veryHigh": return {min:20000,max:55000};
+                default: return {min:10000,max:35000};
+            }
+        }
+
+        function learnedTimeoutV2(provider,model,purpose,tier,fallbackMs) {
+            const safeTier=["low","medium","high","veryHigh"].includes(tier)?tier:"medium";
+            const bounds=latencyTimeoutBoundsV2(safeTier);
+            const snap=latencySnapshotV2(provider,model,purpose,safeTier);
+            const fallback=Math.max(bounds.min,Math.min(bounds.max,Number(fallbackMs)||bounds.max));
+            if(snap.samples<LATENCY_V2.minimumInfluenceSamples||snap.p90TotalMs<=0)return fallback;
+            const learned=Math.round(snap.p90TotalMs*1.8+2000);
+            return Math.max(bounds.min,Math.min(bounds.max,learned));
+        }
+
+        function clearLatencyV2ForTests() {
+            latencyStoreV2={};
+            try{localStorage.removeItem(LATENCY_V2_KEY);}catch(_){}
+        }
+
+        window.SevenLatencyV2=Object.freeze({
+            version:LATENCY_V2.schemaVersion,
+            snapshot:latencySnapshotV2,
+            percentile:percentileLatencyV2,
+            timeout:learnedTimeoutV2,
+            influence:latencyInfluenceWeightV2,
+            clear:clearLatencyV2ForTests
+        });
+
         function providerAuthHeaders(providerId) {
             const token = getFreeProviderCredential(providerId);
             if (!token) return {};
@@ -3405,7 +3582,14 @@
             const outputBudget = Math.max(256, Math.min(Number(cfg.maxTokens)||8192, 65536));
             const requiredContext = analysis.inputTokens + outputBudget + 2048;
             const topTask = (Object.entries(analysis.taskWeights).sort((a,b)=>b[1]-a[1])[0] || ["general"])[0];
-            return Object.assign({},analysis,{taskClass:topTask,requiredContext,outputBudget,purpose:cfg.purpose||"chat"});
+            return Object.assign({},analysis,{
+                taskClass:topTask,
+                requiredContext,
+                outputBudget,
+                purpose:cfg.purpose||"chat",
+                latencyPriority:cfg.latencyPriority===true,
+                latencyTier:["low","medium","high","veryHigh"].includes(cfg.latencyTier)?cfg.latencyTier:analysis.complexity
+            });
         }
 
         function explainModelCandidateV3(model, context, parts) {
@@ -3462,10 +3646,17 @@
             return (Array.isArray(models)?models:[]).map(model=>{
                 const result=scoreModelCandidateV3(model,context);
                 return Object.assign({model},result);
-            }).filter(x=>x.eligible).sort((a,b)=>b.score-a.score ||
-                (Number(b.model.quality)||0)-(Number(a.model.quality)||0) ||
-                (Number(b.model.contextWindow)||0)-(Number(a.model.contextWindow)||0) ||
-                String(a.model.label||a.model.id).localeCompare(String(b.model.label||b.model.id)));
+            }).filter(x=>x.eligible).sort((a,b)=>{
+                const baseDiff=b.score-a.score;
+                if(context?.latencyPriority===true && Math.abs(baseDiff)<=LATENCY_V2.nearTieScoreMargin){
+                    const latencyDiff=compareMeasuredLatencyNearTieV2(a,b,context);
+                    if(latencyDiff!==0)return latencyDiff;
+                }
+                return baseDiff ||
+                    (Number(b.model.quality)||0)-(Number(a.model.quality)||0) ||
+                    (Number(b.model.contextWindow)||0)-(Number(a.model.contextWindow)||0) ||
+                    String(a.model.label||a.model.id).localeCompare(String(b.model.label||b.model.id));
+            });
         }
 
         function applyRoutingHysteresisV3(ranked, preferred, context) {
@@ -3610,21 +3801,42 @@
             }
             const attempts=[];
             for(let i=0;i<route.candidates.length;i++){
-                const model=route.candidates[i]; const started=Date.now();
+                const model=route.candidates[i];
+                const started=Date.now();
+                const tier=["low","medium","high","veryHigh"].includes(config.latencyTier)?config.latencyTier:
+                    (["low","medium","high"].includes(route.requirements.complexity)?route.requirements.complexity:"medium");
+                const attemptTimeout=config.latencyPriority===true
+                    ? learnedTimeoutV2(model.provider,model.id,config.purpose||"chat",tier,config.timeoutMs)
+                    : config.timeoutMs;
+                let firstTokenMs=null;
+                const originalOnToken=typeof config.onToken==="function"?config.onToken:null;
+                const attemptConfig=Object.assign({},config,{
+                    latencyTier:tier,
+                    timeoutMs:attemptTimeout,
+                    onToken:originalOnToken ? (partialText)=>{
+                        if(firstTokenMs===null)firstTokenMs=Math.max(0,Date.now()-started);
+                        originalOnToken(partialText);
+                    } : config.onToken
+                });
                 recordFreeProviderUsage(model.provider,"attempt",route.requirements.inputTokens,Math.min(config.maxTokens,model.maxTokens));
                 try{
-                    const result=await dispatchFreeModelCall(model,config);
-                    recordFreeRouteSuccess(model,Date.now()-started);
+                    const result=await dispatchFreeModelCall(model,attemptConfig);
+                    const totalMs=Math.max(0,Date.now()-started);
+                    recordFreeRouteSuccess(model,totalMs);
+                    recordLatencySampleV2(model,attemptConfig,{success:true,totalMs,firstTokenMs});
                     recordFreeProviderUsage(model.provider,"success");
                     if(result&&typeof result==="object")result._sevenRoute={
                         free:true, freeBasis:model.freeBasis, provider:model.provider, model:model.id,
                         selectionKey:freeModelSelectionKey(model.provider,model.id), attempts:attempts.length+1,
                         routingMode:currentRoutingMode, taskClass:route.requirements.taskClass,
-                        estimatedInputTokens:route.requirements.inputTokens, contextWindow:model.contextWindow
+                        estimatedInputTokens:route.requirements.inputTokens, contextWindow:model.contextWindow,
+                        latencyTier:tier, timeoutMs:attemptTimeout, firstTokenMs, totalLatencyMs:totalMs
                     };
                     return result;
                 }catch(error){
+                    const totalMs=Math.max(0,Date.now()-started);
                     recordFreeRouteFailure(model,error);
+                    recordLatencySampleV2(model,attemptConfig,{success:false,totalMs,firstTokenMs});
                     recordFreeProviderUsage(model.provider,"failure");
                     attempts.push({provider:model.provider,model:model.id,status:Number(error?.status)||0,error:sanitizeProviderError(error,model.provider)});
                     if(error?.partialOutput===true)throw error;
@@ -3648,7 +3860,7 @@
         // Normalizes caller input into one consistent shape/defaults before
         // it reaches any provider function. Pure normalization only — no
         // behavior change (same defaults every call site already relied on).
-        function normalizeRequestConfig({ messages, temperature, maxTokens, purpose, model, stream, onToken, latencyPriority, timeoutMs } = {}) {
+        function normalizeRequestConfig({ messages, temperature, maxTokens, purpose, model, stream, onToken, latencyPriority, latencyTier, timeoutMs } = {}) {
             const targetModel = isValidFreeModelSelection(model) ? model : currentModel;
             const limits = modelLimits(targetModel);
             let safeTemperature = Number(temperature);
@@ -3666,6 +3878,7 @@
                 stream: !!stream,
                 onToken: typeof onToken === "function" ? onToken : null,
                 latencyPriority: latencyPriority === true,
+                latencyTier: ["low","medium","high","veryHigh"].includes(latencyTier) ? latencyTier : null,
                 timeoutMs: Number.isFinite(Number(timeoutMs)) ? Math.max(1000, Math.min(120000, Number(timeoutMs))) : null
             };
         }
@@ -3904,6 +4117,7 @@
                 purpose: "deepThink",
                 model: model,
                 latencyPriority: true,
+                latencyTier: policy.tier,
                 timeoutMs: policy.timeoutMs
             });
             if (stopRequested) throw new DOMException("Stopped", "AbortError");
