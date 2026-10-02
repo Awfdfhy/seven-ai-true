@@ -20,6 +20,23 @@ xml=xml.replace(/<activity\b([^>]*android:name="\.MainActivity"[^>]*)>/,(_,attrs
 });
 fs.writeFileSync(manifestPath,xml);
 
+// The generated project is ephemeral. For CI release-device evidence only, make
+// the application debug/release variants and AndroidTest APK use one explicit
+// deterministic signing identity. Android instrumentation will correctly reject
+// a test APK whose certificate differs from the installed release target.
+// No credential is embedded here: CI provides the keystore and test-only values
+// as Gradle properties, and normal local generation retains Capacitor defaults.
+const gradlePath=path.join(ANDROID,'app','build.gradle');
+if(!fs.existsSync(gradlePath))throw new Error('generated Android app Gradle file missing');
+let gradle=fs.readFileSync(gradlePath,'utf8');
+if(!gradle.includes('android {'))throw new Error('generated Android app Gradle android block missing');
+if(!/buildTypes\s*\{\s*release\s*\{/.test(gradle))throw new Error('generated Android app Gradle release buildType missing');
+const signingPrelude=`def sevenCiKeystore = project.findProperty("sevenCiKeystore")\ndef sevenCiStorePass = project.findProperty("sevenCiStorePass")\ndef sevenCiKeyAlias = project.findProperty("sevenCiKeyAlias")\ndef sevenCiKeyPass = project.findProperty("sevenCiKeyPass")\n`;
+if(!gradle.includes('def sevenCiKeystore'))gradle=signingPrelude+gradle;
+gradle=gradle.replace('android {',`android {\n    if (sevenCiKeystore) {\n        testBuildType = "release"\n    }\n    signingConfigs {\n        if (sevenCiKeystore) {\n            sevenCi {\n                storeFile file(sevenCiKeystore)\n                storePassword sevenCiStorePass\n                keyAlias sevenCiKeyAlias\n                keyPassword sevenCiKeyPass\n            }\n        }\n    }`);
+gradle=gradle.replace(/buildTypes\s*\{\s*release\s*\{/,`buildTypes {\n        debug {\n            if (sevenCiKeystore) {\n                signingConfig signingConfigs.sevenCi\n            }\n        }\n        release {\n            if (sevenCiKeystore) {\n                signingConfig signingConfigs.sevenCi\n            }`);
+fs.writeFileSync(gradlePath,gradle);
+
 // Capacitor generates a sample instrumentation test bound to its template
 // package. It is not a Seven test and must not ship or gate our Android run.
 const templateTest=path.join(ANDROID,'app','src','androidTest','java','com','getcapacitor','myapp','ExampleInstrumentedTest.java');
@@ -30,9 +47,11 @@ fs.mkdirSync(testDir,{recursive:true});
 const test=`package ai.seven.app;
 
 import static org.junit.Assert.*;
+import android.content.Context;
 import android.webkit.WebView;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -64,14 +83,36 @@ public class SevenSmokeTest {
       scenario.onActivity(a -> ref.set(a.getBridge().getWebView()));
       WebView webView=ref.get();
       assertNotNull(webView);
-      waitFor(webView,"Boolean(window.SevenPerformance&&SevenPerformance.state.ready&&window.SevenCanon&&window.SevenMotion&&SevenMotion.state.ready&&window.SevenPdf)");
+      waitFor(webView,"Boolean(window.SevenPerformance&&SevenPerformance.state.ready&&window.SevenMotion&&SevenMotion.state.ready&&window.SevenPdf&&window.SevenBetaUI&&SevenBetaUI.state.ready)");
       waitFor(webView,"Boolean(typeof roomPersistence!=='undefined'&&roomPersistence.status().ready)");
       assertEquals("true",js(webView,"location.origin==='https://localhost'"));
       assertEquals("true",js(webView,"Boolean(document.getElementById('userInput'))"));
       assertEquals("true",js(webView,"document.documentElement.scrollWidth<=document.documentElement.clientWidth+2"));
       assertEquals("true",js(webView,"SevenPdf.loaded===false"));
+      assertEquals("true",js(webView,"typeof window.SevenCanon==='undefined'&&typeof window.SevenWorld==='undefined'"));
+      assertEquals("true",js(webView,"Boolean(window.SevenAttachmentLoader)&&typeof window.SevenAttachments==='undefined'"));
       assertEquals("true",js(webView,"(()=>{const e=document.getElementById('userInput');e.focus();return document.activeElement===e})()"));
+      assertEquals("true",js(webView,"Boolean(window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.SevenPlatform)"));
+      assertEquals("true",js(webView,"(()=>{window.__sevenNativeCaps='pending';const p=Capacitor.Plugins.SevenPlatform;p.getCapabilities().then(x=>window.__sevenNativeCaps=(x.secureStore&&x.androidKeystore&&x.saf&&x.chunkedIO&&!x.broadStoragePermission)?'ok':'bad').catch(()=>window.__sevenNativeCaps='error');return true})()"));
+      waitFor(webView,"window.__sevenNativeCaps==='ok'");
+      assertEquals("true",js(webView,"(()=>{window.__sevenSecure='pending';(async()=>{const p=Capacitor.Plugins.SevenPlatform,k='ci.webview.roundtrip',v='seven-'+Date.now();await p.secureSet({key:k,value:v});const r=await p.secureGet({key:k});await p.secureRemove({key:k});window.__sevenSecure=(r.found&&r.value===v)?'ok':'bad'})().catch(()=>window.__sevenSecure='error');return true})()"));
+      waitFor(webView,"window.__sevenSecure==='ok'");
     }
+  }
+
+  @Test
+  public void secureStoreEncryptsAtRest() throws Exception {
+    Context context=InstrumentationRegistry.getInstrumentation().getTargetContext();
+    SevenSecureStore store=new SevenSecureStore(context);
+    String key="ci.native."+System.nanoTime(),secret="seven-secret-"+System.nanoTime();
+    try{
+      store.put(key,secret);
+      assertEquals(secret,store.get(key));
+      String raw=context.getSharedPreferences(SevenSecureStore.PREFS_NAME,Context.MODE_PRIVATE).getString(key,"");
+      assertNotNull(raw);
+      assertFalse("secret must not be stored as plaintext",raw.contains(secret));
+      assertTrue("encrypted payload must contain IV and ciphertext",raw.contains("."));
+    } finally { store.remove(key); }
   }
 }
 `;

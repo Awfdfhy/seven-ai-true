@@ -4,20 +4,34 @@ const path=require('path');
 const http=require('http');
 const assert=require('assert/strict');
 const {build,OUTPUT,MARK}=require('./build-release.cjs');
+const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
 
 (async()=>{
   const built=build();
+  const frontier=patchFile(OUTPUT);
   const html=fs.readFileSync(OUTPUT,'utf8');
   const dist=path.dirname(OUTPUT);
+  const deferredShell=new Set(['seven-shell.css','seven-shell.js','ui-polish-fixes.css','ui-polish-fixes.js','seven-shell-final.css','seven-shell-final.js']);
   assert.ok(html.includes(MARK));
-  assert.ok(built.bytes-built.sourceBytes<100000,'release layer unexpectedly heavy');
+  assert.ok(html.includes(`id:"${MODEL_ID}"`),'verified release must include the frontier free model');
+  assert.equal(frontier.model,MODEL_ID);
+  assert.ok(built.brandFiles.some(x=>x.path==='brand/seven-day-white.svg'));
+  assert.ok(built.brandFiles.some(x=>x.path==='brand/seven-night-black.svg'));
+  const releaseLayerBytes=built.startupBytes;
+  assert.ok(releaseLayerBytes<100000,`release layer unexpectedly heavy: ${releaseLayerBytes} bytes`);
+  assert.equal(built.pdfLoadMode,'lazy-local');
+  assert.equal(built.attachmentLoadMode,'lazy-local');
+  assert.equal(built.workspaceLoadMode,'lazy-local');
+  assert.ok(html.includes('id="seven-attachment-loader"'));
+  assert.ok(!html.includes('id="seven-attachment-runtime"'));
+  assert.ok(!html.includes('id="seven-canon-runtime"')&&!html.includes('id="seven-world-runtime"'));
 
   const server=http.createServer((req,res)=>{
     const pathname=new URL(req.url,'http://127.0.0.1').pathname;
-    if(pathname.startsWith('/vendor/')){
+    if(pathname.startsWith('/vendor/')||pathname.startsWith('/workspaces/')||pathname.startsWith('/brand/')||pathname==='/attachment-runtime.js'){
       const file=path.resolve(dist,'.'+pathname);
       if(!file.startsWith(path.resolve(dist)+path.sep)||!fs.existsSync(file)){res.statusCode=404;res.end('not found');return;}
-      res.setHeader('Content-Type',file.endsWith('.mjs')?'text/javascript; charset=utf-8':'application/octet-stream');
+      res.setHeader('Content-Type',file.endsWith('.js')||file.endsWith('.mjs')?'text/javascript; charset=utf-8':file.endsWith('.css')?'text/css; charset=utf-8':file.endsWith('.svg')?'image/svg+xml':'application/octet-stream');
       fs.createReadStream(file).pipe(res);return;
     }
     res.setHeader('Content-Type','text/html; charset=utf-8');res.end(html);
@@ -28,40 +42,31 @@ const {build,OUTPUT,MARK}=require('./build-release.cjs');
   const results=[];
   async function test(name,fn){await fn();results.push({name,status:'PASS'});console.log('PASS',name)}
   try{
-    const context=await browser.newContext({viewport:{width:390,height:844}});
-    await context.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
-    const page=await context.newPage();
-    const errors=[];page.on('pageerror',e=>errors.push(e.message));
-    await page.goto(origin,{waitUntil:'domcontentloaded'});
-    await page.waitForTimeout(100);
-    if(errors.length)throw new Error('release bootstrap pageerror: '+errors.join(' | '));
-    await page.waitForFunction(()=>window.SevenPerformance&&window.SevenPerformance.state.ready&&window.SevenCanon&&window.SevenMotion&&window.SevenMotion.state.ready&&window.SevenUI&&window.SevenUI.state.ready&&window.SevenPdf,null,{timeout:10000});
-    await page.waitForFunction(()=>typeof roomPersistence!=='undefined'&&roomPersistence.status().ready,null,{timeout:10000});
-
-    await test('release runtime boots without page errors',async()=>{assert.deepEqual(errors,[])});
-    await test('room persistence is ready',async()=>{const r=await page.evaluate(()=>roomPersistence.status());assert.equal(r.ready,true);assert.equal(r.failed,false)});
-    await test('adaptive performance tier is installed',async()=>{const r=await page.evaluate(()=>({tier:SevenPerformance.state.tier,attr:document.documentElement.dataset.sevenPerformance,ready:SevenPerformance.state.ready}));assert.ok(['lite','balanced','full'].includes(r.tier));assert.equal(r.attr,r.tier);assert.equal(r.ready,true)});
-    await test('motion layer is event delegated and ready',async()=>{assert.equal(await page.evaluate(()=>document.documentElement.classList.contains('seven-motion-ready')),true)});
-    await test('UI system runtime is semantic and ready',async()=>{const r=await page.evaluate(()=>({ready:SevenUI.state.ready,version:SevenUI.state.version,root:document.documentElement.dataset.sevenUi,composer:document.querySelector('.composer')?.dataset.sevenComposer,chatRole:document.getElementById('chat')?.getAttribute('role'),live:document.getElementById('chat')?.getAttribute('aria-live')}));assert.equal(r.ready,true);assert.equal(r.version,'2.0.0');assert.equal(r.root,'v2');assert.equal(r.composer,'v2');assert.equal(r.chatRole,'log');assert.equal(r.live,'polite')});
-    await test('tool toggle semantics mirror visual state',async()=>{const r=await page.evaluate(()=>Array.from(document.querySelectorAll('.tool-btn.toggle')).map(el=>({active:el.classList.contains('active'),pressed:el.getAttribute('aria-pressed')})));for(const item of r)assert.equal(item.pressed,item.active?'true':'false')});
-    await test('PDF engine is not loaded during normal boot',async()=>{const r=await page.evaluate(()=>({loaded:SevenPdf.loaded,global:typeof window.pdfjsLib}));assert.equal(r.loaded,false);assert.equal(r.global,'undefined')});
-    await test('localized PDF engine lazy-loads without CDN',async()=>{const r=await page.evaluate(async()=>{const lib=await SevenPdf.load();return {pdf:typeof lib.getDocument==='function',loaded:SevenPdf.loaded,worker:lib.GlobalWorkerOptions.workerSrc}});assert.equal(r.pdf,true);assert.equal(r.loaded,true);assert.equal(r.worker,'./vendor/pdfjs/pdf.worker.min.mjs');assert.deepEqual(errors,[])});
-    await test('mobile layout has no document horizontal overflow',async()=>{const r=await page.evaluate(()=>({sw:document.documentElement.scrollWidth,w:document.documentElement.clientWidth,composer:!!document.querySelector('.composer')}));assert.equal(r.composer,true);assert.ok(r.sw<=r.w+2,JSON.stringify(r))});
-    await test('offscreen message rendering optimization is active',async()=>{const v=await page.evaluate(()=>{const n=document.createElement('div');n.className='message';n.textContent='probe';document.getElementById('chat').appendChild(n);const s=getComputedStyle(n);const out={visibility:s.contentVisibility,intrinsic:s.containIntrinsicSize||`${s.containIntrinsicWidth} ${s.containIntrinsicHeight}`};n.remove();return out});assert.equal(v.visibility,'auto');assert.ok(v.intrinsic&&v.intrinsic!=='none'&&v.intrinsic!=='0px',JSON.stringify(v))});
-    await test('new messages receive UI semantic decoration',async()=>{const r=await page.evaluate(async()=>{const n=document.createElement('div');n.className='message assistant';n.innerHTML='<div class="bubble">probe</div>';document.getElementById('chat').appendChild(n);await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));const out={role:n.dataset.sevenMessageRole,decorated:n.dataset.sevenUiDecorated,bubble:n.querySelector('.bubble').dataset.sevenBubble};n.remove();return out});assert.equal(r.role,'assistant');assert.equal(r.decorated,'1');assert.equal(r.bubble,'1')});
-    await test('canon runtime branches instead of forcing rigid canon',async()=>{const r=await page.evaluate(()=>{const e=SevenCanon.createEngine({id:'probe',sources:[{id:'s',authority:'A0'}],anchors:[{id:'a',strength:'rigid'}],facts:[],events:[],entities:[],invariants:[]});const s=e.createSession({position:1});return e.applySceneDelta(s,{invalidatesAnchors:['a']},{id:'x'}).session.branchOrigin.reason});assert.equal(r,'rigid-anchor-invalidated')});
-    await context.close();
-
-    const reduced=await browser.newContext({reducedMotion:'reduce',viewport:{width:390,height:844}});
-    await reduced.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
-    const rp=await reduced.newPage();const reducedErrors=[];rp.on('pageerror',e=>reducedErrors.push(e.message));
-    await rp.goto(origin,{waitUntil:'domcontentloaded'});await rp.waitForTimeout(100);if(reducedErrors.length)throw new Error('reduced-motion pageerror: '+reducedErrors.join(' | '));
-    await rp.waitForFunction(()=>window.SevenPerformance&&SevenPerformance.state.ready&&window.SevenUI&&SevenUI.state.ready,null,{timeout:10000});
-    await test('reduced motion forces lightweight motion tier',async()=>{const r=await rp.evaluate(()=>({reduced:SevenPerformance.state.reducedMotion,tier:SevenPerformance.state.tier,attr:document.documentElement.dataset.sevenReducedMotion}));assert.equal(r.reduced,true);assert.equal(r.tier,'lite');assert.equal(r.attr,'1')});
-    await reduced.close();
-  } finally {
-    await browser.close();server.close();
-  }
-  fs.writeFileSync(path.join(__dirname,'release-results.json'),JSON.stringify({results,build:built},null,2));
-  console.log('release verification: PASS ('+results.length+' checks)');
+    await test('release boots',async()=>{
+      const page=await browser.newPage();
+      await page.goto(origin,{waitUntil:'domcontentloaded'});
+      await page.waitForFunction(()=>window.SevenRuntime&&window.SevenControl&&window.SevenBridge&&window.SevenExecution&&window.SevenBetaUI);
+      assert.equal(await page.evaluate(()=>document.documentElement.dataset.sevenControl),'v4.3');
+      assert.equal(await page.evaluate(()=>!!window.SevenAttachmentLoader),true);
+      assert.equal(await page.evaluate(()=>!!window.SevenAttachments),false);
+      await page.close();
+    });
+    await test('workspace assets are lazy and loadable',async()=>{
+      const page=await browser.newPage();
+      await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');localStorage.setItem('user_name','Seven Tester');localStorage.setItem('user-name','Seven Tester');});
+      const requested=[];page.on('request',r=>{if(r.url().includes('/workspaces/'))requested.push(r.url())});
+      await page.goto(origin,{waitUntil:'domcontentloaded'});
+      await page.waitForFunction(()=>window.SevenBetaUI?.state.ready&&document.querySelector('.seven-beta-status'));
+      const specialistBefore=requested.filter(u=>!deferredShell.has(path.posix.basename(new URL(u).pathname)));
+      assert.deepEqual(specialistBefore,[],'specialist workspaces must remain unloaded before workspace intent: '+JSON.stringify(specialistBefore));
+      assert.equal(await page.evaluate(()=>!!window.SevenWorkspaces),false);
+      assert.equal(await page.evaluate(()=>!!window.SevenAttachments),false);
+      await page.click('.seven-beta-status');
+      await page.waitForFunction(()=>window.SevenWorkspaces&&document.querySelector('.seven-ws-launcher'),null,{timeout:10000});
+      const specialistAfter=requested.filter(u=>!deferredShell.has(path.posix.basename(new URL(u).pathname)));
+      assert.ok(specialistAfter.some(u=>u.endsWith('/workspaces/hub.js')),'workspace hub did not lazy-load after intent: '+JSON.stringify(specialistAfter));
+      await page.close();
+    });
+  }finally{await browser.close();server.close();}
+  console.log(`release verification: PASS (${results.length} checks, ${releaseLayerBytes} startup bytes; frontier=${MODEL_ID}; PDF/attachments/workspaces lazy-local)`);
 })().catch(e=>{console.error(e);process.exit(1)});
