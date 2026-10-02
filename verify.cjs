@@ -231,5 +231,55 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   const r=await page.evaluate(()=>{document.documentElement.setAttribute('dir','rtl');document.getElementById('sidebar').classList.add('collapsed');openSettings();const modal=document.querySelector('#settingsModal .modal-content'),chat=document.getElementById('chat'),out={modal:modal.scrollWidth<=modal.clientWidth+1,chat:chat.scrollWidth<=chat.clientWidth+1,direction:getComputedStyle(document.body).direction};document.documentElement.setAttribute('dir','ltr');return out});
   assert.equal(r.modal,true);assert.equal(r.chat,true);assert.equal(r.direction,'rtl');
  });
+
+ await test('deep think speed policy adaptively budgets hidden output',async()=>{
+  const r=await page.evaluate(()=>{
+    const low=SevenDeepThinkPerformance.policy([{role:'user',content:'Explain this briefly.'}],currentModel);
+    const high=SevenDeepThinkPerformance.policy([{role:'user',content:'Research and analyze this architecture carefully with code, multiple steps, assumptions, edge cases, and a detailed comparison.\n1. inspect\n2. compare\n3. verify'}],currentModel);
+    return {lowBudget:low.hiddenMaxTokens,highBudget:high.hiddenMaxTokens,lowTimeout:low.timeoutMs,highTimeout:high.timeoutMs,lowTier:low.tier,highTier:high.tier,strongest:low.strongestEffort,expected:getReasoningEffort(currentModel,'deepThink'),max:modelLimits(currentModel).maxTokens};
+  });
+  assert.ok(r.lowBudget<=r.max);assert.ok(r.highBudget<=r.max);assert.ok(r.highBudget>=r.lowBudget);assert.ok(r.highTimeout>=r.lowTimeout);assert.equal(r.strongest,r.expected);
+ });
+ await test('deep think latency priority becomes an explicit routing signal',async()=>{
+  const r=await page.evaluate(()=>SevenModelIntelligenceV3.analyze('Analyze this problem carefully',{purpose:'deepThink',deepThinkRequested:true,latencyPriority:true}));
+  assert.equal(r.preferSpeed,true);assert.equal(r.preferPrecision,true);assert.ok(r.evidence.includes('latency-priority'));
+ });
+ await test('request normalization preserves deep latency and timeout policy without changing final budgets',async()=>{
+  const r=await page.evaluate(()=>{
+    const deep=normalizeRequestConfig({messages:[{role:'user',content:'x'}],maxTokens:2048,purpose:'deepThink',model:currentModel,latencyPriority:true,timeoutMs:25000});
+    const chat=normalizeRequestConfig({messages:[{role:'user',content:'x'}],maxTokens:1234,purpose:'chat',model:currentModel,latencyPriority:false});
+    return {deep:{maxTokens:deep.maxTokens,latency:deep.latencyPriority,timeout:deep.timeoutMs},chat:{maxTokens:chat.maxTokens,latency:chat.latencyPriority,timeout:chat.timeoutMs}};
+  });
+  assert.deepEqual(r.deep,{maxTokens:2048,latency:true,timeout:25000});assert.deepEqual(r.chat,{maxTokens:1234,latency:false,timeout:null});
+ });
+ await test('runDeepThink keeps a dedicated hidden pass with compact brief and fast-lane config',async()=>{
+  const r=await page.evaluate(async()=>{
+    const old=requestAI;
+    let calls=0,captured=null;
+    requestAI=async cfg=>{calls++;captured={purpose:cfg.purpose,maxTokens:cfg.maxTokens,latencyPriority:cfg.latencyPriority,timeoutMs:cfg.timeoutMs,system:cfg.messages?.[0]?.content||''};return {choices:[{message:{content:'compact synthetic brief'}}],_sevenRoute:{provider:'fixture',model:'fixture-model',attempts:1}}};
+    try{
+      beginDeepThinkPerformanceV1('fixture-room');
+      const out=await runDeepThink([{role:'user',content:'Analyze this carefully'}],currentModel);
+      const snap=SevenDeepThinkPerformance.snapshot();
+      finishDeepThinkPerformanceV1('completed');
+      return {calls,captured,outLen:out.length,last:out[out.length-1].content,snap};
+    }finally{requestAI=old;if(activeDeepThinkPerformance)finishDeepThinkPerformanceV1('cancelled');}
+  });
+  assert.equal(r.calls,1);assert.equal(r.captured.purpose,'deepThink');assert.equal(r.captured.latencyPriority,true);assert.ok(r.captured.timeoutMs>=25000);assert.ok(r.captured.maxTokens>=512);assert.ok(r.captured.system.includes('compact decision brief'));assert.ok(!r.captured.system.toLowerCase().includes('step by step'));assert.ok(r.last.includes('compact synthetic brief'));assert.ok(r.snap.deepRoute.provider==='fixture');
+ });
+ await test('deep think diagnostics expose timings and routes but no content or secrets',async()=>{
+  const r=await page.evaluate(()=>{
+    beginDeepThinkPerformanceV1('safe-room');
+    activeDeepThinkPerformance.contextMs=12;activeDeepThinkPerformance.deepThinkMs=34;activeDeepThinkPerformance.hiddenBudget=2048;activeDeepThinkPerformance.timeoutMs=25000;activeDeepThinkPerformance.deepRoute={provider:'groq',model:'fixture'};
+    finishDeepThinkPerformanceV1('completed');
+    const snap=SevenDeepThinkPerformance.snapshot(),raw=JSON.stringify(snap);
+    return {snap,secret:/gsk_|sk-or-|nvapi-|AIza|Authorization|Bearer/i.test(raw),content:/prompt|response|message|compact synthetic brief/i.test(raw)};
+  });
+  assert.equal(r.snap.status,'completed');assert.equal(r.snap.hiddenBudget,2048);assert.equal(r.secret,false);assert.equal(r.content,false);
+ });
+ await test('deep think low-complexity fast lane does not allocate full model ceiling when ceiling is larger',async()=>{
+  const r=await page.evaluate(()=>{const p=SevenDeepThinkPerformance.policy([{role:'user',content:'What is 2 + 2?'}],currentModel);return {budget:p.hiddenMaxTokens,max:modelLimits(currentModel).maxTokens}});
+  if(r.max>2048)assert.ok(r.budget<r.max);else assert.equal(r.budget,r.max);
+ });
  await browser.close();server.close();fs.writeFileSync(require('path').join(__dirname,'results.json'),JSON.stringify({results,liveProviderCalls:false},null,2));
 })().catch(e=>{console.error(e);server.close();process.exit(1)});
