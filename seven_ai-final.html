@@ -4372,7 +4372,7 @@
         // ---------- Web Search v2: normalized multi-source retrieval ----------
         const SEARCH_V2 = Object.freeze({
             version:2,
-            maxQueries:3,
+            maxQueries:5,
             maxCandidates:24,
             maxContextSources:8,
             maxContextChars:12000,
@@ -4421,7 +4421,9 @@
                 String(adapter||"unknown"),
                 normalizeSearchCacheQueryV2(queryObj?.text),
                 String(queryObj?.language||intent?.language||"unknown"),
-                searchCacheRecencyClassV2(intent)
+                String(queryObj?.recencyHint||searchCacheRecencyClassV2(intent)),
+                String(queryObj?.sourceTypeHint||""),
+                String(queryObj?.domainHint||"")
             ].join("\n");
         }
 
@@ -4629,7 +4631,9 @@
                     body:JSON.stringify({
                         query:queryObj.text,
                         language:queryObj.language||intent?.language||"en",
-                        recency:gatewayRecencyForIntentV2(intent),
+                        recency:queryObj.recencyHint||gatewayRecencyForIntentV2(intent),
+                        sourceTypeHint:queryObj.sourceTypeHint||null,
+                        domainHint:queryObj.domainHint||null,
                         maxResults:8
                     })
                 },SEARCH_V2.gatewaySearchTimeoutMs);
@@ -4645,6 +4649,7 @@
                     engine:"gateway_"+backend,
                     queryId:queryObj.id,
                     queryPriority:queryObj.priority,
+                    queryPurpose:queryObj.purpose,coverageKey:queryObj.coverageKey,sourceTypeHint:queryObj.sourceTypeHint,
                     language:queryObj.language||intent?.language||"unknown",
                     sourceType:item?.sourceType||"unknown",
                     readState:"snippet_only",
@@ -4740,34 +4745,199 @@
                 .split(/\s+/).filter(x=>x.length>=2).slice(0,40);
         }
 
+        const SEARCH_INTENT_TYPES_V2=Object.freeze([
+            "current_fact","evergreen_fact","technical","comparison","how_to",
+            "news","academic","navigational","product_entity","exploratory"
+        ]);
+
+        const SEARCH_STOP_WORDS_V2=new Set([
+            "the","a","an","and","or","of","to","for","in","on","with","what","which","who","why","how","is","are","was","were",
+            "ما","ماذا","من","هو","هي","في","على","الى","إلى","عن","مع","او","أو","و","هل","كيف","لماذا","ماهو","ماهي","ماهو"
+        ]);
+
+        function uniqueBoundedStringsV2(values,limit,maxLength=100){
+            const out=[],seen=new Set();
+            for(const value of Array.isArray(values)?values:[]){
+                const clean=String(value||"").trim().replace(/\s+/g," ").slice(0,maxLength);
+                const key=clean.toLowerCase();
+                if(!clean||seen.has(key))continue;
+                seen.add(key);out.push(clean);
+                if(out.length>=limit)break;
+            }
+            return out;
+        }
+
+        function extractSearchKeyTermsV2(text){
+            const quoted=[...String(text||"").matchAll(/["“”'‘’]([^"“”'‘’]{2,80})["“”'‘’]/g)].map(m=>m[1]);
+            const tokens=String(text||"").match(/[\p{L}\p{N}+#._-]{2,}/gu)||[];
+            const meaningful=tokens.filter(token=>!SEARCH_STOP_WORDS_V2.has(token.toLowerCase()));
+            return uniqueBoundedStringsV2([...quoted,...meaningful],12,80);
+        }
+
+        function extractSearchEntitiesV2(text){
+            const value=String(text||"");
+            const quoted=[...value.matchAll(/["“”'‘’]([^"“”'‘’]{2,80})["“”'‘’]/g)].map(m=>m[1]);
+            const latin=value.match(/\b(?:[A-Z]{2,}[A-Z0-9._+-]*|[A-Za-z]+(?:[-_.]?[A-Za-z0-9]+)*\d+[A-Za-z0-9._+-]*|[A-Z][A-Za-z0-9._+-]+(?:\s+[A-Z][A-Za-z0-9._+-]+){0,3})\b/g)||[];
+            const tech=value.match(/\b(?:Android|WebView|JavaScript|TypeScript|Python|Node(?:\.js)?|React|GitHub|OpenAI|API|SDK|GPU|CPU|LLM|iOS|Windows|Linux)\b/gi)||[];
+            return uniqueBoundedStringsV2([...quoted,...latin,...tech],8,100);
+        }
+
+        function cleanComparisonSubjectV2(value){
+            let text=String(value||"").trim()
+                .replace(/^(?:compare|comparison|between|قارن|مقارنة|بين)\s+/i,"")
+                .replace(/(?:for|in|on|من حيث|في)\s+.{0,80}$/i,"")
+                .replace(/[؟?!.،,;:]+$/g,"").trim();
+            const words=text.split(/\s+/).filter(Boolean);
+            if(words.length<1||words.length>8||text.length>90)return null;
+            return text;
+        }
+
+        function extractComparisonSubjectsV2(text){
+            const value=String(text||"").trim();
+            const patterns=[
+                /\b(.{1,80}?)\s+(?:vs\.?|versus)\s+(.{1,80}?)(?:[?!.]|$)/i,
+                /\bcompare\s+(.{1,80}?)\s+(?:and|with)\s+(.{1,80}?)(?:[?!.]|$)/i,
+                /مقارنة\s+بين\s+(.{1,80}?)\s+و\s+(.{1,80}?)(?:[؟?!.]|$)/,
+                /قارن\s+(.{1,80}?)\s+و\s+(.{1,80}?)(?:[؟?!.]|$)/
+            ];
+            for(const re of patterns){
+                const m=value.match(re);
+                if(!m)continue;
+                const a=cleanComparisonSubjectV2(m[1]),b=cleanComparisonSubjectV2(m[2]);
+                if(a&&b&&a.toLowerCase()!==b.toLowerCase())return [a,b];
+            }
+            return [];
+        }
+
+        function determineSearchIntentTypeV2(text,flags){
+            const value=String(text||"");
+            if(/\b(news|breaking|headline|headlines)\b/i.test(value)||/أخبار|اخبار|خبر عاجل/.test(value))return "news";
+            if(flags.comparison)return "comparison";
+            if(/\b(official site|official website|homepage|go to|open site|website)\b/i.test(value)||/الموقع الرسمي|افتح الموقع|رابط الموقع/.test(value))return "navigational";
+            if(/\b(paper|papers|journal|doi|arxiv|peer[- ]review|academic|study|studies)\b/i.test(value)||/بحث علمي|دراسة|دراسات|ورقة علمية|أكاديمي/.test(value))return "academic";
+            if(/\b(how to|tutorial|guide|steps?)\b/i.test(value)||/كيف|طريقة|خطوات|شرح/.test(value))return "how_to";
+            if(flags.technical)return "technical";
+            if(flags.timeSensitive)return "current_fact";
+            if(/\b(price|specs?|specifications?|model|product|release)\b/i.test(value)||/سعر|مواصفات|منتج|إصدار|اصدار/.test(value))return "product_entity";
+            if(/\b(explore|overview|tell me about|learn about)\b/i.test(value)||/نبذة|نظرة عامة|اشرح لي عن/.test(value))return "exploratory";
+            return "evergreen_fact";
+        }
+
+        function sourceNeedsForIntentV2(type,flags){
+            if(type==="technical")return ["documentation","official","independent"];
+            if(type==="comparison")return ["subject_a_primary","subject_b_primary","independent_comparison"];
+            if(type==="news"||type==="current_fact")return ["primary_current","independent_current"];
+            if(type==="academic")return ["academic","primary","institutional"];
+            if(type==="how_to")return ["documentation","specialist"];
+            if(type==="navigational")return ["official"];
+            if(type==="product_entity"&&flags.timeSensitive)return ["official","independent_current"];
+            return ["strong_reference","independent"];
+        }
+
         function analyzeSearchIntentV2(question){
             const text=String(question||"").trim();
             const language=containsArabicV2(text)?"ar":"en";
             const timeSensitive=/\b(latest|today|current|recent|news|update|updates|now|this week|this month|202[4-9])\b/i.test(text) ||
                 /أحدث|احدث|اليوم|حاليا|حاليًا|الآن|اخبار|أخبار|تحديث|تحديثات|هذا الأسبوع|هذا الشهر/.test(text);
-            const technical=/\b(api|sdk|code|javascript|python|android|webview|github|model|llm|gpu|cpu|linux|windows)\b/i.test(text) ||
-                /برمج|كود|اندرويد|أندرويد|نموذج|محاكي|معالج|كرت شاشة|جيتهاب/.test(text);
+            const technical=/\b(api|sdk|code|javascript|typescript|python|android|webview|github|model|llm|gpu|cpu|linux|windows|library|framework|bug|error)\b/i.test(text) ||
+                /برمج|كود|اندرويد|أندرويد|نموذج|محاكي|معالج|كرت شاشة|جيتهاب|مكتبة|خطأ/.test(text);
             const comparison=/\b(vs\.?|versus|compare|comparison|better)\b/i.test(text) || /مقارنة|قارن|أفضل|افضل|أقوى|اقوى/.test(text);
-            return {version:2,question:text,language,timeSensitive,technical,comparison,currentYear:new Date().getFullYear()};
+            const flags={timeSensitive,technical,comparison};
+            const intentType=determineSearchIntentTypeV2(text,flags);
+            const entities=extractSearchEntitiesV2(text);
+            const keyTerms=extractSearchKeyTermsV2(text);
+            const comparisonSubjects=comparison?extractComparisonSubjectsV2(text):[];
+            return {
+                version:2,question:text,language,timeSensitive,technical,comparison,
+                intentType,
+                likelyHowTo:intentType==="how_to",
+                academic:intentType==="academic",
+                navigational:intentType==="navigational",
+                sourceNeeds:sourceNeedsForIntentV2(intentType,flags),
+                entities,keyTerms,comparisonSubjects,
+                ambiguity:comparison&&comparisonSubjects.length<2?"medium":"low",
+                currentYear:new Date().getFullYear()
+            };
+        }
+
+        function searchPlanSeedV2(intent){
+            if(intent.entities?.length)return intent.entities.slice(0,4).join(" ");
+            if(intent.keyTerms?.length)return intent.keyTerms.slice(0,7).join(" ");
+            return intent.question;
+        }
+
+        function searchRecencyHintV2(intent){
+            if(!intent?.timeSensitive)return null;
+            const q=String(intent.question||"").toLowerCase();
+            if(/\b(today|now)\b|اليوم|الآن/.test(q))return "day";
+            if(/\b(this week|week)\b|هذا الأسبوع|الأسبوع/.test(q))return "week";
+            return "month";
         }
 
         function planSearchQueriesV2(question){
             const intent=analyzeSearchIntentV2(question);
             const queries=[],seen=new Set();
-            const add=(text,purpose,language,priority)=>{
+            const add=(text,purpose,language,priority,meta={})=>{
                 const clean=String(text||"").trim().replace(/\s+/g," ");
                 const key=clean.toLowerCase();
                 if(!clean||seen.has(key)||queries.length>=SEARCH_V2.maxQueries)return;
                 seen.add(key);
-                queries.push({id:"q"+(queries.length+1),text:clean,purpose,language:language||intent.language,priority:Number(priority)||1});
+                queries.push({
+                    id:"q"+(queries.length+1),
+                    text:clean,
+                    purpose:String(purpose||"primary").slice(0,40),
+                    language:language||intent.language,
+                    priority:Math.max(0,Math.min(1,Number(priority)||1)),
+                    sourceTypeHint:meta.sourceTypeHint||null,
+                    domainHint:meta.domainHint||null,
+                    recencyHint:meta.recencyHint||null,
+                    entityGroup:meta.entityGroup||null,
+                    coverageKey:String(meta.coverageKey||purpose||"primary").slice(0,60)
+                });
             };
-            add(intent.question,"primary",intent.language,1);
-            if(intent.timeSensitive && !new RegExp("\\b"+intent.currentYear+"\\b").test(intent.question)){
-                add(intent.question+" "+intent.currentYear,"freshness",intent.language,.9);
+
+            const recency=searchRecencyHintV2(intent);
+            add(intent.question,"primary",intent.language,1,{recencyHint:recency,coverageKey:"primary"});
+            const seed=searchPlanSeedV2(intent);
+
+            if(intent.intentType==="comparison"&&intent.comparisonSubjects.length===2){
+                const [a,b]=intent.comparisonSubjects;
+                const officialSuffix=intent.language==="ar"?" المواصفات الرسمية":" official specifications";
+                add(a+officialSuffix,"subject_a_primary",intent.language,.96,{sourceTypeHint:"official",entityGroup:"A",coverageKey:"subject_a"});
+                add(b+officialSuffix,"subject_b_primary",intent.language,.96,{sourceTypeHint:"official",entityGroup:"B",coverageKey:"subject_b"});
+                add(a+" "+b+(intent.language==="ar"?" مقارنة مستقلة":" independent comparison"),"independent_comparison",intent.language,.9,{sourceTypeHint:"specialist",coverageKey:"independent_comparison"});
+            }else if(intent.intentType==="technical"){
+                add(seed+(intent.language==="ar"?" التوثيق الرسمي":" official documentation"),"official_docs",intent.language,.96,{sourceTypeHint:"documentation",coverageKey:"official_docs",recencyHint:recency});
+                if(intent.timeSensitive)add(seed+" "+intent.currentYear+(intent.language==="ar"?" تغييرات توافق":" compatibility changes"),"technical_current",intent.language,.82,{sourceTypeHint:"specialist",coverageKey:"independent",recencyHint:recency});
+            }else if(intent.intentType==="news"||intent.intentType==="current_fact"){
+                if(!new RegExp("\\b"+intent.currentYear+"\\b").test(intent.question)){
+                    add(intent.question+" "+intent.currentYear,"freshness",intent.language,.94,{recencyHint:recency,coverageKey:"freshness"});
+                }
+                add(seed+(intent.language==="ar"?" المصدر الرسمي الأحدث":" latest official source"),"primary_current",intent.language,.92,{sourceTypeHint:"primary",recencyHint:recency,coverageKey:"primary_current"});
+                add(seed+(intent.language==="ar"?" مصدر مستقل حديث":" recent independent source"),"independent_current",intent.language,.82,{sourceTypeHint:"specialist",recencyHint:recency,coverageKey:"independent_current"});
+            }else if(intent.intentType==="academic"){
+                add(seed+(intent.language==="ar"?" دراسة بحث علمي":" research paper study"),"academic_primary",intent.language,.94,{sourceTypeHint:"academic",coverageKey:"academic"});
+                add(seed+(intent.language==="ar"?" مؤسسة مرجع":" institutional reference"),"academic_reference",intent.language,.78,{sourceTypeHint:"reference",coverageKey:"institutional"});
+            }else if(intent.intentType==="how_to"){
+                add(seed+(intent.language==="ar"?" التعليمات الرسمية":" official documentation guide"),"howto_official",intent.language,.94,{sourceTypeHint:"documentation",coverageKey:"official_guide"});
+                add(seed+(intent.language==="ar"?" دليل متخصص":" specialist guide"),"howto_specialist",intent.language,.76,{sourceTypeHint:"specialist",coverageKey:"specialist_guide"});
+            }else if(intent.intentType==="navigational"){
+                add(seed+(intent.language==="ar"?" الموقع الرسمي":" official website"),"official_site",intent.language,.98,{sourceTypeHint:"official",coverageKey:"official_site"});
+            }else{
+                if(intent.timeSensitive&&!new RegExp("\\b"+intent.currentYear+"\\b").test(intent.question)){
+                    add(intent.question+" "+intent.currentYear,"freshness",intent.language,.9,{recencyHint:recency,coverageKey:"freshness"});
+                }
+                add(seed+(intent.language==="ar"?" مصدر مستقل":" independent source"),"independent",intent.language,.72,{coverageKey:"independent"});
             }
+
+            // Arabic stays primary. Add English only when Latin entities make it useful.
             if(intent.language==="ar"){
-                const latin=(intent.question.match(/[A-Za-z][A-Za-z0-9+._-]*/g)||[]).filter(x=>x.length>=2);
-                if(latin.length) add(latin.slice(0,8).join(" ")+(intent.timeSensitive?" "+intent.currentYear:""),"entity_english","en",.75);
+                const latinEntities=(intent.entities||[]).filter(x=>/[A-Za-z]/.test(x));
+                if(latinEntities.length){
+                    const englishSeed=latinEntities.slice(0,5).join(" ");
+                    const suffix=intent.technical?" official documentation":(intent.timeSensitive?" "+intent.currentYear+" latest":"");
+                    add(englishSeed+suffix,"entity_english","en",.74,{sourceTypeHint:intent.technical?"documentation":null,recencyHint:recency,coverageKey:"english_entity"});
+                }
             }
             return {intent,queries};
         }
@@ -4794,6 +4964,33 @@
             return (h>>>0).toString(36);
         }
 
+        const SEARCH_SOURCE_TYPES_V2=new Set([
+            "government","academic","documentation","official","primary","reference",
+            "specialist","community","social","commercial","unknown"
+        ]);
+
+        function classifySearchSourceTypeV2(candidate){
+            const supplied=String(candidate?.sourceType||"").toLowerCase();
+            if(SEARCH_SOURCE_TYPES_V2.has(supplied)&&supplied!=="unknown")return supplied;
+            let host="",path="";
+            try{
+                const u=new URL(String(candidate?.url||""));
+                host=u.hostname.toLowerCase();path=u.pathname.toLowerCase();
+            }catch(_){}
+            const title=String(candidate?.title||"").toLowerCase();
+            if(/(?:^|\.)gov(?:\.|$)/.test(host)||host.endsWith(".gov.uk")||host.endsWith(".gov.au"))return "government";
+            if(host==="arxiv.org"||host==="doi.org"||/\.edu(?:\.|$)/.test(host)||/\/research\/|\/journal\/|\/papers?\//.test(path))return "academic";
+            if(host.includes("wikipedia.org"))return "reference";
+            if(host==="stackoverflow.com"||host==="reddit.com"||host.endsWith(".reddit.com")||
+               (host==="github.com"&&/\/(?:issues|discussions)(?:\/|$)/.test(path))||/\/forum(?:s)?\//.test(path))return "community";
+            if(["x.com","twitter.com","facebook.com","instagram.com","tiktok.com","youtube.com"].includes(host))return "social";
+            if(host.startsWith("docs.")||host.startsWith("developer.")||host.startsWith("developers.")||
+               /\/(?:docs?|documentation|reference|api|sdk)(?:\/|$)/.test(path)||
+               /\b(?:documentation|api reference|developer docs)\b/.test(title))return "documentation";
+            if(/\b(?:shop|store|buy|pricing|product)\b/.test(path)||/\b(?:buy now|shop|pricing)\b/.test(title))return "commercial";
+            return "unknown";
+        }
+
         function normalizeSearchCandidateV2(raw){
             if(!raw||typeof raw!=="object")return null;
             const url=canonicalSearchUrlV2(raw.url);
@@ -4810,7 +5007,10 @@
                 queryPriority:Math.max(0,Math.min(1,Number(raw.queryPriority)||0)),
                 rank:Math.max(1,Number(raw.rank)||999),
                 language,
-                sourceType:String(raw.sourceType||"unknown").slice(0,40),
+                sourceType:classifySearchSourceTypeV2({url,title,sourceType:raw.sourceType,engine}).slice(0,40),
+                queryPurpose:String(raw.queryPurpose||"primary").slice(0,40),
+                coverageKeys:uniqueBoundedStringsV2(Array.isArray(raw.coverageKeys)?raw.coverageKeys:[raw.coverageKey],8,60),
+                sourceTypeHint:raw.sourceTypeHint?String(raw.sourceTypeHint).slice(0,40):null,
                 readState,
                 discoveredAt:Number(raw.discoveredAt)||Date.now(),
                 publishedAt:raw.publishedAt?String(raw.publishedAt).slice(0,64):null,
@@ -4857,14 +5057,28 @@
             return -4;
         }
 
-        function searchSourceTypeScoreV2(type){
-            if(["government","documentation","academic"].includes(type))return 10;
-            if(type==="reference")return 7;
-            if(type==="official"||type==="primary")return 11;
-            if(type==="specialist")return 4;
-            if(type==="community")return 1;
-            if(type==="commercial")return -2;
-            return 0;
+        function searchSourceTypeScoreV2(type,intent,relevance=1){
+            const t=String(type||"unknown");
+            const kind=intent?.intentType||"evergreen_fact";
+            let score=0;
+            if(kind==="technical"){
+                score=({documentation:14,official:11,government:10,academic:8,primary:8,reference:6,specialist:5,community:2,commercial:-2})[t]||0;
+            }else if(kind==="academic"){
+                score=({academic:15,primary:12,government:9,official:8,documentation:7,reference:6,specialist:4,community:1})[t]||0;
+            }else if(kind==="news"||kind==="current_fact"){
+                score=({primary:14,government:13,official:11,specialist:7,documentation:5,academic:5,reference:2,community:1,commercial:-2})[t]||0;
+            }else if(kind==="comparison"){
+                score=({official:9,documentation:9,specialist:9,primary:8,government:7,academic:7,reference:5,community:3,commercial:-1})[t]||0;
+            }else if(kind==="how_to"){
+                score=({documentation:14,official:11,specialist:7,community:4,reference:4,academic:3,commercial:-1})[t]||0;
+            }else if(kind==="navigational"){
+                score=({official:15,documentation:9,government:9,primary:8,reference:3,commercial:1})[t]||0;
+            }else{
+                score=({government:10,academic:10,documentation:10,official:11,primary:11,reference:7,specialist:4,community:1,commercial:-2})[t]||0;
+            }
+            // Authority never rescues a result that barely matches the question.
+            if(Number(relevance)<.08)score=Math.min(score,2);
+            return score;
         }
 
         function scoreSearchCandidatePartsV2(candidate,intent){
@@ -4876,7 +5090,7 @@
                 relevance:Number((overlap*45).toFixed(3)),
                 readState:readStateWeightV2(candidate.readState),
                 queryPriority:Number((candidate.queryPriority*10).toFixed(3)),
-                sourceType:searchSourceTypeScoreV2(candidate.sourceType),
+                sourceType:searchSourceTypeScoreV2(candidate.sourceType,intent,overlap),
                 language:candidate.language===intent?.language?6:0,
                 freshness:searchFreshnessScoreV2(freshness,intent),
                 corroboration:Math.min(6,Math.max(0,(candidate.discoveredBy?.length||1)-1)*2),
@@ -4904,6 +5118,7 @@
                 }
                 if(existing){
                     existing.discoveredBy=Array.from(new Set([...(existing.discoveredBy||[]),...(c.discoveredBy||[])])).slice(0,12);
+                    existing.coverageKeys=Array.from(new Set([...(existing.coverageKeys||[]),...(c.coverageKeys||[])])).slice(0,8);
                     if(readStateWeightV2(c.readState)>readStateWeightV2(existing.readState)){
                         existing.readState=c.readState;
                         if(c.snippet)existing.snippet=c.snippet;
@@ -4936,7 +5151,7 @@
                     const c=normalizeSearchCandidateV2({
                         title,url,snippet,rank,engine:"duckduckgo",
                         queryId:queryObj.id,queryPriority:queryObj.priority,language:queryObj.language,
-                        sourceType:"reference",readState:"snippet_only",discoveredAt:Date.now()
+                        sourceType:"reference",queryPurpose:queryObj.purpose,coverageKey:queryObj.coverageKey,sourceTypeHint:queryObj.sourceTypeHint,readState:"snippet_only",discoveredAt:Date.now()
                     });
                     if(c)out.push(c);
                 };
@@ -4984,6 +5199,7 @@
                     engine:"wikipedia_"+language,
                     queryId:queryObj.id,queryPriority:queryObj.priority,language,
                     sourceType:"reference",
+                    queryPurpose:queryObj.purpose,coverageKey:queryObj.coverageKey,sourceTypeHint:queryObj.sourceTypeHint,
                     readState:index===0&&topExtract?"read_success":"snippet_only",
                     discoveredAt:Date.now()
                 })).filter(Boolean);
@@ -5024,6 +5240,8 @@
                 excerpt:candidate.snippet||"",
                 engine:candidate.engine,
                 queryId:candidate.queryId,
+                queryPurpose:candidate.queryPurpose||"primary",
+                coverageKeys:Array.isArray(candidate.coverageKeys)?candidate.coverageKeys.slice(0,8):[],
                 readState:candidate.readState,
                 sourceType:candidate.sourceType,
                 language:candidate.language,
@@ -5293,6 +5511,14 @@
             lastSearchV2Diagnostics={
                 version:2,status,capability,
                 language:plan.intent.language,timeSensitive:plan.intent.timeSensitive,
+                intentType:plan.intent.intentType,
+                entityCount:plan.intent.entities.length,
+                keyTermCount:plan.intent.keyTerms.length,
+                sourceNeeds:plan.intent.sourceNeeds.slice(0,8),
+                queryPurposeCounts:[...plan.queries,...followUps].reduce((acc,q)=>{const k=String(q.purpose||"unknown");acc[k]=(acc[k]||0)+1;return acc;},{}),
+                plannedCoverageKeys:Array.from(new Set([...plan.queries,...followUps].map(q=>q.coverageKey).filter(Boolean))).slice(0,16),
+                coveredCoverageKeys:Array.from(new Set(evidence.flatMap(x=>x.coverageKeys||[]))).slice(0,16),
+                uncoveredCoverageKeys:Array.from(new Set([...plan.queries,...followUps].map(q=>q.coverageKey).filter(Boolean))).filter(k=>!new Set(evidence.flatMap(x=>x.coverageKeys||[])).has(k)).slice(0,16),
                 queryCount:plan.queries.length+followUps.length,rawCandidateCount:raw.length,uniqueCandidateCount:ranked.length,
                 evidenceCount:evidence.length,initialEvidenceCount:initialAssessment.evidenceCount,finalEvidenceCount:finalAssessment.evidenceCount,
                 independentHostCount,
@@ -5340,6 +5566,10 @@
             version:SEARCH_V2.version,
             analyze:analyzeSearchIntentV2,
             plan:planSearchQueriesV2,
+            classifySource:classifySearchSourceTypeV2,
+            extractEntities:extractSearchEntitiesV2,
+            extractKeyTerms:extractSearchKeyTermsV2,
+            comparisonSubjects:extractComparisonSubjectsV2,
             normalize:normalizeSearchCandidateV2,
             dedupe:(items,question)=>dedupeSearchCandidatesV2(items,analyzeSearchIntentV2(question||"")),
             freshness:(item,question)=>classifySearchFreshnessV2(item,analyzeSearchIntentV2(question||"")),
