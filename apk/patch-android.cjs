@@ -99,6 +99,8 @@ public class SevenSmokeTest {
       assertEquals("true",js(webView,"typeof window.SevenCanon==='undefined'&&typeof window.SevenWorld==='undefined'"));
       assertEquals("true",js(webView,"Boolean(window.SevenAttachmentLoader)&&typeof window.SevenAttachments==='undefined'"));
       assertEquals("true",js(webView,"(()=>{const e=document.getElementById('userInput');e.focus();return document.activeElement===e})()"));
+      assertEquals("true",js(webView,"(()=>{window.__sevenDoubleSend='pending';freeProviderPrefs={groq:false,nvidia:false,openrouter:false,gemini:false,kilo:false,llm7:false,aion:false,mistral:false,zai:false,cloudflare:false};const input=document.getElementById('userInput');input.value='ci-double-send';Promise.all([sendMessage(),sendMessage()]).then(()=>{const room=rooms[currentRoom];const count=room?room.history.filter(m=>m&&m.role==='user'&&m.content==='ci-double-send').length:0;window.__sevenDoubleSend=count===1?'ok':'bad'}).catch(()=>window.__sevenDoubleSend='error');return true})()"));
+      waitFor(webView,"window.__sevenDoubleSend==='ok'");
       assertEquals("true",js(webView,"Boolean(window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.SevenPlatform)"));
       assertEquals("true",js(webView,"(()=>{window.__sevenNativeCaps='pending';const p=Capacitor.Plugins.SevenPlatform;p.getCapabilities().then(x=>window.__sevenNativeCaps=(x.secureStore&&x.androidKeystore&&x.saf&&x.chunkedIO&&!x.broadStoragePermission)?'ok':'bad').catch(()=>window.__sevenNativeCaps='error');return true})()"));
       waitFor(webView,"window.__sevenNativeCaps==='ok'");

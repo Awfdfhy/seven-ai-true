@@ -1078,7 +1078,7 @@
             llm7: Object.freeze({
                 id: "llm7", name: "LLM7.io Free", kind: "anonymous_free", priority: 82,
                 chatUrl: "https://api.llm7.io/v1/chat/completions",
-                modelsUrl: null, credentialOptional: true, defaultEnabled: false
+                modelsUrl: null, credentialOptional: true, defaultEnabled: true
             }),
             aion: Object.freeze({
                 id: "aion", name: "Aion Labs Free", kind: "permanent_free_tier", priority: 70,
@@ -1387,6 +1387,7 @@
         let searchMode = false;
         let researchMode = false;
         let isGenerating = false;
+        let sendMessageLocked = false;
         let stopRequested = false;
         let activeAbortController = null;
         let activeGenerationRoomId = null;
@@ -6412,7 +6413,7 @@
         // ---------- Sending messages ----------
         async function sendMessage() {
             if (!roomPersistence.status().ready || roomPersistence.status().failed || roomPersistence.status().pending) return;
-            if (isGenerating) return; // a reply is already in flight — ignore Enter/click until it settles
+            if (isGenerating || sendMessageLocked) return; // suppress duplicate Enter/tap dispatches and active replies
             const input = document.getElementById("userInput");
             const text = input.value.trim();
             if (!text) return;
@@ -6420,6 +6421,8 @@
             const roomId = currentRoom;
             const room = rooms[roomId];
             if (!room) return;
+            sendMessageLocked = true;
+            try {
 
             // Carry over any files attached via the composer's attach button
             // before this message was sent.
@@ -6445,10 +6448,13 @@
             if (!await saveRooms()) return;
 
             await generateReply(text, roomId);
+            } finally {
+                sendMessageLocked = false;
+            }
         }
 
         async function regenerateLastReply() {
-            if (isGenerating) return;
+            if (isGenerating || sendMessageLocked) return;
             const roomId = currentRoom;
             const room = rooms[roomId];
             if (!room) return;
@@ -7969,7 +7975,7 @@
             const { room } = state;
 
             if (!hasAnyConfiguredFreeProvider()) {
-                if (currentRoom === roomId) addMessage("system", "⚠️ Add at least one free-provider API key in Settings (⚙️). Seven will never intentionally switch to a paid route.");
+                if (currentRoom === roomId) addMessage("system", "⚠️ No verified-free route is enabled. Enable the anonymous LLM7 free route or add a free-provider API key in Settings (⚙️). Paid fallback stays OFF.");
                 return;
             }
 
@@ -13222,15 +13228,22 @@
         // prompts, stack traces, or hidden reasoning.
         (() => {
             let lastFaultAt = 0;
+            const FAULT_MESSAGE = "⚠️ Seven واجه خطأً غير متوقعًا وتم احتواؤه. يمكنك المتابعة أو إعادة تحميل الصفحة بأمان.";
+            const alreadyVisible = () => {
+                try {
+                    return [...document.querySelectorAll("#chat .message.system .bubble")]
+                        .slice(-8).some(node => String(node.textContent || "").trim() === FAULT_MESSAGE);
+                } catch (_) { return false; }
+            };
             const report = (error, kind) => {
                 const at = Date.now();
-                if (at - lastFaultAt < 1500) return;
+                try { console.error("Seven runtime fault", kind, error); } catch (_) {}
+                if (at - lastFaultAt < 10000 || alreadyVisible()) return;
                 lastFaultAt = at;
                 try {
-                    console.error("Seven runtime fault", kind, error);
                     if (typeof isGenerating !== "undefined" && isGenerating) return;
                     if (typeof addMessage === "function" && typeof currentRoom !== "undefined" && rooms && rooms[currentRoom]) {
-                        addMessage("system", "⚠️ Seven واجه خطأً غير متوقعًا وتم احتواؤه. يمكنك المتابعة أو إعادة تحميل الصفحة بأمان.");
+                        addMessage("system", FAULT_MESSAGE);
                     }
                 } catch (_) { /* containment must never throw */ }
             };

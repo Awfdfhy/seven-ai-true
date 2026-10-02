@@ -83,16 +83,24 @@ public class SevenVisualEvidenceTest {
         WebView webView=webView(scenario);
         waitFor(webView,"Boolean(window.SevenPerformance&&SevenPerformance.state.ready&&window.SevenTheme&&document.getElementById('userInput'))");
 
-        theme(webView,"day");shot("chat-day");
-        theme(webView,"night");shot("chat-night");
+        theme(webView,"day");
+        assertEquals("true",js(webView,"getComputedStyle(document.getElementById('seven-app')).getPropertyValue('--s-bg').trim()==='#f5f7f5'"));
+        shot("chat-day");
+        theme(webView,"night");
+        assertEquals("true",js(webView,"getComputedStyle(document.getElementById('seven-app')).getPropertyValue('--s-bg').trim()==='#111815'&&getComputedStyle(document.querySelector('.main')).backgroundColor==='rgb(17, 24, 21)'"));
+        shot("chat-night");
 
         ensureWorkspaces(webView);
         workspace(webView,"coding");shot("coding");
         workspace(webView,"research");shot("research");
         workspace(webView,"rpg");shot("rpg");
 
-        js(webView,"(()=>{SevenWorkspaces.close();document.documentElement.lang='ar-IQ';document.documentElement.dir='rtl';document.body.dir='rtl';return true})()");
+        js(webView,"(()=>{SevenWorkspaces.close();document.documentElement.lang='ar-IQ';document.documentElement.dir='rtl';document.body.dir='rtl';const s=document.querySelector('.sidebar');s.classList.remove('open','active');document.body.classList.remove('sidebar-open');document.documentElement.dataset.sevenShellSidebar='closed';return true})()");
         waitFor(webView,"document.documentElement.dir==='rtl'&&document.documentElement.lang==='ar-IQ'&&getComputedStyle(document.documentElement).direction==='rtl'");
+        assertEquals("true",js(webView,"(()=>{const r=document.querySelector('.sidebar').getBoundingClientRect();return r.left>=innerWidth-2})()"));
+        js(webView,"(()=>{document.querySelector('.sidebar').classList.add('open');return true})()");
+        assertEquals("true",js(webView,"(()=>{const r=document.querySelector('.sidebar').getBoundingClientRect();return r.left>=-2&&r.right<=innerWidth+2})()"));
+        js(webView,"(()=>{document.querySelector('.sidebar').classList.remove('open');return true})()");
         Thread.sleep(120);shot("arabic-rtl");
       }
 
