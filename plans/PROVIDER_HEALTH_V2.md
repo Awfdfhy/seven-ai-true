@@ -1,7 +1,7 @@
 # Provider Health v2 — Detailed Execution Specification
 
 Date: 2026-10-02
-Status: IMPLEMENTATION READY
+Status: COMPLETE — merged to main via PR #21
 Parent roadmap: ../SEVEN_POLISH_ROADMAP.md
 
 ## Objective
@@ -204,3 +204,11 @@ Provider Health v2 is complete when:
 - long-term per-hour histogram storage
 - learned provider reliability models
 - dedicated diagnostics UI
+
+## Completion record
+
+- Implementation PR: #21
+- Tested head SHA: `8e5f48c70e6e0e9917b3cd85557a778d00c44531`
+- CI run: Seven AI tests #2135 — PASS
+- Squash merge SHA: `cebd9f30d96b7dfaa23e0ff841bd7128f98f1233`
+- Result: Provider Health v2 and all existing regression gates passed before merge.
