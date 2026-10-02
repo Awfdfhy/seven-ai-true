@@ -56,5 +56,38 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   const r=await page.evaluate(()=>{const providers=['kilo','llm7','aion','mistral','zai'];const catalog=getFreeModelCatalog();const before={kilo:isFreeProviderConfigured('kilo'),llm7:isFreeProviderConfigured('llm7')};const old=freeProviderPrefs;freeProviderPrefs=Object.assign({},old,{kilo:true,llm7:true});const after={kilo:isFreeProviderConfigured('kilo'),llm7:isFreeProviderConfigured('llm7')};freeProviderPrefs=old;return {providers:providers.every(id=>!!FREE_PROVIDER_REGISTRY[id]),seeds:['kilo-auto/free','gpt-oss:20b','aion-labs/aion-3.0','mistral-small-latest','glm-4.7-flash'].every(id=>catalog.some(m=>m.id===id)),before,after,ui:providers.every(id=>!!document.getElementById('provider'+id.charAt(0).toUpperCase()+id.slice(1)+'Enabled'))}});
   assert.deepEqual(r,{providers:true,seeds:true,before:{kilo:false,llm7:false},after:{kilo:true,llm7:true},ui:true});
  });
+
+ await test('model intelligence v3 detects multi-intent requests with confidence',async()=>{
+  const r=await page.evaluate(()=>{const x=SevenModelIntelligenceV3.analyze('Debug this JavaScript function and give a proof of why the algorithm is correct.',{workspace:'coding'});return {version:x.version,primary:x.primaryIntent,coding:x.taskWeights.coding,reasoning:x.taskWeights.reasoning,confidence:x.confidence,secondary:x.secondaryIntents.map(v=>v.id)}});
+  assert.equal(r.version,3);assert.ok(r.coding>0.3);assert.ok(r.reasoning>0.12);assert.ok(r.confidence>0.5);assert.ok(r.primary==='coding'||r.secondary.includes('coding'));
+ });
+ await test('model intelligence v3 lowers confidence for ambiguous short requests',async()=>{
+  const r=await page.evaluate(()=>SevenModelIntelligenceV3.analyze('help',{}).confidence);
+  assert.ok(r<=0.45);
+ });
+ await test('model intelligence v3 enforces required vision capability',async()=>{
+  const r=await page.evaluate(()=>{const ctx={version:3,taskWeights:{general:1,coding:0,reasoning:0,research:0,planning:0},intentWeights:{vision:.7},confidence:.8,complexity:'medium',requiredContext:4096,preferSpeed:false,preferPrecision:false,preferTools:false,preferVision:true,requireTools:false,requireVision:true,requireStructured:false,requireStreaming:true};const base={provider:'test',free:true,contextWindow:100000,quality:90,speed:80,tasks:{general:90},effort:null};return {noVision:SevenModelIntelligenceV3.score({...base,id:'a',capabilities:{stream:true,vision:false,tools:true,structured:true}},ctx).eligible,vision:SevenModelIntelligenceV3.score({...base,id:'b',capabilities:{stream:true,vision:true,tools:true,structured:true}},ctx).eligible}});
+  assert.deepEqual(r,{noVision:false,vision:true});
+ });
+ await test('model intelligence v3 rejects insufficient context',async()=>{
+  const r=await page.evaluate(()=>{const ctx={version:3,taskWeights:{general:1,coding:0,reasoning:0,research:0,planning:0},intentWeights:{},confidence:.7,complexity:'low',requiredContext:12000,preferSpeed:false,preferPrecision:false,preferTools:false,preferVision:false,requireTools:false,requireVision:false,requireStructured:false,requireStreaming:false};return SevenModelIntelligenceV3.score({provider:'test',id:'tiny',free:true,contextWindow:4096,quality:99,speed:99,tasks:{general:99},capabilities:{}},ctx).eligible});
+  assert.equal(r,false);
+ });
+ await test('model intelligence v3 decays old failures instead of poisoning health forever',async()=>{
+  const r=await page.evaluate(()=>{const model={provider:'groq',id:'health-fixture'};const key=freeHealthKey(model.provider,model.id),old=freeModelHealth[key];const now=Date.now();freeModelHealth[key]={successes:2,failures:5,latencyMs:600,lastSuccessAt:now-1000,lastFailureAt:now-1000,cooldownUntil:0,lastStatus:500};const recent=SevenModelIntelligenceV3.health(model,now).score;freeModelHealth[key]={successes:2,failures:5,latencyMs:600,lastSuccessAt:now-1000,lastFailureAt:now-6*60*60*1000,cooldownUntil:0,lastStatus:500};const stale=SevenModelIntelligenceV3.health(model,now).score;if(old===undefined)delete freeModelHealth[key];else freeModelHealth[key]=old;return {recent,stale}});
+  assert.ok(r.stale>r.recent);
+ });
+ await test('model intelligence v3 respects provider-wide cooldown',async()=>{
+  const r=await page.evaluate(()=>{const key=freeHealthKey('groq','*'),old=freeModelHealth[key];freeModelHealth[key]={successes:0,failures:1,latencyMs:0,lastSuccessAt:0,lastFailureAt:Date.now(),cooldownUntil:Date.now()+60000,lastStatus:429};const state=SevenModelIntelligenceV3.health({provider:'groq',id:'fixture'}).state;if(old===undefined)delete freeModelHealth[key];else freeModelHealth[key]=old;return state});
+  assert.equal(r,'cooldown');
+ });
+ await test('model intelligence v3 hysteresis keeps healthy near-ties but not clear losses',async()=>{
+  const r=await page.evaluate(()=>{const a={provider:'groq',id:'a'},b={provider:'groq',id:'b'};const ctx={confidence:.5};const near=SevenModelIntelligenceV3.hysteresis([{model:a,score:90,explanation:{reasons:[]}},{model:b,score:88.5,explanation:{reasons:[]}}],b,ctx)[0].model.id;const far=SevenModelIntelligenceV3.hysteresis([{model:a,score:90,explanation:{reasons:[]}},{model:b,score:80,explanation:{reasons:[]}}],b,ctx)[0].model.id;return {near,far}});
+  assert.deepEqual(r,{near:'b',far:'a'});
+ });
+ await test('model picker v3 is ranked by the same scoring primitive and explanations stay bounded',async()=>{
+  const r=await page.evaluate(()=>{document.getElementById('userInput').value='Debug this JavaScript function and verify the logic precisely';populateFreeModelSelect(currentModel);const first=document.getElementById('modelSelect').options[0];const ctx=modelPickerContextV3();const all=getFreeModelCatalog().filter(m=>m.free===true&&isFreePriceProofFresh(m));const ready=all.filter(m=>isFreeProviderConfigured(m.provider)&&(!m.requiresExplicitEnable||isFreeProviderEnabled(m.provider)));const pool=ready.length?ready:all;const ranked=SevenModelIntelligenceV3.rank(pool,ctx);const explanation=JSON.stringify(ranked[0]?.explanation||{});return {option:first?.value||'',expected:ranked[0]?freeModelSelectionKey(ranked[0].model.provider,ranked[0].model.id):'',reasonCount:(ranked[0]?.explanation?.reasons||[]).length,secret:/gsk_|sk-or-|nvapi-|AIza/.test(explanation)}});
+  assert.equal(r.option,r.expected);assert.ok(r.reasonCount<=3);assert.equal(r.secret,false);
+ });
  await browser.close();server.close();fs.writeFileSync(require('path').join(__dirname,'results.json'),JSON.stringify({results,liveProviderCalls:false},null,2));
 })().catch(e=>{console.error(e);server.close();process.exit(1)});
