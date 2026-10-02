@@ -1419,9 +1419,9 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
     ];
     const assessment=assessSearchEvidenceSufficiencyV2(evidence,intent);
     const follow=planSearchFollowUpV2(question,intent,evidence,assessment,[],[]);
-    return {assessment,follow};
+    return {assessment,follow,max:SEARCH_V2.maxFollowUpQueries};
   });
-  assert.equal(r.assessment.sufficient,false);assert.ok(r.assessment.gapCodes.includes('no_primary_source'));assert.ok(r.follow.length<=SEARCH_V2.maxFollowUpQueries);assert.ok(r.follow.some(x=>x.purpose==='primary_source_gap'||x.purpose==='strong_source_gap'));
+  assert.equal(r.assessment.sufficient,false);assert.ok(r.assessment.gapCodes.includes('no_primary_source'));assert.ok(r.follow.length<=r.max);assert.ok(r.follow.some(x=>x.purpose==='primary_source_gap'||x.purpose==='strong_source_gap'));
  });
  await test('Search Batch 8 unresolved conflict blocks early stopping and requests resolution search',async()=>{
   const r=await page.evaluate(()=>{
