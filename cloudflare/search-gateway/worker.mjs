@@ -7,6 +7,9 @@ const MAX_READ_BYTES = 768 * 1024;
 const MAX_READ_CHARS = 20_000;
 const MAX_REDIRECTS = 3;
 const DEFAULT_RATE_PER_MINUTE = 60;
+const SEARCH_TOTAL_BUDGET_MS = 5800;
+const SEARCH_BACKEND_ATTEMPT_MS = 3200;
+const READER_FETCH_TIMEOUT_MS = 6000;
 const RATE_BUCKETS = new Map();
 
 function json(data, status = 200, request = null, env = {}) {
@@ -67,6 +70,39 @@ function consumeRateLimit(request, env = {}, now = Date.now()) {
     }
   }
   return row.count <= limit;
+}
+
+function timedFetch(fetchImpl, timeoutMs) {
+  return async (url, options = {}) => {
+    const ms = Math.max(250, Number(timeoutMs) || 1000);
+    if (typeof AbortController !== "function") {
+      return Promise.race([
+        fetchImpl(url, options),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("upstream_timeout")), ms)),
+      ]);
+    }
+    const controller = new AbortController();
+    const upstreamSignal = options?.signal;
+    let detach = null;
+    if (upstreamSignal) {
+      if (upstreamSignal.aborted) controller.abort();
+      else {
+        const forward = () => controller.abort();
+        upstreamSignal.addEventListener?.("abort", forward, { once: true });
+        detach = () => upstreamSignal.removeEventListener?.("abort", forward);
+      }
+    }
+    const timer = setTimeout(() => controller.abort(), ms);
+    try {
+      return await fetchImpl(url, { ...options, signal: controller.signal });
+    } catch (error) {
+      if (error?.name === "AbortError" && !(upstreamSignal?.aborted)) throw new Error("upstream_timeout");
+      throw error;
+    } finally {
+      clearTimeout(timer);
+      if (detach) detach();
+    }
+  };
 }
 
 async function readJsonBody(request) {
@@ -217,7 +253,7 @@ async function fetchReaderTarget(url, fetchImpl = fetch) {
   let current = validateReaderUrl(url);
   if (!current.ok) throw Object.assign(new Error(current.reason), { code: current.reason });
   for (let redirect = 0; redirect <= MAX_REDIRECTS; redirect++) {
-    const response = await fetchImpl(current.url, {
+    const response = await timedFetch(fetchImpl, READER_FETCH_TIMEOUT_MS)(current.url, {
       method: "GET",
       redirect: "manual",
       headers: {
@@ -453,11 +489,24 @@ async function searchDdgHtml(query, options, env, fetchImpl) {
   return parseDuckDuckGoHtml(text, options.maxResults);
 }
 
+export function searchBackendOrder(env = {}) {
+  const order = [];
+  if (env.BRAVE_SEARCH_API_KEY) order.push("brave");
+  if (env.SERPER_API_KEY) order.push("serper");
+  if (validateConfiguredSearchBase(env.SEARXNG_BASE_URL)) order.push("searxng");
+  order.push("duckduckgo_html");
+  return order;
+}
+
 export function selectSearchBackend(env = {}) {
-  if (env.BRAVE_SEARCH_API_KEY) return "brave";
-  if (env.SERPER_API_KEY) return "serper";
-  if (validateConfiguredSearchBase(env.SEARXNG_BASE_URL)) return "searxng";
-  return "duckduckgo_html";
+  return searchBackendOrder(env)[0];
+}
+
+async function runSearchBackend(backend, query, options, env, fetchImpl) {
+  if (backend === "brave") return searchBrave(query, options, env, fetchImpl);
+  if (backend === "serper") return searchSerper(query, options, env, fetchImpl);
+  if (backend === "searxng") return searchSearxng(query, options, env, fetchImpl);
+  return searchDdgHtml(query, options, env, fetchImpl);
 }
 
 export async function searchGeneralWeb(query, options = {}, env = {}, fetchImpl = fetch) {
@@ -468,17 +517,31 @@ export async function searchGeneralWeb(query, options = {}, env = {}, fetchImpl 
     recency: normalizeRecency(options.recency),
     maxResults: Math.max(1, Math.min(MAX_RESULTS, Number(options.maxResults) || DEFAULT_MAX_RESULTS)),
   };
-  const backend = selectSearchBackend(env);
-  let results;
-  if (backend === "brave") results = await searchBrave(q, normalized, env, fetchImpl);
-  else if (backend === "serper") results = await searchSerper(q, normalized, env, fetchImpl);
-  else if (backend === "searxng") results = await searchSearxng(q, normalized, env, fetchImpl);
-  else results = await searchDdgHtml(q, normalized, env, fetchImpl);
-  return {
-    capability: backend === "duckduckgo_html" ? "general_web_degraded" : "general_web",
-    backend,
-    results,
-  };
+  const started = Date.now();
+  const attempted = [];
+  let lastError = null;
+  for (const backend of searchBackendOrder(env)) {
+    const remaining = SEARCH_TOTAL_BUDGET_MS - (Date.now() - started);
+    if (remaining < 300) break;
+    attempted.push(backend);
+    try {
+      const attemptMs = Math.min(SEARCH_BACKEND_ATTEMPT_MS, remaining);
+      const results = await runSearchBackend(backend, q, normalized, env, timedFetch(fetchImpl, attemptMs));
+      if (!Array.isArray(results) || results.length === 0) throw new Error("empty_search_results");
+      return {
+        capability: backend === "duckduckgo_html" ? "general_web_degraded" : "general_web",
+        backend,
+        attemptedBackends: attempted,
+        results,
+      };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  const failure = new Error("all_search_backends_failed");
+  failure.status = 502;
+  failure.cause = lastError || null;
+  throw failure;
 }
 
 function healthPayload(env = {}) {
