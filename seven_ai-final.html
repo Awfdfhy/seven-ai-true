@@ -690,6 +690,64 @@
             #settingsModal .settings-section>summary::after{transition:none}
         }
     </style>
+
+    <style id="seven-performance-reliability">
+        :root{
+            --seven-visual-height:100vh;
+            --seven-visual-offset-top:0px;
+        }
+        .sidebar,.main{height:var(--seven-visual-height,100vh)}
+        .topbar{
+            padding-top:max(14px,env(safe-area-inset-top,0px));
+            padding-left:max(20px,env(safe-area-inset-left,0px));
+            padding-right:max(20px,env(safe-area-inset-right,0px));
+        }
+        .input-area{
+            padding-bottom:max(18px,env(safe-area-inset-bottom,0px));
+            padding-left:max(16px,env(safe-area-inset-left,0px));
+            padding-right:max(16px,env(safe-area-inset-right,0px));
+        }
+        #chat{
+            padding-left:max(0px,env(safe-area-inset-left,0px));
+            padding-right:max(0px,env(safe-area-inset-right,0px));
+            overflow-anchor:auto;
+        }
+        #chat .message{
+            content-visibility:auto;
+            contain-intrinsic-size:auto 112px;
+        }
+        .history-window-control{
+            max-width:700px;
+            width:100%;
+            margin:0 auto;
+            padding:0 20px;
+            display:flex;
+            justify-content:center;
+            box-sizing:border-box;
+        }
+        .history-window-control button{
+            min-height:40px;
+            border:1px solid var(--border);
+            border-radius:999px;
+            background:var(--surface);
+            color:var(--text);
+            padding:7px 14px;
+            font:inherit;
+            cursor:pointer;
+        }
+        .history-window-control button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+        .app-backgrounded *{animation-play-state:paused!important}
+        #settingsModal .modal-content{
+            max-height:min(calc(var(--seven-visual-height,100vh) - 20px),780px);
+            padding-bottom:max(16px,env(safe-area-inset-bottom,0px));
+        }
+        @supports(height:100dvh){
+            :root{--seven-visual-height:100dvh}
+        }
+        @media(max-width:360px){
+            .message,.history-window-control{padding-left:12px;padding-right:12px}
+        }
+    </style>
 </head>
 <body>
     <!-- Sidebar -->
@@ -1750,7 +1808,8 @@
             }
         }
 
-        function renderChatHistory() {
+        function renderChatHistory(options) {
+            const opts=options&&typeof options==="object"?options:{};
             const chatDiv = document.getElementById("chat");
             chatDiv.innerHTML = "";
             const room = rooms[currentRoom];
@@ -1760,17 +1819,33 @@
                 return;
             }
             if (room.summary) {
-                addMessage("system", "📝 Summary: " + room.summary);
+                addMessage("system", "📝 Summary: " + room.summary,{suppressScroll:true});
             }
+
+            const limit=getChatRenderLimit(currentRoom);
+            const start=Math.max(0,room.history.length-limit);
+            if(start>0){
+                const control=document.createElement("div");
+                control.className="history-window-control";
+                const button=document.createElement("button");
+                button.type="button";
+                button.textContent="Show earlier messages ("+start+" hidden)";
+                button.setAttribute("aria-label","Show earlier messages");
+                button.onclick=showEarlierChatMessages;
+                control.appendChild(button);
+                chatDiv.appendChild(control);
+            }
+
             let lastAssistantBubble = null;
-            for (const msg of room.history) {
-                const bubble = addMessage(msg.role, msg.content);
+            for (let i=start;i<room.history.length;i++) {
+                const msg=room.history[i];
+                const bubble = addMessage(msg.role, msg.content,{suppressScroll:true});
                 if (msg.role === "assistant") lastAssistantBubble = bubble;
             }
             if (lastAssistantBubble && room.history[room.history.length - 1]?.role === "assistant") {
                 renderRegenerateButton(lastAssistantBubble);
             }
-            chatDiv.scrollTop = chatDiv.scrollHeight;
+            if(opts.scrollToBottom!==false) chatDiv.scrollTop = chatDiv.scrollHeight;
         }
 
         // ---------- Name capture & personalized greeting ----------
@@ -1913,7 +1988,8 @@
             return html;
         }
 
-        function addMessage(role, content) {
+        function addMessage(role, content, options) {
+            const opts=options&&typeof options==="object"?options:{};
             const chatDiv = document.getElementById("chat");
             const wrapper = document.createElement("div");
             wrapper.className = "message " + role;
@@ -1923,9 +1999,162 @@
             bubble.innerHTML = renderMarkdown(content);
             wrapper.appendChild(bubble);
             chatDiv.appendChild(wrapper);
-            chatDiv.scrollTop = chatDiv.scrollHeight;
+            if (!opts.suppressScroll) chatDiv.scrollTop = chatDiv.scrollHeight;
             return bubble;
         }
+
+        const CHAT_INITIAL_RENDER_LIMIT = 100;
+        const CHAT_RENDER_CHUNK = 100;
+        const chatRenderLimits = new Map();
+
+        function getChatRenderLimit(roomId) {
+            const saved=Number(chatRenderLimits.get(String(roomId||"")));
+            return Number.isFinite(saved)&&saved>0 ? Math.floor(saved) : CHAT_INITIAL_RENDER_LIMIT;
+        }
+
+        function setChatRenderLimit(roomId,limit) {
+            const safe=Math.max(CHAT_INITIAL_RENDER_LIMIT,Math.floor(Number(limit)||CHAT_INITIAL_RENDER_LIMIT));
+            chatRenderLimits.set(String(roomId||""),safe);
+            return safe;
+        }
+
+        function showEarlierChatMessages() {
+            const room=rooms[currentRoom];
+            const chat=document.getElementById("chat");
+            if(!room||!chat)return;
+            const oldHeight=chat.scrollHeight, oldTop=chat.scrollTop;
+            setChatRenderLimit(currentRoom,getChatRenderLimit(currentRoom)+CHAT_RENDER_CHUNK);
+            renderChatHistory({scrollToBottom:false});
+            const restore=()=>{
+                const delta=Math.max(0,chat.scrollHeight-oldHeight);
+                chat.scrollTop=Math.max(0,oldTop+delta);
+            };
+            if(typeof requestAnimationFrame==="function") requestAnimationFrame(restore);
+            else setTimeout(restore,0);
+        }
+
+        const streamingUiMetrics={requests:0,writes:0,cancelledFrames:0};
+        let streamingUiFrame=0;
+        let streamingUiPending=null;
+
+        function scheduleStreamingBubbleUpdate(bubble,text) {
+            if(!bubble||!bubble.isConnected)return;
+            streamingUiMetrics.requests++;
+            streamingUiPending={bubble,length:typeof text==="string"?text.length:0,text:typeof text==="string"?text:""};
+            if(streamingUiFrame)return;
+            const schedule=typeof requestAnimationFrame==="function"?requestAnimationFrame:(fn=>setTimeout(fn,16));
+            streamingUiFrame=schedule(()=>{
+                streamingUiFrame=0;
+                const pending=streamingUiPending;
+                streamingUiPending=null;
+                if(!pending||!pending.bubble||!pending.bubble.isConnected)return;
+                pending.bubble.textContent=pending.text;
+                streamingUiMetrics.writes++;
+            });
+        }
+
+        function cancelStreamingBubbleUpdate(flush) {
+            const pending=streamingUiPending;
+            if(streamingUiFrame){
+                if(typeof cancelAnimationFrame==="function") cancelAnimationFrame(streamingUiFrame);
+                else clearTimeout(streamingUiFrame);
+                streamingUiFrame=0;
+                streamingUiMetrics.cancelledFrames++;
+            }
+            streamingUiPending=null;
+            if(flush===true&&pending&&pending.bubble&&pending.bubble.isConnected){
+                pending.bubble.textContent=pending.text;
+                streamingUiMetrics.writes++;
+            }
+        }
+
+        const appReliabilityState={
+            version:1,
+            visibility:(typeof document!=="undefined"&&document.hidden)?"background":"foreground",
+            network:(typeof navigator!=="undefined"&&typeof navigator.onLine==="boolean")?(navigator.onLine?"online":"offline"):"unknown",
+            visualViewport:{width:0,height:0,offsetTop:0,scale:1},
+            lastResumeAt:0,
+            lifecycleEvents:0
+        };
+
+        function updateAppVisibilityStateV1(hiddenOverride) {
+            const hidden=typeof hiddenOverride==="boolean"?hiddenOverride:!!document.hidden;
+            appReliabilityState.visibility=hidden?"background":"foreground";
+            appReliabilityState.lifecycleEvents++;
+            document.documentElement.classList.toggle("app-backgrounded",hidden);
+            if(!hidden){
+                appReliabilityState.lastResumeAt=Date.now();
+                syncRuntimeUiAfterResumeV1();
+            }
+            return appReliabilityState.visibility;
+        }
+
+        function updateNetworkUiStateV1(onlineOverride) {
+            const online=typeof onlineOverride==="boolean"?onlineOverride:
+                (typeof navigator.onLine==="boolean"?navigator.onLine:null);
+            appReliabilityState.network=online===null?"unknown":(online?"online":"offline");
+            document.documentElement.dataset.network=appReliabilityState.network;
+            try{
+                if(document.getElementById("settingsModal")?.style.display==="flex"&&typeof renderFreeModelFabricStatus==="function"){
+                    renderFreeModelFabricStatus();
+                }
+            }catch(_){}
+            return appReliabilityState.network;
+        }
+
+        function updateVisualViewportV1() {
+            const vv=window.visualViewport;
+            const width=Math.max(0,Math.round(vv?vv.width:window.innerWidth));
+            const height=Math.max(0,Math.round(vv?vv.height:window.innerHeight));
+            const offsetTop=Math.max(0,Math.round(vv?vv.offsetTop:0));
+            const scale=vv&&Number.isFinite(vv.scale)?vv.scale:1;
+            appReliabilityState.visualViewport={width,height,offsetTop,scale};
+            document.documentElement.style.setProperty("--seven-visual-height",height+"px");
+            document.documentElement.style.setProperty("--seven-visual-offset-top",offsetTop+"px");
+            return Object.assign({},appReliabilityState.visualViewport);
+        }
+
+        function syncRuntimeUiAfterResumeV1() {
+            try{
+                if(roomPersistence.status().ready){
+                    updateRoomTitle();
+                    updateRoomListUI();
+                }
+                if(typeof updateRouteStatusUiV1==="function")updateRouteStatusUiV1();
+            }catch(_){}
+            updateVisualViewportV1();
+        }
+
+        function initAppReliabilityV1() {
+            updateNetworkUiStateV1();
+            updateVisualViewportV1();
+            updateAppVisibilityStateV1(document.hidden);
+            document.addEventListener("visibilitychange",()=>updateAppVisibilityStateV1());
+            window.addEventListener("online",()=>updateNetworkUiStateV1(true));
+            window.addEventListener("offline",()=>updateNetworkUiStateV1(false));
+            window.addEventListener("pageshow",()=>{appReliabilityState.lastResumeAt=Date.now();syncRuntimeUiAfterResumeV1();});
+            if(window.visualViewport){
+                window.visualViewport.addEventListener("resize",updateVisualViewportV1);
+                window.visualViewport.addEventListener("scroll",updateVisualViewportV1);
+            }else{
+                window.addEventListener("resize",updateVisualViewportV1);
+            }
+        }
+
+        window.SevenAppReliability=Object.freeze({
+            version:1,
+            snapshot:()=>({
+                version:1,
+                visibility:appReliabilityState.visibility,
+                network:appReliabilityState.network,
+                visualViewport:Object.assign({},appReliabilityState.visualViewport),
+                lastResumeAt:appReliabilityState.lastResumeAt,
+                lifecycleEvents:appReliabilityState.lifecycleEvents,
+                renderWindow:{roomId:String(currentRoom||""),limit:getChatRenderLimit(currentRoom)},
+                streaming:{requests:streamingUiMetrics.requests,writes:streamingUiMetrics.writes,cancelledFrames:streamingUiMetrics.cancelledFrames}
+            })
+        });
+
 
         // ---------- Settings ----------
         // Populates the Reasoning Effort dropdown and the Max Tokens ceiling
@@ -5507,7 +5736,7 @@
                     onToken: (partialText) => {
                         if (!bubble || !bubble.isConnected) return;
                         if (!streamStarted) { streamStarted = true; bubble.innerHTML = ""; }
-                        bubble.textContent = partialText;
+                        scheduleStreamingBubbleUpdate(bubble,partialText);
                     }
                 });
                 if (stopRequested) throw new DOMException("Stopped", "AbortError");
@@ -5555,6 +5784,7 @@
                         bubble = assistantBubbles[assistantBubbles.length - 1] || null;
                     }
                     if (bubble) {
+                        cancelStreamingBubbleUpdate(false);
                         bubble.innerHTML = renderMarkdown(reply);
                         if (searchResult && Array.isArray(searchResult.sources) && searchResult.sources.length > 0) {
                             renderSearchSources(bubble, searchResult.sources);
@@ -5575,6 +5805,7 @@
                     generateTitle(roomId); // fire-and-forget; bound to the originating room
                 }
             } catch (error) {
+                cancelStreamingBubbleUpdate(false);
                 if (executionRunId) {
                     const aborted = error?.name === "AbortError" || stopRequested;
                     // More than one independent step may be running while buildContext
@@ -5603,6 +5834,7 @@
                     }
                 }
             } finally {
+                cancelStreamingBubbleUpdate(false);
                 sendBtn.style.display = "inline-block";
                 stopBtn.style.display = "none";
                 userInput.disabled = false;
@@ -10499,6 +10731,7 @@
         }
 
         // ---------- Init ----------
+        initAppReliabilityV1();
         loadTheme();
         roomPersistence.init().then(() => { if (roomPersistence.status().ready) checkUserName(); });
         // Opening this file with file:// (double-clicking it) makes the browser
