@@ -142,6 +142,36 @@ await test("health response never echoes configured secrets", async () => {
   assert.match(text, /"backend":"brave"/);
 });
 
+await test("configured search backend falls back without losing the request", async () => {
+  const request = new Request("https://gateway.example/v1/search", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-seven-gateway-key": "k" },
+    body: JSON.stringify({ query: "fallback fixture", language: "en", maxResults: 3 }),
+  });
+  const env = {
+    GATEWAY_CLIENT_KEY: "k",
+    BRAVE_SEARCH_API_KEY: "brave-secret",
+    SERPER_API_KEY: "serper-secret",
+  };
+  const calls = [];
+  const mockFetch = async (url) => {
+    const value = String(url);
+    calls.push(value);
+    if (value.includes("api.search.brave.com")) return new Response("{}", { status: 503 });
+    if (value.includes("google.serper.dev")) return new Response(JSON.stringify({
+      organic: [{ title: "Fallback result", link: "https://example.org/fallback", snippet: "Recovered" }],
+    }), { status: 200, headers: { "content-type": "application/json" } });
+    throw new Error("unexpected_backend");
+  };
+  const response = await handleRequest(request, env, {}, mockFetch);
+  assert.equal(response.status, 200);
+  const data = await response.json();
+  assert.equal(data.backend, "serper");
+  assert.deepEqual(data.attemptedBackends, ["brave", "serper"]);
+  assert.equal(data.results[0].url, "https://example.org/fallback");
+  assert.equal(calls.length, 2);
+});
+
 await test("Brave search endpoint returns normalized results without secret echo", async () => {
   const request = new Request("https://gateway.example/v1/search", {
     method: "POST",
