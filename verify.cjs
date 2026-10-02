@@ -1018,5 +1018,103 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   });
   assert.ok(Array.isArray(r.queries));assert.equal(r.queries.length,r.count);assert.ok(r.queries.length<=2);assert.equal(r.waves,r.queries.length?1:0);
  });
+
+ await test('web search batch6 intent taxonomy is deterministic',async()=>{
+  const r=await page.evaluate(()=>({
+    tech:SevenSearchV2.analyze('Android WebView API changes').intentType,
+    cmp:SevenSearchV2.analyze('Pixel 10 vs Galaxy S26 battery').intentType,
+    academic:SevenSearchV2.analyze('Find peer-reviewed papers about battery degradation').intentType,
+    nav:SevenSearchV2.analyze('Open the official Android website').intentType,
+    how:SevenSearchV2.analyze('How to configure Python asyncio timeout').intentType
+  }));
+  assert.deepEqual(r,{tech:'technical',cmp:'comparison',academic:'academic',nav:'navigational',how:'technical'});
+ });
+ await test('web search batch6 technical plan asks for documentation coverage',async()=>{
+  const r=await page.evaluate(()=>SevenSearchV2.plan('Android WebView API changes'));
+  assert.equal(r.intent.intentType,'technical');assert.ok(r.intent.sourceNeeds.includes('documentation'));assert.ok(r.queries.some(q=>q.sourceTypeHint==='documentation'&&q.coverageKey==='official_docs'));assert.ok(r.queries.length<=5);
+ });
+ await test('web search batch6 comparison decomposes into balanced subject coverage',async()=>{
+  const r=await page.evaluate(()=>SevenSearchV2.plan('Pixel 10 vs Galaxy S26 battery life'));
+  const keys=r.queries.map(q=>q.coverageKey);
+  assert.equal(r.intent.intentType,'comparison');assert.ok(keys.includes('subject_a'));assert.ok(keys.includes('subject_b'));assert.ok(keys.includes('independent_comparison'));assert.ok(r.queries.length<=5);
+ });
+ await test('web search batch6 ambiguous comparison falls back without inventing subjects',async()=>{
+  const r=await page.evaluate(()=>SevenSearchV2.plan('Which one is better? compare them'));
+  assert.equal(r.intent.intentType,'comparison');assert.ok(r.intent.comparisonSubjects.length<2);assert.ok(!r.queries.some(q=>q.coverageKey==='subject_a'||q.coverageKey==='subject_b'));assert.ok(r.queries.length>=1&&r.queries.length<=5);
+ });
+ await test('web search batch6 current queries add freshness and primary coverage',async()=>{
+  const r=await page.evaluate(()=>SevenSearchV2.plan('latest Android security update today'));
+  const keys=r.queries.map(q=>q.coverageKey);
+  assert.ok(['current_fact','technical'].includes(r.intent.intentType));assert.ok(r.intent.timeSensitive);assert.ok(r.queries.some(q=>q.recencyHint==='day'));assert.ok(keys.includes('primary')||keys.includes('primary_current')||keys.includes('official_docs'));assert.ok(r.queries.length<=5);
+ });
+ await test('web search batch6 preserves Arabic primary and useful English technical entity query',async()=>{
+  const r=await page.evaluate(()=>SevenSearchV2.plan('ما هي أحدث تغييرات Android WebView API؟'));
+  assert.equal(r.intent.language,'ar');assert.equal(r.queries[0].language,'ar');assert.ok(r.queries.some(q=>q.language==='en'&&q.purpose==='entity_english'));assert.ok(r.queries.length<=5);
+ });
+ await test('web search batch6 source classifier is conservative',async()=>{
+  const r=await page.evaluate(()=>({
+    gov:SevenSearchV2.classifySource({url:'https://www.nasa.gov/news',title:'NASA'}),
+    docs:SevenSearchV2.classifySource({url:'https://developer.android.com/reference/android/webkit/WebView',title:'WebView API Reference'}),
+    academic:SevenSearchV2.classifySource({url:'https://arxiv.org/abs/1234.5678',title:'Paper'}),
+    reference:SevenSearchV2.classifySource({url:'https://en.wikipedia.org/wiki/WebView',title:'WebView'}),
+    community:SevenSearchV2.classifySource({url:'https://github.com/example/repo/issues/1',title:'Issue'}),
+    unknown:SevenSearchV2.classifySource({url:'https://example.net/article',title:'Article'})
+  }));
+  assert.deepEqual(r,{gov:'government',docs:'documentation',academic:'academic',reference:'reference',community:'community',unknown:'unknown'});
+ });
+ await test('web search batch6 technical scoring favors documentation in near ties',async()=>{
+  const r=await page.evaluate(()=>{
+    const q='Android WebView API changes';
+    const docs={title:'Android WebView API changes',url:'https://developer.android.com/reference/android/webkit/WebView',snippet:'Android WebView API changes',engine:'fixture',queryId:'q1',queryPriority:1,rank:1,language:'en',sourceType:'documentation',readState:'read_success'};
+    const generic={title:'Android WebView API changes',url:'https://example.com/webview',snippet:'Android WebView API changes',engine:'fixture',queryId:'q1',queryPriority:1,rank:1,language:'en',sourceType:'unknown',readState:'read_success'};
+    return {docs:SevenSearchV2.scoreParts(docs,q).total,generic:SevenSearchV2.scoreParts(generic,q).total};
+  });
+  assert.ok(r.docs>r.generic);
+ });
+ await test('web search batch6 authority cannot rescue irrelevant documentation',async()=>{
+  const r=await page.evaluate(()=>{
+    const q='Android WebView API changes';
+    const irrelevant={title:'Cooking documentation',url:'https://docs.example.com/cooking',snippet:'recipes kitchen food',engine:'fixture',queryId:'q1',queryPriority:1,rank:1,language:'en',sourceType:'documentation',readState:'read_success'};
+    const relevant={title:'Android WebView API changes explained',url:'https://specialist.example.com/webview',snippet:'Android WebView API changes compatibility',engine:'fixture',queryId:'q1',queryPriority:1,rank:1,language:'en',sourceType:'specialist',readState:'read_success'};
+    return {irrelevant:SevenSearchV2.scoreParts(irrelevant,q).total,relevant:SevenSearchV2.scoreParts(relevant,q).total};
+  });
+  assert.ok(r.relevant>r.irrelevant);
+ });
+ await test('web search batch6 sends sourceTypeHint and domainHint to gateway payload',async()=>{
+  const r=await page.evaluate(async()=>{
+    const oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY,oldFetch=fetchWithTimeout;
+    SEARCH_GATEWAY_URL='https://gateway.example';
+    SEARCH_GATEWAY_KEY='';
+    let body=null;
+    fetchWithTimeout=async(url,opts)=>{body=JSON.parse(opts.body);return {ok:true,json:async()=>({backend:'fixture',capability:'general_web',results:[]})};};
+    try{
+      await searchGatewayCandidatesV2({id:'q1',text:'Android docs',language:'en',priority:1,sourceTypeHint:'documentation',domainHint:'developer.android.com',recencyHint:'week',purpose:'official_docs',coverageKey:'official_docs'},{language:'en'});
+      return body;
+    }finally{SEARCH_GATEWAY_URL=oldUrl;SEARCH_GATEWAY_KEY=oldKey;fetchWithTimeout=oldFetch;}
+  });
+  assert.equal(r.sourceTypeHint,'documentation');assert.equal(r.domainHint,'developer.android.com');assert.equal(r.recency,'week');
+ });
+ await test('web search batch6 coverage metadata reaches evidence units',async()=>{
+  const r=await page.evaluate(()=>{
+    const items=[{title:'Android docs',url:'https://developer.android.com/reference/android/webkit/WebView',snippet:'WebView API',engine:'fixture',queryId:'q1',queryPriority:1,queryPurpose:'official_docs',coverageKey:'official_docs',language:'en',sourceType:'documentation',readState:'read_success'}];
+    const ev=SevenSearchV2.evidence(items,'Android WebView API');
+    return ev[0];
+  });
+  assert.ok(r.coverageKeys.includes('official_docs'));assert.equal(r.queryPurpose,'official_docs');
+ });
+ await test('web search batch6 diagnostics expose coverage metadata without raw query text',async()=>{
+  const r=await page.evaluate(async()=>{
+    const oldDDG=searchDuckDuckGoCandidatesV2,oldWiki=searchWikipediaCandidatesV2,oldGateway=isSearchGatewayConfiguredV2;
+    searchDuckDuckGoCandidatesV2=async q=>[normalizeSearchCandidateV2({title:'Android docs',url:'https://developer.android.com/reference/android/webkit/WebView',snippet:'Android WebView API changes',engine:'fixture',queryId:q.id,queryPriority:q.priority,queryPurpose:q.purpose,coverageKey:q.coverageKey,language:q.language,sourceType:'documentation',readState:'read_success'})];
+    searchWikipediaCandidatesV2=async()=>[];
+    isSearchGatewayConfiguredV2=()=>false;
+    try{
+      await performWebSearchV2('Android WebView API changes',{});
+      const snap=SevenSearchV2.snapshot(),raw=JSON.stringify(SevenSearchV2.snapshot()||{});
+      return {snap,hasRaw:raw.includes('Android WebView API changes')};
+    }finally{searchDuckDuckGoCandidatesV2=oldDDG;searchWikipediaCandidatesV2=oldWiki;isSearchGatewayConfiguredV2=oldGateway;}
+  });
+  assert.ok(Array.isArray(r.snap.plannedCoverageKeys));assert.ok(Array.isArray(r.snap.coveredCoverageKeys));assert.equal(r.hasRaw,false);
+ });
  await browser.close();server.close();fs.writeFileSync(require('path').join(__dirname,'results.json'),JSON.stringify({results,liveProviderCalls:false},null,2));
 })().catch(e=>{console.error(e);server.close();process.exit(1)});
