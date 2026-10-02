@@ -4735,15 +4735,19 @@
             const maxReads=Math.max(0,Math.min(SEARCH_V2.maxPageReads+SEARCH_V2.maxFollowUpPageReads,Number(opts.maxReads)||SEARCH_V2.maxPageReads));
             if(!isSearchGatewayConfiguredV2()||maxReads<=0)return {candidates:ranked,pagesAttempted:0,pagesRead:0,pagesBlocked:0};
             const selected=[],hosts=new Set();
-            for(const candidate of ranked){
+            const prioritized=(Array.isArray(ranked)?ranked:[])
+                .filter(candidate=>candidate&&candidate.readState==="snippet_only")
+                .map((candidate,index)=>({candidate,index,priority:readerPriorityScoreV2(candidate,opts.intent||{})}))
+                .sort((a,b)=>b.priority-a.priority||a.index-b.index);
+            for(const row of prioritized){
                 if(selected.length>=maxReads)break;
-                if(candidate.readState!=="snippet_only")continue;
+                const candidate=row.candidate;
                 let host="";
                 try{host=new URL(candidate.url).hostname.toLowerCase();}catch(_){}
                 if(!host||hosts.has(host))continue;
                 const key=searchPageCacheKeyV2(candidate);
                 if(key&&opts.runtime?.readMemo?.has(key)){
-                    // already read inside this request; keep it eligible so the cached
+                    // already read inside this request; keep it eligible so cached
                     // truth can be projected without another network call.
                 }
                 hosts.add(host);selected.push(candidate);
@@ -4774,8 +4778,20 @@
             return /[\u0600-\u06FF]/.test(String(text||""));
         }
 
+        function normalizeArabicSearchTextV2(text){
+            return String(text||"")
+                .normalize("NFKC")
+                .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g,"")
+                .replace(/\u0640/g,"")
+                .replace(/[أإآٱ]/g,"ا")
+                .replace(/ى/g,"ي")
+                .replace(/ؤ/g,"و")
+                .replace(/ئ/g,"ي");
+        }
+
         function tokenizeSearchTextV2(text){
-            return String(text||"").toLowerCase()
+            const value=normalizeArabicSearchTextV2(String(text||"").toLowerCase());
+            return value
                 .replace(/[^\p{L}\p{N}+#._-]+/gu," ")
                 .split(/\s+/).filter(x=>x.length>=2).slice(0,40);
         }
@@ -5116,6 +5132,120 @@
             return score;
         }
 
+        // ---------- Web Search v2 Batch 8: live quality hardening ----------
+        const SEARCH_QUALITY_V2=Object.freeze({
+            version:2,
+            maxPerHost:2,
+            maxSeoPenalty:14,
+            strongTypes:Object.freeze(["official","primary","government","documentation","academic"])
+        });
+        let lastSearchQualityV2=null;
+
+        function searchQualityPenaltyV2(candidate,intent){
+            const title=stripSearchHtmlV2(candidate?.title||"");
+            const snippet=stripSearchHtmlV2(candidate?.snippet||candidate?.excerpt||"");
+            const titleTokens=tokenizeSearchTextV2(title);
+            const counts=new Map();
+            for(const token of titleTokens)counts.set(token,(counts.get(token)||0)+1);
+            const maxRepeat=Math.max(0,...counts.values());
+            const queryTerms=new Set(tokenizeSearchTextV2(intent?.question||""));
+            const matched=titleTokens.filter(x=>queryTerms.has(x)).length;
+            let penalty=0;
+            const reasons=[];
+            if(title.length>180){penalty+=2;reasons.push("long_title");}
+            if(maxRepeat>=3){penalty+=Math.min(5,maxRepeat);reasons.push("title_keyword_repetition");}
+            if(titleTokens.length>=8 && matched/titleTokens.length>.72){penalty+=3;reasons.push("query_stuffing");}
+            if(snippet && snippet.length<45){penalty+=4;reasons.push("thin_snippet");}
+            if(!snippet){penalty+=5;reasons.push("missing_snippet");}
+            penalty=Math.max(0,Math.min(SEARCH_QUALITY_V2.maxSeoPenalty,penalty));
+            return {penalty,reasons:reasons.slice(0,6)};
+        }
+
+        function searchIntentNeedsPrimaryV2(intent){
+            const type=String(intent?.intentType||"");
+            if(["technical","news","current_fact","academic","navigational"].includes(type))return true;
+            const needs=Array.isArray(intent?.sourceNeeds)?intent.sourceNeeds:[];
+            return needs.some(x=>/official|primary|documentation|academic|institution/i.test(String(x)));
+        }
+
+        function isPrimaryAppropriateEvidenceV2(item,intent){
+            const type=String(item?.sourceType||"unknown");
+            const kind=String(intent?.intentType||"");
+            if(kind==="technical"||kind==="how_to")return ["documentation","official","primary","government"].includes(type);
+            if(kind==="academic")return ["academic","primary","government","official"].includes(type);
+            if(kind==="news"||kind==="current_fact")return ["primary","government","official"].includes(type);
+            if(kind==="navigational")return ["official","government","primary"].includes(type);
+            return SEARCH_QUALITY_V2.strongTypes.includes(type);
+        }
+
+        function searchEvidenceQualityScoreV2(item,intent){
+            const relevance=Math.max(0,Number(item?.relevanceScore ?? item?.score)||0);
+            const read=readStateWeightV2(item?.readState);
+            const source=searchSourceTypeScoreV2(item?.sourceType,intent,Math.min(1,relevance/45));
+            const freshness=searchFreshnessScoreV2(item?.freshnessClass||classifySearchFreshnessV2(item,intent),intent);
+            const primary=isPrimaryAppropriateEvidenceV2(item,intent)?8:0;
+            const injection=item?.injectionSuspected===true?-35:0;
+            const seo=searchQualityPenaltyV2(item,intent);
+            return {
+                total:Number((relevance+read+source+freshness+primary+injection-seo.penalty).toFixed(3)),
+                seoPenalty:seo.penalty,
+                seoReasons:seo.reasons
+            };
+        }
+
+        function selectDiverseSearchEvidenceV2(input,intent,limit=SEARCH_V2.maxContextSources){
+            const rows=(Array.isArray(input)?input:[]).filter(Boolean).map((item,index)=>{
+                const q=searchEvidenceQualityScoreV2(item,intent);
+                let host="";try{host=new URL(String(item?.url||"")).hostname.toLowerCase().replace(/^www\./,"");}catch(_){}
+                return {item,index,host,quality:q.total,seoPenalty:q.seoPenalty};
+            }).sort((a,b)=>b.quality-a.quality||a.index-b.index);
+            const hardLimit=Math.max(1,Math.min(Number(limit)||SEARCH_V2.maxContextSources,SEARCH_V2.maxContextSources));
+            const selected=[],selectedKeys=new Set(),hostCounts=new Map();
+            const take=row=>{
+                if(!row||selected.length>=hardLimit)return false;
+                const key=String(row.item?.evidenceId||row.item?.sourceId||row.item?.id||row.index);
+                if(selectedKeys.has(key))return false;
+                if(row.host&&(hostCounts.get(row.host)||0)>=SEARCH_QUALITY_V2.maxPerHost)return false;
+                selected.push(row.item);selectedKeys.add(key);
+                if(row.host)hostCounts.set(row.host,(hostCounts.get(row.host)||0)+1);
+                return true;
+            };
+
+            if(searchIntentNeedsPrimaryV2(intent))take(rows.find(x=>isPrimaryAppropriateEvidenceV2(x.item,intent)));
+            if(intent?.timeSensitive===true)take(rows.find(x=>["current","recent"].includes(x.item?.freshnessClass)));
+            for(const row of rows){
+                if(selected.length>=hardLimit)break;
+                if(row.host&&(hostCounts.get(row.host)||0)>0)continue;
+                take(row);
+            }
+            for(const row of rows){
+                if(selected.length>=hardLimit)break;
+                take(row);
+            }
+            const selectedSet=new Set(selected);
+            const diagnostics={
+                selectedCount:selected.length,
+                hostDiversity:new Set(selected.map(x=>{try{return new URL(x.url).hostname.toLowerCase().replace(/^www\./,"");}catch(_){return "";}}).filter(Boolean)).size,
+                sourceTypeDiversity:new Set(selected.map(x=>String(x?.sourceType||"unknown"))).size,
+                redundantEvidenceDropped:rows.filter(x=>!selectedSet.has(x.item)).length,
+                primaryEvidenceCount:selected.filter(x=>isPrimaryAppropriateEvidenceV2(x,intent)).length,
+                freshEvidenceCount:selected.filter(x=>["current","recent"].includes(x?.freshnessClass)).length,
+                seoPenalizedCount:rows.filter(x=>x.seoPenalty>0).length
+            };
+            lastSearchQualityV2=Object.assign({},diagnostics);
+            return {selected,diagnostics};
+        }
+
+        function readerPriorityScoreV2(candidate,intent){
+            const relevance=Math.max(0,Number(candidate?.score)||0);
+            const strong=isPrimaryAppropriateEvidenceV2(candidate,intent)?22:0;
+            const current=intent?.timeSensitive===true&&["current","recent"].includes(candidate?.freshnessClass)?14:0;
+            const hint=String(candidate?.sourceTypeHint||"");
+            const hintBoost=hint&&String(candidate?.sourceType||"")===hint?8:0;
+            const seo=searchQualityPenaltyV2(candidate,intent).penalty;
+            return relevance+strong+current+hintBoost-seo;
+        }
+
         function scoreSearchCandidatePartsV2(candidate,intent){
             const terms=tokenizeSearchTextV2(intent?.question||"");
             const hay=new Set(tokenizeSearchTextV2((candidate.title||"")+" "+(candidate.snippet||"")));
@@ -5129,7 +5259,8 @@
                 language:candidate.language===intent?.language?6:0,
                 freshness:searchFreshnessScoreV2(freshness,intent),
                 corroboration:Math.min(6,Math.max(0,(candidate.discoveredBy?.length||1)-1)*2),
-                rankPenalty:-Math.min(8,Math.max(0,(candidate.rank||1)-1)*.8)
+                rankPenalty:-Math.min(8,Math.max(0,(candidate.rank||1)-1)*.8),
+                qualityPenalty:-searchQualityPenaltyV2(candidate,intent).penalty
             };
             const total=Object.values(parts).reduce((sum,value)=>sum+(Number(value)||0),0);
             return {freshnessClass:freshness,parts,total:Number(total.toFixed(3))};
@@ -5250,24 +5381,7 @@
         }
 
         function buildSearchEvidenceUnitsV2(candidates,intent){
-            const rows=Array.isArray(candidates)?candidates.filter(Boolean):[];
-            const selected=[],seenIds=new Set(),seenHosts=new Set();
-            const diversityTarget=Math.min(4,SEARCH_V2.maxContextSources);
-
-            for(const candidate of rows){
-                if(selected.length>=diversityTarget)break;
-                const host=searchCandidateHostV2(candidate);
-                if(host&&seenHosts.has(host))continue;
-                selected.push(candidate);seenIds.add(candidate.id);
-                if(host)seenHosts.add(host);
-            }
-            for(const candidate of rows){
-                if(selected.length>=SEARCH_V2.maxContextSources)break;
-                if(seenIds.has(candidate.id))continue;
-                selected.push(candidate);seenIds.add(candidate.id);
-            }
-
-            return selected.map((candidate,index)=>({
+            const rows=(Array.isArray(candidates)?candidates:[]).filter(Boolean).map((candidate,index)=>({
                 evidenceId:"E"+(index+1),
                 sourceId:"S"+(index+1),
                 title:candidate.title,
@@ -5287,6 +5401,11 @@
                 injectionSuspected:candidate.injectionSuspected===true,
                 extractedAt:candidate.fetchedAt||candidate.discoveredAt||Date.now()
             }));
+            const packed=selectDiverseSearchEvidenceV2(rows,intent,SEARCH_V2.maxContextSources);
+            return packed.selected.map((item,index)=>Object.assign({},item,{
+                evidenceId:"E"+(index+1),
+                sourceId:"S"+(index+1)
+            }));
         }
 
         function searchEvidenceCoverageV2(evidence,intent){
@@ -5304,7 +5423,9 @@
             const hosts=new Set(rows.map(searchCandidateHostV2).filter(Boolean));
             const readCount=rows.filter(x=>x.readState==="read_success"||x.readState==="read_partial").length;
             const freshCount=rows.filter(x=>x.freshnessClass==="current"||x.freshnessClass==="recent").length;
-            const strongCount=rows.filter(x=>["official","primary","government","documentation","academic"].includes(x.sourceType)).length;
+            const strongCount=rows.filter(x=>SEARCH_QUALITY_V2.strongTypes.includes(x.sourceType)).length;
+            const primaryCount=rows.filter(x=>isPrimaryAppropriateEvidenceV2(x,intent)).length;
+            const unknownDateCount=rows.filter(x=>x.freshnessClass==="unknown").length;
             const coverage=searchEvidenceCoverageV2(rows,intent);
             const gaps=[];
             if(rows.length<2)gaps.push("too_few_sources");
@@ -5312,6 +5433,7 @@
             if(readCount===0)gaps.push("no_read_evidence");
             if(intent?.timeSensitive===true&&freshCount===0)gaps.push("stale_current_query");
             if(intent?.technical===true&&strongCount===0)gaps.push("no_strong_source");
+            if(searchIntentNeedsPrimaryV2(intent)&&primaryCount===0)gaps.push("no_primary_source");
             if(coverage<.3)gaps.push("weak_query_coverage");
             let score=1;
             const penalties={
@@ -5320,42 +5442,57 @@
                 no_read_evidence:.12,
                 stale_current_query:.25,
                 no_strong_source:.18,
+                no_primary_source:.20,
                 weak_query_coverage:.18
             };
             for(const gap of gaps)score-=penalties[gap]||.1;
             score=Math.max(0,Math.min(1,score));
-            const critical=gaps.includes("too_few_sources")||gaps.includes("stale_current_query");
+            const critical=gaps.includes("too_few_sources")||gaps.includes("stale_current_query")||gaps.includes("no_primary_source");
             return {
                 sufficient:!critical&&score>=.62,
                 score:Number(score.toFixed(3)),
                 gapCodes:gaps,
                 evidenceCount:rows.length,
                 independentHostCount:hosts.size,
-                readCount,freshCount,strongCount,
+                readCount,freshCount,strongCount,primaryCount,unknownDateCount,
                 coverage:Number(coverage.toFixed(3))
             };
         }
 
-        function planSearchFollowUpV2(question,intent,evidence,assessment,initialQueries){
+        function planSearchFollowUpV2(question,intent,evidence,assessment,initialQueries,conflicts){
             const out=[],seen=new Set((Array.isArray(initialQueries)?initialQueries:[]).map(q=>String(q?.text||"").trim().toLowerCase()).filter(Boolean));
             const language=intent?.language||"en";
             const base=String(question||"").trim();
-            const add=(text,purpose)=>{
+            const add=(text,purpose,meta={})=>{
                 const clean=String(text||"").trim().replace(/\s+/g," ");
                 const key=clean.toLowerCase();
                 if(!clean||seen.has(key)||out.length>=SEARCH_V2.maxFollowUpQueries)return;
                 seen.add(key);
-                out.push({id:"fq"+(out.length+1),text:clean,purpose,language,priority:.86});
+                out.push({
+                    id:"fq"+(out.length+1),text:clean,purpose,language,priority:.86,
+                    sourceTypeHint:meta.sourceTypeHint||null,
+                    recencyHint:meta.recencyHint||searchRecencyHintV2(intent),
+                    coverageKey:meta.coverageKey||purpose
+                });
             };
             const gaps=new Set(assessment?.gapCodes||[]);
             if(gaps.has("stale_current_query")){
-                add(base+" "+(intent?.currentYear||new Date().getFullYear())+(language==="ar"?" أحدث مصدر رسمي":" latest official source"),"freshness_gap");
+                add(base+" "+(intent?.currentYear||new Date().getFullYear())+(language==="ar"?" أحدث مصدر رسمي":" latest official source"),"freshness_gap",{sourceTypeHint:"primary"});
             }
-            if(gaps.has("no_strong_source")){
-                add(base+(language==="ar"?" التوثيق الرسمي":" official documentation"),"strong_source_gap");
+            if(gaps.has("no_primary_source")){
+                const suffix=intent?.technical
+                    ?(language==="ar"?" التوثيق الرسمي":" official documentation")
+                    :(language==="ar"?" المصدر الرسمي":" official primary source");
+                add(base+suffix,"primary_source_gap",{sourceTypeHint:intent?.technical?"documentation":"official"});
+            }
+            if(gaps.has("no_strong_source")&&out.length<SEARCH_V2.maxFollowUpQueries){
+                add(base+(language==="ar"?" التوثيق الرسمي":" official documentation"),"strong_source_gap",{sourceTypeHint:"documentation"});
             }
             if((gaps.has("too_few_sources")||gaps.has("low_host_diversity")||gaps.has("weak_query_coverage"))&&out.length<SEARCH_V2.maxFollowUpQueries){
-                add(base+(language==="ar"?" مصدر مستقل":" independent source"),"coverage_gap");
+                add(base+(language==="ar"?" مصدر مستقل":" independent source"),"coverage_gap",{sourceTypeHint:"specialist"});
+            }
+            if(Array.isArray(conflicts)&&conflicts.length&&out.length<SEARCH_V2.maxFollowUpQueries){
+                add(base+(language==="ar"?" تحقق من التعارض بمصدر رسمي مستقل":" verify conflicting reports official independent source"),"conflict_resolution",{sourceTypeHint:"official"});
             }
             return out.slice(0,SEARCH_V2.maxFollowUpQueries);
         }
@@ -5483,6 +5620,17 @@
             return text.trim();
         }
 
+        function shouldEarlyStopSearchV2(assessment,conflicts,evidence,intent){
+            if(!assessment?.sufficient)return {stop:false,reason:"insufficient_evidence"};
+            if(Array.isArray(conflicts)&&conflicts.length)return {stop:false,reason:"unresolved_conflict"};
+            if(intent?.timeSensitive===true&&!Array.isArray(evidence))return {stop:false,reason:"freshness_unknown"};
+            if((assessment?.gapCodes||[]).length)return {stop:false,reason:"unresolved_gap"};
+            if(intent?.timeSensitive===true&&!evidence.some(x=>x.freshnessClass==="current"||x.freshnessClass==="recent")){
+                return {stop:false,reason:"freshness_required"};
+            }
+            return {stop:true,reason:"evidence_sufficient"};
+        }
+
         async function performWebSearchV2(question,options){
             const started=Date.now();
             const opts=options&&typeof options==="object"?options:{};
@@ -5506,7 +5654,9 @@
             emitSearchStageV2(runtime,"checking","Checking evidence…",{pageCount:firstRead.pagesAttempted});
             let evidence=buildSearchEvidenceUnitsV2(ranked,plan.intent);
             const initialAssessment=assessSearchEvidenceSufficiencyV2(evidence,plan.intent);
-            const followUps=initialAssessment.sufficient?[]:planSearchFollowUpV2(question,plan.intent,evidence,initialAssessment,plan.queries);
+            const initialConflicts=detectSearchConflictSignalsV2(evidence,plan.intent);
+            const earlyStop=shouldEarlyStopSearchV2(initialAssessment,initialConflicts,evidence,plan.intent);
+            const followUps=earlyStop.stop?[]:planSearchFollowUpV2(question,plan.intent,evidence,initialAssessment,plan.queries,initialConflicts);
             let secondRead={pagesAttempted:0,pagesRead:0,pagesBlocked:0};
 
             if(followUps.length){
@@ -5544,7 +5694,8 @@
                 sourceTypeDistribution[item.sourceType]=(sourceTypeDistribution[item.sourceType]||0)+1;
             }
             const independentHostCount=new Set(evidence.map(searchCandidateHostV2).filter(Boolean)).size;
-            const status=!contextText?"no_results":(capability==="general_web"&&finalAssessment.sufficient?"success":"partial");
+            const finalStop=shouldEarlyStopSearchV2(finalAssessment,conflicts,evidence,plan.intent);
+            const status=!contextText?"no_results":(capability==="general_web"&&finalStop.stop?"success":"partial");
             emitSearchStageV2(runtime,"answering","Answering…",{pageCount:evidence.length});
             lastSearchV2Diagnostics={
                 version:2,status,capability,
@@ -5560,6 +5711,14 @@
                 queryCount:plan.queries.length+followUps.length,rawCandidateCount:raw.length,uniqueCandidateCount:ranked.length,
                 evidenceCount:evidence.length,initialEvidenceCount:initialAssessment.evidenceCount,finalEvidenceCount:finalAssessment.evidenceCount,
                 independentHostCount,
+                hostDiversity:lastSearchQualityV2?.hostDiversity||independentHostCount,
+                sourceTypeDiversity:lastSearchQualityV2?.sourceTypeDiversity||new Set(evidence.map(x=>x.sourceType).filter(Boolean)).size,
+                redundantEvidenceDropped:lastSearchQualityV2?.redundantEvidenceDropped||0,
+                primaryEvidenceCount:finalAssessment.primaryCount||0,
+                unknownDateCount:finalAssessment.unknownDateCount||0,
+                seoPenalizedCount:lastSearchQualityV2?.seoPenalizedCount||0,
+                earlyStopReason:earlyStop.reason,
+                finalStopReason:finalStop.reason,
                 initialGapCodes:initialAssessment.gapCodes.slice(),
                 finalGapCodes:finalAssessment.gapCodes.slice(),
                 followUpCount:followUps.length,
@@ -5616,6 +5775,12 @@
             assess:(items,question)=>{const intent=analyzeSearchIntentV2(question||"");const evidence=(Array.isArray(items)&&items[0]?.evidenceId)?items:buildSearchEvidenceUnitsV2(dedupeSearchCandidatesV2(items,intent),intent);return assessSearchEvidenceSufficiencyV2(evidence,intent);},
             followUp:(question,evidence,assessment,initial)=>planSearchFollowUpV2(question,analyzeSearchIntentV2(question||""),evidence,assessment,initial||[]),
             conflicts:(items,question)=>{const intent=analyzeSearchIntentV2(question||"");const evidence=(Array.isArray(items)&&items[0]?.evidenceId)?items:buildSearchEvidenceUnitsV2(dedupeSearchCandidatesV2(items,intent),intent);return detectSearchConflictSignalsV2(evidence,intent);},
+            qualityPenalty:(item,question)=>searchQualityPenaltyV2(item,analyzeSearchIntentV2(question||"")),
+            selectEvidence:(items,question,limit)=>selectDiverseSearchEvidenceV2(items,analyzeSearchIntentV2(question||""),limit),
+            readerPriority:(item,question)=>readerPriorityScoreV2(item,analyzeSearchIntentV2(question||"")),
+            earlyStop:(assessment,conflicts,items,question)=>shouldEarlyStopSearchV2(assessment,conflicts,items,analyzeSearchIntentV2(question||"")),
+            arabicNormalize:normalizeArabicSearchTextV2,
+            quality:()=>lastSearchQualityV2?JSON.parse(JSON.stringify(lastSearchQualityV2)):null,
             gatewayConfigured:isSearchGatewayConfiguredV2,
             normalizeGatewayUrl:normalizeSearchGatewayUrlV2,
             cacheSnapshot:safeSearchCacheSnapshotV2,
