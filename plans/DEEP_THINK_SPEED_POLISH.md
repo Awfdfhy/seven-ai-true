@@ -1,7 +1,7 @@
 # Deep Thinking Speed Polish — Detailed Plan
 
 Date: 2026-10-02
-Status: MERGED — Android release gate pending
+Status: COMPLETE — browser CI + Android release gate passed
 Milestone: Seven AI 2.1.x — post-polish latency pass
 Parent roadmap: ../SEVEN_POLISH_ROADMAP.md
 
@@ -230,6 +230,18 @@ Fast Lane v1 is complete when:
 - Tested head SHA: `f908de8aa5db604fac3930518d81ec4b64e812af`
 - Browser CI: Seven AI tests #2173 — PASS
 - Squash merge SHA: `f0e67e13731746e36483bb292202ebbdc0a7cc32`
-- Android workflow: Seven Android APK #286 — pending
+- Android workflow: Seven Android APK #286 — PASS
 - Implemented now: Phase A timing, Phase B1 compact brief, Phase B2 adaptive hidden budget, Phase B3 latency-priority routing, Phase B4 purpose-specific timeout, Phase C single-surface progress.
 - Deferred by design: Phase D request hedging and Phase E short-lived reasoning cache until timing evidence proves they are worthwhile.
+
+## Android completion evidence
+
+- Android workflow: Seven Android APK #286
+- Workflow run id: `36985721591`
+- Result: PASS
+- Pre-APK Seven release gate: PASS
+- Android lint + unit tests + APK build: PASS
+- Packaged APK verification: PASS
+- Android 16 / API 36 WebView emulator smoke: PASS
+- Final APK verification + artifact upload: PASS
+- Evidence limitation: emulator evidence only; not a physical-device benchmark.
