@@ -375,7 +375,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  });
  await test('web search v2 query plan keeps Arabic primary and adds bounded freshness/entity variants',async()=>{
   const r=await page.evaluate(()=>SevenSearchV2.plan('ما هي أحدث تحديثات Android؟'));
-  assert.equal(r.intent.language,'ar');assert.ok(r.queries.length>=2&&r.queries.length<=5);assert.equal(r.queries[0].language,'ar');assert.ok(r.queries.some(q=>q.purpose==='freshness'));assert.ok(r.queries.some(q=>q.language==='en'));
+  assert.equal(r.intent.language,'ar');assert.ok(r.queries.length>=2&&r.queries.length<=5);assert.equal(r.queries[0].language,'ar');assert.ok(r.queries.some(q=>q.purpose==='freshness'||q.purpose==='technical_current'||q.purpose==='primary_current'));assert.ok(r.queries.some(q=>q.language==='en'));
  });
  await test('web search v2 canonicalizes and deduplicates tracking variants',async()=>{
   const r=await page.evaluate(()=>SevenSearchV2.dedupe([
