@@ -1299,5 +1299,44 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   });
   assert.equal(r.ok,true);assert.ok(r.filename.endsWith('.json'));assert.equal(r.hasEvidence,true);assert.equal(r.secret,false);
  });
+
+ await test('Search Batch 8 diversity pack prevents one host from crowding context',async()=>{
+  const r=await page.evaluate(()=>{
+    const items=[
+      {evidenceId:'S1',title:'A1',url:'https://a.test/1',excerpt:'topic official',sourceType:'official',readState:'read_success',freshnessClass:'evergreen',relevanceScore:80},
+      {evidenceId:'S2',title:'A2',url:'https://a.test/2',excerpt:'topic official',sourceType:'official',readState:'read_success',freshnessClass:'evergreen',relevanceScore:79},
+      {evidenceId:'S3',title:'B1',url:'https://b.test/1',excerpt:'topic independent',sourceType:'specialist',readState:'read_success',freshnessClass:'evergreen',relevanceScore:60},
+      {evidenceId:'S4',title:'C1',url:'https://c.test/1',excerpt:'topic independent',sourceType:'academic',readState:'read_success',freshnessClass:'evergreen',relevanceScore:58}
+    ];
+    const out=SevenSearchV2.selectEvidence(items,'topic',3);
+    return {ids:out.selected.map(x=>x.evidenceId),hosts:out.hostDiversity,dropped:out.redundantEvidenceDropped};
+  });
+  assert.deepEqual(r.ids,['S1','S3','S4']);assert.equal(r.hosts,3);assert.equal(r.dropped,1);
+ });
+ await test('Search Batch 8 stale-only current evidence cannot stay sufficient',async()=>{
+  const r=await page.evaluate(()=>{
+    const assessment={sufficient:true,score:.9,gapCodes:[]};
+    const items=[{freshnessClass:'stale'},{freshnessClass:'older'}];
+    return SevenSearchV2.freshnessGate(assessment,items,'latest Android update today');
+  });
+  assert.equal(r.sufficient,false);assert.ok(r.gapCodes.includes('stale_current_query'));assert.equal(r.freshnessGate,'stale_only');
+ });
+ await test('Search Batch 8 early-stop refuses unresolved conflicts',async()=>{
+  const r=await page.evaluate(()=>SevenSearchV2.earlyStop(
+    {sufficient:true,score:.9,gapCodes:[]},
+    [{code:'possible_numeric_disagreement',sources:['S1','S2']}],
+    [{freshnessClass:'evergreen'}],
+    'comparison'
+  ));
+  assert.equal(r.stop,false);assert.equal(r.reason,'unresolved_conflict');
+ });
+ await test('Search Batch 8 early-stop accepts covered low-conflict evidence',async()=>{
+  const r=await page.evaluate(()=>SevenSearchV2.earlyStop(
+    {sufficient:true,score:.9,gapCodes:[]},[],
+    [{freshnessClass:'evergreen'}],
+    'evergreen topic'
+  ));
+  assert.equal(r.stop,true);assert.equal(r.reason,'evidence_sufficient');
+ });
  await browser.close();server.close();fs.writeFileSync(require('path').join(__dirname,'results.json'),JSON.stringify({results,liveProviderCalls:false},null,2));
 })().catch(e=>{console.error(e);server.close();process.exit(1)});
