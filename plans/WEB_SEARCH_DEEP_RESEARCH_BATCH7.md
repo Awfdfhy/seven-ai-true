@@ -381,3 +381,13 @@ Batch 7 is complete when:
 - Android release gate: Seven Android APK #296 — PASS
 - Android evidence: lint, unit tests, APK build/verification, Android 16 / API 36 WebView smoke, final APK verification, artifact upload — PASS
 - Batch 7 acceptance criteria: COMPLETE
+
+## Completion evidence
+
+- Runtime implementation: `1416d84a9198e3c2e2a841de1fb874d3ac9f314a`
+- Verification/export completion: `7fc0ac30d8ba4c67d3f44de96a1213ee0b1dcf9c`
+- Browser CI: #2331 PASS
+- Android APK: #296 PASS
+- Android 16 / API 36 WebView smoke: PASS
+- Packaged APK verification + artifact upload: PASS
+- Batch 7 acceptance criteria: COMPLETE
