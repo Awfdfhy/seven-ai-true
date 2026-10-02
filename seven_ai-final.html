@@ -4070,9 +4070,9 @@
 
         // ---------- Deep Think Speed Polish ----------
         const DEEP_THINK_SPEED_POLICY = Object.freeze({
-            version: 1,
-            budgets: Object.freeze({ low: 2048, medium: 4096, high: 8192, veryHigh: 12288 }),
-            timeouts: Object.freeze({ low: 25000, medium: 35000, high: 45000, veryHigh: 55000 })
+            version: 2,
+            budgets: Object.freeze({ low: 1536, medium: 3072, high: 6144, veryHigh: 9216 }),
+            timeouts: Object.freeze({ low: 22000, medium: 32000, high: 42000, veryHigh: 52000 })
         });
 
         let activeDeepThinkPerformance = null;
@@ -4106,7 +4106,7 @@
             const limits=modelLimits(model);
             const requested=DEEP_THINK_SPEED_POLICY.budgets[tier];
             return {
-                version:1,
+                version:DEEP_THINK_SPEED_POLICY.version,
                 tier,
                 hiddenMaxTokens:Math.max(512,Math.min(limits.maxTokens,requested)),
                 timeoutMs:DEEP_THINK_SPEED_POLICY.timeouts[tier],
@@ -4411,8 +4411,12 @@
             maxCandidates:24,
             maxContextSources:8,
             maxContextChars:12000,
-            gatewaySearchTimeoutMs:7000,
-            gatewayReadTimeoutMs:8000,
+            gatewaySearchTimeoutMs:6000,
+            gatewayReadTimeoutMs:6500,
+            firstWaveSoftDeadlineMs:5200,
+            followUpWaveSoftDeadlineMs:4200,
+            earlyWaveMinCandidates:8,
+            earlyWaveMinHosts:2,
             maxPageReads:3,
             maxFollowUpQueries:2,
             maxFollowUpPageReads:2
@@ -4513,6 +4517,7 @@
                 stats:{
                     queryCacheHits:0,queryCacheMisses:0,pageCacheHits:0,pageCacheMisses:0,
                     adapterRequests:0,networkSearchRequests:0,readerNetworkRequests:0,
+                    earlyWaveReturns:0,searchWaveDeadlineHits:0,searchWaveDeferredTasks:0,
                     stageNames:[]
                 }
             };
@@ -5439,7 +5444,55 @@
             return [...dedup.values()].slice(0,8);
         }
 
-        async function runSearchWaveV2(queries,intent,runtime){
+        function searchWavePartialIsSufficientV2(rows,intent){
+            const candidates=[];
+            let hasGeneralWeb=false;
+            for(const row of Array.isArray(rows)?rows:[]){
+                if(row?.kind==="local"&&Array.isArray(row.candidates))candidates.push(...row.candidates);
+                if(row?.kind==="gateway"&&row.result){
+                    if(row.result.ok&&["general_web","general_web_degraded"].includes(row.result.capability))hasGeneralWeb=true;
+                    if(Array.isArray(row.result.candidates))candidates.push(...row.result.candidates);
+                }
+            }
+            const normalized=dedupeSearchCandidatesV2(candidates,intent||{});
+            const hosts=new Set(normalized.map(searchCandidateHostV2).filter(Boolean));
+            if(normalized.length<SEARCH_V2.earlyWaveMinCandidates||hosts.size<SEARCH_V2.earlyWaveMinHosts)return false;
+            if(isSearchGatewayConfiguredV2()&&!hasGeneralWeb)return false;
+            if(intent?.technical===true&&!normalized.some(x=>["documentation","official","government","academic","primary"].includes(x.sourceType)))return false;
+            return true;
+        }
+
+        async function settleSearchWaveTasksV2(tasks,intent,runtime,softDeadlineMs){
+            const rows=[];
+            const wrapped=(Array.isArray(tasks)?tasks:[]).map(p=>Promise.resolve(p).then(row=>{
+                rows.push(row);return row;
+            }).catch(error=>{
+                if(error?.name==="AbortError"&&activeAbortController?.signal?.aborted)throw error;
+                const row={kind:"failed"};rows.push(row);return row;
+            }));
+            if(!wrapped.length)return rows;
+            let timer=null;
+            let deadlineHit=false;
+            const allDone=Promise.all(wrapped);
+            const deadline=new Promise(resolve=>{
+                timer=setTimeout(()=>{deadlineHit=true;resolve(null);},Math.max(500,Number(softDeadlineMs)||SEARCH_V2.firstWaveSoftDeadlineMs));
+            });
+            const completed=await Promise.race([allDone,deadline]);
+            if(timer)clearTimeout(timer);
+            if(completed!==null)return rows;
+            if(runtime)runtime.stats.searchWaveDeadlineHits++;
+            const deferred=Math.max(0,wrapped.length-rows.length);
+            if(runtime)runtime.stats.searchWaveDeferredTasks+=deferred;
+            if(searchWavePartialIsSufficientV2(rows,intent)){
+                if(runtime)runtime.stats.earlyWaveReturns++;
+                allDone.catch(()=>{});
+                return rows.slice();
+            }
+            await allDone;
+            return rows;
+        }
+
+        async function runSearchWaveV2(queries,intent,runtime,softDeadlineMs){
             const tasks=[];
             for(const q of Array.isArray(queries)?queries:[]){
                 tasks.push(Promise.resolve(cachedSearchAdapterV2("duckduckgo",q,intent,runtime,()=>searchDuckDuckGoCandidatesV2(q))).then(candidates=>({kind:"local",candidates})));
@@ -5447,10 +5500,7 @@
                 if(intent?.language==="ar")tasks.push(Promise.resolve(cachedSearchAdapterV2("wikipedia_ar",q,intent,runtime,()=>searchWikipediaCandidatesV2(q,"ar"))).then(candidates=>({kind:"local",candidates})));
                 if(isSearchGatewayConfiguredV2())tasks.push(Promise.resolve(cachedSearchAdapterV2("gateway",q,intent,runtime,()=>searchGatewayCandidatesV2(q,intent))).then(result=>({kind:"gateway",result})));
             }
-            const settled=await Promise.all(tasks.map(p=>Promise.resolve(p).catch(error=>{
-                if(error?.name==="AbortError"&&activeAbortController?.signal?.aborted)throw error;
-                return {kind:"failed"};
-            })));
+            const settled=await settleSearchWaveTasksV2(tasks,intent,runtime,softDeadlineMs);
             const raw=[],gatewayReports=[];
             for(const row of settled){
                 if(row?.kind==="local"&&Array.isArray(row.candidates))raw.push(...row.candidates);
@@ -5494,7 +5544,7 @@
             if(!plan.queries.length)return null;
 
             emitSearchStageV2(runtime,"searching","Searching "+plan.queries.length+" quer"+(plan.queries.length===1?"y":"ies")+"…",{queryCount:plan.queries.length});
-            const firstWave=await runSearchWaveV2(plan.queries,plan.intent,runtime);
+            const firstWave=await runSearchWaveV2(plan.queries,plan.intent,runtime,SEARCH_V2.firstWaveSoftDeadlineMs);
             let raw=firstWave.raw.slice();
             const gatewayReports=firstWave.gatewayReports.slice();
 
@@ -5511,7 +5561,7 @@
 
             if(followUps.length){
                 emitSearchStageV2(runtime,"follow_up","Follow-up search…",{queryCount:followUps.length});
-                const followWave=await runSearchWaveV2(followUps,plan.intent,runtime);
+                const followWave=await runSearchWaveV2(followUps,plan.intent,runtime,SEARCH_V2.followUpWaveSoftDeadlineMs);
                 raw.push(...followWave.raw);
                 gatewayReports.push(...followWave.gatewayReports);
                 accumulatedCandidates=dedupeSearchCandidatesV2([...accumulatedCandidates,...followWave.raw],plan.intent).slice(0,SEARCH_V2.maxCandidates);
@@ -5588,6 +5638,9 @@
                 adapterRequests:runtime.stats.adapterRequests,
                 networkSearchRequests:runtime.stats.networkSearchRequests,
                 readerNetworkRequests:runtime.stats.readerNetworkRequests,
+                earlyWaveReturns:runtime.stats.earlyWaveReturns,
+                searchWaveDeadlineHits:runtime.stats.searchWaveDeadlineHits,
+                searchWaveDeferredTasks:runtime.stats.searchWaveDeferredTasks,
                 stageNames:runtime.stats.stageNames.slice(0,16),
                 elapsedMs:Math.max(0,Date.now()-started)
             };
@@ -5628,6 +5681,14 @@
                 pageMaxEntries:SEARCH_CACHE_V2.pageMaxEntries
             }),
             clearCache:clearSearchCacheV2,
+            latencyPolicy:()=>({
+                gatewaySearchTimeoutMs:SEARCH_V2.gatewaySearchTimeoutMs,
+                gatewayReadTimeoutMs:SEARCH_V2.gatewayReadTimeoutMs,
+                firstWaveSoftDeadlineMs:SEARCH_V2.firstWaveSoftDeadlineMs,
+                followUpWaveSoftDeadlineMs:SEARCH_V2.followUpWaveSoftDeadlineMs,
+                earlyWaveMinCandidates:SEARCH_V2.earlyWaveMinCandidates,
+                earlyWaveMinHosts:SEARCH_V2.earlyWaveMinHosts
+            }),
             snapshot:()=>lastSearchV2Diagnostics?JSON.parse(JSON.stringify(lastSearchV2Diagnostics)):null
         });
 
