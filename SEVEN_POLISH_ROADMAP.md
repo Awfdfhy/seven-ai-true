@@ -43,7 +43,7 @@ Primary goal: make routing, provider health, explainability, memory boundaries, 
    - conflict correction
    - no silent leakage between workspaces
 
-4. UI Simplification Pass
+4. UI Simplification Pass ✅ COMPLETE (merged via PR #23, 2026-10-02)
    - progressive disclosure
    - reduce settings clutter
    - explain routing without exposing internal noise
@@ -159,3 +159,5 @@ The detailed execution specification for the current first item lives in:
 - 2026-10-02: Provider Health v2 implemented, CI #2135 passed, and PR #21 merged to main as `cebd9f30d96b7dfaa23e0ff841bd7128f98f1233`. Memory Scope Hardening is next.
 
 - 2026-10-02: Memory Scope Hardening implemented, CI #2143 passed, and PR #22 merged to main as `44bbd88b9b1ce0c69a328d1d500b4e405c381589`. UI Simplification is next.
+
+- 2026-10-02: UI Simplification implemented, CI #2151 passed, and PR #23 merged to main as `a1bb2714721044dbb1db9afdfbbf9fe69728f12b`. Performance + Android Reliability is the final 2.1 polish stage.
