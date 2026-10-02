@@ -97,10 +97,13 @@ public class SevenVisualEvidenceTest {
 
         js(webView,"(()=>{SevenWorkspaces.close();document.documentElement.lang='ar-IQ';document.documentElement.dir='rtl';document.body.dir='rtl';const s=document.querySelector('.sidebar');s.classList.remove('open','active');document.body.classList.remove('sidebar-open');document.documentElement.dataset.sevenShellSidebar='closed';return true})()");
         waitFor(webView,"document.documentElement.dir==='rtl'&&document.documentElement.lang==='ar-IQ'&&getComputedStyle(document.documentElement).direction==='rtl'");
+        Thread.sleep(380);
         assertEquals("true",js(webView,"(()=>{const r=document.querySelector('.sidebar').getBoundingClientRect();return r.left>=innerWidth-2})()"));
         js(webView,"(()=>{document.querySelector('.sidebar').classList.add('open');return true})()");
+        Thread.sleep(380);
         assertEquals("true",js(webView,"(()=>{const r=document.querySelector('.sidebar').getBoundingClientRect();return r.left>=-2&&r.right<=innerWidth+2})()"));
         js(webView,"(()=>{document.querySelector('.sidebar').classList.remove('open');return true})()");
+        Thread.sleep(380);
         Thread.sleep(120);shot("arabic-rtl");
       }
 
