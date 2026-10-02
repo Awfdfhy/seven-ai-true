@@ -179,3 +179,18 @@ Browser CI: #2173 PASS
 Android release gate: #286 PASS.
 
 - 2026-10-02: Deep Think Speed Polish completed after Android gate #286 passed, including Android lint, unit tests, APK build/verification, API 36 WebView emulator smoke, and artifact upload. Next: measured latency optimization before any hedging/cache work.
+
+### Measured Latency Optimization v2 ✅ COMPLETE
+
+- Plan: `plans/MEASURED_LATENCY_OPTIMIZATION_V2.md`
+- PR #26
+- Browser CI #2189 PASS
+- Android APK #287 PASS
+- Merge: `6a692353190f4d6c7c594bb6c3f872d64659cdd3`
+- Deep Think now records bounded local p50/p90 timing data and uses it only for safe near-tie routing + route-aware timeouts.
+
+### Web Search Overhaul v2 — ACTIVE FOCUS
+
+Plan: `plans/WEB_SEARCH_OVERHAUL_V2.md`
+
+Current target: Batch 1 normalized multi-source retrieval, then General Web Search Gateway + Reader + evidence/citation pipeline.
