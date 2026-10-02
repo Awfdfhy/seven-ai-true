@@ -1299,5 +1299,68 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   });
   assert.equal(r.ok,true);assert.ok(r.filename.endsWith('.json'));assert.equal(r.hasEvidence,true);assert.equal(r.secret,false);
  });
+
+ await test('deep research aggregate follow-up is targeted and keeps total questions bounded',async()=>{
+  const r=await page.evaluate(()=>{
+    const plan=planDeepResearchV2('Research current Android WebView behavior');
+    const run={question:'Research current Android WebView behavior',subquestions:plan.subquestions.slice(),evidence:[],conflicts:[]};
+    const follow=planAggregateResearchFollowUpV2(run,plan,{status:'PARTIAL',gaps:['source_diversity','freshness','unresolved_conflict']});
+    return {initial:plan.subquestions.length,follow:follow.length,total:plan.subquestions.length+follow.length,ids:follow.map(x=>x.id),coverage:follow.map(x=>x.coverageKey)};
+  });
+  assert.ok(r.follow>=1&&r.follow<=2);assert.ok(r.total<=10);assert.equal(new Set(r.ids).size,r.ids.length);assert.equal(new Set(r.coverage).size,r.coverage.length);
+ });
+ await test('deep research enforces aggregate page-read ceiling across subquestions and follow-up',async()=>{
+  const r=await page.evaluate(async()=>{
+    const oldStore=localStorage.getItem('sevenDeepResearchV2'),oldSearch=performWebSearchV2,oldStop=stopRequested;
+    localStorage.removeItem('sevenDeepResearchV2');stopRequested=false;
+    const budgets=[];let calls=0;
+    performWebSearchV2=async(q,opts)=>{
+      calls++;const first=Math.max(0,Number(opts?.maxPageReads)||0),follow=Math.max(0,Number(opts?.maxFollowUpPageReads)||0);
+      budgets.push(first+follow);
+      return {
+        version:2,status:'partial',capability:'general_web',
+        evidence:[{evidenceId:'S1',title:'Evidence '+calls,url:'https://same.example.com/'+calls,excerpt:'Evidence',sourceType:'specialist',readState:'read_success',freshnessClass:'recent',relevanceScore:70,coverageKeys:['fixture'],engine:'gateway'}],
+        conflicts:[],assessment:{gapCodes:['source_diversity'],sufficient:false},
+        diagnostics:{queryCount:1,pagesAttempted:first+follow}
+      };
+    };
+    try{
+      const out=await performDeepResearchV2('Research fixture with weak diversity',currentRoom,{});
+      const run=SevenDeepResearchV2.get(out.researchRunId);
+      return {calls,budgets,pageCount:run.diagnostics.pageCount,subquestions:run.subquestions.length,terminal:out.terminalCode};
+    }finally{
+      performWebSearchV2=oldSearch;stopRequested=oldStop;
+      if(oldStore===null)localStorage.removeItem('sevenDeepResearchV2');else localStorage.setItem('sevenDeepResearchV2',oldStore);
+    }
+  });
+  assert.ok(r.calls>=1);assert.ok(r.budgets.every(x=>x>=0&&x<=5));assert.ok(r.pageCount<=12);assert.ok(r.subquestions<=10);assert.ok(['COMPLETE','PARTIAL','INCONCLUSIVE'].includes(r.terminal));
+ });
+ await test('deep research weak aggregate evidence can trigger one bounded follow-up round',async()=>{
+  const r=await page.evaluate(async()=>{
+    const oldStore=localStorage.getItem('sevenDeepResearchV2'),oldSearch=performWebSearchV2,oldStop=stopRequested;
+    localStorage.removeItem('sevenDeepResearchV2');stopRequested=false;
+    let calls=0;
+    performWebSearchV2=async(q,opts)=>{
+      calls++;
+      const host=calls<=3?'weak.example.com':('independent'+calls+'.example.org');
+      return {
+        version:2,status:'partial',capability:'general_web',
+        evidence:[{evidenceId:'S1',title:'Evidence '+calls,url:'https://'+host+'/doc'+calls,excerpt:'Evidence '+calls,sourceType:calls>3?'official':'specialist',readState:'read_success',freshnessClass:'current',relevanceScore:80,coverageKeys:['fixture'],engine:'gateway'}],
+        conflicts:[],assessment:{gapCodes:calls<=3?['source_diversity']:[],sufficient:calls>3},
+        diagnostics:{queryCount:1,pagesAttempted:1}
+      };
+    };
+    try{
+      const plan=SevenDeepResearchV2.plan('Research current platform behavior');
+      const out=await performDeepResearchV2('Research current platform behavior',currentRoom,{});
+      const run=SevenDeepResearchV2.get(out.researchRunId);
+      return {initial:plan.subquestions.length,total:run.subquestions.length,followIds:run.subquestions.filter(x=>x.id.startsWith('rf')).map(x=>x.id),calls,diag:SevenDeepResearchV2.snapshot()};
+    }finally{
+      performWebSearchV2=oldSearch;stopRequested=oldStop;
+      if(oldStore===null)localStorage.removeItem('sevenDeepResearchV2');else localStorage.setItem('sevenDeepResearchV2',oldStore);
+    }
+  });
+  assert.ok(r.total>=r.initial);assert.ok(r.total<=10);assert.ok(r.followIds.length<=2);assert.ok(r.calls<=10);assert.ok((r.diag?.followUpCount||0)<=2);
+ });
  await browser.close();server.close();fs.writeFileSync(require('path').join(__dirname,'results.json'),JSON.stringify({results,liveProviderCalls:false},null,2));
 })().catch(e=>{console.error(e);server.close();process.exit(1)});
