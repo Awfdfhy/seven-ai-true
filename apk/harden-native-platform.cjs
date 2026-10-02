@@ -1,7 +1,10 @@
 "use strict";
 const fs=require("fs");
 const path=require("path");
-const file=path.resolve(__dirname,"..","android","app","src","main","java","ai","seven","app","SevenPlatformPlugin.java");
+const ROOT=path.resolve(__dirname,"..");
+const CONFIG=JSON.parse(fs.readFileSync(path.join(ROOT,"capacitor.config.json"),"utf8"));
+const APP_ID=String(CONFIG.appId||"").trim();
+const file=path.join(ROOT,"android","app","src","main","java",...APP_ID.split("."),"SevenPlatformPlugin.java");
 if(!fs.existsSync(file))throw new Error("SevenPlatformPlugin.java missing; materialize native platform first");
 let src=fs.readFileSync(file,"utf8");
 const oldPersist=`    Uri uri=result.getData().getData();ContentResolver resolver=getContext().getContentResolver();int wanted=Intent.FLAG_GRANT_READ_URI_PERMISSION|(writable?Intent.FLAG_GRANT_WRITE_URI_PERMISSION:0);int granted=result.getData().getFlags()&wanted;boolean persisted=false;\n    try{resolver.takePersistableUriPermission(uri,granted);persisted=true;}catch(SecurityException ignored){}`;
