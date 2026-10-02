@@ -179,5 +179,23 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   const r=await page.evaluate(()=>{const m=addScopedMemory('Scope export fixture '+Date.now(),'project','export-project');const updated=updateMemoryRecord(m.id,{content:m.content+' updated'});const payload=buildCanonicalBackupPayload();const valid=validateCanonicalBackupPayload(payload);const saved=payload.objects.memory.memories.find(x=>x.id===m.id);deleteMemory(m.id);return {updated:!!updated,valid:valid.valid,scope:saved&&saved.scope,ref:saved&&saved.scopeRef,access:saved&&saved.access}});
   assert.deepEqual(r,{updated:true,valid:true,scope:'project',ref:'export-project',access:'private'});
  });
+
+ await test('ui simplification keeps core routing controls visible and advanced groups collapsed',async()=>{
+  const r=await page.evaluate(()=>{openSettings();const ids=['routingModeSelect','modelSelect','temperatureRange','reasoningEffort','maxTokens','freeFallbackToggle','providerGroqEnabled','providerNvidiaEnabled','providerOpenrouterEnabled','providerGeminiEnabled','pinnedNotes','knowledgeStatus'];const core=['routingModeSelect','modelSelect','temperatureRange','reasoningEffort','maxTokens'].every(id=>{const el=document.getElementById(id);return !!el&&el.closest('details')===null});return {all:ids.every(id=>!!document.getElementById(id)),core,providers:document.getElementById('providersSection').open,memory:document.getElementById('memoryDataSection').open,advanced:document.getElementById('advancedSection').open}});
+  assert.deepEqual(r,{all:true,core:true,providers:false,memory:false,advanced:false});
+ });
+ await test('ui simplification route status is semantic and reflects runtime health',async()=>{
+  const r=await page.evaluate(()=>{openSettings();renderFreeModelFabricStatus();const card=document.getElementById('routeStatusCard'),badge=document.getElementById('routeStateBadge'),text=document.getElementById('freeModelStatus');return {role:card.getAttribute('role'),live:card.getAttribute('aria-live'),state:card.dataset.state,label:badge.textContent.trim(),text:text.textContent.trim()}});
+  assert.equal(r.role,'status');assert.equal(r.live,'polite');assert.ok(['ready','degraded','cooldown','blocked'].includes(r.state));assert.ok(r.label.length>0);assert.ok(r.text.length>0);
+ });
+ await test('ui simplification settings fit 320px without horizontal overflow',async()=>{
+  await page.setViewportSize({width:320,height:800});
+  const r=await page.evaluate(()=>{openSettings();const el=document.querySelector('#settingsModal .modal-content'),rect=el.getBoundingClientRect();return {client:el.clientWidth,scroll:el.scrollWidth,left:rect.left,right:rect.right,width:rect.width,viewport:window.innerWidth}});
+  assert.ok(r.scroll<=r.client+1);assert.ok(r.left>=-1);assert.ok(r.right<=r.viewport+1);
+ });
+ await test('ui simplification RTL sections remain usable at 320px',async()=>{
+  const r=await page.evaluate(()=>{document.documentElement.setAttribute('dir','rtl');openSettings();const section=document.getElementById('providersSection');section.open=true;const summary=section.querySelector('summary'),card=document.getElementById('routeStatusCard'),modal=document.querySelector('#settingsModal .modal-content');const out={direction:getComputedStyle(summary).direction,cardDirection:getComputedStyle(card).direction,overflow:modal.scrollWidth<=modal.clientWidth+1,summaryHeight:summary.getBoundingClientRect().height};document.documentElement.setAttribute('dir','ltr');section.open=false;return out});
+  assert.equal(r.direction,'rtl');assert.ok(['rtl','ltr'].includes(r.cardDirection));assert.equal(r.overflow,true);assert.ok(r.summaryHeight>=44);
+ });
  await browser.close();server.close();fs.writeFileSync(require('path').join(__dirname,'results.json'),JSON.stringify({results,liveProviderCalls:false},null,2));
 })().catch(e=>{console.error(e);server.close();process.exit(1)});
