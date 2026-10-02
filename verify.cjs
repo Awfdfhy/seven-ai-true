@@ -89,5 +89,54 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   const r=await page.evaluate(()=>{document.getElementById('userInput').value='Debug this JavaScript function and verify the logic precisely';populateFreeModelSelect(currentModel);const first=document.getElementById('modelSelect').options[0];const ctx=modelPickerContextV3();const all=getFreeModelCatalog().filter(m=>m.free===true&&isFreePriceProofFresh(m));const ready=all.filter(m=>isFreeProviderConfigured(m.provider)&&(!m.requiresExplicitEnable||isFreeProviderEnabled(m.provider)));const pool=ready.length?ready:all;const ranked=SevenModelIntelligenceV3.rank(pool,ctx);const explanation=JSON.stringify(ranked[0]?.explanation||{});return {option:first?.value||'',expected:ranked[0]?freeModelSelectionKey(ranked[0].model.provider,ranked[0].model.id):'',reasonCount:(ranked[0]?.explanation?.reasons||[]).length,secret:/gsk_|sk-or-|nvapi-|AIza/.test(explanation)}});
   assert.equal(r.option,r.expected);assert.ok(r.reasonCount<=3);assert.equal(r.secret,false);
  });
+
+ await test('provider health v2 lazily normalizes legacy health records',async()=>{
+  const r=await page.evaluate(()=>{const raw={successes:4,failures:2,latencyMs:900,lastSuccessAt:10,lastFailureAt:5,cooldownUntil:0,lastStatus:200};const x=SevenProviderHealthV2.normalize(raw);return {version:x.schemaVersion,successes:x.successes,failures:x.failures,latency:x.ewmaLatencyMs,samples:x.latencySamples}});
+  assert.deepEqual(r,{version:2,successes:4,failures:2,latency:900,samples:[900]});
+ });
+ await test('provider health v2 records bounded EWMA latency samples',async()=>{
+  const r=await page.evaluate(()=>{const model={provider:'groq',id:'latency-v2-fixture'};const key=freeHealthKey(model.provider,model.id),pkey=freeHealthKey(model.provider,'*');const old=freeModelHealth[key],pold=freeModelHealth[pkey];for(let i=0;i<20;i++)recordFreeRouteSuccess(model,100+i*10);const x=getFreeModelHealth(model.provider,model.id);if(old===undefined)delete freeModelHealth[key];else freeModelHealth[key]=old;if(pold===undefined)delete freeModelHealth[pkey];else freeModelHealth[pkey]=pold;return {samples:x.latencySamples.length,ewma:x.ewmaLatencyMs,streak:x.consecutiveSuccesses,fail:x.consecutiveFailures}});
+  assert.equal(r.samples,12);assert.ok(r.ewma>=100&&r.ewma<=300);assert.equal(r.streak,20);assert.equal(r.fail,0);
+ });
+ await test('provider health v2 classifies failure families',async()=>{
+  const r=await page.evaluate(()=>{const classify=SevenProviderHealthV2.classify;const mk=(status,extra={})=>Object.assign(new Error('x'),{status},extra);const old=stopRequested;stopRequested=false;const out={auth:classify(mk(401)),rate:classify(mk(429)),notFound:classify(mk(404)),server:classify(mk(503)),network:classify(Object.assign(new TypeError('Failed to fetch'),{})),timeout:classify(Object.assign(new Error('timeout'),{code:'PROVIDER_TIMEOUT'}))};const abort=new DOMException('Stopped','AbortError');stopRequested=true;out.cancel=classify(abort);stopRequested=old;return out});
+  assert.deepEqual(r,{auth:'auth',rate:'rate_limit',notFound:'not_found',server:'server',network:'network',timeout:'timeout',cancel:'cancelled'});
+ });
+ await test('provider health v2 cancellation does not damage route health',async()=>{
+  const r=await page.evaluate(()=>{const model={provider:'groq',id:'cancel-v2-fixture'};const key=freeHealthKey(model.provider,model.id),old=freeModelHealth[key],oldStop=stopRequested;stopRequested=true;recordFreeRouteFailure(model,new DOMException('Stopped','AbortError'));const x=getFreeModelHealth(model.provider,model.id);stopRequested=oldStop;if(old===undefined)delete freeModelHealth[key];else freeModelHealth[key]=old;return {failures:x.failures,streak:x.consecutiveFailures,last:x.lastErrorClass}});
+  assert.deepEqual(r,{failures:0,streak:0,last:null});
+ });
+ await test('provider health v2 failure streak increases cooldown and retry-after is bounded',async()=>{
+  const r=await page.evaluate(()=>{const a=dynamicCooldownMsV2('server',1,0),b=dynamicCooldownMsV2('server',3,0),retry=SevenProviderHealthV2.retryAfter('99999');return {a,b,retry,max:PROVIDER_HEALTH_V2.maxCooldownMs}});
+  assert.ok(r.b>r.a);assert.equal(r.retry,r.max);
+ });
+ await test('provider health v2 keeps 404 model-local',async()=>{
+  const r=await page.evaluate(()=>{const model={provider:'groq',id:'missing-v2-fixture'};const key=freeHealthKey(model.provider,model.id),pkey=freeHealthKey(model.provider,'*'),old=freeModelHealth[key],pold=freeModelHealth[pkey],oldStop=stopRequested;stopRequested=false;const e=Object.assign(new Error('missing'),{status:404});recordFreeRouteFailure(model,e);const own=getFreeModelHealth(model.provider,model.id),broad=getFreeModelHealth(model.provider,'*');stopRequested=oldStop;if(old===undefined)delete freeModelHealth[key];else freeModelHealth[key]=old;if(pold===undefined)delete freeModelHealth[pkey];else freeModelHealth[pkey]=pold;return {ownCooling:own.cooldownUntil>Date.now(),providerCooling:broad.cooldownUntil>Date.now(),providerFailures:broad.failures}});
+  assert.equal(r.ownCooling,true);assert.equal(r.providerCooling,false);assert.equal(r.providerFailures,0);
+ });
+ await test('provider health v2 opens provider circuit for 429 and honors retry-after',async()=>{
+  const r=await page.evaluate(()=>{const model={provider:'groq',id:'rate-v2-fixture'};const key=freeHealthKey(model.provider,model.id),pkey=freeHealthKey(model.provider,'*'),old=freeModelHealth[key],pold=freeModelHealth[pkey],oldStop=stopRequested;stopRequested=false;const now=Date.now(),e=Object.assign(new Error('rate'),{status:429,retryAfterMs:5*60*1000});recordFreeRouteFailure(model,e);const broad=getFreeModelHealth(model.provider,'*');stopRequested=oldStop;if(old===undefined)delete freeModelHealth[key];else freeModelHealth[key]=old;if(pold===undefined)delete freeModelHealth[pkey];else freeModelHealth[pkey]=pold;return {cooling:broad.cooldownUntil>now,remaining:broad.cooldownUntil-now,error:broad.lastErrorClass}});
+  assert.equal(r.cooling,true);assert.ok(r.remaining>=5*60*1000-1000);assert.equal(r.error,'rate_limit');
+ });
+ await test('provider health v2 opens provider circuit only after repeated server failures',async()=>{
+  const r=await page.evaluate(()=>{const ids=['server-v2-a','server-v2-b','server-v2-c'],keys=ids.map(id=>freeHealthKey('groq',id)),pkey=freeHealthKey('groq','*'),olds=keys.map(k=>freeModelHealth[k]),pold=freeModelHealth[pkey],oldStop=stopRequested;stopRequested=false;const e=Object.assign(new Error('server'),{status:503});recordFreeRouteFailure({provider:'groq',id:ids[0]},e);const first=getFreeModelHealth('groq','*').cooldownUntil>Date.now();recordFreeRouteFailure({provider:'groq',id:ids[1]},e);const second=getFreeModelHealth('groq','*').cooldownUntil>Date.now();recordFreeRouteFailure({provider:'groq',id:ids[2]},e);const third=getFreeModelHealth('groq','*').cooldownUntil>Date.now();stopRequested=oldStop;keys.forEach((k,i)=>{if(olds[i]===undefined)delete freeModelHealth[k];else freeModelHealth[k]=olds[i]});if(pold===undefined)delete freeModelHealth[pkey];else freeModelHealth[pkey]=pold;return {first,second,third}});
+  assert.deepEqual(r,{first:false,second:false,third:true});
+ });
+ await test('provider health v2 success heals failure streak and cooldown',async()=>{
+  const r=await page.evaluate(()=>{const model={provider:'groq',id:'heal-v2-fixture'};const key=freeHealthKey(model.provider,model.id),pkey=freeHealthKey(model.provider,'*'),old=freeModelHealth[key],pold=freeModelHealth[pkey],oldStop=stopRequested;stopRequested=false;recordFreeRouteFailure(model,Object.assign(new Error('rate'),{status:429}));const before=SevenProviderHealthV2.model(model.provider,model.id);recordFreeRouteSuccess(model,420);const after=SevenProviderHealthV2.model(model.provider,model.id);const broad=SevenProviderHealthV2.model(model.provider,'*');stopRequested=oldStop;if(old===undefined)delete freeModelHealth[key];else freeModelHealth[key]=old;if(pold===undefined)delete freeModelHealth[pkey];else freeModelHealth[pkey]=pold;return {before:before.state,after:after.state,streak:after.consecutiveFailures,broad:broad.state,recovery:getFreeModelHealth(model.provider,model.id).recoveryCount}});
+  assert.equal(r.before,'cooldown');assert.notEqual(r.after,'cooldown');assert.equal(r.streak,0);assert.notEqual(r.broad,'cooldown');assert.ok(r.recovery>=1);
+ });
+ await test('provider health v2 exposes deterministic quota pressure',async()=>{
+  const r=await page.evaluate(()=>{const key=freeUsageKey('openrouter'),old=freeModelUsage[key];freeModelUsage[key]={requests:46,successes:40,failures:6,estimatedInputTokens:0,estimatedOutputBudget:0};const near=getProviderQuotaPressureV2('openrouter');freeModelUsage[key]={requests:10,successes:10,failures:0,estimatedInputTokens:0,estimatedOutputBudget:0};const normal=getProviderQuotaPressureV2('openrouter');if(old===undefined)delete freeModelUsage[key];else freeModelUsage[key]=old;return {near:near.state,normal:normal.state}});
+  assert.deepEqual(r,{near:'near_limit',normal:'normal'});
+ });
+ await test('provider health v2 diagnostics are bounded and contain no secrets or content',async()=>{
+  const r=await page.evaluate(()=>{const model={provider:'groq',id:'diag-v2-fixture'};const key=freeHealthKey(model.provider,model.id),old=freeModelHealth[key];freeModelHealth[key]=normalizeHealthRecordV2({successes:2,failures:1,latencySamples:[200,300,400],ewmaLatencyMs:300,lastStatus:500,lastErrorClass:'server'});const snap=SevenProviderHealthV2.model(model.provider,model.id);const text=JSON.stringify(snap);if(old===undefined)delete freeModelHealth[key];else freeModelHealth[key]=old;return {keys:Object.keys(snap).sort(),secret:/gsk_|sk-or-|nvapi-|AIza|Authorization|Bearer/i.test(text),content:/prompt|response|message/i.test(text),p90:snap.p90LatencyMs}});
+  assert.equal(r.secret,false);assert.equal(r.content,false);assert.ok(r.p90>=300);
+ });
+ await test('model intelligence v3 delegates health truth to provider health v2',async()=>{
+  const r=await page.evaluate(()=>{const model={provider:'groq',id:'delegate-v2-fixture'};const key=freeHealthKey(model.provider,model.id),old=freeModelHealth[key];freeModelHealth[key]=normalizeHealthRecordV2({successes:8,failures:0,lastSuccessAt:Date.now(),consecutiveSuccesses:3});const a=SevenModelIntelligenceV3.health(model),b=SevenProviderHealthV2.score(model.provider,model.id);if(old===undefined)delete freeModelHealth[key];else freeModelHealth[key]=old;return {a,b}});
+  assert.deepEqual(r.a,r.b);
+ });
  await browser.close();server.close();fs.writeFileSync(require('path').join(__dirname,'results.json'),JSON.stringify({results,liveProviderCalls:false},null,2));
 })().catch(e=>{console.error(e);server.close();process.exit(1)});
