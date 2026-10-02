@@ -748,14 +748,14 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
       if(s.includes('api.duckduckgo.com')){
         ddgCalls++;
         const q=new URL(s).searchParams.get('q')||'';
-        if(q.includes('official documentation'))return {ok:true,json:async()=>({Heading:'Second strong result',AbstractText:'coverage test official documentation evidence',AbstractURL:'https://two.example/result',RelatedTopics:[]})};
-        return {ok:true,json:async()=>({Heading:'First result',AbstractText:'coverage test evidence',AbstractURL:'https://one.example/result',RelatedTopics:[]})};
+        if(q.includes('independent source'))return {ok:true,json:async()=>({Heading:'Second independent result',AbstractText:'Android API coverage independent evidence',AbstractURL:'https://two.example/result',RelatedTopics:[]})};
+        return {ok:true,json:async()=>({Heading:'First result',AbstractText:'Android API coverage evidence',AbstractURL:'https://one.example/result',RelatedTopics:[]})};
       }
       if(s.includes('wikipedia.org'))return {ok:true,json:async()=>({query:{search:[]}})};
       return {ok:false,json:async()=>({})};
     };
     try{
-      const out=await performWebSearchV2('coverage test');
+      const out=await performWebSearchV2('Android API coverage test');
       return {ddgCalls,diag:out?.diagnostics,queries:out?.queries?.map(q=>q.text)||[],sources:out?.sources?.length||0};
     }finally{fetchWithTimeout=oldFetch;SEARCH_GATEWAY_URL=oldUrl;SEARCH_GATEWAY_KEY=oldKey;}
   });
