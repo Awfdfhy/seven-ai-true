@@ -1,7 +1,7 @@
 # Web Search v2 — Production Hardening Pass
 
 Date: 2026-10-02  
-Status: IN PROGRESS — runtime/CI implementation complete; production deployment/live endpoint gate depends on Cloudflare repository configuration.
+Status: CODE COMPLETE / PRODUCTION CONFIG BLOCKED — runtime, CI, latency, fallback and live-eval harness are implemented. GitHub Actions confirmed that the production deploy and live endpoint gate are currently blocked only by missing Cloudflare repository configuration.
 
 ## Scope
 
@@ -76,3 +76,16 @@ Search-provider credentials such as Brave/Serper remain Worker-side Cloudflare s
 - Cloudflare deployment step executes successfully
 - live Search Quality strict gate PASS
 - main contains all production-hardening commits
+
+
+## Observed CI state
+
+Production workflow run #2 validated the Search Gateway successfully.
+
+Deployment readiness result:
+- Cloudflare deploy step: SKIPPED
+- reason: `CLOUDFLARE_API_TOKEN` and/or `CLOUDFLARE_ACCOUNT_ID` are not configured as GitHub repository secrets
+- live Search Quality step: SKIPPED
+- reason: repository variable `SEARCH_GATEWAY_URL` is not configured
+
+This is an external deployment-configuration blocker, not a Search v2 code/test failure. Once those settings exist, the same workflow will execute deployment and the strict live gate automatically on the next relevant `main` push or manual dispatch.
