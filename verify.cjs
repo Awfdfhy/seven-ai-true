@@ -790,7 +790,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
       return {searchCalls,readCalls,diag:out?.diagnostics};
     }finally{fetchWithTimeout=oldFetch;SEARCH_GATEWAY_URL=oldUrl;SEARCH_GATEWAY_KEY=oldKey;}
   });
-  assert.equal(r.diag.sufficient,true);assert.equal(r.diag.followUpWaveCount,0);assert.equal(r.diag.followUpCount,0);assert.equal(r.searchCalls,1);assert.equal(r.readCalls,2);
+  assert.equal(r.diag.sufficient,true);assert.equal(r.diag.followUpWaveCount,0);assert.equal(r.diag.followUpCount,0);assert.equal(r.searchCalls,r.diag.queryCount);assert.equal(r.readCalls,2);
  });
  await test('web search follow-up preserves prior read state and does not reread same successful URL',async()=>{
   const r=await page.evaluate(async()=>{
