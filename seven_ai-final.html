@@ -3944,7 +3944,7 @@
             if (typeof room.summary === "string" && room.summary) {
                 sources.push(createContextSource("summary", room.summary, { priority: 60, provenance: "conversation_summary" }));
             }
-            const usableMemory = getUsableMemoryContext(text);
+            const usableMemory = getUsableMemoryContext(text, getActiveMemoryScopeContext());
             if (usableMemory.valid && usableMemory.text) {
                 sources.push(createContextSource("memory", usableMemory.text, {
                     priority: 65,
@@ -5967,14 +5967,15 @@
         // status. No authorization/filtering/inheritance logic, no schema
         // changes, no storage/AI calls.
         const MEMORY_SCOPE_ACCESS_CONTRACT = Object.freeze({
-            version: 1,
+            version: 2,
             scopes: Object.freeze({
                 message: Object.freeze({ description: "Memory associated with a specific message/event." }),
                 conversation: Object.freeze({ description: "Memory bounded to one conversation/room." }),
                 project: Object.freeze({ description: "Memory belonging to a specific project/workspace." }),
                 user: Object.freeze({ description: "User-level memory intended to persist across conversations." }),
                 shared: Object.freeze({ description: "Memory explicitly available across authorized agents/components/users." }),
-                system: Object.freeze({ description: "System/application-level memory." })
+                system: Object.freeze({ description: "System/application-level memory." }),
+                rpg: Object.freeze({ description: "Memory isolated to one RPG/world continuity scope." })
             }),
             accessModes: Object.freeze({
                 private: Object.freeze({ description: "Usable only within its owning scope/authorized principal." }),
@@ -7081,7 +7082,8 @@
             version: Object.freeze({ type: "object|null", role: "optional explicit version identity, e.g. { number, familyId }. null/absent for backward compatibility. Never inferred." }),
             supersession: Object.freeze({ type: "object|null", role: "optional explicit supersession state, e.g. { status, predecessorId, successorId, reason }. null/absent for backward compatibility. Never inferred." }),
             lineage: Object.freeze({ type: "array", role: "optional explicit array of non-empty version-family memory-id strings, order preserved. Empty/absent for backward compatibility. Never inferred." }),
-            scope: Object.freeze({ type: "string|null", role: "optional explicit applicability/ownership boundary from MEMORY_SCOPE_ACCESS_CONTRACT. null/absent means unspecified; never inferred from type." }),
+            scope: Object.freeze({ type: "string|null", role: "optional explicit applicability/ownership boundary from MEMORY_SCOPE_ACCESS_CONTRACT. null/absent means legacy-global compatibility; never inferred from type." }),
+            scopeRef: Object.freeze({ type: "string|null", role: "optional stable identifier binding a scoped memory to one room/project/RPG/message/shared domain. Preserved through retrieval and exports." }),
             access: Object.freeze({ type: "string|null", role: "optional explicit access mode from MEMORY_SCOPE_ACCESS_CONTRACT. null/absent means unspecified; independent from trust/provenance." }),
             authority: Object.freeze({ type: "object|null", role: "optional origin-bound authority metadata { level, origin, reason }. Independent from trust/confidence and never a tool/access permission grant." })
         });
@@ -7194,6 +7196,7 @@
                 supersession: (src.supersession !== undefined && src.supersession !== null && isCanonicalMemorySupersessionShape(src.supersession)) ? { status: src.supersession.status, predecessorId: src.supersession.predecessorId, successorId: src.supersession.successorId, reason: src.supersession.reason } : MEMORY_METADATA_DEFAULTS.supersession,
                 lineage: (src.lineage !== undefined && src.lineage !== null && isCanonicalMemoryLineageShape(src.lineage)) ? src.lineage.slice() : MEMORY_METADATA_DEFAULTS.lineage.slice(),
                 scope: isValidMemoryScope(src.scope) ? src.scope : MEMORY_METADATA_DEFAULTS.scope,
+                scopeRef: (typeof src.scopeRef === "string" && src.scopeRef.trim() !== "") ? src.scopeRef.trim().slice(0, 240) : MEMORY_METADATA_DEFAULTS.scopeRef,
                 access: isValidMemoryAccessMode(src.access) ? src.access : MEMORY_METADATA_DEFAULTS.access,
                 authority: (src.authority !== undefined && src.authority !== null && isCanonicalMemoryAuthorityShape(src.authority) &&
                     isMemoryAuthorityOriginCompatible((src.provenance !== undefined) ? src.provenance : MEMORY_METADATA_DEFAULTS.provenance, src.authority))
@@ -7243,6 +7246,8 @@
                 if (!isCanonicalMemoryLineageShape(record.lineage)) return invalid;
             }
             if (record.scope !== undefined && record.scope !== null && !isValidMemoryScope(record.scope)) return invalid;
+            if (record.scopeRef !== undefined && record.scopeRef !== null &&
+                (typeof record.scopeRef !== "string" || record.scopeRef.trim() === "" || record.scopeRef.length > 240)) return invalid;
             if (record.access !== undefined && record.access !== null && !isValidMemoryAccessMode(record.access)) return invalid;
             if (record.authority !== undefined && record.authority !== null && !isCanonicalMemoryAuthorityShape(record.authority)) return invalid;
             if (!isMemoryAuthorityOriginCompatible(record.provenance, record.authority)) return invalid;
@@ -7329,6 +7334,7 @@
             supersession: null,
             lineage: Object.freeze([]),
             scope: null,
+            scopeRef: null,
             access: null,
             authority: null
         });
@@ -7691,10 +7697,11 @@
             if (typeof content !== "string") return null;
             const trimmed = content.trim();
             if (trimmed === "" || trimmed.length > MAX_MEMORY_CONTENT_LENGTH) return null;
-            const memories = getMemories();
-            if (memories.some(m => m && typeof m === "object" && m.content === trimmed)) return null;
-            const record = createMemoryRecord({ content: trimmed });
+            const policy = memoryDomainPolicy("global");
+            const record = createMemoryRecord(Object.assign({ content: trimmed }, policy || {}));
             if (!record || !validateMemoryRecord(record).valid) return null;
+            const memories = getMemories();
+            if (memories.some(m => m && typeof m === "object" && m.content === trimmed && sameMemoryScopeIdentity(m,record))) return null;
             memories.push(record);
             const committed = commitCanonicalMemoryMutation(memories, {
                 memoryIds: [record.id],
@@ -7714,7 +7721,7 @@
             const record = createMemoryRecord(input);
             if (!record || !validateMemoryRecord(record).valid) return null;
             const memories = getMemories();
-            if (opts.allowDuplicate !== true && memories.some(m => m && typeof m === "object" && m.content === record.content)) return null;
+            if (opts.allowDuplicate !== true && memories.some(m => m && typeof m === "object" && m.content === record.content && sameMemoryScopeIdentity(m,record))) return null;
             if (memories.some(m => m && typeof m === "object" && m.id === record.id)) return null;
             const next = memories.slice();
             next.push(record);
@@ -7922,7 +7929,7 @@
             const existing = memories[index];
             if (!validateMemoryRecord(existing).valid) return null;
 
-            const allowed = ["type", "content", "updatedAt", "provenance", "trust", "temporal", "relations", "status", "epistemicStatus", "evidenceRefs", "version", "supersession", "lineage", "scope", "access", "authority"];
+            const allowed = ["type", "content", "updatedAt", "provenance", "trust", "temporal", "relations", "status", "epistemicStatus", "evidenceRefs", "version", "supersession", "lineage", "scope", "scopeRef", "access", "authority"];
             const candidate = { id: existing.id, createdAt: existing.createdAt };
             for (const key of Object.keys(existing)) {
                 candidate[key] = existing[key];
@@ -8069,8 +8076,7 @@
             return getCanonicalMemories().filter(m => m.status === state);
         }
 
-        // Task 115: Scope/access runtime. Explicit only; scope/access
-        // are not inferred from memory type, trust, provenance, or recency.
+        // Task 115 + Scope Hardening: explicit applicability/access runtime.
         function isValidMemoryScope(scope) {
             return typeof scope === "string" && scope !== "" &&
                 Object.prototype.hasOwnProperty.call(MEMORY_SCOPE_ACCESS_CONTRACT.scopes, scope);
@@ -8081,38 +8087,178 @@
                 Object.prototype.hasOwnProperty.call(MEMORY_SCOPE_ACCESS_CONTRACT.accessModes, access);
         }
 
+        function normalizeScopeRef(value) {
+            return typeof value === "string" && value.trim() !== "" ? value.trim().slice(0,240) : null;
+        }
+
         function getMemoryScopeAccess(record) {
-            if (!isCanonicalMemoryRecord(record)) return { scope: null, access: null };
+            if (!isCanonicalMemoryRecord(record)) return { scope: null, scopeRef: null, access: null };
             return {
                 scope: isValidMemoryScope(record.scope) ? record.scope : null,
+                scopeRef: normalizeScopeRef(record.scopeRef),
                 access: isValidMemoryAccessMode(record.access) ? record.access : null
             };
         }
 
-        function setMemoryScopeAccess(id, policy) {
-            const existing = getCanonicalMemoryById(id);
-            if (!existing || !policy || typeof policy !== "object" || Array.isArray(policy)) return null;
-            const patch = {};
-            if (Object.prototype.hasOwnProperty.call(policy, "scope")) {
-                if (policy.scope !== null && !isValidMemoryScope(policy.scope)) return null;
-                patch.scope = policy.scope;
+        function memoryScopeIdentityKey(record) {
+            if (!record || typeof record !== "object") return "invalid";
+            const scope=isValidMemoryScope(record.scope)?record.scope:null;
+            const ref=normalizeScopeRef(record.scopeRef);
+            // Unscoped legacy records and explicit user/global records are the
+            // same practical domain for duplicate detection.
+            if (scope===null || (scope==="user" && (ref===null||ref==="global"))) return "global";
+            return (scope||"legacy")+":"+(ref||"<unbound>");
+        }
+
+        function sameMemoryScopeIdentity(a,b) {
+            return memoryScopeIdentityKey(a)===memoryScopeIdentityKey(b);
+        }
+
+        function normalizeMemoryScopeContext(input) {
+            const src=input&&typeof input==="object"&&!Array.isArray(input)?input:{};
+            return {
+                roomId:normalizeScopeRef(src.roomId),
+                projectId:normalizeScopeRef(src.projectId),
+                rpgId:normalizeScopeRef(src.rpgId),
+                messageId:normalizeScopeRef(src.messageId),
+                allowGlobal:src.allowGlobal!==false,
+                allowLegacyGlobal:src.allowLegacyGlobal!==false,
+                allowShared:src.allowShared===true,
+                allowSystem:src.allowSystem===true,
+                allowRestricted:src.allowRestricted===true,
+                sharedRefs:Array.isArray(src.sharedRefs)?src.sharedRefs.map(normalizeScopeRef).filter(Boolean).slice(0,32):[]
+            };
+        }
+
+        function activeMemoryWorkspaceName() {
+            try {
+                if (typeof window!=="undefined" && window.SevenWorkspaces && typeof window.SevenWorkspaces.active==="function") {
+                    const value=window.SevenWorkspaces.active();
+                    if (typeof value==="string"&&value) return value;
+                }
+            } catch (_) {}
+            return "chat";
+        }
+
+        function getActiveMemoryScopeContext(options) {
+            const opts=options&&typeof options==="object"&&!Array.isArray(options)?options:{};
+            const workspace=typeof opts.workspace==="string"&&opts.workspace?opts.workspace:activeMemoryWorkspaceName();
+            const roomId=normalizeScopeRef(opts.roomId)||(typeof currentRoom==="string"?normalizeScopeRef(currentRoom):null);
+            const projectId=normalizeScopeRef(opts.projectId) ||
+                ((workspace==="coding"||workspace==="research"||workspace==="project") && roomId ? workspace+":"+roomId : null);
+            const rpgId=normalizeScopeRef(opts.rpgId) || (workspace==="rpg"&&roomId ? "rpg:"+roomId : null);
+            return normalizeMemoryScopeContext({
+                roomId,projectId,rpgId,
+                messageId:opts.messageId,
+                allowGlobal:opts.allowGlobal!==false,
+                allowLegacyGlobal:opts.allowLegacyGlobal!==false,
+                allowShared:opts.allowShared===true,
+                allowSystem:opts.allowSystem===true,
+                allowRestricted:opts.allowRestricted===true,
+                sharedRefs:opts.sharedRefs
+            });
+        }
+
+        function isMemoryVisibleInScope(record, context) {
+            if (!isCanonicalMemoryRecord(record)) return false;
+            const ctx=normalizeMemoryScopeContext(context);
+            const meta=getMemoryScopeAccess(record);
+            if (meta.access==="restricted"&&!ctx.allowRestricted) return false;
+
+            // Legacy canonical records predate explicit scoping. Preserve
+            // compatibility only as global/user memory, never as room/project.
+            if (meta.scope===null) return ctx.allowLegacyGlobal===true;
+            if (meta.scope==="user") return ctx.allowGlobal===true && (meta.scopeRef===null||meta.scopeRef==="global");
+            if (meta.scope==="conversation") return !!meta.scopeRef && meta.scopeRef===ctx.roomId;
+            if (meta.scope==="project") return !!meta.scopeRef && meta.scopeRef===ctx.projectId;
+            if (meta.scope==="rpg") return !!meta.scopeRef && meta.scopeRef===ctx.rpgId;
+            if (meta.scope==="message") return !!meta.scopeRef && meta.scopeRef===ctx.messageId;
+            if (meta.scope==="system") return ctx.allowSystem===true;
+            if (meta.scope==="shared") {
+                if (!ctx.allowShared) return false;
+                return meta.scopeRef===null || ctx.sharedRefs.includes(meta.scopeRef);
             }
-            if (Object.prototype.hasOwnProperty.call(policy, "access")) {
-                if (policy.access !== null && !isValidMemoryAccessMode(policy.access)) return null;
-                patch.access = policy.access;
+            return false;
+        }
+
+        function filterMemoriesByScopeContext(records, context) {
+            if (!Array.isArray(records)) return [];
+            const ctx=normalizeMemoryScopeContext(context);
+            return records.filter(record=>isMemoryVisibleInScope(record,ctx));
+        }
+
+        function memoryDomainPolicy(domain, ref, options) {
+            const opts=options&&typeof options==="object"&&!Array.isArray(options)?options:{};
+            const value=String(domain||"").toLowerCase();
+            const access=isValidMemoryAccessMode(opts.access)?opts.access:"private";
+            if (value==="global") return {scope:"user",scopeRef:"global",access};
+            if (value==="room") {
+                const room=normalizeScopeRef(ref)||(typeof currentRoom==="string"?normalizeScopeRef(currentRoom):null);
+                return room?{scope:"conversation",scopeRef:room,access}:null;
+            }
+            if (value==="project") {
+                const ctx=getActiveMemoryScopeContext(opts);
+                const id=normalizeScopeRef(ref)||ctx.projectId;
+                return id?{scope:"project",scopeRef:id,access}:null;
+            }
+            if (value==="rpg") {
+                const ctx=getActiveMemoryScopeContext(Object.assign({},opts,{workspace:"rpg"}));
+                const id=normalizeScopeRef(ref)||ctx.rpgId;
+                return id?{scope:"rpg",scopeRef:id,access}:null;
+            }
+            return null;
+        }
+
+        function addScopedMemory(content, domain, ref, options) {
+            if (typeof content!=="string") return null;
+            const trimmed=content.trim();
+            if (!trimmed||trimmed.length>MAX_MEMORY_CONTENT_LENGTH) return null;
+            const policy=memoryDomainPolicy(domain,ref,options);
+            if (!policy) return null;
+            const record=createMemoryRecord(Object.assign({content:trimmed},policy));
+            if (!record||!validateMemoryRecord(record).valid) return null;
+            const memories=getMemories();
+            if (memories.some(m=>m&&typeof m==="object"&&m.content===trimmed&&sameMemoryScopeIdentity(m,record))) return null;
+            const next=memories.slice();next.push(record);
+            const committed=commitCanonicalMemoryMutation(next,{
+                memoryIds:[record.id],operation:"create",actor:"runtime",
+                reason:"scoped_create_"+String(domain||""),
+                changes:{after:record}
+            });
+            return committed?record:null;
+        }
+
+        function setMemoryScopeAccess(id, policy) {
+            const existing=getCanonicalMemoryById(id);
+            if (!existing||!policy||typeof policy!=="object"||Array.isArray(policy)) return null;
+            const patch={};
+            if (Object.prototype.hasOwnProperty.call(policy,"scope")) {
+                if (policy.scope!==null&&!isValidMemoryScope(policy.scope)) return null;
+                patch.scope=policy.scope;
+            }
+            if (Object.prototype.hasOwnProperty.call(policy,"scopeRef")) {
+                if (policy.scopeRef!==null&&!normalizeScopeRef(policy.scopeRef)) return null;
+                patch.scopeRef=policy.scopeRef===null?null:normalizeScopeRef(policy.scopeRef);
+            }
+            if (Object.prototype.hasOwnProperty.call(policy,"access")) {
+                if (policy.access!==null&&!isValidMemoryAccessMode(policy.access)) return null;
+                patch.access=policy.access;
             }
             if (!Object.keys(patch).length) return null;
-            return updateMemoryRecord(id, patch);
+            const finalScope=Object.prototype.hasOwnProperty.call(patch,"scope")?patch.scope:existing.scope;
+            const finalRef=Object.prototype.hasOwnProperty.call(patch,"scopeRef")?patch.scopeRef:existing.scopeRef;
+            if (["conversation","project","rpg","message"].includes(finalScope)&&!normalizeScopeRef(finalRef)) return null;
+            return updateMemoryRecord(id,patch);
         }
 
         function getMemoriesByScope(scope) {
             if (!isValidMemoryScope(scope)) return [];
-            return getCanonicalMemories().filter(record => record.scope === scope);
+            return getCanonicalMemories().filter(record=>record.scope===scope);
         }
 
         function getMemoriesByAccessMode(access) {
             if (!isValidMemoryAccessMode(access)) return [];
-            return getCanonicalMemories().filter(record => record.access === access);
+            return getCanonicalMemories().filter(record=>record.access===access);
         }
 
         // Task 106: Memory Epistemic Status Runtime. Pure/read-only checks
@@ -9258,17 +9404,18 @@
         // Compilation. Evidence is only surfaced when explicitly referenced
         // by retrieved canonical memory, and compiled citations are locked to
         // items actually placed into the context projection.
-        function expandMemoryEvidence(records, limit = 6) {
+        function expandMemoryEvidence(records, limit = 6, scopeContext) {
             if (!Array.isArray(records)) return [];
             const cap = (typeof limit === "number" && isFinite(limit) && limit > 0) ? Math.floor(limit) : 6;
+            const ctx=normalizeMemoryScopeContext(scopeContext||getActiveMemoryScopeContext());
             const out = [];
             const seen = new Set();
             for (const owner of records) {
-                if (!isCanonicalMemoryRecord(owner) || !Array.isArray(owner.evidenceRefs)) continue;
+                if (!isCanonicalMemoryRecord(owner) || !isMemoryVisibleInScope(owner,ctx) || !Array.isArray(owner.evidenceRefs)) continue;
                 for (const ref of owner.evidenceRefs) {
                     if (!isCanonicalEvidenceRefShape(ref) || ref.type !== "memory") continue;
                     const evidence = getCanonicalMemoryById(ref.source);
-                    if (!evidence || seen.has(evidence.id) || records.some(record => record && record.id === evidence.id)) continue;
+                    if (!evidence || !isMemoryVisibleInScope(evidence,ctx) || seen.has(evidence.id) || records.some(record => record && record.id === evidence.id)) continue;
                     seen.add(evidence.id);
                     out.push({ record: evidence, evidenceFor: [owner.id], relation: ref.relation });
                     if (out.length >= cap) return out;
@@ -9296,9 +9443,10 @@
             const opts = (options && typeof options === "object" && !Array.isArray(options)) ? options : {};
             const primaryLimit = (typeof opts.primaryLimit === "number" && isFinite(opts.primaryLimit) && opts.primaryLimit > 0) ? Math.floor(opts.primaryLimit) : 3;
             const evidenceLimit = (typeof opts.evidenceLimit === "number" && isFinite(opts.evidenceLimit) && opts.evidenceLimit > 0) ? Math.floor(opts.evidenceLimit) : 6;
-            const retrieval = retrieveMemoryIntelligence(query, primaryLimit);
+            const scopeContext=normalizeMemoryScopeContext(opts.scopeContext||getActiveMemoryScopeContext());
+            const retrieval = retrieveMemoryIntelligence(query, primaryLimit, scopeContext);
             const primary = retrieval.memories.slice(0, primaryLimit);
-            const expanded = expandMemoryEvidence(primary, evidenceLimit);
+            const expanded = expandMemoryEvidence(primary, evidenceLimit, scopeContext);
             const allRecords = primary.concat(expanded.map(item => item.record));
             const conflicts = buildMemoryConflictAnnotations(allRecords);
             const items = [];
@@ -9309,6 +9457,7 @@
                     id: record.id, role: "primary", type: record.type, content: record.content,
                     provenanceSource: provenance && provenance.source ? provenance.source : null,
                     authorityLevel: authority ? authority.level : null,
+                    scope: record.scope || null, scopeRef: record.scopeRef || null, access: record.access || null,
                     evidenceFor: [], evidenceRelation: null,
                     conflicts: (conflicts.get(record.id) || []).map(x => ({ withId: x.withId, outcome: x.outcome, signals: x.signals.slice() }))
                 });
@@ -9321,18 +9470,20 @@
                     id: record.id, role: "evidence", type: record.type, content: record.content,
                     provenanceSource: provenance && provenance.source ? provenance.source : null,
                     authorityLevel: authority ? authority.level : null,
+                    scope: record.scope || null, scopeRef: record.scopeRef || null, access: record.access || null,
                     evidenceFor: entry.evidenceFor.slice(), evidenceRelation: entry.relation,
                     conflicts: (conflicts.get(record.id) || []).map(x => ({ withId: x.withId, outcome: x.outcome, signals: x.signals.slice() }))
                 });
             });
-            return { query: normalizeMemoryQuery(query), intent: retrieval.intent, primary: primary, items: items, diagnostics: retrieval.diagnostics };
+            return { query: normalizeMemoryQuery(query), intent: retrieval.intent, primary: primary, items: items, diagnostics: Object.assign({},retrieval.diagnostics,{scopeContext}) };
         }
 
         function serializeMemoryContextItem(item) {
             if (!item || typeof item !== "object" || typeof item.id !== "string" || typeof item.content !== "string") return "";
             const source = item.provenanceSource || "unknown";
             const authority = item.authorityLevel || "unknown";
-            let meta = "[M:" + item.id + "][" + item.role + "][" + item.type + "][source:" + source + "][authority:" + authority + "]";
+            let meta = "[M:" + item.id + "][" + item.role + "][" + item.type + "][source:" + source + "][authority:" + authority + "]" +
+                "[scope:" + (item.scope || "legacy-global") + (item.scopeRef ? ":" + item.scopeRef : "") + "]";
             if (item.role === "evidence" && item.evidenceFor.length > 0) meta += "[evidence-for:" + item.evidenceFor.join(",") + "]";
             if (Array.isArray(item.conflicts) && item.conflicts.length > 0) meta += "[conflict:" + item.conflicts.map(c => c.outcome + "@" + c.withId).join(",") + "]";
             return meta + " " + item.content;
@@ -9386,10 +9537,10 @@
 
         const MEMORY_CONTEXT_CHAR_LIMIT = 800;
 
-        function getUsableMemoryContext(query) {
+        function getUsableMemoryContext(query, scopeContext) {
             const empty = { valid: false, memories: [], text: "" };
             if (typeof query !== "string" || query.trim() === "") return empty;
-            const built = buildMemoryContext(query);
+            const built = buildMemoryContext(query,{scopeContext:scopeContext||getActiveMemoryScopeContext()});
             const validated = validateMemoryContext(built);
             if (!validated.valid) return empty;
             return {
@@ -9429,8 +9580,10 @@
             };
         }
 
-        function buildMemoryContext(query) {
-            const reconstructed = reconstructMemoryContext(query, { primaryLimit: 3, evidenceLimit: 6 });
+        function buildMemoryContext(query, options) {
+            const opts=options&&typeof options==="object"&&!Array.isArray(options)?options:{};
+            const scopeContext=normalizeMemoryScopeContext(opts.scopeContext||getActiveMemoryScopeContext());
+            const reconstructed = reconstructMemoryContext(query, { primaryLimit: 3, evidenceLimit: 6, scopeContext });
             const compiled = compileMemoryContext(reconstructed, { maxChars: MEMORY_CONTEXT_CHAR_LIMIT, maxItems: 9 });
             return {
                 memories: reconstructed.primary,
@@ -9656,11 +9809,12 @@
             };
         }
 
-        function retrieveMemoryIntelligence(query, limit = 3) {
+        function retrieveMemoryIntelligence(query, limit = 3, scopeContext) {
             const cap = (typeof limit === "number" && isFinite(limit) && limit > 0) ? Math.floor(limit) : 3;
-            const source = getCanonicalMemories().filter(isMemoryEligibleForNormalRetrieval);
+            const ctx=normalizeMemoryScopeContext(scopeContext||getActiveMemoryScopeContext());
+            const source = filterMemoriesByScopeContext(getCanonicalMemories(),ctx).filter(isMemoryEligibleForNormalRetrieval);
             const intent = detectMemoryRetrievalIntent(query, source);
-            const emptyDiagnostics = { lexical: 0, relationExpanded: 0, considered: 0, fused: 0, sources: {}, rankingMode: "weighted" };
+            const emptyDiagnostics = { lexical: 0, relationExpanded: 0, considered: 0, fused: 0, sources: {}, rankingMode: "weighted", scopedEligible: source.length };
             if (!intent.useMemory) return { intent: intent, memories: [], diagnostics: emptyDiagnostics };
 
             const entityTokens = intent.intents.includes("entity") ? getMemoryEntityQueryTokens(query) : [];
@@ -9709,6 +9863,7 @@
                     fused: fused.length,
                     sources: sourceCounts,
                     rankingMode: "weighted",
+                    scopedEligible: source.length,
                     hierarchy: {
                         initialFused: hierarchy.fused,
                         initialConsidered: hierarchy.considered,
