@@ -197,5 +197,39 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   const r=await page.evaluate(()=>{document.documentElement.setAttribute('dir','rtl');openSettings();const section=document.getElementById('providersSection');section.open=true;const summary=section.querySelector('summary'),card=document.getElementById('routeStatusCard'),modal=document.querySelector('#settingsModal .modal-content');const out={direction:getComputedStyle(summary).direction,cardDirection:getComputedStyle(card).direction,overflow:modal.scrollWidth<=modal.clientWidth+1,summaryHeight:summary.getBoundingClientRect().height};document.documentElement.setAttribute('dir','ltr');section.open=false;return out});
   assert.equal(r.direction,'rtl');assert.ok(['rtl','ltr'].includes(r.cardDirection));assert.equal(r.overflow,true);assert.ok(r.summaryHeight>=44);
  });
+
+ await test('performance polish bounds 500-message chat DOM without mutating canonical history',async()=>{
+  const r=await page.evaluate(()=>{const old=currentRoom,id='perf-long-'+Date.now();rooms[id]=createEmptyRoom();roomTitles[id]='Perf';for(let i=0;i<500;i++)rooms[id].history.push({role:i%2?'assistant':'user',content:'message '+i});currentRoom=id;chatRenderLimits.delete(id);renderChatHistory();const chat=document.getElementById('chat'),out={canonical:rooms[id].history.length,rendered:chat.querySelectorAll('.message').length,hidden:chat.querySelector('.history-window-control button')?.textContent||'',regen:!!chat.querySelector('.message.assistant:last-of-type .regenerate-btn')||!!chat.querySelector('.regenerate-btn')};delete rooms[id];delete roomTitles[id];chatRenderLimits.delete(id);currentRoom=old;renderChatHistory();return out});
+  assert.equal(r.canonical,500);assert.ok(r.rendered<=100);assert.ok(r.hidden.includes('400 hidden'));assert.equal(r.regen,true);
+ });
+ await test('performance polish show-earlier expands projection without changing history',async()=>{
+  const r=await page.evaluate(()=>new Promise(resolve=>{const old=currentRoom,id='perf-expand-'+Date.now();rooms[id]=createEmptyRoom();roomTitles[id]='Perf expand';for(let i=0;i<350;i++)rooms[id].history.push({role:i%2?'assistant':'user',content:'row '+i});currentRoom=id;chatRenderLimits.delete(id);renderChatHistory();const before=document.querySelectorAll('#chat .message').length,canonicalBefore=rooms[id].history.length;showEarlierChatMessages();requestAnimationFrame(()=>requestAnimationFrame(()=>{const after=document.querySelectorAll('#chat .message').length,canonicalAfter=rooms[id].history.length,limit=getChatRenderLimit(id);delete rooms[id];delete roomTitles[id];chatRenderLimits.delete(id);currentRoom=old;renderChatHistory();resolve({before,after,canonicalBefore,canonicalAfter,limit})}))}));
+  assert.equal(r.canonicalBefore,350);assert.equal(r.canonicalAfter,350);assert.ok(r.after>r.before);assert.equal(r.limit,200);
+ });
+ await test('performance polish streaming UI coalesces bursts and preserves latest text',async()=>{
+  const r=await page.evaluate(()=>new Promise(resolve=>{const before=SevenAppReliability.snapshot().streaming;const bubble=addMessage('assistant','',{suppressScroll:true});for(let i=0;i<50;i++)scheduleStreamingBubbleUpdate(bubble,'chunk-'+i);requestAnimationFrame(()=>requestAnimationFrame(()=>{const after=SevenAppReliability.snapshot().streaming;const text=bubble.textContent;bubble.closest('.message')?.remove();resolve({text,requests:after.requests-before.requests,writes:after.writes-before.writes})}))}));
+  assert.equal(r.text,'chunk-49');assert.equal(r.requests,50);assert.ok(r.writes>=1&&r.writes<50);
+ });
+ await test('performance polish background state does not cancel active generation',async()=>{
+  const r=await page.evaluate(()=>{const oldGenerating=isGenerating,oldStop=stopRequested;isGenerating=true;stopRequested=false;const bg=updateAppVisibilityStateV1(true),during={generating:isGenerating,stop:stopRequested,cls:document.documentElement.classList.contains('app-backgrounded')};const fg=updateAppVisibilityStateV1(false);isGenerating=oldGenerating;stopRequested=oldStop;return {bg,fg,during,afterClass:document.documentElement.classList.contains('app-backgrounded')}});
+  assert.equal(r.bg,'background');assert.equal(r.fg,'foreground');assert.deepEqual(r.during,{generating:true,stop:false,cls:true});assert.equal(r.afterClass,false);
+ });
+ await test('performance polish network projection is advisory and deterministic',async()=>{
+  const r=await page.evaluate(()=>{const a=updateNetworkUiStateV1(false),da=document.documentElement.dataset.network,b=updateNetworkUiStateV1(true),db=document.documentElement.dataset.network;updateNetworkUiStateV1();return {a,da,b,db}});
+  assert.deepEqual(r,{a:'offline',da:'offline',b:'online',db:'online'});
+ });
+ await test('performance polish visual viewport and diagnostics initialize safely',async()=>{
+  const r=await page.evaluate(()=>{const vv=updateVisualViewportV1(),snap=SevenAppReliability.snapshot(),raw=JSON.stringify(SevenAppReliability.snapshot());return {width:vv.width,height:vv.height,version:snap.version,visibility:snap.visibility,network:snap.network,hasRender:!!snap.renderWindow,secret:/gsk_|sk-or-|nvapi-|AIza|Authorization|Bearer/i.test(raw),content:/message-499|chunk-49|Relevant memories/.test(raw)}});
+  assert.ok(r.width>0&&r.height>0);assert.equal(r.version,1);assert.ok(['foreground','background'].includes(r.visibility));assert.ok(['online','offline','unknown'].includes(r.network));assert.equal(r.hasRender,true);assert.equal(r.secret,false);assert.equal(r.content,false);
+ });
+ await test('performance polish 320px chat and settings avoid horizontal overflow',async()=>{
+  await page.setViewportSize({width:320,height:800});
+  const r=await page.evaluate(()=>{document.getElementById('sidebar').classList.add('collapsed');updateVisualViewportV1();openSettings();const settings=document.querySelector('#settingsModal .modal-content'),composer=document.querySelector('.composer'),main=document.querySelector('.main');return {doc:document.documentElement.scrollWidth<=window.innerWidth+1,settings:settings.scrollWidth<=settings.clientWidth+1,settingsRight:settings.getBoundingClientRect().right<=window.innerWidth+1,composer:composer.getBoundingClientRect().right<=window.innerWidth+1&&composer.getBoundingClientRect().left>=-1,main:main.getBoundingClientRect().right<=window.innerWidth+1}});
+  assert.equal(r.doc,true);assert.equal(r.settings,true);assert.equal(r.settingsRight,true);assert.equal(r.composer,true);assert.equal(r.main,true);
+ });
+ await test('performance polish RTL remains bounded at 320px',async()=>{
+  const r=await page.evaluate(()=>{document.documentElement.setAttribute('dir','rtl');document.getElementById('sidebar').classList.add('collapsed');openSettings();const modal=document.querySelector('#settingsModal .modal-content'),chat=document.getElementById('chat'),out={modal:modal.scrollWidth<=modal.clientWidth+1,chat:chat.scrollWidth<=chat.clientWidth+1,direction:getComputedStyle(document.body).direction};document.documentElement.setAttribute('dir','ltr');return out});
+  assert.equal(r.modal,true);assert.equal(r.chat,true);assert.equal(r.direction,'rtl');
+ });
  await browser.close();server.close();fs.writeFileSync(require('path').join(__dirname,'results.json'),JSON.stringify({results,liveProviderCalls:false},null,2));
 })().catch(e=>{console.error(e);server.close();process.exit(1)});
