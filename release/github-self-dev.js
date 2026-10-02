@@ -5,7 +5,7 @@ const d=r.document;
 const CLIENT_ID="Iv23lilyiGs3RQPZrPjq";
 const REPO="Awfdfhy/seven-ai-true";
 const REPO_API="/repos/"+REPO;
-const DEFAULT_BASE="ultimate-polish-free-apis-v1";
+const DEFAULT_BASE="main";
 const PROTECTED_PATHS=[
   /^\.github\/workflows\//,
   /^evolution\//,
