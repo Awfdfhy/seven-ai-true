@@ -439,5 +439,109 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   });
   assert.equal(r.secret,false);assert.equal(r.full,false);
  });
+
+ await test('web search gateway URL validation requires clean HTTPS',async()=>{
+  const r=await page.evaluate(()=>({
+    good:SevenSearchV2.normalizeGatewayUrl('https://gateway.example/path/'),
+    http:SevenSearchV2.normalizeGatewayUrl('http://gateway.example'),
+    credentialed:SevenSearchV2.normalizeGatewayUrl('https://user:pass@gateway.example')
+  }));
+  assert.equal(r.good,'https://gateway.example/path');assert.equal(r.http,null);assert.equal(r.credentialed,null);
+ });
+ await test('web search gateway joins the parallel pool and reader upgrades source state',async()=>{
+  const r=await page.evaluate(async()=>{
+    const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
+    SEARCH_GATEWAY_URL='https://gateway.example';SEARCH_GATEWAY_KEY='gateway-secret-fixture';
+    fetchWithTimeout=async (url,opts)=>{
+      const s=String(url);
+      if(s==='https://gateway.example/v1/search'){
+        const body=JSON.parse(opts.body);
+        if(opts.headers['X-Seven-Gateway-Key']!=='gateway-secret-fixture')throw new Error('missing key');
+        return {ok:true,json:async()=>({capability:'general_web',backend:'brave',results:[{title:'General Android source',url:'https://docs.example.com/android',snippet:'Search snippet',rank:1,sourceType:'documentation'}]})};
+      }
+      if(s==='https://gateway.example/v1/read'){
+        const body=JSON.parse(opts.body);
+        return {ok:true,json:async()=>({readState:'read_success',title:'General Android source',text:'General article body with verified Android details.',finalUrl:body.url,contentType:'text/html',injectionSuspected:false})};
+      }
+      return {ok:false,json:async()=>({})};
+    };
+    try{
+      const out=await performWebSearchV2('latest Android update');
+      const raw=JSON.stringify({diagnostics:out?.diagnostics,context:out?.contextText,sources:out?.sources});
+      return {
+        capability:out?.capability,
+        status:out?.status,
+        engines:(out?.sources||[]).map(x=>x.engine),
+        states:(out?.sources||[]).map(x=>x.readState),
+        pagesRead:out?.diagnostics?.pagesRead,
+        hasBody:(out?.contextText||'').includes('General article body'),
+        leaked:raw.includes('gateway-secret-fixture')
+      };
+    }finally{fetchWithTimeout=oldFetch;SEARCH_GATEWAY_URL=oldUrl;SEARCH_GATEWAY_KEY=oldKey;}
+  });
+  assert.equal(r.capability,'general_web');assert.equal(r.status,'success');assert.ok(r.engines.includes('gateway_brave'));assert.ok(r.states.includes('read_success'));assert.ok(r.pagesRead>=1);assert.equal(r.hasBody,true);assert.equal(r.leaked,false);
+ });
+ await test('web search gateway failure degrades truthfully to limited capability',async()=>{
+  const r=await page.evaluate(async()=>{
+    const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
+    SEARCH_GATEWAY_URL='https://gateway.example';SEARCH_GATEWAY_KEY='';
+    fetchWithTimeout=async (url)=>{
+      const s=String(url);
+      if(s.includes('gateway.example'))return {ok:false,status:502,json:async()=>({error:'down'})};
+      if(s.includes('api.duckduckgo.com'))return {ok:true,json:async()=>({Heading:'Fallback',AbstractText:'Fallback knowledge result',AbstractURL:'https://example.com/fallback',RelatedTopics:[]})};
+      return {ok:false,json:async()=>({})};
+    };
+    try{
+      const out=await performWebSearchV2('fallback query');
+      return {capability:out?.capability,status:out?.status,configured:out?.diagnostics?.gatewayConfigured,sources:out?.sources?.length||0};
+    }finally{fetchWithTimeout=oldFetch;SEARCH_GATEWAY_URL=oldUrl;SEARCH_GATEWAY_KEY=oldKey;}
+  });
+  assert.equal(r.capability,'limited_capability');assert.equal(r.status,'partial');assert.equal(r.configured,true);assert.ok(r.sources>=1);
+ });
+ await test('web search gateway reader failure stays explicit and preserves snippet evidence',async()=>{
+  const r=await page.evaluate(async()=>{
+    const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
+    SEARCH_GATEWAY_URL='https://gateway.example';SEARCH_GATEWAY_KEY='';
+    fetchWithTimeout=async (url,opts)=>{
+      const s=String(url);
+      if(s.endsWith('/v1/search'))return {ok:true,json:async()=>({capability:'general_web_degraded',backend:'duckduckgo_html',results:[{title:'Result',url:'https://site.example/page',snippet:'Useful search snippet',rank:1}]})};
+      if(s.endsWith('/v1/read'))throw Object.assign(new Error('reader timeout'),{code:'PROVIDER_TIMEOUT'});
+      return {ok:false,json:async()=>({})};
+    };
+    try{
+      const out=await performWebSearchV2('reader failure');
+      const source=out?.sources?.find(x=>x.url.includes('site.example'));
+      return {capability:out?.capability,state:source?.readState,context:out?.contextText||'',blocked:out?.diagnostics?.pagesBlocked};
+    }finally{fetchWithTimeout=oldFetch;SEARCH_GATEWAY_URL=oldUrl;SEARCH_GATEWAY_KEY=oldKey;}
+  });
+  assert.equal(r.capability,'general_web_degraded');assert.equal(r.state,'failed');assert.ok(r.context.includes('Useful search snippet'));assert.ok(r.blocked>=1);
+ });
+ await test('web search gateway disabled preserves knowledge-sources-only behavior',async()=>{
+  const r=await page.evaluate(async()=>{
+    const oldFetch=fetchWithTimeout,oldUrl=SEARCH_GATEWAY_URL,oldKey=SEARCH_GATEWAY_KEY;
+    SEARCH_GATEWAY_URL='';SEARCH_GATEWAY_KEY='should-not-be-used';
+    fetchWithTimeout=async url=>{
+      const s=String(url);
+      if(s.includes('api.duckduckgo.com'))return {ok:true,json:async()=>({Heading:'Local',AbstractText:'Local result',AbstractURL:'https://example.com/local',RelatedTopics:[]})};
+      return {ok:false,json:async()=>({})};
+    };
+    try{
+      const out=await performWebSearchV2('local fallback');
+      return {capability:out?.capability,gatewayConfigured:out?.diagnostics?.gatewayConfigured,keyLeaked:JSON.stringify(out||{}).includes('should-not-be-used')};
+    }finally{fetchWithTimeout=oldFetch;SEARCH_GATEWAY_URL=oldUrl;SEARCH_GATEWAY_KEY=oldKey;}
+  });
+  assert.equal(r.capability,'knowledge_sources_only');assert.equal(r.gatewayConfigured,false);assert.equal(r.keyLeaked,false);
+ });
+ await test('web search gateway settings are present without entering search context automatically',async()=>{
+  const r=await page.evaluate(()=>{
+    openSettings();
+    const ids=['searchGatewayUrlInput','searchGatewayKeyInput','searchGatewayStatus'];
+    const present=ids.every(id=>!!document.getElementById(id));
+    const keyType=document.getElementById('searchGatewayKeyInput')?.type;
+    closeSettings();
+    return {present,keyType};
+  });
+  assert.equal(r.present,true);assert.equal(r.keyType,'password');
+ });
  await browser.close();server.close();fs.writeFileSync(require('path').join(__dirname,'results.json'),JSON.stringify({results,liveProviderCalls:false},null,2));
 })().catch(e=>{console.error(e);server.close();process.exit(1)});
