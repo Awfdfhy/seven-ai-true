@@ -1879,7 +1879,16 @@
             const configured = Object.keys(FREE_PROVIDER_REGISTRY).filter(isFreeProviderConfigured);
             const dynamicCount = catalog.filter(m => m.discovered).length;
             const mode = currentRoutingMode === "auto" ? "Auto Free" : "Manual preference";
-            el.textContent = `${mode} • ${catalog.length} verified-free catalog entries (${dynamicCount} zero-price discovered) • ${configured.length} configured providers • ${freeModelQuarantine.length} unproven models quarantined • paid fallback: OFF`;
+            const healthRows = configured.map(providerHealthSummaryV2);
+            const cooling = healthRows.filter(x=>x.state==="cooldown").length;
+            const degraded = healthRows.filter(x=>x.state==="degraded"||x.state==="poor").length;
+            const quota = healthRows.filter(x=>x.quota?.state==="near_limit").length;
+            const healthText = cooling ? cooling+" provider"+(cooling===1?"":"s")+" cooling down" :
+                (degraded ? degraded+" provider"+(degraded===1?"":"s")+" degraded" : "provider health healthy");
+            const quotaText = quota ? " • "+quota+" provider"+(quota===1?"":"s")+" near soft limit" : "";
+            el.textContent = mode+" • "+catalog.length+" verified-free catalog entries ("+dynamicCount+" zero-price discovered) • "+
+                configured.length+" configured providers • "+healthText+quotaText+" • "+freeModelQuarantine.length+
+                " unproven models quarantined • paid fallback: OFF";
         }
 
         // Populates reasoning/output controls from the registry rather than a
@@ -2337,6 +2346,17 @@
             const keys=Object.keys(freeModelUsage).sort().reverse(); for(const k of keys.slice(35))delete freeModelUsage[k];
             try{localStorage.setItem(FREE_USAGE_KEY,JSON.stringify(freeModelUsage));}catch(e){}
         }
+
+        // ---------- Provider Health v2 ----------
+        const PROVIDER_HEALTH_V2 = Object.freeze({
+            schemaVersion: 2,
+            maxLatencySamples: 12,
+            ewmaAlpha: 0.25,
+            maxRecords: 180,
+            maxCooldownMs: 30 * 60 * 1000,
+            providerCircuitFailureThreshold: 3
+        });
+
         function loadFreeModelHealth() {
             try {
                 const value = JSON.parse(localStorage.getItem(FREE_MODEL_HEALTH_KEY) || "{}");
@@ -2346,62 +2366,331 @@
         let freeModelHealth = loadFreeModelHealth();
 
         function freeHealthKey(provider, id) { return provider + "\n" + id; }
-        function getFreeModelHealth(provider, id) {
-            const raw = freeModelHealth[freeHealthKey(provider,id)] || {};
+
+        function boundedLatencySamplesV2(value) {
+            return (Array.isArray(value) ? value : [])
+                .map(Number)
+                .filter(x => Number.isFinite(x) && x > 0 && x <= 10 * 60 * 1000)
+                .slice(-PROVIDER_HEALTH_V2.maxLatencySamples);
+        }
+
+        function normalizeStatusFamilyCountsV2(value) {
+            const allowed = ["auth","rate_limit","not_found","client","server","timeout","network","cancelled","unknown"];
+            const out = {};
+            for (const key of allowed) out[key] = Math.max(0, Number(value && value[key]) || 0);
+            return out;
+        }
+
+        function normalizeHealthRecordV2(raw) {
+            const source = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+            const legacyLatency = Math.max(0, Number(source.latencyMs) || 0);
+            const ewma = Math.max(0, Number(source.ewmaLatencyMs) || legacyLatency);
             return {
-                successes: Math.max(0, Number(raw.successes) || 0),
-                failures: Math.max(0, Number(raw.failures) || 0),
-                latencyMs: Math.max(0, Number(raw.latencyMs) || 0),
-                lastSuccessAt: Math.max(0, Number(raw.lastSuccessAt) || 0),
-                lastFailureAt: Math.max(0, Number(raw.lastFailureAt) || 0),
-                cooldownUntil: Math.max(0, Number(raw.cooldownUntil) || 0),
-                lastStatus: Number.isFinite(Number(raw.lastStatus)) ? Number(raw.lastStatus) : null
+                schemaVersion: PROVIDER_HEALTH_V2.schemaVersion,
+                successes: Math.max(0, Number(source.successes) || 0),
+                failures: Math.max(0, Number(source.failures) || 0),
+                consecutiveSuccesses: Math.max(0, Number(source.consecutiveSuccesses) || 0),
+                consecutiveFailures: Math.max(0, Number(source.consecutiveFailures) || 0),
+                latencyMs: ewma,
+                ewmaLatencyMs: ewma,
+                latencySamples: boundedLatencySamplesV2(source.latencySamples && source.latencySamples.length ? source.latencySamples : (legacyLatency ? [legacyLatency] : [])),
+                lastSuccessAt: Math.max(0, Number(source.lastSuccessAt) || 0),
+                lastFailureAt: Math.max(0, Number(source.lastFailureAt) || 0),
+                lastAttemptAt: Math.max(0, Number(source.lastAttemptAt) || Math.max(Number(source.lastSuccessAt)||0, Number(source.lastFailureAt)||0)),
+                cooldownUntil: Math.max(0, Number(source.cooldownUntil) || 0),
+                lastStatus: Number.isFinite(Number(source.lastStatus)) ? Number(source.lastStatus) : null,
+                lastErrorClass: typeof source.lastErrorClass === "string" ? source.lastErrorClass.slice(0,32) : null,
+                statusFamilyCounts: normalizeStatusFamilyCountsV2(source.statusFamilyCounts),
+                recoveryCount: Math.max(0, Number(source.recoveryCount) || 0)
             };
         }
+
+        function getFreeModelHealth(provider, id) {
+            return normalizeHealthRecordV2(freeModelHealth[freeHealthKey(provider,id)] || {});
+        }
+
         function saveFreeModelHealth() {
-            try { localStorage.setItem(FREE_MODEL_HEALTH_KEY, JSON.stringify(freeModelHealth)); } catch (e) {}
+            try {
+                const entries = Object.entries(freeModelHealth).map(([key,value]) => {
+                    const record = normalizeHealthRecordV2(value);
+                    return { key, record, touched: Math.max(record.lastAttemptAt, record.lastSuccessAt, record.lastFailureAt) };
+                });
+                const providerRows = entries.filter(x => x.key.endsWith("\n*"));
+                const modelRows = entries.filter(x => !x.key.endsWith("\n*")).sort((a,b)=>b.touched-a.touched);
+                const kept = [...providerRows, ...modelRows.slice(0, Math.max(0, PROVIDER_HEALTH_V2.maxRecords-providerRows.length))];
+                freeModelHealth = Object.fromEntries(kept.map(x=>[x.key,x.record]));
+                localStorage.setItem(FREE_MODEL_HEALTH_KEY, JSON.stringify(freeModelHealth));
+            } catch (e) {}
         }
-        function freeFailureCooldownMs(status) {
-            if (status === 401 || status === 403) return 10 * 60 * 1000;
-            if (status === 404) return 30 * 60 * 1000;
-            if (status === 429) return 2 * 60 * 1000;
-            if (status >= 500) return 30 * 1000;
-            return 15 * 1000;
+
+        function classifyProviderFailureV2(error) {
+            if (stopRequested === true || (error && error.name === "AbortError" && !error.code)) return "cancelled";
+            const code = String(error && error.code || "");
+            const status = Number(error && error.status) || 0;
+            if (code === "PROVIDER_TIMEOUT" || code === "REQUEST_TIMEOUT" || (error && error.isTimeout === true)) return "timeout";
+            if (status === 401 || status === 403) return "auth";
+            if (status === 429) return "rate_limit";
+            if (status === 404) return "not_found";
+            if (status >= 500) return "server";
+            if (status >= 400) return "client";
+            if (error && (error.name === "TypeError" || /network|fetch failed|failed to fetch|connection|socket/i.test(String(error.message||"")))) return "network";
+            if (error && error.name === "AbortError") return "cancelled";
+            return "unknown";
         }
+
+        function parseRetryAfterMsV2(value, now=Date.now()) {
+            if (value == null || value === "") return 0;
+            const numeric = Number(value);
+            if (Number.isFinite(numeric) && numeric >= 0) return Math.min(PROVIDER_HEALTH_V2.maxCooldownMs, Math.round(numeric * 1000));
+            const when = Date.parse(String(value));
+            if (!Number.isFinite(when)) return 0;
+            return Math.max(0, Math.min(PROVIDER_HEALTH_V2.maxCooldownMs, when-now));
+        }
+
+        function retryAfterMsFromResponseV2(response) {
+            try { return parseRetryAfterMsV2(response && response.headers && response.headers.get("retry-after")); }
+            catch (_) { return 0; }
+        }
+
+        function baseCooldownForClassV2(errorClass) {
+            switch (errorClass) {
+                case "auth": return 10 * 60 * 1000;
+                case "rate_limit": return 2 * 60 * 1000;
+                case "not_found": return 30 * 60 * 1000;
+                case "client": return 30 * 1000;
+                case "server": return 20 * 1000;
+                case "timeout": return 15 * 1000;
+                case "network": return 10 * 1000;
+                case "cancelled": return 0;
+                default: return 15 * 1000;
+            }
+        }
+
+        function dynamicCooldownMsV2(errorClass, consecutiveFailures, retryAfterMs=0) {
+            if (errorClass === "cancelled") return 0;
+            const base = baseCooldownForClassV2(errorClass);
+            const streak = Math.max(1, Number(consecutiveFailures)||1);
+            const multiplier = Math.pow(2, Math.min(4, streak-1));
+            const computed = Math.min(PROVIDER_HEALTH_V2.maxCooldownMs, Math.round(base * multiplier));
+            return Math.min(PROVIDER_HEALTH_V2.maxCooldownMs, Math.max(computed, Math.max(0,Number(retryAfterMs)||0)));
+        }
+
+        function addLatencySampleV2(record, latencyMs) {
+            const latency = Math.max(0, Number(latencyMs)||0);
+            if (!latency) return record;
+            const samples = boundedLatencySamplesV2([...(record.latencySamples||[]), latency]);
+            const previous = Math.max(0, Number(record.ewmaLatencyMs)||0);
+            const ewma = previous
+                ? Math.round(previous * (1-PROVIDER_HEALTH_V2.ewmaAlpha) + latency * PROVIDER_HEALTH_V2.ewmaAlpha)
+                : Math.round(latency);
+            record.latencySamples = samples;
+            record.ewmaLatencyMs = ewma;
+            record.latencyMs = ewma;
+            return record;
+        }
+
+        function recordHealthSuccessV2(provider, id, latencyMs, now=Date.now()) {
+            const key = freeHealthKey(provider,id);
+            const old = getFreeModelHealth(provider,id);
+            const recovered = old.consecutiveFailures > 0 || old.cooldownUntil > now || ["degraded","poor","cooldown"].includes(providerHealthScoreV2(provider,id,now).state);
+            const next = normalizeHealthRecordV2(Object.assign({},old,{
+                successes: old.successes + 1,
+                consecutiveSuccesses: old.consecutiveSuccesses + 1,
+                consecutiveFailures: 0,
+                lastSuccessAt: now,
+                lastAttemptAt: now,
+                cooldownUntil: 0,
+                lastStatus: 200,
+                lastErrorClass: null,
+                recoveryCount: old.recoveryCount + (recovered ? 1 : 0)
+            }));
+            addLatencySampleV2(next,latencyMs);
+            freeModelHealth[key] = next;
+            return next;
+        }
+
+        function recordHealthFailureV2(provider, id, error, now=Date.now()) {
+            const errorClass = classifyProviderFailureV2(error);
+            if (errorClass === "cancelled") return getFreeModelHealth(provider,id);
+            const key = freeHealthKey(provider,id);
+            const old = getFreeModelHealth(provider,id);
+            const status = Number(error && error.status) || 0;
+            const counts = normalizeStatusFamilyCountsV2(old.statusFamilyCounts);
+            counts[errorClass] = (counts[errorClass]||0) + 1;
+            const consecutiveFailures = old.consecutiveFailures + 1;
+            const cooldown = dynamicCooldownMsV2(errorClass, consecutiveFailures, Number(error && error.retryAfterMs)||0);
+            const next = normalizeHealthRecordV2(Object.assign({},old,{
+                failures: old.failures + 1,
+                consecutiveFailures,
+                consecutiveSuccesses: 0,
+                lastFailureAt: now,
+                lastAttemptAt: now,
+                cooldownUntil: now + cooldown,
+                lastStatus: status || null,
+                lastErrorClass: errorClass,
+                statusFamilyCounts: counts
+            }));
+            freeModelHealth[key] = next;
+            return next;
+        }
+
+        function shouldOpenProviderCircuitV2(errorClass, providerRecord) {
+            if (errorClass === "auth" || errorClass === "rate_limit") return true;
+            if (!["server","timeout","network"].includes(errorClass)) return false;
+            return providerRecord.consecutiveFailures + 1 >= PROVIDER_HEALTH_V2.providerCircuitFailureThreshold;
+        }
+
         function recordFreeRouteSuccess(model, latencyMs) {
             if (!model) return;
-            const key = freeHealthKey(model.provider, model.id);
-            const old = getFreeModelHealth(model.provider, model.id);
-            const latency = Math.max(0, Number(latencyMs) || 0);
-            freeModelHealth[key] = {
-                successes: old.successes + 1, failures: old.failures,
-                latencyMs: old.latencyMs ? Math.round(old.latencyMs * 0.7 + latency * 0.3) : Math.round(latency),
-                lastSuccessAt: Date.now(), lastFailureAt: old.lastFailureAt,
-                cooldownUntil: 0, lastStatus: 200
-            };
+            const now = Date.now();
+            recordHealthSuccessV2(model.provider, model.id, latencyMs, now);
+            // Any real success demonstrates that the provider is reachable and
+            // heals provider-wide degradation/circuit state.
+            recordHealthSuccessV2(model.provider, "*", latencyMs, now);
             saveFreeModelHealth();
         }
+
         function recordFreeRouteFailure(model, error) {
             if (!model) return;
-            const key = freeHealthKey(model.provider, model.id);
-            const old = getFreeModelHealth(model.provider, model.id);
-            const status = Number(error && error.status) || 0;
-            freeModelHealth[key] = {
-                successes: old.successes, failures: old.failures + 1, latencyMs: old.latencyMs,
-                lastSuccessAt: old.lastSuccessAt, lastFailureAt: Date.now(),
-                cooldownUntil: Date.now() + freeFailureCooldownMs(status), lastStatus: status || null
-            };
-            // Auth and quota failures are commonly provider-wide. Circuit-break
-            // the provider so Seven does not burn every model on the same dead key.
-            if ([401,403,429].includes(status)) {
-                const pKey=freeHealthKey(model.provider,"*"), pOld=getFreeModelHealth(model.provider,"*");
-                freeModelHealth[pKey]={successes:pOld.successes,failures:pOld.failures+1,latencyMs:pOld.latencyMs,lastSuccessAt:pOld.lastSuccessAt,lastFailureAt:Date.now(),cooldownUntil:Date.now()+freeFailureCooldownMs(status),lastStatus:status};
+            const errorClass = classifyProviderFailureV2(error);
+            if (errorClass === "cancelled") return;
+            const now = Date.now();
+            recordHealthFailureV2(model.provider, model.id, error, now);
+
+            const providerOld = getFreeModelHealth(model.provider,"*");
+            if (shouldOpenProviderCircuitV2(errorClass, providerOld)) {
+                const providerError = Object.assign(new Error(errorClass), {
+                    status: Number(error && error.status)||0,
+                    retryAfterMs: Number(error && error.retryAfterMs)||0,
+                    code: error && error.code
+                });
+                recordHealthFailureV2(model.provider, "*", providerError, now);
+            } else if (["server","timeout","network"].includes(errorClass)) {
+                // Track repeated provider-class failures without opening the
+                // circuit until the threshold is reached.
+                const key = freeHealthKey(model.provider,"*");
+                const counts = normalizeStatusFamilyCountsV2(providerOld.statusFamilyCounts);
+                counts[errorClass] = (counts[errorClass]||0)+1;
+                freeModelHealth[key] = normalizeHealthRecordV2(Object.assign({},providerOld,{
+                    failures: providerOld.failures+1,
+                    consecutiveFailures: providerOld.consecutiveFailures+1,
+                    consecutiveSuccesses: 0,
+                    lastFailureAt: now,
+                    lastAttemptAt: now,
+                    lastStatus: Number(error && error.status)||null,
+                    lastErrorClass:errorClass,
+                    statusFamilyCounts:counts
+                }));
             }
             saveFreeModelHealth();
         }
+
         function isFreeModelCoolingDown(model, now=Date.now()) {
-            return getFreeModelHealth(model.provider, model.id).cooldownUntil > now || getFreeModelHealth(model.provider,"*").cooldownUntil > now;
+            return getFreeModelHealth(model.provider, model.id).cooldownUntil > now ||
+                getFreeModelHealth(model.provider,"*").cooldownUntil > now;
         }
+
+        function quantileLatencyV2(samples, q) {
+            const list = boundedLatencySamplesV2(samples).sort((a,b)=>a-b);
+            if (!list.length) return 0;
+            const index = Math.max(0, Math.min(list.length-1, Math.ceil((list.length-1)*q)));
+            return Math.round(list[index]);
+        }
+
+        function getProviderQuotaPressureV2(provider) {
+            const usage = getFreeProviderUsage(provider);
+            const softCap = FREE_PROVIDER_SOFT_DAILY_REQUESTS[provider];
+            if (!softCap) return {state:"normal",ratio:null,requests:usage.requests,softCap:null};
+            const ratio = usage.requests / softCap;
+            return {
+                state: ratio >= .9 ? "near_limit" : (ratio >= .65 ? "elevated" : "normal"),
+                ratio: Math.max(0,ratio),
+                requests:usage.requests,
+                softCap
+            };
+        }
+
+        function providerHealthScoreV2(provider, id, now=Date.now()) {
+            const own = getFreeModelHealth(provider,id);
+            const broad = id === "*" ? own : getFreeModelHealth(provider,"*");
+            const cooldownUntil = Math.max(own.cooldownUntil,broad.cooldownUntil);
+            if (cooldownUntil > now) {
+                return {score:0,state:"cooldown",latencyMs:own.ewmaLatencyMs||broad.ewmaLatencyMs||0,cooldownUntil};
+            }
+
+            const decay = (at,halfLife) => at>0 ? Math.pow(.5,Math.max(0,now-at)/halfLife) : 0;
+            const ownFailureRecency = decay(own.lastFailureAt,30*60*1000);
+            const ownSuccessRecency = decay(own.lastSuccessAt,90*60*1000);
+            const broadFailureRecency = id==="*" ? 0 : decay(broad.lastFailureAt,30*60*1000);
+            const bayesian = (own.successes+3)/(own.successes+own.failures+6);
+
+            let score = .66 + (bayesian-.5)*.46;
+            score += Math.min(.11, ownSuccessRecency * .08 + Math.min(3,own.consecutiveSuccesses)*.01);
+            score -= Math.min(.28, ownFailureRecency * (.08 + Math.min(.20,own.consecutiveFailures*.045)));
+            score -= Math.min(.18, broadFailureRecency * (.06 + Math.min(.12,broad.consecutiveFailures*.03)));
+
+            if (own.lastErrorClass === "auth" && ownFailureRecency>.25) score -= .12;
+            if (own.lastErrorClass === "rate_limit" && ownFailureRecency>.25) score -= .10;
+            if (["server","timeout","network"].includes(own.lastErrorClass) && ownFailureRecency>.25) score -= .06;
+
+            score = clamp01V3(score);
+            return {
+                score,
+                state: score>=.72 ? "healthy" : (score>=.50 ? "degraded" : "poor"),
+                latencyMs: own.ewmaLatencyMs||broad.ewmaLatencyMs||0,
+                cooldownUntil:0
+            };
+        }
+
+        function safeProviderHealthSnapshotV2(provider,id) {
+            const record = getFreeModelHealth(provider,id);
+            const signal = providerHealthScoreV2(provider,id);
+            const quota = getProviderQuotaPressureV2(provider);
+            return {
+                schemaVersion:PROVIDER_HEALTH_V2.schemaVersion,
+                provider:String(provider||""),
+                model:String(id||""),
+                state:signal.state,
+                score:Number(signal.score.toFixed(4)),
+                ewmaLatencyMs:Math.round(record.ewmaLatencyMs||0),
+                p50LatencyMs:quantileLatencyV2(record.latencySamples,.50),
+                p90LatencyMs:quantileLatencyV2(record.latencySamples,.90),
+                successes:record.successes,
+                failures:record.failures,
+                consecutiveFailures:record.consecutiveFailures,
+                consecutiveSuccesses:record.consecutiveSuccesses,
+                lastStatus:record.lastStatus,
+                lastErrorClass:record.lastErrorClass,
+                cooldownRemainingMs:Math.max(0,record.cooldownUntil-Date.now()),
+                quota
+            };
+        }
+
+        function providerHealthSummaryV2(providerId) {
+            const models = getFreeModelCatalog().filter(m=>m.provider===providerId && m.free===true);
+            const snapshots = models.map(m=>safeProviderHealthSnapshotV2(providerId,m.id));
+            const states = snapshots.map(x=>x.state);
+            const broad = safeProviderHealthSnapshotV2(providerId,"*");
+            const state = broad.state==="cooldown" ? "cooldown" :
+                (states.includes("healthy") ? "healthy" : (states.includes("degraded") ? "degraded" : (states.includes("poor") ? "poor" : broad.state)));
+            return {
+                provider:providerId,
+                state,
+                quota:getProviderQuotaPressureV2(providerId),
+                models:snapshots.length
+            };
+        }
+
+        window.SevenProviderHealthV2 = Object.freeze({
+            version:PROVIDER_HEALTH_V2.schemaVersion,
+            normalize:normalizeHealthRecordV2,
+            classify:classifyProviderFailureV2,
+            score:(provider,id)=>providerHealthScoreV2(provider,id),
+            model:(provider,id)=>safeProviderHealthSnapshotV2(provider,id),
+            provider:providerHealthSummaryV2,
+            snapshot:(provider,id)=>id ? safeProviderHealthSnapshotV2(provider,id) : providerHealthSummaryV2(provider),
+            retryAfter:parseRetryAfterMsV2
+        });
 
         function providerAuthHeaders(providerId) {
             const token = getFreeProviderCredential(providerId);
@@ -2677,26 +2966,7 @@
         }
 
         function computeHealthSignalV3(model, now=Date.now()) {
-            const own = getFreeModelHealth(model.provider, model.id);
-            const provider = getFreeModelHealth(model.provider, "*");
-            const ownCooling = own.cooldownUntil > now;
-            const providerCooling = provider.cooldownUntil > now;
-            if (ownCooling || providerCooling) return {score:0,state:"cooldown",latencyMs:own.latencyMs||provider.latencyMs||0};
-
-            const decay = (at, halfLifeMs) => at > 0 ? Math.pow(.5, Math.max(0, now-at)/halfLifeMs) : 0;
-            const failRecency = decay(own.lastFailureAt, 30*60*1000);
-            const successRecency = decay(own.lastSuccessAt, 90*60*1000);
-            const providerFailRecency = decay(provider.lastFailureAt, 30*60*1000);
-            const effectiveSuccesses = own.successes * (.45 + .55*successRecency);
-            const effectiveFailures = own.failures * (.20 + .80*failRecency);
-            const reliability = (effectiveSuccesses + 3) / (effectiveSuccesses + effectiveFailures + 6);
-            let score = .62 + (reliability-.5)*.55 + Math.min(.08, own.successes*.006);
-            score -= Math.min(.25, failRecency * (.10 + Math.min(.15, own.failures*.025)));
-            score -= Math.min(.22, providerFailRecency * (.10 + Math.min(.12, provider.failures*.025)));
-            if ([401,403].includes(own.lastStatus) && failRecency > .25) score -= .18;
-            if (own.lastStatus === 429 && failRecency > .25) score -= .15;
-            score = clamp01V3(score);
-            return {score,state:score>=.72?"healthy":(score>=.50?"degraded":"poor"),latencyMs:own.latencyMs||provider.latencyMs||0};
+            return providerHealthScoreV2(model.provider,model.id,now);
         }
 
         function isFreePriceProofFresh(model, now=Date.now()) {
@@ -2937,7 +3207,11 @@
             if(!response.ok){
                 let detail=response.status+" "+response.statusText;
                 try{const j=await response.json();detail=j?.error?.message||j?.errors?.[0]?.message||detail;}catch(e){}
-                const err=new Error(detail);err.status=response.status;err.partialOutput=false;throw err;
+                const err=new Error(detail);
+                err.status=response.status;
+                err.partialOutput=false;
+                err.retryAfterMs=retryAfterMsFromResponseV2(response);
+                throw err;
             }
             if(!stream)return response.json();
             return readOpenAICompatibleStream(response,onToken);
@@ -3037,18 +3311,17 @@
             });
 
             if (!response.ok) {
-                if (purpose === "deepThink") {
-                    throw new Error("Deep think reasoning pass failed: " + response.status);
-                }
-                if (purpose === "title") {
-                    throw new Error("Title error");
-                }
                 let detail = response.status + " " + response.statusText;
                 try {
                     const errBody = await response.json();
                     detail = errBody?.error?.message || detail;
                 } catch (e) { /* body wasn't JSON, keep status text */ }
-                if (purpose === "chat") {
+
+                if (purpose === "deepThink") {
+                    detail = "Deep think reasoning pass failed: " + response.status;
+                } else if (purpose === "title") {
+                    detail = "Title error";
+                } else if (purpose === "chat") {
                     if (response.status === 401) {
                         detail = "Invalid API key. Check the key in Settings (⚙️).";
                     } else if (response.status === 429) {
@@ -3057,6 +3330,8 @@
                 }
                 const err = new Error(detail);
                 err.status = response.status;
+                err.partialOutput = false;
+                err.retryAfterMs = retryAfterMsFromResponseV2(response);
                 throw err;
             }
 
