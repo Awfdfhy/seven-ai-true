@@ -1,7 +1,7 @@
 # Web Search v2 — Batch 6: Query Intelligence + Primary Source Discovery
 
 Date: 2026-10-02
-Status: IMPLEMENTATION READY
+Status: COMPLETE — PR #37, browser #2316 PASS, Android #294 PASS, merge `d072bda179df394c4568bf86a9402f392d8c82eb`
 Parent: WEB_SEARCH_OVERHAUL_V2.md
 
 ## Objective
