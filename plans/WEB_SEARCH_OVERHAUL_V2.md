@@ -1,7 +1,7 @@
 # Seven Web Search Overhaul v2 — Deep Architecture Plan
 
 Date: 2026-10-02
-Status: PLANNED — next major focus after Measured Latency v2
+Status: ACTIVE — Batch 1 merged; Android gate pending
 Parent roadmap: ../SEVEN_POLISH_ROADMAP.md
 
 ## Why this overhaul exists
@@ -745,3 +745,13 @@ Search v2 is complete only when:
 - the UI differentiates discovered/snippet/read evidence;
 - no prompt-injection path can grant web content higher authority;
 - performance budgets and Stop/Resume semantics are enforced.
+
+## Batch 1 implementation record
+
+- Clean implementation PR: #28
+- Browser PR CI: Seven AI tests #2204 — PASS
+- Main merge SHA: `25576802d6e786ff522ea93eb36df492ed132a63`
+- Main browser CI: #2205 — PASS
+- Android workflow: Seven Android APK #288 — pending
+- Implemented: Search v2 contracts, Arabic/current intent analysis, bounded query planning, parallel DDG + EN/AR Wikipedia retrieval, canonical URL dedupe, source ranking, explicit read states, bounded context, source metadata UI, and truthful limited-search capability label.
+- Still intentionally missing: general web index gateway, arbitrary page reader, freshness dates from general sources, evidence/claim matrix, contradiction/gap loop.
