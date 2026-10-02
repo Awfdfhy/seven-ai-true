@@ -951,14 +951,14 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
       const s=String(url);
       if(s.includes('api.duckduckgo.com')){
         const q=new URL(s).searchParams.get('q')||'';
-        if(q.includes('independent source'))return {ok:true,json:async()=>({Heading:'Follow Two',AbstractText:'follow stage independent evidence',AbstractURL:'https://follow-two.example/page',RelatedTopics:[]})};
-        return {ok:true,json:async()=>({Heading:'Follow One',AbstractText:'follow stage evidence',AbstractURL:'https://follow-one.example/page',RelatedTopics:[]})};
+        if(q.includes('independent source'))return {ok:true,json:async()=>({Heading:'Follow Two',AbstractText:'Android API follow stage independent evidence',AbstractURL:'https://follow-two.example/page',RelatedTopics:[]})};
+        return {ok:true,json:async()=>({Heading:'Follow One',AbstractText:'Android API follow stage evidence',AbstractURL:'https://follow-one.example/page',RelatedTopics:[]})};
       }
       if(s.includes('wikipedia.org'))return {ok:true,json:async()=>({query:{search:[]}})};
       return {ok:false,json:async()=>({})};
     };
     try{
-      const out=await performWebSearchV2('follow stage',{onStage:s=>stages.push(s)});
+      const out=await performWebSearchV2('Android API follow stage',{onStage:s=>stages.push(s)});
       return {names:stages.map(x=>x.name),diag:out?.diagnostics};
     }finally{fetchWithTimeout=oldFetch;SEARCH_GATEWAY_URL=oldUrl;SEARCH_GATEWAY_KEY=oldKey;SevenSearchV2.clearCache();}
   });
