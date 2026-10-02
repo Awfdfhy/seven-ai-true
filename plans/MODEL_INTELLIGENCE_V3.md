@@ -1,7 +1,7 @@
 # Model Intelligence v3 — Detailed Execution Specification
 
 Date: 2026-10-02
-Status: IMPLEMENTATION READY
+Status: COMPLETE — merged to main via PR #20
 Parent roadmap: ../SEVEN_POLISH_ROADMAP.md
 
 ## Objective
@@ -231,3 +231,11 @@ Deferred to Provider Health v2:
 - EWMA samples per status family
 - dedicated diagnostics UI
 - persistent outcome-learning/kNN routing
+
+## Completion record
+
+- Implementation PR: #20
+- Tested head SHA: `68e0d4616f625f637dd85dced50b7bb8f222a58b`
+- CI run: Seven AI tests #2125 — PASS
+- Squash merge SHA: `454c72ecab333938cc642b5ba0e63d27efc00f3e`
+- Result: all deterministic and browser regression gates completed successfully before merge.
