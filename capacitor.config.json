@@ -1,6 +1,6 @@
 {
-  "appId": "ai.seven.app",
-  "appName": "seven.ai",
+  "appId": "ai.seven.v24",
+  "appName": "Seven 2.4 Modern",
   "webDir": "www",
   "loggingBehavior": "none",
   "server": {
