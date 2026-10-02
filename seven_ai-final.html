@@ -5249,25 +5249,132 @@
             try{return new URL(candidate?.url||"").hostname.toLowerCase();}catch(_){return "";}
         }
 
+        // ---------- Web Search v2 Batch 8: evidence precision + diversity ----------
+        const SEARCH_QUALITY_V2=Object.freeze({
+            version:2,
+            maxPerHost:2,
+            maxContextPerHost:2,
+            strongTypes:new Set(["official","primary","government","documentation","academic"]),
+            corroboratingTypes:new Set(["news","reference","specialist","community","unknown"])
+        });
+        let lastSearchQualityV2=null;
+
+        function evidenceQualityPartsV2(item,intent){
+            const sourceType=String(item?.sourceType||"unknown");
+            const readState=String(item?.readState||"snippet_only");
+            const freshness=String(item?.freshnessClass||classifySearchFreshnessV2(item,intent||{}));
+            const lexical=Math.max(0,Math.min(100,Number(item?.relevanceScore??item?.score)||0));
+            const sourceAppropriateness=SEARCH_QUALITY_V2.strongTypes.has(sourceType)?100:
+                (sourceType==="news"||sourceType==="specialist"?78:(sourceType==="reference"?68:52));
+            const readQuality=readState==="read_success"?100:(readState==="read_partial"?78:(readState==="snippet_only"?48:20));
+            const freshnessQuality=freshness==="current"?100:(freshness==="recent"?88:(freshness==="evergreen"?80:(freshness==="stale"?20:55)));
+            const primaryNeed=(intent?.technical||intent?.intentType==="academic"||intent?.sourceNeeds?.includes?.("official"));
+            const primaryBonus=primaryNeed&&SEARCH_QUALITY_V2.strongTypes.has(sourceType)?14:0;
+            const injectionPenalty=item?.injectionSuspected===true?35:0;
+            const total=Math.max(0,Math.min(100,
+                lexical*.42+sourceAppropriateness*.20+readQuality*.18+freshnessQuality*.20+primaryBonus-injectionPenalty));
+            return {lexical:Number(lexical.toFixed(2)),sourceAppropriateness,readQuality,freshnessQuality,primaryBonus,injectionPenalty,total:Number(total.toFixed(2))};
+        }
+
+        function rerankEvidencePrecisionV2(evidence,intent){
+            return (Array.isArray(evidence)?evidence:[]).map(item=>{
+                const scoreParts=evidenceQualityPartsV2(item,intent);
+                return Object.assign({},item,{precisionScore:scoreParts.total,qualityParts:scoreParts});
+            }).sort((a,b)=>b.precisionScore-a.precisionScore||
+                (Number(b.relevanceScore)||0)-(Number(a.relevanceScore)||0)||
+                String(a.title||"").localeCompare(String(b.title||"")));
+        }
+
+        function evidenceHostV2(item){
+            try{return new URL(String(item?.url||"")).hostname.toLowerCase().replace(/^www\./,"");}catch(_){return "";}
+        }
+
+        function selectDiverseEvidenceV2(evidence,intent,limit,options){
+            const opts=options&&typeof options==="object"?options:{};
+            const rows=rerankEvidencePrecisionV2(evidence,intent);
+            const max=Math.max(1,Math.min(30,Number(limit)||SEARCH_V2.maxContextSources));
+            const selected=[],selectedIds=new Set(),hostCounts=new Map();
+            let redundantEvidenceDropped=0;
+            const comparison=intent?.comparison===true||intent?.intentType==="comparison";
+            const conflictIds=new Set((opts.conflicts||[]).flatMap(x=>Array.isArray(x?.sources)?x.sources:[]));
+            const plannedCoverage=new Set((opts.coverageKeys||[]).filter(Boolean));
+            const covered=new Set();
+
+            const canTake=item=>{
+                const host=evidenceHostV2(item);
+                if(host&&(hostCounts.get(host)||0)>=SEARCH_QUALITY_V2.maxContextPerHost)return false;
+                return true;
+            };
+            const take=item=>{
+                if(!item||selectedIds.has(item.evidenceId||item.sourceId)||selected.length>=max||!canTake(item))return false;
+                selected.push(item);selectedIds.add(item.evidenceId||item.sourceId);
+                const host=evidenceHostV2(item);if(host)hostCounts.set(host,(hostCounts.get(host)||0)+1);
+                for(const key of item.coverageKeys||[])covered.add(key);
+                return true;
+            };
+
+            // Reserve one slot for strong/primary evidence when the intent benefits from it.
+            const strong=rows.find(x=>SEARCH_QUALITY_V2.strongTypes.has(x.sourceType));
+            if(strong&&(intent?.technical||intent?.intentType==="academic"||intent?.sourceNeeds?.includes?.("official")))take(strong);
+
+            // Preserve explicit counter/conflict evidence before redundant corroboration.
+            for(const row of rows){if(conflictIds.has(row.sourceId)||conflictIds.has(row.evidenceId))take(row);}
+
+            // Cover distinct query/subquestion needs before filling by raw score.
+            if(plannedCoverage.size){
+                for(const key of plannedCoverage){
+                    if(selected.length>=max)break;
+                    const row=rows.find(x=>!selectedIds.has(x.evidenceId||x.sourceId)&&(x.coverageKeys||[]).includes(key)&&canTake(x));
+                    if(row)take(row);
+                }
+            }
+
+            // Comparisons should keep distinct coverage sides whenever planner supplied them.
+            if(comparison){
+                const keys=Array.from(new Set(rows.flatMap(x=>x.coverageKeys||[]))).slice(0,6);
+                for(const key of keys){
+                    if(selected.length>=max)break;
+                    const row=rows.find(x=>!selectedIds.has(x.evidenceId||x.sourceId)&&(x.coverageKeys||[]).includes(key)&&canTake(x));
+                    if(row)take(row);
+                }
+            }
+
+            for(const row of rows){
+                if(selected.length>=max)break;
+                if(selectedIds.has(row.evidenceId||row.sourceId))continue;
+                if(!canTake(row)){redundantEvidenceDropped++;continue;}
+                take(row);
+            }
+            return {selected,diagnostics:{
+                redundantEvidenceDropped,
+                hostDiversity:new Set(selected.map(evidenceHostV2).filter(Boolean)).size,
+                sourceTypeDiversity:new Set(selected.map(x=>x.sourceType).filter(Boolean)).size,
+                selectedCount:selected.length,
+                coveredCoverageKeys:Array.from(covered)
+            }};
+        }
+
+        function currentFreshnessGateV2(evidence,intent){
+            const rows=Array.isArray(evidence)?evidence:[];
+            const stale=rows.filter(x=>x.freshnessClass==="stale").length;
+            const fresh=rows.filter(x=>x.freshnessClass==="current"||x.freshnessClass==="recent").length;
+            const required=intent?.timeSensitive===true;
+            return {required,freshCount:fresh,staleCount:stale,passes:!required||fresh>0};
+        }
+
+        function searchEarlyStopDecisionV2(assessment,conflicts,intent,evidence){
+            const freshness=currentFreshnessGateV2(evidence,intent);
+            const unresolvedConflict=Array.isArray(conflicts)&&conflicts.length>0;
+            const unresolvedRequiredCoverage=Array.isArray(assessment?.gapCodes)?assessment.gapCodes.filter(x=>
+                ["too_few_sources","low_host_diversity","stale_current_query","no_strong_source","weak_query_coverage"].includes(x)):[];
+            if(!assessment?.sufficient)return {stop:false,reason:"insufficient_evidence",unresolvedRequiredCoverage};
+            if(!freshness.passes)return {stop:false,reason:"freshness_required",unresolvedRequiredCoverage:["stale_current_query"]};
+            if(unresolvedConflict)return {stop:false,reason:"unresolved_conflict",unresolvedRequiredCoverage};
+            return {stop:true,reason:"evidence_sufficient",unresolvedRequiredCoverage:[]};
+        }
+
         function buildSearchEvidenceUnitsV2(candidates,intent){
-            const rows=Array.isArray(candidates)?candidates.filter(Boolean):[];
-            const selected=[],seenIds=new Set(),seenHosts=new Set();
-            const diversityTarget=Math.min(4,SEARCH_V2.maxContextSources);
-
-            for(const candidate of rows){
-                if(selected.length>=diversityTarget)break;
-                const host=searchCandidateHostV2(candidate);
-                if(host&&seenHosts.has(host))continue;
-                selected.push(candidate);seenIds.add(candidate.id);
-                if(host)seenHosts.add(host);
-            }
-            for(const candidate of rows){
-                if(selected.length>=SEARCH_V2.maxContextSources)break;
-                if(seenIds.has(candidate.id))continue;
-                selected.push(candidate);seenIds.add(candidate.id);
-            }
-
-            return selected.map((candidate,index)=>({
+            const rows=(Array.isArray(candidates)?candidates:[]).filter(Boolean).map((candidate,index)=>({
                 evidenceId:"E"+(index+1),
                 sourceId:"S"+(index+1),
                 title:candidate.title,
@@ -5287,6 +5394,10 @@
                 injectionSuspected:candidate.injectionSuspected===true,
                 extractedAt:candidate.fetchedAt||candidate.discoveredAt||Date.now()
             }));
+            const selection=selectDiverseEvidenceV2(rows,intent,SEARCH_V2.maxContextSources,{coverageKeys:rows.flatMap(x=>x.coverageKeys||[])});
+            const selected=selection.selected.map((item,index)=>Object.assign({},item,{evidenceId:"E"+(index+1),sourceId:"S"+(index+1)}));
+            lastSearchQualityV2=Object.assign({},selection.diagnostics,{freshness:currentFreshnessGateV2(selected,intent)});
+            return selected;
         }
 
         function searchEvidenceCoverageV2(evidence,intent){
@@ -5707,7 +5818,11 @@
                 pageMaxEntries:SEARCH_CACHE_V2.pageMaxEntries
             }),
             clearCache:clearSearchCacheV2,
-            snapshot:()=>lastSearchV2Diagnostics?JSON.parse(JSON.stringify(lastSearchV2Diagnostics)):null
+            snapshot:()=>lastSearchV2Diagnostics?JSON.parse(JSON.stringify(lastSearchV2Diagnostics)):null,
+            quality:()=>lastSearchQualityV2?JSON.parse(JSON.stringify(lastSearchQualityV2)):null,
+            rerank:(items,question)=>rerankEvidencePrecisionV2(items,analyzeSearchIntentV2(question||"")),
+            select:(items,question,limit)=>selectDiverseEvidenceV2(items,analyzeSearchIntentV2(question||""),limit||SEARCH_V2.maxContextSources),
+            earlyStop:(assessment,conflicts,question,evidence)=>searchEarlyStopDecisionV2(assessment,conflicts,analyzeSearchIntentV2(question||""),evidence||[])
         });
 
         // ---------- Web Search v2 Batch 7: Deep Research Integration ----------
