@@ -1,5 +1,5 @@
 import { SevenError } from "../../core/errors";
-import { isRoom, type Room } from "../../domain/chat";
+import { cloneRoom, isRoom, type Room } from "../../domain/chat";
 import {
   assertValidProviderMessages,
   type ProviderAdapter,
@@ -13,6 +13,8 @@ import type {
   ChatStreamContext,
   ChatTransport,
 } from "../../application/chat/chat-service";
+import type { ProviderContextSource } from "../../application/context/memory-context-service";
+import type { ContextBuildResult } from "../../context/context-builder";
 
 export type ProviderMap = ReadonlyMap<string, ProviderAdapter>;
 
@@ -82,6 +84,9 @@ function validatePlan(plan: RoutePlan): void {
     if (
       !isCanonicalId(candidate.providerId) ||
       !isCanonicalId(candidate.modelId) ||
+      typeof candidate.contextWindow !== "number" ||
+      !Number.isSafeInteger(candidate.contextWindow) ||
+      candidate.contextWindow <= 0 ||
       typeof candidate.score !== "number" ||
       !Number.isFinite(candidate.score)
     ) {
@@ -111,6 +116,7 @@ function snapshotPlan(plan: RoutePlan): RoutePlan {
         Object.freeze({
           providerId: candidate.providerId,
           modelId: candidate.modelId,
+          contextWindow: candidate.contextWindow,
           score: candidate.score,
         }),
       ),
@@ -191,13 +197,72 @@ function validateContext(context: ChatStreamContext): void {
     !context.signal ||
     typeof context.signal !== "object" ||
     typeof context.signal.aborted !== "boolean" ||
-    typeof context.signal.addEventListener !== "function"
+    typeof context.signal.addEventListener !== "function" ||
+    typeof context.signal.removeEventListener !== "function"
   ) {
     throw new SevenError({
       code: "VALIDATION",
       message: "Chat stream signal is malformed.",
     });
   }
+}
+
+function validatePreparedContext(
+  value: ContextBuildResult,
+  contextWindow: number,
+): readonly ProviderMessage[] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Prepared context must be an object.",
+    });
+  }
+  if (!Array.isArray(value.messages)) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Prepared context messages must be an array.",
+    });
+  }
+  if (
+    !Number.isSafeInteger(value.estimatedInputTokens) ||
+    value.estimatedInputTokens <= 0 ||
+    !Number.isSafeInteger(value.maxInputTokens) ||
+    value.maxInputTokens <= 0 ||
+    value.maxInputTokens >= contextWindow ||
+    value.estimatedInputTokens > value.maxInputTokens
+  ) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Prepared context token budget is invalid.",
+    });
+  }
+  if (
+    !Array.isArray(value.selectedMemoryIds) ||
+    !Array.isArray(value.omittedMessages) ||
+    typeof value.summaryUsed !== "boolean"
+  ) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Prepared context metadata is malformed.",
+    });
+  }
+  const ids = new Set<string>();
+  for (const id of value.selectedMemoryIds) {
+    if (
+      typeof id !== "string" ||
+      !id.trim() ||
+      id !== id.trim() ||
+      ids.has(id)
+    ) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Prepared context memory ids are malformed.",
+      });
+    }
+    ids.add(id);
+  }
+  assertValidProviderMessages(value.messages);
+  return value.messages;
 }
 
 export class RoutedChatTransport implements ChatTransport {
@@ -210,6 +275,7 @@ export class RoutedChatTransport implements ChatTransport {
     private readonly systemPrompt = "You are Seven, a precise and helpful AI assistant.",
     private readonly health?: ProviderHealthTracker,
     private readonly now: () => number = Date.now,
+    private readonly contextSource?: ProviderContextSource,
   ) {
     this.plan = snapshotPlan(plan);
     this.providers = snapshotProviders(providers);
@@ -239,22 +305,23 @@ export class RoutedChatTransport implements ChatTransport {
         message: "Provider clock must be a function.",
       });
     }
+    if (
+      contextSource !== undefined &&
+      (!contextSource ||
+        typeof contextSource !== "object" ||
+        typeof contextSource.prepare !== "function")
+    ) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Provider context source is malformed.",
+      });
+    }
   }
 
   async *stream(context: ChatStreamContext): AsyncIterable<string> {
     validateContext(context);
 
-    const messages: ProviderMessage[] = [
-      Object.freeze({ role: "system", content: this.systemPrompt }),
-      ...context.room.messages.map((message) =>
-        Object.freeze({
-          role: message.role,
-          content: message.content,
-        }),
-      ),
-    ];
-    assertValidProviderMessages(messages);
-
+    const room = cloneRoom(context.room);
     const failures: string[] = [];
 
     for (const candidate of this.plan.candidates) {
@@ -272,6 +339,57 @@ export class RoutedChatTransport implements ChatTransport {
         continue;
       }
 
+      let preparedMessages: readonly ProviderMessage[];
+      let maxOutputTokens: number | undefined;
+      if (this.contextSource === undefined) {
+        preparedMessages = [
+          { role: "system", content: this.systemPrompt },
+          ...room.messages.map((message) => ({
+            role: message.role,
+            content: message.content,
+          })),
+        ];
+      } else {
+        try {
+          const prepared = await this.contextSource.prepare({
+            room,
+            systemPrompt: this.systemPrompt,
+            contextWindow: candidate.contextWindow,
+            signal: context.signal,
+          });
+          if (context.signal.aborted) {
+            throw new DOMException("Aborted", "AbortError");
+          }
+          preparedMessages = validatePreparedContext(prepared, candidate.contextWindow);
+          maxOutputTokens = candidate.contextWindow - prepared.maxInputTokens;
+        } catch (error) {
+          if (context.signal.aborted) {
+            throw new DOMException("Aborted", "AbortError");
+          }
+          // A larger fallback may fit a turn that this model cannot. Data or
+          // storage failures stay fatal rather than being hidden by retries.
+          if (
+            error instanceof SevenError &&
+            error.code === "VALIDATION" &&
+            error.details?.reason === "CONTEXT_CAPACITY"
+          ) {
+            failures.push(`${candidate.providerId}:CONTEXT_CAPACITY`);
+            continue;
+          }
+          throw error;
+        }
+      }
+
+      // Context work can finish after the user cancels, even when a custom
+      // source does not cooperate with AbortSignal. Never dispatch that result.
+      if (context.signal.aborted) {
+        throw new DOMException("Aborted", "AbortError");
+      }
+      assertValidProviderMessages(preparedMessages);
+      const messages = Object.freeze(
+        preparedMessages.map((message) => Object.freeze({ ...message })),
+      );
+
       const attemptToken = this.health?.beginAttempt(provider.id);
 
       let meaningfulOutputStarted = false;
@@ -282,6 +400,7 @@ export class RoutedChatTransport implements ChatTransport {
           {
             modelId: candidate.modelId,
             messages,
+            ...(maxOutputTokens !== undefined ? { maxOutputTokens } : {}),
           },
           context.signal,
         )) {
@@ -334,6 +453,11 @@ export class RoutedChatTransport implements ChatTransport {
           }
 
           yield chunk.delta;
+        }
+
+        // A provider may complete quietly on abort instead of rejecting.
+        if (context.signal.aborted) {
+          throw new DOMException("Aborted", "AbortError");
         }
 
         if (meaningfulOutputStarted) {

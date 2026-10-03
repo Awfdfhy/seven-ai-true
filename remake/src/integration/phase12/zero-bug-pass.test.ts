@@ -1689,6 +1689,7 @@ describe("Zero-bug regressions", () => {
         {
           providerId: "bound-provider",
           modelId: "original-model",
+          contextWindow: 32_000,
           score: 1,
         },
       ],

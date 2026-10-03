@@ -26,6 +26,7 @@ export type ModelDescriptor = Readonly<{
 export type ProviderStreamRequest = Readonly<{
   modelId: string;
   messages: readonly ProviderMessage[];
+  maxOutputTokens?: number;
 }>;
 
 export type ProviderChunk = Readonly<{
