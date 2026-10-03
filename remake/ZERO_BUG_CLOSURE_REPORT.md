@@ -13,17 +13,21 @@ This report closes the deep hardening pass for the currently integrated Phase 1�
 
 Future milestones are explicitly out of scope. Any later production change reopens this gate.
 
-## Verified production candidate
+## Verified integrated candidate
 
-- Production candidate SHA: `9564b2bdcfa7695a2e97668e1fb192818189557d`
-- Branch: `remake-manager/zero-bug-pass-01`
-- Subsequent branch commits only cleaned temporary audit workflows/artifacts before integration; the production source under `remake/src` was not changed by that cleanup.
+- Final merged SHA on `seven-remake-v3`: `e216fafc5e7e8ae9e880ce4317e4faecd87caf37`
+- Pull request: #60 — `Seven Remake: zero-bug hardening pass 01`
+- The last production-source hardening after the earlier `9564b2b` checkpoint was the TaskManager listener-snapshot fix (`475b969`), followed by its regression test (`ced4210`).
+- Temporary audit workflows/artifacts were then cleaned before integration.
+- Post-merge verification was executed again on the merged `seven-remake-v3` commit itself.
 
 ## Deterministic verification
 
 ### Seven Remake V3 CI
 
-Workflow run: `37125606301` — **SUCCESS**
+Pre-merge candidate workflow run: `37125606301` — **SUCCESS**
+
+Post-merge workflow run on `seven-remake-v3`: `37126282472` — **SUCCESS**
 
 - Dependency audit: **0 vulnerabilities**
 - Production dependency audit: **0 vulnerabilities**
@@ -149,7 +153,9 @@ No unresolved reproducible finding from the valid audit evidence remains in the 
 ```
 PHASE_1_2_ZERO_BUG_GATE
 
-Production candidate      9564b2b
+Integrated merge          e216faf
+Last production hardening 475b969
+Regression checkpoint     ced4210
 Remake test files         6/6 PASS
 Remake tests              91/91 PASS
 TypeScript                PASS
@@ -164,4 +170,4 @@ KNOWN_REPRODUCIBLE_BUGS=0
 ZERO_BUG_GATE=PASS
 ```
 
-This is a zero-known-reproducible-bug verdict for the defined Phase 1–2 scope, not a mathematical claim that arbitrary future environments or future code can never reveal another defect. Any reproducible new defect reopens this gate immediately.
+This is a zero-known-reproducible-bug verdict for the defined Phase 1–2 scope at the integrated merge commit `e216faf`, not a mathematical claim that arbitrary future environments or future code can never reveal another defect. Any reproducible new defect reopens this gate immediately.
