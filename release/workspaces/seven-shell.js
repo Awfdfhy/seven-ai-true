@@ -5,7 +5,7 @@ const d=r.document,$=s=>d.querySelector(s),qa=s=>Array.from(d.querySelectorAll(s
 const S={version:'2.1.0',ready:false,observer:null,viewportBound:false,chat:null,model:null,modelMenu:null};
 function visible(el){if(!el||el.hidden)return false;const cs=r.getComputedStyle?r.getComputedStyle(el):null;return !cs||cs.display!=='none'}
 function reduced(){return !!(r.matchMedia&&r.matchMedia('(prefers-reduced-motion: reduce)').matches)}
-function isAr(){return /^ar\\b/i.test(String(d.documentElement.lang||''))}
+function isAr(){return String(d.documentElement.lang||'').toLowerCase().startsWith('ar')}
 function localizeShell(){
   const ar=isAr();
   const backdrop=$('.seven-shell-backdrop');if(backdrop)backdrop.setAttribute('aria-label',ar?'إغلاق التنقل':'Close navigation');
