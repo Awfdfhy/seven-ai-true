@@ -508,6 +508,42 @@ describe("Zero-bug regressions", () => {
     });
   });
 
+  it("orders concurrent provider health updates with monotonic attempt tokens", () => {
+    const health = new ProviderHealthTracker();
+    const older = health.beginAttempt("p");
+    const newer = health.beginAttempt("p");
+
+    health.recordAttemptSuccess("p", newer);
+    health.recordAttemptFailure("p", older, 100, {
+      penalty: 100,
+      retryAfterMs: 1000,
+    });
+
+    expect(health.snapshot(["p"])[0]).toEqual({
+      providerId: "p",
+      penalty: 0,
+      cooldownUntil: null,
+    });
+  });
+
+  it("ignores a stale success after a newer provider failure even when timestamps collide", () => {
+    const health = new ProviderHealthTracker();
+    const older = health.beginAttempt("p");
+    const newer = health.beginAttempt("p");
+
+    health.recordAttemptFailure("p", newer, 100, {
+      penalty: 100,
+      retryAfterMs: 1000,
+    });
+    health.recordAttemptSuccess("p", older);
+
+    expect(health.snapshot(["p"])[0]).toEqual({
+      providerId: "p",
+      penalty: 100,
+      cooldownUntil: 1100,
+    });
+  });
+
   it("rejects non-string stream deltas and falls back before meaningful output", async () => {
     const badModel = model("bad", "m1");
     const goodModel = model("good", "m2");
