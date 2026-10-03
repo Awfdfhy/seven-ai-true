@@ -261,6 +261,41 @@ describe("Zero-bug regressions", () => {
     vi.useRealTimers();
   });
 
+  it("seals and clears the deadline after the final assistant write succeeds", async () => {
+    vi.useFakeTimers();
+    const repository = new InMemoryRoomRepository([
+      createRoom({ id: "deadline-success-room", now: 1 }),
+    ]);
+    const tasks = new TaskManager();
+    const chat = new ChatService(tasks, repository);
+
+    const run = await chat.send(
+      "deadline-success-room",
+      "hello",
+      {
+        async *stream() {
+          yield "done";
+        },
+      },
+      { timeoutMs: 50 },
+    );
+
+    await expect(run.result).resolves.toMatchObject({
+      messages: [
+        expect.objectContaining({ role: "user", content: "hello" }),
+        expect.objectContaining({ role: "assistant", content: "done" }),
+      ],
+    });
+    expect(tasks.get(run.taskId)).toMatchObject({
+      status: "succeeded",
+      deadlineSealed: true,
+    });
+
+    await vi.advanceTimersByTimeAsync(100);
+    expect(tasks.get(run.taskId)?.status).toBe("succeeded");
+    vi.useRealTimers();
+  });
+
   it("falls back when a provider emits only whitespace then fails", async () => {
     const firstModel = model("first", "m1");
     const secondModel = model("second", "m2");
