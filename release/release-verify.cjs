@@ -100,6 +100,20 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       assert.deepEqual(state.visible,[]);assert.equal(state.kilo,true);assert.equal(state.llm7,true);assert.equal(state.route,true);assert.ok(/never need to paste an API key/i.test(state.text));
       await page.close();
     });
+    await test('search settings require no manual API key',async()=>{
+      const page=await browser.newPage({viewport:{width:360,height:800}});
+      await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');});
+      await page.goto(origin,{waitUntil:'domcontentloaded'});
+      await page.waitForFunction(()=>window.SevenRemake&&typeof SevenRemake.searchSettings==='function');
+      await page.evaluate(()=>SevenRemake.searchSettings());
+      await page.waitForFunction(()=>!!document.querySelector('.s-modal .s-dialog'));
+      const state=await page.evaluate(()=>{const modal=document.querySelector('.s-modal');const fields=[...modal.querySelectorAll('input[type="password"],[id*="key" i],[name*="key" i]')];const engine=modal.querySelector('#s-search-engine');return{keyFields:fields.map(x=>x.id||x.name||x.tagName),options:engine?[...engine.options].map(o=>o.value):[],text:modal.innerText,box:(()=>{const r=modal.querySelector('.s-dialog').getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,w:innerWidth,h:innerHeight}})()}}); 
+      assert.deepEqual(state.keyFields,[]);
+      assert.equal(state.options.includes('brave'),false);
+      assert.equal(/API\s*key|أدخل المفتاح|Brave API key/i.test(state.text),false);
+      assert.ok(state.box.left>=-2&&state.box.right<=state.box.w+2&&state.box.top>=-2&&state.box.bottom<=state.box.h+2,JSON.stringify(state.box));
+      await page.close();
+    });
     await test('responsive UI matrix stays bounded on phone widths themes and directions',async()=>{
       const sizes=[[320,800],[360,800],[390,844],[412,915]];
       for(const [width,height] of sizes)for(const dir of ['ltr','rtl'])for(const theme of ['day','night']){
