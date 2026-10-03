@@ -12,7 +12,24 @@ function abortError(): DOMException {
   return new DOMException("Aborted", "AbortError");
 }
 
+function validateSignal(signal?: AbortSignal): void {
+  if (
+    signal !== undefined &&
+    (!signal ||
+      typeof signal !== "object" ||
+      typeof signal.aborted !== "boolean" ||
+      typeof signal.addEventListener !== "function" ||
+      typeof signal.removeEventListener !== "function")
+  ) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "AbortSignal is malformed.",
+    });
+  }
+}
+
 function throwIfAborted(signal?: AbortSignal): void {
+  validateSignal(signal);
   if (signal?.aborted) throw abortError();
 }
 
@@ -280,6 +297,7 @@ export class IndexedDbRoomRepository implements RoomRepository {
     promise: Promise<T>,
     signal?: AbortSignal,
   ): Promise<T> {
+    validateSignal(signal);
     if (!signal) return promise;
     if (signal.aborted) return Promise.reject(abortError());
 
