@@ -85,15 +85,13 @@ jobs:
           profile: pixel_6
           disable-animations: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          # The runner starts a separate shell for each line; preserve the test result while collecting evidence.
           script: |
             adb shell rm -rf /data/local/tmp/seven-visual || true
             adb shell mkdir -p /data/local/tmp/seven-visual
-            cd android
-            ./gradlew --no-daemon :app:connectedDebugAndroidTest
-            cd ..
             rm -rf visual-evidence/android16
             mkdir -p visual-evidence/android16
-            adb pull /data/local/tmp/seven-visual/. visual-evidence/android16/ || true
+            seven_test_status=0; (cd android && ./gradlew --no-daemon :app:connectedDebugAndroidTest) || seven_test_status=$?; adb pull /data/local/tmp/seven-visual/. visual-evidence/android16/ || true; exit "$seven_test_status"
 
       - name: Android 14 WebView UI regression test
         uses: reactivecircus/android-emulator-runner@v2.38.0
@@ -104,18 +102,17 @@ jobs:
           profile: pixel_6
           disable-animations: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          # The runner starts a separate shell for each line; preserve the test result while collecting evidence.
           script: |
             adb shell settings put system font_scale 1.15 || true
             adb shell rm -rf /data/local/tmp/seven-visual || true
             adb shell mkdir -p /data/local/tmp/seven-visual
-            cd android
-            ./gradlew --no-daemon :app:connectedDebugAndroidTest
-            cd ..
             rm -rf visual-evidence/android14
             mkdir -p visual-evidence/android14
-            adb pull /data/local/tmp/seven-visual/. visual-evidence/android14/ || true
+            seven_test_status=0; (cd android && ./gradlew --no-daemon :app:connectedDebugAndroidTest) || seven_test_status=$?; adb pull /data/local/tmp/seven-visual/. visual-evidence/android14/ || true; exit "$seven_test_status"
 
       - name: Upload Android UI visual evidence
+        if: ${{ always() && hashFiles('visual-evidence/**') != '' }}
         uses: actions/upload-artifact@v7
         with:
           name: seven-ui-visual-evidence
