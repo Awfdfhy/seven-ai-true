@@ -23,10 +23,12 @@ jobs:
       matrix:
         include:
           - name: Bug Hunt A09 Qwen performance audit
+            id: A09
             branch: bughunt/a09
             prompt: .seven-team/prompts/bughunt/A09.md
             report: .seven-team/reports/bughunt/A09.md
           - name: Bug Hunt B09 Qwen race audit
+            id: B09
             branch: bughunt/b09
             prompt: .seven-team/prompts/bughunt/B09.md
             report: .seven-team/reports/bughunt/B09.md
@@ -78,15 +80,42 @@ jobs:
                   print('probe failed',mid,type(e).__name__,e)
           raise SystemExit('no healthy direct free model')
           PY
+      - name: Build bounded Seven evidence pack
+        run: |
+          set -euo pipefail
+          {
+            echo '=== FILE SIZES ==='
+            for f in seven_ai-final.html release/workspaces/*.js release/workspaces/*.css release/native-bridge.js release/github-self-dev.js native-security-policy.cjs verify.cjs; do
+              test -f "$f" && wc -lc "$f"
+            done
+            echo
+            echo '=== BUG-PRONE SEAMS ==='
+            git grep -nE 'localStorage|sessionStorage|MutationObserver|innerHTML|setTimeout|fetch\(|AbortController|sendMessageLocked|isGenerating|retry|fallback|catch\s*\(|finally|stop|stream|room|currentRoom|persist|restore|save|load|race|lock|pending|controller' -- seven_ai-final.html release native-security-policy.cjs verify.cjs | head -n 520 || true
+          } > /tmp/bug-evidence.txt
+          head -c 30000 /tmp/bug-evidence.txt > /tmp/bug-evidence-bounded.txt
+
       - name: Run Qwen audit
         env:
           REPORT: ${{ matrix.report }}
+          BUG_ID: ${{ matrix.id }}
           OPENAI_API_KEY: local-dummy-key
           OPENAI_BASE_URL: http://127.0.0.1:8877/v1
           QWEN_CODE_SUPPRESS_YOLO_WARNING: 'true'
         run: |
           set -euo pipefail
           mkdir -p "$(dirname "$REPORT")"
+
+          validate_report() {
+            test -f "$REPORT" || return 1
+            grep -q 'BUGHUNT=COMPLETE' "$REPORT" || return 1
+            grep -q "${BUG_ID}-" "$REPORT" || return 1
+            grep -qi 'Severity' "$REPORT" || return 1
+            grep -qiE 'Affected|surface|file/function' "$REPORT" || return 1
+            grep -qiE 'repro|reproduction|test idea' "$REPORT" || return 1
+            test "$(wc -c < "$REPORT")" -ge 1200 || return 1
+          }
+
+          rm -f /tmp/qwen.out
           set +e
           timeout 180s qwen -p "$(cat /tmp/prompt.md)" \
             --approval-mode yolo \
@@ -96,31 +125,43 @@ jobs:
             --openai-base-url http://127.0.0.1:8877/v1 2>&1 | tee /tmp/qwen.out
           rc=${PIPESTATUS[0]}
           set -e
-          if grep -q 'BUGHUNT=COMPLETE' /tmp/qwen.out; then cp /tmp/qwen.out "$REPORT"; fi
-          if ! (test -f "$REPORT" && grep -q 'BUGHUNT=COMPLETE' "$REPORT"); then
+
+          cp /tmp/qwen.out "$REPORT" || true
+          if ! validate_report; then
+            echo "Qwen CLI output is not a valid audit; synthesizing from bounded repository evidence."
             python - <<'PY'
           import json,os,pathlib,urllib.request
           prompt=pathlib.Path('/tmp/prompt.md').read_text(encoding='utf-8')
+          evidence=pathlib.Path('/tmp/bug-evidence-bounded.txt').read_text(encoding='utf-8',errors='replace')
+          task=prompt+"\n\nDETERMINISTIC REPOSITORY EVIDENCE:\n"+evidence+"\n\nReturn a concrete report, not tool calls or JSON traces."
           req=urllib.request.Request(
               'http://127.0.0.1:8877/v1/chat/completions',
               data=json.dumps({
                   'model':os.environ['BUG_MODEL'],
                   'messages':[
-                      {'role':'system','content':'Return only the requested bug-audit report. End exactly BUGHUNT=COMPLETE.'},
-                      {'role':'user','content':prompt}
+                      {'role':'system','content':'You are the final bug-audit synthesizer. Use only supplied repository evidence. Produce a plain Markdown report with concrete bug IDs, severity, affected surfaces, evidence, repro/test ideas, fix directions, and regression tests. Do not emit tool-call JSON. End exactly BUGHUNT=COMPLETE.'},
+                      {'role':'user','content':task}
                   ],
-                  'temperature':0,'max_tokens':5000,'stream':False
+                  'temperature':0,'max_tokens':6500,'stream':False
               }).encode(),
               headers={'Content-Type':'application/json'}
           )
-          with urllib.request.urlopen(req,timeout=160) as r: d=json.load(r)
+          with urllib.request.urlopen(req,timeout=170) as r: d=json.load(r)
           m=((d.get('choices') or [{}])[0].get('message') or {})
           t=(m.get('content') or m.get('reasoning_content') or '').strip()
-          if 'BUGHUNT=COMPLETE' not in t: t=t.rstrip()+'\nBUGHUNT=COMPLETE'
-          pathlib.Path(os.environ['REPORT']).write_text(t+'\n',encoding='utf-8')
+          if 'BUGHUNT=COMPLETE' in t:
+              t=t[:t.rfind('BUGHUNT=COMPLETE')].rstrip()
+          t=t+'\n\nBUGHUNT=COMPLETE\n'
+          pathlib.Path(os.environ['REPORT']).write_text(t,encoding='utf-8')
           PY
           fi
-          grep -q 'BUGHUNT=COMPLETE' "$REPORT"
+
+          if ! validate_report; then
+            echo "Qwen report failed semantic quality gate." >&2
+            sed -n '1,120p' "$REPORT" >&2 || true
+            exit 1
+          fi
+
       - name: Sanitize and push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
