@@ -89,7 +89,7 @@ jobs:
         run: |
           set -u
           git show origin/main:.seven-team/prompts/bughunt/A06.md > /tmp/team-a-aider.md
-          mkdir -p .seven-team/reports/wave-01
+          mkdir -p .seven-team/reports/bughunt
           touch .seven-team/reports/bughunt/A06.md
           set +e
           timeout 300s aider .seven-team/reports/bughunt/A06.md \
@@ -188,7 +188,7 @@ jobs:
         run: |
           set -u
           git show origin/main:.seven-team/prompts/bughunt/B06.md > /tmp/team-b-aider.md
-          mkdir -p .seven-team/reports/wave-01
+          mkdir -p .seven-team/reports/bughunt
           touch .seven-team/reports/bughunt/B06.md
           set +e
           timeout 300s aider .seven-team/reports/bughunt/B06.md \
