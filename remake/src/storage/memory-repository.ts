@@ -317,7 +317,16 @@ export class IndexedDbMemoryRepository implements MemoryRepository {
       throw this.storageError("Stored context summary failed schema validation.");
     }
     if (!isContextSummary(raw)) {
-      await this.compareAndSwapSummary(id, migrated, migrated, signal);
+      const upgraded = await this.compareAndSwapSummary(id, migrated, migrated, signal);
+      if (!upgraded) {
+        const latestRaw = await this.read<unknown>("summaries", (store) => store.get(id), signal);
+        if (latestRaw === undefined) return null;
+        const latest = migrateContextSummary(latestRaw);
+        if (latest === null || latest.roomId !== id) {
+          throw this.storageError("Stored context summary failed schema validation.");
+        }
+        return cloneContextSummary(latest);
+      }
     }
     return cloneContextSummary(migrated);
   }
