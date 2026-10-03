@@ -19,7 +19,9 @@ html,body{max-width:100%;overflow-x:hidden}
 #settingsModal .modal-content{width:min(540px,100%);max-width:100%;max-height:calc(var(--seven-visual-height,100dvh) - 16px);overflow:auto;overscroll-behavior:contain}
 #settingsModal .settings-section,#settingsModal .settings-section-body,#settingsModal .settings-row{min-width:0}
 #settingsModal summary,#settingsModal button,.topbar button,.composer button,.seven-shell-nav-btn{touch-action:manipulation}
-.seven-shell-model-menu,.seven-ws-picker,[role="dialog"]{max-width:calc(100vw - 16px);max-height:calc(var(--seven-visual-height,100dvh) - 16px);overflow:auto}
+.seven-shell-model-menu,.seven-ws-picker,[role="dialog"],.s-dialog{max-width:calc(100vw - 16px);max-height:calc(var(--seven-visual-height,100dvh) - 16px);overflow:auto}
+.s-modal{position:fixed!important;inset:0!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:max(8px,env(safe-area-inset-top,0px)) max(8px,env(safe-area-inset-right,0px)) max(8px,env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))!important;overflow:hidden!important}
+.s-modal .s-dialog{width:min(560px,100%)!important;max-width:100%!important;max-height:calc(var(--seven-visual-height,100dvh) - 16px)!important;overflow:auto!important;overscroll-behavior:contain}
 [dir="rtl"] #seven-app .bubble,[dir="rtl"] #seven-app .markdown{text-align:start}
 #seven-app[data-seven-theme="night"],html[data-seven-theme="night"] #seven-app{
  --s-bg:#111815;--s-panel:#17211d;--s-panel-2:#1c2923;--s-text:#edf5f0;--s-muted:#a8b8af;--s-border:#33443b;--s-accent:#4ad8ad;
