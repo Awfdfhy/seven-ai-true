@@ -144,4 +144,45 @@ Status: **PASS**
   - Combined Legacy Seven + release artifact: PASS.
   - Manager PR #65 merged; post-merge Remake CI PASS.
 
-**REMAKE_PROGRESS=6/12**
+- 7/12 Android Native Bridge: CLOSURE CANDIDATE
+  - Typed request/response envelopes with exact requestId correlation.
+  - Structured BRIDGE error normalization.
+  - Capability negotiation and SAF content-URI grant validation.
+  - JS cancellation maps to the exact native request token.
+  - Native cancellation is idempotent; late completion cannot win.
+  - Individual gates: Remake CI PASS; Legacy Seven + release artifact PASS.
+
+- 8/12 GitHub Self-Dev: CLOSURE CANDIDATE
+  - Public auth snapshots never contain plaintext access tokens.
+  - Single-flight refresh with expiry skew.
+  - Per-caller cancellation isolation during shared refresh.
+  - Exact full base-SHA mutation contract.
+  - Repository path normalization and secret-path rejection before credential acquisition.
+  - Mutation result changed-path verification.
+  - Individual gates: Remake CI PASS; Legacy Seven + release artifact PASS.
+
+- 9/12 RPG / Canon: CLOSURE CANDIDATE
+  - Immutable authoritative RPG snapshots with separate world/canon session identities.
+  - Branches, titles, relationships and world state under one revision.
+  - Deterministic SHA-256 checksum verification.
+  - Expected-revision change sets and storage CAS.
+  - IndexedDB persistence lives under the storage adapter boundary.
+  - Restart/restore and corruption detection.
+  - Individual gates: Remake CI PASS; Legacy Seven + release artifact PASS.
+
+- 10/12 Product / UI Polish: CLOSURE CANDIDATE
+  - Single ShellStore owns workspace, locale/direction, theme, viewport/keyboard and reduced-motion truth.
+  - Core / Research / Build / World share one mobile-first shell.
+  - Locale-derived RTL/LTR.
+  - One ThemeService auto/light/dark scheduler with one timer generation.
+  - Reduced-motion authority, logical CSS properties, 44px touch floor and 320px responsive floor.
+  - Individual gates: Remake CI PASS; Legacy Seven + release artifact PASS.
+
+- Waves 7→10 manager integration: IN PROGRESS
+  - cross-subsystem TaskManager cancellation isolation.
+  - GitHub secret non-leakage into public auth/task snapshots.
+  - RPG restart persistence independent of shell/UI projection.
+  - Theme single-timer ownership independent of Android capability truth.
+  - Awaiting combined Remake CI + Legacy Seven + merge/post-merge CI.
+
+**REMAKE_PROGRESS=6/12_COMPLETE + 7-10_CLOSURE_CANDIDATES**
