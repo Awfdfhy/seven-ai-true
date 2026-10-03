@@ -19,7 +19,7 @@ export type SevenErrorOptions = {
 export class SevenError extends Error {
   readonly code: SevenErrorCode;
   readonly retryable: boolean;
-  readonly details?: Readonly<Record<string, unknown>>;
+  readonly details: Readonly<Record<string, unknown>> | undefined;
 
   constructor(options: SevenErrorOptions) {
     super(options.message, { cause: options.cause });
