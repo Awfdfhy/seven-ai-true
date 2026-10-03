@@ -32,6 +32,12 @@ jobs:
       - name: Install
         run: npm install
 
+      - name: Production dependency security audit
+        run: npm audit --omit=dev --audit-level=moderate
+
+      - name: Full dependency moderate-severity audit
+        run: npm audit --audit-level=moderate
+
       - name: Typecheck
         run: npm run typecheck
 

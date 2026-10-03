@@ -30,14 +30,53 @@ export type ChatRun = Readonly<{
 }>;
 
 const DEFAULT_CHAT_DEADLINE_MS = 60_000;
+const MAX_ASSISTANT_DRAFT_CHARS = 1_000_000;
+
+function normalizeTimeout(timeoutMs: number | undefined): number {
+  const value = timeoutMs ?? DEFAULT_CHAT_DEADLINE_MS;
+  if (
+    !Number.isFinite(value) ||
+    value <= 0 ||
+    value > 2_147_483_647
+  ) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "timeoutMs must be a positive finite timer-safe number.",
+    });
+  }
+  return value;
+}
 
 export class ChatService {
-  private readonly startingRooms = new Set<string>();
-
   constructor(
     private readonly tasks: TaskManager,
     private readonly rooms: RoomRepository,
-  ) {}
+  ) {
+    if (
+      !tasks ||
+      typeof tasks !== "object" ||
+      typeof tasks.run !== "function" ||
+      typeof tasks.listActive !== "function"
+    ) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "ChatService requires a valid TaskManager.",
+      });
+    }
+    if (
+      !rooms ||
+      typeof rooms !== "object" ||
+      typeof rooms.get !== "function" ||
+      typeof rooms.put !== "function" ||
+      typeof rooms.list !== "function" ||
+      typeof rooms.delete !== "function"
+    ) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "ChatService requires a valid RoomRepository.",
+      });
+    }
+  }
 
   async send(
     roomId: string,
@@ -45,10 +84,37 @@ export class ChatService {
     transport: ChatTransport,
     options: ChatSendOptions = {},
   ): Promise<ChatRun> {
+    if (!options || typeof options !== "object") {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Chat options must be an object.",
+      });
+    }
     if (
-      this.startingRooms.has(roomId) ||
-      this.tasks.listActive(roomId).length > 0
+      !transport ||
+      typeof transport !== "object" ||
+      typeof transport.stream !== "function"
     ) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Chat transport must provide a stream function.",
+      });
+    }
+    if (
+      options.onDraft !== undefined &&
+      typeof options.onDraft !== "function"
+    ) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "onDraft must be a function when provided.",
+      });
+    }
+
+    const timeoutMs = normalizeTimeout(options.timeoutMs);
+    const stream = transport.stream.bind(transport);
+    const onDraft = options.onDraft;
+
+    if (this.tasks.listActive(roomId).length > 0) {
       throw new SevenError({
         code: "VALIDATION",
         message: "A chat task is already active for this room.",
@@ -56,78 +122,116 @@ export class ChatService {
       });
     }
 
-    this.startingRooms.add(roomId);
-    try {
-      const current = await this.rooms.get(roomId);
-      if (!current) {
-        throw new SevenError({
-          code: "VALIDATION",
-          message: "Room does not exist.",
-          details: { roomId },
+    const run: TaskRun<Room> = this.tasks.run(
+      {
+        kind: "chat",
+        ownerId: roomId,
+        timeoutMs,
+      },
+      async ({ taskId, signal, sealCancellation, sealDeadline }) => {
+        const current = await this.rooms.get(roomId, signal);
+        if (signal.aborted) {
+          throw new DOMException("Aborted", "AbortError");
+        }
+        if (!current) {
+          throw new SevenError({
+            code: "VALIDATION",
+            message: "Room does not exist.",
+            details: { roomId },
+          });
+        }
+
+        const withUser = commitMessage(current, {
+          role: "user",
+          content,
         });
-      }
+        await this.rooms.put(withUser, signal);
 
-      const withUser = commitMessage(current, {
-        role: "user",
-        content,
-      });
-      await this.rooms.put(withUser);
+        if (signal.aborted) {
+          throw new DOMException("Aborted", "AbortError");
+        }
 
-      const timeoutMs = options.timeoutMs ?? DEFAULT_CHAT_DEADLINE_MS;
-      const run: TaskRun<Room> = this.tasks.run(
-        {
-          kind: "chat",
-          ownerId: roomId,
-          timeoutMs,
-        },
-        async ({ taskId, signal }) => {
-          let draft = "";
+        let draft = "";
+        const output = stream({
+          room: withUser,
+          signal,
+        });
+        if (
+          !output ||
+          (typeof output !== "object" && typeof output !== "function") ||
+          typeof output[Symbol.asyncIterator] !== "function"
+        ) {
+          throw new SevenError({
+            code: "PROVIDER",
+            message: "Chat transport did not return an AsyncIterable.",
+          });
+        }
 
-          for await (const delta of transport.stream({
-            room: withUser,
-            signal,
-          })) {
-            if (signal.aborted) {
-              throw new DOMException("Aborted", "AbortError");
-            }
-            if (!delta) continue;
-            draft += delta;
-            options.onDraft?.(
-              Object.freeze({
-                roomId,
-                taskId,
-                content: draft,
-              }),
-            );
-          }
-
+        for await (const delta of output) {
           if (signal.aborted) {
             throw new DOMException("Aborted", "AbortError");
           }
-          if (!draft.trim()) {
+          if (typeof delta !== "string") {
             throw new SevenError({
               code: "PROVIDER",
-              message: "Provider completed without assistant content.",
-              retryable: true,
+              message: "Chat transport emitted a non-string delta.",
             });
           }
+          if (!delta) continue;
+          if (delta.length > MAX_ASSISTANT_DRAFT_CHARS - draft.length) {
+            throw new SevenError({
+              code: "PROVIDER",
+              message: "Assistant response exceeded the safe draft size limit.",
+            });
+          }
+          draft += delta;
 
-          const completed = commitMessage(withUser, {
-            role: "assistant",
-            content: draft,
+          if (onDraft) {
+            try {
+              onDraft(
+                Object.freeze({
+                  roomId,
+                  taskId,
+                  content: draft,
+                }),
+              );
+            } catch {
+              // UI/observer callbacks are intentionally isolated from generation.
+            }
+          }
+        }
+
+        if (signal.aborted) {
+          throw new DOMException("Aborted", "AbortError");
+        }
+        if (!draft.trim()) {
+          throw new SevenError({
+            code: "PROVIDER",
+            message: "Provider completed without assistant content.",
+            retryable: true,
           });
-          await this.rooms.put(completed);
-          return completed;
-        },
-      );
+        }
 
-      return Object.freeze({
-        taskId: run.taskId,
-        result: run.result,
-        cancel: run.cancel,
-      });
-    } finally {
-      this.startingRooms.delete(roomId);
-    }
+        if (!sealCancellation()) {
+          throw new DOMException("Aborted", "AbortError");
+        }
+
+        const completed = commitMessage(withUser, {
+          role: "assistant",
+          content: draft,
+        });
+        await this.rooms.put(completed, signal);
+        if (!sealDeadline()) {
+          throw new DOMException("Aborted", "AbortError");
+        }
+        return completed;
+      },
+    );
+
+    return Object.freeze({
+      taskId: run.taskId,
+      result: run.result,
+      cancel: run.cancel,
+    });
   }
 }
