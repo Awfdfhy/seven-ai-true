@@ -28,11 +28,13 @@ jobs:
       matrix:
         include:
           - name: Bug Hunt A08 mini-SWE UI evaluation audit
+            id: A08
             branch: bughunt/a08
             prompt_path: .seven-team/prompts/bughunt/A08.md
             report: .seven-team/reports/bughunt/A08.md
             commit_message: Bug Hunt A08 UI evaluation audit
           - name: Bug Hunt B08 mini-SWE RPG evaluation audit
+            id: B08
             branch: bughunt/b08
             prompt_path: .seven-team/prompts/bughunt/B08.md
             report: .seven-team/reports/bughunt/B08.md
@@ -121,6 +123,7 @@ jobs:
           MSWEA_SILENT_STARTUP: '1'
           MSWEA_COST_TRACKING: ignore_errors
           REPORT: ${{ matrix.report }}
+          BUG_ID: ${{ matrix.id }}
         run: |
           set -euo pipefail
           mkdir -p "$(dirname "$REPORT")"
@@ -128,9 +131,13 @@ jobs:
           validate_report() {
             test -f "$REPORT" || return 1
             grep -q 'BUGHUNT=COMPLETE' "$REPORT" || return 1
+            grep -Eq "^### .*${BUG_ID}-[0-9]{3}" "$REPORT" || return 1
             grep -qi 'Severity' "$REPORT" || return 1
             grep -qiE 'repro|reproduction|test idea' "$REPORT" || return 1
-            test "$(wc -c < "$REPORT")" -ge 1200 || return 1
+            ! grep -q 'mini-swe-agent (step' "$REPORT" || return 1
+            bytes="$(wc -c < "$REPORT")"
+            test "$bytes" -ge 1200 || return 1
+            test "$bytes" -le 30000 || return 1
           }
 
           set +e
