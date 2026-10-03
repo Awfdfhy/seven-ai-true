@@ -65,6 +65,14 @@ function provider(
   };
 }
 
+function immediateTransportForTest(): ChatTransport {
+  return {
+    async *stream() {
+      yield "ok";
+    },
+  };
+}
+
 class CountingRepository implements RoomRepository {
   readonly inner: InMemoryRoomRepository;
   puts = 0;
@@ -747,6 +755,58 @@ describe("Zero-bug regressions", () => {
     expect(plan.candidates[0]).toMatchObject({
       providerId: "a",
       modelId: "b::c",
+    });
+  });
+
+  it("registers chat ownership before storage preflight and can cancel a blocked room load", async () => {
+    const room = createRoom({ id: "blocked-load", now: 1 });
+    let releaseGet: (() => void) | undefined;
+    const getGate = new Promise<void>((resolve) => {
+      releaseGet = resolve;
+    });
+    let putCount = 0;
+
+    const repository: RoomRepository = {
+      async get(roomId) {
+        await getGate;
+        return roomId === room.id ? room : null;
+      },
+      async put() {
+        putCount += 1;
+      },
+      async list() {
+        return [room];
+      },
+      async delete() {},
+    };
+
+    const tasks = new TaskManager();
+    const chat = new ChatService(tasks, repository);
+    const run = await chat.send("blocked-load", "hello", immediateTransportForTest());
+
+    expect(tasks.listActive("blocked-load")).toHaveLength(1);
+    expect(run.cancel("user")).toBe(true);
+    releaseGet?.();
+
+    await expect(run.result).rejects.toMatchObject({ code: "CANCELLED" });
+    expect(putCount).toBe(0);
+  });
+
+  it("treats executor AbortError without TaskManager cancellation as failure, not cancellation", async () => {
+    const manager = new TaskManager();
+    const run = manager.run(
+      { kind: "system", ownerId: "abort-mismatch" },
+      async () => {
+        throw new DOMException("provider aborted internally", "AbortError");
+      },
+    );
+
+    await expect(run.result).rejects.toMatchObject({
+      code: "UNKNOWN",
+    });
+    expect(manager.get(run.taskId)).toMatchObject({
+      status: "failed",
+      error: { code: "UNKNOWN" },
     });
   });
 
