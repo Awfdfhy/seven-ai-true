@@ -1,0 +1,156 @@
+name: Seven Wave 01 — mini-SWE Evaluation Audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.seven-team/prompts/wave-01/A08.md'
+      - '.seven-team/prompts/wave-01/B08.md'
+      - '.github/workflows/wave-01-mini-swe.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: seven-wave01-mini-swe
+  cancel-in-progress: true
+
+jobs:
+  mini-swe-live:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - name: Wave 01 A08 mini-SWE UI evaluation audit
+            branch: agent/08-testing-ci
+            prompt_path: .seven-team/prompts/wave-01/A08.md
+            report: .seven-team/reports/wave-01/A08-ui-evaluation-harness.md
+            commit_message: Wave 01 A08 UI evaluation audit
+          - name: Wave 01 B08 mini-SWE RPG evaluation audit
+            branch: agent-b/08-rpg-testing
+            prompt_path: .seven-team/prompts/wave-01/B08.md
+            report: .seven-team/reports/wave-01/B08-rpg-evaluation-harness.md
+            commit_message: Wave 01 B08 RPG evaluation audit
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install mini-SWE-agent
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install mini-swe-agent
+
+      - name: Materialize guarded runtime and prompt from main
+        run: |
+          git fetch origin main
+          git show origin/main:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/kilo_anonymous_relay.py
+          git show origin/main:${{ matrix.prompt_path }} > /tmp/mini-prompt.md
+          cat > /tmp/seven-mini.yaml <<'YAML'
+          agent:
+            system_template: |
+              You are a controlled repository worker. Follow the task literally, minimize actions, and do not explore unrelated files.
+            instance_template: |
+              {{task}}
+            step_limit: 4
+            cost_limit: 3
+            mode: yolo
+          environment:
+            env:
+              PAGER: cat
+              MANPAGER: cat
+          model:
+            cost_tracking: ignore_errors
+            model_kwargs:
+              drop_params: true
+              api_base: http://127.0.0.1:8877/v1
+              api_key: local-dummy-key
+          YAML
+
+      - name: Start guarded relay
+        run: |
+          python /tmp/kilo_anonymous_relay.py > /tmp/seven-relay.log 2>&1 &
+          ready=0
+          for i in {1..20}; do
+            if curl -fsS http://127.0.0.1:8877/v1/models >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" -eq 1
+
+      - name: Preseed mini-SWE global config
+        run: |
+          mkdir -p "$HOME/.config/mini-swe-agent"
+          cat > "$HOME/.config/mini-swe-agent/.env" <<'ENV'
+          MSWEA_MODEL_NAME=openai/kilo-auto/free
+          OPENAI_API_KEY=local-dummy-key
+          OPENAI_API_BASE=http://127.0.0.1:8877/v1
+          MSWEA_COST_TRACKING=ignore_errors
+          ENV
+
+      - name: Run real mini-SWE agent
+        env:
+          OPENAI_API_BASE: http://127.0.0.1:8877/v1
+          OPENAI_API_KEY: local-dummy-key
+          MSWEA_CONFIGURED: 'true'
+          MSWEA_MODEL_NAME: openai/kilo-auto/free
+          MSWEA_SILENT_STARTUP: '1'
+          MSWEA_COST_TRACKING: ignore_errors
+        run: |
+          set -u
+          mkdir -p "$(dirname "${{ matrix.report }}")"
+          set +e
+          timeout 150s mini \
+            -c /tmp/seven-mini.yaml \
+            -m openai/kilo-auto/free \
+            -t "$(cat /tmp/mini-prompt.md)" \
+            -y
+          rc=$?
+          set -e
+          if test -f "${{ matrix.report }}" && grep -q 'WAVE01=COMPLETE' "${{ matrix.report }}"; then
+            echo "mini-SWE produced required report; accepting output (rc=$rc)."
+          else
+            echo "mini-SWE did not produce required report (rc=$rc)." >&2
+            exit "${rc:-1}"
+          fi
+
+      - name: Sanitize to allowed output only
+        run: |
+          set -euo pipefail
+          EXPECTED='${{ matrix.report }}'
+          cp "$EXPECTED" /tmp/seven-agent-report.md
+          git reset --hard HEAD
+          git clean -fdx
+          mkdir -p "$(dirname "$EXPECTED")"
+          cp /tmp/seven-agent-report.md "$EXPECTED"
+          git add -f "$EXPECTED"
+          count="$(git diff --cached --name-only | wc -l)"
+          test "$count" -le 1
+          if test "$count" -eq 1; then
+            test "$(git diff --cached --name-only)" = "$EXPECTED"
+            echo "REPORT_CHANGED=1" >> "$GITHUB_ENV"
+          else
+            echo "REPORT_CHANGED=0" >> "$GITHUB_ENV"
+          fi
+
+      - name: Commit and push controlled report
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if test "${REPORT_CHANGED:-0}" = "0"; then exit 0; fi
+          git config user.name 'Seven Team Runtime'
+          git config user.email 'actions@users.noreply.github.com'
+          git commit -m "${{ matrix.commit_message }}"
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:${{ matrix.branch }}

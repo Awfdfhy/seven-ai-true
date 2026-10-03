@@ -1,0 +1,137 @@
+name: Seven Wave 01 — Qwen Performance Audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.seven-team/runtime/kilo_anonymous_relay.py'
+      - '.seven-team/prompts/wave-01/A09.md'
+      - '.seven-team/prompts/wave-01/B09.md'
+      - '.github/workflows/wave-01-qwen.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: seven-wave01-qwen
+  cancel-in-progress: true
+
+jobs:
+  qwen-live:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - name: Wave 01 A09 Qwen UI performance audit
+            branch: agent/09-performance
+            prompt_path: .seven-team/prompts/wave-01/A09.md
+            report: .seven-team/reports/wave-01/A09-ui-performance.md
+            commit_message: Wave 01 A09 UI performance audit
+          - name: Wave 01 B09 Qwen RPG performance audit
+            branch: agent-b/09-rpg-performance
+            prompt_path: .seven-team/prompts/wave-01/B09.md
+            report: .seven-team/reports/wave-01/B09-rpg-performance.md
+            commit_message: Wave 01 B09 RPG performance audit
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Qwen Code
+        run: npm install -g @qwen-code/qwen-code@latest
+
+      - name: Materialize runtime and prompt from main
+        run: |
+          git fetch origin main
+          git show origin/main:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/kilo_anonymous_relay.py
+          git show origin/main:${{ matrix.prompt_path }} > /tmp/qwen-prompt.md
+
+      - name: Start compatibility relay
+        env:
+          SEVEN_RELAY_BRIDGE_STREAM: '1'
+        run: |
+          python /tmp/kilo_anonymous_relay.py > /tmp/seven-relay.log 2>&1 &
+          ready=0
+          for i in {1..20}; do
+            if curl -fsS http://127.0.0.1:8877/v1/models >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" -eq 1
+
+      - name: Run real Qwen Code agent
+        env:
+          OPENAI_API_KEY: local-dummy-key
+          OPENAI_BASE_URL: http://127.0.0.1:8877/v1
+          OPENAI_MODEL: kilo-auto/free
+          QWEN_CODE_SUPPRESS_YOLO_WARNING: 'true'
+        run: |
+          set -u
+          mkdir -p "$(dirname "${{ matrix.report }}")"
+          rc=1
+          for attempt in 1 2 3; do
+            echo "Qwen live attempt $attempt/3"
+            set +e
+            timeout 100s qwen -p "$(cat /tmp/qwen-prompt.md)" \
+              --approval-mode yolo \
+              --output-format text \
+              --model kilo-auto/free \
+              --openai-api-key local-dummy-key \
+              --openai-base-url http://127.0.0.1:8877/v1
+            rc=$?
+            set -e
+            if test -f "${{ matrix.report }}" && grep -q 'WAVE01=COMPLETE' "${{ matrix.report }}"; then
+              echo "Qwen produced required report; accepting output (attempt=$attempt rc=$rc)."
+              rc=0
+              break
+            fi
+            sleep $((attempt * 3))
+          done
+          if test "$rc" -ne 0; then
+            echo "Qwen did not produce required PASS report after retries." >&2
+            exit "$rc"
+          fi
+
+      - name: Sanitize to allowed output only
+        run: |
+          set -euo pipefail
+          EXPECTED='${{ matrix.report }}'
+          cp "$EXPECTED" /tmp/seven-agent-report.md
+          git reset --hard HEAD
+          git clean -fdx
+          mkdir -p "$(dirname "$EXPECTED")"
+          cp /tmp/seven-agent-report.md "$EXPECTED"
+          git add -f "$EXPECTED"
+          count="$(git diff --cached --name-only | wc -l)"
+          test "$count" -le 1
+          if test "$count" -eq 1; then
+            test "$(git diff --cached --name-only)" = "$EXPECTED"
+            echo "REPORT_CHANGED=1" >> "$GITHUB_ENV"
+          else
+            echo "REPORT_CHANGED=0" >> "$GITHUB_ENV"
+          fi
+
+      - name: Commit and push controlled report
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if test "${REPORT_CHANGED:-0}" = "0"; then
+            echo "Report already matches branch; idempotent success."
+            exit 0
+          fi
+          git config user.name 'Seven Team Runtime'
+          git config user.email 'actions@users.noreply.github.com'
+          git commit -m "${{ matrix.commit_message }}"
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:${{ matrix.branch }}
