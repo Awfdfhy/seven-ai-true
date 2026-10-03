@@ -328,7 +328,7 @@ export class ContextBuilder {
       if (!message) continue;
       const shaped = providerMessage(message);
       const cost = this.estimator.estimateMessages([shaped]);
-      if (total + cost > maxInputTokens) continue;
+      if (total + cost > maxInputTokens) break;
       chosen.push(shaped);
       chosenIndexes.push(index);
       total += cost;
