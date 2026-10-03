@@ -134,13 +134,13 @@ export class ChatService {
             throw new DOMException("Aborted", "AbortError");
           }
           if (!delta) continue;
-          draft += delta;
-          if (draft.length > MAX_ASSISTANT_DRAFT_CHARS) {
+          if (delta.length > MAX_ASSISTANT_DRAFT_CHARS - draft.length) {
             throw new SevenError({
               code: "PROVIDER",
               message: "Assistant response exceeded the safe draft size limit.",
             });
           }
+          draft += delta;
 
           if (options.onDraft) {
             try {
