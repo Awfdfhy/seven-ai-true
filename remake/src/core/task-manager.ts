@@ -240,6 +240,7 @@ export class TaskManager {
             taskId,
             signal: controller.signal,
             sealCancellation: () => this.sealCancellation(task),
+            sealDeadline: () => this.sealDeadline(task),
           }),
         );
       })
