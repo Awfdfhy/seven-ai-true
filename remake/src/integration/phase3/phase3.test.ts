@@ -201,7 +201,6 @@ describe("Phase 3 memory + context", () => {
     });
     expect(result.omittedMessages.map((message) => message.id)).toEqual([
       "m1",
-      "m2",
     ]);
     expect(result.estimatedInputTokens).toBeLessThanOrEqual(
       result.maxInputTokens,
@@ -306,6 +305,39 @@ describe("Phase 3 memory + context", () => {
 
     expect(second.omittedMessages).toHaveLength(0);
     expect(second.summaryUsed).toBe(true);
+  });
+
+  it("rejects an oversized generated summary before it becomes durable", async () => {
+    let room = createRoom({ id: "oversized-summary", now: 1 });
+    room = addTurn(room, "m1", "user", "old ".repeat(900), 2);
+    room = addTurn(room, "m2", "user", "latest", 3);
+
+    const repository = new InMemoryMemoryRepository();
+    const service = new MemoryContextService(repository, {
+      async summarize() {
+        return "summary ".repeat(500);
+      },
+    });
+
+    await expect(
+      service.prepare({
+        room,
+        systemPrompt: "You are Seven.",
+        contextWindow: 1200,
+        signal: new AbortController().signal,
+        policy: {
+          reservedOutputTokens: 300,
+          memoryTokenBudget: 0,
+          summaryTokenBudget: 50,
+          maxMemoryItems: 0,
+        },
+      }),
+    ).rejects.toMatchObject({
+      code: "PROVIDER",
+      message: "Context summarizer exceeded the summary token budget.",
+    });
+
+    await expect(repository.getSummary("oversized-summary")).resolves.toBeNull();
   });
 
   it("does not persist a summary after cancellation", async () => {
