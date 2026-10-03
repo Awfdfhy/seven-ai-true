@@ -82,7 +82,7 @@ Status: **PASS**
 - Foundation: COMPLETE
 - 1/12 Chat + Rooms + Persistence: COMPLETE
 - 2/12 Models + Routing: COMPLETE
-- 3/12 Memory + Context: CLOSURE CANDIDATE — functional scope complete; final merge gates pending
+- 3/12 Memory + Context: COMPLETE
   - Versioned global + room memory domain.
   - In-memory and IndexedDB memory + summary persistence.
   - Explicit manual-delete-only memory capacity policy; no silent eviction.
@@ -105,6 +105,6 @@ Status: **PASS**
   - Prepared-context runtime validation before provider dispatch.
   - Persistent/adversarial Phase 3 integration tests are included in the permanent suite.
   - Closure-candidate evidence: Seven Remake V3 CI #188 SUCCESS; 16/16 test files PASS; 190/190 tests PASS; strict typecheck PASS; build PASS; dependency audits 0 vulnerabilities.
-  - Remaining before 3/12 closure: final-head legacy regression, PR #61 merge, post-merge Remake CI.
+  - Closure gates passed: final-head legacy regression PASS; PR #61 merged; post-merge Remake CI PASS.
 
-**REMAKE_PROGRESS=2/12_COMPLETE + 3/12_CLOSURE_CANDIDATE**
+**REMAKE_PROGRESS=3/12**
