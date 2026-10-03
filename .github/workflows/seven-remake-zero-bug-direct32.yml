@@ -7,6 +7,7 @@ on:
       - remake-manager/zero-bug-pass-01
     paths:
       - '.github/workflows/seven-remake-zero-bug-direct32.yml'
+      - '.seven-team/zero-bug/manifest.json'
 
 permissions:
   contents: write
@@ -267,10 +268,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+          cp .seven-team/zero-bug/AUDIT_DIRECT32_SUMMARY.md /tmp/direct32-summary.md
           git checkout remake-manager/zero-bug-pass-01
           git pull --rebase origin remake-manager/zero-bug-pass-01
-          cp .seven-team/zero-bug/AUDIT_DIRECT32_SUMMARY.md /tmp/direct32-summary.md || true
-          git checkout "$TARGET_SHA" -- .seven-team/zero-bug 2>/dev/null || true
           mkdir -p .seven-team/zero-bug
           cp /tmp/direct32-summary.md .seven-team/zero-bug/AUDIT_DIRECT32_SUMMARY.md
           git add -f .seven-team/zero-bug/AUDIT_DIRECT32_SUMMARY.md
