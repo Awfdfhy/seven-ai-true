@@ -67,7 +67,7 @@ jobs:
         run: |
           set -euo pipefail
           git show HEAD:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/kilo_anonymous_relay.py
-          git checkout --detach 68a92d06842420a02a60ea78b74d7f6ab1684f13
+          git checkout --detach c247c001acd4b73733a28e6e3f193c83f15f8487
           python - <<'PY'
           from pathlib import Path
           files=[
@@ -242,7 +242,7 @@ jobs:
           findings=[(r['id'],f) for r in results for f in r['findings']]
           lines=[
             '# Seven Remake — Current32 Final Zero-Bug Audit','',
-            'Target SHA: 68a92d06842420a02a60ea78b74d7f6ab1684f13',
+            'Target SHA: c247c001acd4b73733a28e6e3f193c83f15f8487',
             'Valid auditor reports: 32/32',
             f'Concrete findings: {len(findings)}','',
             '## Auditor results',
@@ -264,7 +264,7 @@ jobs:
             '',
             'CURRENT32_VALID=32/32',
             f'CURRENT32_FINDINGS={len(findings)}',
-            'TARGET_SHA=68a92d06842420a02a60ea78b74d7f6ab1684f13',
+            'TARGET_SHA=c247c001acd4b73733a28e6e3f193c83f15f8487',
             'CURRENT32=COMPLETE',''
           ]
           pathlib.Path('/tmp/CURRENT32_FINAL.md').write_text('\n'.join(lines),encoding='utf-8')
