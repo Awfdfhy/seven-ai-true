@@ -1910,6 +1910,39 @@ describe("IndexedDB lifecycle regressions", () => {
     await v1.close();
   });
 
+  it("rejects a blocked IndexedDB upgrade promptly and succeeds on retry after the blocker closes", async () => {
+    const name = dbName("blocked-policy");
+    const blocker = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open(name, 1);
+      request.onupgradeneeded = () => {
+        if (!request.result.objectStoreNames.contains("rooms")) {
+          request.result.createObjectStore("rooms", { keyPath: "id" });
+        }
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+
+    // Intentionally keep the old connection open through versionchange.
+    blocker.onversionchange = () => {};
+
+    const repository = new IndexedDbRoomRepository({
+      databaseName: name,
+      version: 2,
+    });
+
+    await expect(repository.list()).rejects.toMatchObject({
+      code: "STORAGE",
+      retryable: true,
+      message: "Room storage upgrade is blocked.",
+    });
+
+    blocker.close();
+
+    await expect(repository.list()).resolves.toEqual([]);
+    await repository.close();
+  });
+
   it("validates rooms before writing them to IndexedDB", async () => {
     const name = dbName("invalid-write");
     const repository = new IndexedDbRoomRepository({ databaseName: name });
