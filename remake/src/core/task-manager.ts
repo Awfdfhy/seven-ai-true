@@ -231,11 +231,13 @@ export class TaskManager {
         }
         task.status = "running";
         this.emit(task);
-        return executor({
-          taskId,
-          signal: controller.signal,
-          sealCancellation: () => this.sealCancellation(task),
-        });
+        return this.executeWithAbort(task, () =>
+          executor({
+            taskId,
+            signal: controller.signal,
+            sealCancellation: () => this.sealCancellation(task),
+          }),
+        );
       })
       .then(
         (value) => {
@@ -348,6 +350,40 @@ export class TaskManager {
         message: "Task ownerId must be a canonical non-empty string.",
       });
     }
+  }
+
+  private executeWithAbort<T>(
+    task: MutableTask,
+    executor: () => Promise<T>,
+  ): Promise<T> {
+    const signal = task.controller.signal;
+    if (signal.aborted) {
+      return Promise.reject(new DOMException("Aborted", "AbortError"));
+    }
+
+    return new Promise<T>((resolve, reject) => {
+      let settled = false;
+      const cleanup = () => signal.removeEventListener("abort", onAbort);
+      const finishResolve = (value: T) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        resolve(value);
+      };
+      const finishReject = (error: unknown) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        reject(error);
+      };
+      const onAbort = () =>
+        finishReject(new DOMException("Aborted", "AbortError"));
+
+      signal.addEventListener("abort", onAbort, { once: true });
+      Promise.resolve()
+        .then(executor)
+        .then(finishResolve, finishReject);
+    });
   }
 
   private sealCancellation(task: MutableTask): boolean {
