@@ -319,7 +319,9 @@ export class RoutedChatTransport implements ChatTransport {
           return;
         }
 
-        this.health?.recordFailure(provider.id, this.now());
+        this.health?.recordFailure(provider.id, this.now(), {
+          attemptStartedAt,
+        });
         failures.push(`${candidate.providerId}:empty`);
       } catch (error) {
         if (context.signal.aborted) throw error;
@@ -333,11 +335,10 @@ export class RoutedChatTransport implements ChatTransport {
         }
 
         const retryAfter = retryAfterMs(error);
-        this.health?.recordFailure(
-          provider.id,
-          failedAt,
-          retryAfter === undefined ? {} : { retryAfterMs: retryAfter },
-        );
+        this.health?.recordFailure(provider.id, failedAt, {
+          attemptStartedAt,
+          ...(retryAfter === undefined ? {} : { retryAfterMs: retryAfter }),
+        });
 
         if (meaningfulOutputStarted) {
           if (error instanceof SevenError) throw error;
