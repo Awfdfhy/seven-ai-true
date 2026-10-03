@@ -217,8 +217,20 @@ Status: **PASS**
   - Combined Legacy Seven + verified legacy release artifact: PASS.
   - Final Manager PR #74 merged; post-merge Remake CI PASS.
   - Normal application boot is now owned by one SevenRuntime/AppKernel.
-  - Current installed-remake release readiness remains INCONCLUSIVE until a real remake APK packaging/device gate provides exact payload identity + installed smoke evidence.
+
+- Remake Android Release Gate: COMPLETE
+  - Dedicated non-legacy Capacitor package: `ai.seven.remake.v3`.
+  - Production `SevenRemakeNative` bridge implements the Phase 7 request/response envelope.
+  - Deterministic SHA-256 release manifest is embedded into the APK.
+  - Installed instrumentation verifies package id, version and every web-payload file hash.
+  - Installed WebView boot/smoke and exact request-id native bridge round-trip: PASS.
+  - Android 14 / API 34 installed gate: PASS.
+  - Android 16 / API 36 installed gate: PASS.
+  - PR #79 merged as `a8000ca65ff766a22c510454a3fa8d914f97a314`.
+  - Post-merge Remake CI run `37160934367`: PASS.
+  - Post-merge Android Release Gate run `37160934350`: PASS.
+  - Verified artifact: `Seven-Remake-V3.apk`, artifact id `11287572718`, digest `sha256:aa75260a9f713a474a5f02d04c78479a60397b69c26977a896ff86a19ca7b445`.
 
 **REMAKE_PROGRESS=12/12**
 
-**RELEASE_READY=INCONCLUSIVE** — implementation is complete, but installed-remake Android artifact identity/smoke evidence does not yet exist.
+**RELEASE_READY=PASS** — real Remake APK packaging, exact installed payload identity, native bridge round-trip and installed Android smoke are proven on API 34 and API 36.
