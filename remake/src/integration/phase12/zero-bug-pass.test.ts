@@ -1285,6 +1285,49 @@ describe("Zero-bug regressions", () => {
     expect(output).toHaveLength(20_000);
   });
 
+  it("enforces deadlines even when the executor ignores AbortSignal", async () => {
+    vi.useFakeTimers();
+    const manager = new TaskManager();
+    const never = new Promise<string>(() => {});
+
+    const run = manager.run(
+      {
+        kind: "system",
+        ownerId: "uncooperative-deadline",
+        timeoutMs: 25,
+      },
+      async () => never,
+    );
+    const rejection = expect(run.result).rejects.toMatchObject({
+      code: "DEADLINE_EXCEEDED",
+    });
+
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(25);
+    await rejection;
+
+    expect(manager.listActive("uncooperative-deadline")).toHaveLength(0);
+    expect(manager.get(run.taskId)).toMatchObject({
+      status: "cancelled",
+      error: { code: "DEADLINE_EXCEEDED" },
+    });
+    vi.useRealTimers();
+  });
+
+  it("enforces user cancellation even when the executor ignores AbortSignal", async () => {
+    const manager = new TaskManager();
+    const never = new Promise<string>(() => {});
+    const run = manager.run(
+      { kind: "system", ownerId: "uncooperative-user-cancel" },
+      async () => never,
+    );
+
+    await Promise.resolve();
+    expect(run.cancel("user")).toBe(true);
+    await expect(run.result).rejects.toMatchObject({ code: "CANCELLED" });
+    expect(manager.listActive("uncooperative-user-cancel")).toHaveLength(0);
+  });
+
   it("validates cancellation reasons through the TaskRun handle too", async () => {
     const manager = new TaskManager();
     const run = manager.run(
