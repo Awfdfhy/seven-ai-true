@@ -133,6 +133,12 @@ export class ChatService {
           if (signal.aborted) {
             throw new DOMException("Aborted", "AbortError");
           }
+          if (typeof delta !== "string") {
+            throw new SevenError({
+              code: "PROVIDER",
+              message: "Chat transport emitted a non-string delta.",
+            });
+          }
           if (!delta) continue;
           if (delta.length > MAX_ASSISTANT_DRAFT_CHARS - draft.length) {
             throw new SevenError({
