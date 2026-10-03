@@ -64,7 +64,8 @@ function validateHealth(entry: ProviderHealth): void {
     !entry ||
     typeof entry !== "object" ||
     typeof entry.providerId !== "string" ||
-    !entry.providerId.trim()
+    !entry.providerId.trim() ||
+    entry.providerId !== entry.providerId.trim()
   ) {
     throw new SevenError({
       code: "VALIDATION",
@@ -90,7 +91,7 @@ export class ModelRegistry {
     providerId: string,
     models: readonly ModelDescriptor[],
   ): void {
-    if (typeof providerId !== "string" || !providerId.trim()) {
+    if (typeof providerId !== "string" || !providerId.trim() || providerId !== providerId.trim()) {
       throw new SevenError({
         code: "VALIDATION",
         message: "providerId must not be empty.",
@@ -159,7 +160,7 @@ export class ProviderHealthTracker {
       ids
         .sort()
         .map((providerId) => {
-          if (typeof providerId !== "string" || !providerId.trim()) {
+          if (typeof providerId !== "string" || !providerId.trim() || providerId !== providerId.trim()) {
             throw new SevenError({
               code: "VALIDATION",
               message: "providerId must not be empty.",
@@ -176,7 +177,7 @@ export class ProviderHealthTracker {
   }
 
   recordSuccess(providerId: string, attemptStartedAt = Date.now()): void {
-    if (typeof providerId !== "string" || !providerId.trim()) {
+    if (typeof providerId !== "string" || !providerId.trim() || providerId !== providerId.trim()) {
       throw new SevenError({
         code: "VALIDATION",
         message: "providerId must not be empty.",
@@ -217,7 +218,7 @@ export class ProviderHealthTracker {
         message: "Provider failure options must be an object.",
       });
     }
-    if (typeof providerId !== "string" || !providerId.trim()) {
+    if (typeof providerId !== "string" || !providerId.trim() || providerId !== providerId.trim()) {
       throw new SevenError({
         code: "VALIDATION",
         message: "providerId must not be empty.",
