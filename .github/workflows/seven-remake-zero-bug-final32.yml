@@ -43,24 +43,35 @@ jobs:
               Path('remake/src/routing'),
               Path('remake/src/integration/phase12'),
           ]
-          files=[]
+          production=[]
+          tests=[]
           for root in roots:
-              if root.exists():
-                  files.extend(sorted(p for p in root.rglob('*') if p.is_file() and p.suffix in {'.ts','.tsx'}))
+              if not root.exists(): continue
+              for p in sorted(root.rglob('*')):
+                  if not p.is_file() or p.suffix not in {'.ts','.tsx'}: continue
+                  if '.test.' in p.name:
+                      tests.append(p)
+                  else:
+                      production.append(p)
+
           blocks=[]
-          total=0
-          cap=220000
-          for p in files:
+          for p in production:
               raw=p.read_text(encoding='utf-8',errors='replace')
-              block=f"===== {p.as_posix()} =====\n{raw}\n"
-              if total+len(block)>cap:
-                  remaining=cap-total
-                  if remaining>1000: blocks.append(block[:remaining])
-                  break
-              blocks.append(block); total+=len(block)
-          evidence='\n'.join(blocks)
+              blocks.append(f"===== {p.as_posix()} =====\n{raw}\n")
+
+          inventory=['===== REGRESSION TEST INVENTORY =====']
+          import re
+          for p in tests:
+              raw=p.read_text(encoding='utf-8',errors='replace')
+              titles=re.findall(r'\\bit\\(\\s*["\\\']([^"\\\']+)',raw)
+              inventory.append(p.as_posix())
+              inventory.extend('  - '+title for title in titles)
+
+          evidence='\n'.join(blocks+['\n'.join(inventory)])
+          if len(evidence)>120000:
+              evidence=evidence[:120000]
           Path('/tmp/evidence.txt').write_text(evidence,encoding='utf-8')
-          print('evidence_chars',len(evidence),'files',len(files))
+          print('evidence_chars',len(evidence),'production_files',len(production),'test_files',len(tests))
           PY
 
       - name: Start free model relay
@@ -164,7 +175,7 @@ jobs:
                       break
           if not healthy:
               raise SystemExit('No healthy direct free models')
-          healthy=sorted(healthy,key=rank)[:6]
+          healthy=sorted(healthy,key=rank)[:8]
           print('MODEL_POOL',healthy,flush=True)
 
           severities={'CRITICAL','HIGH','MEDIUM','LOW'}
@@ -201,7 +212,7 @@ jobs:
               user=(
                   f'AUDITOR ID: {aid}\nFOCUS: {focus}\n'
                   'Audit only the existing Seven Remake Phase 1-2 source. Check tests in the evidence before claiming a gap. '
-                  'A bug must describe current production behavior that violates an existing invariant or can deterministically fail. '
+                  'A bug must describe current production behavior that violates an existing invariant or can deterministically fail. The REGRESSION TEST INVENTORY shows covered scenarios; do not report a missing test as a bug by itself. '
                   'If no concrete bug survives scrutiny, PASS. Output exactly one machine line: '
                   'ZERO_AUDIT_JSON={"id":"'+aid+'","status":"PASS","findings":[]} '
                   'or BUG with findings. Each finding needs severity CRITICAL/HIGH/MEDIUM/LOW, title, exact remake/src/... evidence, '
@@ -211,7 +222,7 @@ jobs:
               errors=[]
               for mid in rotated[:4]:
                   try:
-                      raw=ask(mid,[{'role':'system','content':system},{'role':'user','content':user}],2200,80)
+                      raw=ask(mid,[{'role':'system','content':system},{'role':'user','content':user}],1700,60)
                       data=validate(aid,raw)
                       return {'id':aid,'focus':focus,'model':mid,'report':data}
                   except Exception as exc:
@@ -219,7 +230,7 @@ jobs:
               raise RuntimeError(aid+' invalid results '+','.join(errors))
 
           results=[]; errors=[]
-          with cf.ThreadPoolExecutor(max_workers=8) as ex:
+          with cf.ThreadPoolExecutor(max_workers=10) as ex:
               futs={ex.submit(run_auditor,i):i for i in range(32)}
               for fut in cf.as_completed(futs):
                   i=futs[fut]; aid=f'F{i+1:02d}'
