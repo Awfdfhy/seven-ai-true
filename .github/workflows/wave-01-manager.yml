@@ -2,6 +2,11 @@ name: Seven Wave 01 — Manager Review and Integration
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/wave-01-manager.yml'
   workflow_run:
     workflows:
       - Seven Wave 01 — Cline Product Audit
@@ -308,6 +313,9 @@ jobs:
           ]
           Path('.seven-team/cohesion/WAVE01_MANAGER_SUMMARY.md').write_text('\n'.join(lines),encoding='utf-8')
           PY
+
+      - name: Install regression dependencies
+        run: npm install --package-lock=false --ignore-scripts --no-audit --no-fund
 
       - name: Run Seven main regression suite
         run: npm test
