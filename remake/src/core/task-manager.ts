@@ -299,20 +299,26 @@ export class TaskManager {
     return {
       taskId,
       result,
-      cancel: (reason = "user") => this.requestCancel(task, reason),
+      cancel: (reason = "user") =>
+        this.requestCancel(task, this.validateCancelReason(reason)),
     };
   }
 
   cancel(taskId: string, reason = "user"): boolean {
     const id = this.validateTaskId(taskId);
+    const normalizedReason = this.validateCancelReason(reason);
+    const task = this.tasks.get(id);
+    return task ? this.requestCancel(task, normalizedReason) : false;
+  }
+
+  private validateCancelReason(reason: string): string {
     if (typeof reason !== "string" || !reason.trim()) {
       throw new SevenError({
         code: "VALIDATION",
         message: "Cancellation reason must be a non-empty string.",
       });
     }
-    const task = this.tasks.get(id);
-    return task ? this.requestCancel(task, reason.trim()) : false;
+    return reason.trim();
   }
 
   private validateTaskId(taskId: string): string {
