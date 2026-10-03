@@ -36,7 +36,7 @@ let gradle=fs.readFileSync(gradlePath,'utf8');
 if(!gradle.includes('android {'))throw new Error('generated Android app Gradle android block missing');
 if(!/buildTypes\s*\{\s*release\s*\{/.test(gradle))throw new Error('generated Android app Gradle release buildType missing');
 if(!/versionCode\s+\d+/.test(gradle)||!/versionName\s+["'][^"']+["']/.test(gradle))throw new Error('generated Android version anchors missing');
-gradle=gradle.replace(/versionCode\s+\d+/,'versionCode 24').replace(/versionName\s+["'][^"']+["']/,'versionName "2.4.0-modern"');
+gradle=gradle.replace(/versionCode\s+\d+/,'versionCode 242').replace(/versionName\s+["'][^"']+["']/,'versionName "2.4.2-ui-zero-key"');
 const signingPrelude=`def sevenCiKeystore = project.findProperty("sevenCiKeystore")\ndef sevenCiStorePass = project.findProperty("sevenCiStorePass")\ndef sevenCiKeyAlias = project.findProperty("sevenCiKeyAlias")\ndef sevenCiKeyPass = project.findProperty("sevenCiKeyPass")\n`;
 if(!gradle.includes('def sevenCiKeystore'))gradle=signingPrelude+gradle;
 gradle=gradle.replace('android {',`android {\n    if (sevenCiKeystore) {\n        testBuildType = "release"\n    }\n    signingConfigs {\n        if (sevenCiKeystore) {\n            sevenCi {\n                storeFile file(sevenCiKeystore)\n                storePassword sevenCiStorePass\n                keyAlias sevenCiKeyAlias\n                keyPassword sevenCiKeyPass\n            }\n        }\n    }`);
@@ -93,6 +93,9 @@ public class SevenSmokeTest {
       waitFor(webView,"Boolean(typeof roomPersistence!=='undefined'&&roomPersistence.status().ready)");
       assertEquals("true",js(webView,"location.origin==='https://localhost'"));
       assertEquals("true",js(webView,"Boolean(document.getElementById('userInput'))"));
+      assertEquals("true",js(webView,"Boolean(window.SevenRemake&&window.SevenIntelligence&&document.getElementById('seven-app'))"));
+      assertEquals("true",js(webView,"isFreeProviderConfigured('kilo')&&isFreeProviderConfigured('llm7')&&hasAnyConfiguredFreeProvider()"));
+      assertEquals("true",js(webView,"(()=>{openSettings();const s=document.getElementById('providersSection');s.open=true;return [...s.querySelectorAll('input,textarea,select')].every(el=>{const cs=getComputedStyle(el),r=el.getBoundingClientRect();return el.hidden||cs.display==='none'||cs.visibility==='hidden'||r.width===0||r.height===0})})()"));
       assertEquals("true",js(webView,"Boolean(document.querySelector('#seven-app[data-seven-remake=\\\"1\\"]'))"));
       assertEquals("true",js(webView,"document.documentElement.scrollWidth<=document.documentElement.clientWidth+2"));
       assertEquals("true",js(webView,"SevenPdf.loaded===false"));
