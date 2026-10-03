@@ -86,8 +86,8 @@ jobs:
           disable-animations: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: |
-            rm -rf /data/local/tmp/seven-visual || true
-            mkdir -p /data/local/tmp/seven-visual
+            adb shell rm -rf /data/local/tmp/seven-visual || true
+            adb shell mkdir -p /data/local/tmp/seven-visual
             cd android
             ./gradlew --no-daemon :app:connectedDebugAndroidTest
             cd ..
@@ -106,8 +106,8 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: |
             adb shell settings put system font_scale 1.15 || true
-            rm -rf /data/local/tmp/seven-visual || true
-            mkdir -p /data/local/tmp/seven-visual
+            adb shell rm -rf /data/local/tmp/seven-visual || true
+            adb shell mkdir -p /data/local/tmp/seven-visual
             cd android
             ./gradlew --no-daemon :app:connectedDebugAndroidTest
             cd ..
