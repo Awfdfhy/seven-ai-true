@@ -108,6 +108,33 @@ export class TaskManager {
     spec: TaskSpec,
     executor: (context: TaskContext) => Promise<T>,
   ): TaskRun<T> {
+    const validKinds: readonly TaskKind[] = [
+      "chat",
+      "research",
+      "attachment",
+      "github",
+      "rpg",
+      "system",
+    ];
+    if (!validKinds.includes(spec.kind)) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Task kind is invalid.",
+      });
+    }
+    if (typeof spec.ownerId !== "string" || !spec.ownerId.trim()) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Task ownerId must not be empty.",
+      });
+    }
+    if (typeof executor !== "function") {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Task executor must be a function.",
+      });
+    }
+
     const timeoutMs = spec.timeoutMs;
     if (
       timeoutMs !== undefined &&
