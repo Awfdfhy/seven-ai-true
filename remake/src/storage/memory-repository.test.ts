@@ -50,6 +50,17 @@ for (const backend of ["memory", "indexeddb"] as const) {
       await repo.putSummary(summary("other"));
       expect(await repo.getSummary("room")).toBeNull();
     });
+    it("compare-and-swaps summaries without accepting stale writers", async () => {
+      const repo = make();
+      const first = summary("room");
+      const second = { ...first, content: "Newer facts", updatedAt: 2 };
+      expect(await repo.compareAndSwapSummary("room", null, first)).toBe(true);
+      expect(await repo.compareAndSwapSummary("room", null, second)).toBe(false);
+      expect(await repo.compareAndSwapSummary("room", first, second)).toBe(true);
+      expect(await repo.compareAndSwapSummary("room", first, null)).toBe(false);
+      expect(await repo.compareAndSwapSummary("room", second, null)).toBe(true);
+      expect(await repo.getSummary("room")).toBeNull();
+    });
     it("rejects malformed values and invalid signals with structured errors", async () => {
       const repo = make();
       await expect(repo.put({ ...memory("id"), priority: NaN })).rejects.toMatchObject({ code: "VALIDATION" });
@@ -99,6 +110,14 @@ async function rawPut(db: IDBDatabase, store: string, value: unknown) {
     tx.onabort = () => reject(tx.error);
   });
 }
+async function rawGet(db: IDBDatabase, store: string, key: IDBValidKey): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, "readonly");
+    const request = tx.objectStore(store).get(key);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
 
 describe("IndexedDB durability and corrupt storage", () => {
   it("restores memory and summary after closing and constructing a fresh repository", async () => {
@@ -120,6 +139,46 @@ describe("IndexedDB durability and corrupt storage", () => {
     expect(writes.filter((result) => result.status === "fulfilled")).toHaveLength(1);
     expect(writes.filter((result) => result.status === "rejected")).toHaveLength(1);
     expect(await first.listForRoom("room")).toHaveLength(1);
+  });
+  it("allows only one cross-repository summary CAS winner", async () => {
+    const name = crypto.randomUUID();
+    const first = disk(name);
+    const second = disk(name);
+    const a = summary("room");
+    const b = { ...a, content: "Competing summary" };
+    const results = await Promise.all([
+      first.compareAndSwapSummary("room", null, a),
+      second.compareAndSwapSummary("room", null, b),
+    ]);
+    expect(results.filter(Boolean)).toHaveLength(1);
+    expect(["Earlier facts", "Competing summary"]).toContain((await first.getSummary("room"))?.content);
+  });
+
+  it("migrates legacy v1 summaries durably on read", async () => {
+    const name = crypto.randomUUID();
+    const repo = disk(name);
+    await repo.put(memory("seed"));
+    const db = await rawDb(name);
+    try {
+      await rawPut(db, "summaries", {
+        schemaVersion: 1,
+        roomId: "room",
+        content: "Legacy facts",
+        throughMessageId: "m1",
+        createdAt: 1,
+        updatedAt: 1,
+      });
+    } finally {
+      db.close();
+    }
+    const migrated = await repo.getSummary("room");
+    expect(migrated).toMatchObject({ schemaVersion: 2, sourceFingerprint: null, content: "Legacy facts" });
+    const verify = await rawDb(name);
+    try {
+      expect(await rawGet(verify, "summaries", "room")).toMatchObject({ schemaVersion: 2, sourceFingerprint: null });
+    } finally {
+      verify.close();
+    }
   });
   it("fails closed on corrupted records and summaries", async () => {
     const name = crypto.randomUUID();
