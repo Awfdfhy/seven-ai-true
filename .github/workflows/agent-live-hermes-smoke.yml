@@ -1,4 +1,4 @@
-name: Seven Cline Live Agent Smoke
+name: Seven Hermes Live Agent Smoke
 
 on:
   workflow_dispatch:
@@ -6,39 +6,37 @@ on:
     branches:
       - main
     paths:
-      - '.seven-team/prompts/live-smoke/team-a-cline.md'
-      - '.seven-team/prompts/live-smoke/team-b-cline.md'
-      - '.github/workflows/agent-live-cline-smoke.yml'
+      - '.seven-team/prompts/live-smoke/team-a-hermes.md'
+      - '.seven-team/prompts/live-smoke/team-b-hermes.md'
+      - '.github/workflows/agent-live-hermes-smoke.yml'
 
 permissions:
   contents: write
 
 concurrency:
-  group: seven-cline-live-smoke
+  group: seven-hermes-live-smoke
   cancel-in-progress: true
 
 jobs:
-  cline-live:
+  hermes-live:
     name: ${{ matrix.name }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 18
     strategy:
       fail-fast: false
       max-parallel: 2
       matrix:
         include:
-          - name: Team A Cline live edit
-            branch: agent/01-ui-ux
-            prompt_path: .seven-team/prompts/live-smoke/team-a-cline.md
-            report: .seven-team/reports/team-a-cline-live-smoke.md
-            commit_message: Agent A01 Cline live runtime smoke report
-            data_dir: /tmp/cline-a
-          - name: Team B Cline live edit
-            branch: agent-b/01-rpg-ux
-            prompt_path: .seven-team/prompts/live-smoke/team-b-cline.md
-            report: .seven-team/reports/team-b-cline-live-smoke.md
-            commit_message: Agent B01 Cline live runtime smoke report
-            data_dir: /tmp/cline-b
+          - name: Team A Hermes live review
+            branch: agent/10-integration-review
+            prompt_path: .seven-team/prompts/live-smoke/team-a-hermes.md
+            report: .seven-team/reports/team-a-hermes-live-smoke.md
+            commit_message: Agent A10 Hermes live runtime smoke report
+          - name: Team B Hermes live review
+            branch: agent-b/10-rpg-review
+            prompt_path: .seven-team/prompts/live-smoke/team-b-hermes.md
+            report: .seven-team/reports/team-b-hermes-live-smoke.md
+            commit_message: Agent B10 Hermes live runtime smoke report
 
     steps:
       - uses: actions/checkout@v4
@@ -47,18 +45,17 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Install Cline
-        run: npm install -g cline
+      - name: Install Hermes Agent
+        run: |
+          curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
 
       - name: Materialize guarded runtime and prompt from main
         run: |
           git fetch origin main
           git show origin/main:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/kilo_anonymous_relay.py
-          git show origin/main:${{ matrix.prompt_path }} > /tmp/cline-prompt.md
+          git show origin/main:${{ matrix.prompt_path }} > /tmp/hermes-prompt.md
 
       - name: Start guarded relay
         run: |
@@ -70,35 +67,28 @@ jobs:
           done
           test "$ready" -eq 1
 
-      # openai-compatible is required here; openai-native follows OpenAI-specific transport.
-      - name: Configure isolated OpenAI-compatible provider
-        run: |
-          cline --data-dir "${{ matrix.data_dir }}" auth \
-            --provider openai-compatible \
-            --apikey local-dummy-key \
-            --modelid kilo-auto/free \
-            --baseurl http://127.0.0.1:8877/v1
-
-      - name: Run real Cline agent
+      - name: Run real Hermes agent
+        env:
+          OPENAI_BASE_URL: http://127.0.0.1:8877/v1
+          OPENAI_API_KEY: local-dummy-key
+          HERMES_YOLO_MODE: '1'
         run: |
           set -u
+          export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
           mkdir -p "$(dirname "${{ matrix.report }}")"
           set +e
-          timeout 150s cline \
-            --data-dir "${{ matrix.data_dir }}" \
-            --yolo \
-            --timeout 120 \
-            --retries 1 \
-            -P openai-compatible \
+          timeout 150s hermes \
+            --provider custom \
             -m kilo-auto/free \
-            -k local-dummy-key \
-            "$(cat /tmp/cline-prompt.md)"
+            --yolo \
+            --ignore-rules \
+            chat -Q --max-turns 4 -q "$(cat /tmp/hermes-prompt.md)"
           rc=$?
           set -e
           if test -f "${{ matrix.report }}" && grep -q 'LIVE_AGENT_SMOKE=PASS' "${{ matrix.report }}"; then
-            echo "Cline produced required report; accepting output (rc=$rc)."
+            echo "Hermes produced required report; accepting output (rc=$rc)."
           else
-            echo "Cline did not produce required report (rc=$rc)." >&2
+            echo "Hermes did not produce required report (rc=$rc)." >&2
             exit "${rc:-1}"
           fi
 
