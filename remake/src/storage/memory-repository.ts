@@ -1,5 +1,6 @@
 import { SevenError } from "../core/errors";
 import {
+  MEMORY_LIMITS,
   cloneContextSummary,
   cloneMemoryRecord,
   isContextSummary,
@@ -46,7 +47,8 @@ function canonicalId(value: unknown, field: string): string {
   if (
     typeof value !== "string" ||
     !value.trim() ||
-    value !== value.trim()
+    value !== value.trim() ||
+    value.length > MEMORY_LIMITS.idCharacters
   ) {
     throw new SevenError({
       code: "VALIDATION",
@@ -71,20 +73,46 @@ function sortMemories(records: MemoryRecord[]): readonly MemoryRecord[] {
   );
 }
 
+export type MemoryRepositoryLimits = Readonly<{
+  maxRecords?: number;
+  maxSummaries?: number;
+}>;
+
+function repositoryLimits(options: MemoryRepositoryLimits): { records: number; summaries: number } {
+  if (!options || typeof options !== "object" || Array.isArray(options)) {
+    throw new SevenError({ code: "VALIDATION", message: "Memory limits must be an object." });
+  }
+  const records = options.maxRecords ?? MEMORY_LIMITS.records;
+  const summaries = options.maxSummaries ?? MEMORY_LIMITS.summaries;
+  if (!Number.isSafeInteger(records) || records < 1 || records > MEMORY_LIMITS.records ||
+      !Number.isSafeInteger(summaries) || summaries < 1 || summaries > MEMORY_LIMITS.summaries) {
+    throw new SevenError({ code: "VALIDATION", message: "Memory repository limits must be positive integers within the hard limits." });
+  }
+  return { records, summaries };
+}
+
+function capacityError(): SevenError {
+  return new SevenError({ code: "STORAGE", message: "Memory storage capacity reached. Delete an existing item before adding another." });
+}
+
 export class InMemoryMemoryRepository implements MemoryRepository {
   private readonly records = new Map<string, MemoryRecord>();
   private readonly summaries = new Map<string, ContextSummary>();
+  private readonly limits: { records: number; summaries: number };
 
   constructor(
     seed: readonly MemoryRecord[] = [],
     summaries: readonly ContextSummary[] = [],
+    options: MemoryRepositoryLimits = {},
   ) {
+    this.limits = repositoryLimits(options);
     if (!Array.isArray(seed) || !Array.isArray(summaries)) {
       throw new SevenError({
         code: "VALIDATION",
         message: "Memory repository seeds must be arrays.",
       });
     }
+    if (seed.length > this.limits.records || summaries.length > this.limits.summaries) throw capacityError();
     for (const record of seed) {
       if (!isMemoryRecord(record)) {
         throw new SevenError({
@@ -142,6 +170,7 @@ export class InMemoryMemoryRepository implements MemoryRepository {
         message: "Memory record is invalid.",
       });
     }
+    if (!this.records.has(record.id) && this.records.size >= this.limits.records) throw capacityError();
     this.records.set(record.id, cloneMemoryRecord(record));
     throwIfAborted(signal);
   }
@@ -173,6 +202,7 @@ export class InMemoryMemoryRepository implements MemoryRepository {
         message: "Context summary is invalid.",
       });
     }
+    if (!this.summaries.has(summary.roomId) && this.summaries.size >= this.limits.summaries) throw capacityError();
     this.summaries.set(summary.roomId, cloneContextSummary(summary));
     throwIfAborted(signal);
   }
@@ -184,7 +214,7 @@ export class InMemoryMemoryRepository implements MemoryRepository {
   }
 }
 
-type IndexedDbMemoryRepositoryOptions = Readonly<{
+type IndexedDbMemoryRepositoryOptions = MemoryRepositoryLimits & Readonly<{
   databaseName?: string;
   version?: number;
 }>;
@@ -192,206 +222,125 @@ type IndexedDbMemoryRepositoryOptions = Readonly<{
 export class IndexedDbMemoryRepository implements MemoryRepository {
   private readonly databaseName: string;
   private readonly version: number;
+  private readonly limits: { records: number; summaries: number };
   private dbPromise: Promise<IDBDatabase> | null = null;
 
   constructor(options: IndexedDbMemoryRepositoryOptions = {}) {
-    if (!options || typeof options !== "object" || Array.isArray(options)) {
-      throw new SevenError({
-        code: "VALIDATION",
-        message: "Memory IndexedDB options must be an object.",
-      });
+    this.limits = repositoryLimits(options);
+    this.databaseName = options.databaseName === undefined
+      ? "seven-remake-memory" : canonicalId(options.databaseName, "Memory databaseName");
+    this.version = options.version ?? 1;
+    if (!Number.isSafeInteger(this.version) || this.version <= 0 || this.version > 0xffff_ffff) {
+      throw new SevenError({ code: "VALIDATION", message: "Memory IndexedDB version must be a positive 32-bit integer." });
     }
-    if (
-      options.databaseName !== undefined &&
-      (typeof options.databaseName !== "string" ||
-        !options.databaseName.trim() ||
-        options.databaseName !== options.databaseName.trim())
-    ) {
-      throw new SevenError({
-        code: "VALIDATION",
-        message: "Memory databaseName must be a canonical non-empty string.",
-      });
-    }
-    const version = options.version ?? 1;
-    if (!Number.isSafeInteger(version) || version <= 0) {
-      throw new SevenError({
-        code: "VALIDATION",
-        message: "Memory IndexedDB version must be a positive safe integer.",
-      });
-    }
-    this.databaseName = options.databaseName ?? "seven-remake-memory";
-    this.version = version;
   }
 
-  async listForRoom(
-    roomId: string,
-    signal?: AbortSignal,
-  ): Promise<readonly MemoryRecord[]> {
-    const id = canonicalId(roomId, "roomId");
-    const db = await this.withSignal(this.open(), signal);
+  async listForRoom(roomId: string, signal?: AbortSignal): Promise<readonly MemoryRecord[]> {
     throwIfAborted(signal);
-    const tx = db.transaction("memories", "readonly");
-    const raw = await this.request(
-      tx.objectStore("memories").getAll(),
-      tx,
-      signal,
-    );
-    const records = raw
-      .map((value) => {
-        if (!isMemoryRecord(value)) {
-          throw new SevenError({
-            code: "STORAGE",
-            message: "Stored memory failed schema validation.",
-          });
-        }
-        return cloneMemoryRecord(value);
-      })
-      .filter(
-        (record) =>
-          record.scope === "global" ||
-          (record.scope === "room" && record.roomId === id),
-      );
+    const id = canonicalId(roomId, "roomId");
+    const raw = await this.read<unknown[]>("memories", (store) => store.getAll(undefined, this.limits.records + 1), signal);
+    throwIfAborted(signal);
+    if (raw.length > this.limits.records) throw capacityError();
+    const records: MemoryRecord[] = [];
+    for (const value of raw) {
+      if (!isMemoryRecord(value)) throw this.storageError("Stored memory failed schema validation.");
+      if (value.scope === "global" || value.roomId === id) records.push(cloneMemoryRecord(value));
+    }
     return sortMemories(records);
   }
 
   async put(record: MemoryRecord, signal?: AbortSignal): Promise<void> {
-    if (!isMemoryRecord(record)) {
-      throw new SevenError({
-        code: "VALIDATION",
-        message: "Memory record is invalid.",
-      });
-    }
-    const db = await this.withSignal(this.open(), signal);
     throwIfAborted(signal);
-    const tx = db.transaction("memories", "readwrite");
-    tx.objectStore("memories").put(cloneMemoryRecord(record));
-    await this.transaction(tx, signal);
+    const snapshot = cloneMemoryRecord(record);
+    await this.putBounded("memories", snapshot.id, snapshot, this.limits.records, signal);
   }
 
   async delete(memoryId: string, signal?: AbortSignal): Promise<void> {
-    const id = canonicalId(memoryId, "memoryId");
-    const db = await this.withSignal(this.open(), signal);
     throwIfAborted(signal);
-    const tx = db.transaction("memories", "readwrite");
-    tx.objectStore("memories").delete(id);
-    await this.transaction(tx, signal);
+    const id = canonicalId(memoryId, "memoryId");
+    await this.run("memories", "readwrite", (store) => { store.delete(id); }, signal);
   }
 
-  async getSummary(
-    roomId: string,
-    signal?: AbortSignal,
-  ): Promise<ContextSummary | null> {
-    const id = canonicalId(roomId, "roomId");
-    const db = await this.withSignal(this.open(), signal);
+  async getSummary(roomId: string, signal?: AbortSignal): Promise<ContextSummary | null> {
     throwIfAborted(signal);
-    const tx = db.transaction("summaries", "readonly");
-    const raw = await this.request(
-      tx.objectStore("summaries").get(id),
-      tx,
-      signal,
-    );
+    const id = canonicalId(roomId, "roomId");
+    const raw = await this.read<unknown>("summaries", (store) => store.get(id), signal);
+    throwIfAborted(signal);
     if (raw === undefined) return null;
-    if (!isContextSummary(raw)) {
-      throw new SevenError({
-        code: "STORAGE",
-        message: "Stored context summary failed schema validation.",
-      });
+    if (!isContextSummary(raw) || raw.roomId !== id) {
+      throw this.storageError("Stored context summary failed schema validation.");
     }
     return cloneContextSummary(raw);
   }
 
-  async putSummary(
-    summary: ContextSummary,
-    signal?: AbortSignal,
-  ): Promise<void> {
-    if (!isContextSummary(summary)) {
-      throw new SevenError({
-        code: "VALIDATION",
-        message: "Context summary is invalid.",
-      });
-    }
-    const db = await this.withSignal(this.open(), signal);
+  async putSummary(summary: ContextSummary, signal?: AbortSignal): Promise<void> {
     throwIfAborted(signal);
-    const tx = db.transaction("summaries", "readwrite");
-    tx.objectStore("summaries").put(cloneContextSummary(summary));
-    await this.transaction(tx, signal);
+    const snapshot = cloneContextSummary(summary);
+    await this.putBounded("summaries", snapshot.roomId, snapshot, this.limits.summaries, signal);
   }
 
   async deleteSummary(roomId: string, signal?: AbortSignal): Promise<void> {
-    const id = canonicalId(roomId, "roomId");
-    const db = await this.withSignal(this.open(), signal);
     throwIfAborted(signal);
-    const tx = db.transaction("summaries", "readwrite");
-    tx.objectStore("summaries").delete(id);
-    await this.transaction(tx, signal);
+    const id = canonicalId(roomId, "roomId");
+    await this.run("summaries", "readwrite", (store) => { store.delete(id); }, signal);
   }
 
   async close(): Promise<void> {
     const pending = this.dbPromise;
     this.dbPromise = null;
     if (!pending) return;
-    try {
-      const db = await pending;
-      db.close();
-    } catch {
-      // No usable connection exists after a failed open.
-    }
+    try { (await pending).close(); } catch { /* Failed opens have no usable connection. */ }
+  }
+
+  private storageError(message: string, cause?: unknown): SevenError {
+    return new SevenError({ code: "STORAGE", message, cause });
   }
 
   private open(): Promise<IDBDatabase> {
     if (this.dbPromise) return this.dbPromise;
-    if (typeof indexedDB === "undefined") {
-      throw new SevenError({
-        code: "STORAGE",
-        message: "IndexedDB is unavailable.",
-      });
-    }
-
     let settled = false;
     const promise = new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open(this.databaseName, this.version);
+      if (typeof indexedDB === "undefined") {
+        reject(this.storageError("IndexedDB is unavailable."));
+        return;
+      }
+      let request: IDBOpenDBRequest;
+      try { request = indexedDB.open(this.databaseName, this.version); }
+      catch (error) { reject(this.storageError("Failed to open memory storage.", error)); return; }
       request.onupgradeneeded = () => {
+        if (settled) { request.transaction?.abort(); return; }
         const db = request.result;
-        if (!db.objectStoreNames.contains("memories")) {
-          db.createObjectStore("memories", { keyPath: "id" });
-        }
-        if (!db.objectStoreNames.contains("summaries")) {
-          db.createObjectStore("summaries", { keyPath: "roomId" });
-        }
+        if (!db.objectStoreNames.contains("memories")) db.createObjectStore("memories", { keyPath: "id" });
+        if (!db.objectStoreNames.contains("summaries")) db.createObjectStore("summaries", { keyPath: "roomId" });
       };
       request.onsuccess = () => {
         const db = request.result;
-        if (settled) {
+        if (settled) { db.close(); return; }
+        settled = true;
+        try {
+          const tx = db.transaction(["memories", "summaries"], "readonly");
+          if (tx.objectStore("memories").keyPath !== "id" || tx.objectStore("summaries").keyPath !== "roomId") {
+            throw this.storageError("Memory storage schema is incompatible.");
+          }
+        } catch (error) {
           db.close();
+          reject(this.storageError("Memory storage schema is incompatible.", error));
           return;
         }
-        settled = true;
-        db.onversionchange = () => {
-          db.close();
-          if (this.dbPromise === promise) this.dbPromise = null;
-        };
+        const invalidate = () => { if (this.dbPromise === promise) this.dbPromise = null; };
+        db.onversionchange = () => { db.close(); invalidate(); };
+        db.onclose = invalidate;
         resolve(db);
       };
       request.onerror = () => {
         if (settled) return;
         settled = true;
-        reject(
-          new SevenError({
-            code: "STORAGE",
-            message: "Failed to open memory storage.",
-          }),
-        );
+        reject(this.storageError("Failed to open memory storage.", request.error));
       };
       request.onblocked = () => {
         if (settled) return;
         settled = true;
-        reject(
-          new SevenError({
-            code: "STORAGE",
-            message: "Memory storage upgrade is blocked.",
-            retryable: true,
-          }),
-        );
+        reject(new SevenError({ code: "STORAGE", message: "Memory storage upgrade is blocked.", retryable: true }));
       };
     }).catch((error: unknown) => {
       if (this.dbPromise === promise) this.dbPromise = null;
@@ -401,145 +350,77 @@ export class IndexedDbMemoryRepository implements MemoryRepository {
     return promise;
   }
 
-  private withSignal<T>(
-    promise: Promise<T>,
-    signal?: AbortSignal,
-  ): Promise<T> {
-    validateSignal(signal);
+  private withSignal<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
     if (!signal) return promise;
-    if (signal.aborted) return Promise.reject(abortError());
-
     return new Promise<T>((resolve, reject) => {
-      let settled = false;
+      const onAbort = () => { cleanup(); reject(abortError()); };
       const cleanup = () => signal.removeEventListener("abort", onAbort);
-      const onAbort = () => {
-        if (settled) return;
-        settled = true;
-        cleanup();
-        reject(abortError());
-      };
       signal.addEventListener("abort", onAbort, { once: true });
-      promise.then(
-        (value) => {
-          if (settled) return;
-          settled = true;
-          cleanup();
-          resolve(value);
-        },
-        (error: unknown) => {
-          if (settled) return;
-          settled = true;
-          cleanup();
-          reject(error);
-        },
-      );
+      // Always attach both handlers, including when already aborted, to consume open failures.
+      promise.then((value) => { cleanup(); resolve(value); }, (error: unknown) => { cleanup(); reject(error); });
+      if (signal.aborted) onAbort();
     });
   }
 
-  private request<T>(
-    request: IDBRequest<T>,
-    tx: IDBTransaction,
-    signal?: AbortSignal,
-  ): Promise<T> {
-    return new Promise<T>((resolve, reject) => {
-      let settled = false;
-      const cleanup = () => signal?.removeEventListener("abort", onAbort);
-      const finishResolve = (value: T) => {
-        if (settled) return;
-        settled = true;
-        cleanup();
-        resolve(value);
-      };
-      const finishReject = (error: unknown) => {
-        if (settled) return;
-        settled = true;
-        cleanup();
-        reject(error);
-      };
-      const onAbort = () => {
-        if (settled) return;
-        try {
-          tx.abort();
-        } catch {
-          // Transaction may already be completing.
-        }
-        finishReject(abortError());
-      };
-      if (signal?.aborted) {
-        onAbort();
-        return;
-      }
-      signal?.addEventListener("abort", onAbort, { once: true });
-      request.onsuccess = () => finishResolve(request.result);
-      request.onerror = () =>
-        finishReject(
-          new SevenError({
-            code: "STORAGE",
-            message: "Memory storage request failed.",
-          }),
-        );
-      tx.onabort = () =>
-        finishReject(
-          signal?.aborted
-            ? abortError()
-            : new SevenError({
-                code: "STORAGE",
-                message: "Memory storage transaction was aborted.",
-              }),
-        );
-    });
+  private async read<T>(store: string, request: (store: IDBObjectStore) => IDBRequest<T>, signal?: AbortSignal): Promise<T> {
+    let value!: T;
+    await this.run(store, "readonly", (objectStore) => {
+      request(objectStore).onsuccess = (event) => { value = (event.target as IDBRequest<T>).result; };
+    }, signal);
+    return value;
   }
 
-  private transaction(
-    tx: IDBTransaction,
+  private async putBounded(store: string, key: string, value: MemoryRecord | ContextSummary, limit: number, signal?: AbortSignal): Promise<void> {
+    await this.run(store, "readwrite", (objectStore, fail) => {
+      // The existence check, count and put share one transaction, so concurrent writers cannot overrun the limit.
+      const existing = objectStore.getKey(key);
+      existing.onsuccess = () => {
+        if (existing.result !== undefined) { objectStore.put(value); return; }
+        const count = objectStore.count();
+        count.onsuccess = () => {
+          if (count.result >= limit) { fail(capacityError()); return; }
+          objectStore.put(value);
+        };
+      };
+    }, signal);
+  }
+
+  private async run(
+    store: string,
+    mode: IDBTransactionMode,
+    action: (store: IDBObjectStore, fail: (error: unknown) => void) => void,
     signal?: AbortSignal,
   ): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      let settled = false;
+    throwIfAborted(signal);
+    const db = await this.withSignal(this.open(), signal);
+    throwIfAborted(signal);
+    let tx: IDBTransaction;
+    try { tx = db.transaction(store, mode); }
+    catch (error) { throw this.storageError("Could not start memory storage transaction.", error); }
+    await new Promise<void>((resolve, reject) => {
+      let failure: unknown;
+      let failed = false;
       const cleanup = () => signal?.removeEventListener("abort", onAbort);
-      const finishResolve = () => {
-        if (settled) return;
-        settled = true;
+      const fail = (error: unknown) => {
+        if (failed) return;
+        failed = true;
+        failure = error;
+        try { tx.abort(); } catch { cleanup(); reject(error); }
+      };
+      const onAbort = () => fail(abortError());
+      tx.oncomplete = () => { cleanup(); failed ? reject(failure) : resolve(); };
+      tx.onabort = () => {
         cleanup();
-        resolve();
+        reject(failed ? failure : this.storageError("Memory storage transaction was aborted.", tx.error));
       };
-      const finishReject = (error: unknown) => {
-        if (settled) return;
-        settled = true;
-        cleanup();
-        reject(error);
+      // Let IndexedDB abort on request errors. Resolution/rejection is tied to the durable transaction boundary.
+      tx.onerror = () => {
+        if (!failed) { failure = this.storageError("Memory storage transaction failed.", tx.error); failed = true; }
       };
-      const onAbort = () => {
-        if (settled) return;
-        try {
-          tx.abort();
-        } catch {
-          // Transaction may already be completing.
-        }
-        finishReject(abortError());
-      };
-      if (signal?.aborted) {
-        onAbort();
-        return;
-      }
       signal?.addEventListener("abort", onAbort, { once: true });
-      tx.oncomplete = finishResolve;
-      tx.onerror = () =>
-        finishReject(
-          new SevenError({
-            code: "STORAGE",
-            message: "Memory storage transaction failed.",
-          }),
-        );
-      tx.onabort = () =>
-        finishReject(
-          signal?.aborted
-            ? abortError()
-            : new SevenError({
-                code: "STORAGE",
-                message: "Memory storage transaction was aborted.",
-              }),
-        );
+      if (signal?.aborted) { onAbort(); return; }
+      try { action(tx.objectStore(store), fail); }
+      catch (error) { fail(error instanceof SevenError ? error : this.storageError("Memory storage operation failed.", error)); }
     });
   }
 }

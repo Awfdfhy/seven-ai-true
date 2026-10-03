@@ -1,5 +1,5 @@
 import { SevenError } from "../../core/errors";
-import { isRoom, type Room } from "../../domain/chat";
+import { cloneRoom, isRoom, type Room } from "../../domain/chat";
 import {
   assertValidProviderMessages,
   type ProviderAdapter,
@@ -197,7 +197,8 @@ function validateContext(context: ChatStreamContext): void {
     !context.signal ||
     typeof context.signal !== "object" ||
     typeof context.signal.aborted !== "boolean" ||
-    typeof context.signal.addEventListener !== "function"
+    typeof context.signal.addEventListener !== "function" ||
+    typeof context.signal.removeEventListener !== "function"
   ) {
     throw new SevenError({
       code: "VALIDATION",
@@ -224,10 +225,10 @@ function validatePreparedContext(
   }
   if (
     !Number.isSafeInteger(value.estimatedInputTokens) ||
-    value.estimatedInputTokens < 0 ||
+    value.estimatedInputTokens <= 0 ||
     !Number.isSafeInteger(value.maxInputTokens) ||
     value.maxInputTokens <= 0 ||
-    value.maxInputTokens > contextWindow ||
+    value.maxInputTokens >= contextWindow ||
     value.estimatedInputTokens > value.maxInputTokens
   ) {
     throw new SevenError({
@@ -320,6 +321,7 @@ export class RoutedChatTransport implements ChatTransport {
   async *stream(context: ChatStreamContext): AsyncIterable<string> {
     validateContext(context);
 
+    const room = cloneRoom(context.room);
     const failures: string[] = [];
 
     for (const candidate of this.plan.candidates) {
@@ -337,31 +339,56 @@ export class RoutedChatTransport implements ChatTransport {
         continue;
       }
 
-      const messages: readonly ProviderMessage[] =
-        this.contextSource === undefined
-          ? [
-              Object.freeze({
-                role: "system" as const,
-                content: this.systemPrompt,
-              }),
-              ...context.room.messages.map((message) =>
-                Object.freeze({
-                  role: message.role,
-                  content: message.content,
-                }),
-              ),
-            ]
-          : validatePreparedContext(
-              await this.contextSource.prepare({
-                room: context.room,
-                systemPrompt: this.systemPrompt,
-                contextWindow: candidate.contextWindow,
-                signal: context.signal,
-              }),
-              candidate.contextWindow,
-            );
+      let preparedMessages: readonly ProviderMessage[];
+      let maxOutputTokens: number | undefined;
+      if (this.contextSource === undefined) {
+        preparedMessages = [
+          { role: "system", content: this.systemPrompt },
+          ...room.messages.map((message) => ({
+            role: message.role,
+            content: message.content,
+          })),
+        ];
+      } else {
+        try {
+          const prepared = await this.contextSource.prepare({
+            room,
+            systemPrompt: this.systemPrompt,
+            contextWindow: candidate.contextWindow,
+            signal: context.signal,
+          });
+          if (context.signal.aborted) {
+            throw new DOMException("Aborted", "AbortError");
+          }
+          preparedMessages = validatePreparedContext(prepared, candidate.contextWindow);
+          maxOutputTokens = candidate.contextWindow - prepared.maxInputTokens;
+        } catch (error) {
+          if (context.signal.aborted) {
+            throw new DOMException("Aborted", "AbortError");
+          }
+          // A larger fallback may fit a turn that this model cannot. Data or
+          // storage failures stay fatal rather than being hidden by retries.
+          if (
+            error instanceof SevenError &&
+            error.code === "VALIDATION" &&
+            error.details?.reason === "CONTEXT_CAPACITY"
+          ) {
+            failures.push(`${candidate.providerId}:CONTEXT_CAPACITY`);
+            continue;
+          }
+          throw error;
+        }
+      }
 
-      assertValidProviderMessages(messages);
+      // Context work can finish after the user cancels, even when a custom
+      // source does not cooperate with AbortSignal. Never dispatch that result.
+      if (context.signal.aborted) {
+        throw new DOMException("Aborted", "AbortError");
+      }
+      assertValidProviderMessages(preparedMessages);
+      const messages = Object.freeze(
+        preparedMessages.map((message) => Object.freeze({ ...message })),
+      );
 
       const attemptToken = this.health?.beginAttempt(provider.id);
 
@@ -373,6 +400,7 @@ export class RoutedChatTransport implements ChatTransport {
           {
             modelId: candidate.modelId,
             messages,
+            ...(maxOutputTokens !== undefined ? { maxOutputTokens } : {}),
           },
           context.signal,
         )) {
@@ -425,6 +453,11 @@ export class RoutedChatTransport implements ChatTransport {
           }
 
           yield chunk.delta;
+        }
+
+        // A provider may complete quietly on abort instead of rejecting.
+        if (context.signal.aborted) {
+          throw new DOMException("Aborted", "AbortError");
         }
 
         if (meaningfulOutputStarted) {

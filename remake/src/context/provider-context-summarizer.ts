@@ -1,5 +1,6 @@
 import { SevenError } from "../core/errors";
 import type { ChatMessage } from "../domain/chat";
+import { MEMORY_LIMITS } from "../domain/memory";
 import {
   assertValidProviderMessages,
   type ProviderAdapter,
@@ -62,11 +63,23 @@ export class ProviderContextSummarizer implements ContextSummarizer {
       });
     }
     canonicalId(input.roomId, "Summarizer roomId");
-    if (!Array.isArray(input.messages) || input.messages.length === 0) {
+    if (!Array.isArray(input.messages) || input.messages.length === 0 || input.messages.length > 10_000) {
       throw new SevenError({
         code: "VALIDATION",
         message: "Summarizer messages must be a non-empty array.",
       });
+    }
+    if (input.previousSummary !== null && (typeof input.previousSummary !== "string" || !input.previousSummary.trim() || input.previousSummary.length > MEMORY_LIMITS.summaryCharacters)) {
+      throw new SevenError({ code: "VALIDATION", message: "Previous summary is malformed." });
+    }
+    for (const message of input.messages) {
+      if (!message || typeof message !== "object" ||
+          typeof message.id !== "string" || !message.id.trim() ||
+          (message.role !== "user" && message.role !== "assistant") ||
+          typeof message.content !== "string" || !message.content.trim() ||
+          !Number.isFinite(message.createdAt) || message.createdAt < 0) {
+        throw new SevenError({ code: "VALIDATION", message: "Summary source message is malformed." });
+      }
     }
     if (
       !Number.isSafeInteger(input.targetTokens) ||
@@ -114,6 +127,7 @@ export class ProviderContextSummarizer implements ContextSummarizer {
       {
         modelId: this.modelId,
         messages,
+        maxOutputTokens: input.targetTokens,
       },
       input.signal,
     );
@@ -154,6 +168,9 @@ export class ProviderContextSummarizer implements ContextSummarizer {
       summary += chunk.delta;
     }
 
+    if (input.signal.aborted) {
+      throw new DOMException("Aborted", "AbortError");
+    }
     if (!summary.trim()) {
       throw new SevenError({
         code: "PROVIDER",

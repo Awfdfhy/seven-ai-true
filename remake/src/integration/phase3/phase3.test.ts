@@ -203,6 +203,7 @@ describe("Phase 3 memory + context", () => {
     });
     expect(result.omittedMessages.map((message) => message.id)).toEqual([
       "m1",
+      "m2",
     ]);
     expect(result.estimatedInputTokens).toBeLessThanOrEqual(
       result.maxInputTokens,

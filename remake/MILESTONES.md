@@ -98,6 +98,7 @@ Status: **PASS**
   - Prepared-context runtime validation before provider dispatch.
   - Phase 3 integration tests included in the permanent suite.
   - Checkpoint evidence: 7/7 test files PASS, 104/104 tests PASS, build PASS, dependency audits 0 vulnerabilities, legacy Seven tests PASS.
+  - Subsequent merged hardening checkpoint: 14/14 test files PASS, 176/176 tests PASS, strict typecheck and build PASS locally; final-commit CI pending. See PHASE3_HARDENING_REPORT.md for fixes and remaining limits.
   - Remaining before 3/12 closure: persisted context policy/settings, memory capacity/eviction policy, stale-summary/version migration hardening, Phase 3 adversarial zero-bug pass, final merge/post-merge CI.
 
 **REMAKE_PROGRESS=2/12_COMPLETE + 3/12_IN_PROGRESS**

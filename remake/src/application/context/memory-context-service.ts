@@ -1,5 +1,5 @@
 import { SevenError } from "../../core/errors";
-import { isRoom, type ChatMessage, type Room } from "../../domain/chat";
+import { cloneRoom, isRoom, type ChatMessage, type Room } from "../../domain/chat";
 import {
   createContextSummary,
   type ContextSummary,
@@ -59,6 +59,32 @@ function throwIfAborted(signal: AbortSignal): void {
   if (signal.aborted) throw new DOMException("Aborted", "AbortError");
 }
 
+// Ports receive the same signal, but an adapter that ignores it must not keep the
+// caller waiting or allow a late completion to continue the write pipeline.
+function abortable<T>(operation: Promise<T>, signal: AbortSignal): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => {
+      cleanup();
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+    const cleanup = () => signal.removeEventListener("abort", onAbort);
+    signal.addEventListener("abort", onAbort, { once: true });
+    operation.then(
+      (value) => {
+        cleanup();
+        if (signal.aborted) onAbort();
+        else resolve(value);
+      },
+      (error: unknown) => {
+        cleanup();
+        if (signal.aborted) onAbort();
+        else reject(error);
+      },
+    );
+    if (signal.aborted) onAbort();
+  });
+}
+
 function targetSummaryTokens(policy?: Partial<ContextPolicy>): number {
   const value = policy?.summaryTokenBudget ?? 1024;
   if (!Number.isSafeInteger(value) || value <= 0) {
@@ -71,10 +97,15 @@ function targetSummaryTokens(policy?: Partial<ContextPolicy>): number {
   return value;
 }
 
+// Fail fast instead of accumulating an unbounded queue or letting two service
+// instances overwrite each other's summaries on the same repository connection.
+const activeRooms = new WeakMap<MemoryRepository, Set<string>>();
+
 export class MemoryContextService implements ProviderContextSource {
   private readonly maxSummaryPasses: number;
   private readonly now: () => number;
   private readonly roomTails = new Map<string, Promise<void>>();
+  private readonly roomPending = new Map<string, number>();
 
   constructor(
     private readonly repository: MemoryRepository,
@@ -157,20 +188,51 @@ export class MemoryContextService implements ProviderContextSource {
     validateSignal(input.signal);
     throwIfAborted(input.signal);
 
-    return this.withRoomLock(input.room.id, input.signal, () =>
-      this.prepareLocked(input),
-    );
+    if (
+      input.policy !== undefined &&
+      (!input.policy || typeof input.policy !== "object" || Array.isArray(input.policy))
+    ) {
+      throw new SevenError({ code: "VALIDATION", message: "Context policy must be an object." });
+    }
+
+    // Capture mutable JavaScript callers before crossing any asynchronous port.
+    input = Object.freeze({
+      ...input,
+      room: cloneRoom(input.room),
+      ...(input.policy !== undefined
+        ? { policy: Object.freeze({ ...input.policy }) }
+        : {}),
+    });
+    return this.withRoomLock(input.room.id, input.signal, () => this.prepareExclusive(input));
   }
 
-  private async prepareLocked(
-    input: ContextPrepareInput,
-  ): Promise<ContextBuildResult> {
-    throwIfAborted(input.signal);
+  private async prepareExclusive(input: ContextPrepareInput): Promise<ContextBuildResult> {
+    let active = activeRooms.get(this.repository);
+    if (!active) {
+      active = new Set();
+      activeRooms.set(this.repository, active);
+    }
+    if (active.has(input.room.id)) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Context preparation is already active for this room.",
+        retryable: true,
+      });
+    }
+    active.add(input.room.id);
+    try {
+      return await this.prepareSnapshot(input);
+    } finally {
+      active.delete(input.room.id);
+      if (active.size === 0) activeRooms.delete(this.repository);
+    }
+  }
 
-    const [memories, initialSummary] = await Promise.all([
+  private async prepareSnapshot(input: ContextPrepareInput): Promise<ContextBuildResult> {
+    const [memories, initialSummary] = await abortable(Promise.all([
       this.repository.listForRoom(input.room.id, input.signal),
       this.repository.getSummary(input.room.id, input.signal),
-    ]);
+    ]), input.signal);
     throwIfAborted(input.signal);
 
     let summary: ContextSummary | null = initialSummary;
@@ -183,7 +245,6 @@ export class MemoryContextService implements ProviderContextSource {
       ...(input.policy !== undefined ? { policy: input.policy } : {}),
     });
 
-    const targetTokens = targetSummaryTokens(input.policy);
     let pass = 0;
 
     while (result.omittedMessages.length > 0) {
@@ -199,14 +260,17 @@ export class MemoryContextService implements ProviderContextSource {
       const lastOmitted = omitted.at(-1);
       if (!lastOmitted) break;
 
-      const previousThrough = summary?.throughMessageId ?? null;
-      const summaryText = await this.summarizer.summarize({
+      const targetTokens = targetSummaryTokens(input.policy);
+      // If the old summary did not fit this model, omittedMessages already
+      // includes its original source prefix. Combining both would double count.
+      const previousSummary = result.summaryUsed ? summary : null;
+      const summaryText = await abortable(this.summarizer.summarize({
         roomId: input.room.id,
-        previousSummary: summary?.content ?? null,
+        previousSummary: previousSummary?.content ?? null,
         messages: omitted,
         targetTokens,
         signal: input.signal,
-      });
+      }), input.signal);
       throwIfAborted(input.signal);
 
       if (typeof summaryText !== "string" || !summaryText.trim()) {
@@ -235,9 +299,11 @@ export class MemoryContextService implements ProviderContextSource {
         content: summaryText,
         throughMessageId: lastOmitted.id,
         ...(summary !== null ? { createdAt: summary.createdAt } : {}),
-        now,
+        now: Math.max(now, summary?.updatedAt ?? 0),
       });
 
+      // Validate the candidate before changing durable truth. A provider may
+      // ignore targetTokens or produce a summary too large for this model.
       const next = this.builder.build({
         room: input.room,
         systemPrompt: input.systemPrompt,
@@ -247,17 +313,15 @@ export class MemoryContextService implements ProviderContextSource {
         ...(input.policy !== undefined ? { policy: input.policy } : {}),
       });
 
-      if (
-        next.omittedMessages.length >= result.omittedMessages.length &&
-        (!next.summaryUsed || previousThrough === nextSummary.throughMessageId)
-      ) {
+      if (!next.summaryUsed) {
         throw new SevenError({
           code: "VALIDATION",
           message: "Context summarization made no forward progress.",
         });
       }
 
-      await this.repository.putSummary(nextSummary, input.signal);
+      throwIfAborted(input.signal);
+      await abortable(this.repository.putSummary(nextSummary, input.signal), input.signal);
       throwIfAborted(input.signal);
       summary = nextSummary;
       result = next;
@@ -272,6 +336,16 @@ export class MemoryContextService implements ProviderContextSource {
     signal: AbortSignal,
     operation: () => Promise<T>,
   ): Promise<T> {
+    throwIfAborted(signal);
+    const pending = this.roomPending.get(roomId) ?? 0;
+    if (pending >= 64 || (pending === 0 && this.roomPending.size >= 1024)) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Context preparation queue capacity was reached.",
+        retryable: true,
+      });
+    }
+    this.roomPending.set(roomId, pending + 1);
     const previous = this.roomTails.get(roomId) ?? Promise.resolve();
     const safePrevious = previous.catch(() => undefined);
 
@@ -281,44 +355,22 @@ export class MemoryContextService implements ProviderContextSource {
     });
     const tail = safePrevious.then(() => gate);
     this.roomTails.set(roomId, tail);
+    // A canceled waiter may finish before its predecessor. Keep its tail until
+    // the chain really drains, or another caller could skip the active writer.
+    void tail.then(() => {
+      if (this.roomTails.get(roomId) === tail) this.roomTails.delete(roomId);
+      const remaining = (this.roomPending.get(roomId) ?? 1) - 1;
+      if (remaining === 0) this.roomPending.delete(roomId);
+      else this.roomPending.set(roomId, remaining);
+    });
 
     try {
-      await this.waitFor(safePrevious, signal);
+      await abortable(safePrevious, signal);
       throwIfAborted(signal);
       return await operation();
     } finally {
       release();
-      if (this.roomTails.get(roomId) === tail) {
-        this.roomTails.delete(roomId);
-      }
     }
   }
 
-  private waitFor(promise: Promise<unknown>, signal: AbortSignal): Promise<void> {
-    if (signal.aborted) {
-      return Promise.reject(new DOMException("Aborted", "AbortError"));
-    }
-
-    return new Promise<void>((resolve, reject) => {
-      let settled = false;
-      const cleanup = () => signal.removeEventListener("abort", onAbort);
-      const finishResolve = () => {
-        if (settled) return;
-        settled = true;
-        cleanup();
-        resolve();
-      };
-      const finishReject = (error: unknown) => {
-        if (settled) return;
-        settled = true;
-        cleanup();
-        reject(error);
-      };
-      const onAbort = () =>
-        finishReject(new DOMException("Aborted", "AbortError"));
-
-      signal.addEventListener("abort", onAbort, { once: true });
-      promise.then(finishResolve, finishReject);
-    });
-  }
 }

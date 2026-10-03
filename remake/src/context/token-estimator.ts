@@ -6,9 +6,13 @@ export interface TokenEstimator {
   estimateMessages(messages: readonly ProviderMessage[]): number;
 }
 
+/** Conservative UTF-8 byte heuristic, not an exact provider tokenizer.
+ * Provider-specific framing/tokenization may differ; inject a model tokenizer
+ * when exact accounting is available. The default can compact history earlier.
+ */
 export class ConservativeTokenEstimator implements TokenEstimator {
   constructor(
-    private readonly charsPerToken = 3,
+    private readonly charsPerToken = 1,
     private readonly messageOverhead = 6,
   ) {
     if (
@@ -32,7 +36,10 @@ export class ConservativeTokenEstimator implements TokenEstimator {
       });
     }
     if (text.length === 0) return 0;
-    return Math.max(1, Math.ceil([...text].length / this.charsPerToken));
+    // Byte-level tokenizers may need multiple tokens per Unicode code point.
+    // The default reserves one token per UTF-8 byte; custom ratios are estimates,
+    // not a tokenizer-specific guarantee.
+    return Math.max(1, Math.ceil(new TextEncoder().encode(text).byteLength / this.charsPerToken));
   }
 
   estimateMessages(messages: readonly ProviderMessage[]): number {

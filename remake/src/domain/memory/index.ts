@@ -1,5 +1,13 @@
 import { SevenError } from "../../core/errors";
 
+export const MEMORY_LIMITS = Object.freeze({
+  idCharacters: 512,
+  contentCharacters: 32_768,
+  summaryCharacters: 65_536,
+  records: 10_000,
+  summaries: 10_000,
+});
+
 export type MemoryScope = "global" | "room";
 
 export type MemoryRecord = Readonly<{
@@ -43,7 +51,8 @@ function canonicalText(value: unknown, field: string): string {
   if (
     typeof value !== "string" ||
     !value.trim() ||
-    value !== value.trim()
+    value !== value.trim() ||
+    value.length > MEMORY_LIMITS.idCharacters
   ) {
     throw new SevenError({
       code: "VALIDATION",
@@ -53,11 +62,11 @@ function canonicalText(value: unknown, field: string): string {
   return value;
 }
 
-function contentText(value: unknown, field: string): string {
-  if (typeof value !== "string" || !value.trim()) {
+function contentText(value: unknown, field: string, limit: number = MEMORY_LIMITS.contentCharacters): string {
+  if (typeof value !== "string" || !value.trim() || value.length > limit) {
     throw new SevenError({
       code: "VALIDATION",
-      message: `${field} must not be empty.`,
+      message: `${field} must be non-empty and at most ${limit} characters.`,
     });
   }
   return value;
@@ -173,12 +182,12 @@ export function createContextSummary(
   return Object.freeze({
     schemaVersion: 1 as const,
     roomId: canonicalText(options.roomId, "Summary roomId"),
-    content: contentText(options.content, "Summary content"),
+    content: contentText(options.content, "Summary content", MEMORY_LIMITS.summaryCharacters),
     throughMessageId: canonicalText(
       options.throughMessageId,
       "Summary throughMessageId",
     ),
-    createdAt: Math.min(createdAt, now),
+    createdAt,
     updatedAt: Math.max(createdAt, now),
   });
 }
@@ -190,7 +199,11 @@ export function cloneMemoryRecord(record: MemoryRecord): MemoryRecord {
       message: "Memory record is invalid.",
     });
   }
-  return Object.isFrozen(record) ? record : Object.freeze({ ...record });
+  return Object.freeze({
+    schemaVersion: 1, id: record.id, scope: record.scope, roomId: record.roomId,
+    content: record.content, priority: record.priority,
+    createdAt: record.createdAt, updatedAt: record.updatedAt,
+  });
 }
 
 export function cloneContextSummary(summary: ContextSummary): ContextSummary {
@@ -200,7 +213,11 @@ export function cloneContextSummary(summary: ContextSummary): ContextSummary {
       message: "Context summary is invalid.",
     });
   }
-  return Object.isFrozen(summary) ? summary : Object.freeze({ ...summary });
+  return Object.freeze({
+    schemaVersion: 1, roomId: summary.roomId, content: summary.content,
+    throughMessageId: summary.throughMessageId,
+    createdAt: summary.createdAt, updatedAt: summary.updatedAt,
+  });
 }
 
 export function isMemoryRecord(value: unknown): value is MemoryRecord {
@@ -210,15 +227,18 @@ export function isMemoryRecord(value: unknown): value is MemoryRecord {
     item.schemaVersion === 1 &&
     typeof item.id === "string" &&
     item.id.trim().length > 0 &&
+    item.id.length <= MEMORY_LIMITS.idCharacters &&
     item.id === item.id.trim() &&
     (item.scope === "global" || item.scope === "room") &&
     ((item.scope === "global" && item.roomId === null) ||
       (item.scope === "room" &&
         typeof item.roomId === "string" &&
         item.roomId.trim().length > 0 &&
+        item.roomId.length <= MEMORY_LIMITS.idCharacters &&
         item.roomId === item.roomId.trim())) &&
     typeof item.content === "string" &&
     item.content.trim().length > 0 &&
+    item.content.length <= MEMORY_LIMITS.contentCharacters &&
     Number.isSafeInteger(item.priority) &&
     (item.priority as number) >= 0 &&
     (item.priority as number) <= 100 &&
@@ -238,11 +258,14 @@ export function isContextSummary(value: unknown): value is ContextSummary {
     item.schemaVersion === 1 &&
     typeof item.roomId === "string" &&
     item.roomId.trim().length > 0 &&
+        item.roomId.length <= MEMORY_LIMITS.idCharacters &&
     item.roomId === item.roomId.trim() &&
     typeof item.content === "string" &&
     item.content.trim().length > 0 &&
+    item.content.length <= MEMORY_LIMITS.summaryCharacters &&
     typeof item.throughMessageId === "string" &&
     item.throughMessageId.trim().length > 0 &&
+    item.throughMessageId.length <= MEMORY_LIMITS.idCharacters &&
     item.throughMessageId === item.throughMessageId.trim() &&
     typeof item.createdAt === "number" &&
     Number.isFinite(item.createdAt) &&
