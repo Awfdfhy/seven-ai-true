@@ -224,8 +224,9 @@ export class RoutedChatTransport implements ChatTransport {
       health !== undefined &&
       (!health ||
         typeof health !== "object" ||
-        typeof health.recordSuccess !== "function" ||
-        typeof health.recordFailure !== "function")
+        typeof health.beginAttempt !== "function" ||
+        typeof health.recordAttemptSuccess !== "function" ||
+        typeof health.recordAttemptFailure !== "function")
     ) {
       throw new SevenError({
         code: "VALIDATION",
@@ -271,13 +272,7 @@ export class RoutedChatTransport implements ChatTransport {
         continue;
       }
 
-      const attemptStartedAt = this.now();
-      if (!Number.isFinite(attemptStartedAt) || attemptStartedAt < 0) {
-        throw new SevenError({
-          code: "VALIDATION",
-          message: "Provider attempt clock returned an invalid timestamp.",
-        });
-      }
+      const attemptToken = this.health?.beginAttempt(provider.id);
 
       let meaningfulOutputStarted = false;
       let prelude = "";
@@ -342,13 +337,26 @@ export class RoutedChatTransport implements ChatTransport {
         }
 
         if (meaningfulOutputStarted) {
-          this.health?.recordSuccess(provider.id, attemptStartedAt);
+          if (this.health !== undefined && attemptToken !== undefined) {
+            this.health.recordAttemptSuccess(provider.id, attemptToken);
+          }
           return;
         }
 
-        this.health?.recordFailure(provider.id, this.now(), {
-          attemptStartedAt,
-        });
+        if (this.health !== undefined && attemptToken !== undefined) {
+          const failedAt = this.now();
+          if (!Number.isFinite(failedAt) || failedAt < 0) {
+            throw new SevenError({
+              code: "VALIDATION",
+              message: "Provider health clock returned an invalid timestamp.",
+            });
+          }
+          this.health.recordAttemptFailure(
+            provider.id,
+            attemptToken,
+            failedAt,
+          );
+        }
         failures.push(`${candidate.providerId}:empty`);
       } catch (error) {
         if (context.signal.aborted) throw error;
@@ -362,10 +370,14 @@ export class RoutedChatTransport implements ChatTransport {
         }
 
         const retryAfter = retryAfterMs(error);
-        this.health?.recordFailure(provider.id, failedAt, {
-          attemptStartedAt,
-          ...(retryAfter === undefined ? {} : { retryAfterMs: retryAfter }),
-        });
+        if (this.health !== undefined && attemptToken !== undefined) {
+          this.health.recordAttemptFailure(
+            provider.id,
+            attemptToken,
+            failedAt,
+            retryAfter === undefined ? {} : { retryAfterMs: retryAfter },
+          );
+        }
 
         if (meaningfulOutputStarted) {
           if (error instanceof SevenError) throw error;
