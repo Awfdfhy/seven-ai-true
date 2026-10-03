@@ -429,6 +429,39 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       assert.equal(await page.evaluate(()=>!document.getElementById('seven-github-selfdev')&&[...document.getElementById('seven-app').children].every(x=>!x.inert)),true);
       await page.close();
     });
+    await test('Arabic sidebar room search model picker and final nav are localized',async()=>{
+      const page=await browser.newPage({viewport:{width:390,height:844}});
+      await page.addInitScript(()=>{localStorage.setItem('seven_ui_language','ar');localStorage.setItem('user_name_asked','1');});
+      await page.goto(origin,{waitUntil:'domcontentloaded'});
+      await page.waitForFunction(()=>window.SevenShell&&window.SevenShellFinal&&window.SevenUiPolish&&document.documentElement.lang==='ar');
+      await page.evaluate(()=>{SevenUiPolish.sync();SevenShell.sync();SevenShellFinal.sync();});
+      await page.waitForFunction(()=>document.querySelector('#seven-room-search')?.placeholder==='بحث المحادثات'&&document.querySelector('.seven-shell-primary-nav'));
+      const state=await page.evaluate(()=>{
+        const search=document.querySelector('#seven-room-search');
+        const modelPanel=document.querySelector('.seven-model-panel');
+        const modelHead=document.querySelector('.seven-model-panel-head strong');
+        const modelClose=document.querySelector('[data-seven-model-close]');
+        const nav=[...document.querySelectorAll('.seven-shell-primary-nav .seven-shell-nav-btn')].map(x=>({text:x.textContent.trim(),aria:x.getAttribute('aria-label')||''}));
+        return{
+          searchPlaceholder:search?.placeholder,
+          searchAria:search?.getAttribute('aria-label'),
+          modelAria:modelPanel?.getAttribute('aria-label'),
+          modelHead:modelHead?.textContent.trim(),
+          modelClose:modelClose?.getAttribute('aria-label'),
+          nav,
+          doc:document.documentElement.scrollWidth<=innerWidth+2
+        };
+      });
+      assert.equal(state.searchPlaceholder,'بحث المحادثات');
+      assert.equal(state.searchAria,'بحث المحادثات');
+      assert.equal(state.modelAria,'اختيار النموذج');
+      assert.equal(state.modelHead,'النماذج');
+      assert.equal(state.modelClose,'إغلاق قائمة النماذج');
+      assert.ok(state.nav.some(x=>x.text.includes('محادثة جديدة')));
+      assert.ok(state.nav.some(x=>x.text.includes('تطوير ذاتي')&&x.aria.includes('GitHub')));
+      assert.equal(state.doc,true);
+      await page.close();
+    });
     await test('settings expose no manual credential entry points',async()=>{
       const page=await browser.newPage({viewport:{width:390,height:844}});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
