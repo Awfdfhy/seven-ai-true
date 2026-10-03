@@ -1,20 +1,35 @@
 # Seven Remake V3 — Current Release Status
 
-- Remake implementation progress: **12/12 candidate pending Final Manager gates**
-- Release assurance engine: implemented
+- Remake implementation progress: **12/12 COMPLETE**
+- Final Manager: **PASS**
+- Release assurance engine: **COMPLETE**
 - Current installed-remake release state: **INCONCLUSIVE**
 
-## Evidence currently available
+## Proven implementation evidence
 
-- strict TypeScript / Remake CI: available
-- automated unit/contract/integration suite: available
-- legacy Seven regression + legacy verified release artifact: available
+- 28/28 Remake test files passed in the Final Manager gate.
+- 255/255 Remake tests passed.
+- strict TypeScript passed.
+- production build passed.
+- dependency audits reported 0 vulnerabilities.
+- Legacy Seven regression passed.
+- verified legacy release artifact gate passed.
+- Final Manager PR #74 merged.
+- post-merge Remake CI passed.
 
-## Evidence not yet valid for the remake artifact
+## Why release readiness is still INCONCLUSIVE
 
-- installed remake Android bridge round-trip
-- built remake APK payload identity
-- installed remake payload identity comparison
-- installed remake APK smoke
+The existing Android workflow packages and installs the legacy release path, not the Vite/TypeScript `remake/` artifact. Therefore these required Phase 12 proofs do not yet exist for the remake APK:
 
-The existing Android workflow validates the legacy packaging path. Those results are useful regression evidence, but they are not substituted for remake APK evidence.
+1. installed remake Android bridge round-trip evidence
+2. built remake APK payload SHA-256 identity
+3. installed remake payload identity match
+4. installed remake APK smoke evidence
+
+This is not converted into PASS. The release-assurance engine intentionally preserves missing platform evidence as **INCONCLUSIVE**.
+
+## Current truth
+
+`REMAKE_PROGRESS=12/12`
+
+`RELEASE_READY=INCONCLUSIVE`
