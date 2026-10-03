@@ -8,6 +8,16 @@ export interface RoomRepository {
   delete(roomId: string): Promise<void>;
 }
 
+function requireRoomId(roomId: string): string {
+  if (typeof roomId !== "string" || !roomId.trim() || roomId !== roomId.trim()) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "roomId must be a canonical non-empty string.",
+    });
+  }
+  return roomId;
+}
+
 function assertRoom(room: Room): void {
   if (!isRoom(room)) {
     throw new SevenError({
@@ -28,7 +38,8 @@ export class InMemoryRoomRepository implements RoomRepository {
   }
 
   async get(roomId: string): Promise<Room | null> {
-    const room = this.rooms.get(roomId);
+    const id = requireRoomId(roomId);
+    const room = this.rooms.get(id);
     return room ? cloneRoom(room) : null;
   }
 
@@ -46,7 +57,7 @@ export class InMemoryRoomRepository implements RoomRepository {
   }
 
   async delete(roomId: string): Promise<void> {
-    this.rooms.delete(roomId);
+    this.rooms.delete(requireRoomId(roomId));
   }
 }
 
@@ -63,7 +74,7 @@ export class IndexedDbRoomRepository implements RoomRepository {
   constructor(options: IndexedDbRoomRepositoryOptions = {}) {
     this.databaseName = options.databaseName?.trim() || "seven-remake";
     const version = options.version ?? 1;
-    if (!Number.isInteger(version) || version <= 0) {
+    if (!Number.isSafeInteger(version) || version <= 0) {
       throw new SevenError({
         code: "VALIDATION",
         message: "IndexedDB version must be a positive integer.",
@@ -73,16 +84,17 @@ export class IndexedDbRoomRepository implements RoomRepository {
   }
 
   async get(roomId: string): Promise<Room | null> {
+    const id = requireRoomId(roomId);
     const db = await this.open();
     const raw = await this.request<unknown>(
-      db.transaction("rooms", "readonly").objectStore("rooms").get(roomId),
+      db.transaction("rooms", "readonly").objectStore("rooms").get(id),
     );
     if (raw === undefined) return null;
     if (!isRoom(raw)) {
       throw new SevenError({
         code: "STORAGE",
-        message: `Room ${roomId} failed schema validation.`,
-        details: { roomId },
+        message: `Room ${id} failed schema validation.`,
+        details: { roomId: id },
       });
     }
     return cloneRoom(raw);
@@ -118,9 +130,10 @@ export class IndexedDbRoomRepository implements RoomRepository {
   }
 
   async delete(roomId: string): Promise<void> {
+    const id = requireRoomId(roomId);
     const db = await this.open();
     const tx = db.transaction("rooms", "readwrite");
-    tx.objectStore("rooms").delete(roomId);
+    tx.objectStore("rooms").delete(id);
     await this.transaction(tx);
   }
 
