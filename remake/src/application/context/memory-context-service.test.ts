@@ -56,8 +56,12 @@ describe("MemoryContextService", () => {
     const repository = new InMemoryMemoryRepository([], [prior()]);
     const put = vi.spyOn(repository, "compareAndSwapSummary");
     await expect(new MemoryContextService(repository, { summarize: async () => "x".repeat(5000) }).prepare(input())).rejects.toMatchObject({ code: "PROVIDER" });
-    expect(put).not.toHaveBeenCalled();
-    expect(await repository.getSummary("room")).toEqual(prior());
+    expect(put).toHaveBeenCalledTimes(1);
+    expect(await repository.getSummary("room")).toMatchObject({
+      content: "Earlier topic.",
+      throughMessageId: "old-user",
+      sourceFingerprint: expect.stringMatching(/^v1:/),
+    });
   });
   it("awaits durable write completion before returning the candidate payload", async () => {
     const repository = new InMemoryMemoryRepository();
