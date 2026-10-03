@@ -2,9 +2,15 @@
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
-  color: #f6f7fb;
-  background: #0b0c0f;
   font-synthesis: none;
+  --seven-bg: #0b0c0f;
+  --seven-surface: rgba(255, 255, 255, 0.055);
+  --seven-surface-strong: #f6f7fb;
+  --seven-text: #f6f7fb;
+  --seven-text-muted: #aeb0bb;
+  --seven-accent: #a9a4ff;
+  --seven-border: rgba(255, 255, 255, 0.12);
+  --seven-on-strong: #0b0c0f;
 }
 
 * {
@@ -21,31 +27,49 @@ body,
 body {
   min-width: 320px;
   min-height: 100vh;
-  background:
-    radial-gradient(circle at 20% 0%, rgba(124, 92, 255, 0.2), transparent 32rem),
-    #0b0c0f;
+  background: var(--seven-bg);
 }
 
 button {
+  min-width: 44px;
+  min-height: 44px;
   font: inherit;
+  touch-action: manipulation;
 }
 
 .seven-app {
   width: min(100%, 72rem);
   min-height: 100vh;
-  margin: 0 auto;
-  padding:
-    max(1.25rem, env(safe-area-inset-top))
-    max(1.25rem, env(safe-area-inset-right))
-    max(1.25rem, env(safe-area-inset-bottom))
-    max(1.25rem, env(safe-area-inset-left));
+  margin-inline: auto;
+  padding-block:
+    max(1rem, env(safe-area-inset-top))
+    max(1rem, env(safe-area-inset-bottom));
+  padding-inline:
+    max(1rem, env(safe-area-inset-left))
+    max(1rem, env(safe-area-inset-right));
+  color: var(--seven-text);
+  background:
+    radial-gradient(circle at 20% 0%, color-mix(in srgb, var(--seven-accent) 20%, transparent), transparent 32rem),
+    var(--seven-bg);
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.seven-app[data-theme="light"] {
+  --seven-bg: #f6f7fb;
+  --seven-surface: rgba(13, 15, 22, 0.055);
+  --seven-surface-strong: #11131a;
+  --seven-text: #11131a;
+  --seven-text-muted: #5e6370;
+  --seven-accent: #5749d8;
+  --seven-border: rgba(13, 15, 22, 0.14);
+  --seven-on-strong: #f7f8fb;
 }
 
 .seven-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .seven-header h1 {
@@ -57,23 +81,53 @@ button {
 .seven-eyebrow,
 .seven-kicker {
   margin: 0 0 0.35rem;
-  color: #a9a4ff;
+  color: var(--seven-accent);
   font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.12em;
 }
 
+[dir="rtl"] .seven-eyebrow,
+[dir="rtl"] .seven-kicker {
+  letter-spacing: 0.04em;
+}
+
 .seven-status {
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  max-width: 50%;
+  border: 1px solid var(--seven-border);
   border-radius: 999px;
   padding: 0.55rem 0.8rem;
-  color: #c9cbd6;
-  background: rgba(255, 255, 255, 0.04);
+  color: var(--seven-text-muted);
+  background: var(--seven-surface);
+  text-align: center;
+}
+
+.seven-workspaces {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-block-start: 1.25rem;
+}
+
+.seven-workspace-button,
+.seven-actions button {
+  border: 1px solid var(--seven-border);
+  border-radius: 0.9rem;
+  padding: 0.75rem;
+  color: var(--seven-text);
+  background: var(--seven-surface);
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.seven-workspace-button[aria-pressed="true"] {
+  color: var(--seven-on-strong);
+  background: var(--seven-surface-strong);
 }
 
 .seven-stage {
   max-width: 48rem;
-  margin-top: clamp(5rem, 16vh, 10rem);
+  margin-block-start: clamp(3.5rem, 12vh, 8rem);
 }
 
 .seven-stage h2 {
@@ -84,20 +138,80 @@ button {
   letter-spacing: -0.065em;
 }
 
+[dir="rtl"] .seven-stage h2 {
+  letter-spacing: -0.025em;
+}
+
 .seven-stage p:not(.seven-kicker) {
   max-width: 46rem;
-  color: #aeb0bb;
+  color: var(--seven-text-muted);
   font-size: 1.05rem;
   line-height: 1.65;
 }
 
-.seven-stage button {
-  margin-top: 1rem;
-  border: 0;
-  border-radius: 1rem;
-  padding: 0.9rem 1.1rem;
-  color: #0b0c0f;
-  background: #f6f7fb;
-  font-weight: 800;
-  cursor: pointer;
+.seven-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-block-start: 1rem;
+}
+
+.seven-actions > button:first-child {
+  border-color: transparent;
+  color: var(--seven-on-strong);
+  background: var(--seven-surface-strong);
+}
+
+.seven-secondary {
+  color: var(--seven-text);
+  background: var(--seven-surface);
+}
+
+.seven-app[data-reduced-motion="true"],
+.seven-app[data-reduced-motion="true"] * {
+  scroll-behavior: auto !important;
+  transition-duration: 0.001ms !important;
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seven-app,
+  .seven-app * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .seven-header {
+    align-items: flex-start;
+  }
+
+  .seven-status {
+    font-size: 0.82rem;
+  }
+
+  .seven-workspaces {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .seven-stage {
+    margin-block-start: 3rem;
+  }
+
+  .seven-stage h2 {
+    font-size: clamp(2.4rem, 14vw, 4.6rem);
+  }
+
+  .seven-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .seven-actions button {
+    width: 100%;
+  }
 }
