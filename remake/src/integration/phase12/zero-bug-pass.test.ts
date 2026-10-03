@@ -251,7 +251,7 @@ describe("Zero-bug regressions", () => {
     expect(chunks.join("")).toBe("real");
   });
 
-  it("rejects provider map identity mismatches instead of dispatching to the wrong adapter", async () => {
+  it("rejects provider map identity mismatches before dispatch", () => {
     const descriptor = model("expected", "m");
     const wrong = provider(
       "wrong",
@@ -272,21 +272,13 @@ describe("Zero-bug regressions", () => {
       },
     );
 
-    const transport = new RoutedChatTransport(
-      plan,
-      new Map([["expected", wrong]]),
-    );
-
-    const consume = async () => {
-      for await (const _chunk of transport.stream({
-        room: createRoom({ id: "r2", now: 1 }),
-        signal: new AbortController().signal,
-      })) {
-        // no-op
-      }
-    };
-
-    await expect(consume()).rejects.toMatchObject({ code: "PROVIDER" });
+    expect(
+      () =>
+        new RoutedChatTransport(
+          plan,
+          new Map([["expected", wrong]]),
+        ),
+    ).toThrow(/Provider adapter expected is malformed/);
   });
 
   it("rejects invalid model numbers and ambiguous bare preferred model ids", () => {
