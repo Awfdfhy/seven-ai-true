@@ -1,0 +1,310 @@
+name: Seven Remake Zero Bug Final32
+
+on:
+  push:
+    branches:
+      - remake-manager/zero-bug-pass-01
+    paths:
+      - '.github/workflows/seven-remake-zero-bug-final32.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: seven-remake-zero-bug-final32
+  cancel-in-progress: true
+
+jobs:
+  final32:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: remake-manager/zero-bug-pass-01
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Pin green target and build evidence pack
+        run: |
+          set -euo pipefail
+          echo "TARGET_SHA=92b928a2c8b4484f28682af17c8a606aa7afbec5" >> "$GITHUB_ENV"
+          git show HEAD:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/kilo_anonymous_relay.py
+          git checkout --detach 92b928a2c8b4484f28682af17c8a606aa7afbec5
+          python - <<'PY'
+          from pathlib import Path
+          roots=[
+              Path('remake/src/core'),
+              Path('remake/src/domain'),
+              Path('remake/src/storage'),
+              Path('remake/src/application'),
+              Path('remake/src/providers'),
+              Path('remake/src/routing'),
+              Path('remake/src/integration/phase12'),
+          ]
+          files=[]
+          for root in roots:
+              if root.exists():
+                  files.extend(sorted(p for p in root.rglob('*') if p.is_file() and p.suffix in {'.ts','.tsx'}))
+          blocks=[]
+          total=0
+          cap=220000
+          for p in files:
+              raw=p.read_text(encoding='utf-8',errors='replace')
+              block=f"===== {p.as_posix()} =====\n{raw}\n"
+              if total+len(block)>cap:
+                  remaining=cap-total
+                  if remaining>1000: blocks.append(block[:remaining])
+                  break
+              blocks.append(block); total+=len(block)
+          evidence='\n'.join(blocks)
+          Path('/tmp/evidence.txt').write_text(evidence,encoding='utf-8')
+          print('evidence_chars',len(evidence),'files',len(files))
+          PY
+
+      - name: Start free model relay
+        run: |
+          set -euo pipefail
+          python /tmp/kilo_anonymous_relay.py >/tmp/relay.log 2>&1 &
+          ready=0
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8877/v1/models >/tmp/models.json; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" -eq 1
+
+      - name: Run strict 32-auditor final gate
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import concurrent.futures as cf
+          import json, pathlib, time, urllib.request
+
+          target='92b928a2c8b4484f28682af17c8a606aa7afbec5'
+          evidence=pathlib.Path('/tmp/evidence.txt').read_text(encoding='utf-8')
+          focuses=[
+            "TaskManager lifecycle, terminal states, cancellation sealing, retention and owner isolation",
+            "Cancellation races before start, during storage, during stream, after seal, deadline versus user stop",
+            "Timeout/deadline bounds, timer cleanup, clock rollback and abort semantics",
+            "Observer/listener isolation, reentrancy, callback exceptions and lifecycle corruption",
+            "Room/message invariants, immutable snapshots, timestamps, duplicate IDs and malformed runtime values",
+            "Room persistence round-trip, in-memory isolation, list ordering and invalid writes",
+            "IndexedDB open, blocked, upgrade, versionchange, close, transaction failure and retry lifecycle",
+            "ChatService ownership, concurrent sends, storage preflight cancellation and missing-room paths",
+            "Chat persistence failures before user write, after user write and during assistant commit",
+            "Streaming draft/final commit exactly-once semantics and partial response cancellation",
+            "Assistant draft resource bounds, long streams and memory exhaustion resistance",
+            "Provider message invariant, malformed roles/content and single leading system message",
+            "ModelDescriptor runtime validation, capabilities, numeric edge cases and collision-safe keys",
+            "ProviderAdapter contract, malformed chunks, adapter identity and mutable provider registries",
+            "Fallback before meaningful output, whitespace prelude, empty output and malformed chunks",
+            "Failure after first meaningful token; verify no cross-provider answer splicing",
+            "Provider error normalization, retryAfter handling and privacy-safe failure details",
+            "ModelRegistry atomic replacement, duplicates, immutability and malformed model lists",
+            "ModelRouter quick/balanced/deep determinism, tie breaks, numeric overflow and capability filtering",
+            "Preferred model resolution, cross-provider collisions and qualified model identities",
+            "ProviderHealth penalties, cooldowns, stale success/failure ordering and recovery",
+            "Routing runtime boundary validation for mode, booleans, arrays, IDs and timestamps",
+            "Concurrency across rooms/providers with one shared TaskManager and service instances",
+            "Restart/restore consistency and schema validation after persistence",
+            "Architecture invariants: no mutable Seven globals and storage ownership isolation",
+            "UI isolation from provider/network/storage contracts in current Phase 1-2 scope",
+            "Security/privacy: raw provider errors, secrets, unknown thrown values and diagnostic retention",
+            "Performance: cloning cost, unbounded arrays/maps/listeners/timers and pathological provider behavior",
+            "TypeScript/runtime mismatch attacks using malformed JavaScript values at public boundaries",
+            "Cross-module contract consistency among chat, TaskManager, repository, router and provider transport",
+            "Test-suite blind spots: identify concrete existing production behavior not exercised by regressions",
+            "Holistic adversarial review: any concrete Phase 1-2 bug missed by all narrower focuses",
+          ]
+
+          catalog=json.load(open('/tmp/models.json'))
+          rows=catalog.get('data',catalog if isinstance(catalog,list) else [])
+          mids=[]
+          for row in rows:
+              mid=row.get('id') if isinstance(row,dict) else row if isinstance(row,str) else None
+              if isinstance(mid,str) and ':free' in mid and not mid.startswith('kilo-auto/'):
+                  mids.append(mid)
+          def rank(mid):
+              low=mid.lower()
+              preferred=('qwen','z-ai/glm','minimax/','moonshot','google/','nvidia/nemotron')
+              for i,key in enumerate(preferred):
+                  if key in low:return (i,mid)
+              return (20,mid)
+          mids=sorted(dict.fromkeys(mids),key=rank)[:16]
+          base='http://127.0.0.1:8877/v1'
+
+          def ask(mid,messages,max_tokens=20,timeout=25):
+              body=json.dumps({
+                  'model':mid,'messages':messages,'temperature':0,
+                  'max_tokens':max_tokens,'stream':False
+              }).encode()
+              req=urllib.request.Request(base+'/chat/completions',data=body,headers={'Content-Type':'application/json'})
+              with urllib.request.urlopen(req,timeout=timeout) as res:
+                  data=json.load(res)
+              choices=data.get('choices') or []
+              msg=(choices[0].get('message') or {}) if choices else {}
+              texts=[x for x in (msg.get('content'),msg.get('reasoning_content')) if isinstance(x,str) and x.strip()]
+              return '\n'.join(texts)
+
+          healthy=[]
+          with cf.ThreadPoolExecutor(max_workers=6) as ex:
+              futs={ex.submit(ask,mid,[{'role':'user','content':'Reply exactly OK'}],12,22):mid for mid in mids}
+              for fut in cf.as_completed(futs):
+                  mid=futs[fut]
+                  try:
+                      if fut.result().strip():
+                          healthy.append(mid)
+                          print('HEALTHY',mid,flush=True)
+                  except Exception as exc:
+                      print('UNHEALTHY',mid,type(exc).__name__,flush=True)
+                  if len(healthy)>=6:
+                      for other in futs:
+                          if not other.done(): other.cancel()
+                      break
+          if not healthy:
+              raise SystemExit('No healthy direct free models')
+          healthy=sorted(healthy,key=rank)[:6]
+          print('MODEL_POOL',healthy,flush=True)
+
+          severities={'CRITICAL','HIGH','MEDIUM','LOW'}
+          banned={'short title','file/function and concrete reason','deterministic test/repro','minimal root-cause fix','CRITICAL|HIGH|MEDIUM|LOW'}
+
+          def validate(aid,raw):
+              markers=[line.strip() for line in raw.splitlines() if line.strip().startswith('ZERO_AUDIT_JSON=')]
+              if len(markers)!=1: raise ValueError('exactly one marker required')
+              data=json.loads(markers[0][len('ZERO_AUDIT_JSON='):])
+              if data.get('id')!=aid: raise ValueError('wrong id')
+              if data.get('status') not in {'PASS','BUG'}: raise ValueError('bad status')
+              fs=data.get('findings')
+              if not isinstance(fs,list) or len(fs)>6: raise ValueError('bad findings')
+              if data['status']=='PASS' and fs: raise ValueError('PASS with findings')
+              if data['status']=='BUG' and not fs: raise ValueError('BUG without findings')
+              seen=set()
+              for f in fs:
+                  if not isinstance(f,dict): raise ValueError('finding object required')
+                  sev=f.get('severity'); title=f.get('title'); ev=f.get('evidence'); repro=f.get('repro'); fix=f.get('fix')
+                  if sev not in severities: raise ValueError('bad severity')
+                  if not isinstance(title,str) or len(title.strip())<10 or title in seen: raise ValueError('bad title')
+                  seen.add(title)
+                  if not isinstance(ev,str) or len(ev.strip())<35 or 'remake/src/' not in ev: raise ValueError('weak evidence')
+                  if not isinstance(repro,str) or len(repro.strip())<30: raise ValueError('weak repro')
+                  if not isinstance(fix,str) or len(fix.strip())<20: raise ValueError('weak fix')
+                  joined=' '.join(map(str,[sev,title,ev,repro,fix]))
+                  if any(x in joined for x in banned): raise ValueError('placeholder')
+              return data
+
+          def run_auditor(idx):
+              aid=f'F{idx+1:02d}'
+              focus=focuses[idx]
+              system='You are an exacting adversarial TypeScript software auditor. Use only supplied source. Never invent a bug. Future features are out of scope.'
+              user=(
+                  f'AUDITOR ID: {aid}\nFOCUS: {focus}\n'
+                  'Audit only the existing Seven Remake Phase 1-2 source. Check tests in the evidence before claiming a gap. '
+                  'A bug must describe current production behavior that violates an existing invariant or can deterministically fail. '
+                  'If no concrete bug survives scrutiny, PASS. Output exactly one machine line: '
+                  'ZERO_AUDIT_JSON={"id":"'+aid+'","status":"PASS","findings":[]} '
+                  'or BUG with findings. Each finding needs severity CRITICAL/HIGH/MEDIUM/LOW, title, exact remake/src/... evidence, '
+                  'deterministic repro, and minimal root-cause fix. No markdown, no templates.\n\nSOURCE EVIDENCE:\n'+evidence
+              )
+              rotated=healthy[idx%len(healthy):]+healthy[:idx%len(healthy)]
+              errors=[]
+              for mid in rotated[:4]:
+                  try:
+                      raw=ask(mid,[{'role':'system','content':system},{'role':'user','content':user}],2200,80)
+                      data=validate(aid,raw)
+                      return {'id':aid,'focus':focus,'model':mid,'report':data}
+                  except Exception as exc:
+                      errors.append(mid+':'+type(exc).__name__)
+              raise RuntimeError(aid+' invalid results '+','.join(errors))
+
+          results=[]; errors=[]
+          with cf.ThreadPoolExecutor(max_workers=8) as ex:
+              futs={ex.submit(run_auditor,i):i for i in range(32)}
+              for fut in cf.as_completed(futs):
+                  i=futs[fut]; aid=f'F{i+1:02d}'
+                  try:
+                      r=fut.result(); results.append(r)
+                      print('AUDIT',aid,r['report']['status'],len(r['report']['findings']),r['model'],flush=True)
+                  except Exception as exc:
+                      errors.append((aid,str(exc)))
+                      print('AUDIT_FAIL',aid,str(exc),flush=True)
+
+          results.sort(key=lambda r:r['id'])
+          pathlib.Path('/tmp/final32.json').write_text(json.dumps(results,ensure_ascii=False,indent=2),encoding='utf-8')
+          if errors:
+              pathlib.Path('/tmp/final32-errors.json').write_text(json.dumps(errors,ensure_ascii=False,indent=2),encoding='utf-8')
+              raise SystemExit('Invalid auditor reports: '+', '.join(x[0] for x in errors))
+          if len(results)!=32: raise SystemExit(f'Expected 32 reports, got {len(results)}')
+          findings=[(r['id'],f) for r in results for f in r['report']['findings']]
+          pathlib.Path('/tmp/counts.json').write_text(json.dumps({'reports':32,'findings':len(findings)}))
+          PY
+
+      - name: Build final audit report
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          results=json.load(open('/tmp/final32.json'))
+          findings=[(r['id'],f) for r in results for f in r['report']['findings']]
+          lines=[
+              '# Seven Remake — Final32 Zero-Bug Audit',
+              '',
+              'Target SHA: 92b928a2c8b4484f28682af17c8a606aa7afbec5',
+              f'Valid reports: {len(results)}/32',
+              f'Concrete findings: {len(findings)}',
+              '',
+              '## Auditor results',
+          ]
+          for r in results:
+              lines.append(f"- {r['id']}: {r['report']['status']} ({len(r['report']['findings'])}) via {r['model']}")
+          lines += ['', '## Findings']
+          if not findings:
+              lines.append('No concrete Phase 1-2 bugs were found by the 32 valid independent audits.')
+          else:
+              for aid,f in findings:
+                  lines += [
+                      f"### {aid} — {f['severity']} — {f['title']}",
+                      f"- Evidence: {f['evidence']}",
+                      f"- Repro: {f['repro']}",
+                      f"- Fix: {f['fix']}",
+                      ''
+                  ]
+          lines += [
+              '',
+              'VALID_REPORTS=32/32',
+              f'CONCRETE_FINDINGS={len(findings)}',
+              'TARGET_SHA=92b928a2c8b4484f28682af17c8a606aa7afbec5',
+              'ZERO_BUG_FINAL32=COMPLETE',
+              ''
+          ]
+          pathlib.Path('/tmp/FINAL32_REPORT.md').write_text('\n'.join(lines),encoding='utf-8')
+          print('\n'.join(lines[-6:]))
+          PY
+
+      - name: Save final audit report
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git checkout remake-manager/zero-bug-pass-01
+          git pull --rebase origin remake-manager/zero-bug-pass-01
+          mkdir -p .seven-team/zero-bug
+          cp /tmp/FINAL32_REPORT.md .seven-team/zero-bug/FINAL32_REPORT.md
+          git add -f .seven-team/zero-bug/FINAL32_REPORT.md
+          git config user.name 'Seven Final32 Audit'
+          git config user.email 'actions@users.noreply.github.com'
+          if ! git diff --cached --quiet; then
+            git commit -m 'Record Final32 zero-bug audit'
+            git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:remake-manager/zero-bug-pass-01
+          fi
+
+      - name: Enforce zero findings
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('/tmp/counts.json'))
+          assert d['reports']==32,d
+          assert d['findings']==0,d
+          print('FINAL32 ZERO-BUG GATE PASS')
+          PY
