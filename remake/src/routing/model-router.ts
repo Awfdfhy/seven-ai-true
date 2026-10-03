@@ -121,6 +121,7 @@ export class ModelRegistry {
 type InternalHealth = ProviderHealth &
   Readonly<{
     revision: number;
+    lastFailureAt: number | null;
   }>;
 
 export class ProviderHealthTracker {
@@ -152,14 +153,24 @@ export class ProviderHealthTracker {
     );
   }
 
-  recordSuccess(providerId: string): void {
+  recordSuccess(providerId: string, attemptStartedAt = Date.now()): void {
     if (!providerId.trim()) {
       throw new SevenError({
         code: "VALIDATION",
         message: "providerId must not be empty.",
       });
     }
+    requireFiniteNonNegative(attemptStartedAt, "Provider attempt start timestamp");
     const current = this.states.get(providerId);
+
+    if (
+      current?.lastFailureAt !== null &&
+      current?.lastFailureAt !== undefined &&
+      attemptStartedAt <= current.lastFailureAt
+    ) {
+      return;
+    }
+
     const nextPenalty = Math.max(0, (current?.penalty ?? 0) - 25);
     this.states.set(
       providerId,
@@ -168,6 +179,7 @@ export class ProviderHealthTracker {
         penalty: nextPenalty,
         cooldownUntil: null,
         revision: (current?.revision ?? 0) + 1,
+        lastFailureAt: current?.lastFailureAt ?? null,
       }),
     );
   }
@@ -220,6 +232,7 @@ export class ProviderHealthTracker {
         penalty: Math.min(1000, (current?.penalty ?? 0) + addedPenalty),
         cooldownUntil,
         revision: (current?.revision ?? 0) + 1,
+        lastFailureAt: Math.max(current?.lastFailureAt ?? 0, now),
       }),
     );
   }
@@ -313,6 +326,12 @@ export class ModelRouter {
             : preferences.mode === "deep"
               ? model.qualityScore * 1.5 + model.speedScore * 0.5
               : model.qualityScore + model.speedScore;
+        if (!Number.isFinite(modeWeight)) {
+          throw new SevenError({
+            code: "VALIDATION",
+            message: "Model route score overflowed.",
+          });
+        }
         const isPreferred =
           preferred !== null &&
           (modelKey(model) === preferred ||
