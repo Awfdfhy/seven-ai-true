@@ -22,6 +22,16 @@ function applyCompatibilityFixes(name,raw){
     if(!hardening.includes("Seven 2.4.2 UI Hardening"))throw new Error("Seven UI hardening marker missing");
     if(!text.includes("Seven 2.4.2 UI Hardening"))text+="\n"+hardening;
   }
+  if(name==="intelligence.js"){
+    const prefsOld="p.engine=['auto','brave','searxng','wikipedia'].includes(p.engine)?p.engine:'auto';";
+    const prefsNew="p.engine=['auto','searxng','wikipedia'].includes(p.engine)?p.engine:'auto';";
+    if(!text.includes(prefsOld))throw new Error("Seven Intelligence legacy Brave preference anchor missing");
+    text=text.replace(prefsOld,prefsNew);
+    const discoverOld="async function discover(query,signal,cfg){cancelled(signal);let found=[];if(cfg.engine==='brave')return brave(query,signal,cfg);";
+    const discoverNew="async function discover(query,signal,cfg){cancelled(signal);let found=[];if(cfg.engine==='brave')cfg=Object.assign({},cfg,{engine:'auto'});";
+    if(!text.includes(discoverOld))throw new Error("Seven Intelligence Brave discovery anchor missing");
+    text=text.replace(discoverOld,discoverNew);
+  }
   if(name==="remake.js"){
     const bootAnchor="d.documentElement.lang=language;d.documentElement.dir=language==='ar'?'rtl':'ltr';r.SevenRemake={version:'2.0.0',update,openWorkspace,searchSettings,depthDialog,modeDialog,closeDialog,welcome,t:T};";
     const bootFixed="d.documentElement.lang=language;d.documentElement.dir=language==='ar'?'rtl':'ltr';const appRoot=d.getElementById('seven-app');if(appRoot){appRoot.lang=language;appRoot.dir=d.documentElement.dir;appRoot.dataset.sevenTheme=r.SevenTheme?.getResolvedTheme?.()||d.documentElement.dataset.sevenTheme||'day';}r.SevenRemake={version:'2.0.1',update,openWorkspace,searchSettings,depthDialog,modeDialog,closeDialog,welcome,t:T};";
