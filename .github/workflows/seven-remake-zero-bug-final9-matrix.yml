@@ -49,7 +49,7 @@ jobs:
         run: |
           set -euo pipefail
           git show HEAD:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/kilo_anonymous_relay.py
-          git checkout --detach 0e8e04d20a6beb798101f555fe38ae5870bef96f
+          git checkout --detach 215310e473df6b4016a57630f2f9bca690cf70ac
           python - <<'PY'
           from pathlib import Path
           files=[
@@ -194,7 +194,7 @@ jobs:
           if ids!=expected: raise SystemExit(f'Expected {expected}, got {ids}')
           findings=[(r['id'],f) for r in results for f in r['report']['findings']]
           lines=['# Seven Remake — Final9 Matrix Recovery','',
-                 'Target SHA: 0e8e04d20a6beb798101f555fe38ae5870bef96f',
+                 'Target SHA: 215310e473df6b4016a57630f2f9bca690cf70ac',
                  'Valid reports: 9/9',
                  f'Concrete findings: {len(findings)}','']
           for r in results:
