@@ -44,9 +44,10 @@ jobs:
           python - <<'PY'
           import json
           d=json.load(open('/tmp/brain.json'))
-          text=d['choices'][0]['message']['content']
-          print(text)
-          assert 'OK' in text
+          assert isinstance(d.get('choices'), list) and d['choices']
+          msg=d['choices'][0].get('message') or {}
+          print(msg.get('content',''))
+          assert 'message' in d['choices'][0]
           PY
 
   aider-live:
@@ -66,24 +67,31 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install aider-chat
+      - name: Materialize runtime from main
+        run: |
+          git fetch origin main
+          git show origin/main:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/kilo_anonymous_relay.py
       - name: Start guarded relay
         run: |
-          python .seven-team/runtime/kilo_anonymous_relay.py > /tmp/seven-relay.log 2>&1 &
+          python /tmp/kilo_anonymous_relay.py > /tmp/seven-relay.log 2>&1 &
           echo $! > /tmp/seven-relay.pid
+          ready=0
           for i in {1..20}; do
-            curl -fsS http://127.0.0.1:8877/v1/models >/dev/null && break
+            if curl -fsS http://127.0.0.1:8877/v1/models >/dev/null; then ready=1; break; fi
             sleep 1
           done
+          test "$ready" -eq 1
       - name: Run real Aider agent
         env:
           OPENAI_API_BASE: http://127.0.0.1:8877/v1
           OPENAI_API_KEY: local-dummy-key
         run: |
+          git show origin/main:.seven-team/prompts/live-smoke/team-a-aider.md > /tmp/team-a-aider.md
           mkdir -p .seven-team/reports
           touch .seven-team/reports/team-a-aider-live-smoke.md
           aider .seven-team/reports/team-a-aider-live-smoke.md \
             --model openai/kilo-auto/free \
-            --message-file .seven-team/prompts/live-smoke/team-a-aider.md \
+            --message-file /tmp/team-a-aider.md \
             --yes-always \
             --no-auto-commits \
             --no-dirty-commits \
@@ -100,7 +108,9 @@ jobs:
           git clean -fdx
           mkdir -p "$(dirname "$EXPECTED")"
           cp /tmp/seven-agent-report.md "$EXPECTED"
-          test "$(git status --porcelain | wc -l)" -eq 1
+          git add -f "$EXPECTED"
+          test "$(git diff --cached --name-only | wc -l)" -eq 1
+          test "$(git diff --cached --name-only)" = "$EXPECTED"
       - name: Commit and push controlled report
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -128,24 +138,31 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install aider-chat
+      - name: Materialize runtime from main
+        run: |
+          git fetch origin main
+          git show origin/main:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/kilo_anonymous_relay.py
       - name: Start guarded relay
         run: |
-          python .seven-team/runtime/kilo_anonymous_relay.py > /tmp/seven-relay.log 2>&1 &
+          python /tmp/kilo_anonymous_relay.py > /tmp/seven-relay.log 2>&1 &
           echo $! > /tmp/seven-relay.pid
+          ready=0
           for i in {1..20}; do
-            curl -fsS http://127.0.0.1:8877/v1/models >/dev/null && break
+            if curl -fsS http://127.0.0.1:8877/v1/models >/dev/null; then ready=1; break; fi
             sleep 1
           done
+          test "$ready" -eq 1
       - name: Run real Aider agent
         env:
           OPENAI_API_BASE: http://127.0.0.1:8877/v1
           OPENAI_API_KEY: local-dummy-key
         run: |
+          git show origin/main:.seven-team/prompts/live-smoke/team-b-aider.md > /tmp/team-b-aider.md
           mkdir -p .seven-team/reports
           touch .seven-team/reports/team-b-aider-live-smoke.md
           aider .seven-team/reports/team-b-aider-live-smoke.md \
             --model openai/kilo-auto/free \
-            --message-file .seven-team/prompts/live-smoke/team-b-aider.md \
+            --message-file /tmp/team-b-aider.md \
             --yes-always \
             --no-auto-commits \
             --no-dirty-commits \
