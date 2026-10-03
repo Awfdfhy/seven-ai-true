@@ -453,7 +453,8 @@ export class ModelRouter {
     if (
       preferences.preferredModelId !== null &&
       (typeof preferences.preferredModelId !== "string" ||
-        !preferences.preferredModelId.trim())
+        !preferences.preferredModelId.trim() ||
+        preferences.preferredModelId !== preferences.preferredModelId.trim())
     ) {
       throw new SevenError({
         code: "VALIDATION",
