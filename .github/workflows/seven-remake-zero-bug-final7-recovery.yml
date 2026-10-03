@@ -134,11 +134,9 @@ jobs:
               for line in raw.splitlines():
                   line=line.strip()
                   if not line.startswith('1|'): continue
-                  parts=line.split('|',6)
-                  if len(parts)!=7: continue
-                  _,sev,path,title,repro,fix,extra=parts if len(parts)==7 else (*parts,'')
-                  # If an extra delimiter slipped into fix, fold it back.
-                  if extra: fix=fix+'|'+extra
+                  parts=line.split('|',5)
+                  if len(parts)!=6: continue
+                  _,sev,path,title,repro,fix=parts
                   if sev not in {'CRITICAL','HIGH','MEDIUM','LOW'}: continue
                   if not path.startswith('remake/src/'): continue
                   if len(title.strip())<6 or len(repro.strip())<15 or len(fix.strip())<10: continue
