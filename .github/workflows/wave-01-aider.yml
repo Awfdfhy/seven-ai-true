@@ -51,9 +51,10 @@ jobs:
           PY
 
   aider-live:
+    needs: provider-brain
     name: Team A Aider live edit
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
@@ -91,7 +92,7 @@ jobs:
           mkdir -p .seven-team/reports/wave-01
           touch .seven-team/reports/wave-01/A06-persisted-ui-state.md
           set +e
-          timeout 150s aider .seven-team/reports/wave-01/A06-persisted-ui-state.md \
+          timeout 300s aider .seven-team/reports/wave-01/A06-persisted-ui-state.md \
             --read memory.cjs \
             --read release/workspaces/seven-shell.js \
             --read release/workspaces/ui-polish-fixes.js \
@@ -146,9 +147,10 @@ jobs:
           git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:agent/06-memory-context
 
   aider-team-b-live:
+    needs: aider-live
     name: Team B Aider live edit
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
@@ -186,7 +188,7 @@ jobs:
           mkdir -p .seven-team/reports/wave-01
           touch .seven-team/reports/wave-01/B06-rpg-memory.md
           set +e
-          timeout 150s aider .seven-team/reports/wave-01/B06-rpg-memory.md \
+          timeout 300s aider .seven-team/reports/wave-01/B06-rpg-memory.md \
             --read memory.cjs \
             --read plans/MEMORY_SCOPE_HARDENING.md \
             --read release/workspaces/rpg.js \
