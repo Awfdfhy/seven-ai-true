@@ -1,0 +1,117 @@
+name: Seven Wave 01 — B09 Recovery Audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/wave-01-b09-recovery.yml'
+      - '.seven-team/prompts/wave-01/B09.md'
+      - '.seven-team/runtime/kilo_anonymous_relay.py'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: seven-wave01-b09-recovery
+  cancel-in-progress: true
+
+jobs:
+  b09-qwen-recovery:
+    name: B09 Qwen RPG performance recovery
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent-b/09-rpg-performance
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Qwen Code
+        run: npm install -g @qwen-code/qwen-code@latest
+
+      - name: Materialize guarded runtime and B09 prompt
+        run: |
+          git fetch origin main
+          git show origin/main:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/kilo_anonymous_relay.py
+          git show origin/main:.seven-team/prompts/wave-01/B09.md > /tmp/b09-prompt.md
+
+      - name: Start compatibility relay
+        env:
+          SEVEN_RELAY_BRIDGE_STREAM: '1'
+        run: |
+          python /tmp/kilo_anonymous_relay.py > /tmp/seven-relay.log 2>&1 &
+          ready=0
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8877/v1/models >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" -eq 1
+
+      - name: Run B09 real Qwen agent with recovery
+        env:
+          OPENAI_API_KEY: local-dummy-key
+          OPENAI_BASE_URL: http://127.0.0.1:8877/v1
+          OPENAI_MODEL: kilo-auto/free
+          QWEN_CODE_SUPPRESS_YOLO_WARNING: 'true'
+        run: |
+          set -u
+          REPORT=.seven-team/reports/wave-01/B09-rpg-performance.md
+          mkdir -p "$(dirname "$REPORT")"
+          rc=1
+          for attempt in 1 2 3 4 5; do
+            echo "B09 recovery attempt $attempt/5"
+            rm -f /tmp/b09-qwen.out
+            set +e
+            timeout 120s qwen -p "$(cat /tmp/b09-prompt.md)" \
+              --approval-mode yolo \
+              --output-format text \
+              --model kilo-auto/free \
+              --openai-api-key local-dummy-key \
+              --openai-base-url http://127.0.0.1:8877/v1 2>&1 | tee /tmp/b09-qwen.out
+            rc=${PIPESTATUS[0]}
+            set -e
+            if test -f "$REPORT" && grep -q 'WAVE01=COMPLETE' "$REPORT"; then
+              rc=0
+              break
+            fi
+            if grep -q 'WAVE01=COMPLETE' /tmp/b09-qwen.out; then
+              cp /tmp/b09-qwen.out "$REPORT"
+              rc=0
+              break
+            fi
+            sleep $((attempt * 4))
+          done
+          if test "$rc" -ne 0 || ! test -f "$REPORT" || ! grep -q 'WAVE01=COMPLETE' "$REPORT"; then
+            echo "B09 recovery did not produce complete evidence." >&2
+            tail -160 /tmp/seven-relay.log >&2 || true
+            exit 1
+          fi
+
+      - name: Sanitize and push B09 report
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          REPORT=.seven-team/reports/wave-01/B09-rpg-performance.md
+          cp "$REPORT" /tmp/B09-rpg-performance.md
+          git reset --hard HEAD
+          git clean -fdx
+          mkdir -p "$(dirname "$REPORT")"
+          cp /tmp/B09-rpg-performance.md "$REPORT"
+          git add -f "$REPORT"
+          if git diff --cached --quiet; then
+            echo "B09 report already present."
+            exit 0
+          fi
+          git config user.name 'Seven Team Runtime'
+          git config user.email 'actions@users.noreply.github.com'
+          git commit -m 'Wave 01 B09 RPG performance audit'
+          git fetch origin agent-b/09-rpg-performance
+          git rebase origin/agent-b/09-rpg-performance
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:agent-b/09-rpg-performance
