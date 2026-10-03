@@ -41,11 +41,38 @@ export interface ProviderAdapter {
   ): AsyncIterable<ProviderChunk>;
 }
 
-export function modelKey(model: Pick<ModelDescriptor, "providerId" | "id">): string {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+export function modelKey(
+  model: Pick<ModelDescriptor, "providerId" | "id">,
+): string {
+  if (
+    !isRecord(model) ||
+    typeof model.providerId !== "string" ||
+    !model.providerId.trim() ||
+    typeof model.id !== "string" ||
+    !model.id.trim()
+  ) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Model key requires non-empty providerId and id.",
+    });
+  }
   return `${encodeURIComponent(model.providerId)}::${encodeURIComponent(model.id)}`;
 }
 
-export function assertValidModelDescriptor(model: ModelDescriptor): void {
+export function assertValidModelDescriptor(
+  model: ModelDescriptor,
+): void {
+  if (!isRecord(model)) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Model descriptor must be an object.",
+    });
+  }
+
   const textFields = [
     ["id", model.id],
     ["providerId", model.providerId],
@@ -53,7 +80,7 @@ export function assertValidModelDescriptor(model: ModelDescriptor): void {
   ] as const;
 
   for (const [field, value] of textFields) {
-    if (!value.trim()) {
+    if (typeof value !== "string" || !value.trim()) {
       throw new SevenError({
         code: "VALIDATION",
         message: `Model ${field} must not be empty.`,
@@ -64,7 +91,7 @@ export function assertValidModelDescriptor(model: ModelDescriptor): void {
   if (!Number.isSafeInteger(model.contextWindow) || model.contextWindow <= 0) {
     throw new SevenError({
       code: "VALIDATION",
-      message: "Model contextWindow must be a positive integer.",
+      message: "Model contextWindow must be a positive safe integer.",
     });
   }
 
@@ -72,7 +99,7 @@ export function assertValidModelDescriptor(model: ModelDescriptor): void {
     ["qualityScore", model.qualityScore],
     ["speedScore", model.speedScore],
   ] as const) {
-    if (!Number.isFinite(value) || value < 0) {
+    if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
       throw new SevenError({
         code: "VALIDATION",
         message: `Model ${field} must be a non-negative finite number.`,
@@ -80,6 +107,12 @@ export function assertValidModelDescriptor(model: ModelDescriptor): void {
     }
   }
 
+  if (!isRecord(model.capabilities)) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Model capabilities must be an object.",
+    });
+  }
   if (
     typeof model.capabilities.streaming !== "boolean" ||
     typeof model.capabilities.tools !== "boolean" ||
@@ -95,7 +128,13 @@ export function assertValidModelDescriptor(model: ModelDescriptor): void {
 export function assertValidProviderMessages(
   messages: readonly ProviderMessage[],
 ): void {
-  if (messages.length === 0 || messages[0]?.role !== "system") {
+  if (!Array.isArray(messages)) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Provider messages must be an array.",
+    });
+  }
+  if (messages.length === 0) {
     throw new SevenError({
       code: "VALIDATION",
       message: "Provider payload must begin with exactly one system message.",
@@ -104,25 +143,30 @@ export function assertValidProviderMessages(
 
   let systemCount = 0;
   for (let index = 0; index < messages.length; index += 1) {
-    const message = messages[index];
-    if (!message) continue;
-    if (
-      message.role !== "system" &&
-      message.role !== "user" &&
-      message.role !== "assistant"
-    ) {
+    const message = messages[index] as unknown;
+    if (!isRecord(message)) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: `Provider message ${index} must be an object.`,
+      });
+    }
+
+    const role = message.role;
+    const content = message.content;
+    if (role !== "system" && role !== "user" && role !== "assistant") {
       throw new SevenError({
         code: "VALIDATION",
         message: `Provider message ${index} has an invalid role.`,
       });
     }
-    if (!message.content.trim()) {
+    if (typeof content !== "string" || !content.trim()) {
       throw new SevenError({
         code: "VALIDATION",
         message: `Provider message ${index} is empty.`,
       });
     }
-    if (message.role === "system") {
+
+    if (role === "system") {
       systemCount += 1;
       if (index !== 0) {
         throw new SevenError({
@@ -130,6 +174,11 @@ export function assertValidProviderMessages(
           message: "System messages are only allowed at index 0.",
         });
       }
+    } else if (index === 0) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Provider payload must begin with a system message.",
+      });
     }
   }
 
