@@ -954,6 +954,137 @@ describe("Zero-bug regressions", () => {
     ).rejects.toMatchObject({ code: "VALIDATION" });
   });
 
+  it("rejects non-canonical or non-monotonic persisted room state", () => {
+    expect(
+      isRoom({
+        schemaVersion: 1,
+        id: " room ",
+        title: "Room",
+        modelId: null,
+        createdAt: 1,
+        updatedAt: 2,
+        messages: [],
+      }),
+    ).toBe(false);
+
+    expect(
+      isRoom({
+        schemaVersion: 1,
+        id: "room",
+        title: "Room",
+        modelId: null,
+        createdAt: 1,
+        updatedAt: 10,
+        messages: [
+          { id: "m1", role: "user", content: "one", createdAt: 8 },
+          { id: "m2", role: "assistant", content: "two", createdAt: 7 },
+        ],
+      }),
+    ).toBe(false);
+  });
+
+  it("uses locale-independent deterministic route tie breaking", () => {
+    const router = new ModelRouter();
+    const plan = router.plan(
+      [
+        model("a", "same"),
+        model("Z", "same"),
+      ],
+      [],
+      {
+        mode: "balanced",
+        preferredModelId: null,
+        requireStreaming: true,
+        now: 1,
+        maxAttempts: 2,
+      },
+    );
+
+    expect(plan.candidates.map((candidate) => candidate.providerId)).toEqual([
+      "Z",
+      "a",
+    ]);
+  });
+
+  it("validates ProviderHealthTracker public runtime inputs", () => {
+    const health = new ProviderHealthTracker();
+
+    expect(() => health.snapshot("bad" as never)).toThrow(/array/);
+    expect(() =>
+      health.recordFailure("provider", 1, null as never),
+    ).toThrow(/options/);
+  });
+
+  it("rejects malformed routed system prompts before dispatch", () => {
+    const descriptor = model("prompt-provider", "m1");
+    const plan = new ModelRouter().plan(
+      [descriptor],
+      [],
+      {
+        mode: "balanced",
+        preferredModelId: null,
+        requireStreaming: true,
+        now: 1,
+        maxAttempts: 1,
+      },
+    );
+
+    expect(
+      () =>
+        new RoutedChatTransport(
+          plan,
+          new Map(),
+          42 as never,
+        ),
+    ).toThrow(/System prompt/);
+  });
+
+  it("rejects a single oversized assistant chunk before concatenating it", async () => {
+    const repository = new InMemoryRoomRepository([
+      createRoom({ id: "single-huge-chunk", now: 1 }),
+    ]);
+    const chat = new ChatService(new TaskManager(), repository);
+    const run = await chat.send("single-huge-chunk", "hello", {
+      async *stream() {
+        yield "x".repeat(1_000_001);
+      },
+    });
+
+    await expect(run.result).rejects.toMatchObject({ code: "PROVIDER" });
+    const saved = await repository.get("single-huge-chunk");
+    expect(saved?.messages.map((message) => message.role)).toEqual(["user"]);
+  });
+
+  it("validates repository identifiers and IndexedDB version bounds", async () => {
+    const memory = new InMemoryRoomRepository([
+      createRoom({ id: "canonical-room", now: 1 }),
+    ]);
+
+    await expect(memory.get(" canonical-room ")).rejects.toMatchObject({
+      code: "VALIDATION",
+    });
+    await expect(memory.delete(" ")).rejects.toMatchObject({
+      code: "VALIDATION",
+    });
+
+    expect(
+      () =>
+        new IndexedDbRoomRepository({
+          version: Number.MAX_SAFE_INTEGER + 1,
+        }),
+    ).toThrow(/positive integer/);
+  });
+
+  it("validates TaskManager constructor and subscription runtime inputs", () => {
+    expect(() => new TaskManager(null as never)).toThrow(/options/);
+
+    const manager = new TaskManager();
+    expect(() => manager.subscribe("bad" as never)).toThrow(/listener/);
+    expect(() =>
+      manager.run(null as never, async () => "no"),
+    ).toThrow(/specification/);
+  });
+
   it("isolates task listeners and bounds completed task retention", async () => {
     const manager = new TaskManager({ maxRetainedCompleted: 2 });
     manager.subscribe(() => {
