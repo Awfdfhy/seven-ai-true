@@ -55,17 +55,24 @@ jobs:
       - name: Enable documented gateway auth in noninteractive CLI
         run: |
           ROOT="$(npm root -g)/@google/gemini-cli"
-          TARGET="$(grep -RIl "Invalid auth method selected" "$ROOT" | head -n 1)"
+          TARGET="$(grep -RIl --include='*.js' "Invalid auth method selected" "$ROOT" | head -n 1)"
           test -n "$TARGET"
           python - "$TARGET" <<'PY'
           import sys
           p=sys.argv[1]
           s=open(p,encoding='utf-8').read()
-          needle="return 'Invalid auth method selected.';"
-          assert needle in s
-          s=s.replace(needle,"if (authMethod === 'gateway') return null;\n  "+needle,1)
-          open(p,'w',encoding='utf-8').write(s)
-          print("Patched Gemini CLI gateway validation:",p)
+          variants=[
+              "return 'Invalid auth method selected.';",
+              'return "Invalid auth method selected.";',
+          ]
+          for needle in variants:
+              if needle in s:
+                  s=s.replace(needle,"if (authMethod === 'gateway') return null;\n  "+needle,1)
+                  open(p,'w',encoding='utf-8').write(s)
+                  print("Patched Gemini CLI gateway validation:",p)
+                  break
+          else:
+              raise SystemExit("Gateway validation target not found in "+p)
           PY
 
       - name: Materialize runtime and prompt from main
