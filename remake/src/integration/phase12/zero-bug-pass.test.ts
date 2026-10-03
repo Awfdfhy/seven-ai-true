@@ -809,6 +809,89 @@ describe("Zero-bug regressions", () => {
     });
   });
 
+  it("turns malformed provider descriptors and messages into structured validation errors", () => {
+    const registry = new ModelRegistry();
+
+    expect(() =>
+      registry.replaceProviderModels("p", [null as never]),
+    ).toThrow(/descriptor/);
+
+    expect(() =>
+      assertValidProviderMessages([
+        { role: "system", content: "system" },
+        { role: "user", content: 42 as never },
+      ]),
+    ).toThrow(/empty/);
+  });
+
+  it("snapshots the provider map so mid-generation registry mutation cannot swap adapters", async () => {
+    const descriptor = model("stable-provider", "m1");
+    const first = provider(
+      "stable-provider",
+      [descriptor],
+      async function* () {
+        yield { delta: "first" };
+      },
+    );
+    const replacement = provider(
+      "stable-provider",
+      [descriptor],
+      async function* () {
+        yield { delta: "replacement" };
+      },
+    );
+
+    const plan = new ModelRouter().plan(
+      [descriptor],
+      [],
+      {
+        mode: "balanced",
+        preferredModelId: null,
+        requireStreaming: true,
+        now: 1,
+        maxAttempts: 1,
+      },
+    );
+    const mutableProviders = new Map<string, ProviderAdapter>([
+      ["stable-provider", first],
+    ]);
+    const transport = new RoutedChatTransport(plan, mutableProviders);
+    mutableProviders.set("stable-provider", replacement);
+
+    let output = "";
+    for await (const chunk of transport.stream({
+      room: createRoom({ id: "provider-snapshot", now: 1 }),
+      signal: new AbortController().signal,
+    })) {
+      output += chunk;
+    }
+
+    expect(output).toBe("first");
+  });
+
+  it("rejects an unbounded assistant stream before it can exhaust room memory", async () => {
+    const repository = new InMemoryRoomRepository([
+      createRoom({ id: "bounded-draft", now: 1 }),
+    ]);
+    const chat = new ChatService(new TaskManager(), repository);
+    const transport: ChatTransport = {
+      async *stream() {
+        yield "a".repeat(600_000);
+        yield "b".repeat(500_001);
+      },
+    };
+
+    const run = await chat.send("bounded-draft", "hello", transport);
+    await expect(run.result).rejects.toMatchObject({
+      code: "PROVIDER",
+    });
+
+    const persisted = await repository.get("bounded-draft");
+    expect(persisted?.messages.map((message) => message.role)).toEqual([
+      "user",
+    ]);
+  });
+
   it("isolates task listeners and bounds completed task retention", async () => {
     const manager = new TaskManager({ maxRetainedCompleted: 2 });
     manager.subscribe(() => {
