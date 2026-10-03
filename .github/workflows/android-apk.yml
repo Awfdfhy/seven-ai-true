@@ -81,7 +81,23 @@ jobs:
           profile: pixel_6
           disable-animations: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: cd android && ./gradlew --no-daemon :app:connectedDebugAndroidTest
+          script: |
+            rm -rf /data/local/tmp/seven-visual || true
+            mkdir -p /data/local/tmp/seven-visual
+            cd android
+            ./gradlew --no-daemon :app:connectedDebugAndroidTest
+            cd ..
+            rm -rf visual-evidence
+            mkdir -p visual-evidence
+            adb pull /data/local/tmp/seven-visual/. visual-evidence/ || true
+
+      - name: Upload Android UI visual evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: seven-ui-visual-evidence
+          path: visual-evidence
+          if-no-files-found: error
+          retention-days: 3
 
       - name: Verify APK again after device tests
         run: npm run android:verify
