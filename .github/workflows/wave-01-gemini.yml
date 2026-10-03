@@ -102,17 +102,26 @@ jobs:
           GEMINI_TELEMETRY_ENABLED: 'false'
         run: |
           set -u
-          mkdir -p "$(dirname "${{ matrix.report }}")"
+          set -o pipefail
+          REPORT="${{ matrix.report }}"
+          mkdir -p "$(dirname "$REPORT")"
+          rm -f /tmp/gemini-final.txt
           set +e
           timeout 300s gemini \
             -p "$(cat /tmp/gemini-prompt.md)" \
             --approval-mode=yolo \
             --skip-trust \
             --model kilo-auto/free \
-            --output-format text
-          rc=$?
+            --output-format text | tee /tmp/gemini-final.txt
+          rc=${PIPESTATUS[0]}
           set -e
-          if test -f "${{ matrix.report }}" && grep -q 'WAVE01=COMPLETE' "${{ matrix.report }}"; then
+          if ! (test -f "$REPORT" && grep -q 'WAVE01=COMPLETE' "$REPORT"); then
+            if test -s /tmp/gemini-final.txt && grep -q 'WAVE01=COMPLETE' /tmp/gemini-final.txt; then
+              cp /tmp/gemini-final.txt "$REPORT"
+              echo "Recovered Gemini report from deterministic stdout."
+            fi
+          fi
+          if test -f "$REPORT" && grep -q 'WAVE01=COMPLETE' "$REPORT"; then
             echo "Gemini produced required report; accepting output (rc=$rc)."
           else
             echo "Gemini did not produce required report (rc=$rc)." >&2
