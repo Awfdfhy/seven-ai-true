@@ -265,7 +265,7 @@ export class TaskManager {
                   : "Task cancelled.",
             });
             this.finish(task, "cancelled");
-            throw this.publicTaskError(task.error);
+            throw task.error;
           }
 
           this.finish(task, "succeeded");
@@ -289,23 +289,22 @@ export class TaskManager {
                 code === "DEADLINE_EXCEEDED"
                   ? "Task deadline exceeded."
                   : "Task cancelled.",
-              cause: error,
             });
             this.finish(task, "cancelled");
-            throw this.publicTaskError(task.error);
+            throw task.error;
           }
 
-          task.error =
+          const normalized =
             error instanceof DOMException && error.name === "AbortError"
               ? new SevenError({
                   code: "UNKNOWN",
                   message:
                     "Task executor aborted without TaskManager cancellation.",
-                  cause: error,
                 })
               : toSevenError(error);
+          task.error = this.publicTaskError(normalized);
           this.finish(task, "failed");
-          throw this.publicTaskError(task.error);
+          throw task.error;
         },
       );
 
