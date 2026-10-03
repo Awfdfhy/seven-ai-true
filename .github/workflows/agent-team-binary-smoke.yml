@@ -7,7 +7,7 @@ on:
       - main
     paths:
       - '.github/workflows/agent-team-binary-smoke.yml'
-      - '.seven-team/**'
+      - '.seven-team/team.json'
 
 permissions:
   contents: read
