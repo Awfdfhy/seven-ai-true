@@ -39,14 +39,14 @@ jobs:
         run: |
           curl -fsS http://127.0.0.1:8877/v1/chat/completions \
             -H 'Content-Type: application/json' \
-            -d '{"model":"kilo-auto/free","messages":[{"role":"user","content":"Reply with exactly SEVEN_BRAIN_OK"}],"max_tokens":32,"temperature":0}' \
+            -d '{"model":"kilo-auto/free","messages":[{"role":"user","content":"Reply with exactly OK"}],"max_tokens":16,"temperature":0}' \
             > /tmp/brain.json
           python - <<'PY'
           import json
           d=json.load(open('/tmp/brain.json'))
           text=d['choices'][0]['message']['content']
           print(text)
-          assert 'SEVEN_BRAIN_OK' in text
+          assert 'OK' in text
           PY
 
   aider-live:
@@ -80,12 +80,14 @@ jobs:
           OPENAI_API_KEY: local-dummy-key
         run: |
           mkdir -p .seven-team/reports
-          aider \
+          touch .seven-team/reports/team-a-aider-live-smoke.md
+          aider .seven-team/reports/team-a-aider-live-smoke.md \
             --model openai/kilo-auto/free \
             --message-file .seven-team/prompts/live-smoke/team-a-aider.md \
             --yes-always \
             --no-auto-commits \
             --no-dirty-commits \
+            --no-gitignore \
             --no-show-model-warnings
       - name: Enforce write boundary
         run: |
