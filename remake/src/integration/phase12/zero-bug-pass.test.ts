@@ -1,5 +1,5 @@
 import "fake-indexeddb/auto";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ChatService, type ChatTransport } from "../../application/chat/chat-service";
 import { SevenError, toSevenError } from "../../core/errors";
 import { TaskManager } from "../../core/task-manager";
