@@ -1,0 +1,178 @@
+name: Seven Bug Hunt — Master Synthesis
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.seven-team/bughunt/BUGHUNT_MANAGER_SUMMARY.md'
+      - '.github/workflows/bughunt-master-synthesis.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: seven-bughunt-master-synthesis
+  cancel-in-progress: true
+
+jobs:
+  synthesize:
+    name: Deduplicate and rank 20-agent bug hunt
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify 20 integrated reports
+        run: |
+          set -euo pipefail
+          test -f .seven-team/bughunt/BUGHUNT_MANAGER_SUMMARY.md
+          grep -q 'Completed agents: 20/20' .seven-team/bughunt/BUGHUNT_MANAGER_SUMMARY.md
+          python - <<'PY'
+          import json,pathlib
+          m=json.load(open('.seven-team/bughunt/manifest.json'))
+          missing=[]
+          for w in m['workers']:
+              p=pathlib.Path(w['report'])
+              if not p.exists() or 'BUGHUNT=COMPLETE' not in p.read_text(encoding='utf-8',errors='replace'):
+                  missing.append(w['id'])
+          if missing:
+              raise SystemExit('missing/incomplete reports: '+','.join(missing))
+          print('verified',len(m['workers']),'reports')
+          PY
+
+      - name: Start final-only relay
+        env:
+          SEVEN_RELAY_BRIDGE_STREAM: '1'
+          SEVEN_RELAY_FINAL_ONLY: '1'
+        run: |
+          set -euo pipefail
+          python .seven-team/runtime/kilo_anonymous_relay.py >/tmp/relay.log 2>&1 &
+          for i in {1..25}; do
+            if curl -fsS http://127.0.0.1:8877/v1/models >/tmp/models.json; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/relay.log || true
+          exit 1
+
+      - name: Select healthy synthesis model
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request
+          d=json.load(open('/tmp/models.json'))
+          ids=[x.get('id') for x in d.get('data',[]) if isinstance(x,dict) and isinstance(x.get('id'),str) and ':free' in x['id'] and not x['id'].startswith('kilo-auto/')]
+          def rank(mid):
+              low=mid.lower()
+              order=('qwen','nvidia/nemotron-3-ultra','nvidia/nemotron-3-super','cohere/','stepfun/')
+              for i,t in enumerate(order):
+                  if t in low:return (i,mid)
+              return (20,mid)
+          for mid in sorted(dict.fromkeys(ids),key=rank)[:18]:
+              req=urllib.request.Request('http://127.0.0.1:8877/v1/chat/completions',
+                  data=json.dumps({'model':mid,'messages':[{'role':'user','content':'Reply exactly OK'}],'max_tokens':8,'stream':False}).encode(),
+                  headers={'Content-Type':'application/json'})
+              try:
+                  with urllib.request.urlopen(req,timeout=35) as r:out=json.load(r)
+                  m=((out.get('choices') or [{}])[0].get('message') or {})
+                  if (m.get('content') or m.get('reasoning_content') or '').strip():
+                      with open(os.environ['GITHUB_ENV'],'a') as env:env.write('SYNTH_MODEL='+mid+'\n')
+                      print('Selected',mid)
+                      raise SystemExit(0)
+              except Exception as e: print('probe',mid,e)
+          raise SystemExit('no healthy synthesis model')
+          PY
+
+      - name: Map-reduce bug reports into master report
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,os,pathlib,re,urllib.request,time
+          root=pathlib.Path('.')
+          manifest=json.load(open('.seven-team/bughunt/manifest.json'))
+          workers=manifest['workers']
+          chunks=[workers[i:i+5] for i in range(0,len(workers),5)]
+          outdir=pathlib.Path('/tmp/bughunt-synthesis'); outdir.mkdir(exist_ok=True)
+
+          def call(system,user,max_tokens=5200,attempts=3):
+              last=''
+              for attempt in range(1,attempts+1):
+                  body=json.dumps({
+                      'model':os.environ['SYNTH_MODEL'],
+                      'messages':[{'role':'system','content':system},{'role':'user','content':user}],
+                      'temperature':0,'max_tokens':max_tokens,'stream':False
+                  }).encode()
+                  req=urllib.request.Request('http://127.0.0.1:8877/v1/chat/completions',data=body,headers={'Content-Type':'application/json'})
+                  try:
+                      with urllib.request.urlopen(req,timeout=210) as r:d=json.load(r)
+                      m=((d.get('choices') or [{}])[0].get('message') or {})
+                      text=(m.get('content') or m.get('reasoning_content') or '').strip()
+                      if len(text)>1200:return text
+                      last=text
+                  except Exception as e:
+                      print('attempt',attempt,'failed',e)
+                  time.sleep(3)
+              raise SystemExit('synthesis call failed; last chars='+str(len(last)))
+
+          map_system=(
+            'You are a senior software QA triage lead. You are given raw bug-hunt reports from independent agents auditing Seven AI 2.4.3. '
+            'Use only the supplied reports. Deduplicate overlapping findings, preserve source bug IDs, distinguish verified evidence from hypotheses, '
+            'and cluster findings by underlying root cause rather than wording. Do not invent runtime results. '
+            'For every retained cluster include severity, confidence, affected surfaces, user impact, root cause/evidence, source IDs, minimal reproduction/test, '
+            'and fix direction. Use BLOCKER/CRITICAL/HIGH/MEDIUM/LOW consistently. Mark suspected duplicates explicitly.'
+          )
+          partials=[]
+          for idx,group in enumerate(chunks,1):
+              parts=[]
+              for w in group:
+                  p=root/w['report']
+                  parts.append('\n\n===== '+w['id']+' — '+w['focus']+' =====\n'+p.read_text(encoding='utf-8',errors='replace'))
+              user='Synthesize and deduplicate this batch of five reports. Do not lose source IDs.\n'+''.join(parts)
+              text=call(map_system,user,5400)
+              (outdir/f'part-{idx}.md').write_text(text,encoding='utf-8')
+              partials.append(text)
+              print('part',idx,'chars',len(text))
+
+          final_system=(
+            'You are the final release-triage manager for Seven AI 2.4.3. Merge four already-deduplicated QA summaries into one authoritative master bug report. '
+            'Do not invent facts and do not convert uncertain findings into verified ones. Merge cross-batch duplicates by common root cause and retain all source IDs. '
+            'Order unique root-cause clusters strictly by severity: BLOCKER, CRITICAL, HIGH, MEDIUM, LOW; within a severity put broadest user impact first. '
+            'Each cluster must contain: Master ID MASTER-###, severity, confidence/evidence status, affected surfaces, user-visible symptom/impact, root cause/technical evidence, '
+            'all source bug IDs, reproduction or deterministic test idea, fix direction, regression tests, and dependencies/related clusters. '
+            'Include an executive summary with counts by severity, a cross-cutting root-cause section, a duplicate-merge ledger, and a recommended fix-wave order. '
+            'Do NOT claim fixes were made. Raw agent reports remain authoritative evidence. End exactly MASTER_BUGHUNT=COMPLETE.'
+          )
+          final_user='\n\n'.join(f'===== PART {i+1} =====\n{x}' for i,x in enumerate(partials))
+          final=call(final_system,final_user,8000)
+          if 'MASTER_BUGHUNT=COMPLETE' not in final:
+              final=final.rstrip()+'\n\nMASTER_BUGHUNT=COMPLETE\n'
+          checks=[
+              ('master ids',bool(re.search(r'MASTER-[0-9]{3}',final))),
+              ('severity',bool(re.search(r'BLOCKER|CRITICAL|HIGH|MEDIUM|LOW',final))),
+              ('source ids',bool(re.search(r'[AB][0-9]{2}-[0-9]{3}',final))),
+              ('root cause',bool(re.search(r'root cause|technical evidence',final,re.I))),
+              ('repro',bool(re.search(r'repro|test idea|regression',final,re.I))),
+              ('complete','MASTER_BUGHUNT=COMPLETE' in final),
+          ]
+          print(checks)
+          if not all(v for _,v in checks) or len(final)<5000:
+              raise SystemExit('master semantic gate failed')
+          pathlib.Path('.seven-team/bughunt/BUGHUNT_MASTER_REPORT.md').write_text(final,encoding='utf-8')
+          PY
+
+      - name: Commit master bug report
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git add -f .seven-team/bughunt/BUGHUNT_MASTER_REPORT.md
+          if git diff --cached --quiet; then echo 'Master report already current.'; exit 0; fi
+          git config user.name 'Seven Bug Hunt Manager'
+          git config user.email 'actions@users.noreply.github.com'
+          git commit -m 'Add deduplicated Seven AI master bug report'
+          git fetch origin main
+          git rebase origin/main
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main
