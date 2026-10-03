@@ -93,7 +93,7 @@ describe("Phase 8 GitHub Self-Dev", () => {
       files: [{ path: "src/a.ts", content: "export const a = 1;" }],
     }).result;
     expect(result).toEqual({ commitSha, changedPaths: ["src/a.ts"] });
-    expect(mutation).toHaveBeenCalledTimes(1);
+    expect(mutation.apply).toHaveBeenCalledTimes(1);
 
     const hostile = new GitHubSelfDevService(new TaskManager(), auth, {
       async apply() {
