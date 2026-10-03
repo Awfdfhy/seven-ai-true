@@ -136,6 +136,11 @@ export class ModelRegistry {
   }
 }
 
+export type ProviderAttemptToken = Readonly<{
+  providerId: string;
+  sequence: number;
+}>;
+
 type InternalHealth = ProviderHealth &
   Readonly<{
     revision: number;
@@ -146,6 +151,7 @@ type InternalHealth = ProviderHealth &
 
 export class ProviderHealthTracker {
   private readonly states = new Map<string, InternalHealth>();
+  private readonly issuedAttempts = new WeakSet<object>();
   private nextAttemptToken = 1;
 
   snapshot(providerIds: readonly string[] = []): readonly ProviderHealth[] {
@@ -175,7 +181,7 @@ export class ProviderHealthTracker {
     );
   }
 
-  beginAttempt(providerId: string): number {
+  beginAttempt(providerId: string): ProviderAttemptToken {
     this.validateProviderId(providerId);
     if (!Number.isSafeInteger(this.nextAttemptToken)) {
       throw new SevenError({
@@ -183,19 +189,26 @@ export class ProviderHealthTracker {
         message: "Provider attempt token space is exhausted.",
       });
     }
-    const token = this.nextAttemptToken;
+    const token = Object.freeze({
+      providerId,
+      sequence: this.nextAttemptToken,
+    });
     this.nextAttemptToken += 1;
+    this.issuedAttempts.add(token);
     return token;
   }
 
-  recordAttemptSuccess(providerId: string, attemptToken: number): void {
+  recordAttemptSuccess(
+    providerId: string,
+    attemptToken: ProviderAttemptToken,
+  ): void {
     this.validateProviderId(providerId);
-    this.validateAttemptToken(attemptToken);
+    this.validateAttemptToken(providerId, attemptToken);
     const current = this.states.get(providerId);
     if (
       current?.latestAppliedAttemptToken !== null &&
       current?.latestAppliedAttemptToken !== undefined &&
-      attemptToken <= current.latestAppliedAttemptToken
+      attemptToken.sequence <= current.latestAppliedAttemptToken
     ) {
       return;
     }
@@ -210,19 +223,19 @@ export class ProviderHealthTracker {
         revision: (current?.revision ?? 0) + 1,
         lastFailureAt: current?.lastFailureAt ?? null,
         latestAttemptStartedAt: current?.latestAttemptStartedAt ?? null,
-        latestAppliedAttemptToken: attemptToken,
+        latestAppliedAttemptToken: attemptToken.sequence,
       }),
     );
   }
 
   recordAttemptFailure(
     providerId: string,
-    attemptToken: number,
+    attemptToken: ProviderAttemptToken,
     now: number,
     options: Omit<ProviderFailureOptions, "attemptStartedAt"> = {},
   ): void {
     this.validateProviderId(providerId);
-    this.validateAttemptToken(attemptToken);
+    this.validateAttemptToken(providerId, attemptToken);
     this.validateFailureOptions(options);
     requireFiniteNonNegative(now, "Provider failure timestamp");
 
@@ -230,7 +243,7 @@ export class ProviderHealthTracker {
     if (
       current?.latestAppliedAttemptToken !== null &&
       current?.latestAppliedAttemptToken !== undefined &&
-      attemptToken <= current.latestAppliedAttemptToken
+      attemptToken.sequence <= current.latestAppliedAttemptToken
     ) {
       return;
     }
@@ -267,7 +280,7 @@ export class ProviderHealthTracker {
         revision: (current?.revision ?? 0) + 1,
         lastFailureAt: Math.max(current?.lastFailureAt ?? 0, now),
         latestAttemptStartedAt: current?.latestAttemptStartedAt ?? null,
-        latestAppliedAttemptToken: attemptToken,
+        latestAppliedAttemptToken: attemptToken.sequence,
       }),
     );
   }
@@ -296,7 +309,7 @@ export class ProviderHealthTracker {
         revision: (current?.revision ?? 0) + 1,
         lastFailureAt: current?.lastFailureAt ?? null,
         latestAttemptStartedAt: attemptStartedAt,
-        latestAppliedAttemptToken: token,
+        latestAppliedAttemptToken: token.sequence,
       }),
     );
   }
@@ -360,7 +373,7 @@ export class ProviderHealthTracker {
         revision: (current?.revision ?? 0) + 1,
         lastFailureAt: Math.max(current?.lastFailureAt ?? 0, now),
         latestAttemptStartedAt: attemptStartedAt,
-        latestAppliedAttemptToken: token,
+        latestAppliedAttemptToken: token.sequence,
       }),
     );
   }
@@ -378,11 +391,21 @@ export class ProviderHealthTracker {
     }
   }
 
-  private validateAttemptToken(attemptToken: number): void {
-    if (!Number.isSafeInteger(attemptToken) || attemptToken <= 0) {
+  private validateAttemptToken(
+    providerId: string,
+    attemptToken: ProviderAttemptToken,
+  ): void {
+    if (
+      !attemptToken ||
+      typeof attemptToken !== "object" ||
+      !this.issuedAttempts.has(attemptToken) ||
+      attemptToken.providerId !== providerId ||
+      !Number.isSafeInteger(attemptToken.sequence) ||
+      attemptToken.sequence <= 0
+    ) {
       throw new SevenError({
         code: "VALIDATION",
-        message: "Provider attempt token must be a positive safe integer.",
+        message: "Provider attempt token is invalid for this provider.",
       });
     }
   }
