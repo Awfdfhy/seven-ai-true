@@ -1,0 +1,198 @@
+name: Seven Remake — Phase 1-2 Integration Wave
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - seven-remake-v3
+    paths:
+      - '.seven-team/remake-super/launch-phase12.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: seven-remake-phase12-integration
+  cancel-in-progress: false
+
+jobs:
+  integrate:
+    name: Phase12 ${{ matrix.id }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      max-parallel: 12
+      matrix:
+        include:
+          - id: C01
+            branch: remake-agent/c01-room-repository
+          - id: C02
+            branch: remake-agent/c02-composer-ime
+          - id: C03
+            branch: remake-agent/c03-streaming-integration
+          - id: C04
+            branch: remake-agent/c04-stop-race-redteam
+          - id: C05
+            branch: remake-agent/c05-provider-execution
+          - id: C06
+            branch: remake-agent/c06-model-registry
+          - id: C07
+            branch: remake-agent/c07-fallback-controller
+          - id: C08
+            branch: remake-agent/c08-phase12-integration
+          - id: C09
+            branch: remake-agent/c09-persistence-recovery
+          - id: C10
+            branch: remake-agent/c10-android-contract-review
+          - id: C11
+            branch: remake-agent/c11-phase12-ci
+          - id: C12
+            branch: remake-agent/c12-architecture-redteam
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Rebase worker onto latest Remake baseline
+        run: |
+          set -euo pipefail
+          git fetch origin seven-remake-v3 "${{ matrix.branch }}"
+          git rebase origin/seven-remake-v3
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Remake dependencies
+        working-directory: remake
+        run: npm install --package-lock=false --ignore-scripts --no-audit --no-fund
+
+      - name: Install Codex worker
+        run: npm install -g @openai/codex@latest
+
+      - name: Materialize Phase 1-2 worker contract
+        env:
+          WORKER_ID: ${{ matrix.id }}
+        run: |
+          set -euo pipefail
+          git show origin/seven-remake-v3:.seven-team/remake-super/c-wave.json > /tmp/c-wave.json
+          git show origin/seven-remake-v3:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/kilo_anonymous_relay.py
+          git show origin/seven-remake-v3:.seven-team/runtime/codex_responses_bridge.py > /tmp/codex_responses_bridge.py
+          python - <<'PY'
+          import json,os,pathlib
+          d=json.load(open('/tmp/c-wave.json'))
+          wid=os.environ['WORKER_ID']
+          w=next(x for x in d['workers'] if x['id']==wid)
+          report=f".seven-team/reports/remake-phase12/{wid}.md"
+          prompt=f"""
+          You are Seven Remake Phase 1-2 integration worker {wid}. Use the full useful coding budget.
+
+          You are working on the latest integrated Seven Remake baseline.
+          Read remake/README.md and remake/ARCHITECTURE.md.
+          Inspect the newly merged Phase 1/2 modules and use their real public interfaces; do not invent duplicate domain models when an existing one can be adapted.
+
+          YOUR ONLY WRITE SCOPE:
+          {w['scope']}/**
+
+          TASK:
+          {w['task']}
+
+          HARD RULES:
+          - Production TypeScript + deterministic tests are mandatory.
+          - Do not edit other scopes, core, package.json, tsconfig, workflows, or UI App.
+          - Do not weaken invariants to make tests pass.
+          - Keep cancellation, deadlines, error typing, immutability, and transactional state explicit.
+          - Avoid mutable global state and direct window/Capacitor/provider/storage coupling.
+          - Run tests/typecheck as needed and fix your own defects.
+          - No plan-only output.
+
+          Create {report} with objective, integration points used, code/tests implemented,
+          invariants, files changed, test commands, and remaining risks.
+          Final line exactly:
+          REMAKE_C=COMPLETE
+
+          Do not commit or push.
+          """
+          pathlib.Path('/tmp/prompt.md').write_text(prompt,encoding='utf-8')
+          pathlib.Path('/tmp/scope.txt').write_text(w['scope'],encoding='utf-8')
+          pathlib.Path('/tmp/report.txt').write_text(report,encoding='utf-8')
+          PY
+
+      - name: Start guarded bridges
+        run: |
+          set -euo pipefail
+          python /tmp/kilo_anonymous_relay.py >/tmp/relay.log 2>&1 &
+          python /tmp/codex_responses_bridge.py >/tmp/codex-bridge.log 2>&1 &
+          ready=0
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8878/v1/models >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" -eq 1
+
+      - name: Run maximum-effort Phase 1-2 agent
+        env:
+          SEVEN_CODEX_KEY: local-dummy-key
+          CODEX_HOME: /tmp/seven-phase12-${{ matrix.id }}
+        run: |
+          set -u
+          mkdir -p "$CODEX_HOME" "$(dirname "$(cat /tmp/report.txt)")"
+          ok=0
+          for attempt in 1 2; do
+            set +e
+            timeout 430s codex exec               --skip-git-repo-check               -m kilo-auto/free               -c 'approval_policy="never"'               -c 'sandbox_mode="danger-full-access"'               -c 'model_provider="seven"'               -c 'model_providers.seven={name="Seven Local Bridge",base_url="http://127.0.0.1:8878/v1",env_key="SEVEN_CODEX_KEY",wire_api="responses",requires_openai_auth=false,supports_websockets=false,request_max_retries=2,stream_max_retries=2}'               "$(cat /tmp/prompt.md)"
+            rc=$?
+            set -e
+            REPORT="$(cat /tmp/report.txt)"
+            if test -f "$REPORT" && grep -q '^REMAKE_C=COMPLETE$' "$REPORT"; then ok=1; break; fi
+            echo "Attempt $attempt incomplete (rc=$rc)." >&2
+          done
+          test "$ok" -eq 1
+
+      - name: Enforce exclusive C-wave ownership
+        run: |
+          set -euo pipefail
+          SCOPE="$(cat /tmp/scope.txt)"
+          REPORT="$(cat /tmp/report.txt)"
+          rm -rf remake/dist
+          mapfile -t changed < <({ git diff --name-only; git ls-files --others --exclude-standard; } | sort -u)
+          prod=0; tests=0
+          for f in "${changed[@]}"; do
+            if [[ "$f" == "$REPORT" ]]; then continue; fi
+            if [[ "$f" != "$SCOPE/"* ]]; then echo "scope violation: $f" >&2; exit 1; fi
+            if [[ "$f" =~ \.test\.(ts|tsx)$ ]]; then tests=$((tests+1))
+            elif [[ "$f" =~ \.(ts|tsx)$ ]]; then prod=$((prod+1)); fi
+          done
+          test "$prod" -ge 1
+          test "$tests" -ge 1
+          grep -q '^REMAKE_C=COMPLETE$' "$REPORT"
+
+      - name: Typecheck
+        working-directory: remake
+        run: npm run typecheck
+
+      - name: Tests
+        working-directory: remake
+        run: npm test
+
+      - name: Build
+        working-directory: remake
+        run: npm run build
+
+      - name: Commit validated Phase 1-2 output
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          SCOPE="$(cat /tmp/scope.txt)"
+          REPORT="$(cat /tmp/report.txt)"
+          rm -rf remake/dist
+          git add "$SCOPE" "$REPORT"
+          git config user.name 'Seven Remake Phase12 Worker'
+          git config user.email 'actions@users.noreply.github.com'
+          git commit -m "Phase12 ${{ matrix.id }} validated implementation"
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:"${{ matrix.branch }}"
