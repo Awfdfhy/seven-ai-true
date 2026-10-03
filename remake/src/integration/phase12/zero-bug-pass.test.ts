@@ -636,6 +636,61 @@ describe("Zero-bug regressions", () => {
     expect(manager.listActive()).toHaveLength(0);
   });
 
+  it("prevents two ChatService instances from racing on the same room", async () => {
+    const initial = createRoom({ id: "shared-manager-room", now: 1 });
+    let state = initial;
+    let releaseRead: (() => void) | undefined;
+    const readGate = new Promise<void>((resolve) => {
+      releaseRead = resolve;
+    });
+
+    const repository: RoomRepository = {
+      async get(roomId) {
+        if (roomId !== state.id) return null;
+        await readGate;
+        return state;
+      },
+      async put(room) {
+        state = room;
+      },
+      async list() {
+        return [state];
+      },
+      async delete() {},
+    };
+
+    const manager = new TaskManager();
+    const firstService = new ChatService(manager, repository);
+    const secondService = new ChatService(manager, repository);
+    const transport: ChatTransport = {
+      async *stream() {
+        yield "answer";
+      },
+    };
+
+    const firstPending = firstService.send(
+      "shared-manager-room",
+      "first",
+      transport,
+    );
+
+    await expect(
+      secondService.send("shared-manager-room", "second", transport),
+    ).rejects.toMatchObject({
+      code: "VALIDATION",
+      message: "Task owner is already active or reserved.",
+    });
+
+    releaseRead?.();
+    const firstRun = await firstPending;
+    const completed = await firstRun.result;
+
+    expect(completed.messages.map((message) => message.content)).toEqual([
+      "first",
+      "answer",
+    ]);
+  });
+
   it("rejects timer values that overflow browser timeout semantics", () => {
     const manager = new TaskManager();
     expect(() =>
