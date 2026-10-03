@@ -18,10 +18,10 @@ concurrency:
 jobs:
   audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 14
     strategy:
       fail-fast: false
-      max-parallel: 12
+      max-parallel: 8
       matrix:
         include:
           - { id: C01, focus: "TaskManager lifecycle terminal states cancellation sealing deadline sealing retention and owner isolation" }
@@ -67,7 +67,7 @@ jobs:
         run: |
           set -euo pipefail
           git show HEAD:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/kilo_anonymous_relay.py
-          git checkout --detach dd2f9be44b3ffbe954738a640d38418cdd5f8ed6
+          git checkout --detach fbc1cc845f298b0ac4390df43b12d3ab0d5fc097
           python - <<'PY'
           from pathlib import Path
           files=[
@@ -137,24 +137,65 @@ jobs:
               if not text: raise ValueError('empty response')
               return text
 
+          def validate_findings(findings):
+              valid=[]
+              if not isinstance(findings,list): return valid
+              for finding in findings[:5]:
+                  if not isinstance(finding,dict): continue
+                  sev=finding.get('severity')
+                  path=finding.get('evidence') or finding.get('path')
+                  title=finding.get('title')
+                  repro=finding.get('repro')
+                  fix=finding.get('fix')
+                  if sev not in {'CRITICAL','HIGH','MEDIUM','LOW'}: continue
+                  if not isinstance(path,str) or not path.startswith('remake/src/'): continue
+                  if not isinstance(title,str) or len(title.strip())<8: continue
+                  if not isinstance(repro,str) or len(repro.strip())<20: continue
+                  if not isinstance(fix,str) or len(fix.strip())<15: continue
+                  valid.append({
+                    'severity':sev,'title':title.strip(),'evidence':path.strip(),
+                    'repro':repro.strip(),'fix':fix.strip()
+                  })
+              return valid
+
           def parse_protocol(raw):
-              compact=''.join(raw.split())
-              if compact=='0':
+              text=raw.strip()
+              compact=''.join(text.split()).upper()
+              if compact in {'0','PASS'}:
                   return {'status':'PASS','findings':[]}
+
+              cleaned=text
+              if cleaned.startswith('\\`\\`\\`'):
+                  cleaned=cleaned.strip('\\`').strip()
+                  if cleaned.lower().startswith('json'):
+                      cleaned=cleaned[4:].strip()
+
+              start=cleaned.find('{'); end=cleaned.rfind('}')
+              if start>=0 and end>start:
+                  try:
+                      data=json.loads(cleaned[start:end+1])
+                      status=str(data.get('status','')).upper()
+                      findings=validate_findings(data.get('findings'))
+                      if status=='PASS' and data.get('findings')==[]:
+                          return {'status':'PASS','findings':[]}
+                      if status=='BUG' and findings:
+                          return {'status':'BUG','findings':findings}
+                  except Exception:
+                      pass
+
               findings=[]
-              for line in raw.splitlines():
+              for line in text.splitlines():
                   line=line.strip()
+                  if line.startswith('BUG|'):
+                      line='1|'+line[4:]
                   if not line.startswith('1|'): continue
                   parts=line.split('|',5)
                   if len(parts)!=6: continue
                   _,sev,path,title,repro,fix=parts
-                  if sev not in {'CRITICAL','HIGH','MEDIUM','LOW'}: continue
-                  if not path.startswith('remake/src/'): continue
-                  if len(title.strip())<8 or len(repro.strip())<20 or len(fix.strip())<15: continue
-                  findings.append({
-                    'severity':sev,'title':title.strip(),'evidence':path.strip(),
-                    'repro':repro.strip(),'fix':fix.strip()
-                  })
+                  findings.extend(validate_findings([{
+                    'severity':sev,'evidence':path,'title':title,
+                    'repro':repro,'fix':fix
+                  }]))
               if findings:
                   return {'status':'BUG','findings':findings[:5]}
               raise ValueError('protocol invalid')
@@ -183,13 +224,19 @@ jobs:
               return ask(model,[{'role':'system','content':'You are a deterministic report formatter. Preserve meaning exactly.'},{'role':'user','content':fmt}],700,40)
 
           errors=[]
-          for idx,model in enumerate(models):
+          prompt_variants=[
+            audit_prompt,
+            audit_prompt + '\nFINAL OUTPUT MUST BE ONLY 0 OR ONE OR MORE 1|... LINES.',
+          ]
+          for attempt in range(8):
+              model=models[attempt%len(models)]
+              prompt=prompt_variants[attempt%len(prompt_variants)]
               try:
-                  raw=ask(model,[{'role':'system','content':audit_system},{'role':'user','content':audit_prompt}])
+                  raw=ask(model,[{'role':'system','content':audit_system},{'role':'user','content':prompt}],1400,70)
                   try:
                       report=parse_protocol(raw)
                   except Exception:
-                      formatter=models[(idx+1)%len(models)]
+                      formatter=models[(attempt+1)%len(models)]
                       report=parse_protocol(format_raw(formatter,raw))
                   out={'id':aid,'model':model,'status':report['status'],'findings':report['findings']}
                   pathlib.Path('/tmp/report.json').write_text(json.dumps(out,ensure_ascii=False,indent=2),encoding='utf-8')
@@ -242,7 +289,7 @@ jobs:
           findings=[(r['id'],f) for r in results for f in r['findings']]
           lines=[
             '# Seven Remake — Current32 Final Zero-Bug Audit','',
-            'Target SHA: dd2f9be44b3ffbe954738a640d38418cdd5f8ed6',
+            'Target SHA: fbc1cc845f298b0ac4390df43b12d3ab0d5fc097',
             'Valid auditor reports: 32/32',
             f'Concrete findings: {len(findings)}','',
             '## Auditor results',
@@ -264,7 +311,7 @@ jobs:
             '',
             'CURRENT32_VALID=32/32',
             f'CURRENT32_FINDINGS={len(findings)}',
-            'TARGET_SHA=dd2f9be44b3ffbe954738a640d38418cdd5f8ed6',
+            'TARGET_SHA=fbc1cc845f298b0ac4390df43b12d3ab0d5fc097',
             'CURRENT32=COMPLETE',''
           ]
           pathlib.Path('/tmp/CURRENT32_FINAL.md').write_text('\n'.join(lines),encoding='utf-8')
