@@ -28,12 +28,12 @@ jobs:
       matrix:
         include:
           - name: Bug Hunt A03 Gemini localization audit
-            branch: agent/03-search
+            branch: bughunt/a03
             prompt_path: .seven-team/prompts/bughunt/A03.md
             report: .seven-team/reports/bughunt/A03.md
             commit_message: Bug Hunt A03 localization cohesion audit
           - name: Bug Hunt B03 Gemini canon audit
-            branch: bughunt/a03
+            branch: bughunt/b03
             prompt_path: .seven-team/prompts/bughunt/B03.md
             report: .seven-team/reports/bughunt/B03.md
             commit_message: Bug Hunt B03 canon grounding audit
