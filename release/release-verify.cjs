@@ -389,6 +389,34 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       assert.equal(/paste\s+(an?\s+)?api\s*key|enter\s+(an?\s+)?api\s*key|أدخل\s+.*مفتاح/i.test(state.text),false);
       await page.close();
     });
+    await test('attachment menu is localized themed and bounded on mobile',async()=>{
+      const page=await browser.newPage({viewport:{width:320,height:800}});
+      await page.addInitScript(()=>{localStorage.setItem('seven_ui_language','ar');localStorage.setItem('user_name_asked','1');});
+      await page.goto(origin,{waitUntil:'domcontentloaded'});
+      await page.waitForFunction(()=>window.SevenRemake&&window.SevenTheme&&window.SevenAttachmentLoader);
+      await page.evaluate(async()=>{SevenTheme.setPreference('night');await SevenAttachmentLoader.load();});
+      await page.waitForFunction(()=>window.SevenAttachments&&!!document.querySelector('[data-seven-attach-trigger]'));
+      await page.click('[data-seven-attach-trigger]');
+      await page.waitForFunction(()=>{const m=document.querySelector('.seven-attach-menu');return m&&!m.hidden});
+      const state=await page.evaluate(()=>{
+        const m=document.querySelector('.seven-attach-menu'),r=m.getBoundingClientRect(),cs=getComputedStyle(m),composer=document.querySelector('.composer');
+        composer.classList.add('seven-drag-active');
+        const pseudo=getComputedStyle(composer,'::before').content;
+        composer.classList.remove('seven-drag-active');
+        return{
+          parentInsideSeven:document.getElementById('seven-app').contains(m),
+          bounded:r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2,
+          bg:cs.backgroundColor,border:cs.borderStyle,
+          photos:m.querySelector('[data-seven-attach="photos"] strong')?.textContent.trim(),
+          files:m.querySelector('[data-seven-attach="files"] strong')?.textContent.trim(),
+          aria:document.querySelector('[data-seven-attach-trigger]')?.getAttribute('aria-label'),
+          pseudo
+        };
+      });
+      assert.equal(state.parentInsideSeven,true);assert.equal(state.bounded,true);assert.notEqual(state.bg,'rgba(0, 0, 0, 0)');assert.equal(state.border,'solid');
+      assert.equal(state.photos,'الصور');assert.equal(state.files,'الملفات');assert.equal(state.aria,'إرفاق صور أو ملفات');assert.match(state.pseudo,/أفلت الملفات/);
+      await page.close();
+    });
     await test('workspace assets are lazy and loadable',async()=>{
       const page=await browser.newPage();
       await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');localStorage.setItem('user_name','Seven Tester');localStorage.setItem('user-name','Seven Tester');});
