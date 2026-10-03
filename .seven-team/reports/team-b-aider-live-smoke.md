@@ -6,7 +6,7 @@ Team B / B06 / Aider
 
 ## B06 mission
 
-Rebuild RPG V2 around a compelling persistent 10-minute interactive-story vertical slice. Validate that a meaningful choice is available within three visible actions, changes subsequent world state and narration, survives exit and re-entry, and preserves character-local knowledge. Character B must not learn information revealed only to Character A.
+Validate that RPG V2 delivers a meaningful choice within three visible actions, changes world state and later narration, persists across exit and re-entry, and keeps character-local knowledge isolated.
 
 ## Memory and persistence risks
 
