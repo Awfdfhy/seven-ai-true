@@ -379,6 +379,135 @@ describe("Phase 3 memory + context", () => {
     await expect(repository.getSummary("cancel-summary")).resolves.toBeNull();
   });
 
+  it("serializes concurrent summary mutation for the same room", async () => {
+    let room = createRoom({ id: "summary-race", now: 1 });
+    room = addTurn(room, "m1", "user", "old ".repeat(900), 2);
+    room = addTurn(room, "m2", "user", "latest", 3);
+
+    const repository = new InMemoryMemoryRepository();
+    let calls = 0;
+    let active = 0;
+    let maxActive = 0;
+    let releaseFirst!: () => void;
+    const firstGate = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+    let firstStarted!: () => void;
+    const started = new Promise<void>((resolve) => {
+      firstStarted = resolve;
+    });
+
+    const service = new MemoryContextService(repository, {
+      async summarize() {
+        calls += 1;
+        active += 1;
+        maxActive = Math.max(maxActive, active);
+        if (calls === 1) {
+          firstStarted();
+          await firstGate;
+        }
+        active -= 1;
+        return "Serialized compact summary.";
+      },
+    });
+
+    const makeInput = () => ({
+      room,
+      systemPrompt: "You are Seven.",
+      contextWindow: 1200,
+      signal: new AbortController().signal,
+      policy: {
+        reservedOutputTokens: 300,
+        memoryTokenBudget: 0,
+        summaryTokenBudget: 100,
+        maxMemoryItems: 0,
+      },
+    });
+
+    const first = service.prepare(makeInput());
+    await started;
+    const second = service.prepare(makeInput());
+    await Promise.resolve();
+
+    expect(calls).toBe(1);
+    expect(maxActive).toBe(1);
+
+    releaseFirst();
+    const [a, b] = await Promise.all([first, second]);
+
+    expect(a.omittedMessages).toHaveLength(0);
+    expect(b.omittedMessages).toHaveLength(0);
+    expect(maxActive).toBe(1);
+    expect(calls).toBe(1);
+  });
+
+  it("rejects malformed prepared context before provider dispatch", async () => {
+    const descriptor = model("context-guard", "m1", 4000);
+    let providerCalled = false;
+    const guarded = adapter(
+      "context-guard",
+      [descriptor],
+      async function* () {
+        providerCalled = true;
+        yield { delta: "must-not-run" };
+      },
+    );
+    const plan = new ModelRouter().plan(
+      [descriptor],
+      [],
+      {
+        mode: "balanced",
+        preferredModelId: null,
+        requireStreaming: true,
+        now: 1,
+        maxAttempts: 1,
+      },
+    );
+    const transport = new RoutedChatTransport(
+      plan,
+      new Map([["context-guard", guarded]]),
+      "system",
+      undefined,
+      () => 1,
+      {
+        async prepare() {
+          return {
+            messages: [
+              { role: "system", content: "system" },
+              { role: "user", content: "hello" },
+            ],
+            estimatedInputTokens: 5000,
+            maxInputTokens: 3000,
+            selectedMemoryIds: [],
+            omittedMessages: [],
+            summaryUsed: false,
+          } as never;
+        },
+      },
+    );
+
+    const consume = async () => {
+      for await (const _chunk of transport.stream({
+        room: addTurn(
+          createRoom({ id: "guard-room", now: 1 }),
+          "u1",
+          "user",
+          "hello",
+          2,
+        ),
+        signal: new AbortController().signal,
+      })) {
+        // no-op
+      }
+    };
+
+    await expect(consume()).rejects.toMatchObject({
+      code: "VALIDATION",
+      message: "Prepared context token budget is invalid.",
+    });
+    expect(providerCalled).toBe(false);
+  });
+
   it("rebuilds context for each fallback model using that model's context window", async () => {
     const large = model("large", "large-model", 16_000);
     const small = model("small", "small-model", 4_000);
