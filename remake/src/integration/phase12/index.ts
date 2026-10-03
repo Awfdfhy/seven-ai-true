@@ -13,6 +13,14 @@ import type {
 
 export type ProviderMap = ReadonlyMap<string, ProviderAdapter>;
 
+const MAX_PRELUDE_CHARS = 16_384;
+
+function failureLabel(error: unknown): string {
+  if (error instanceof SevenError) return error.code;
+  if (error instanceof Error) return error.name || "Error";
+  return "failed";
+}
+
 export class RoutedChatTransport implements ChatTransport {
   constructor(
     private readonly plan: RoutePlan,
@@ -70,10 +78,28 @@ export class RoutedChatTransport implements ChatTransport {
           if (context.signal.aborted) {
             throw new DOMException("Aborted", "AbortError");
           }
+
+          if (
+            !chunk ||
+            typeof chunk !== "object" ||
+            typeof chunk.delta !== "string"
+          ) {
+            throw new SevenError({
+              code: "PROVIDER",
+              message: "Provider emitted an invalid streaming chunk.",
+            });
+          }
+
           if (!chunk.delta) continue;
 
           if (!meaningfulOutputStarted) {
             prelude += chunk.delta;
+            if (prelude.length > MAX_PRELUDE_CHARS) {
+              throw new SevenError({
+                code: "PROVIDER",
+                message: "Provider emitted excessive non-content prelude.",
+              });
+            }
             if (!prelude.trim()) continue;
             meaningfulOutputStarted = true;
             yield prelude;
@@ -88,10 +114,17 @@ export class RoutedChatTransport implements ChatTransport {
         failures.push(`${candidate.providerId}:empty`);
       } catch (error) {
         if (context.signal.aborted) throw error;
-        if (meaningfulOutputStarted) throw error;
-        failures.push(
-          `${candidate.providerId}:${error instanceof Error ? error.message : "failed"}`,
-        );
+
+        if (meaningfulOutputStarted) {
+          if (error instanceof SevenError) throw error;
+          throw new SevenError({
+            code: "PROVIDER",
+            message: "Provider stream failed after output began.",
+            cause: error,
+          });
+        }
+
+        failures.push(`${candidate.providerId}:${failureLabel(error)}`);
       }
     }
 
