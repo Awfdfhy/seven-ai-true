@@ -1851,6 +1851,53 @@ describe("Zero-bug regressions", () => {
     });
   });
 
+  it("reuses frozen prior message snapshots while isolating mutable external rooms", () => {
+    const base = createRoom({ id: "message-reuse", now: 1 });
+    const first = commitMessage(base, {
+      id: "m1",
+      role: "user",
+      content: "first",
+      now: 2,
+    });
+    const second = commitMessage(first, {
+      id: "m2",
+      role: "assistant",
+      content: "second",
+      now: 3,
+    });
+
+    expect(second.messages[0]).toBe(first.messages[0]);
+    expect(Object.isFrozen(second.messages[0])).toBe(true);
+
+    const mutableMessage = {
+      id: "external",
+      role: "user" as const,
+      content: "external",
+      createdAt: 2,
+    };
+    const mutableRoom = {
+      schemaVersion: 1 as const,
+      id: "mutable-room",
+      title: "Mutable",
+      modelId: null,
+      messages: [mutableMessage],
+      createdAt: 1,
+      updatedAt: 2,
+    };
+
+    const committed = commitMessage(mutableRoom, {
+      id: "new",
+      role: "assistant",
+      content: "safe",
+      now: 3,
+    });
+
+    mutableMessage.content = "mutated-after-commit";
+    expect(committed.messages[0]?.content).toBe("external");
+    expect(committed.messages[0]).not.toBe(mutableMessage);
+    expect(Object.isFrozen(committed.messages[0])).toBe(true);
+  });
+
   it("isolates task listeners and bounds completed task retention", async () => {
     const manager = new TaskManager({ maxRetainedCompleted: 2 });
     manager.subscribe(() => {
