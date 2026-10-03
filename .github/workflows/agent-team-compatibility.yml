@@ -4,7 +4,8 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - '.seven-team/**'
+      - '.seven-team/team.json'
+      - '.seven-team/runtime/**'
       - '.github/workflows/agent-team-compatibility.yml'
 
 permissions:
@@ -38,7 +39,7 @@ jobs:
             target: aider-chat
           - name: Goose
             kind: git
-            target: https://github.com/block/goose.git
+            target: https://github.com/aaif-goose/goose.git
           - name: mini-SWE-agent
             kind: pip
             target: mini-swe-agent
@@ -51,41 +52,43 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         if: matrix.kind == 'npm'
         with:
           node-version: '22'
-
       - uses: actions/setup-python@v5
         if: matrix.kind == 'pip'
         with:
           python-version: '3.12'
-
       - name: Probe source
         shell: bash
         run: |
           set -euo pipefail
           case "${{ matrix.kind }}" in
-            npm)
-              npm view "${{ matrix.target }}" version
-              ;;
-            pip)
-              python -m pip index versions "${{ matrix.target }}" | head -n 5
-              ;;
-            git)
-              git ls-remote "${{ matrix.target }}" HEAD
-              ;;
-            *)
-              echo "Unknown probe kind" >&2
-              exit 2
-              ;;
+            npm) npm view "${{ matrix.target }}" version ;;
+            pip) python -m pip index versions "${{ matrix.target }}" | head -n 5 ;;
+            git) git ls-remote "${{ matrix.target }}" HEAD ;;
+            *) echo "Unknown probe kind" >&2; exit 2 ;;
           esac
 
   control-plane-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate team manifest
+      - name: Validate two-team manifest
         run: |
-          node -e "const t=require('./.seven-team/team.json'); if(t.workers.length!==10) throw new Error('Expected 10 workers'); const b=new Set(t.workers.map(x=>x.branch)); if(b.size!==10) throw new Error('Duplicate branches'); console.log('10-agent manifest OK')"
+          node - <<'NODE'
+          const t=require('./.seven-team/team.json');
+          const teams=Object.values(t.teams||{});
+          if(teams.length!==2) throw new Error('Expected exactly 2 teams');
+          for(const team of teams){
+            if(!Array.isArray(team.workers)||team.workers.length!==10) throw new Error(team.name+': expected 10 workers');
+          }
+          const workers=teams.flatMap(x=>x.workers);
+          if(workers.length!==20||t.totalAgents!==20) throw new Error('Expected 20 total agents');
+          const branches=new Set(workers.map(x=>x.branch));
+          if(branches.size!==20) throw new Error('Duplicate agent branches');
+          const projects=new Set(workers.map(x=>x.project));
+          if(projects.size!==10) throw new Error('Expected 10 verified binary projects shared by two teams');
+          console.log('Two-team manifest OK: 20 agents, 20 unique branches, 10 shared binaries');
+          NODE

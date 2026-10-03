@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "policy": "exclusive-active-write",
+  "manager": "ChatGPT",
+  "leases": [
+    {
+      "team": "A",
+      "scope": [
+        "release/workspaces/*.css",
+        "release/workspaces/seven-shell*.js",
+        "release/workspaces/ui-polish-fixes.js",
+        "release/workspaces/hub.js"
+      ],
+      "purpose": "UI Foundation V2",
+      "status": "active"
+    },
+    {
+      "team": "B",
+      "scope": [
+        "release/workspaces/rpg.js",
+        "release/world-runtime.js",
+        "release/canon-simulator.js"
+      ],
+      "purpose": "RPG V2 vertical slice",
+      "status": "active"
+    }
+  ],
+  "sharedReadOnlyByDefault": [
+    "seven_ai-final.html",
+    "release/build-release.cjs",
+    "apk/patch-android.cjs",
+    "verify.cjs",
+    ".github/workflows/**"
+  ],
+  "sharedWriteRule": "Manager must grant a temporary explicit lease before either team edits sharedReadOnlyByDefault paths."
+}
