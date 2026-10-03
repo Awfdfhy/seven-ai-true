@@ -88,6 +88,9 @@ jobs:
             --yolo \
             --timeout 120 \
             --retries 1 \
+            -P openai-compatible \
+            -m kilo-auto/free \
+            -k local-dummy-key \
             "$(cat /tmp/cline-prompt.md)"
           rc=$?
           set -e
