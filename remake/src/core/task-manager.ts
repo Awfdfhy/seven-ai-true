@@ -458,7 +458,18 @@ export class TaskManager {
       ...(task.cancelReason !== undefined
         ? { cancelReason: task.cancelReason }
         : {}),
-      ...(task.error !== undefined ? { error: task.error } : {}),
+      ...(task.error !== undefined
+        ? {
+            error: new SevenError({
+              code: task.error.code,
+              message: task.error.message,
+              retryable: task.error.retryable,
+              ...(task.error.details !== undefined
+                ? { details: task.error.details }
+                : {}),
+            }),
+          }
+        : {}),
     });
   }
 
