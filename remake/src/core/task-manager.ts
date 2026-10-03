@@ -74,6 +74,7 @@ export class TaskManager {
   private readonly tasks = new Map<string, MutableTask>();
   private readonly listeners = new Set<Listener>();
   private readonly completedOrder: string[] = [];
+  private readonly exclusiveOwners = new Set<string>();
   private readonly maxRetainedCompleted: number;
 
   constructor(options: TaskManagerOptions = {}) {
@@ -95,6 +96,30 @@ export class TaskManager {
   get(taskId: string): TaskSnapshot | undefined {
     const task = this.tasks.get(taskId);
     return task ? this.snapshot(task) : undefined;
+  }
+
+  claimExclusiveOwner(ownerId: string): () => void {
+    this.validateOwnerId(ownerId);
+
+    if (
+      this.exclusiveOwners.has(ownerId) ||
+      this.listActive(ownerId).length > 0
+    ) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Task owner is already active or reserved.",
+        details: { ownerId },
+      });
+    }
+
+    this.exclusiveOwners.add(ownerId);
+    let released = false;
+
+    return () => {
+      if (released) return;
+      released = true;
+      this.exclusiveOwners.delete(ownerId);
+    };
   }
 
   listActive(ownerId?: string): TaskSnapshot[] {
@@ -124,10 +149,12 @@ export class TaskManager {
         message: "Task kind is invalid.",
       });
     }
-    if (typeof spec.ownerId !== "string" || !spec.ownerId.trim()) {
+    this.validateOwnerId(spec.ownerId);
+    if (this.exclusiveOwners.has(spec.ownerId)) {
       throw new SevenError({
         code: "VALIDATION",
-        message: "Task ownerId must not be empty.",
+        message: "Task owner is currently reserved.",
+        details: { ownerId: spec.ownerId },
       });
     }
     if (typeof executor !== "function") {
@@ -251,6 +278,15 @@ export class TaskManager {
   cancel(taskId: string, reason = "user"): boolean {
     const task = this.tasks.get(taskId);
     return task ? this.requestCancel(task, reason) : false;
+  }
+
+  private validateOwnerId(ownerId: string): void {
+    if (typeof ownerId !== "string" || !ownerId.trim()) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Task ownerId must not be empty.",
+      });
+    }
   }
 
   private sealCancellation(task: MutableTask): boolean {
