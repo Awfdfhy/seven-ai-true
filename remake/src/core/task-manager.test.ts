@@ -96,9 +96,10 @@ describe("TaskManager", () => {
         }),
     );
 
+    const captured = run.result.catch((error: unknown) => error);
     await vi.advanceTimersByTimeAsync(1000);
 
-    await expect(run.result).rejects.toMatchObject({
+    await expect(captured).resolves.toMatchObject({
       code: "DEADLINE_EXCEEDED",
     });
     expect(manager.get(run.taskId)?.status).toBe("cancelled");
