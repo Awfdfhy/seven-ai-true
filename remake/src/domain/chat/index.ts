@@ -168,8 +168,10 @@ export function isRoom(value: unknown): value is Room {
     candidate.schemaVersion !== 1 ||
     typeof candidate.id !== "string" ||
     candidate.id.trim().length === 0 ||
+    candidate.id !== candidate.id.trim() ||
     typeof candidate.title !== "string" ||
     candidate.title.trim().length === 0 ||
+    candidate.title !== candidate.title.trim() ||
     typeof candidate.createdAt !== "number" ||
     !Number.isFinite(candidate.createdAt) ||
     candidate.createdAt < 0 ||
@@ -185,19 +187,22 @@ export function isRoom(value: unknown): value is Room {
     !(
       candidate.modelId === null ||
       (typeof candidate.modelId === "string" &&
-        candidate.modelId.trim().length > 0)
+        candidate.modelId.trim().length > 0 &&
+        candidate.modelId === candidate.modelId.trim())
     )
   ) {
     return false;
   }
 
   const ids = new Set<string>();
+  let previousTime = candidate.createdAt;
   return candidate.messages.every((message) => {
     if (!message || typeof message !== "object") return false;
     const item = message as Partial<ChatMessage>;
     if (
       typeof item.id !== "string" ||
       item.id.trim().length === 0 ||
+      item.id !== item.id.trim() ||
       ids.has(item.id) ||
       (item.role !== "user" && item.role !== "assistant") ||
       typeof item.content !== "string" ||
@@ -205,11 +210,13 @@ export function isRoom(value: unknown): value is Room {
       typeof item.createdAt !== "number" ||
       !Number.isFinite(item.createdAt) ||
       item.createdAt < candidate.createdAt! ||
-      item.createdAt > candidate.updatedAt!
+      item.createdAt > candidate.updatedAt! ||
+      item.createdAt < previousTime
     ) {
       return false;
     }
     ids.add(item.id);
+    previousTime = item.createdAt;
     return true;
   });
 }
