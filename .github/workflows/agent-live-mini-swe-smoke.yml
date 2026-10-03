@@ -90,6 +90,16 @@ jobs:
           done
           test "$ready" -eq 1
 
+      - name: Preseed mini-SWE global config
+        run: |
+          mkdir -p "$HOME/.config/mini-swe-agent"
+          cat > "$HOME/.config/mini-swe-agent/.env" <<'ENV'
+          MSWEA_MODEL_NAME=openai/kilo-auto/free
+          OPENAI_API_KEY=local-dummy-key
+          OPENAI_API_BASE=http://127.0.0.1:8877/v1
+          MSWEA_COST_TRACKING=ignore_errors
+          ENV
+
       - name: Run real mini-SWE agent
         env:
           OPENAI_API_BASE: http://127.0.0.1:8877/v1
