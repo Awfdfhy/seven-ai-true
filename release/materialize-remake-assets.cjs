@@ -55,6 +55,16 @@ function applyCompatibilityFixes(name,raw){
     if(!text.includes(saveOld))throw new Error("Seven UI Remake save-key anchor missing");
     text=text.replace(saveOld,saveNew);
 
+    const settingsOld="let current='models';const children=[...content.childNodes];for(const node of children){if(node===buttons||node.nodeType!==1)continue;if(node.tagName==='LABEL'&&node.nextElementSibling?.id==='temperatureRange')current='generation';if(node.tagName==='LABEL'&&node.nextElementSibling?.id==='pinnedNotes')current='context';if(node.querySelector?.('[onclick=\\\"exportRooms()\\\"]'))current='data';sections[current].appendChild(node)}";
+    const settingsNew="const core=content.querySelector('.settings-core');if(core){let coreTarget='models';for(const node of [...core.childNodes]){if(node.nodeType!==1)continue;if(node.tagName==='LABEL'&&node.nextElementSibling?.id==='temperatureRange')coreTarget='generation';sections[coreTarget].appendChild(node)}core.remove()}const providers=content.querySelector('#providersSection');if(providers)sections.models.appendChild(providers);const memory=content.querySelector('#memoryDataSection');if(memory)sections.context.appendChild(memory);const advanced=content.querySelector('#advancedSection');if(advanced)sections.data.appendChild(advanced);for(const node of [...content.childNodes]){if(node===buttons||node===heading||node.nodeType!==1)continue;if(node.matches?.('.settings-core,#providersSection,#memoryDataSection,#advancedSection'))continue;sections.models.appendChild(node)}";
+    if(!text.includes(settingsOld))throw new Error("Seven UI Remake settings layout anchor missing");
+    text=text.replace(settingsOld,settingsNew);
+
+    const freshnessOld="T('Freshness · Brave / SearXNG','حداثة النتائج · Brave / SearXNG')";
+    const freshnessNew="T('Freshness · SearXNG','حداثة النتائج · SearXNG')";
+    if(!text.includes(freshnessOld))throw new Error("Seven UI Remake stale freshness label anchor missing");
+    text=text.replace(freshnessOld,freshnessNew);
+
     const appInertOn="d.body.appendChild(modal);$('.app').inert=true;modal.querySelector('button').focus();return modal";
     const appInertOnFixed="d.body.appendChild(modal);const inertRoot=d.getElementById('seven-app')||d.body;inertRoot.inert=true;modal.querySelector('button').focus();return modal";
     if(!text.includes(appInertOn))throw new Error("Seven UI Remake dialog inert-on anchor missing");
