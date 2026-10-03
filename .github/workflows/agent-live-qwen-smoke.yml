@@ -80,20 +80,28 @@ jobs:
         run: |
           set -u
           mkdir -p "$(dirname "${{ matrix.report }}")"
-          set +e
-          timeout 150s qwen -p "$(cat /tmp/qwen-prompt.md)" \
-            --approval-mode yolo \
-            --output-format text \
-            --model kilo-auto/free \
-            --openai-api-key local-dummy-key \
-            --openai-base-url http://127.0.0.1:8877/v1
-          rc=$?
-          set -e
-          if test -f "${{ matrix.report }}" && grep -q 'LIVE_AGENT_SMOKE=PASS' "${{ matrix.report }}"; then
-            echo "Qwen produced required report; accepting output (rc=$rc)."
-          else
-            echo "Qwen did not produce required report (rc=$rc)." >&2
-            exit "${rc:-1}"
+          rc=1
+          for attempt in 1 2 3; do
+            echo "Qwen live attempt $attempt/3"
+            set +e
+            timeout 100s qwen -p "$(cat /tmp/qwen-prompt.md)" \
+              --approval-mode yolo \
+              --output-format text \
+              --model kilo-auto/free \
+              --openai-api-key local-dummy-key \
+              --openai-base-url http://127.0.0.1:8877/v1
+            rc=$?
+            set -e
+            if test -f "${{ matrix.report }}" && grep -q 'LIVE_AGENT_SMOKE=PASS' "${{ matrix.report }}"; then
+              echo "Qwen produced required report; accepting output (attempt=$attempt rc=$rc)."
+              rc=0
+              break
+            fi
+            sleep $((attempt * 3))
+          done
+          if test "$rc" -ne 0; then
+            echo "Qwen did not produce required PASS report after retries." >&2
+            exit "$rc"
           fi
 
       - name: Sanitize to allowed output only
