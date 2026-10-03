@@ -1,7 +1,9 @@
 import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it } from "vitest";
 import { MemoryContextService, type ContextSummarizer } from "../../application/context/memory-context-service";
+import { MemoryService } from "../../application/memory/memory-service";
 import { ContextBuilder } from "../../context/context-builder";
+import { ProviderContextSummarizer } from "../../context/provider-context-summarizer";
 import { commitMessage, createRoom } from "../../domain/chat";
 import {
   createContextSummary,
@@ -506,6 +508,121 @@ describe("Phase 3 memory + context", () => {
       message: "Prepared context token budget is invalid.",
     });
     expect(providerCalled).toBe(false);
+  });
+
+  it("supports explicit durable memory CRUD through MemoryService", async () => {
+    const repository = new InMemoryMemoryRepository();
+    const service = new MemoryService(repository, () => 42);
+
+    const remembered = await service.remember({
+      id: "remembered",
+      scope: "room",
+      roomId: "memory-service-room",
+      content: "Remember this durable preference.",
+      priority: 85,
+    });
+
+    expect(remembered).toMatchObject({
+      id: "remembered",
+      roomId: "memory-service-room",
+      createdAt: 42,
+      updatedAt: 42,
+      priority: 85,
+    });
+
+    await expect(service.list("memory-service-room")).resolves.toEqual([
+      remembered,
+    ]);
+
+    await service.forget("remembered");
+    await expect(service.list("memory-service-room")).resolves.toEqual([]);
+  });
+
+  it("summarizes through a real ProviderAdapter with one leading system message", async () => {
+    const descriptor = model("summary-provider", "summary-model", 8_000);
+    let captured: ProviderStreamRequest | null = null;
+    const provider = adapter(
+      "summary-provider",
+      [descriptor],
+      async function* (request) {
+        captured = request;
+        yield { delta: "Compact " };
+        yield { delta: "summary." };
+      },
+    );
+    const summarizer = new ProviderContextSummarizer(
+      provider,
+      "summary-model",
+    );
+
+    const sourceRoom = addTurn(
+      addTurn(
+        createRoom({ id: "summary-adapter-room", now: 1 }),
+        "u1",
+        "user",
+        "We decided to keep one system message.",
+        2,
+      ),
+      "a1",
+      "assistant",
+      "Yes, preserve that constraint.",
+      3,
+    );
+
+    const output = await summarizer.summarize({
+      roomId: "summary-adapter-room",
+      previousSummary: "Earlier architecture work is complete.",
+      messages: sourceRoom.messages,
+      targetTokens: 120,
+      signal: new AbortController().signal,
+    });
+
+    expect(output).toBe("Compact summary.");
+    expect(captured?.modelId).toBe("summary-model");
+    expect(captured?.messages.filter((message) => message.role === "system"))
+      .toHaveLength(1);
+    expect(captured?.messages[0]?.role).toBe("system");
+    expect(captured?.messages[1]?.content).toContain(
+      "Earlier architecture work is complete.",
+    );
+    expect(captured?.messages[1]?.content).toContain(
+      "We decided to keep one system message.",
+    );
+  });
+
+  it("does not call the summary provider after cancellation", async () => {
+    const descriptor = model("cancel-summary-provider", "m1", 8_000);
+    let calls = 0;
+    const provider = adapter(
+      "cancel-summary-provider",
+      [descriptor],
+      async function* () {
+        calls += 1;
+        yield { delta: "must not happen" };
+      },
+    );
+    const summarizer = new ProviderContextSummarizer(provider, "m1");
+    const controller = new AbortController();
+    controller.abort();
+
+    await expect(
+      summarizer.summarize({
+        roomId: "cancel-provider-summary",
+        previousSummary: null,
+        messages: [
+          {
+            id: "u1",
+            role: "user",
+            content: "hello",
+            createdAt: 1,
+          },
+        ],
+        targetTokens: 100,
+        signal: controller.signal,
+      }),
+    ).rejects.toMatchObject({ name: "AbortError" });
+
+    expect(calls).toBe(0);
   });
 
   it("rebuilds context for each fallback model using that model's context window", async () => {
