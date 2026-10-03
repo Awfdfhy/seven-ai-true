@@ -3,7 +3,7 @@ name: Seven Superloop Watchdog
 on:
   workflow_dispatch:
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '*/5 * * * *'
 
 permissions:
   actions: write
@@ -30,7 +30,7 @@ jobs:
             now="$(date -u +%s)"
             last="$(date -u -d "$last_updated" +%s)"
             age="$((now-last))"
-            if (( age < 1200 )); then
+            if (( age < 240 )); then
               echo "Last Superloop run changed only $age seconds ago; avoiding duplicate restart."
               exit 0
             fi
