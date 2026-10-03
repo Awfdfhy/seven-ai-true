@@ -1462,7 +1462,9 @@ describe("Zero-bug regressions", () => {
     const snapshot = manager.get(run.taskId);
     expect(snapshot?.error).toBeInstanceOf(SevenError);
     expect((snapshot?.error as Error & { cause?: unknown }).cause).toBeUndefined();
-    expect(snapshot?.error?.message).toBe("private provider detail");
+    expect(snapshot?.error?.message).toBe("Task failed.");
+    expect(snapshot?.error?.details).toBeUndefined();
+    expect(snapshot?.error?.message).not.toContain("private provider detail");
   });
 
   it("isolates task listeners and bounds completed task retention", async () => {
