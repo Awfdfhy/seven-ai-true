@@ -107,6 +107,40 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       assert.deepEqual(state.visible,[]);assert.equal(state.kilo,true);assert.equal(state.llm7,true);assert.equal(state.route,true);assert.ok(/never need to paste an API key/i.test(state.text));
       await page.close();
     });
+    await test('settings tabs map every control to the correct modern section',async()=>{
+      const page=await browser.newPage({viewport:{width:320,height:800}});
+      await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');localStorage.setItem('user_name','Seven Tester');});
+      await page.goto(origin,{waitUntil:'domcontentloaded'});
+      await page.waitForFunction(()=>window.SevenRemake&&document.getElementById('settingsModal'));
+      const state=await page.evaluate(()=>{
+        openSettings();
+        const panel=id=>document.getElementById(id)?.closest('[role="tabpanel"]')?.id||null;
+        const panels=[...document.querySelectorAll('#settingsModal [role="tabpanel"]')].map(p=>({id:p.id,children:p.children.length,text:p.innerText.trim()}));
+        const tabs=[...document.querySelectorAll('#settingsModal [role="tab"]')].map(b=>({id:b.id,text:b.textContent.trim(),selected:b.getAttribute('aria-selected')}));
+        const modal=document.querySelector('#settingsModal .modal-content'),r=modal.getBoundingClientRect();
+        return{
+          temperature:panel('temperatureRange'),
+          reasoning:panel('reasoningEffort'),
+          pinned:panel('pinnedNotes'),
+          providers:panel('providersSection'),
+          advanced:panel('advancedSection'),
+          theme:panel('s-theme'),
+          panels,tabs,
+          bounded:modal.scrollWidth<=modal.clientWidth+1&&r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2
+        };
+      });
+      assert.equal(state.temperature,'s-settings-generation');
+      assert.equal(state.reasoning,'s-settings-generation');
+      assert.equal(state.pinned,'s-settings-context');
+      assert.equal(state.providers,'s-settings-models');
+      assert.equal(state.advanced,'s-settings-data');
+      assert.equal(state.theme,'s-settings-data');
+      assert.equal(state.panels.length,4);
+      assert.ok(state.panels.every(p=>p.children>0&&p.text.length>0),JSON.stringify(state.panels));
+      assert.equal(state.tabs.length,4);
+      assert.equal(state.bounded,true);
+      await page.close();
+    });
     await test('search settings require no manual API key',async()=>{
       const page=await browser.newPage({viewport:{width:360,height:800}});
       await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');});
