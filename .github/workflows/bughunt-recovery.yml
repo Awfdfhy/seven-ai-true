@@ -21,24 +21,24 @@ jobs:
     timeout-minutes: 18
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: 3
       matrix:
         include:
-          - id: A01
-            branch: bughunt/a01
-            pattern: 'theme|night|day|layout|modal|dialog|drawer|menu|responsive|viewport|safe-area|overflow|composer|topbar|sidebar|css|style|hidden|display'
           - id: A02
             branch: bughunt/a02
-            pattern: 'Android|WebView|Capacitor|native|bridge|permission|lifecycle|resume|pause|install|upgrade|manifest|intent|secure|file|keyboard'
-          - id: A04
-            branch: bughunt/a04
-            pattern: 'workspace|navigation|nav|modal|dialog|menu|shell|hub|open|close|mount|unmount|duplicate|listener|MutationObserver|architecture'
-          - id: A05
-            branch: bughunt/a05
-            pattern: 'provider|model|routing|fallback|free|health|cooldown|mode|deep|search|temperature|maxTokens|catalog|quota|429|503'
-          - id: B06
-            branch: bughunt/b06
-            pattern: 'github|self.?dev|coding|branch|commit|pull|workflow|actions|job|logs|repair|protected|patch|rollback|token|oauth|device|busy'
+            pattern: 'Android|WebView|Capacitor|native|bridge|permission|lifecycle|resume|pause|install|upgrade|manifest|intent|secure|file|keyboard|document'
+          - id: B01
+            branch: bughunt/b01
+            pattern: 'chat|send|stop|copy|stream|retry|room|message|assistant|composer|AbortController|generation|regenerate|switch|history|response'
+          - id: B02
+            branch: bughunt/b02
+            pattern: 'attachment|file|pdf|document|picker|import|export|upload|download|blob|base64|mime|Android|Capacitor|content|uri|filesystem'
+          - id: B03
+            branch: bughunt/b03
+            pattern: 'search|research|web|citation|source|evidence|result|stale|query|fetch|url|rank|rerank|ground|snippet|provider|timeout'
+          - id: B05
+            branch: bughunt/b05
+            pattern: 'rpg|world|canon|character|state|title|scene|story|memory|persist|save|load|runtime|episode|quest|inventory|relationship'
           - id: B07
             branch: bughunt/b07
             pattern: 'fetch\\(|network|offline|timeout|AbortController|retry|fallback|provider|429|503|rate|cooldown|health|stream|error|connection'
@@ -143,6 +143,7 @@ jobs:
           grep -q 'BUGHUNT=COMPLETE' "$REPORT"
           grep -Eq "^### .*${BUG_ID}-[0-9]{3}" "$REPORT"
           grep -qi 'Severity' "$REPORT"
+          grep -qiE 'evidence|root cause|technical evidence' "$REPORT"
           grep -qiE 'repro|reproduction|test idea' "$REPORT"
           bytes="$(wc -c < "$REPORT")"
           test "$bytes" -ge 1200
