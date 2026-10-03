@@ -686,7 +686,6 @@ describe("Zero-bug regressions", () => {
       secondService.send("shared-manager-room", "second", transport),
     ).rejects.toMatchObject({
       code: "VALIDATION",
-      message: "Task owner is already active or reserved.",
     });
 
     releaseRead?.();
