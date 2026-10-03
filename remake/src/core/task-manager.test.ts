@@ -1,20 +1,21 @@
 import { describe, expect, it, vi } from "vitest";
-import { SevenError } from "./errors";
 import { TaskManager } from "./task-manager";
 
 describe("TaskManager", () => {
   it("completes a task successfully", async () => {
     const manager = new TaskManager();
+    let observedTaskId = "";
     const run = manager.run(
       { kind: "chat", ownerId: "room-1" },
       async ({ taskId, signal }) => {
-        expect(taskId).toBe(run.taskId);
+        observedTaskId = taskId;
         expect(signal.aborted).toBe(false);
         return "ok";
       },
     );
 
     await expect(run.result).resolves.toBe("ok");
+    expect(observedTaskId).toBe(run.taskId);
     expect(manager.get(run.taskId)?.status).toBe("succeeded");
     expect(manager.listActive()).toHaveLength(0);
   });
@@ -45,7 +46,7 @@ describe("TaskManager", () => {
     expect(run.cancel("user")).toBe(true);
     expect(run.cancel("user-again")).toBe(false);
 
-    await expect(run.result).rejects.toMatchObject<SevenError>({
+    await expect(run.result).rejects.toMatchObject({
       code: "CANCELLED",
     });
     expect(abortEvents).toBe(1);
