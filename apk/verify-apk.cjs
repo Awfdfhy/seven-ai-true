@@ -25,5 +25,7 @@ assert.ok(html.stdout.includes('./workspaces/remake.css')&&html.stdout.includes(
 assert.ok(!html.stdout.includes('cdnjs.cloudflare.com/ajax/libs/pdf.js'),'APK still references remote PDF runtime');
 assert.ok(html.stdout.includes('Seven 2.4.2 Zero-Key UX'),'zero-key marker missing from APK');
 assert.ok(!html.stdout.includes('id="apiKeyInput"')&&!html.stdout.includes('id="nvidiaApiKeyInput"')&&!html.stdout.includes('id="openrouterApiKeyInput"')&&!html.stdout.includes('id="geminiApiKeyInput"')&&!html.stdout.includes('id="llm7TokenInput"'),'APK still contains manual API-key fields');
-assert.ok(html.stdout.includes('id="seven-ui-hardening"'),'APK missing UI hardening layer');
+const bundledRemakeCss=spawnSync('unzip',['-p',APK,'assets/public/workspaces/remake.css'],{encoding:'utf8',maxBuffer:4*1024*1024});
+assert.equal(bundledRemakeCss.status,0,bundledRemakeCss.stderr);
+assert.ok(bundledRemakeCss.stdout.includes('Seven 2.4.2 UI Hardening'),'APK missing bundled UI hardening layer');
 console.log(`apk package gate: PASS (${path.basename(APK)}, ${bytes} bytes)`);
