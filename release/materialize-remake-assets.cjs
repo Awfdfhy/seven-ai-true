@@ -18,6 +18,9 @@ function applyCompatibilityFixes(name,raw){
   if(name==="remake.css"){
     if(!text.includes('#seven-app body'))throw new Error("Seven UI Remake body-scope anchor missing");
     text=text.split('#seven-app body').join('#seven-app');
+    const hardening=fs.readFileSync(path.join(ROOT,"ui-hardening.css"),"utf8");
+    if(!hardening.includes("Seven 2.4.2 UI Hardening"))throw new Error("Seven UI hardening marker missing");
+    if(!text.includes("Seven 2.4.2 UI Hardening"))text+="\n"+hardening;
   }
   if(name==="remake.js"){
     const bootAnchor="d.documentElement.lang=language;d.documentElement.dir=language==='ar'?'rtl':'ltr';r.SevenRemake={version:'2.0.0',update,openWorkspace,searchSettings,depthDialog,modeDialog,closeDialog,welcome,t:T};";
