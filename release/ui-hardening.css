@@ -63,3 +63,28 @@ html[data-seven-theme="night"] #seven-app textarea{background:#111815!important;
  #seven-app .composer-tools span{display:none}
 }
 @media(prefers-reduced-motion:reduce){#seven-app *,#settingsModal *{scroll-behavior:auto!important;transition-duration:.001ms!important;animation-duration:.001ms!important}}
+
+
+/* Seven 2.4.3 full-surface settings hardening */
+#settingsModal .s-settings-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;min-width:0;overflow:hidden}
+#settingsModal .s-settings-tabs button{min-width:0;white-space:normal;overflow-wrap:anywhere;line-height:1.25}
+#settingsModal [role="tabpanel"]{min-width:0;max-width:100%}
+#settingsModal [role="tabpanel"]>*{min-width:0;max-width:100%}
+#settingsModal .settings-core{display:contents}
+#settingsModal .settings-section{width:100%;max-width:100%;border:1px solid var(--s-line,var(--border,#d6ddd9));border-radius:14px;overflow:hidden;margin:12px 0}
+#settingsModal .settings-section>summary{display:flex;align-items:center;min-height:48px;padding:12px 14px;cursor:pointer;overflow-wrap:anywhere}
+#settingsModal .settings-section-body{padding:12px 14px}
+#settingsModal .settings-row>*{min-width:0;flex:1 1 150px}
+#settingsModal .modal-buttons{padding-bottom:max(4px,env(safe-area-inset-bottom,0px))}
+#settingsModal textarea{resize:vertical}
+#settingsModal #routeStatusCard,#settingsModal #automaticProviderCard{max-width:100%;overflow-wrap:anywhere}
+@media(max-width:420px){
+ #settingsModal .s-settings-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #settingsModal .s-settings-tabs button{min-height:42px}
+ #settingsModal .settings-row{display:grid;grid-template-columns:1fr}
+ #settingsModal .settings-row>*{width:100%}
+}
+@media(max-height:560px){
+ #settingsModal .modal-content{max-height:calc(var(--seven-visual-height,100dvh) - 8px)}
+ #settingsModal{padding:4px}
+}
