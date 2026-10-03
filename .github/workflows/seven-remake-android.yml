@@ -95,11 +95,17 @@ jobs:
           console.log('Remake APK embedded payload identity: PASS',manifest.payloadSha256);
           NODE
 
+      - name: Prepare named Remake release artifacts
+        run: |
+          set -euo pipefail
+          mkdir -p remake/release-artifacts
+          cp remake/android/app/build/outputs/apk/debug/app-debug.apk remake/release-artifacts/Seven-Remake-V3.apk
+          cp remake/dist/seven-remake-release.json remake/release-artifacts/Seven-Remake-V3-Release-Identity.json
+
       - name: Upload built Seven Remake candidate APK
         uses: actions/upload-artifact@v7
         with:
-          name: seven-remake-v3-candidate-apk
-          path: remake/android/app/build/outputs/apk/debug/app-debug.apk
+          path: remake/release-artifacts/Seven-Remake-V3.apk
           archive: false
           if-no-files-found: error
           retention-days: 14
@@ -107,8 +113,7 @@ jobs:
       - name: Upload built Remake candidate identity
         uses: actions/upload-artifact@v7
         with:
-          name: seven-remake-v3-candidate-identity
-          path: remake/dist/seven-remake-release.json
+          path: remake/release-artifacts/Seven-Remake-V3-Release-Identity.json
           archive: false
           if-no-files-found: error
           retention-days: 14
@@ -141,20 +146,3 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: cd remake/android && ./gradlew --no-daemon :app:connectedDebugAndroidTest
 
-      - name: Upload Seven Remake APK
-        uses: actions/upload-artifact@v7
-        with:
-          name: seven-remake-v3-verified-debug-apk
-          path: remake/android/app/build/outputs/apk/debug/app-debug.apk
-          archive: false
-          if-no-files-found: error
-          retention-days: 14
-
-      - name: Upload Remake release identity
-        uses: actions/upload-artifact@v7
-        with:
-          name: seven-remake-v3-verified-release-identity
-          path: remake/dist/seven-remake-release.json
-          archive: false
-          if-no-files-found: error
-          retention-days: 14
