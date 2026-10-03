@@ -293,7 +293,13 @@ GitHub Self-Dev.
 ### Vertical Slice 9
 RPG / Canon.
 
-### Product Polish
+### Vertical Slice 10 — Product Polish
 Themes, RTL, accessibility, animation, performance.
+
+### Vertical Slice 11 — AppKernel + Recovery + Observability
+One composition root owns boot/shutdown, deterministic dependency order, rollback/retry recovery and bounded privacy-safe diagnostics. The normal React path receives an injected runtime rather than creating alternate owners.
+
+### Vertical Slice 12 — Release Assurance + Final Closure
+Deterministic payload identity, explicit release evidence gates, installed-artifact identity verification and evidence-bearing final closure. Missing device/artifact proof remains INCONCLUSIVE rather than being converted into PASS.
 
 The old Seven feature set is ported only after the equivalent new subsystem passes its contract suite.

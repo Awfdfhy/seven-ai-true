@@ -188,4 +188,31 @@ Status: **PASS**
   - Manager PR #70 merged; post-merge Remake CI PASS.
   - Android installed-APK/native round-trip evidence remains a final release gate; browser CI does not pretend to replace device evidence.
 
-**REMAKE_PROGRESS=10/12**
+- 11/12 AppKernel + Recovery + Observability: CLOSURE CANDIDATE
+  - One AppKernel owns service boot/shutdown.
+  - Deterministic dependency graph with cycle/missing-dependency rejection.
+  - Concurrent boot callers share one promise.
+  - Startup failure rolls back completed services in reverse order.
+  - Failed boot is retryable after recovery.
+  - Boot cancellation rolls back completed dependencies.
+  - Bounded diagnostics with default token/secret/auth/prompt/message/content/body redaction.
+  - Normal path now boots through createSevenRuntime; React no longer constructs TaskManager/ShellStore/ThemeService/AppKernel owners.
+  - Individual gates: Remake CI PASS; Legacy Seven + verified release artifact PASS.
+
+- 12/12 Release Assurance + Final Closure: CLOSURE CANDIDATE
+  - Deterministic release payload manifests.
+  - SHA-256 payload identity.
+  - Exact installed artifact id/version/payload comparison.
+  - Required gate aggregation with PASS / FAIL / BLOCKED / INCONCLUSIVE.
+  - Missing release evidence cannot manufacture PASS.
+  - Final closure requires evidence-bearing completion records for all 12 phases.
+  - Individual gates: rebased Remake CI PASS — 27/27 files, 251/251 tests; Legacy Seven + verified legacy release artifact PASS.
+
+- Final Manager 11+12: IN PROGRESS
+  - normal application path uses one SevenRuntime/AppKernel.
+  - boot failure remains recoverable.
+  - UI contains no duplicate runtime-owner construction.
+  - 12/12 implementation truth is separated from installed-remake release evidence.
+  - Awaiting combined Remake CI + Legacy Seven + merge/post-merge CI.
+
+**REMAKE_PROGRESS=10/12_COMPLETE + 11-12_CLOSURE_CANDIDATES**

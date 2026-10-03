@@ -1,33 +1,23 @@
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { TaskManager } from "../core/task-manager";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import type { SevenRuntime } from "../kernel/seven-runtime";
 import {
-  ShellStore,
   type SevenWorkspace,
   type ThemePreference,
 } from "./shell/shell-store";
-import { ThemeService } from "./system/theme-service";
 import { sevenCopy } from "./system/locale";
 
 const WORKSPACES: readonly SevenWorkspace[] = ["core", "research", "build", "world"];
 const THEMES: readonly ThemePreference[] = ["auto", "light", "dark"];
 
-export function App() {
-  const taskManager = useMemo(() => new TaskManager(), []);
-  const shell = useMemo(() => new ShellStore({
-    viewportWidth: typeof window === "undefined" ? 390 : window.innerWidth,
-    viewportHeight: typeof window === "undefined" ? 844 : window.innerHeight,
-    reducedMotion:
-      typeof window !== "undefined" &&
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-  }), []);
-  const theme = useMemo(() => new ThemeService(shell), [shell]);
+export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
+  const { taskManager, shell, theme, kernel } = runtime;
   const snapshot = useSyncExternalStore(shell.subscribe, shell.getSnapshot, shell.getSnapshot);
-  const [status, setStatus] = useState("Runtime ready");
+  const [status, setStatus] = useState(
+    kernel.snapshot().status === "failed" ? "Runtime recovery required" : "Runtime ready",
+  );
   const copy = sevenCopy(snapshot.locale);
 
   useEffect(() => {
-    theme.start();
     const onResize = () => {
       const viewport = window.visualViewport;
       const width = viewport?.width ?? window.innerWidth;
@@ -46,17 +36,30 @@ export function App() {
       window.removeEventListener("resize", onResize);
       window.visualViewport?.removeEventListener("resize", onResize);
       document.removeEventListener("visibilitychange", onVisibility);
-      theme.stop();
     };
   }, [shell, theme]);
 
   useEffect(() => {
-    setStatus(copy.status);
-  }, [copy.status]);
+    if (kernel.snapshot().status === "running") setStatus(copy.status);
+  }, [copy.status, kernel]);
 
   const cycleTheme = () => {
     const index = THEMES.indexOf(snapshot.themePreference);
     theme.setPreference(THEMES[(index + 1) % THEMES.length] ?? "auto");
+  };
+
+  const checkRuntime = () => {
+    const current = kernel.snapshot().status;
+    if (current === "failed" || current === "stopped" || current === "idle") {
+      setStatus(snapshot.locale === "ar" ? "جارٍ تشغيل النظام" : "Starting runtime");
+      void kernel.start().then(
+        () => setStatus(copy.status),
+        () => setStatus(snapshot.locale === "ar" ? "يلزم استرداد النظام" : "Runtime recovery required"),
+      );
+      return;
+    }
+    const active = taskManager.listActive().length;
+    setStatus(active === 0 ? copy.status : `${active} active`);
   };
 
   return (
@@ -67,6 +70,7 @@ export function App() {
       data-theme={snapshot.effectiveTheme}
       data-reduced-motion={snapshot.reducedMotion ? "true" : "false"}
       data-keyboard={snapshot.keyboardVisible ? "visible" : "hidden"}
+      data-kernel={kernel.snapshot().status}
     >
       <header className="seven-header">
         <div>
@@ -96,13 +100,7 @@ export function App() {
         <p>{copy.description}</p>
 
         <div className="seven-actions">
-          <button
-            type="button"
-            onClick={() => {
-              const active = taskManager.listActive().length;
-              setStatus(active === 0 ? copy.status : `${active} active`);
-            }}
-          >
+          <button type="button" onClick={checkRuntime}>
             {copy.check}
           </button>
           <button type="button" className="seven-secondary" onClick={cycleTheme}>
