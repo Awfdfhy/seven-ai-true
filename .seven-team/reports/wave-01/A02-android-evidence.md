@@ -2,219 +2,392 @@
 
 Author: A02 (Codex CLI), Team A
 Date: 2026-10-03
-Scope: read-only inspection. No production source was modified.
-Sources inspected (evidence for every claim below is one of these):
-`apk/materialize-android-visual-test.cjs`, `.github/workflows/android-apk.yml`, `capacitor.config.json`,
-`package.json`, `apk/patch-android.cjs`, `apk/patch-production-signing.cjs`, `apk/verify-apk.cjs`,
-`apk/materialize-native-platform.cjs`, `apk/materialize-android-motion-bridge.cjs`, `apk/harden-native-platform.cjs`,
-`seven_ai-final.html`, `all.cjs`, `.seven-team/ownership.json`.
+Mode: read-only inspection. No production source was modified. My only write is this file.
+
+**Verified sources** (every factual claim below traces to one of these):
+`apk/materialize-android-visual-test.cjs`, `.github/workflows/android-apk.yml`, `apk/patch-android.cjs`,
+`apk/verify-apk.cjs`, `apk/materialize-native-platform.cjs`, `apk/materialize-android-motion-bridge.cjs`,
+`apk/harden-native-platform.cjs`, `capacitor.config.json`, `package.json`, `all.cjs`,
+`.github/workflows/seven-tests.yml`, `release/visual-evidence-runtime.cjs`, `seven_ai-final.html` (grep-level only).
+
+**Evidence-strength convention used throughout:**
+- **PROVEN** = asserted by executable code that runs in CI (generated instrumentation assertions, or `verify-apk.cjs`).
+- **CAPTURED** = a PNG is produced and uploaded, but nothing compares it to a baseline.
+- **UNPROVEN** = no code, no workflow step, and no assertion touches it.
+- Cost figures are **estimates**, explicitly labelled; they are not measured.
+
+Note on this file: a prior version of this report existed in the workspace. I rewrote it so that every
+line is backed by the files I inspected in this run. Claims I could not re-verify from the inspected files
+were removed rather than carried forward.
 
 ---
 
-## 1. Current Android evidence coverage (what is already proven)
+## 1. Current Android evidence coverage
 
-### 1.1 The device-evidence pipeline that exists today
+### 1.1 What actually exists
 
-`apk/materialize-android-visual-test.cjs` (175 lines) does not contain a test — it *generates* one. It writes
-`android/app/src/androidTest/java/ai/seven/v243/SevenVisualEvidenceTest.java` (path derived from
-`capacitor.config.json` `appId`, lines 4-5) from an inline template (lines 7-174). A single JUnit method,
-`captureReleaseVisualStates()` (line 86), drives every capture.
+`apk/materialize-android-visual-test.cjs` is a **generator**, not a test. It reads `capacitor.config.json`,
+derives the Java package from `appId` (`ai.seven.v243`), and writes
+`android/app/src/androidTest/java/ai/seven/v243/SevenVisualEvidenceTest.java` from an inline template
+(`const source = ...`, then `fs.writeFileSync(path.join(testDir,"SevenVisualEvidenceTest.java"), source)`).
+The `android/` tree itself is **ephemeral**: `package.json` `android:generate` runs `rm -rf android` before
+`npx --no-install cap add android`. So there is **no committed Android test source** — every change to Android
+test coverage is a change to a `.cjs` generator.
 
-The generated test uses:
-- `ActivityScenario<MainActivity>` to launch the real Capacitor activity and pull the real WebView
-  (`webView(ActivityScenario)`, line 63 — `a.getBridge().getWebView()`).
-- `evaluateJavascript` with a 12 s latch timeout (`js(...)`, lines 23-28) and a 20 s poll loop
-  (`waitFor(...)`, lines 29-32) for DOM readiness.
-- `UiAutomation.executeShellCommand` (`shell(...)`, lines 36-45) for `settings get/put global` and
-  `screencap -p <name>.png` (`shot(...)`, lines 55-61).
-- Evidence root is a fixed device path: `EVIDENCE_ROOT="/data/local/tmp/seven-visual"` (line 21).
+`apk/patch-android.cjs` writes a *second* generated test, `SevenSmokeTest.java`, into the same
+`androidTest/java/ai/seven/v243/` directory (and deletes Capacitor's template
+`.../com/getcapacitor/myapp/ExampleInstrumentedTest.java`). Both tests therefore run in the same
+`:app:connectedDebugAndroidTest` invocation in CI.
 
 ### 1.2 CI wiring — `.github/workflows/android-apk.yml`
 
-One job, `android`, `runs-on: ubuntu-24.04`, **`timeout-minutes: 50`**. Step order:
+One job `android` on `ubuntu-24.04`, **`timeout-minutes: 50`**. Triggers: push to `main`/`apk-finalization`
+on paths `seven_ai-final.html`, `release/**`, `apk/**`, `package.json`, `capacitor.config.json`, and the
+workflow itself; plus `workflow_dispatch`.
 
-| Step | Fact |
+Step order (verified):
+
+| Step | Command / config |
 |---|---|
-| Checkout / Node 24 / Java 21 / `npm install` | toolchain only |
-| `npx playwright install --only-shell chromium` | Chromium for the release gate; **no browser-based Android-viewport tests consume it in this workflow** |
-| `node all.cjs` | web pre-APK gate |
-| `npm run android:generate` | build:web → label contract → assets → `rm -rf android` → `cap add/sync android` → materialize/patch/harden chain |
-| `./gradlew lintDebug testDebugUnitTest assembleDebug` | **debug variant only** |
+| Checkout, Node 24, Java 21 (temurin), `npm install --no-audit --no-fund` | toolchain |
+| `npx playwright install --with-deps --only-shell chromium` | "Install Chromium for release gate" — consumed by `node all.cjs`, not by any Android-viewport test |
+| `node all.cjs` | pre-APK web gate |
+| `npm run android:generate` | build:web → `sync-launcher-label-contract` → `prepare-assets` → `rm -rf android` → `cap add/sync android` → `materialize-android-assets` → `patch-android` → `materialize-native-platform` → `materialize-android-motion-bridge` → `harden-native-platform` → `materialize-android-visual-test` |
+| `./gradlew --no-daemon lintDebug testDebugUnitTest assembleDebug` (cwd `android`) | **debug variant only** |
 | `npm run android:verify` | `apk/verify-apk.cjs` |
-| Enable KVM | udev rule for `/dev/kvm` |
-| **Android 16 WebView device smoke test** | `reactivecircus/android-emulator-runner@v2.38.0`, `api-level: 36`, `arch: x86_64`, `profile: pixel_6`, `disable-animations: false`, `-no-window -gpu swiftshader_indirect`, runs `./gradlew :app:connectedDebugAndroidTest`, pulls to `visual-evidence/android16/` |
-| **Android 14 WebView UI regression test** | same runner, `api-level: 34`, plus **`adb shell settings put system font_scale 1.15`**, pulls to `visual-evidence/android14/` |
-| Upload evidence | `actions/upload-artifact@v7`, name `seven-ui-visual-evidence`, `retention-days: 3`, `if-no-files-found: error` |
+| Enable KVM | udev rule + reload, needed by the emulator runner |
+| **Android 16 device smoke** | `reactivecircus/android-emulator-runner@v2.38.0`, `api-level: 36`, `arch: x86_64`, `target: default`, `profile: pixel_6`, `disable-animations: false`, `emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none`; `adb shell rm -rf /data/local/tmp/seven-visual`, mkdir, `./gradlew --no-daemon :app:connectedDebugAndroidTest`, pull → `visual-evidence/android16/` |
+| **Android 14 device regression** | same runner, `api-level: 34`, same profile/options, **plus `adb shell settings put system font_scale 1.15`**; pull → `visual-evidence/android14/` |
+| Upload evidence | `actions/upload-artifact@v7`, name `seven-ui-visual-evidence`, `path: visual-evidence`, `retention-days: 3`, `if-no-files-found: error` |
 | `npm run android:verify` again | post-device re-verify |
-| Upload APK | `android/app/build/outputs/apk/debug/app-debug.apk` |
+| Upload APK | `android/app/build/outputs/apk/debug/app-debug.apk`, `if-no-files-found: error`, `retention-days: 14` |
 
-### 1.3 What the generated test actually asserts (line refs into the template)
+Two material facts follow directly:
+1. **No screenshot is ever compared.** `shot()` in the generated test only shells `screencap -p <name>.png`;
+   the workflow pulls the directory and uploads it. There is no diff, no golden set, no pixel or
+   perceptual comparison anywhere in the repository.
+2. **The build matrix is debug-only.** `assembleDebug`, `connectedDebugAndroidTest`, and the uploaded
+   `app-debug.apk`. `assembleRelease` never runs in this workflow.
 
-These are **hard DOM/CSS assertions**, independent of the screenshots:
+### 1.3 What the generated visual test asserts (PROVEN) vs. captures (CAPTURED)
 
-- **Theme tokens, day**: `--s-bg` on `#seven-app` equals `#f5f7f5` (line 92).
-- **Theme tokens, night**: `#seven-app --s-bg === '#111815'`, `.main` and `.composer` background `rgb(23, 33, 29)`, root color not `rgb(0,0,0)` (line 94).
-- **Model menu**: `.seven-shell-model-menu` exists and is not `hidden` (line 97); dismissed via synthetic `Escape` `KeyboardEvent` (line 98).
-- **Dialogs**: `SevenRemake.modeDialog/depthDialog/searchSettings` each assert `#seven-app > .s-modal .s-dialog` exists, then `closeDialog()` (lines 100-102).
-- **Settings**: `#s-tab-context` and `#s-tab-data` clicks (lines ~104-105); `closeSettings()` (line 107).
-- **Workspaces**: `ensureWorkspaces()` injects `./workspaces/hub.js` if `window.SevenWorkspaces` is absent and waits for load (lines 73-77); `workspace(webView,kind)` opens and asserts `document.documentElement.dataset.sevenWorkspace===kind` (lines 78-83). Captured: workspace picker + `coding`, `research`, `rpg` (lines 110-115).
-- **RTL (DOM-level)**: sets `lang='ar-IQ'`, `dir='rtl'` on `<html>` and `<body>`, asserts computed `direction==='rtl'` (line 118); asserts closed sidebar `left >= innerWidth-2` (line 120) and open sidebar `left>=-2 && right<=innerWidth+2` with backdrop present under `#seven-app` (line 122).
-- **Long chat (RTL + night)**: injects 18 assistant messages of `('نص '.repeat(24))` and asserts `.seven-shell-jump` exists, has class `show`, `aria-label==='الانتقال إلى أحدث رسالة'`, parent `#seven-app` (line 126).
-- **Reduced motion**: sets `window_animation_scale`, `transition_animation_scale`, `animator_duration_scale` to 0 via `shell`, re-reads them with `assertZeroScale` (lines 133-136), **relaunches the activity**, then asserts `__sevenAndroidMotion.source==='ANDROID_GLOBAL_ANIMATION_SCALES'`, `reducedMotion===true`, `SevenPerformance.state.reducedMotion===true`, `dataset.sevenReducedMotion==='1'`, `SevenMotion.allow('ambient')===false` (line 149). Animation scales are restored in a `finally` block (lines 152-155).
+Single `@Test public void captureReleaseVisualStates()`. Helpers: `js()` (`evaluateJavascript` + 12 s latch),
+`waitFor()` (100 × 200 ms poll, fails with "Seven visual state did not become ready"), `shell()`
+(`UiAutomation.executeShellCommand`), `restoreScale()` (regex-validated numeric restore), `assertZeroScale()`,
+`shot()`, `webView(ActivityScenario)` (`a.getBridge().getWebView()`), `theme()`, `ensureWorkspaces()`,
+`workspace()`. `EVIDENCE_ROOT = "/data/local/tmp/seven-visual"`.
 
-### 1.4 Coverage summary table (current state)
+**PROVEN — hard assertions:**
 
-| Dimension | Status | Evidence |
+| Area | Assertion |
+|---|---|
+| Startup contract | `SevenPerformance.state.ready` and `SevenTheme`/`SevenRemake`/`SevenShell` globals exist and `#userInput` exists |
+| Day tokens | `#seven-app` computed `--s-bg` `.trim() === '#f5f7f5'` |
+| Night tokens | `#seven-app` `--s-bg === '#111815'`, `.main` and `.composer` background `rgb(23, 33, 29)`, root color `!== 'rgb(0, 0, 0)'` |
+| Model menu | `.seven-shell-model-menu` exists and `!hidden`; dismissed with a synthetic `Escape` `KeyboardEvent` |
+| Dialogs | `SevenRemake.modeDialog()`, `depthDialog()`, `searchSettings()` each require `#seven-app > .s-modal .s-dialog`; each followed by `closeDialog()` |
+| Settings routing | After `openSettings()`: `temperatureRange`→`s-settings-generation`, `reasoningEffort`→`s-settings-generation`, `pinnedNotes`→`s-settings-context`, `providersSection`→`s-settings-models`, `advancedSection`→`s-settings-data`, `s-theme`→`s-settings-data` |
+| Settings viewport containment | `#settingsModal .modal-content`: `scrollWidth <= clientWidth + 1` **and** rect `left>=-2 && right<=innerWidth+2 && top>=-2 && bottom<=innerHeight+2` |
+| Workspaces | `ensureWorkspaces()` injects `./workspaces/hub.js` if `window.SevenWorkspaces` is absent and waits for load; `workspace()` asserts `document.documentElement.dataset.sevenWorkspace === kind` for `coding`, `research`, `rpg` |
+| RTL (DOM) | `lang='ar-IQ'`, `dir='rtl'` on `<html>` and `<body>`, computed `direction==='rtl'`; closed sidebar `left >= innerWidth-2`; open sidebar `left>=-2 && right<=innerWidth+2` with `.seven-shell-backdrop` present, not hidden, parent `#seven-app` |
+| Long chat (RTL) | 18 assistant messages of `رسالة اختبار طويلة رقم N — ` + `('نص '.repeat(24))`; `.seven-shell-jump` exists, has class `show`, `aria-label === 'الانتقال إلى أحدث رسالة'`, parent `#seven-app` |
+| Reduced motion (native→JS bridge) | Sets `window_animation_scale`, `transition_animation_scale`, `animator_duration_scale` to `0` via shell, re-reads them with `assertZeroScale` (delta 0.0001), **relaunches the activity**, then asserts `__sevenAndroidMotion.source==='ANDROID_GLOBAL_ANIMATION_SCALES'`, `reducedMotion===true`, `SevenPerformance.state.reducedMotion===true`, `document.documentElement.dataset.sevenReducedMotion==='1'`, `SevenMotion.allow('ambient')===false` |
+| Hygiene | Animation scales restored in a `finally` block; `shot()` name must match `[a-z0-9-]+` |
+
+**CAPTURED (screenshot only, never compared):** `chat-day`, `chat-night`, `model-menu-night`,
+`mode-dialog-night`, `depth-dialog-night`, `search-dialog-night`, `attachments-night`,
+`github-selfdev-night`, `settings-models-night`, `settings-intelligence-night`, `settings-context-night`,
+`settings-app-night`, `workspace-picker-night`, `coding`, `research`, `rpg`, `sidebar-rtl-night`,
+`long-chat-jump-rtl-night`, `arabic-rtl`, `reduced-motion`.
+
+Two observations that matter for V2:
+- **Theme skew.** `theme(webView,"day")` is used exactly once, for `chat-day`. Every dialog, all three
+  settings tabs, all four workspaces, the RTL sidebar, the long-chat jump, and `arabic-rtl` are captured
+  and asserted **in night**. `reduced-motion` relaunches explicitly back into `night`. Day-mode dialog,
+  settings, and workspace surfaces have **zero** coverage.
+- **Naming vs. theme.** The three workspace shots are named `coding`/`research`/`rpg` with no theme suffix,
+  but they execute while night is active — a future human reviewer filtering by filename would misread them.
+
+**Also PROVEN (host-side, not device):** `apk/verify-apk.cjs` gates the **debug** APK by default
+(`android/app/build/outputs/apk/debug/app-debug.apk`, overridable via `SEVEN_APK_PATH` or argv[2]):
+size `< 30 MiB`; `unzip -l` must contain `assets/public/index.html`, `vendor/pdfjs/pdf.min.mjs`,
+`workspaces/remake.css`, `workspaces/remake.js`, `workspaces/intelligence.js`, `workspaces/research-v2.js`,
+`classes*.dex`; unpacked `index.html` must contain `SEVEN_FINAL_RELEASE_LAYER_V1`, `id="seven-app"`,
+`data-seven-remake="1"`, the workspace script/css wiring, `Seven 2.4.3 Zero-Key + UI Cleanup`,
+`Seven 2.4.2 Zero-Key UX`, `Automatic Providers`, `Zero-Key routing`; must **not** contain
+`cdnjs.cloudflare.com/ajax/libs/pdf.js`, `id="apiKeyInput"`, `id="nvidiaApiKeyInput"`,
+`id="openrouterApiKeyInput"`, `id="geminiApiKeyInput"`, `id="llm7TokenInput"`, any `type="password"`,
+`id="nameModal"`, `id="nameInput"`; bundled `remake.css` must carry `--seven-ui-hardening-v242:1`;
+bundled `remake.js` must not contain `s-brave-key`, `Brave API key`, or `Enter API key`. It also asserts
+the generated `app/build.gradle` `versionCode`/`versionName` match `package.json` (`2.4.3` / `243`).
+
+### 1.4 Coverage summary
+
+| Dimension | Status | Basis |
 |---|---|---|
-| Android 14 / API 34 | **Partially covered** — one run, `pixel_6`, portrait, `font_scale 1.15`, night-heavy theme | workflow "Android 14 WebView UI regression test" |
-| Android 16 / API 36 | **Partially covered** — one run, `pixel_6`, portrait, default `font_scale` | workflow "Android 16 WebView device smoke test" |
-| Small / compact viewport | **Not covered** — the only device profile pinned is `pixel_6`; no `wm size`, no density override, no small-width profile | workflow `profile: pixel_6` (both steps) |
-| Font scale | **Weakly covered** — exactly one non-default value (1.15) on API 34; no 1.3/1.5/2.0; no clipping assertion | workflow `settings put system font_scale 1.15` |
-| Landscape / rotation | **Not covered** — no `user_rotation`, no `wm size`, no `screenOrientation`, no rotation in the test | no rotation token in workflow or test; `apk/patch-android.cjs` manifest rewrite (lines 17-30) sets only `allowBackup`, `usesCleartextTraffic`, `windowSoftInputMode`, `configChanges` |
-| Keyboard / IME / safe-area | **Not covered** — `adjustResize` is declared but never exercised; `visualViewport` is tracked in web code but never asserted; `env(safe-area-inset-*)` CSS exists but is never asserted | `apk/patch-android.cjs:24` (`android:windowSoftInputMode="adjustResize"`); `seven_ai-final.html:694-737` (insets CSS) and `seven_ai-final.html:2095-2170` (visualViewport reliability state); no `keyboard`, `ime`, `insets`, `fitsSystemWindows`, `visualViewport` token in `apk/materialize-native-platform.cjs`, `apk/materialize-android-motion-bridge.cjs`, `apk/harden-native-platform.cjs` |
-| Day/night | **App-level only** — `SevenTheme.setPreference('day'|'night')` driven from JS; **no OS dark mode** (`cmd uimode night`), and `prefers-color-scheme` has **0 occurrences** in `seven_ai-final.html`; no `values-night` resources in the three materialize scripts | test `theme(webView,value)` (lines 64-68) and line 92/94; `grep -c "prefers-color-scheme" seven_ai-final.html` = 0 |
-| Arabic RTL | **DOM-level only** — `lang`/`dir` swapped in JS while the Android locale stays default; Arabic text rendering (Arabic font, shaping) is exercised by the long-chat injection; **system** RTL (window insets, back gesture, `supportsRtl`) is not | test lines 118-129 |
-| Long chat | **Partially covered** — 18 messages, RTL + night, jump-button presence/aria only | test line 126 |
-| Settings / dialogs | **Partially covered** — 3 dialogs + 2 settings tabs, night only, no rotation/keyboard/scroll assertions | test lines 100-107 |
-| Screenshots as *evidence* | Captured (`screencap -p`, ~20 PNGs) and uploaded, **never compared** to a baseline; no diff step exists in the workflow | `shot()` line 55-61; artifact step has no diff tool |
-| Build variant exercised | **debug only** — `assembleDebug`, `connectedDebugAndroidTest`, uploaded `app-debug.apk`; `assembleRelease` never runs | workflow |
-| APK content gate | Covered for the **debug** APK: version name/code match `package.json`, size < 30 MB, required `assets/public/**` entries, `SEVEN_FINAL_RELEASE_LAYER_V1`, `id="seven-app"`, `data-seven-remake="1"`, no manual key inputs, no password inputs, no CDN pdf.js | `apk/verify-apk.cjs:12-48` |
-| Web-side gate overlap | `grep -E "android|apk|viewport|rtl|font|safe|visual" all.cjs` → **0 matches** | `all.cjs` |
-
-**Headline:** Android evidence today is *one API 36 run + one API 34 run, one device profile, portrait only, night-biased, debug variant, screenshots without comparison, DOM assertions only for theme tokens / dialogs / workspaces / DOM-RTL / reduced motion.*
+| Android 14 / API 34 | CAPTURED + partial assertions, single config | workflow step, `font_scale 1.15` |
+| Android 16 / API 36 | CAPTURED + partial assertions, single config | workflow step |
+| Small / compact viewport | **UNPROVEN** | only `profile: pixel_6`; no `wm size`, no `wm density`, no second profile |
+| Font scale | CAPTURED at exactly `1.15` on API 34 only; **UNPROVEN** at any other value incl. API 36 | `settings put system font_scale 1.15` |
+| Landscape / rotation | **UNPROVEN** | no `user_rotation`, no `wm size`, no `screenOrientation`, no rotation in the test; `apk/patch-android.cjs` manifest rewrite touches only `allowBackup`, `usesCleartextTraffic`, `windowSoftInputMode`, `configChanges` |
+| Keyboard / IME | **UNPROVEN** | `windowSoftInputMode="adjustResize"` is declared; nothing focuses `#userInput` and re-measures |
+| Safe-area insets | **UNPROVEN** | `safe-area-inset` occurs 9× in `seven_ai-final.html`, but no assertion reads a resolved inset; `materialize-native-platform.cjs` grep for `WindowInsets`/`setDecorFitsSystemWindows`/`safe-area`/`ime`/`statusBar`/`navigationBar`/`uiMode`/`ColorMode`/`landscape`/`font_scale` returns **no matches** |
+| Day / night | Day: 1 screenshot. Night: everything else. **System** day/night: **UNPROVEN** | `SevenTheme.setPreference()` is a JS preference; no `cmd uimode` anywhere |
+| Arabic RTL | PROVEN at DOM level (night, portrait, one device width) | the `dir`/`lang`/sidebar/jump assertions above |
+| Long chat | PROVEN only in RTL + night, synthetic `addMessage` payloads, 18 messages | the `.seven-shell-jump` assertion |
+| Settings / dialogs | PROVEN at night; routing + one containment assertion | `openSettings()` / `closeSettings()` / `SevenRemake.*Dialog()` |
+| Baseline comparison | **UNPROVEN** — none exists | no diff step in the workflow |
+| Build variant | debug only | `assembleDebug` / `connectedDebugAndroidTest` / `app-debug.apk` |
 
 ---
 
-## 2. Exact gaps by required dimension
+## 2. Exact gaps per required dimension
 
-### 2.1 Android 14 / API 34 and Android 16 / API 36
-- **Gap A1** — One profile (`pixel_6`) and one configuration per API. No compact-width or large-screen device, no tablet/foldable, no low-RAM path.
-- **Gap A2** — `font_scale` is asymmetric: 1.15 on API 34, untouched (1.0) on API 36. There is therefore **no API-36 large-font evidence at all**, which is exactly where WebView text autosizing plus `dvh` layout tends to break.
-- **Gap A3** — Emulator rendering is software: `-no-window -gpu swiftshader_indirect`. Font rasterization, blur/backdrop and any GPU-composited effect are not representative of real hardware.
-- **Gap A4** — No assertion ties an API level to any behavior; both steps run the identical test, so a regression that only appears on one API would only be caught if the captured pixels were reviewed by a human.
+### 2.1 Android 14 / API 34 — gaps
+- **G-34-1** Exactly one emulator config. No compact-width device, no tablet/foldable, no low-RAM path,
+  no alternate WebView provider. `arch: x86_64` on both steps means no ARM WebView rendering path.
+- **G-34-2** The `font_scale 1.15` write is applied but **nothing asserts that WebView honoured it.**
+  There is no check of `document.documentElement` text size, no measurement of composer/textarea height
+  before vs. after, and no clipping assertion. If the setting did not propagate, the run would still be green.
+- **G-34-3** Nothing in the test is API-aware. Both steps execute the *same* generated test, so an
+  API-34-only regression is only detectable by a human comparing two un-diffed PNG sets.
+- **G-34-4** The API-34 job has no timing budget of its own; the shared `timeout-minutes: 50` covers
+  two emulator boots plus a full web build and two Gradle invocations.
 
-### 2.2 Small viewport
-- **Gap S1** — No device narrower than the pinned profile. Nothing asserts `document.documentElement.scrollWidth <= clientWidth` at a compact width, which is the single cheapest overflow detector.
-- **Gap S2** — Nothing asserts the composer, send button, model chip, or sidebar trigger remain reachable when width collapses.
-- **Gap S3** — `seven_ai-final.html` mixes `100vh` (5 occurrences) and `@supports(height:100dvh){--seven-visual-height:100dvh}` (lines 737-738). Which branch is active inside an Android WebView for a compact window is unverified — no test reads `--seven-visual-height`.
+### 2.2 Android 16 / API 36 — gaps
+- **G-36-1** API 36 runs at **default font scale**, i.e. `1.0`. There is therefore *no* large-font
+  evidence on the newest target at all.
+- **G-36-2** No API-36-specific behavioural assertion (window-inset handling, predictive-back,
+  edge-to-edge window behaviour) exists in any generated test.
+- **G-36-3** No `SevenSmokeTest` / `SevenVisualEvidenceTest` distinction in reporting: both tests run under
+  one Gradle task, so a failure in the SAF/`SevenSecureStore` test (from `apk/patch-android.cjs`) is
+  indistinguishable in the workflow log from a visual-regression failure.
 
-### 2.3 Font scale
-- **Gap F1** — Only `1.15`. No coverage at 1.3 / 1.5 / 2.0, and Android's accessibility range goes well beyond that.
-- **Gap F2** — No assertion that the composer, dialogs, or the RTL jump button survive large fonts; the test only screenshots.
-- **Gap F3** — `apk/patch-android.cjs:26-29` appends only `|density` to `android:configChanges`. A system font-scale change is a different configuration change, so the activity is expected to recreate — no test covers a recreation with in-app state (open dialog, typed draft, scrolled chat).
+### 2.3 Small viewport — gaps
+- **G-SM-1** No viewport narrower than the pinned `pixel_6` profile. Nothing asserts
+  `documentElement.scrollWidth <= documentElement.clientWidth + 1` at a compact width, which is the single
+  cheapest horizontal-overflow detector and is already the pattern used for `#settingsModal .modal-content`.
+- **G-SM-2** No assertion that the composer, send button, model chip, or sidebar trigger remain reachable
+  when width collapses. The only width-sensitive assertions in the whole suite are the settings-modal
+  containment check and the RTL sidebar bounds — both at one width.
+- **G-SM-3** `seven_ai-final.html`'s viewport meta is exactly
+  `<meta name="viewport" content="width=device-width, initial-scale=1.0">` — **no `viewport-fit=cover`,
+  no `maximum-scale`**. Any `env(safe-area-inset-*)` usage therefore has to be treated as
+  "unproven whether it ever resolves non-zero on Android", not as an assumed working mechanism.
+- **G-SM-4** Density is unparameterized: no `wm density` override, so no high-density/low-density render.
 
-### 2.4 Landscape
-- **Gap L1** — No rotation anywhere: no `user_rotation`, no `wm size`, no `screenOrientation` lock, no rotation assertion in the test.
-- **Gap L2** — No post-rotation reflow evidence for: chat list, sidebar, workspace hub, model menu, or any of the three dialogs.
-- **Gap L3** — Landscape is where `env(safe-area-inset-left/right)` and `100dvh` disagree most; nothing asserts insets or the `--seven-visual-height` variable after rotation.
+### 2.4 Font scale — gaps
+- **G-FS-1** One value (`1.15`). No `1.3`, `1.5`, or `2.0` — all inside Android's accessibility range and
+  all inside the range where a fixed-height composer or dialog will clip.
+- **G-FS-2** No assertion of survival at large fonts for the composer, the three dialogs, the settings
+  tabs, or the `.seven-shell-jump` button; these are screenshot-only even at 1.15.
+- **G-FS-3** `apk/patch-android.cjs` appends only `|density` to the activity's `android:configChanges`
+  (`a.replace(/android:configChanges="([^"]*)"/, ...)`). A system font-scale change is a *different*
+  configuration change, so the activity is expected to be recreated. There is **no** test that changes
+  font scale with in-app state live (open dialog, unsent draft in `#userInput`, scrolled chat) and
+  verifies the state survives recreation.
 
-### 2.5 Keyboard / safe-area
-- **Gap K1** — `windowSoftInputMode="adjustResize"` (`apk/patch-android.cjs:24`) is a declaration with **zero** runtime evidence. Nothing focuses `#userInput` and re-measures.
-- **Gap K2** — `seven_ai-final.html:2095-2170` computes and stores `appReliabilityState.visualViewport` and re-reads it on `resize`/`scroll`. That is an *observability* hook with no assertion attached anywhere.
-- **Gap K3** — `env(safe-area-inset-*)` appears at lines 694-737 of `seven_ai-final.html`, but no test asserts the resolved inset values, and no native code in the three materialize scripts applies window insets (no `setDecorFitsSystemWindows`, no `fitsSystemWindows`, no `WindowInsets` listener). Whether insets are consumed by the WebView at all is unknown from repository evidence.
-- **Gap K4** — Hardware/gesture back with a dialog or the sidebar open is untested (no `OnBackPressed` or history assertion).
+### 2.5 Landscape — gaps
+- **G-LS-1** Zero rotation coverage. The only evidence is `apk/patch-android.cjs` setting
+  `windowSoftInputMode="adjustResize"` and appending `|density`; it does not set `screenOrientation`
+  or add any layout-land/port qualifiers, and the manifest is otherwise left at Capacitor defaults.
+- **G-LS-2** No post-rotation assertion for any surface: chat list, sidebar, workspace hub, model menu,
+  attachments menu, GitHub self-dev panel, settings modal, or the three dialogs.
+- **G-LS-3** No rotated evidence for the settings-modal containment assertion, even though that assertion
+  is written in viewport-relative terms (`innerWidth`/`innerHeight`) and would be the natural landscape probe.
 
-### 2.6 Day / night
-- **Gap D1** — Theme is a JS preference, not a system signal: `prefers-color-scheme` count in `seven_ai-final.html` is **0**. No `cmd uimode night yes|no` anywhere.
-- **Gap D2** — Every dialog, settings tab, workspace and RTL capture is night. Day-mode dialogs/workspaces are only covered by `chat-day` (line 93) — one screen.
-- **Gap D3** — No `values-night` resources exist in the three materialize scripts, so native chrome (status bar, splash, launcher) is not proven to follow system night mode.
+### 2.6 Keyboard / safe-area — gaps
+- **G-KB-1** `adjustResize` is declared and never exercised. Nothing focuses `#userInput`, waits for the
+  IME, and re-checks composer visibility or `visualViewport.height`.
+- **G-KB-2** No native inset plumbing exists in the generation scripts. Grepping
+  `apk/materialize-native-platform.cjs` for `WindowInsets`, `setDecorFitsSystemWindows`, `fitsSystemWindows`,
+  `statusBar`, `navigationBar`, `ColorMode`, `uiMode` returns no matches; `apk/harden-native-platform.cjs`
+  touches only SAF permission constants. `MainActivity` is rewritten only to add
+  `registerPlugin(SevenPlatformPlugin.class)` inside `onCreate` before `super.onCreate(...)`.
+  Consequence: **inset propagation into the WebView is structurally unmodelled** — it must be measured,
+  not assumed in either direction.
+- **G-KB-3** Because insets are unmodelled, the correct assertion is *no occlusion of interactive targets*
+  (composer, jump button, dialog close), **not** "insets are non-zero". A gate written as "insets > 0"
+  would be wrong on a non-edge-to-edge window and would be a false failure.
+- **G-KB-4** Hardware/gesture back with a dialog open or sidebar open is untested — no `OnBackPressed`
+  dispatch, no history assertion.
 
-### 2.7 Arabic RTL
-- **Gap R1** — RTL is applied by setting `lang`/`dir` attributes, not by an Arabic system locale. Arabic *font* and shaping are exercised (Arabic strings are injected), but WebView's locale-driven line-breaking/percent-width behavior is not.
-- **Gap R2** — RTL assertions cover only the sidebar (lines 120, 122) and the jump button (line 126). **Not** covered: composer/send button order, model chip, settings tabs, all three dialogs, the workspace hub, and the input caret/selection in RTL.
-- **Gap R3** — No `android:supportsRtl` / locale config is added by the manifest rewrite (`apk/patch-android.cjs:17-30`), so window-level RTL (and its effect on `safe-area-inset-left/right`) is unproven.
+### 2.7 Day / night — gaps
+- **G-DN-1** Theme is an app preference (`SevenTheme.setPreference`), not a system signal. No
+  `adb shell cmd uimode night yes|no` exists in the workflow or the test.
+- **G-DN-2** Day coverage is one screenshot (`chat-day`) plus its token assertion. Day dialogs, day
+  settings tabs, day workspaces, and day RTL have none.
+- **G-DN-3** No native dark resources or theme plumbing is generated, so status bar / splash / launcher
+  behaviour under system night mode is unproven (and is out of scope for `materialize-*` scripts as written).
 
-### 2.8 Long chat
-- **Gap C1** — 18 messages is a shallow history; no test at 200+ messages, no scroll-performance/virtualization check, no memory or frame-timing assertion.
-- **Gap C2** — Only assistant messages with a fixed repeated string; no long user message, no code block, no long unbroken URL/token, no markdown table.
-- **Gap C3** — The jump button assertion checks presence + `aria-label` only; no assertion that scrolling to bottom hides it, and no LTR long-chat case.
+### 2.8 Arabic RTL — gaps
+- **G-RTL-1** RTL is proven only at one device width, portrait, night, on the generated test's own DOM
+  manipulation (`document.documentElement.dir='rtl'` applied by the test itself, not by a persisted
+  user setting or `android:configChanges` locale change).
+- **G-RTL-2** RTL is never combined with: day theme, large font scale, landscape, small viewport, or IME.
+- **G-RTL-3** RTL proof covers sidebar bounds, backdrop parentage, and the jump button's Arabic
+  `aria-label`. It does **not** cover the settings modal, any dialog, the model menu, the attachments menu,
+  the workspace picker, or code/markdown blocks in RTL.
 
-### 2.9 Settings / dialogs
-- **Gap G1** — Three dialogs asserted to exist, then closed. No assertion on geometry (`getBoundingClientRect` within viewport), no small-height dialog case, no scroll-within-dialog case.
-- **Gap G2** — Settings covers two tabs (`s-tab-context`, `s-tab-data`) out of the tab set, night only, and nothing is asserted about the panel being scrollable or fitting the viewport.
-- **Gap G3** — No dialog behaviour under font scale 2.0 or landscape — the two states most likely to clip a fixed-height dialog.
+### 2.9 Long chat — gaps
+- **G-LC-1** Long chat is exercised **only** as 18 Arabic assistant messages appended via `addMessage`,
+  in RTL + night, with no user turns, no code blocks, no markdown tables, no long unbroken URLs, and no
+  streaming/partial-render state.
+- **G-LC-2** The `.seven-shell-jump` assertion is RTL-only. There is **no LTR long-chat assertion**, so
+  the jump affordance is unproven in the default direction.
+- **G-LC-3** `chat.scrollTop=0` is set before asserting `.show`; the `arabic-rtl` shot then scrolls to the
+  bottom. No assertion covers scroll position after rotation, font-scale change, or dialog close.
+
+### 2.10 Settings / dialogs — gaps
+- **G-SD-1** Night-only. The settings routing assertion and the `.modal-content` containment assertion are
+  strong, but both run at one width, portrait, one font scale.
+- **G-SD-2** Dialogs are asserted to *exist* (`#seven-app > .s-modal .s-dialog`) and to close. Nothing
+  asserts scrollability or non-occlusion of dialog content at large font scale or landscape — precisely
+  where a modal taller than the viewport fails silently.
+- **G-SD-3** No focus-trap / Escape-contract assertion for dialogs. Escape is only exercised against the
+  model menu via a synthetic `KeyboardEvent`.
 
 ---
 
-## 3. Release vs debug build implications (signing deliberately excluded)
+## 3. Release-vs-debug build implications (signing deliberately kept separate)
 
-Facts:
-- CI builds and uploads **only** `assembleDebug` / `app-debug.apk` (workflow build step + final upload step).
-- `apk/verify-apk.cjs:17-18` defaults to `android/app/build/outputs/apk/debug/app-debug.apk` but **already honours `SEVEN_APK_PATH`**, so verifying a release APK needs no code change — only a different path/arg in CI.
-- Device evidence runs `:app:connectedDebugAndroidTest`, so every assertion in §1.3 is against the **debug** variant.
-- `apk/patch-android.cjs:47-48`: the injected Gradle sets `testBuildType = "release"` and swaps in `signingConfig signingConfigs.sevenCi` **only when the `sevenCiKeystore` Gradle property is present**; the debug buildType block is likewise conditional.
-- The workflow supplies `SEVEN_EMBED_*` API-key env vars but **no `sevenCiKeystore`/related Gradle properties**, so today `testBuildType` stays at Capacitor's default (debug).
+**Signing is out of scope here by instruction.** Recording only what the files state, so the boundary is clear:
+`apk/patch-android.cjs` injects a `sevenCi*` signing block **only when** `project.findProperty("sevenCiKeystore")`
+is non-null, sets `testBuildType = "release"` in that case, and comments that instrumentation "will correctly
+reject a test APK whose certificate differs from the installed release target". The workflow's
+`npm run android:generate` passes **no** `-P` flags, so today the whole chain runs on Capacitor defaults and
+the uploaded APK is the debug-signed `app-debug.apk`. No signing change is proposed by this report.
 
-Implications for UI Foundation V2 validation:
-1. **Minified/resource-shrunk release rendering is entirely unproven.** R8/shrinking only applies to the release variant; nothing in CI would catch a release-only regression (stripped class, renamed asset, dropped CSS rule). Any UI Foundation V2 CSS/JS change must be proven on the release variant before it is trusted.
-2. **The build variant is coupled to a signing identity.** Because `testBuildType = "release"` is gated on `sevenCiKeystore` (`apk/patch-android.cjs:47`), release-variant device evidence cannot be obtained without supplying a keystore. **Decoupling "which variant is instrumented" from "which key signs it" is a prerequisite code change in `apk/patch-android.cjs`** (e.g. an explicit `sevenTestBuildType` property), and that change is *not* a signing decision and should be reviewed independently.
-3. **Debug-only evidence has one known blind spot already visible in the repo:** `capacitor.config.json` sets `webContentsDebuggingEnabled: false` and `allowMixedContent: false` for **all** variants, so DevTools-based debugging is not available even on debug; a failure inside the WebView currently has only the instrumentation assertions and screenshots to work with.
-4. Recommended sequencing: land the P0 assertions first against debug (fast, no signing change), then add one release-variant connected run as a *separate* CI step/job once the variant/signing coupling is decoupled. Keep `apk/patch-production-signing.cjs` out of that change entirely.
+Non-signing implications of moving to a release variant:
+
+- **R-1 — `assembleRelease` has never run in CI.** `lintDebug testDebugUnitTest assembleDebug` is the entire
+  Gradle line. Any release-only path (resource shrinking, R8/minification, per-variant asset packaging) is
+  **UNPROVEN**.
+- **R-2 — `apk/verify-apk.cjs` is debug-shaped but parameterised.** It defaults to
+  `android/app/build/outputs/apk/debug/app-debug.apk` yet honours `SEVEN_APK_PATH` / `argv[2]`. Pointing it at
+  `app-release-unsigned.apk` or a CI-signed release APK is a one-env-var change with **no code change** —
+  this is the cheapest release-side coverage available and should be adopted first.
+- **R-3 — shrinking can change the UI contract the APK gate asserts.** `verify-apk.cjs` checks the presence of
+  `workspaces/*.js|css` inside the APK and inside `index.html`. If a release build shrinks or strips web assets,
+  these assertions are the tripwire. They have never run against a shrunk artifact.
+- **R-4 — WebView debugging.** `capacitor.config.json` sets `android.webContentsDebuggingEnabled: false`. The
+  visual test drives the WebView through `a.getBridge().getWebView()` + `evaluateJavascript`, which is
+  independent of DevTools, so the same test is expected to work against a release variant — but that is an
+  expectation, not evidence.
+- **R-5 — variant + test-variant pairing.** `connectedDebugAndroidTest` is the only wired task. A release
+  instrumented run needs either `connectedReleaseAndroidTest` or the `testBuildType` mechanism described in
+  `apk/patch-android.cjs`. Either way this is a workflow change, not a test change.
+- **R-6 — the pre-APK web gate is variant-agnostic.** `node all.cjs` runs on host Node and never sees the
+  APK, so a release-only regression would be invisible to it.
 
 ---
 
-## 4. Files / workflows that would change
+## 4. Files that would change (exact list)
 
-| File | Change | Priority |
+| File | Change needed | Why |
 |---|---|---|
-| `apk/materialize-android-visual-test.cjs` | Add new `@Test` methods alongside `captureReleaseVisualStates()` (line 86): viewport-overflow, font-scale, rotation, IME-focus, inset, system-night, RTL-composer. Reuse `shell()` (line 36) for `settings put system font_scale`, `wm size`, `settings put system user_rotation`, `cmd uimode night`; reuse `js()`/`waitFor()`/`shot()` unchanged. Add a `finally` restore for every setting mutated (pattern already exists at lines 152-155). | P0/P1 |
-| `.github/workflows/android-apk.yml` | Mirror `font_scale` into the API 36 step; add rotation + IME steps to the API 34 step (or a third runner step); add `assembleRelease` + `SEVEN_APK_PATH=.../release/*.apk npm run android:verify`; increase or split the `timeout-minutes: 50` job budget; raise `retention-days: 3` if evidence must outlive the run; add a screenshot-count/manifest assertion step. | P0/P1 |
-| `apk/patch-android.cjs` | Decouple instrumented build variant from `sevenCiKeystore` (line 47) so release-variant evidence does not require a signing identity. Manifest rewrite (lines 17-30) is the natural place to consider `supportsRtl`/locale config if RTL must be device-driven. | P1 |
-| `apk/verify-apk.cjs` | **No change required** for release verification (`SEVEN_APK_PATH`/`argv[2]` already supported, lines 17-18). Only change if release-only asset expectations need asserting. | — |
-| `package.json` | Only if new scripts are added (e.g. an `android:evidence` wrapper). `android:generate` and `android:verify` already exist and are unchanged. | P2 |
-| `all.cjs` | Contains **0** matches for android/apk/viewport/rtl/font/safe/visual — web-side gap for the same dimensions. Out of Android scope; flag to the web gate owner. | P2 |
+| `apk/materialize-android-visual-test.cjs` | **Primary.** Add a second `@Test` (e.g. `captureResponsiveMatrix()`) parameterised over device state, plus a `wmSize`/`rotate`/`fontScale` shell helper and a baseline-comparison assertion. Extend the existing RTL/long-chat assertions to LTR and day. Add a dialog/settings "fits viewport" assertion mirroring the existing `.modal-content` check. | The generated Java is the only device-level test surface; the generator is the only committed source for it. |
+| `.github/workflows/android-apk.yml` | Add `adb shell wm size` / `wm density` / `settings put system accelerometer_rotation 0` + `user_rotation` / `settings put system font_scale` preconditions per step; add `assembleRelease`; add a golden-diff step; add `SEVEN_APK_PATH` invocation of `android:verify`; consider splitting the two emulator runs into separate jobs given `timeout-minutes: 50`. | All device preconditioning and all variant changes live here. |
+| `apk/verify-apk.cjs` | Add assertions that only make sense for a release artifact (e.g. no debug-only markers) — optional; the `SEVEN_APK_PATH` hook already exists. | Release APK coverage. |
+| `apk/patch-android.cjs` | Only if a release instrumented task is added, or if the manifest needs an orientation/config change. Also the home of the generated `SevenSmokeTest.java`. | Variant/test-variant wiring. |
+| `all.cjs` + `release/visual-evidence-runtime.cjs` | Optional host-side viewport/font-scale matrix. `release/visual-evidence-runtime.cjs` already models `viewport`, `density`, `fontScale`, `locale`, `direction`, `theme`, `reducedMotion`, `expectedSelectors`, `criticalSelectors` as scenario fields — it is the natural place to declare V2 device-equivalent scenarios that run without an emulator. Note this is a **descriptor model**; whether it performs real viewport emulation is not established by the inspected lines. | Cheap pre-APK regression net for responsive breakage. |
+| `package.json` | Only if new npm scripts are added (e.g. an `android:evidence` gate). | Script wiring. |
+| `.github/workflows/seven-tests.yml` | Only if the host-side matrix lands in `all.cjs`. | It currently runs `node all.cjs` only. |
+| `android/app/src/androidTest/**` | **Never edited directly** — the directory is deleted by `rm -rf android` on every `android:generate`. | Must be regenerated. |
+
+No change is proposed to `apk/materialize-native-platform.cjs`, `apk/materialize-android-motion-bridge.cjs`,
+`apk/harden-native-platform.cjs`, `apk/materialize-android-assets.cjs`, or any signing logic.
 
 ---
 
-## 5. Prioritized validation matrix (with relative cost)
+## 5. Prioritised validation matrix
 
-Cost legend: **S** ≈ single emulator step + 2-4 assertions (~5-8 min CI, no new job); **M** ≈ emulator run + one or two settings toggles plus restore (~10-15 min, may need a second runner step); **L** ≈ new runner step / new job / Gradle change (~20-30 min, pushes the 50-min job budget).
+Cost is an **estimate** in relative terms, anchored to observed CI structure: one extra emulator step of the
+existing shape (boot → one `:app:connectedDebugAndroidTest` → pull) is the unit of cost, and the job already
+carries `timeout-minutes: 50`. "Est." values are engineering estimates, not measurements.
 
-| # | Dimension | API/Profile | Action | Assertion (hard, not screenshot) | Cost |
-|---|---|---|---|---|---|
-| P0-1 | Horizontal overflow, any state | 36 / pixel_6 | none | `document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1` across chat, sidebar-open, settings, dialog, workspace hub | S |
-| P0-2 | Compact viewport | 36 / `wm size` override or small profile | `shell("wm size WxH")` in `finally` | P0-1 re-run; composer + send button `getBoundingClientRect().right <= innerWidth` | M |
-| P0-3 | Font scale 1.3 and 2.0 | 36 + 34 | `settings put system font_scale` + restore | composer controls and dialog `height <= innerHeight`, no clipped text, jump button inside viewport | M |
-| P0-4 | IME focus | 36 | `document.getElementById('userInput').focus()` | composer bottom ≤ `visualViewport.height + offsetTop`; send button visible; `visualViewport` height actually shrank | M |
-| P0-5 | Landscape + rotation | 34 | `settings put system user_rotation 1` + restore | P0-1 after rotation; sidebar and dialog within viewport; `--seven-visual-height` equals `100dvh` | M |
-| P1-1 | Safe-area / insets | 36 | none | `getComputedStyle` resolved insets are non-negative and composer padding ≥ inset; `#seven-app` not under the status bar | S |
-| P1-2 | System night mode | 36 | `cmd uimode night yes/no` + restore | app honours system signal **or** demonstrably does not — record which, since `prefers-color-scheme` is absent today | M |
-| P1-3 | RTL, device-driven locale | 34 | `adb shell setprop persist.sys.locale ar` requires reboot — infeasible in-run | DOM-level RTL extended to composer, model chip, settings tabs, all three dialogs, workspace hub | M |
-| P1-4 | Long chat depth | 36 + 34 | 200+ messages, long code block, long unbroken URL | jump button show/hide across scrollTop extremes; no unbounded layout growth; scroll reaches bottom | S |
-| P1-5 | Release-variant parity | 36 | requires `apk/patch-android.cjs` decoupling | P0-1/P0-3 assertions pass on the release variant after shrinking | L |
-| P2-1 | Screenshot comparison | 36 + 34 | baseline store + diff step | diff count under a threshold per shot name; today there is no baseline to diff against | L |
-| P2-2 | Hardware GPU rendering | — | real device or GPU emulator | not reproducible in current CI (`-gpu swiftshader_indirect`); requires out-of-band device run | L |
-| P2-3 | Back gesture with dialog/sidebar | 36 | instrumentation back event | dialog closes, sidebar closes, no WebView history entry left behind | M |
+### P0 — required before UI Foundation V2 can be called Android-safe
 
-**Total added CI cost if P0 + P1 all land in the existing job:** roughly +25-40 min against a job already capped at `timeout-minutes: 50` and already doing two full emulator boots. **This is the practical constraint:** the job must be split or the budget raised before P1 lands.
+| # | Matrix cell | How it is produced | Est. cost | Gate type |
+|---|---|---|---|---|
+| P0-1 | **Baseline comparison of the existing 20 shots.** Give each `shot()` a deterministic name and add a host-side diff step (e.g. ImageMagick `compare -metric AE` / `ssim`) against a committed `visual-baseline/` set, per API level, with an explicit allowlist workflow for intentional deltas. Without this, P1–P4 produce more unreviewed PNGs. | `.github/workflows/android-apk.yml` + new baseline dir | S (≈0.5 dev-day; ≈2 CI min extra) | CI-blocking, with human-approve escape hatch |
+| P0-2 | **Small viewport, portrait, API 36.** `adb shell wm size 720x1280` + `wm density 320` before launch; assert `documentElement.scrollWidth <= clientWidth + 1` for `#seven-app`; assert composer/send/model-chip rects within `innerWidth`; assert `#settingsModal .modal-content` containment (reuse the existing assertion verbatim). | `apk/materialize-android-visual-test.cjs` + workflow | M (≈1 dev-day) | CI-blocking |
+| P0-3 | **Font scale 1.5 and 2.0, API 36 and API 34.** Set `font_scale`, relaunch, assert composer height and `#userInput` visibility, assert dialog `.s-dialog` rects fit `innerHeight` (or are explicitly scrollable), assert `.seven-shell-jump` is reachable. | same two files | M (≈1 dev-day; ≈4 extra CI min) | CI-blocking |
+| P0-4 | **Landscape, API 36 and API 34.** `accelerometer_rotation 0` + `user_rotation 1` (and `wm size 1280x720` where rotation is not honoured); re-run the settings containment assertion and add it for the three dialogs, model menu, workspace picker, and sidebar in RTL. | same two files | M (≈1 dev-day) | CI-blocking |
+
+### P1 — required before release sign-off, not before merge
+
+| # | Matrix cell | Notes | Est. cost |
+|---|---|---|---|
+| P1-1 | **Day-theme parity.** Re-run the dialogs, settings tabs, workspace picker, and sidebar assertions under `SevenTheme.setPreference('day')` with the **same** token-assertion shape as the existing night block. | Generator only | S–M (≈0.5 day) |
+| P1-2 | **Arabic RTL × {large font, landscape, compact width}.** Extend the existing RTL block into a matrix instead of a single sequence; assert settings modal and at least one dialog in RTL (currently unproven). | Generator only | M (≈1 day) |
+| P1-3 | **LTR long chat.** Same 18-message synthetic load in `dir='ltr'`, asserting `.seven-shell-jump` presence/class. Add one code-block message to catch horizontal overflow inside messages. | Generator only | S (≈0.25 day) |
+| P1-4 | **Release-variant APK.** Add `assembleRelease`; run `SEVEN_APK_PATH=<release apk> npm run android:verify`. Zero new assertions needed for the first pass — this only proves the existing gate survives a shrunk artifact. | Workflow only | S (≈0.5 day + CI time) |
+| P1-5 | **System day/night.** `adb shell cmd uimode night yes|no` before launch, asserting the app honours the system signal **or** explicitly asserting it does not (whichever is the intended V2 contract). Requires the product contract to be decided first. | Workflow + generator | S (≈0.5 day) + decision |
+
+### P2 — valuable, deferrable
+
+| # | Matrix cell | Notes | Est. cost |
+|---|---|---|---|
+| P2-1 | **Keyboard / IME.** Focus `#userInput`, wait for `visualViewport.height` to shrink, assert composer stays visible and no dialog action is occluded. **See blockers — emulator evidence here is unreliable.** | Requires a physical device run or a hardened IME harness | L (≈2 days, plus a device) |
+| P2-2 | **Safe-area inset measurement.** Read resolved `env(safe-area-inset-*)` on both APIs and assert *no occlusion of interactive targets*, not non-zero insets (see §2.6 G-KB-3). | Emulator cutout profile needed | M (≈1 day) |
+| P2-3 | **Back behaviour.** Dispatch back with a dialog open and with the sidebar open; assert dismissal contract. | Generator only | S (≈0.25 day) |
+| P2-4 | **ARM / real-device spot check.** Both emulator steps are `x86_64` with `-gpu swiftshader_indirect`; no GPU-composited or ARM WebView rendering is proven. | Manual / self-hosted runner | M (device access) |
+| P2-5 | **Tablet / foldable.** One non-`pixel_6` profile. | Workflow | S |
 
 ---
 
 ## 6. Blockers
 
-1. **The Android project is not in the repository.** `package.json` `android:generate` runs `rm -rf android && npx --no-install cap add android`, so `minSdk`/`targetSdk`/`compileSdk`, Capacitor's `variables.gradle`, `AndroidManifest.xml` final state and `MainActivity` final state **cannot be read without executing the generation step**. Therefore the Android 15+ (API 35) edge-to-edge enforcement behaviour that would affect API 36 insets **is unverified from repository evidence** — this is an unknown, not a pass.
-2. **`npx --no-install cap` requires a populated `node_modules`**; the generation step cannot be reproduced in a bare checkout without `npm install`.
-3. **Job timeout.** `timeout-minutes: 50` covers `node all.cjs`, `lintDebug testDebugUnitTest assembleDebug`, KVM setup, and two emulator boots. There is no headroom for the P1 matrix without splitting the job.
-4. **No screenshot baseline exists** anywhere in the repo, and the artifact has `retention-days: 3` — evidence is both uncompared and short-lived. Any "visual regression" claim is therefore currently a human-review activity, not a gate.
-5. **Non-deterministic captures.** Earlier screenshots are taken with animations **enabled** (`disable-animations: false`) and rely on `Thread.sleep(80..380)`; only the reduced-motion phase forces animation scales to 0. Frame-timing differences across emulator hosts will make any future pixel diff flaky unless animations are disabled for all captures.
-6. **Build variant is coupled to signing identity** (`apk/patch-android.cjs:47`) — release-variant evidence is blocked until that coupling is removed; production signing (`apk/patch-production-signing.cjs`) is intentionally untouched by this recommendation.
-7. **RTL device-level testing requires an emulator locale change plus reboot**, which is not feasible inside the current single-runner-step structure; RTL evidence stays DOM-level unless the workflow is restructured.
-8. **Ownership:** `.seven-team/ownership.json` shows Team A's active lease covers `release/workspaces/*.css`, `release/workspaces/seven-shell*.js`, `release/workspaces/ui-polish-fixes.js`, `release/workspaces/hub.js`. The instrumentation template `apk/materialize-android-visual-test.cjs` and the workflow are **outside both leases**, so changes to them need a manager decision before implementation.
+1. **No golden baseline exists anywhere.** Screenshots are produced, pulled, and uploaded with
+   `retention-days: 3`, and nothing diffs them. Every visual claim in §1 is therefore
+   human-review-only, and any new matrix cell added without P0-1 multiplies unreviewed images rather than
+   adding signal. This is the single highest-leverage blocker.
+2. **CI time budget.** The job is `timeout-minutes: 50` and already contains a full web build
+   (`node all.cjs` + `npm run android:generate`), two Gradle invocations, and two full emulator boots.
+   P0-2 through P0-4 as written would add matrix dimensions inside those existing boots (cheap) or as new
+   steps (expensive). Splitting the two API levels into separate jobs is the safe shape but doubles
+   build time — a workflow-architecture decision, not a test change.
+3. **No `android/` in version control.** `rm -rf android` on every generate means baseline APKs, test
+   sources, and any Gradle tuning are entirely reproducible-from-script or lost.
+4. **IME evidence on a `-no-window -gpu swiftshader_indirect` emulator is not trustworthy.** P2-1 should be
+   treated as requiring a physical device or a deliberately instrumented IME; do not gate merge on it.
+5. **System dark-mode contract is undecided.** `SevenTheme` is an app preference; whether V2 must follow
+   `cmd uimode` is a product decision, so P1-5 cannot be written until it is made.
+6. **No native inset model exists** (`materialize-native-platform.cjs` contains no `WindowInsets` /
+   `setDecorFitsSystemWindows` / `ColorMode` code). Safe-area gaps must therefore be closed by
+   **measurement**, and a change to the activity may be required before a gate can be written at all.
+7. **Release variant is entirely unexercised**, so R-1..R-3 are hypotheses until `assembleRelease` runs once.
+8. **Test/report separation.** `SevenSmokeTest` (SAF + `SevenSecureStore`) and `SevenVisualEvidenceTest` run
+   under one Gradle task; failures are hard to attribute in logs.
 
 ---
 
 ## 7. Recommended first Android gate
 
-**Gate G0 — "Android compact-viewport + font-scale + IME + landscape overflow gate" on API 36, debug variant, no new CI job.**
+**Extend the existing API 36 emulator step in `.github/workflows/android-apk.yml` with device-state
+preconditions, and add exactly one new generated test method — `captureResponsiveMatrix()` — in
+`apk/materialize-android-visual-test.cjs`.** Concretely:
 
-Rationale: it reuses the existing API 36 runner step (zero new infrastructure, zero Gradle/signing change), and every one of its assertions is a hard DOM assertion that fails the existing `connectedDebugAndroidTest` step rather than producing a screenshot nobody diffs. It covers four of the requested dimensions at once (small viewport, font scale, keyboard, landscape) with the cheapest possible device-configuration toggles, all of which are already expressible through the existing `shell()` helper.
+1. In the API 36 step, set `wm size 720x1280`, `wm density 320`, `accelerometer_rotation 0`,
+   `user_rotation 1`, and `font_scale 1.5` before `:app:connectedDebugAndroidTest`, and restore nothing
+   (fresh emulator per step).
+2. In the generator, add `captureResponsiveMatrix()` that relaunches at each device state and asserts the
+   **three assertions that already have precedent in the suite** — document-level
+   `scrollWidth <= clientWidth + 1` (the same pattern the suite already uses on `.modal-content`),
+   interactive-target rect containment in `innerWidth`/`innerHeight`, and dialog rect containment —
+   then calls the existing `shot()` so the human-review path keeps working.
+3. Add the baseline-diff step (P0-1) for this one subset in the same change, so the new gate produces a
+   **verdict**, not just more images.
 
-Concrete shape (single new `@Test` in `apk/materialize-android-visual-test.cjs`):
-1. `wm size` to a compact width; assert `scrollWidth <= clientWidth + 1` and composer/send button within `innerWidth`.
-2. `settings put system font_scale 2.0`; relaunch; assert dialog (`#seven-app > .s-modal .s-dialog`) and composer fit `innerHeight`, then `settings put system font_scale 1.0` in `finally`.
-3. Focus `#userInput`; assert `visualViewport.height < window.innerHeight` and composer bottom ≤ `visualViewport.height + visualViewport.offsetTop`.
-4. `settings put system user_rotation 1`; assert step 1 again plus `--seven-visual-height` resolves to `100dvh`.
+Why this first: API 36 is already booted and green, needs no new infrastructure, exercises the newest
+WebView, and — unlike API 34 — currently runs at **default font scale**, so it has the largest uncovered
+surface. It also converts three declared-but-unproven settings (`adjustResize`, safe-area usage, viewport
+meta without `viewport-fit=cover`) into measurements. API 34 should follow as the second gate once the
+cell shape is proven, and it should carry the `font_scale 1.15` legacy value plus the new cells so the
+existing 20 shots keep a meaning.
 
-Promotion path: G0 on API 36 → replicate the same test method on API 34 → then P1 (insets, system night, extended RTL, long chat) → then P1-5 release-variant parity once `apk/patch-android.cjs` decouples variant from signing.
+Explicitly **not** recommended as a first gate: any release-variant work (R-1..R-4 — needs a decision about
+the job's time budget first) and anything keyboard/IME related (blocker #4).
 
 WAVE01=COMPLETE
