@@ -7911,7 +7911,7 @@
             const { room } = state;
 
             if (!hasAnyConfiguredFreeProvider()) {
-                if (currentRoom === roomId) addMessage("system", "⚠️ No verified-free route is enabled. Enable the anonymous LLM7 free route or add a free-provider API key in Settings (⚙️). Paid fallback stays OFF.");
+                if (currentRoom === roomId) addMessage("system", "⚠️ Automatic free routes are temporarily unavailable. Check your connection and try again. Paid fallback stays OFF.");
                 return;
             }
 
