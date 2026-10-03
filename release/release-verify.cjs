@@ -78,6 +78,12 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       assert.equal(dayBefore.root,'#f5f7f5');
       await page.evaluate(()=>SevenTheme.setPreference('night'));
       await page.waitForFunction(()=>document.documentElement.dataset.sevenTheme==='night');
+      // Theme state flips synchronously, while composer/background colors animate.
+      // Gate the settled visual state rather than sampling the first transition frame.
+      await page.waitForFunction(()=>{
+        const main=document.querySelector('.main'),composer=document.querySelector('.composer');
+        return !!main&&!!composer&&getComputedStyle(main).backgroundColor==='rgb(23, 33, 29)'&&getComputedStyle(composer).backgroundColor==='rgb(23, 33, 29)';
+      },null,{timeout:2500});
       const night=await page.evaluate(()=>{
         const app=document.getElementById('seven-app'),main=document.querySelector('.main'),composer=document.querySelector('.composer');
         const rs=getComputedStyle(app),ms=getComputedStyle(main),cs=getComputedStyle(composer);
@@ -93,26 +99,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
           composerSurface:cs.getPropertyValue('--surface').trim(),
           composerShell:cs.getPropertyValue('--seven-shell-composer').trim(),
           composerInline:composer.getAttribute('style')||'',
-          composerInApp:app.contains(composer),
-          matchedBackgroundRules:(()=>{
-            const out=[];
-            const visit=(rules,source)=>{
-              for(const rule of Array.from(rules||[])){
-                if(rule.cssRules){visit(rule.cssRules,source);continue;}
-                const sel=rule.selectorText,style=rule.style;
-                if(!sel||!style)continue;
-                let matches=false;
-                for(const part of sel.split(',')){try{if(composer.matches(part.trim())){matches=true;break}}catch(_){}}
-                if(!matches)continue;
-                const bg=style.getPropertyValue('background'),bgc=style.getPropertyValue('background-color');
-                if(bg||bgc)out.push({source,selector:sel,background:bg,backgroundColor:bgc,importantBg:style.getPropertyPriority('background'),importantBgc:style.getPropertyPriority('background-color')});
-              }
-            };
-            for(const sheet of Array.from(document.styleSheets)){
-              try{visit(sheet.cssRules,sheet.href||sheet.ownerNode&&sheet.ownerNode.id||'inline')}catch(_){}
-            }
-            return out.slice(-30);
-          })()
+          composerInApp:app.contains(composer)
         };
       });
       if(night.main!=='rgb(23, 33, 29)'||night.composer!=='rgb(23, 33, 29)')console.error('NIGHT_THEME_DIAGNOSTIC',JSON.stringify(night));
