@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Seven AI continuous 20-agent + Manager engineering superloop.
 
-This controller runs ONE complete development cycle. GitHub Actions self-dispatches
-the next cycle after a successful run; a separate watchdog restarts the chain if
-an infrastructure failure stops it.
+This controller runs one evidence-gated development cycle at a time. GitHub Actions
+keeps a successor run pre-queued before the current cycle begins, so there is no
+intentional inter-cycle sleep. A watchdog restarts the chain after infrastructure
+failures.
 
 Agents never receive GitHub credentials. They work in disposable git worktrees.
 Only the controller integrates candidates, and the workflow pushes the validated
@@ -27,7 +28,7 @@ from typing import Any
 ROOT = pathlib.Path.cwd()
 PRODUCT_BRANCH = os.environ.get("SEVEN_PRODUCT_BRANCH", "seven-remake-v3")
 WORK_BRANCH = os.environ.get("SEVEN_SUPERLOOP_BRANCH", "autoloop/seven-24h-work")
-MAX_PARALLEL = max(1, min(8, int(os.environ.get("SEVEN_SUPERLOOP_MAX_PARALLEL", "5"))))
+MAX_PARALLEL = max(1, min(20, int(os.environ.get("SEVEN_SUPERLOOP_MAX_PARALLEL", "20"))))
 READ_TIMEOUT = int(os.environ.get("SEVEN_AGENT_READ_TIMEOUT", "360"))
 WRITE_TIMEOUT = int(os.environ.get("SEVEN_AGENT_WRITE_TIMEOUT", "600"))
 MANAGER_TIMEOUT = int(os.environ.get("SEVEN_MANAGER_TIMEOUT", "480"))

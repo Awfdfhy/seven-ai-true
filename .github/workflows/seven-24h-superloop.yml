@@ -19,14 +19,10 @@ permissions:
   pull-requests: write
   actions: write
 
-concurrency:
-  group: seven-24-7-superloop
-  cancel-in-progress: false
-
 env:
   SEVEN_PRODUCT_BRANCH: seven-remake-v3
   SEVEN_SUPERLOOP_BRANCH: autoloop/seven-24h-work
-  SEVEN_SUPERLOOP_MAX_PARALLEL: '5'
+  SEVEN_SUPERLOOP_MAX_PARALLEL: '20'
   SEVEN_SUPERLOOP_MODEL: kilo-auto/free
   SEVEN_AGENT_READ_TIMEOUT: '360'
   SEVEN_AGENT_WRITE_TIMEOUT: '600'
@@ -55,8 +51,11 @@ jobs:
   cycle:
     if: github.event_name != 'pull_request'
     needs: validate-control
+    concurrency:
+      group: seven-24-7-superloop-cycle
+      cancel-in-progress: false
     runs-on: ubuntu-24.04
-    timeout-minutes: 330
+    timeout-minutes: 350
     steps:
       - name: Checkout control plane
         uses: actions/checkout@v4
@@ -99,6 +98,14 @@ jobs:
           done
           test "$bridge_ready" -eq 1
 
+      - name: Pre-queue successor cycle
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh workflow run seven-24h-superloop.yml --repo "$GITHUB_REPOSITORY" --ref main
+          echo "Successor cycle pre-queued before active engineering begins."
+
       - name: Run Manager plus 20-agent full engineering cycle
         run: python .seven-team/superloop/controller.py
 
@@ -139,15 +146,6 @@ jobs:
           else
             echo "Superloop PR #$number updated."
           fi
-
-      - name: Immediately dispatch next cycle
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          sleep 5
-          gh workflow run seven-24h-superloop.yml --repo "$GITHUB_REPOSITORY" --ref main
-          echo "Next Seven Superloop cycle dispatched."
 
       - name: Relay diagnostics on failure
         if: failure()
