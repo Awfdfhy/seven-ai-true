@@ -18,6 +18,10 @@ function requireRoomId(roomId: string): string {
   return roomId;
 }
 
+function compareText(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
 function assertRoom(room: Room): void {
   if (!isRoom(room)) {
     throw new SevenError({
@@ -31,8 +35,20 @@ export class InMemoryRoomRepository implements RoomRepository {
   private readonly rooms = new Map<string, Room>();
 
   constructor(seed: readonly Room[] = []) {
+    if (!Array.isArray(seed)) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Room repository seed must be an array.",
+      });
+    }
     for (const room of seed) {
       assertRoom(room);
+      if (this.rooms.has(room.id)) {
+        throw new SevenError({
+          code: "VALIDATION",
+          message: `Duplicate seed room id ${room.id}.`,
+        });
+      }
       this.rooms.set(room.id, cloneRoom(room));
     }
   }
@@ -52,7 +68,7 @@ export class InMemoryRoomRepository implements RoomRepository {
     return Object.freeze(
       [...this.rooms.values()]
         .map(cloneRoom)
-        .sort((a, b) => b.updatedAt - a.updatedAt || a.id.localeCompare(b.id)),
+        .sort((a, b) => b.updatedAt - a.updatedAt || compareText(a.id, b.id)),
     );
   }
 
@@ -72,7 +88,24 @@ export class IndexedDbRoomRepository implements RoomRepository {
   private dbPromise: Promise<IDBDatabase> | null = null;
 
   constructor(options: IndexedDbRoomRepositoryOptions = {}) {
-    this.databaseName = options.databaseName?.trim() || "seven-remake";
+    if (!options || typeof options !== "object" || Array.isArray(options)) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "IndexedDB repository options must be an object.",
+      });
+    }
+    if (
+      options.databaseName !== undefined &&
+      (typeof options.databaseName !== "string" ||
+        !options.databaseName.trim() ||
+        options.databaseName !== options.databaseName.trim())
+    ) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "databaseName must be a canonical non-empty string.",
+      });
+    }
+    this.databaseName = options.databaseName ?? "seven-remake";
     const version = options.version ?? 1;
     if (!Number.isSafeInteger(version) || version <= 0) {
       throw new SevenError({
@@ -124,7 +157,7 @@ export class IndexedDbRoomRepository implements RoomRepository {
     });
     return Object.freeze(
       rooms.sort(
-        (a, b) => b.updatedAt - a.updatedAt || a.id.localeCompare(b.id),
+        (a, b) => b.updatedAt - a.updatedAt || compareText(a.id, b.id),
       ),
     );
   }
