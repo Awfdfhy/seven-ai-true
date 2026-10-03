@@ -102,7 +102,7 @@ export class ChatService {
         timeoutMs,
       },
       async ({ taskId, signal, sealCancellation }) => {
-        const current = await this.rooms.get(roomId);
+        const current = await this.rooms.get(roomId, signal);
         if (signal.aborted) {
           throw new DOMException("Aborted", "AbortError");
         }
@@ -118,7 +118,7 @@ export class ChatService {
           role: "user",
           content,
         });
-        await this.rooms.put(withUser);
+        await this.rooms.put(withUser, signal);
 
         if (signal.aborted) {
           throw new DOMException("Aborted", "AbortError");
@@ -182,7 +182,7 @@ export class ChatService {
           role: "assistant",
           content: draft,
         });
-        await this.rooms.put(completed);
+        await this.rooms.put(completed, signal);
         return completed;
       },
     );
