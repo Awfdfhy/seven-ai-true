@@ -1,0 +1,122 @@
+name: Seven Wave 01 — OpenCode Runtime Audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.seven-team/prompts/wave-01/A05.md'
+      - '.seven-team/prompts/wave-01/B05.md'
+      - '.github/workflows/wave-01-opencode.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: seven-wave01-opencode
+  cancel-in-progress: true
+
+jobs:
+  opencode-live:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - name: Wave 01 A05 OpenCode runtime audit
+            branch: agent/05-runtime-models
+            prompt_path: .seven-team/prompts/wave-01/A05.md
+            report: .seven-team/reports/wave-01/A05-runtime-controls.md
+            commit_message: Wave 01 A05 runtime-control audit
+          - name: Wave 01 B05 OpenCode RPG runtime audit
+            branch: agent-b/05-rpg-runtime
+            prompt_path: .seven-team/prompts/wave-01/B05.md
+            report: .seven-team/reports/wave-01/B05-rpg-runtime.md
+            commit_message: Wave 01 B05 RPG runtime audit
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install OpenCode
+        run: npm install -g opencode-ai@latest
+
+      - name: Materialize guarded runtime and prompt from main
+        run: |
+          git fetch origin main
+          git show origin/main:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/kilo_anonymous_relay.py
+          git show origin/main:${{ matrix.prompt_path }} > /tmp/opencode-prompt.md
+
+      - name: Start guarded relay
+        run: |
+          python /tmp/kilo_anonymous_relay.py > /tmp/seven-relay.log 2>&1 &
+          ready=0
+          for i in {1..20}; do
+            if curl -fsS http://127.0.0.1:8877/v1/models >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" -eq 1
+
+      - name: Run real OpenCode agent
+        env:
+          NO_COLOR: '1'
+          OPENCODE_CONFIG_CONTENT: >-
+            {"$schema":"https://opencode.ai/config.json","share":"disabled","model":"seven/kilo-auto/free","small_model":"seven/kilo-auto/free","provider":{"seven":{"npm":"@ai-sdk/openai-compatible","name":"Seven guarded free relay","options":{"baseURL":"http://127.0.0.1:8877/v1","apiKey":"local-dummy-key"},"models":{"kilo-auto/free":{"name":"Kilo Auto Free"}}}}}
+        run: |
+          set -u
+          mkdir -p "$(dirname "${{ matrix.report }}")"
+          set +e
+          timeout 150s opencode run \
+            --auto \
+            --model seven/kilo-auto/free \
+            --format json \
+            --dir "$GITHUB_WORKSPACE" \
+            "$(cat /tmp/opencode-prompt.md)"
+          rc=$?
+          set -e
+          if test -f "${{ matrix.report }}" && grep -q 'WAVE01=COMPLETE' "${{ matrix.report }}"; then
+            echo "OpenCode produced required report; accepting output (rc=$rc)."
+          else
+            echo "OpenCode did not produce required report (rc=$rc)." >&2
+            exit "${rc:-1}"
+          fi
+
+      - name: Sanitize to allowed output only
+        run: |
+          set -euo pipefail
+          EXPECTED='${{ matrix.report }}'
+          cp "$EXPECTED" /tmp/seven-agent-report.md
+          git reset --hard HEAD
+          git clean -fdx
+          mkdir -p "$(dirname "$EXPECTED")"
+          cp /tmp/seven-agent-report.md "$EXPECTED"
+          git add -f "$EXPECTED"
+          count="$(git diff --cached --name-only | wc -l)"
+          test "$count" -le 1
+          if test "$count" -eq 1; then
+            test "$(git diff --cached --name-only)" = "$EXPECTED"
+            echo "REPORT_CHANGED=1" >> "$GITHUB_ENV"
+          else
+            echo "REPORT_CHANGED=0" >> "$GITHUB_ENV"
+          fi
+
+      - name: Commit and push controlled report
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if test "${REPORT_CHANGED:-0}" = "0"; then exit 0; fi
+          git config user.name 'Seven Team Runtime'
+          git config user.email 'actions@users.noreply.github.com'
+          git commit -m "${{ matrix.commit_message }}"
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:${{ matrix.branch }}

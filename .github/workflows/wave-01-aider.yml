@@ -1,0 +1,242 @@
+name: Seven Wave 01 — Aider Persistence Audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.seven-team/prompts/wave-01/A06.md'
+      - '.seven-team/prompts/wave-01/B06.md'
+      - '.github/workflows/wave-01-aider.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: seven-wave01-aider
+  cancel-in-progress: true
+
+jobs:
+  provider-brain:
+    name: Anonymous free brain probe
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Start guarded relay
+        run: |
+          python .seven-team/runtime/kilo_anonymous_relay.py > /tmp/seven-relay.log 2>&1 &
+          echo $! > /tmp/seven-relay.pid
+          for i in {1..20}; do
+            curl -fsS http://127.0.0.1:8877/v1/models >/tmp/models.json && break
+            sleep 1
+          done
+          test -s /tmp/models.json
+      - name: Verify live inference
+        run: |
+          curl -fsS http://127.0.0.1:8877/v1/chat/completions \
+            -H 'Content-Type: application/json' \
+            -d '{"model":"kilo-auto/free","messages":[{"role":"user","content":"Reply with exactly OK"}],"max_tokens":16,"temperature":0}' \
+            > /tmp/brain.json
+          python - <<'PY'
+          import json
+          d=json.load(open('/tmp/brain.json'))
+          assert isinstance(d.get('choices'), list) and d['choices']
+          msg=d['choices'][0].get('message') or {}
+          print(msg.get('content',''))
+          assert 'message' in d['choices'][0]
+          PY
+
+  aider-live:
+    name: Team A Aider live edit
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/06-memory-context
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Aider
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install aider-chat
+      - name: Materialize runtime from main
+        run: |
+          git fetch origin main
+          git show origin/main:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/kilo_anonymous_relay.py
+      - name: Start guarded relay
+        run: |
+          python /tmp/kilo_anonymous_relay.py > /tmp/seven-relay.log 2>&1 &
+          echo $! > /tmp/seven-relay.pid
+          ready=0
+          for i in {1..20}; do
+            if curl -fsS http://127.0.0.1:8877/v1/models >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" -eq 1
+      - name: Run real Aider agent
+        env:
+          OPENAI_API_BASE: http://127.0.0.1:8877/v1
+          OPENAI_API_KEY: local-dummy-key
+        run: |
+          set -u
+          git show origin/main:.seven-team/prompts/wave-01/A06.md > /tmp/team-a-aider.md
+          mkdir -p .seven-team/reports
+          touch .seven-team/reports/wave-01/A06-persisted-ui-state.md
+          set +e
+          timeout 150s aider .seven-team/reports/wave-01/A06-persisted-ui-state.md \
+            --read memory.cjs \
+            --read release/workspaces/seven-shell.js \
+            --read release/workspaces/ui-polish-fixes.js \
+            --read verify.cjs \
+            --model openai/kilo-auto/free \
+            --message-file /tmp/team-a-aider.md \
+            --yes-always \
+            --no-git \
+            --no-gitignore \
+            --map-tokens 0 \
+            --no-show-model-warnings
+          rc=$?
+          set -e
+          if grep -q 'WAVE01=COMPLETE' .seven-team/reports/wave-01/A06-persisted-ui-state.md; then
+            echo "Agent produced required report; accepting output (agent rc=$rc)."
+          else
+            echo "Agent did not produce required PASS report (agent rc=$rc)." >&2
+            exit "${rc:-1}"
+          fi
+      - name: Sanitize to allowed output only
+        run: |
+          set -euo pipefail
+          EXPECTED='.seven-team/reports/wave-01/A06-persisted-ui-state.md'
+          test -f "$EXPECTED"
+          grep -q 'WAVE01=COMPLETE' "$EXPECTED"
+          cp "$EXPECTED" /tmp/seven-agent-report.md
+          git reset --hard HEAD
+          git clean -fdx
+          mkdir -p "$(dirname "$EXPECTED")"
+          cp /tmp/seven-agent-report.md "$EXPECTED"
+          git add -f "$EXPECTED"
+          count="$(git diff --cached --name-only | wc -l)"
+          test "$count" -le 1
+          if test "$count" -eq 1; then
+            test "$(git diff --cached --name-only)" = "$EXPECTED"
+            echo "REPORT_CHANGED=1" >> "$GITHUB_ENV"
+          else
+            echo "REPORT_CHANGED=0" >> "$GITHUB_ENV"
+          fi
+      - name: Commit and push controlled report
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if test "${REPORT_CHANGED:-0}" = "0"; then
+            echo "Report already matches branch; idempotent success."
+            exit 0
+          fi
+          git config user.name 'Seven Team Runtime'
+          git config user.email 'actions@users.noreply.github.com'
+          git add .seven-team/reports/wave-01/A06-persisted-ui-state.md
+          git commit -m 'Wave 01 A06 persisted UI-state audit'
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:agent/06-memory-context
+
+  aider-team-b-live:
+    name: Team B Aider live edit
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent-b/06-rpg-memory
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Aider
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install aider-chat
+      - name: Materialize runtime from main
+        run: |
+          git fetch origin main
+          git show origin/main:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/kilo_anonymous_relay.py
+      - name: Start guarded relay
+        run: |
+          python /tmp/kilo_anonymous_relay.py > /tmp/seven-relay.log 2>&1 &
+          echo $! > /tmp/seven-relay.pid
+          ready=0
+          for i in {1..20}; do
+            if curl -fsS http://127.0.0.1:8877/v1/models >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" -eq 1
+      - name: Run real Aider agent
+        env:
+          OPENAI_API_BASE: http://127.0.0.1:8877/v1
+          OPENAI_API_KEY: local-dummy-key
+        run: |
+          set -u
+          git show origin/main:.seven-team/prompts/wave-01/B06.md > /tmp/team-b-aider.md
+          mkdir -p .seven-team/reports
+          touch .seven-team/reports/wave-01/B06-rpg-memory.md
+          set +e
+          timeout 150s aider .seven-team/reports/wave-01/B06-rpg-memory.md \
+            --read memory.cjs \
+            --read plans/MEMORY_SCOPE_HARDENING.md \
+            --read release/workspaces/rpg.js \
+            --read release/world-runtime.js \
+            --read release/canon-simulator.js \
+            --model openai/kilo-auto/free \
+            --message-file /tmp/team-b-aider.md \
+            --yes-always \
+            --no-git \
+            --no-gitignore \
+            --map-tokens 0 \
+            --no-show-model-warnings
+          rc=$?
+          set -e
+          if grep -q 'WAVE01=COMPLETE' .seven-team/reports/wave-01/B06-rpg-memory.md; then
+            echo "Agent produced required report; accepting output (agent rc=$rc)."
+          else
+            echo "Agent did not produce required PASS report (agent rc=$rc)." >&2
+            exit "${rc:-1}"
+          fi
+      - name: Sanitize to allowed output only
+        run: |
+          set -euo pipefail
+          EXPECTED='.seven-team/reports/wave-01/B06-rpg-memory.md'
+          test -f "$EXPECTED"
+          grep -q 'WAVE01=COMPLETE' "$EXPECTED"
+          cp "$EXPECTED" /tmp/seven-agent-report.md
+          git reset --hard HEAD
+          git clean -fdx
+          mkdir -p "$(dirname "$EXPECTED")"
+          cp /tmp/seven-agent-report.md "$EXPECTED"
+          git add -f "$EXPECTED"
+          count="$(git diff --cached --name-only | wc -l)"
+          test "$count" -le 1
+          if test "$count" -eq 1; then
+            test "$(git diff --cached --name-only)" = "$EXPECTED"
+            echo "REPORT_CHANGED=1" >> "$GITHUB_ENV"
+          else
+            echo "REPORT_CHANGED=0" >> "$GITHUB_ENV"
+          fi
+      - name: Commit and push controlled report
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if test "${REPORT_CHANGED:-0}" = "0"; then
+            echo "Report already matches branch; idempotent success."
+            exit 0
+          fi
+          git config user.name 'Seven Team Runtime'
+          git config user.email 'actions@users.noreply.github.com'
+          git add .seven-team/reports/wave-01/B06-rpg-memory.md
+          git commit -m 'Wave 01 B06 RPG memory audit'
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:agent-b/06-rpg-memory
