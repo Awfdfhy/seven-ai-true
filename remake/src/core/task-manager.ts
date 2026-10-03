@@ -78,8 +78,14 @@ export class TaskManager {
   private readonly maxRetainedCompleted: number;
 
   constructor(options: TaskManagerOptions = {}) {
+    if (!options || typeof options !== "object" || Array.isArray(options)) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "TaskManager options must be an object.",
+      });
+    }
     const limit = options.maxRetainedCompleted ?? 128;
-    if (!Number.isInteger(limit) || limit < 0) {
+    if (!Number.isSafeInteger(limit) || limit < 0) {
       throw new SevenError({
         code: "VALIDATION",
         message: "maxRetainedCompleted must be a non-negative integer.",
@@ -89,6 +95,12 @@ export class TaskManager {
   }
 
   subscribe(listener: Listener): () => void {
+    if (typeof listener !== "function") {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Task listener must be a function.",
+      });
+    }
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
@@ -123,6 +135,7 @@ export class TaskManager {
   }
 
   listActive(ownerId?: string): TaskSnapshot[] {
+    if (ownerId !== undefined) this.validateOwnerId(ownerId);
     return [...this.tasks.values()]
       .filter((task) =>
         ["starting", "running", "cancelling"].includes(task.status),
@@ -135,6 +148,12 @@ export class TaskManager {
     spec: TaskSpec,
     executor: (context: TaskContext) => Promise<T>,
   ): TaskRun<T> {
+    if (!spec || typeof spec !== "object" || Array.isArray(spec)) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Task specification must be an object.",
+      });
+    }
     const validKinds: readonly TaskKind[] = [
       "chat",
       "research",
