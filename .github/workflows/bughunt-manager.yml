@@ -1,0 +1,115 @@
+name: Seven Bug Hunt — Manager
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - Seven Bug Hunt — Cline Product Audit
+      - Seven Bug Hunt — Codex Android Audit
+      - Seven Bug Hunt — Gemini Cohesion Audit
+      - Seven Bug Hunt — OpenHands Architecture Audit
+      - Seven Bug Hunt — OpenCode Runtime Audit
+      - Seven Bug Hunt — Aider Persistence Audit
+      - Seven Bug Hunt — Goose Integrity Audit
+      - Seven Bug Hunt — mini-SWE Evaluation Audit
+      - Seven Bug Hunt — Qwen Stress Audit
+      - Seven Bug Hunt — Hermes Holistic Audit
+    types: [completed]
+permissions:
+  contents: write
+concurrency:
+  group: seven-bughunt-manager
+  cancel-in-progress: false
+jobs:
+  collect:
+    name: 20-agent bug-hunt gate and collection
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Fetch all bug-hunt branches
+        run: git fetch origin '+refs/heads/bughunt/*:refs/remotes/origin/bughunt/*'
+      - name: Check 20 reports
+        id: gate
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,subprocess,os,pathlib
+          manifest=json.load(open('.seven-team/bughunt/manifest.json'))
+          status=[]
+          for w in manifest['workers']:
+              ref=f"origin/{w['branch']}"
+              p=subprocess.run(['git','show',f"{ref}:{w['report']}"],capture_output=True,text=True)
+              ready=p.returncode==0 and 'BUGHUNT=COMPLETE' in p.stdout
+              status.append({**w,'ready':ready,'chars':len(p.stdout) if p.returncode==0 else 0})
+          ready=sum(x['ready'] for x in status)
+          pathlib.Path('/tmp/bughunt-status.json').write_text(json.dumps({'readyCount':ready,'total':len(status),'entries':status},indent=2))
+          print(f"Bug Hunt ready {ready}/{len(status)}")
+          for x in status:
+              print(('READY' if x['ready'] else 'WAIT '),x['id'],x['worker'],x['branch'])
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:
+              f.write(f"ready={'true' if ready==len(status) else 'false'}\n")
+          PY
+      - name: Stop until all 20 are complete
+        if: steps.gate.outputs.ready != 'true'
+        run: |
+          cat /tmp/bughunt-status.json
+          echo "Not all reports are complete yet; next worker completion will trigger another manager check."
+      - name: Collect all reports
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          rm -rf .seven-team/reports/bughunt
+          mkdir -p .seven-team/reports/bughunt
+          python - <<'PY'
+          import json,subprocess,pathlib
+          m=json.load(open('.seven-team/bughunt/manifest.json'))
+          for w in m['workers']:
+              p=subprocess.run(['git','show',f"origin/{w['branch']}:{w['report']}"],check=True,capture_output=True,text=True)
+              out=pathlib.Path(w['report']); out.parent.mkdir(parents=True,exist_ok=True); out.write_text(p.stdout,encoding='utf-8')
+          PY
+      - name: Write manager summary
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          d=json.load(open('/tmp/bughunt-status.json'))
+          lines=[
+            '# Seven AI 2.4.3 — 20-Agent Full Bug Hunt',
+            '',
+            f"Completed agents: {d['readyCount']}/{d['total']}",
+            '',
+            'Target: user-uploaded Seven-AI-2.4.3-Zero-Key-Final(1).apk',
+            'Scope: diagnostic audit only; no production bug fixes were made in this wave.',
+            '',
+            '## Reports'
+          ]
+          for x in d['entries']:
+              lines.append(f"- {x['id']} — {x['worker']} — {x['focus']} — PASS ({x['chars']} chars)")
+          lines += [
+            '',
+            '## Next step',
+            'Synthesize, deduplicate, severity-rank, reproduce and then create the fix plan. Raw reports remain authoritative evidence.',
+            '',
+            'BUGHUNT_MANAGER=PASS',
+            ''
+          ]
+          pathlib.Path('.seven-team/bughunt/BUGHUNT_MANAGER_SUMMARY.md').write_text('\n'.join(lines),encoding='utf-8')
+          PY
+      - name: Commit integrated bug reports
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git add -f .seven-team/reports/bughunt .seven-team/bughunt/BUGHUNT_MANAGER_SUMMARY.md
+          if git diff --cached --quiet; then echo "Bug Hunt reports already integrated."; exit 0; fi
+          git config user.name 'Seven Bug Hunt Manager'
+          git config user.email 'actions@users.noreply.github.com'
+          git commit -m 'Integrate Seven AI 20-agent bug hunt reports'
+          git fetch origin main
+          git rebase origin/main
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main
