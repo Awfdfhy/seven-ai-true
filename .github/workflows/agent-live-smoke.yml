@@ -7,7 +7,8 @@ on:
       - main
     paths:
       - '.seven-team/runtime/**'
-      - '.seven-team/prompts/live-smoke/**'
+      - '.seven-team/prompts/live-smoke/team-a-aider.md'
+      - '.seven-team/prompts/live-smoke/team-b-aider.md'
       - '.github/workflows/agent-live-smoke.yml'
 
 permissions:
