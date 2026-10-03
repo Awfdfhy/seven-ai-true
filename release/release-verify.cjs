@@ -4,10 +4,12 @@ const path=require('path');
 const http=require('http');
 const assert=require('assert/strict');
 const {build,OUTPUT,MARK}=require('./build-release.cjs');
+const {transformFile}=require('./zero-room-transform.cjs');
 const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
 
 (async()=>{
   const built=build();
+  transformFile(OUTPUT);
   const frontier=patchFile(OUTPUT);
   const html=fs.readFileSync(OUTPUT,'utf8');
   const dist=path.dirname(OUTPUT);
