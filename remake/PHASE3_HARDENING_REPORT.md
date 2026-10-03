@@ -1,31 +1,37 @@
-# Phase 3 memory/context hardening — 2026-10-03
+# Phase 3 memory/context hardening — Wave 3 closure candidate — 2026-10-03
 
-This checkpoint combines the existing Phase 3 branch with four parallel review/implementation lanes: persistence, context construction, summary orchestration, and routed transport. It does not mark the entire milestone complete or claim an absence of all bugs.
+This checkpoint closes the previously recorded Phase 3 functional gaps while preserving all Phase 1–2 invariants. It is a closure candidate until PR #61 is merged and post-merge CI on `seven-remake-v3` is green.
 
 ## Changes
 
-- Memory records, summaries and identifiers have explicit size limits. Repository capacity is enforced in the same IndexedDB transaction as insertion; replacements remain possible at capacity. No automatic eviction of user memories occurs.
-- Stored records are validated and projected to canonical fields. Cancellation before opening storage avoids unnecessary work; cancellation during a write aborts the transaction. Restart, malformed-schema and concurrent-capacity cases are covered.
-- Context construction retains the latest user turn and its following replies, preserves a contiguous history suffix and never mutates committed history. Memory and summary content is quoted as data inside exactly one leading system message.
-- Full payload and section framing count toward deterministic budgets. The UTF-8 byte estimator is deliberately conservative, including for Arabic and emoji; it is a heuristic rather than the provider's exact tokenizer.
-- Candidate summaries are validated before durable writes. Oversized summaries cannot replace valid persistent state. Incremental summaries do not duplicate an excluded summary's raw history.
-- Preparation snapshots input, validates policy before copying, propagates cancellation across asynchronous ports, and coordinates same-room mutation. Queue and pass limits bound work.
-- Routed fallback rebuilds context using each model's window, passes the reserved output limit, handles capacity-only fallback, and prevents dispatch after cancellation. Provider summarization also receives its output limit and rejects cancellation on stream completion.
-- A persistent end-to-end test covers memory → summary → durable write → primary failure → smaller fallback → chat commit → repository close/reopen → reuse.
+- Memory records, summaries and identifiers have explicit size limits. Capacity is enforced transactionally. The eviction policy is explicit: **manual-delete-only** — user memory is never silently evicted; replacements are allowed at capacity and deletion frees capacity.
+- Context policy/settings now have a dedicated in-memory + IndexedDB repository. Policies are normalized to a complete canonical shape, survive restart, honor cancellation, and are consumed by `MemoryContextService`; per-request policy still overrides persisted defaults.
+- Context summaries are now schema v2 and carry a source-history fingerprint. Legacy v1 summaries are migrated on read. Missing or edited source history invalidates stale summaries, removes them with compare-and-swap, and rebuilds context rather than failing the request.
+- Summary mutation now uses storage-level compare-and-swap. Separate repository instances/tabs cannot silently overwrite each other; a stale writer receives a retryable structured storage conflict.
+- Context construction still retains the newest user turn, preserves a contiguous history suffix, quotes memory/summary as untrusted data inside exactly one leading system message, and never mutates committed room history.
+- Full payload framing counts toward deterministic budgets. The conservative estimator remains intentionally stricter than provider tokenizers.
+- Provider-backed summarization now chunks oversized source transcripts against an explicit summarizer context-window budget, carries the prior compact summary forward between chunks, enforces a bounded chunk count, and rejects provider output that exceeds the requested summary budget.
+- Routed fallback continues to rebuild context for each candidate model's own context window and prevents dispatch after cancellation.
+- Persistent and adversarial tests cover restart, stale/edited history, legacy migration, cancellation, cross-tab CAS races, persisted policy precedence, provider fallback, and bounded summarizer chunking.
 
 ## Verification
 
-Local merged-checkpoint results: strict TypeScript PASS; 176/176 tests across 14 files PASS; production build PASS. Dependency audit returned zero known vulnerabilities in the installed dependency set. See PR #61 CI for the final commit's authoritative checks.
+Authoritative closure-candidate Remake CI: **Seven Remake V3 CI #188 = SUCCESS**.
 
-The local legacy run passed its early Node suites but stopped at browser launch: the required Chromium executable was unavailable, and both full-browser and headless-shell downloads returned invalid archives. No browser test failure was converted into a pass; the existing GitHub legacy workflow remains the required gate.
+- strict TypeScript: PASS
+- test files: **16/16 PASS**
+- tests: **190/190 PASS**
+- production build: PASS
+- production dependency audit: **0 vulnerabilities**
+- full dependency moderate-severity audit: **0 vulnerabilities**
 
-## Remaining scope and limits
+Legacy Seven regression remains a mandatory pre-merge gate on the final PR head. After merge, the push-triggered Remake CI on `seven-remake-v3` is the final Phase 3 closure gate.
 
-- Persistent context-policy/settings storage and an explicit migration strategy remain milestone work.
-- Stale summary message IDs fail explicitly; automatic recovery for edited or imported histories remains to be designed.
-- The service coordinates shared repository instances. Cross-tab/separate repository instances need storage-level compare-and-swap before claiming multi-writer summary safety.
-- Custom estimators, context sources and storage/provider adapters are trusted ports. Adapters must honor output limits and abort before committing; the service cannot undo writes from an adapter that ignores its signal.
-- The provider-backed summarizer still needs input-window-aware chunking for extremely long omitted prefixes.
-- The Remake UI is still the foundation shell. This checkpoint does not deliver a new Android APK or prove live model quality or device WebView behavior.
+## Remaining closure gates
 
-Progress remains **2/12 complete; 3/12 in progress** pending remaining scope, review and integration gates.
+1. Final-head Legacy Seven regression must pass.
+2. Merge PR #61 into `seven-remake-v3`.
+3. Post-merge Remake CI on `seven-remake-v3` must pass.
+4. Then update `MILESTONES.md` to Phase 3 COMPLETE / `REMAKE_PROGRESS=3/12`.
+
+The Remake UI/Android product shell remains later milestone work and is not part of the Phase 3 Memory + Context acceptance boundary.
