@@ -28,12 +28,12 @@ jobs:
       matrix:
         include:
           - name: Bug Hunt A05 OpenCode runtime audit
-            branch: agent/05-runtime-models
+            branch: bughunt/a05
             prompt_path: .seven-team/prompts/bughunt/A05.md
             report: .seven-team/reports/bughunt/A05.md
             commit_message: Bug Hunt A05 runtime-control audit
           - name: Bug Hunt B05 OpenCode RPG runtime audit
-            branch: bughunt/a05
+            branch: bughunt/b05
             prompt_path: .seven-team/prompts/bughunt/B05.md
             report: .seven-team/reports/bughunt/B05.md
             commit_message: Bug Hunt B05 RPG runtime audit
