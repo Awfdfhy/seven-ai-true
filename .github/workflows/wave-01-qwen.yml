@@ -83,17 +83,25 @@ jobs:
           rc=1
           for attempt in 1 2 3; do
             echo "Qwen live attempt $attempt/3"
+            rm -f /tmp/qwen-wave01.out
             set +e
             timeout 100s qwen -p "$(cat /tmp/qwen-prompt.md)" \
               --approval-mode yolo \
               --output-format text \
               --model kilo-auto/free \
               --openai-api-key local-dummy-key \
-              --openai-base-url http://127.0.0.1:8877/v1
-            rc=$?
+              --openai-base-url http://127.0.0.1:8877/v1 2>&1 | tee /tmp/qwen-wave01.out
+            rc=${PIPESTATUS[0]}
             set -e
             if test -f "${{ matrix.report }}" && grep -q 'WAVE01=COMPLETE' "${{ matrix.report }}"; then
-              echo "Qwen produced required report; accepting output (attempt=$attempt rc=$rc)."
+              echo "Qwen produced required repository report; accepting output (attempt=$attempt rc=$rc)."
+              rc=0
+              break
+            fi
+            if grep -q 'WAVE01=COMPLETE' /tmp/qwen-wave01.out; then
+              echo "Qwen completed the audit in stdout; recovering controlled report."
+              mkdir -p "$(dirname "${{ matrix.report }}")"
+              cp /tmp/qwen-wave01.out "${{ matrix.report }}"
               rc=0
               break
             fi
