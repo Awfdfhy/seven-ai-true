@@ -45,6 +45,15 @@ function applyCompatibilityFixes(name,raw){
     if(!text.includes(saveOld))throw new Error("Seven UI Remake save-key anchor missing");
     text=text.replace(saveOld,saveNew);
 
+    const appInertOn="d.body.appendChild(modal);$('.app').inert=true;modal.querySelector('button').focus();return modal";
+    const appInertOnFixed="d.body.appendChild(modal);const inertRoot=d.getElementById('seven-app')||d.body;inertRoot.inert=true;modal.querySelector('button').focus();return modal";
+    if(!text.includes(appInertOn))throw new Error("Seven UI Remake dialog inert-on anchor missing");
+    text=text.replace(appInertOn,appInertOnFixed);
+    const appInertOff="function closeDialog(){if(!modal)return;modal.remove();modal=null;$('.app').inert=false;opener?.isConnected&&opener.focus();opener=null}";
+    const appInertOffFixed="function closeDialog(){if(!modal)return;modal.remove();modal=null;const inertRoot=d.getElementById('seven-app')||d.body;inertRoot.inert=false;opener?.isConnected&&opener.focus();opener=null}";
+    if(!text.includes(appInertOff))throw new Error("Seven UI Remake dialog inert-off anchor missing");
+    text=text.replace(appInertOff,appInertOffFixed);
+
     const eventAnchor="d.addEventListener('seven:workspacechange',()=>{update();localizeWorkspace()});d.addEventListener('seven:runprogress',()=>{update()});d.addEventListener('seven:intelligenceconfig',update);";
     const eventFixed="d.addEventListener('seven:workspacechange',()=>{update();localizeWorkspace()});d.addEventListener('seven:runprogress',()=>{update()});d.addEventListener('seven:intelligenceconfig',update);d.addEventListener('seven:themechange',e=>{const root=d.getElementById('seven-app');if(root)root.dataset.sevenTheme=e?.detail?.theme||r.SevenTheme?.getResolvedTheme?.()||d.documentElement.dataset.sevenTheme||'day';update()});";
     if(!text.includes(eventAnchor))throw new Error("Seven UI Remake theme event anchor missing");
