@@ -108,6 +108,65 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
         await page.close();
       }
     });
+    await test('fresh install stays zero-room with no legacy name modal',async()=>{
+      const context=await browser.newContext({viewport:{width:390,height:844}});
+      const page=await context.newPage();
+      await page.goto(origin,{waitUntil:'domcontentloaded'});
+      await page.waitForFunction(()=>window.SevenRemake&&typeof roomPersistence!=='undefined'&&roomPersistence.status().ready);
+      await page.waitForTimeout(120);
+      const state=await page.evaluate(()=>({nameDisplay:getComputedStyle(document.getElementById('nameModal')).display,rooms:Object.keys(rooms).length,current:currentRoom,title:document.getElementById('roomTitle').textContent.trim()}));
+      assert.equal(state.nameDisplay,'none');assert.equal(state.rooms,0);assert.equal(state.current,'');assert.ok(/new chat/i.test(state.title));
+      await context.close();
+    });
+    await test('expanded settings sections remain bounded on smallest phone',async()=>{
+      const page=await browser.newPage({viewport:{width:320,height:800}});
+      await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');});
+      await page.goto(origin,{waitUntil:'domcontentloaded'});
+      await page.waitForFunction(()=>window.SevenRemake&&document.getElementById('settingsModal'));
+      const state=await page.evaluate(()=>{openSettings();document.querySelectorAll('#settingsModal details').forEach(d=>d.open=true);const m=document.querySelector('#settingsModal .modal-content'),r=m.getBoundingClientRect();return{overflow:m.scrollWidth<=m.clientWidth+1,left:r.left,right:r.right,top:r.top,bottom:r.bottom,w:innerWidth,h:innerHeight,sections:[...document.querySelectorAll('#settingsModal details')].length}});
+      assert.ok(state.sections>=2);assert.equal(state.overflow,true);assert.ok(state.left>=-2&&state.right<=state.w+2&&state.top>=-2&&state.bottom<=state.h+2,JSON.stringify(state));
+      await page.close();
+    });
+    await test('long messages code and URLs cannot widen the mobile viewport',async()=>{
+      const page=await browser.newPage({viewport:{width:320,height:800}});
+      await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');});
+      await page.goto(origin,{waitUntil:'domcontentloaded'});
+      await page.waitForFunction(()=>window.SevenRemake&&document.getElementById('chat'));
+      const state=await page.evaluate(()=>{const long='x'.repeat(500);addMessage('assistant','https://example.com/'+long+'\n\n```js\nconst value="'+long+'";\n```');const chat=document.getElementById('chat'),pre=chat.querySelector('pre'),bubble=chat.querySelector('.message:last-child .bubble');return{doc:document.documentElement.scrollWidth<=innerWidth+2,chat:chat.scrollWidth<=chat.clientWidth+2,pre:!pre||pre.getBoundingClientRect().right<=innerWidth+2,bubble:!bubble||bubble.getBoundingClientRect().right<=innerWidth+2}});
+      assert.deepEqual(state,{doc:true,chat:true,pre:true,bubble:true});
+      await page.close();
+    });
+    await test('all specialist workspaces remain viewport-safe on mobile RTL night',async()=>{
+      const page=await browser.newPage({viewport:{width:360,height:800}});
+      await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');});
+      await page.goto(origin,{waitUntil:'domcontentloaded'});
+      await page.waitForFunction(()=>window.SevenRemake&&window.SevenTheme);
+      await page.evaluate(()=>{document.documentElement.dir='rtl';document.body.dir='rtl';SevenTheme.setPreference('night');});
+      for(const kind of ['coding','research','rpg']){
+        await page.evaluate(k=>window.SevenRemake.openWorkspace(k),kind);
+        await page.waitForFunction(k=>document.documentElement.dataset.sevenWorkspace===k,kind,{timeout:10000});
+        const state=await page.evaluate(()=>{const root=document.querySelector('.seven-workspace-root'),r=root?.getBoundingClientRect();return{doc:document.documentElement.scrollWidth<=innerWidth+2,root:!r||(r.left>=-2&&r.right<=innerWidth+2),scroll:!root||root.scrollWidth<=Math.max(root.clientWidth+2,innerWidth+2)}});
+        assert.equal(state.doc,true,kind+' document overflow');assert.equal(state.root,true,kind+' root clipped');assert.equal(state.scroll,true,kind+' workspace overflow');
+      }
+      await page.evaluate(()=>window.SevenWorkspaces?.close());
+      await page.close();
+    });
+    await test('modern model and workspace menus stay inside viewport',async()=>{
+      const page=await browser.newPage({viewport:{width:360,height:800}});
+      await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');});
+      await page.goto(origin,{waitUntil:'domcontentloaded'});
+      await page.waitForFunction(()=>window.SevenRemake&&document.querySelector('.seven-shell-model-chip')&&document.querySelector('.seven-shell-workspace-chip'));
+      await page.click('.seven-shell-model-chip');
+      await page.waitForTimeout(60);
+      const model=await page.evaluate(()=>{const e=document.querySelector('.seven-shell-model-menu'),r=e?.getBoundingClientRect();return!!r&&r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2});
+      assert.equal(model,true);
+      await page.keyboard.press('Escape');
+      await page.click('.seven-shell-workspace-chip');
+      await page.waitForFunction(()=>!!document.querySelector('.seven-ws-launcher'),null,{timeout:10000});
+      const picker=await page.evaluate(()=>{const e=document.querySelector('.seven-ws-picker'),r=e?.getBoundingClientRect();return!!r&&r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2});
+      assert.equal(picker,true);
+      await page.close();
+    });
     await test('workspace assets are lazy and loadable',async()=>{
       const page=await browser.newPage();
       await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');localStorage.setItem('user_name','Seven Tester');localStorage.setItem('user-name','Seven Tester');});
