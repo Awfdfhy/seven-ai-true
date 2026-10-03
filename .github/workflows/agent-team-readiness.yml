@@ -1,0 +1,42 @@
+name: Seven 20-Agent Readiness Gate
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.seven-team/readiness.json'
+      - '.seven-team/runtime/check_readiness.py'
+      - '.github/workflows/agent-team-readiness.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: seven-team-readiness
+  cancel-in-progress: true
+
+jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fetch all worker branches
+        run: git fetch origin '+refs/heads/*:refs/remotes/origin/*'
+
+      - name: Verify 20 independent live-agent reports
+        run: python .seven-team/runtime/check_readiness.py
+
+      - name: Upload readiness evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seven-20-agent-readiness
+          path: /tmp/seven-team-readiness.json
+          if-no-files-found: error
+          retention-days: 14

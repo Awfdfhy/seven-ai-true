@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "requiredMarker": "LIVE_AGENT_SMOKE=PASS",
+  "agents": [
+    {
+      "id": "A01",
+      "worker": "Cline",
+      "branch": "agent/01-ui-ux",
+      "report": ".seven-team/reports/team-a-cline-live-smoke.md"
+    },
+    {
+      "id": "A02",
+      "worker": "Codex CLI",
+      "branch": "agent/02-android-build",
+      "report": ".seven-team/reports/team-a-codex-live-smoke.md"
+    },
+    {
+      "id": "A03",
+      "worker": "Gemini CLI",
+      "branch": "agent/03-search",
+      "report": ".seven-team/reports/team-a-gemini-live-smoke.md"
+    },
+    {
+      "id": "A04",
+      "worker": "OpenHands",
+      "branch": "agent/04-research",
+      "report": ".seven-team/reports/team-a-openhands-live-smoke.md"
+    },
+    {
+      "id": "A05",
+      "worker": "OpenCode",
+      "branch": "agent/05-runtime-models",
+      "report": ".seven-team/reports/team-a-opencode-live-smoke.md"
+    },
+    {
+      "id": "A06",
+      "worker": "Aider",
+      "branch": "agent/06-memory-context",
+      "report": ".seven-team/reports/team-a-aider-live-smoke.md"
+    },
+    {
+      "id": "A07",
+      "worker": "Goose",
+      "branch": "agent/07-security-selfdev",
+      "report": ".seven-team/reports/team-a-goose-live-smoke.md"
+    },
+    {
+      "id": "A08",
+      "worker": "mini-SWE",
+      "branch": "agent/08-testing-ci",
+      "report": ".seven-team/reports/team-a-mini-swe-live-smoke.md"
+    },
+    {
+      "id": "A09",
+      "worker": "Qwen Code",
+      "branch": "agent/09-performance",
+      "report": ".seven-team/reports/team-a-qwen-live-smoke.md"
+    },
+    {
+      "id": "A10",
+      "worker": "Hermes Agent",
+      "branch": "agent/10-integration-review",
+      "report": ".seven-team/reports/team-a-hermes-live-smoke.md"
+    },
+    {
+      "id": "B01",
+      "worker": "Cline",
+      "branch": "agent-b/01-rpg-ux",
+      "report": ".seven-team/reports/team-b-cline-live-smoke.md"
+    },
+    {
+      "id": "B02",
+      "worker": "Codex CLI",
+      "branch": "agent-b/02-android-rpg",
+      "report": ".seven-team/reports/team-b-codex-live-smoke.md"
+    },
+    {
+      "id": "B03",
+      "worker": "Gemini CLI",
+      "branch": "agent-b/03-canon-retrieval",
+      "report": ".seven-team/reports/team-b-gemini-live-smoke.md"
+    },
+    {
+      "id": "B04",
+      "worker": "OpenHands",
+      "branch": "agent-b/04-rpg-engine",
+      "report": ".seven-team/reports/team-b-openhands-live-smoke.md"
+    },
+    {
+      "id": "B05",
+      "worker": "OpenCode",
+      "branch": "agent-b/05-rpg-runtime",
+      "report": ".seven-team/reports/team-b-opencode-live-smoke.md"
+    },
+    {
+      "id": "B06",
+      "worker": "Aider",
+      "branch": "agent-b/06-rpg-memory",
+      "report": ".seven-team/reports/team-b-aider-live-smoke.md"
+    },
+    {
+      "id": "B07",
+      "worker": "Goose",
+      "branch": "agent-b/07-rpg-integrity",
+      "report": ".seven-team/reports/team-b-goose-live-smoke.md"
+    },
+    {
+      "id": "B08",
+      "worker": "mini-SWE",
+      "branch": "agent-b/08-rpg-testing",
+      "report": ".seven-team/reports/team-b-mini-swe-live-smoke.md"
+    },
+    {
+      "id": "B09",
+      "worker": "Qwen Code",
+      "branch": "agent-b/09-rpg-performance",
+      "report": ".seven-team/reports/team-b-qwen-live-smoke.md"
+    },
+    {
+      "id": "B10",
+      "worker": "Hermes Agent",
+      "branch": "agent-b/10-rpg-review",
+      "report": ".seven-team/reports/team-b-hermes-live-smoke.md"
+    }
+  ]
+}
