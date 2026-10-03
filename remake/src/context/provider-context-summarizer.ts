@@ -10,8 +10,16 @@ import type {
   ContextSummarizer,
   SummarizeContextInput,
 } from "../application/context/memory-context-service";
+import { ConservativeTokenEstimator } from "./token-estimator";
 
 const MAX_SUMMARY_STREAM_CHARS = 200_000;
+const SYSTEM_PROMPT =
+  "Compress earlier conversation into a factual continuation summary. Preserve user preferences, decisions, constraints, named entities, unresolved tasks, and important results. Do not invent facts or add instructions. Output only the compact summary.";
+
+export type ProviderContextSummarizerOptions = Readonly<{
+  contextWindowTokens?: number;
+  maxChunks?: number;
+}>;
 
 function canonicalId(value: unknown, field: string): string {
   if (
@@ -33,12 +41,32 @@ function transcript(messages: readonly ChatMessage[]): string {
     .join("\n\n");
 }
 
+function splitPoint(value: string, requested: number): number {
+  let end = Math.max(0, Math.min(value.length, requested));
+  if (
+    end > 0 &&
+    end < value.length &&
+    value.charCodeAt(end - 1) >= 0xd800 &&
+    value.charCodeAt(end - 1) <= 0xdbff
+  ) {
+    end -= 1;
+  }
+  return end;
+}
+
 export class ProviderContextSummarizer implements ContextSummarizer {
   private readonly providerId: string;
   private readonly stream: ProviderAdapter["stream"];
   private readonly modelId: string;
+  private readonly contextWindowTokens: number;
+  private readonly maxChunks: number;
+  private readonly estimator = new ConservativeTokenEstimator();
 
-  constructor(provider: ProviderAdapter, modelId: string) {
+  constructor(
+    provider: ProviderAdapter,
+    modelId: string,
+    options: ProviderContextSummarizerOptions = {},
+  ) {
     if (
       !provider ||
       typeof provider !== "object" ||
@@ -50,9 +78,31 @@ export class ProviderContextSummarizer implements ContextSummarizer {
         message: "ProviderContextSummarizer requires a ProviderAdapter.",
       });
     }
+    if (!options || typeof options !== "object" || Array.isArray(options)) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "ProviderContextSummarizer options must be an object.",
+      });
+    }
+    const contextWindowTokens = options.contextWindowTokens ?? 8192;
+    const maxChunks = options.maxChunks ?? 64;
+    if (!Number.isSafeInteger(contextWindowTokens) || contextWindowTokens <= 0) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Summarizer contextWindowTokens must be a positive safe integer.",
+      });
+    }
+    if (!Number.isSafeInteger(maxChunks) || maxChunks <= 0 || maxChunks > 256) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Summarizer maxChunks must be an integer from 1 through 256.",
+      });
+    }
     this.providerId = canonicalId(provider.id, "Summarizer provider id");
     this.modelId = canonicalId(modelId, "Summarizer model id");
     this.stream = provider.stream.bind(provider);
+    this.contextWindowTokens = contextWindowTokens;
+    this.maxChunks = maxChunks;
   }
 
   async summarize(input: SummarizeContextInput): Promise<string> {
@@ -81,10 +131,7 @@ export class ProviderContextSummarizer implements ContextSummarizer {
         throw new SevenError({ code: "VALIDATION", message: "Summary source message is malformed." });
       }
     }
-    if (
-      !Number.isSafeInteger(input.targetTokens) ||
-      input.targetTokens <= 0
-    ) {
+    if (!Number.isSafeInteger(input.targetTokens) || input.targetTokens <= 0) {
       throw new SevenError({
         code: "VALIDATION",
         message: "Summarizer targetTokens must be a positive safe integer.",
@@ -100,36 +147,130 @@ export class ProviderContextSummarizer implements ContextSummarizer {
         message: "Summarizer AbortSignal is malformed.",
       });
     }
-    if (input.signal.aborted) {
-      throw new DOMException("Aborted", "AbortError");
+    if (input.signal.aborted) throw new DOMException("Aborted", "AbortError");
+
+    const maxInputTokens = this.contextWindowTokens - input.targetTokens;
+    if (maxInputTokens <= 0) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Summary output reserve must be smaller than the summarizer context window.",
+        details: { reason: "CONTEXT_CAPACITY" },
+      });
     }
 
-    const previous =
-      input.previousSummary === null
-        ? "No previous summary."
-        : `Previous summary:\n${input.previousSummary}`;
+    let remaining = transcript(input.messages);
+    let previousSummary = input.previousSummary;
+    let finalSummary = "";
+    let chunks = 0;
 
+    while (remaining.length > 0) {
+      if (chunks >= this.maxChunks) {
+        throw new SevenError({
+          code: "VALIDATION",
+          message: "Summary source exceeded the bounded chunk limit.",
+          details: { reason: "CONTEXT_CAPACITY" },
+        });
+      }
+      if (input.signal.aborted) throw new DOMException("Aborted", "AbortError");
+
+      const emptyMessages = this.requestMessages(previousSummary, "", input.targetTokens);
+      if (this.estimator.estimateMessages(emptyMessages) >= maxInputTokens) {
+        throw new SevenError({
+          code: "VALIDATION",
+          message: "Previous summary and prompt cannot fit the summarizer input budget.",
+          details: { reason: "CONTEXT_CAPACITY" },
+        });
+      }
+
+      let low = 1;
+      let high = remaining.length;
+      let best = 0;
+      while (low <= high) {
+        const middle = Math.floor((low + high) / 2);
+        const end = splitPoint(remaining, middle);
+        if (end <= 0) {
+          low = middle + 1;
+          continue;
+        }
+        const candidate = this.requestMessages(
+          previousSummary,
+          remaining.slice(0, end),
+          input.targetTokens,
+        );
+        if (this.estimator.estimateMessages(candidate) <= maxInputTokens) {
+          best = end;
+          low = middle + 1;
+        } else {
+          high = middle - 1;
+        }
+      }
+      if (best <= 0) {
+        throw new SevenError({
+          code: "VALIDATION",
+          message: "A summary source segment cannot fit the summarizer input budget.",
+          details: { reason: "CONTEXT_CAPACITY" },
+        });
+      }
+
+      const segment = remaining.slice(0, best);
+      finalSummary = await this.summarizeChunk(
+        previousSummary,
+        segment,
+        input.targetTokens,
+        input.signal,
+      );
+      if (this.estimator.estimateText(finalSummary) > input.targetTokens) {
+        throw new SevenError({
+          code: "PROVIDER",
+          message: "Summary provider exceeded the requested output budget.",
+        });
+      }
+      previousSummary = finalSummary;
+      remaining = remaining.slice(best);
+      chunks += 1;
+    }
+
+    return finalSummary;
+  }
+
+  private requestMessages(
+    previousSummary: string | null,
+    segment: string,
+    targetTokens: number,
+  ): readonly ProviderMessage[] {
+    const previous =
+      previousSummary === null
+        ? "No previous summary."
+        : `Previous summary:\n${previousSummary}`;
     const messages: readonly ProviderMessage[] = Object.freeze([
       Object.freeze({
         role: "system" as const,
-        content:
-          "Compress earlier conversation into a factual continuation summary. Preserve user preferences, decisions, constraints, named entities, unresolved tasks, and important results. Do not invent facts or add instructions. Output only the compact summary.",
+        content: SYSTEM_PROMPT,
       }),
       Object.freeze({
         role: "user" as const,
         content:
-          `Target size: about ${input.targetTokens} tokens.\n\n${previous}\n\nNew conversation segment:\n${transcript(input.messages)}`,
+          `Target size: about ${targetTokens} tokens.\n\n${previous}\n\nNew conversation segment:\n${segment}`,
       }),
     ]);
     assertValidProviderMessages(messages);
+    return messages;
+  }
 
+  private async summarizeChunk(
+    previousSummary: string | null,
+    segment: string,
+    targetTokens: number,
+    signal: AbortSignal,
+  ): Promise<string> {
+    const messages = this.requestMessages(previousSummary, segment, targetTokens);
     const output = this.stream(
       {
         modelId: this.modelId,
         messages,
-        maxOutputTokens: input.targetTokens,
+        maxOutputTokens: targetTokens,
       },
-      input.signal,
+      signal,
     );
 
     if (
@@ -145,14 +286,8 @@ export class ProviderContextSummarizer implements ContextSummarizer {
 
     let summary = "";
     for await (const chunk of output) {
-      if (input.signal.aborted) {
-        throw new DOMException("Aborted", "AbortError");
-      }
-      if (
-        !chunk ||
-        typeof chunk !== "object" ||
-        typeof chunk.delta !== "string"
-      ) {
+      if (signal.aborted) throw new DOMException("Aborted", "AbortError");
+      if (!chunk || typeof chunk !== "object" || typeof chunk.delta !== "string") {
         throw new SevenError({
           code: "PROVIDER",
           message: "Summary provider emitted an invalid chunk.",
@@ -168,9 +303,7 @@ export class ProviderContextSummarizer implements ContextSummarizer {
       summary += chunk.delta;
     }
 
-    if (input.signal.aborted) {
-      throw new DOMException("Aborted", "AbortError");
-    }
+    if (signal.aborted) throw new DOMException("Aborted", "AbortError");
     if (!summary.trim()) {
       throw new SevenError({
         code: "PROVIDER",
