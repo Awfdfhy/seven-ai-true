@@ -1538,6 +1538,152 @@ describe("Zero-bug regressions", () => {
     expect(snapshot?.error?.message).not.toContain("private provider detail");
   });
 
+  it("sanitizes TaskRun rejection payloads, not only task snapshots", async () => {
+    const manager = new TaskManager();
+    const raw = new Error("private provider token=secret");
+    const run = manager.run(
+      { kind: "system", ownerId: "result-privacy" },
+      async () => {
+        throw raw;
+      },
+    );
+
+    const publicError = await run.result.catch((error: unknown) => error);
+    expect(publicError).toBeInstanceOf(SevenError);
+    const seven = publicError as SevenError;
+    expect(seven.code).toBe("UNKNOWN");
+    expect(seven.message).toBe("Task failed.");
+    expect((seven as Error & { cause?: unknown }).cause).toBeUndefined();
+    expect(seven.details).toBeUndefined();
+    expect(JSON.stringify(seven)).not.toContain("secret");
+  });
+
+  it("snapshots ChatService transport and draft callback before task execution", async () => {
+    const repository = new InMemoryRoomRepository([
+      createRoom({ id: "chat-binding-snapshot", now: 1 }),
+    ]);
+    const chat = new ChatService(new TaskManager(), repository);
+    let originalDrafts = 0;
+    let replacementDrafts = 0;
+
+    const transport: ChatTransport = {
+      async *stream() {
+        yield "original";
+      },
+    };
+    const options = {
+      onDraft() {
+        originalDrafts += 1;
+      },
+    };
+
+    const runPromise = chat.send(
+      "chat-binding-snapshot",
+      "hello",
+      transport,
+      options,
+    );
+
+    (transport as { stream: ChatTransport["stream"] }).stream =
+      async function* () {
+        yield "replacement";
+      };
+    options.onDraft = () => {
+      replacementDrafts += 1;
+    };
+
+    const run = await runPromise;
+    const completed = await run.result;
+    expect(completed.messages.at(-1)?.content).toBe("original");
+    expect(originalDrafts).toBe(1);
+    expect(replacementDrafts).toBe(0);
+  });
+
+  it("snapshots route candidates and provider method bindings at transport construction", async () => {
+    const adapter = provider(
+      "bound-provider",
+      [model("bound-provider", "original-model")],
+      async function* (request) {
+        yield { delta: `original:${request.modelId}` };
+      },
+    );
+    const mutablePlan = {
+      createdAt: 1,
+      mode: "balanced" as const,
+      candidates: [
+        {
+          providerId: "bound-provider",
+          modelId: "original-model",
+          score: 1,
+        },
+      ],
+    };
+
+    const transport = new RoutedChatTransport(
+      mutablePlan,
+      new Map([["bound-provider", adapter]]),
+    );
+
+    mutablePlan.candidates[0]!.modelId = "mutated-model";
+    (adapter as { stream: ProviderAdapter["stream"] }).stream =
+      async function* () {
+        yield { delta: "replacement-provider" };
+      };
+
+    let output = "";
+    for await (const chunk of transport.stream({
+      room: createRoom({ id: "binding-room", now: 1 }),
+      signal: new AbortController().signal,
+    })) {
+      output += chunk;
+    }
+
+    expect(output).toBe("original:original-model");
+  });
+
+  it("does not expose raw provider causes after output has begun", async () => {
+    const descriptor = model("post-output-privacy", "m1");
+    const adapter = provider(
+      "post-output-privacy",
+      [descriptor],
+      async function* () {
+        yield { delta: "started" };
+        throw new Error("secret upstream response body");
+      },
+    );
+    const plan = new ModelRouter().plan(
+      [descriptor],
+      [],
+      {
+        mode: "balanced",
+        preferredModelId: null,
+        requireStreaming: true,
+        now: 1,
+        maxAttempts: 1,
+      },
+    );
+    const transport = new RoutedChatTransport(
+      plan,
+      new Map([["post-output-privacy", adapter]]),
+    );
+
+    const consume = async () => {
+      for await (const _chunk of transport.stream({
+        room: createRoom({ id: "post-output-room", now: 1 }),
+        signal: new AbortController().signal,
+      })) {
+        // no-op
+      }
+    };
+
+    const error = await consume().catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(SevenError);
+    const seven = error as SevenError;
+    expect(seven.code).toBe("PROVIDER");
+    expect((seven as Error & { cause?: unknown }).cause).toBeUndefined();
+    expect(seven.message).not.toContain("secret upstream response body");
+  });
+
   it("isolates task listeners and bounds completed task retention", async () => {
     const manager = new TaskManager({ maxRetainedCompleted: 2 });
     manager.subscribe(() => {
