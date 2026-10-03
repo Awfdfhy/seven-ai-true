@@ -1,6 +1,7 @@
 import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it } from "vitest";
 import { ChatService, type ChatTransport } from "../../application/chat/chat-service";
+import { SevenError, toSevenError } from "../../core/errors";
 import { TaskManager } from "../../core/task-manager";
 import {
   commitMessage,
@@ -1222,6 +1223,59 @@ describe("Zero-bug regressions", () => {
       output += chunk;
     }
     expect(output).toHaveLength(20_000);
+  });
+
+  it("validates cancellation reasons through the TaskRun handle too", async () => {
+    const manager = new TaskManager();
+    const run = manager.run(
+      { kind: "system", ownerId: "cancel-handle" },
+      async ({ signal }) => {
+        await new Promise<void>((_resolve, reject) => {
+          signal.addEventListener(
+            "abort",
+            () => reject(new DOMException("Aborted", "AbortError")),
+            { once: true },
+          );
+        });
+        return "unreachable";
+      },
+    );
+
+    expect(() => run.cancel(" ")).toThrow(/reason/);
+    expect(run.cancel("user")).toBe(true);
+    await expect(run.result).rejects.toMatchObject({ code: "CANCELLED" });
+  });
+
+  it("copies and freezes error details and never retains raw unknown thrown values", () => {
+    const details = { retryAfterMs: 1000 };
+    const error = new SevenError({
+      code: "PROVIDER",
+      message: "limited",
+      details,
+    });
+    details.retryAfterMs = 2000;
+    expect(error.details).toEqual({ retryAfterMs: 1000 });
+    expect(Object.isFrozen(error.details)).toBe(true);
+
+    const secret = { token: "must-not-be-retained" };
+    const normalized = toSevenError(secret);
+    expect(normalized.details).toEqual({ valueType: "object" });
+    expect(normalized.details).not.toHaveProperty("value");
+  });
+
+  it("rejects non-canonical provider and model identities", () => {
+    const registry = new ModelRegistry();
+    expect(() =>
+      registry.replaceProviderModels(" provider ", [
+        model(" provider ", "m1"),
+      ]),
+    ).toThrow();
+
+    expect(() =>
+      registry.replaceProviderModels("provider", [
+        model("provider", " model "),
+      ]),
+    ).toThrow();
   });
 
   it("isolates task listeners and bounds completed task retention", async () => {
