@@ -5,6 +5,7 @@ import {
   cloneMemoryRecord,
   isContextSummary,
   isMemoryRecord,
+  migrateContextSummary,
   type ContextSummary,
   type MemoryRecord,
 } from "../domain/memory";
@@ -16,6 +17,12 @@ export interface MemoryRepository {
   getSummary(roomId: string, signal?: AbortSignal): Promise<ContextSummary | null>;
   putSummary(summary: ContextSummary, signal?: AbortSignal): Promise<void>;
   deleteSummary(roomId: string, signal?: AbortSignal): Promise<void>;
+  compareAndSwapSummary(
+    roomId: string,
+    expected: ContextSummary | null,
+    next: ContextSummary | null,
+    signal?: AbortSignal,
+  ): Promise<boolean>;
 }
 
 function abortError(): DOMException {
@@ -93,6 +100,19 @@ function repositoryLimits(options: MemoryRepositoryLimits): { records: number; s
 
 function capacityError(): SevenError {
   return new SevenError({ code: "STORAGE", message: "Memory storage capacity reached. Delete an existing item before adding another." });
+}
+
+function sameSummary(a: ContextSummary | null, b: ContextSummary | null): boolean {
+  if (a === null || b === null) return a === b;
+  return (
+    a.schemaVersion === b.schemaVersion &&
+    a.roomId === b.roomId &&
+    a.content === b.content &&
+    a.throughMessageId === b.throughMessageId &&
+    a.sourceFingerprint === b.sourceFingerprint &&
+    a.createdAt === b.createdAt &&
+    a.updatedAt === b.updatedAt
+  );
 }
 
 export class InMemoryMemoryRepository implements MemoryRepository {
@@ -212,6 +232,31 @@ export class InMemoryMemoryRepository implements MemoryRepository {
     this.summaries.delete(canonicalId(roomId, "roomId"));
     throwIfAborted(signal);
   }
+
+  async compareAndSwapSummary(
+    roomId: string,
+    expected: ContextSummary | null,
+    next: ContextSummary | null,
+    signal?: AbortSignal,
+  ): Promise<boolean> {
+    throwIfAborted(signal);
+    const id = canonicalId(roomId, "roomId");
+    if (expected !== null && (!isContextSummary(expected) || expected.roomId !== id)) {
+      throw new SevenError({ code: "VALIDATION", message: "Expected context summary is invalid." });
+    }
+    if (next !== null && (!isContextSummary(next) || next.roomId !== id)) {
+      throw new SevenError({ code: "VALIDATION", message: "Next context summary is invalid." });
+    }
+    const current = this.summaries.get(id) ?? null;
+    if (!sameSummary(current, expected)) return false;
+    if (next === null) this.summaries.delete(id);
+    else {
+      if (current === null && this.summaries.size >= this.limits.summaries) throw capacityError();
+      this.summaries.set(id, cloneContextSummary(next));
+    }
+    throwIfAborted(signal);
+    return true;
+  }
 }
 
 type IndexedDbMemoryRepositoryOptions = MemoryRepositoryLimits & Readonly<{
@@ -267,10 +312,14 @@ export class IndexedDbMemoryRepository implements MemoryRepository {
     const raw = await this.read<unknown>("summaries", (store) => store.get(id), signal);
     throwIfAborted(signal);
     if (raw === undefined) return null;
-    if (!isContextSummary(raw) || raw.roomId !== id) {
+    const migrated = migrateContextSummary(raw);
+    if (migrated === null || migrated.roomId !== id) {
       throw this.storageError("Stored context summary failed schema validation.");
     }
-    return cloneContextSummary(raw);
+    if (!isContextSummary(raw)) {
+      await this.compareAndSwapSummary(id, migrated, migrated, signal);
+    }
+    return cloneContextSummary(migrated);
   }
 
   async putSummary(summary: ContextSummary, signal?: AbortSignal): Promise<void> {
@@ -283,6 +332,60 @@ export class IndexedDbMemoryRepository implements MemoryRepository {
     throwIfAborted(signal);
     const id = canonicalId(roomId, "roomId");
     await this.run("summaries", "readwrite", (store) => { store.delete(id); }, signal);
+  }
+
+  async compareAndSwapSummary(
+    roomId: string,
+    expected: ContextSummary | null,
+    next: ContextSummary | null,
+    signal?: AbortSignal,
+  ): Promise<boolean> {
+    throwIfAborted(signal);
+    const id = canonicalId(roomId, "roomId");
+    if (expected !== null && (!isContextSummary(expected) || expected.roomId !== id)) {
+      throw new SevenError({ code: "VALIDATION", message: "Expected context summary is invalid." });
+    }
+    if (next !== null && (!isContextSummary(next) || next.roomId !== id)) {
+      throw new SevenError({ code: "VALIDATION", message: "Next context summary is invalid." });
+    }
+    const snapshot = next === null ? null : cloneContextSummary(next);
+    let swapped = false;
+    await this.run("summaries", "readwrite", (store, fail) => {
+      const request = store.get(id);
+      request.onsuccess = () => {
+        const raw = request.result as unknown;
+        let current: ContextSummary | null = null;
+        if (raw !== undefined) {
+          current = migrateContextSummary(raw);
+          if (current === null || current.roomId !== id) {
+            fail(this.storageError("Stored context summary failed schema validation."));
+            return;
+          }
+        }
+        if (!sameSummary(current, expected)) return;
+        if (snapshot === null) {
+          store.delete(id);
+          swapped = true;
+          return;
+        }
+        if (current !== null) {
+          store.put(snapshot);
+          swapped = true;
+          return;
+        }
+        const count = store.count();
+        count.onsuccess = () => {
+          if (count.result >= this.limits.summaries) {
+            fail(capacityError());
+            return;
+          }
+          store.put(snapshot);
+          swapped = true;
+        };
+      };
+    }, signal);
+    throwIfAborted(signal);
+    return swapped;
   }
 
   async close(): Promise<void> {
