@@ -53,4 +53,4 @@ The integration suite additionally proves:
 3. RPG authoritative state survives restart independently of shell/UI projection state.
 4. Theme timer ownership remains single-flight while Android capability state changes independently.
 
-Phases 7–10 remain closure candidates until combined Remake CI, Legacy Seven, merge and post-merge CI all pass.
+Phases 7–10 are **COMPLETE** at the remake application-contract level. Combined Remake CI passed with 25/25 test files and 237/237 tests, strict typecheck/build and dependency audits green; Legacy Seven plus verified release artifact passed; manager PR #70 merged; post-merge Remake CI passed. Official progress: **10/12**. Installed-APK/native round-trip evidence remains a final release gate and is not simulated by browser CI.
