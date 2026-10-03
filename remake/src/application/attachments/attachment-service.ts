@@ -62,6 +62,16 @@ function canonical(value: unknown, field: string): string {
   return value;
 }
 
+function isUint8Array(value: unknown): value is Uint8Array {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    Object.prototype.toString.call(value) === "[object Uint8Array]" &&
+    typeof (value as Uint8Array).byteLength === "number" &&
+    typeof (value as Uint8Array).slice === "function"
+  );
+}
+
 function sniff(bytes: Uint8Array): AttachmentMimeType {
   if (
     bytes.length >= 5 &&
@@ -117,11 +127,11 @@ export class AttachmentService {
     if (options.declaredMimeType !== "text/plain" && options.declaredMimeType !== "application/pdf") {
       throw new SevenError({ code: "VALIDATION", message: "Declared attachment MIME type is unsupported." });
     }
-    if (!(options.bytes instanceof Uint8Array) || options.bytes.byteLength === 0 || options.bytes.byteLength > ATTACHMENT_LIMITS.bytes) {
+    if (!isUint8Array(options.bytes) || options.bytes.byteLength === 0 || options.bytes.byteLength > ATTACHMENT_LIMITS.bytes) {
       throw new SevenError({ code: "VALIDATION", message: "Attachment bytes are empty or exceed the safe limit." });
     }
     if (options.id !== undefined) canonical(options.id, "Attachment id");
-    const bytes = options.bytes.slice();
+    const bytes = Uint8Array.from(options.bytes);
     const declaredMimeType = options.declaredMimeType;
     const id = options.id;
 
