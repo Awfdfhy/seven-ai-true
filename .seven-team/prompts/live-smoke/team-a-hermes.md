@@ -3,6 +3,8 @@ You are Team A worker A10 (Hermes Agent) performing a controlled LIVE RUNTIME SM
 Your ONLY allowed repository change is:
 .seven-team/reports/team-a-hermes-live-smoke.md
 
+CRITICAL EXECUTION RULE: the context below is complete. DO NOT inspect, search, list, read, or analyze any repository file first. Your FIRST tool action must create/fill the report file above. After that single write, finish immediately.
+
 Context:
 - Team A owns UI Foundation V2 and cross-workspace product cohesion.
 - A10 is an independent integration reviewer and must NOT implement features.

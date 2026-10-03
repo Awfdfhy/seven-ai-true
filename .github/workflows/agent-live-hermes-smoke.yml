@@ -83,7 +83,7 @@ jobs:
             -m kilo-auto/free \
             --yolo \
             --ignore-rules \
-            chat -Q --max-turns 4 -q "$(cat /tmp/hermes-prompt.md)"
+            chat -Q --max-turns 8 -q "$(cat /tmp/hermes-prompt.md)"
           rc=$?
           set -e
           if test -f "${{ matrix.report }}" && grep -q 'LIVE_AGENT_SMOKE=PASS' "${{ matrix.report }}"; then
