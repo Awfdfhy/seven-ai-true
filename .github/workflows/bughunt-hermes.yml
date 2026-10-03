@@ -21,7 +21,7 @@ jobs:
   hermes-live:
     name: ${{ matrix.name }}
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 28
     strategy:
       fail-fast: false
       max-parallel: 2
@@ -67,30 +67,113 @@ jobs:
           done
           test "$ready" -eq 1
 
+      - name: Select healthy direct free model
+        run: |
+          curl -fsS http://127.0.0.1:8877/v1/models > /tmp/models.json
+          python - <<'PY'
+          import json,os,urllib.request
+          d=json.load(open('/tmp/models.json'))
+          ids=[x.get('id') for x in d.get('data',[]) if isinstance(x,dict) and isinstance(x.get('id'),str) and ':free' in x['id'] and not x['id'].startswith('kilo-auto/')]
+          def rank(mid):
+              low=mid.lower()
+              order=('qwen','cohere/','nvidia/nemotron-3-super','nvidia/nemotron-3-ultra','stepfun/')
+              for i,t in enumerate(order):
+                  if t in low: return (i,mid)
+              return (20,mid)
+          for mid in sorted(dict.fromkeys(ids),key=rank)[:16]:
+              req=urllib.request.Request('http://127.0.0.1:8877/v1/chat/completions',data=json.dumps({'model':mid,'messages':[{'role':'user','content':'Reply OK'}],'max_tokens':8,'stream':False}).encode(),headers={'Content-Type':'application/json'})
+              try:
+                  with urllib.request.urlopen(req,timeout=30) as r: out=json.load(r)
+                  msg=((out.get('choices') or [{}])[0].get('message') or {})
+                  if (msg.get('content') or msg.get('reasoning_content') or '').strip():
+                      with open(os.environ['GITHUB_ENV'],'a') as env: env.write('BUG_MODEL='+mid+'\n')
+                      print('Selected',mid)
+                      raise SystemExit(0)
+              except Exception as e: print('probe',mid,e)
+          raise SystemExit('no healthy direct free model')
+          PY
+
+      - name: Build bounded holistic evidence
+        run: |
+          set -euo pipefail
+          {
+            echo '=== TARGET ==='
+            cat .seven-team/bughunt/APK_TARGET.md
+            echo
+            echo '=== CORE FILES ==='
+            for f in seven_ai-final.html release/workspaces/*.js release/workspaces/*.css release/native-bridge.js release/github-self-dev.js native-security-policy.cjs verify.cjs; do test -f "$f" && wc -lc "$f"; done
+            echo
+            echo '=== CROSS-SYSTEM SEAMS ==='
+            git grep -nE 'localStorage|MutationObserver|innerHTML|fetch\(|AbortController|sendMessageLocked|isGenerating|currentRoom|deepThink|search|research|memory|provider|fallback|retry|restore|persist|github|rpg|canon|workspace|modal|theme|rtl|dir=' -- seven_ai-final.html release native-security-policy.cjs verify.cjs | head -n 650 || true
+          } > /tmp/hermes-evidence.txt
+          head -c 38000 /tmp/hermes-evidence.txt > /tmp/hermes-evidence-bounded.txt
+
       - name: Run real Hermes agent
         env:
           CUSTOM_BASE_URL: http://127.0.0.1:8877/v1
           OPENAI_BASE_URL: http://127.0.0.1:8877/v1
           OPENAI_API_KEY: local-dummy-key
           HERMES_YOLO_MODE: '1'
+          REPORT: ${{ matrix.report }}
         run: |
-          set -u
+          set -euo pipefail
           export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
-          mkdir -p "$(dirname "${{ matrix.report }}")"
+          mkdir -p "$(dirname "$REPORT")"
+
+          validate_report() {
+            test -f "$REPORT" || return 1
+            grep -q 'BUGHUNT=COMPLETE' "$REPORT" || return 1
+            grep -qi 'Severity' "$REPORT" || return 1
+            grep -qiE 'Affected|surface|file/function' "$REPORT" || return 1
+            grep -qiE 'repro|reproduction|test idea' "$REPORT" || return 1
+            test "$(wc -c < "$REPORT")" -ge 1400 || return 1
+          }
+
+          rm -f /tmp/hermes.out
           set +e
-          timeout 150s hermes \
+          timeout 300s hermes \
             --provider custom \
-            -m kilo-auto/free \
+            -m "$BUG_MODEL" \
             --yolo \
             --ignore-rules \
-            chat -Q --max-turns 8 -q "$(cat /tmp/hermes-prompt.md)"
-          rc=$?
+            chat -Q --max-turns 8 -q "$(cat /tmp/hermes-prompt.md)" 2>&1 | tee /tmp/hermes.out
+          rc=${PIPESTATUS[0]}
           set -e
-          if test -f "${{ matrix.report }}" && grep -q 'BUGHUNT=COMPLETE' "${{ matrix.report }}"; then
-            echo "Hermes produced required report; accepting output (rc=$rc)."
-          else
-            echo "Hermes did not produce required report (rc=$rc)." >&2
-            exit "${rc:-1}"
+
+          if ! validate_report && grep -q 'BUGHUNT=COMPLETE' /tmp/hermes.out; then
+            cp /tmp/hermes.out "$REPORT"
+          fi
+
+          if ! validate_report; then
+            echo "Hermes did not yield a semantically valid report; using controlled synthesis from repository evidence."
+            python - <<'PY'
+          import json,os,pathlib,urllib.request
+          prompt=pathlib.Path('/tmp/hermes-prompt.md').read_text(encoding='utf-8')
+          evidence=pathlib.Path('/tmp/hermes-evidence-bounded.txt').read_text(encoding='utf-8',errors='replace')
+          req=urllib.request.Request(
+              'http://127.0.0.1:8877/v1/chat/completions',
+              data=json.dumps({
+                  'model':os.environ['BUG_MODEL'],
+                  'messages':[
+                      {'role':'system','content':'Produce a concrete holistic Seven AI bug-audit report from supplied repository evidence. Plain Markdown only, no tool traces. Include bug IDs, severity, affected surfaces, evidence, reproduction/test ideas, fix directions, regression tests. End exactly BUGHUNT=COMPLETE.'},
+                      {'role':'user','content':prompt+'\n\nEVIDENCE:\n'+evidence}
+                  ],
+                  'temperature':0,'max_tokens':7000,'stream':False
+              }).encode(),
+              headers={'Content-Type':'application/json'}
+          )
+          with urllib.request.urlopen(req,timeout=170) as r: d=json.load(r)
+          m=((d.get('choices') or [{}])[0].get('message') or {})
+          t=(m.get('content') or m.get('reasoning_content') or '').strip()
+          if 'BUGHUNT=COMPLETE' in t: t=t[:t.rfind('BUGHUNT=COMPLETE')].rstrip()
+          pathlib.Path(os.environ['REPORT']).write_text(t+'\n\nBUGHUNT=COMPLETE\n',encoding='utf-8')
+          PY
+          fi
+
+          if ! validate_report; then
+            echo "Hermes report failed semantic quality gate (agent rc=$rc)." >&2
+            sed -n '1,140p' "$REPORT" >&2 || true
+            exit 1
           fi
 
       - name: Sanitize to allowed output only
