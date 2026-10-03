@@ -103,7 +103,26 @@ export class AppKernel {
       return this.stopPromise.then(() => this.start());
     }
 
-    const order = this.resolveOrder();
+    let order: readonly KernelService[];
+    try {
+      order = this.resolveOrder();
+    } catch (error) {
+      const normalized = toSevenError(error);
+      this.status = "failed";
+      this.failedServiceId = null;
+      this.rollbackFailureCount = 0;
+      this.errorCode = normalized.code;
+      this.record("error", "kernel", "configuration_failed", {
+        errorCode: normalized.code,
+      });
+      return Promise.reject(
+        new SevenError({
+          code: normalized.code,
+          message: "Kernel startup configuration is invalid.",
+          retryable: normalized.retryable,
+        }),
+      );
+    }
     this.status = "starting";
     this.failedServiceId = null;
     this.rollbackFailureCount = 0;
