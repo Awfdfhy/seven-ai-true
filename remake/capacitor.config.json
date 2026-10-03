@@ -1,0 +1,14 @@
+{
+  "appId": "ai.seven.remake.v3",
+  "appName": "Seven Remake V3",
+  "webDir": "dist",
+  "loggingBehavior": "none",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": false
+  },
+  "android": {
+    "webContentsDebuggingEnabled": false,
+    "allowMixedContent": false
+  }
+}
