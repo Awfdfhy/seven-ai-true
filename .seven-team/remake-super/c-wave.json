@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "totalTeamSize": 32,
+  "layer": "C",
+  "purpose": "Phase 1-2 integration, adversarial verification and closure",
+  "baseBranch": "seven-remake-v3",
+  "marker": "REMAKE_C=COMPLETE",
+  "workers": [
+    {
+      "id": "C01",
+      "branch": "remake-agent/c01-room-repository",
+      "scope": "remake/src/integration/rooms",
+      "task": "Integrate the merged chat domain and storage contracts into a versioned RoomRepository abstraction with transactional save/load/list/delete, immutable snapshots, deterministic ordering, and recovery-safe errors. Add integration tests."
+    },
+    {
+      "id": "C02",
+      "branch": "remake-agent/c02-composer-ime",
+      "scope": "remake/src/composer",
+      "task": "Implement the composer domain/controller with IME composition lifecycle lock, send eligibility, enter-to-send policy, draft state, attachment references as opaque IDs, and deterministic tests including Arabic composition sequences."
+    },
+    {
+      "id": "C03",
+      "branch": "remake-agent/c03-streaming-integration",
+      "scope": "remake/src/integration/streaming",
+      "task": "Integrate chat orchestration with provider streaming contracts into a cancellation-aware streaming session adapter. Ensure transient assistant drafts are finalized once and never committed twice. Add race tests."
+    },
+    {
+      "id": "C04",
+      "branch": "remake-agent/c04-stop-race-redteam",
+      "scope": "remake/src/verification/stop",
+      "task": "Build an adversarial cancellation/race harness for the merged TaskManager + chat streaming layers: rapid stop/start, double stop, deadline vs user cancel, provider late chunks, room switch. Include reusable verification primitives and regression tests."
+    },
+    {
+      "id": "C05",
+      "branch": "remake-agent/c05-provider-execution",
+      "scope": "remake/src/integration/provider-execution",
+      "task": "Implement provider execution service over merged provider contracts and TaskManager, with global deadlines, normalized errors, cancellation propagation, and strict final-message validation. Add fake-provider integration tests."
+    },
+    {
+      "id": "C06",
+      "branch": "remake-agent/c06-model-registry",
+      "scope": "remake/src/models",
+      "task": "Implement immutable model registry/catalog primitives that normalize models from providers, track capabilities and availability, support deterministic strongest-first policy inputs without UI coupling, and test duplicates/updates."
+    },
+    {
+      "id": "C07",
+      "branch": "remake-agent/c07-fallback-controller",
+      "scope": "remake/src/integration/fallback",
+      "task": "Integrate model routing and provider health into a bounded fallback controller with one global wall-clock budget, cooldown awareness, cancellation, attempt ledger, and deterministic tests."
+    },
+    {
+      "id": "C08",
+      "branch": "remake-agent/c08-phase12-integration",
+      "scope": "remake/src/integration/phase12",
+      "task": "Build the Phase 1-2 application facade wiring rooms, chat orchestration, provider execution, model registry/router and persistence ports. Keep adapters injectable. Add vertical-slice tests: send→stream→stop→save→restore and fallback route."
+    },
+    {
+      "id": "C09",
+      "branch": "remake-agent/c09-persistence-recovery",
+      "scope": "remake/src/recovery",
+      "task": "Implement storage recovery and migration orchestration for rooms/settings required by Phase 1-2: atomic migrate-verify-commit, rollback, corruption quarantine metadata, interactive recovery actions model, and failure-injection tests."
+    },
+    {
+      "id": "C10",
+      "branch": "remake-agent/c10-android-contract-review",
+      "scope": "remake/src/verification/android",
+      "task": "Build platform-contract verification helpers and tests ensuring Phase 1-2 code depends only on typed ports, not window globals or direct Capacitor calls; include request/cancellation contract vectors for later Android adapter tests."
+    },
+    {
+      "id": "C11",
+      "branch": "remake-agent/c11-phase12-ci",
+      "scope": "remake/src/verification/phase12",
+      "task": "Build deterministic Phase 1-2 acceptance scenario definitions and reusable gate evaluator covering rooms persistence, streaming, stop, provider failure, fallback, restart restore and schema invariants. Add self-tests."
+    },
+    {
+      "id": "C12",
+      "branch": "remake-agent/c12-architecture-redteam",
+      "scope": "remake/src/verification/architecture",
+      "task": "Build static/runtime architecture invariant checks for Phase 1-2: no mutable window Seven globals, no duplicate owners, no direct storage/provider calls from UI, no trailing system message, explicit cancellation ownership. Add tests."
+    }
+  ]
+}
