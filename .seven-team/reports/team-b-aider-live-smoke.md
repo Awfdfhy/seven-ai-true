@@ -6,13 +6,13 @@ Team B / B06 / Aider
 
 ## B06 mission
 
-Ensure RPG V2 preserves character-local knowledge and world-state continuity throughout its 10-minute interactive story. The happy path must require no JSON pack import, deliver a meaningful choice within three visible actions, reflect that choice in later narration, survive exit and re-entry, and maintain strict knowledge boundaries.
+Validate RPG V2’s persistent 10-minute story, character-local knowledge, world-state continuity, and safe migration without requiring a JSON pack import. Confirm that a meaningful choice is available within three visible actions, changes subsequent world state and narration, and remains intact after exit and re-entry. Character B must not learn information revealed only to Character A.
 
 ## Memory and persistence risks
 
-1. Character-specific knowledge could leak into unrelated characters or global context.
-2. State could be lost, corrupted, or become unreadable after exit, re-entry, or upgrades.
-3. Migration could overwrite valid state, broaden knowledge boundaries, or fail silently.
+1. Character-local knowledge could leak into another character or the global context.
+2. World state could be lost or corrupted during exit, re-entry, or upgrades.
+3. Migration could overwrite valid state, weaken knowledge boundaries, or fail silently.
 
 ## Branch
 
