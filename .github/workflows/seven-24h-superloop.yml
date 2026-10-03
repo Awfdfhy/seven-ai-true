@@ -1,0 +1,158 @@
+name: Seven 24-7 Superloop
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/seven-24h-superloop.yml'
+      - '.github/workflows/seven-superloop-watchdog.yml'
+      - '.seven-team/superloop/**'
+  pull_request:
+    paths:
+      - '.github/workflows/seven-24h-superloop.yml'
+      - '.github/workflows/seven-superloop-watchdog.yml'
+      - '.seven-team/superloop/**'
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+concurrency:
+  group: seven-24-7-superloop
+  cancel-in-progress: false
+
+env:
+  SEVEN_PRODUCT_BRANCH: seven-remake-v3
+  SEVEN_SUPERLOOP_BRANCH: autoloop/seven-24h-work
+  SEVEN_SUPERLOOP_MAX_PARALLEL: '5'
+  SEVEN_SUPERLOOP_MODEL: kilo-auto/free
+  SEVEN_AGENT_READ_TIMEOUT: '360'
+  SEVEN_AGENT_WRITE_TIMEOUT: '600'
+  SEVEN_MANAGER_TIMEOUT: '480'
+
+jobs:
+  validate-control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate controller and team manifest
+        run: |
+          set -euo pipefail
+          python -m py_compile .seven-team/superloop/controller.py
+          python - <<'PY'
+          import json
+          d=json.load(open('.seven-team/superloop/team-v1.json'))
+          assert d['schemaVersion']==1
+          assert d['teamSize']==20
+          assert len(d['agents'])==20
+          assert len({x['id'] for x in d['agents']})==20
+          print('Seven Superloop control validation: PASS')
+          PY
+
+  cycle:
+    if: github.event_name != 'pull_request'
+    needs: validate-control
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
+    steps:
+      - name: Checkout control plane
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Java 21 for Remake Android/APK work
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install Codex runtime
+        run: npm install -g @openai/codex@latest
+
+      - name: Start guarded anonymous model relay
+        run: |
+          set -euo pipefail
+          cp .seven-team/runtime/kilo_anonymous_relay.py /tmp/kilo_anonymous_relay.py
+          cp .seven-team/runtime/codex_responses_bridge.py /tmp/codex_responses_bridge.py
+          python /tmp/kilo_anonymous_relay.py >/tmp/seven-superloop-relay.log 2>&1 &
+          relay_ready=0
+          for i in {1..40}; do
+            if curl -fsS http://127.0.0.1:8877/v1/models >/dev/null; then relay_ready=1; break; fi
+            sleep 1
+          done
+          test "$relay_ready" -eq 1
+          SEVEN_CODEX_MODEL="$SEVEN_SUPERLOOP_MODEL" python /tmp/codex_responses_bridge.py >/tmp/seven-superloop-codex.log 2>&1 &
+          bridge_ready=0
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8878/v1/models >/dev/null; then bridge_ready=1; break; fi
+            sleep 1
+          done
+          test "$bridge_ready" -eq 1
+
+      - name: Run Manager plus 20-agent full engineering cycle
+        run: python .seven-team/superloop/controller.py
+
+      - name: Upload full cycle research and QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seven-superloop-run-${{ github.run_number }}-evidence
+          path: ${{ runner.temp }}/seven-superloop-artifacts
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Upload generated Remake APK when present
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seven-superloop-run-${{ github.run_number }}-apk
+          path: ${{ runner.temp }}/seven-superloop-artifacts/**/apk/files/*.apk
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Push validated integration branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          test "$(git branch --show-current)" = "$SEVEN_SUPERLOOP_BRANCH"
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:"$SEVEN_SUPERLOOP_BRANCH"
+
+      - name: Create or update Superloop PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          number="$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --head "$SEVEN_SUPERLOOP_BRANCH" --base "$SEVEN_PRODUCT_BRANCH" --json number --jq '.[0].number // empty')"
+          if [[ -z "$number" ]]; then
+            gh pr create               --repo "$GITHUB_REPOSITORY"               --base "$SEVEN_PRODUCT_BRANCH"               --head "$SEVEN_SUPERLOOP_BRANCH"               --title "Seven AI — continuous 20-agent Superloop"               --body "Continuous Manager + 20-agent engineering branch. Each cycle performs research → implementation → compatibility verification → bug hunt/fix → agent-driven exploratory QA → polish/APK. Changes are integrated only after deterministic gates. Raw cycle evidence is attached to Actions runs."
+          else
+            echo "Superloop PR #$number updated."
+          fi
+
+      - name: Immediately dispatch next cycle
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          sleep 5
+          gh workflow run seven-24h-superloop.yml --repo "$GITHUB_REPOSITORY" --ref main
+          echo "Next Seven Superloop cycle dispatched."
+
+      - name: Relay diagnostics on failure
+        if: failure()
+        run: |
+          echo "--- anonymous relay ---"
+          tail -120 /tmp/seven-superloop-relay.log || true
+          echo "--- codex bridge ---"
+          tail -120 /tmp/seven-superloop-codex.log || true
