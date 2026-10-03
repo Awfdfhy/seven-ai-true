@@ -1,6 +1,6 @@
-# Phase 3 memory/context hardening — Wave 3 closure candidate — 2026-10-03
+# Phase 3 memory/context hardening — Wave 3 COMPLETE — 2026-10-03
 
-This checkpoint closes the previously recorded Phase 3 functional gaps while preserving all Phase 1–2 invariants. It is a closure candidate until PR #61 is merged and post-merge CI on `seven-remake-v3` is green.
+This checkpoint closes the previously recorded Phase 3 functional gaps while preserving all Phase 1–2 invariants. PR #61 was merged into `seven-remake-v3`, and the post-merge Remake CI completed successfully.
 
 ## Changes
 
@@ -25,13 +25,13 @@ Authoritative closure-candidate Remake CI: **Seven Remake V3 CI #188 = SUCCESS**
 - production dependency audit: **0 vulnerabilities**
 - full dependency moderate-severity audit: **0 vulnerabilities**
 
-Legacy Seven regression remains a mandatory pre-merge gate on the final PR head. After merge, the push-triggered Remake CI on `seven-remake-v3` is the final Phase 3 closure gate.
+Final-head Legacy Seven regression passed before merge. Post-merge Remake CI also passed on merge commit `30330ff0b27ecac13c95a987c6a5911e9dcf154b`.
 
-## Remaining closure gates
+## Closure status
 
-1. Final-head Legacy Seven regression must pass.
-2. Merge PR #61 into `seven-remake-v3`.
-3. Post-merge Remake CI on `seven-remake-v3` must pass.
-4. Then update `MILESTONES.md` to Phase 3 COMPLETE / `REMAKE_PROGRESS=3/12`.
+- final-head Legacy Seven regression: **PASS**
+- PR #61 merge into `seven-remake-v3`: **PASS**
+- post-merge Remake CI: **PASS**
+- milestone status: **3/12 COMPLETE**
 
 The Remake UI/Android product shell remains later milestone work and is not part of the Phase 3 Memory + Context acceptance boundary.
