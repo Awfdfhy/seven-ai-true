@@ -250,6 +250,32 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       await page.evaluate(()=>window.SevenWorkspaces?.close());
       await page.close();
     });
+    await test('Arabic workspace picker and specialist surfaces are fully localized',async()=>{
+      const page=await browser.newPage({viewport:{width:360,height:800}});
+      await page.addInitScript(()=>{localStorage.setItem('seven_ui_language','ar');localStorage.setItem('user_name_asked','1');});
+      await page.goto(origin,{waitUntil:'domcontentloaded'});
+      await page.waitForFunction(()=>window.SevenRemake&&document.documentElement.lang==='ar'&&document.documentElement.dir==='rtl');
+      await page.evaluate(()=>SevenRemake.openWorkspace('coding'));
+      await page.waitForFunction(()=>document.documentElement.dataset.sevenWorkspace==='coding'&&document.querySelector('.seven-workspace-root h1')?.textContent.includes('البرمجة'),null,{timeout:10000});
+      let state=await page.evaluate(()=>({h1:document.querySelector('.seven-workspace-root h1')?.textContent.trim(),importText:document.querySelector('[data-code-import]')?.textContent.trim(),placeholder:document.querySelector('[data-code-task]')?.placeholder,doc:document.documentElement.scrollWidth<=innerWidth+2}));
+      assert.match(state.h1,/البرمجة/);assert.equal(state.importText,'استيراد ملفات');assert.match(state.placeholder,/صف/);assert.equal(state.doc,true);
+
+      await page.evaluate(()=>SevenRemake.openWorkspace('research'));
+      await page.waitForFunction(()=>document.documentElement.dataset.sevenWorkspace==='research'&&document.querySelector('.seven-workspace-root h1')?.textContent.trim()==='البحث',null,{timeout:10000});
+      state=await page.evaluate(()=>({h1:document.querySelector('.seven-workspace-root h1')?.textContent.trim(),importText:document.querySelector('[data-research-import]')?.textContent.trim(),runText:document.querySelector('[data-research-run]')?.textContent.trim(),doc:document.documentElement.scrollWidth<=innerWidth+2}));
+      assert.equal(state.h1,'البحث');assert.equal(state.importText,'استيراد الأدلة');assert.equal(state.runText,'ابحث عبر الويب');assert.equal(state.doc,true);
+
+      await page.evaluate(()=>SevenRemake.openWorkspace('rpg'));
+      await page.waitForFunction(()=>document.documentElement.dataset.sevenWorkspace==='rpg'&&!!document.querySelector('.seven-rpg-chatbar'),null,{timeout:10000});
+      state=await page.evaluate(()=>({world:document.querySelector('[data-rpg-world-name]')?.textContent.trim(),mode:document.querySelector('[data-rpg-state]')?.textContent.trim(),titles:document.querySelector('[data-rpg-title-toggle]')?.textContent.trim(),exit:document.querySelector('[data-rpg-exit]')?.textContent.trim(),doc:document.documentElement.scrollWidth<=innerWidth+2}));
+      assert.equal(state.world,'RPG حر');assert.equal(state.mode,'وضع المحادثة');assert.equal(state.titles,'العناوين');assert.equal(state.exit,'الخروج من RPG');assert.equal(state.doc,true);
+
+      await page.evaluate(()=>{SevenWorkspaces.close();SevenWorkspaces.openLauncher();});
+      await page.waitForFunction(()=>document.querySelector('#seven-ws-launcher-title')?.textContent.trim()==='اختر مساحة عمل',null,{timeout:10000});
+      state=await page.evaluate(()=>{const p=document.querySelector('.seven-ws-picker'),r=p.getBoundingClientRect();return{title:document.querySelector('#seven-ws-launcher-title').textContent.trim(),close:document.querySelector('[data-ws-close]')?.getAttribute('aria-label'),coding:document.querySelector('[data-ws="coding"] strong')?.textContent.trim(),research:document.querySelector('[data-ws="research"] strong')?.textContent.trim(),bounded:r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2}});
+      assert.equal(state.title,'اختر مساحة عمل');assert.equal(state.close,'إغلاق');assert.match(state.coding,/البرمجة/);assert.equal(state.research,'البحث');assert.equal(state.bounded,true);
+      await page.close();
+    });
     await test('mode and depth dialogs stay usable on smallest RTL night phone',async()=>{
       const page=await browser.newPage({viewport:{width:320,height:800}});
       await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');});
