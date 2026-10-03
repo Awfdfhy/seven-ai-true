@@ -82,7 +82,7 @@ jobs:
             --skip-git-repo-check \
             -m kilo-auto/free \
             -c 'approval_policy="never"' \
-            -c 'sandbox_mode="workspace-write"' \
+            -c 'sandbox_mode="danger-full-access"' \
             -c 'model_provider="seven"' \
             -c 'model_providers.seven={name="Seven Local Bridge",base_url="http://127.0.0.1:8878/v1",env_key="SEVEN_CODEX_KEY",wire_api="responses",requires_openai_auth=false,supports_websockets=false,request_max_retries=1,stream_max_retries=1}' \
             "$(cat /tmp/codex-prompt.md)"
@@ -94,7 +94,7 @@ jobs:
             echo "Codex did not produce required report (rc=$rc)." >&2
             echo "--- codex bridge log ---" >&2
             tail -100 /tmp/codex-bridge.log >&2 || true
-            exit "${rc:-1}"
+            exit 1
           fi
 
       - name: Sanitize to allowed output only
