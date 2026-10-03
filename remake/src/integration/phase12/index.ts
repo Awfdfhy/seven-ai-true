@@ -43,7 +43,7 @@ export class RoutedChatTransport implements ChatTransport {
     private readonly now: () => number = Date.now,
   ) {
     this.providers = new Map(providers);
-    if (!systemPrompt.trim()) {
+    if (typeof systemPrompt !== "string" || !systemPrompt.trim()) {
       throw new SevenError({
         code: "VALIDATION",
         message: "System prompt must not be empty.",
