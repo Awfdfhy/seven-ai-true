@@ -23,4 +23,7 @@ assert.ok(html.stdout.includes('SEVEN_FINAL_RELEASE_LAYER_V1'),'release marker m
 assert.ok(html.stdout.includes('id="seven-app"')&&html.stdout.includes('data-seven-remake="1"'),'modern Seven UI root missing from APK');
 assert.ok(html.stdout.includes('./workspaces/remake.css')&&html.stdout.includes('./workspaces/remake.js')&&html.stdout.includes('./workspaces/intelligence.js'),'modern Seven UI wiring missing from APK');
 assert.ok(!html.stdout.includes('cdnjs.cloudflare.com/ajax/libs/pdf.js'),'APK still references remote PDF runtime');
+assert.ok(html.stdout.includes('Seven 2.4.2 Zero-Key UX'),'zero-key marker missing from APK');
+assert.ok(html.stdout.includes('type="hidden" id="apiKeyInput"')&&!html.stdout.includes('type="password" id="apiKeyInput"'),'APK exposes manual API-key input');
+assert.ok(html.stdout.includes('id="seven-ui-hardening"'),'APK missing UI hardening layer');
 console.log(`apk package gate: PASS (${path.basename(APK)}, ${bytes} bytes)`);
