@@ -120,12 +120,22 @@ jobs:
           mkdir -p "$(dirname "$EXPECTED")"
           cp /tmp/seven-agent-report.md "$EXPECTED"
           git add -f "$EXPECTED"
-          test "$(git diff --cached --name-only | wc -l)" -eq 1
-          test "$(git diff --cached --name-only)" = "$EXPECTED"
+          count="$(git diff --cached --name-only | wc -l)"
+          test "$count" -le 1
+          if test "$count" -eq 1; then
+            test "$(git diff --cached --name-only)" = "$EXPECTED"
+            echo "REPORT_CHANGED=1" >> "$GITHUB_ENV"
+          else
+            echo "REPORT_CHANGED=0" >> "$GITHUB_ENV"
+          fi
       - name: Commit and push controlled report
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          if test "${REPORT_CHANGED:-0}" = "0"; then
+            echo "Report already matches branch; idempotent success."
+            exit 0
+          fi
           git config user.name 'Seven Team Runtime'
           git config user.email 'actions@users.noreply.github.com'
           git add .seven-team/reports/team-a-aider-live-smoke.md
@@ -201,12 +211,22 @@ jobs:
           mkdir -p "$(dirname "$EXPECTED")"
           cp /tmp/seven-agent-report.md "$EXPECTED"
           git add -f "$EXPECTED"
-          test "$(git diff --cached --name-only | wc -l)" -eq 1
-          test "$(git diff --cached --name-only)" = "$EXPECTED"
+          count="$(git diff --cached --name-only | wc -l)"
+          test "$count" -le 1
+          if test "$count" -eq 1; then
+            test "$(git diff --cached --name-only)" = "$EXPECTED"
+            echo "REPORT_CHANGED=1" >> "$GITHUB_ENV"
+          else
+            echo "REPORT_CHANGED=0" >> "$GITHUB_ENV"
+          fi
       - name: Commit and push controlled report
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          if test "${REPORT_CHANGED:-0}" = "0"; then
+            echo "Report already matches branch; idempotent success."
+            exit 0
+          fi
           git config user.name 'Seven Team Runtime'
           git config user.email 'actions@users.noreply.github.com'
           git add .seven-team/reports/team-b-aider-live-smoke.md

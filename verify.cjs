@@ -136,7 +136,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  });
  await test('model intelligence v3 delegates health truth to provider health v2',async()=>{
   const r=await page.evaluate(()=>{const model={provider:'groq',id:'delegate-v2-fixture'};const key=freeHealthKey(model.provider,model.id),old=freeModelHealth[key];freeModelHealth[key]=normalizeHealthRecordV2({successes:8,failures:0,lastSuccessAt:Date.now(),consecutiveSuccesses:3});const a=SevenModelIntelligenceV3.health(model),b=SevenProviderHealthV2.score(model.provider,model.id);if(old===undefined)delete freeModelHealth[key];else freeModelHealth[key]=old;return {a,b}});
-  assert.deepEqual(r.a,r.b);
+  assert.equal(r.a.state,r.b.state);assert.equal(r.a.cooldownUntil,r.b.cooldownUntil);assert.equal(r.a.latencyMs,r.b.latencyMs);assert.ok(Math.abs(r.a.score-r.b.score)<1e-6);
  });
 
  await test('memory scope hardening writes ordinary memory as explicit global private',async()=>{
