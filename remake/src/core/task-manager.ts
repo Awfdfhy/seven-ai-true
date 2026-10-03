@@ -265,7 +265,7 @@ export class TaskManager {
                   : "Task cancelled.",
             });
             this.finish(task, "cancelled");
-            throw task.error;
+            throw this.publicTaskError(task.error);
           }
 
           this.finish(task, "succeeded");
@@ -292,7 +292,7 @@ export class TaskManager {
               cause: error,
             });
             this.finish(task, "cancelled");
-            throw task.error;
+            throw this.publicTaskError(task.error);
           }
 
           task.error =
@@ -305,7 +305,7 @@ export class TaskManager {
                 })
               : toSevenError(error);
           this.finish(task, "failed");
-          throw task.error;
+          throw this.publicTaskError(task.error);
         },
       );
 
@@ -491,13 +491,17 @@ export class TaskManager {
         : {}),
       ...(task.error !== undefined
         ? {
-            error: new SevenError({
-              code: task.error.code,
-              message: this.publicErrorMessage(task.error.code),
-              retryable: task.error.retryable,
-            }),
+            error: this.publicTaskError(task.error),
           }
         : {}),
+    });
+  }
+
+  private publicTaskError(error: SevenError): SevenError {
+    return new SevenError({
+      code: error.code,
+      message: this.publicErrorMessage(error.code),
+      retryable: error.retryable,
     });
   }
 
