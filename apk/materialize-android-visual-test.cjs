@@ -136,6 +136,10 @@ public class SevenVisualEvidenceTest {
         shot("sidebar-rtl-night");
         js(webView,"(()=>{document.querySelector('.sidebar').classList.remove('open');return true})()");
         Thread.sleep(380);
+        js(webView,"(()=>{const chat=document.getElementById('chat');for(let i=0;i<18;i++)addMessage('assistant','رسالة اختبار طويلة رقم '+(i+1)+' — '+('نص '.repeat(24)));chat.scrollTop=0;window.SevenShell?.sync?.();return true})()");
+        waitFor(webView,"(()=>{const b=document.querySelector('.seven-shell-jump');return !!b&&b.classList.contains('show')&&b.getAttribute('aria-label')==='الانتقال إلى أحدث رسالة'&&b.parentElement?.id==='seven-app'})()");
+        shot("long-chat-jump-rtl-night");
+        js(webView,"(()=>{const chat=document.getElementById('chat');chat.scrollTop=chat.scrollHeight;return true})()");Thread.sleep(100);
         Thread.sleep(120);shot("arabic-rtl");
       }
 
