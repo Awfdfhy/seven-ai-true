@@ -90,6 +90,14 @@ public class SevenVisualEvidenceTest {
         assertEquals("true",js(webView,"(()=>{const root=document.getElementById('seven-app'),main=document.querySelector('.main'),composer=document.querySelector('.composer');const rs=getComputedStyle(root),ms=getComputedStyle(main),cs=getComputedStyle(composer);return rs.getPropertyValue('--s-bg').trim()==='#111815'&&ms.backgroundColor==='rgb(23, 33, 29)'&&cs.backgroundColor==='rgb(23, 33, 29)'&&rs.color!=='rgb(0, 0, 0)'})()"));
         shot("chat-night");
 
+        assertEquals("true",js(webView,"(()=>{openSettings();const panel=id=>document.getElementById(id)?.closest('[role=tabpanel]')?.id||'';return panel('temperatureRange')==='s-settings-generation'&&panel('reasoningEffort')==='s-settings-generation'&&panel('pinnedNotes')==='s-settings-context'&&panel('providersSection')==='s-settings-models'&&panel('advancedSection')==='s-settings-data'&&panel('s-theme')==='s-settings-data'})()"));
+        assertEquals("true",js(webView,"(()=>{const m=document.querySelector('#settingsModal .modal-content'),r=m.getBoundingClientRect();return m.scrollWidth<=m.clientWidth+1&&r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2})()"));
+        shot("settings-models-night");
+        js(webView,"(()=>{document.getElementById('s-tab-generation').click();return true})()");Thread.sleep(80);shot("settings-intelligence-night");
+        js(webView,"(()=>{document.getElementById('s-tab-context').click();return true})()");Thread.sleep(80);shot("settings-context-night");
+        js(webView,"(()=>{document.getElementById('s-tab-data').click();return true})()");Thread.sleep(80);shot("settings-app-night");
+        js(webView,"(()=>{closeSettings();return true})()");Thread.sleep(80);
+
         ensureWorkspaces(webView);
         workspace(webView,"coding");shot("coding");
         workspace(webView,"research");shot("research");
