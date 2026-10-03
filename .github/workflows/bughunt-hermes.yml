@@ -1,0 +1,126 @@
+name: Seven Bug Hunt — Hermes Holistic Audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.seven-team/prompts/bughunt/A10.md'
+      - '.seven-team/prompts/bughunt/B10.md'
+      - '.github/workflows/bughunt-hermes.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: seven-bughunt-hermes
+  cancel-in-progress: true
+
+jobs:
+  hermes-live:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - name: Bug Hunt A10 Hermes holistic audit
+            branch: bughunt/a10
+            prompt_path: .seven-team/prompts/bughunt/A10.md
+            report: .seven-team/reports/bughunt/A10.md
+            commit_message: Bug Hunt A10 holistic report
+          - name: Bug Hunt B10 Hermes holistic audit
+            branch: bughunt/b10
+            prompt_path: .seven-team/prompts/bughunt/B10.md
+            report: .seven-team/reports/bughunt/B10.md
+            commit_message: Bug Hunt B10 holistic report
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install Hermes Agent
+        run: |
+          curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+
+      - name: Materialize guarded runtime and prompt from main
+        run: |
+          git fetch origin main
+          git show origin/main:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/kilo_anonymous_relay.py
+          git show origin/main:${{ matrix.prompt_path }} > /tmp/hermes-prompt.md
+
+      - name: Start guarded relay
+        run: |
+          python /tmp/kilo_anonymous_relay.py > /tmp/seven-relay.log 2>&1 &
+          ready=0
+          for i in {1..20}; do
+            if curl -fsS http://127.0.0.1:8877/v1/models >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" -eq 1
+
+      - name: Run real Hermes agent
+        env:
+          CUSTOM_BASE_URL: http://127.0.0.1:8877/v1
+          OPENAI_BASE_URL: http://127.0.0.1:8877/v1
+          OPENAI_API_KEY: local-dummy-key
+          HERMES_YOLO_MODE: '1'
+        run: |
+          set -u
+          export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
+          mkdir -p "$(dirname "${{ matrix.report }}")"
+          set +e
+          timeout 150s hermes \
+            --provider custom \
+            -m kilo-auto/free \
+            --yolo \
+            --ignore-rules \
+            chat -Q --max-turns 8 -q "$(cat /tmp/hermes-prompt.md)"
+          rc=$?
+          set -e
+          if test -f "${{ matrix.report }}" && grep -q 'BUGHUNT=COMPLETE' "${{ matrix.report }}"; then
+            echo "Hermes produced required report; accepting output (rc=$rc)."
+          else
+            echo "Hermes did not produce required report (rc=$rc)." >&2
+            exit "${rc:-1}"
+          fi
+
+      - name: Sanitize to allowed output only
+        run: |
+          set -euo pipefail
+          EXPECTED='${{ matrix.report }}'
+          cp "$EXPECTED" /tmp/seven-agent-report.md
+          git reset --hard HEAD
+          git clean -fdx
+          mkdir -p "$(dirname "$EXPECTED")"
+          cp /tmp/seven-agent-report.md "$EXPECTED"
+          git add -f "$EXPECTED"
+          count="$(git diff --cached --name-only | wc -l)"
+          test "$count" -le 1
+          if test "$count" -eq 1; then
+            test "$(git diff --cached --name-only)" = "$EXPECTED"
+            echo "REPORT_CHANGED=1" >> "$GITHUB_ENV"
+          else
+            echo "REPORT_CHANGED=0" >> "$GITHUB_ENV"
+          fi
+
+      - name: Commit and push controlled report
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if test "${REPORT_CHANGED:-0}" = "0"; then
+            echo "Report already matches branch; idempotent success."
+            exit 0
+          fi
+          git config user.name 'Seven Team Runtime'
+          git config user.email 'actions@users.noreply.github.com'
+          git commit -m "${{ matrix.commit_message }}"
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:${{ matrix.branch }}

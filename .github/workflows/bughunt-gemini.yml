@@ -1,0 +1,160 @@
+name: Seven Bug Hunt — Gemini Cohesion Audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.seven-team/runtime/gemini_gateway_bridge.py'
+      - '.seven-team/prompts/bughunt/A03.md'
+      - '.seven-team/prompts/bughunt/B03.md'
+      - '.github/workflows/bughunt-gemini.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: seven-bughunt-gemini
+  cancel-in-progress: true
+
+jobs:
+  gemini-live:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          - name: Bug Hunt A03 Gemini localization audit
+            branch: agent/03-search
+            prompt_path: .seven-team/prompts/bughunt/A03.md
+            report: .seven-team/reports/bughunt/A03.md
+            commit_message: Bug Hunt A03 localization cohesion audit
+          - name: Bug Hunt B03 Gemini canon audit
+            branch: bughunt/a03
+            prompt_path: .seven-team/prompts/bughunt/B03.md
+            report: .seven-team/reports/bughunt/B03.md
+            commit_message: Bug Hunt B03 canon grounding audit
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Gemini CLI
+        run: npm install -g @google/gemini-cli@latest
+
+      - name: Enable documented gateway auth in noninteractive CLI
+        run: |
+          ROOT="$(npm root -g)/@google/gemini-cli"
+          TARGET="$(grep -RIl --include='*.js' "Invalid auth method selected" "$ROOT" | head -n 1)"
+          test -n "$TARGET"
+          python - "$TARGET" <<'PY'
+          import sys
+          p=sys.argv[1]
+          s=open(p,encoding='utf-8').read()
+          variants=[
+              "return 'Invalid auth method selected.';",
+              'return "Invalid auth method selected.";',
+          ]
+          for needle in variants:
+              if needle in s:
+                  s=s.replace(needle,"if (authMethod === 'gateway') return null;\n  "+needle,1)
+                  open(p,'w',encoding='utf-8').write(s)
+                  print("Patched Gemini CLI gateway validation:",p)
+                  break
+          else:
+              raise SystemExit("Gateway validation target not found in "+p)
+          PY
+
+      - name: Materialize runtime and prompt from main
+        run: |
+          git fetch origin main
+          git show origin/main:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/kilo_anonymous_relay.py
+          git show origin/main:.seven-team/runtime/gemini_gateway_bridge.py > /tmp/gemini_gateway_bridge.py
+          git show origin/main:${{ matrix.prompt_path }} > /tmp/gemini-prompt.md
+
+      - name: Start relays
+        run: |
+          python /tmp/kilo_anonymous_relay.py > /tmp/seven-relay.log 2>&1 &
+          python /tmp/gemini_gateway_bridge.py > /tmp/gemini-bridge.log 2>&1 &
+          ready=0
+          for i in {1..20}; do
+            if curl -fsS http://127.0.0.1:8879/v1beta/models >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" -eq 1
+
+      - name: Run real Gemini CLI agent
+        env:
+          GOOGLE_GEMINI_BASE_URL: http://127.0.0.1:8879
+          GEMINI_DEFAULT_AUTH_TYPE: gemini-api-key
+          GEMINI_API_KEY: local-dummy-key
+          GOOGLE_GENAI_API_VERSION: v1beta
+          GEMINI_TELEMETRY_ENABLED: 'false'
+        run: |
+          set -u
+          set -o pipefail
+          REPORT="${{ matrix.report }}"
+          mkdir -p "$(dirname "$REPORT")"
+          rm -f /tmp/gemini-final.txt
+          set +e
+          timeout 300s gemini \
+            -p "$(cat /tmp/gemini-prompt.md)" \
+            --approval-mode=yolo \
+            --skip-trust \
+            --model kilo-auto/free \
+            --output-format text | tee /tmp/gemini-final.txt
+          rc=${PIPESTATUS[0]}
+          set -e
+          if ! (test -f "$REPORT" && grep -q 'BUGHUNT=COMPLETE' "$REPORT"); then
+            if test -s /tmp/gemini-final.txt && grep -q 'BUGHUNT=COMPLETE' /tmp/gemini-final.txt; then
+              cp /tmp/gemini-final.txt "$REPORT"
+              echo "Recovered Gemini report from deterministic stdout."
+            fi
+          fi
+          if test -f "$REPORT" && grep -q 'BUGHUNT=COMPLETE' "$REPORT"; then
+            echo "Gemini produced required report; accepting output (rc=$rc)."
+          else
+            echo "Gemini did not produce required report (rc=$rc)." >&2
+            echo "--- gemini bridge log ---" >&2
+            tail -120 /tmp/gemini-bridge.log >&2 || true
+            exit 1
+          fi
+
+      - name: Sanitize to allowed output only
+        run: |
+          set -euo pipefail
+          EXPECTED='${{ matrix.report }}'
+          cp "$EXPECTED" /tmp/seven-agent-report.md
+          git reset --hard HEAD
+          git clean -fdx
+          mkdir -p "$(dirname "$EXPECTED")"
+          cp /tmp/seven-agent-report.md "$EXPECTED"
+          git add -f "$EXPECTED"
+          count="$(git diff --cached --name-only | wc -l)"
+          test "$count" -le 1
+          if test "$count" -eq 1; then
+            test "$(git diff --cached --name-only)" = "$EXPECTED"
+            echo "REPORT_CHANGED=1" >> "$GITHUB_ENV"
+          else
+            echo "REPORT_CHANGED=0" >> "$GITHUB_ENV"
+          fi
+
+      - name: Commit and push controlled report
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if test "${REPORT_CHANGED:-0}" = "0"; then exit 0; fi
+          git config user.name 'Seven Team Runtime'
+          git config user.email 'actions@users.noreply.github.com'
+          git commit -m "${{ matrix.commit_message }}"
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:${{ matrix.branch }}

@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 1,
+  "target": "Seven-AI-2.4.3-Zero-Key-Final(1).apk",
+  "marker": "BUGHUNT=COMPLETE",
+  "workers": [
+    {
+      "id": "A01",
+      "team": "A",
+      "worker": "Cline",
+      "focus": "UI / visual layout / theme / night mode / responsive surfaces",
+      "branch": "bughunt/a01",
+      "prompt": ".seven-team/prompts/bughunt/A01.md",
+      "report": ".seven-team/reports/bughunt/A01.md"
+    },
+    {
+      "id": "A02",
+      "team": "A",
+      "worker": "Codex CLI",
+      "focus": "Android lifecycle / install-upgrade / WebView / native bridge / permissions",
+      "branch": "bughunt/a02",
+      "prompt": ".seven-team/prompts/bughunt/A02.md",
+      "report": ".seven-team/reports/bughunt/A02.md"
+    },
+    {
+      "id": "A03",
+      "team": "A",
+      "worker": "Gemini CLI",
+      "focus": "Arabic RTL / localization / accessibility / text overflow / keyboard",
+      "branch": "bughunt/a03",
+      "prompt": ".seven-team/prompts/bughunt/A03.md",
+      "report": ".seven-team/reports/bughunt/A03.md"
+    },
+    {
+      "id": "A04",
+      "team": "A",
+      "worker": "OpenHands",
+      "focus": "Navigation / dialogs / workspaces / architecture / duplicate UI systems",
+      "branch": "bughunt/a04",
+      "prompt": ".seven-team/prompts/bughunt/A04.md",
+      "report": ".seven-team/reports/bughunt/A04.md"
+    },
+    {
+      "id": "A05",
+      "team": "A",
+      "worker": "OpenCode",
+      "focus": "Model picker / provider routing / free-route selection / mode controls",
+      "branch": "bughunt/a05",
+      "prompt": ".seven-team/prompts/bughunt/A05.md",
+      "report": ".seven-team/reports/bughunt/A05.md"
+    },
+    {
+      "id": "A06",
+      "team": "A",
+      "worker": "Aider",
+      "focus": "Memory / context / persistence / migrations / corruption / restore",
+      "branch": "bughunt/a06",
+      "prompt": ".seven-team/prompts/bughunt/A06.md",
+      "report": ".seven-team/reports/bughunt/A06.md"
+    },
+    {
+      "id": "A07",
+      "team": "A",
+      "worker": "Goose",
+      "focus": "Security / zero-key / credentials / self-dev / GitHub protections",
+      "branch": "bughunt/a07",
+      "prompt": ".seven-team/prompts/bughunt/A07.md",
+      "report": ".seven-team/reports/bughunt/A07.md"
+    },
+    {
+      "id": "A08",
+      "team": "A",
+      "worker": "mini-SWE",
+      "focus": "Test gaps / reproducibility / CI / release verification / regressions",
+      "branch": "bughunt/a08",
+      "prompt": ".seven-team/prompts/bughunt/A08.md",
+      "report": ".seven-team/reports/bughunt/A08.md"
+    },
+    {
+      "id": "A09",
+      "team": "A",
+      "worker": "Qwen Code",
+      "focus": "Performance / DOM / storage / observers / network latency / long chats",
+      "branch": "bughunt/a09",
+      "prompt": ".seven-team/prompts/bughunt/A09.md",
+      "report": ".seven-team/reports/bughunt/A09.md"
+    },
+    {
+      "id": "A10",
+      "team": "A",
+      "worker": "Hermes Agent",
+      "focus": "Holistic adversarial product audit across all surfaces",
+      "branch": "bughunt/a10",
+      "prompt": ".seven-team/prompts/bughunt/A10.md",
+      "report": ".seven-team/reports/bughunt/A10.md"
+    },
+    {
+      "id": "B01",
+      "team": "B",
+      "worker": "Cline",
+      "focus": "Chat core / send-stop-copy / streaming / retry / room switching",
+      "branch": "bughunt/b01",
+      "prompt": ".seven-team/prompts/bughunt/B01.md",
+      "report": ".seven-team/reports/bughunt/B01.md"
+    },
+    {
+      "id": "B02",
+      "team": "B",
+      "worker": "Codex CLI",
+      "focus": "Attachments / PDF / import-export / file errors / Android document flow",
+      "branch": "bughunt/b02",
+      "prompt": ".seven-team/prompts/bughunt/B02.md",
+      "report": ".seven-team/reports/bughunt/B02.md"
+    },
+    {
+      "id": "B03",
+      "team": "B",
+      "worker": "Gemini CLI",
+      "focus": "Web Search / Deep Research / citations / evidence / stale-result handling",
+      "branch": "bughunt/b03",
+      "prompt": ".seven-team/prompts/bughunt/B03.md",
+      "report": ".seven-team/reports/bughunt/B03.md"
+    },
+    {
+      "id": "B04",
+      "team": "B",
+      "worker": "OpenHands",
+      "focus": "Deep Think / reasoning modes / context construction / orchestration",
+      "branch": "bughunt/b04",
+      "prompt": ".seven-team/prompts/bughunt/B04.md",
+      "report": ".seven-team/reports/bughunt/B04.md"
+    },
+    {
+      "id": "B05",
+      "team": "B",
+      "worker": "OpenCode",
+      "focus": "RPG / canon / world runtime / state / titles / persistence",
+      "branch": "bughunt/b05",
+      "prompt": ".seven-team/prompts/bughunt/B05.md",
+      "report": ".seven-team/reports/bughunt/B05.md"
+    },
+    {
+      "id": "B06",
+      "team": "B",
+      "worker": "Aider",
+      "focus": "Coding workspace / GitHub self-development / repo actions / failure recovery",
+      "branch": "bughunt/b06",
+      "prompt": ".seven-team/prompts/bughunt/B06.md",
+      "report": ".seven-team/reports/bughunt/B06.md"
+    },
+    {
+      "id": "B07",
+      "team": "B",
+      "worker": "Goose",
+      "focus": "Provider/network failures / offline / timeout / rate-limit / fallback behavior",
+      "branch": "bughunt/b07",
+      "prompt": ".seven-team/prompts/bughunt/B07.md",
+      "report": ".seven-team/reports/bughunt/B07.md"
+    },
+    {
+      "id": "B08",
+      "team": "B",
+      "worker": "mini-SWE",
+      "focus": "Storage / backup / migration / session recovery / destructive edge cases",
+      "branch": "bughunt/b08",
+      "prompt": ".seven-team/prompts/bughunt/B08.md",
+      "report": ".seven-team/reports/bughunt/B08.md"
+    },
+    {
+      "id": "B09",
+      "team": "B",
+      "worker": "Qwen Code",
+      "focus": "Concurrency / races / duplicate actions / state corruption / stress paths",
+      "branch": "bughunt/b09",
+      "prompt": ".seven-team/prompts/bughunt/B09.md",
+      "report": ".seven-team/reports/bughunt/B09.md"
+    },
+    {
+      "id": "B10",
+      "team": "B",
+      "worker": "Hermes Agent",
+      "focus": "Independent whole-app adversarial bug hunt and cross-system contradictions",
+      "branch": "bughunt/b10",
+      "prompt": ".seven-team/prompts/bughunt/B10.md",
+      "report": ".seven-team/reports/bughunt/B10.md"
+    }
+  ]
+}
