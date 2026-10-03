@@ -39,7 +39,7 @@ export type ContextBuildResult = Readonly<{
 
 const MAX_CONTEXT_ITEMS = 10_000;
 
-const DEFAULT_POLICY: ContextPolicy = Object.freeze({
+export const DEFAULT_CONTEXT_POLICY: ContextPolicy = Object.freeze({
   reservedOutputTokens: 1024,
   memoryTokenBudget: 768,
   summaryTokenBudget: 1024,
@@ -66,7 +66,7 @@ function validateNonNegativeInteger(value: unknown, field: string): number {
   return value as number;
 }
 
-function normalizePolicy(
+export function normalizeContextPolicy(
   policy: Partial<ContextPolicy> | undefined,
 ): ContextPolicy {
   if (
@@ -81,19 +81,19 @@ function normalizePolicy(
   const source = policy ?? {};
   return Object.freeze({
     reservedOutputTokens: validatePositiveInteger(
-      source.reservedOutputTokens ?? DEFAULT_POLICY.reservedOutputTokens,
+      source.reservedOutputTokens ?? DEFAULT_CONTEXT_POLICY.reservedOutputTokens,
       "reservedOutputTokens",
     ),
     memoryTokenBudget: validateNonNegativeInteger(
-      source.memoryTokenBudget ?? DEFAULT_POLICY.memoryTokenBudget,
+      source.memoryTokenBudget ?? DEFAULT_CONTEXT_POLICY.memoryTokenBudget,
       "memoryTokenBudget",
     ),
     summaryTokenBudget: validateNonNegativeInteger(
-      source.summaryTokenBudget ?? DEFAULT_POLICY.summaryTokenBudget,
+      source.summaryTokenBudget ?? DEFAULT_CONTEXT_POLICY.summaryTokenBudget,
       "summaryTokenBudget",
     ),
     maxMemoryItems: validateNonNegativeInteger(
-      source.maxMemoryItems ?? DEFAULT_POLICY.maxMemoryItems,
+      source.maxMemoryItems ?? DEFAULT_CONTEXT_POLICY.maxMemoryItems,
       "maxMemoryItems",
     ),
   });
@@ -225,7 +225,7 @@ export class ContextBuilder {
       }
     }
 
-    const policy = normalizePolicy(input.policy);
+    const policy = normalizeContextPolicy(input.policy);
     if (policy.reservedOutputTokens >= contextWindow) {
       throw new SevenError({
         code: "VALIDATION",
