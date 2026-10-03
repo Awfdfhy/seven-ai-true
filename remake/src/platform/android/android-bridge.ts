@@ -63,6 +63,7 @@ export class AndroidBridgeClient {
         reject(error);
       };
       const onAbort = () => {
+        if (settled) return;
         try {
           const cancellation = this.transport.cancel(request.requestId);
           if (cancellation && typeof (cancellation as Promise<void>).catch === "function") {
