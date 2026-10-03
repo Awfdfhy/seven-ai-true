@@ -30,6 +30,7 @@ export type RoutePreferences = Readonly<{
 export type RouteCandidate = Readonly<{
   providerId: string;
   modelId: string;
+  contextWindow: number;
   score: number;
 }>;
 
@@ -565,6 +566,7 @@ export class ModelRouter {
         return Object.freeze({
           providerId: model.providerId,
           modelId: model.id,
+          contextWindow: model.contextWindow,
           score: preferredBonus + modeWeight - penalty,
         });
       })
