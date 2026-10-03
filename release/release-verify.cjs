@@ -78,7 +78,25 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       assert.equal(dayBefore.root,'#f5f7f5');
       await page.evaluate(()=>SevenTheme.setPreference('night'));
       await page.waitForFunction(()=>document.documentElement.dataset.sevenTheme==='night');
-      const night=await page.evaluate(()=>({root:getComputedStyle(document.getElementById('seven-app')).getPropertyValue('--s-bg').trim(),main:getComputedStyle(document.querySelector('.main')).backgroundColor,composer:getComputedStyle(document.querySelector('.composer')).backgroundColor,text:getComputedStyle(document.getElementById('seven-app')).color}));
+      const night=await page.evaluate(()=>{
+        const app=document.getElementById('seven-app'),main=document.querySelector('.main'),composer=document.querySelector('.composer');
+        const rs=getComputedStyle(app),ms=getComputedStyle(main),cs=getComputedStyle(composer);
+        return {
+          root:rs.getPropertyValue('--s-bg').trim(),
+          main:ms.backgroundColor,
+          composer:cs.backgroundColor,
+          text:rs.color,
+          htmlTheme:document.documentElement.dataset.sevenTheme||'',
+          htmlClass:document.documentElement.className,
+          bodyClass:document.body.className,
+          composerSbS:cs.getPropertyValue('--sb-s').trim(),
+          composerSurface:cs.getPropertyValue('--surface').trim(),
+          composerShell:cs.getPropertyValue('--seven-shell-composer').trim(),
+          composerInline:composer.getAttribute('style')||'',
+          composerInApp:app.contains(composer)
+        };
+      });
+      if(night.main!=='rgb(23, 33, 29)'||night.composer!=='rgb(23, 33, 29)')console.error('NIGHT_THEME_DIAGNOSTIC',JSON.stringify(night));
       assert.equal(night.root,'#111815');
       assert.equal(night.main,'rgb(23, 33, 29)');
       assert.equal(night.composer,'rgb(23, 33, 29)');
