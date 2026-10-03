@@ -1,0 +1,148 @@
+name: Seven Wave 01 — Cline Product Audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.seven-team/prompts/wave-01/A01.md'
+      - '.seven-team/prompts/wave-01/B01.md'
+      - '.github/workflows/wave-01-cline.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: seven-wave01-cline
+  cancel-in-progress: true
+
+jobs:
+  cline-live:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - name: Wave 01 A01 Cline UI audit
+            branch: agent/01-ui-ux
+            prompt_path: .seven-team/prompts/wave-01/A01.md
+            report: .seven-team/reports/wave-01/A01-ui-ownership.md
+            commit_message: Wave 01 A01 UI ownership audit
+            config_dir: /tmp/cline-config-a
+          - name: Wave 01 B01 Cline RPG UX audit
+            branch: agent-b/01-rpg-ux
+            prompt_path: .seven-team/prompts/wave-01/B01.md
+            report: .seven-team/reports/wave-01/B01-rpg-ux.md
+            commit_message: Wave 01 B01 RPG UX audit
+            config_dir: /tmp/cline-config-b
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Cline
+        run: npm install -g cline
+
+      - name: Materialize guarded runtime and prompt from main
+        run: |
+          git fetch origin main
+          git show origin/main:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/kilo_anonymous_relay.py
+          git show origin/main:${{ matrix.prompt_path }} > /tmp/cline-prompt.md
+
+      - name: Start guarded relay
+        run: |
+          python /tmp/kilo_anonymous_relay.py > /tmp/seven-relay.log 2>&1 &
+          ready=0
+          for i in {1..20}; do
+            if curl -fsS http://127.0.0.1:8877/v1/models >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" -eq 1
+
+      # openai-compatible is required here; openai-native follows OpenAI-specific transport.
+      - name: Configure isolated OpenAI-compatible provider
+        run: |
+          cline --config "${{ matrix.config_dir }}" auth \
+            --provider openai-compatible \
+            --apikey local-dummy-key \
+            --modelid kilo-auto/free \
+            --baseurl http://127.0.0.1:8877/v1
+
+      - name: Verify persisted custom endpoint
+        run: |
+          SETTINGS="$(find "${{ matrix.config_dir }}" -type f -name providers.json -print -quit)"
+          test -n "$SETTINGS"
+          python - "$SETTINGS" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1]))
+          raw=json.dumps(d)
+          assert "http://127.0.0.1:8877/v1" in raw
+          assert "kilo-auto/free" in raw
+          print("Cline custom endpoint persisted")
+          PY
+
+      - name: Run real Cline agent
+        run: |
+          set -u
+          mkdir -p "$(dirname "${{ matrix.report }}")"
+          set +e
+          timeout 150s cline \
+            --config "${{ matrix.config_dir }}" \
+            --yolo \
+            --timeout 120 \
+            --retries 1 \
+            -P openai-compatible \
+            -m kilo-auto/free \
+            -k local-dummy-key \
+            "$(cat /tmp/cline-prompt.md)"
+          rc=$?
+          set -e
+          if test -f "${{ matrix.report }}" && grep -q 'WAVE01=COMPLETE' "${{ matrix.report }}"; then
+            echo "Cline produced required report; accepting output (rc=$rc)."
+          else
+            echo "Cline did not produce required report (rc=$rc)." >&2
+            exit "${rc:-1}"
+          fi
+
+      - name: Sanitize to allowed output only
+        run: |
+          set -euo pipefail
+          EXPECTED='${{ matrix.report }}'
+          cp "$EXPECTED" /tmp/seven-agent-report.md
+          git reset --hard HEAD
+          git clean -fdx
+          mkdir -p "$(dirname "$EXPECTED")"
+          cp /tmp/seven-agent-report.md "$EXPECTED"
+          git add -f "$EXPECTED"
+          count="$(git diff --cached --name-only | wc -l)"
+          test "$count" -le 1
+          if test "$count" -eq 1; then
+            test "$(git diff --cached --name-only)" = "$EXPECTED"
+            echo "REPORT_CHANGED=1" >> "$GITHUB_ENV"
+          else
+            echo "REPORT_CHANGED=0" >> "$GITHUB_ENV"
+          fi
+
+      - name: Commit and push controlled report
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if test "${REPORT_CHANGED:-0}" = "0"; then
+            echo "Report already matches branch; idempotent success."
+            exit 0
+          fi
+          git config user.name 'Seven Team Runtime'
+          git config user.email 'actions@users.noreply.github.com'
+          git commit -m "${{ matrix.commit_message }}"
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:${{ matrix.branch }}
