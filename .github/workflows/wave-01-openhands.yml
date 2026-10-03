@@ -21,10 +21,10 @@ jobs:
   openhands-live:
     name: ${{ matrix.name }}
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: 1
       matrix:
         include:
           - name: Wave 01 A04 OpenHands architecture audit
@@ -88,14 +88,14 @@ jobs:
           set -u
           mkdir -p "$(dirname "${{ matrix.report }}")"
           set +e
-          timeout 180s python /tmp/openhands_live.py
+          timeout 300s python /tmp/openhands_live.py
           rc=$?
           set -e
           if test -f "${{ matrix.report }}" && grep -q 'WAVE01=COMPLETE' "${{ matrix.report }}"; then
             echo "OpenHands produced required report; accepting output (rc=$rc)."
           else
             echo "OpenHands did not produce required report (rc=$rc)." >&2
-            exit "${rc:-1}"
+            exit 1
           fi
 
       - name: Sanitize to allowed output only
