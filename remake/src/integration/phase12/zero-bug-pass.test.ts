@@ -1457,6 +1457,35 @@ describe("Zero-bug regressions", () => {
     expect(manager.listActive("uncooperative-user-cancel")).toHaveLength(0);
   });
 
+  it("does not let callers spoof the internal deadline cancellation path", async () => {
+    const manager = new TaskManager();
+    let sealed: (() => boolean) | undefined;
+    let release: (() => void) | undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+
+    const run = manager.run(
+      { kind: "system", ownerId: "deadline-spoof", timeoutMs: 10_000 },
+      async ({ sealCancellation }) => {
+        sealed = sealCancellation;
+        await gate;
+        return "done";
+      },
+    );
+
+    await Promise.resolve();
+    expect(sealed?.()).toBe(true);
+    expect(() => run.cancel("deadline")).toThrow(/reserved internally/);
+    expect(manager.get(run.taskId)).toMatchObject({
+      status: "running",
+      cancellationSealed: true,
+    });
+
+    release?.();
+    await expect(run.result).resolves.toBe("done");
+  });
+
   it("validates cancellation reasons through the TaskRun handle too", async () => {
     const manager = new TaskManager();
     const run = manager.run(
