@@ -539,16 +539,17 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   });
   assert.equal(r.capability,'knowledge_sources_only');assert.equal(r.gatewayConfigured,false);assert.equal(r.keyLeaked,false);
  });
- await test('web search gateway settings are present without entering search context automatically',async()=>{
+ await test('web search gateway is managed automatically with no manual credential controls',async()=>{
   const r=await page.evaluate(()=>{
     openSettings();
-    const ids=['searchGatewayUrlInput','searchGatewayKeyInput','searchGatewayStatus'];
-    const present=ids.every(id=>!!document.getElementById(id));
-    const keyType=document.getElementById('searchGatewayKeyInput')?.type;
+    const status=!!document.getElementById('searchGatewayStatus');
+    const url=!!document.getElementById('searchGatewayUrlInput');
+    const key=!!document.getElementById('searchGatewayKeyInput');
+    const text=document.getElementById('searchGatewayStatus')?.textContent||'';
     closeSettings();
-    return {present,keyType};
+    return {status,url,key,text};
   });
-  assert.equal(r.present,true);assert.equal(r.keyType,'password');
+  assert.equal(r.status,true);assert.equal(r.url,false);assert.equal(r.key,false);assert.ok(/without setup|managed/i.test(r.text));
  });
 
  await test('web search evidence freshness is query-relative',async()=>{
