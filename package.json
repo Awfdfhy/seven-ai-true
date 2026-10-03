@@ -1,6 +1,6 @@
 {
   "name": "seven-ai",
-  "version": "1.0.0",
+  "version": "2.4.3",
   "private": true,
   "description": "Seven AI Android release packaging",
   "engines": {
@@ -28,5 +28,6 @@
     "xcode": {
       "uuid": "11.1.1"
     }
-  }
+  },
+  "sevenAndroidVersionCode": 243
 }
