@@ -1754,6 +1754,40 @@ describe("Zero-bug regressions", () => {
     expect(seven.message).not.toContain("secret upstream response body");
   });
 
+  it("rejects malformed ChatService composition dependencies", () => {
+    expect(() =>
+      new ChatService(null as never, new InMemoryRoomRepository()),
+    ).toThrow(/TaskManager/);
+
+    expect(() =>
+      new ChatService(new TaskManager(), null as never),
+    ).toThrow(/RoomRepository/);
+  });
+
+  it("rejects a transport that does not return an AsyncIterable", async () => {
+    const repository = new InMemoryRoomRepository([
+      createRoom({ id: "bad-stream-shape", now: 1 }),
+    ]);
+    const chat = new ChatService(new TaskManager(), repository);
+    const badTransport = {
+      stream() {
+        return Promise.resolve(["not", "an", "async", "iterable"]);
+      },
+    } as never;
+
+    const run = await chat.send(
+      "bad-stream-shape",
+      "hello",
+      badTransport,
+    );
+    await expect(run.result).rejects.toMatchObject({
+      code: "PROVIDER",
+    });
+
+    const saved = await repository.get("bad-stream-shape");
+    expect(saved?.messages.map((message) => message.role)).toEqual(["user"]);
+  });
+
   it("isolates task listeners and bounds completed task retention", async () => {
     const manager = new TaskManager({ maxRetainedCompleted: 2 });
     manager.subscribe(() => {
