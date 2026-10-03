@@ -16,6 +16,7 @@ export type ProviderHealth = Readonly<{
 export type ProviderFailureOptions = Readonly<{
   retryAfterMs?: number;
   penalty?: number;
+  attemptStartedAt?: number;
 }>;
 
 export type RoutePreferences = Readonly<{
@@ -139,6 +140,7 @@ type InternalHealth = ProviderHealth &
   Readonly<{
     revision: number;
     lastFailureAt: number | null;
+    latestAttemptStartedAt: number | null;
   }>;
 
 export class ProviderHealthTracker {
@@ -187,9 +189,9 @@ export class ProviderHealthTracker {
     const current = this.states.get(providerId);
 
     if (
-      current?.lastFailureAt !== null &&
-      current?.lastFailureAt !== undefined &&
-      attemptStartedAt <= current.lastFailureAt
+      current?.latestAttemptStartedAt !== null &&
+      current?.latestAttemptStartedAt !== undefined &&
+      attemptStartedAt < current.latestAttemptStartedAt
     ) {
       return;
     }
@@ -203,6 +205,7 @@ export class ProviderHealthTracker {
         cooldownUntil: null,
         revision: (current?.revision ?? 0) + 1,
         lastFailureAt: current?.lastFailureAt ?? null,
+        latestAttemptStartedAt: attemptStartedAt,
       }),
     );
   }
@@ -227,6 +230,22 @@ export class ProviderHealthTracker {
     requireFiniteNonNegative(now, "Provider failure timestamp");
 
     const current = this.states.get(providerId);
+    const attemptStartedAt =
+      options.attemptStartedAt === undefined
+        ? now
+        : requireFiniteNonNegative(
+            options.attemptStartedAt,
+            "Provider attempt start timestamp",
+          );
+
+    if (
+      current?.latestAttemptStartedAt !== null &&
+      current?.latestAttemptStartedAt !== undefined &&
+      attemptStartedAt < current.latestAttemptStartedAt
+    ) {
+      return;
+    }
+
     const addedPenalty =
       options.penalty === undefined
         ? 50
@@ -262,6 +281,7 @@ export class ProviderHealthTracker {
         cooldownUntil,
         revision: (current?.revision ?? 0) + 1,
         lastFailureAt: Math.max(current?.lastFailureAt ?? 0, now),
+        latestAttemptStartedAt: attemptStartedAt,
       }),
     );
   }
