@@ -60,10 +60,20 @@ jobs:
               blocks.append(f"===== {p.as_posix()} =====\n{raw}\n")
 
           inventory=['===== REGRESSION TEST INVENTORY =====']
-          import re
           for p in tests:
               raw=p.read_text(encoding='utf-8',errors='replace')
-              titles=re.findall(r'\\bit\\(\\s*["\\\']([^"\\\']+)',raw)
+              titles=[]
+              for line in raw.splitlines():
+                  stripped=line.strip()
+                  for prefix in ('it("', "it('"):
+                      if prefix in stripped:
+                          tail=stripped.split(prefix,1)[1]
+                          quote=prefix[-1]
+                          if quote in tail:
+                              title=tail.split(quote,1)[0].strip()
+                              if title:
+                                  titles.append(title)
+                          break
               inventory.append(p.as_posix())
               inventory.extend('  - '+title for title in titles)
 
