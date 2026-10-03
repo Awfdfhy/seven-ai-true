@@ -563,7 +563,8 @@ export class TaskManager {
 
   private emit(task: MutableTask): void {
     const snapshot = this.snapshot(task);
-    for (const listener of this.listeners) {
+    const listeners = [...this.listeners];
+    for (const listener of listeners) {
       try {
         listener(snapshot);
       } catch {
