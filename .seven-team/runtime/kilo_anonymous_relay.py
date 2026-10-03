@@ -112,7 +112,34 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self.send_header("Cache-Control", "no-cache")
                 self.send_header("Connection", "close")
                 self.end_headers()
-                self.wfile.write(("data: " + json.dumps(chunk, separators=(",", ":")) + "\n\n").encode())
+                # Emit payload deltas first, then an explicit terminal chunk.
+                # Qwen Code rejects streams that reach [DONE] without observing a
+                # non-null finish_reason, even when the upstream full response left
+                # it null. Infer the OpenAI finish reason conservatively.
+                first = dict(chunk)
+                for item in first["choices"]:
+                    item["finish_reason"] = None
+                self.wfile.write(("data: " + json.dumps(first, separators=(",", ":")) + "\n\n").encode())
+
+                terminal_choices = []
+                for idx, choice in enumerate(data.get("choices") or []):
+                    message = choice.get("message") or {}
+                    finish = choice.get("finish_reason")
+                    if not finish:
+                        finish = "tool_calls" if message.get("tool_calls") else "stop"
+                    terminal_choices.append({
+                        "index": choice.get("index", idx),
+                        "delta": {},
+                        "finish_reason": finish,
+                    })
+                terminal = {
+                    "id": data.get("id") or "seven-relay",
+                    "object": "chat.completion.chunk",
+                    "created": data.get("created", 0),
+                    "model": data.get("model") or request_json.get("model"),
+                    "choices": terminal_choices,
+                }
+                self.wfile.write(("data: " + json.dumps(terminal, separators=(",", ":")) + "\n\n").encode())
                 self.wfile.write(b"data: [DONE]\n\n")
                 self.wfile.flush()
                 return
