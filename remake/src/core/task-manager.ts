@@ -492,15 +492,34 @@ export class TaskManager {
         ? {
             error: new SevenError({
               code: task.error.code,
-              message: task.error.message,
+              message: this.publicErrorMessage(task.error.code),
               retryable: task.error.retryable,
-              ...(task.error.details !== undefined
-                ? { details: task.error.details }
-                : {}),
             }),
           }
         : {}),
     });
+  }
+
+  private publicErrorMessage(code: SevenError["code"]): string {
+    switch (code) {
+      case "CANCELLED":
+        return "Task cancelled.";
+      case "DEADLINE_EXCEEDED":
+        return "Task deadline exceeded.";
+      case "NETWORK":
+        return "Network operation failed.";
+      case "PROVIDER":
+        return "Provider operation failed.";
+      case "STORAGE":
+        return "Storage operation failed.";
+      case "BRIDGE":
+        return "Bridge operation failed.";
+      case "VALIDATION":
+        return "Task validation failed.";
+      case "UNKNOWN":
+      default:
+        return "Task failed.";
+    }
   }
 
   private emit(task: MutableTask): void {
