@@ -21,6 +21,7 @@ from urllib.parse import urlsplit
 
 HOST = os.environ.get("SEVEN_RELAY_HOST", "127.0.0.1")
 PORT = int(os.environ.get("SEVEN_RELAY_PORT", "8877"))
+BRIDGE_STREAM = os.environ.get("SEVEN_RELAY_BRIDGE_STREAM", "").strip().lower() in {"1", "true", "yes"}
 UPSTREAM = "api.kilo.ai"
 PREFIX = "/api/gateway"
 
@@ -51,10 +52,78 @@ class Handler(http.server.BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", "0") or "0")
         payload = self.rfile.read(length) if length else None
         headers = {"Content-Type": self.headers.get("Content-Type", "application/json")}
+
+        # Some coding CLIs require OpenAI-style SSE streaming even when a free
+        # upstream gateway is more reliable in non-stream mode. When explicitly
+        # enabled, request one complete response upstream and translate it into
+        # a standards-shaped SSE stream locally. Other workers retain pass-through.
+        bridge_stream = False
+        if BRIDGE_STREAM and target == "/chat/completions" and payload:
+            try:
+                request_json = json.loads(payload.decode("utf-8"))
+                bridge_stream = bool(request_json.get("stream"))
+                if bridge_stream:
+                    request_json["stream"] = False
+                    request_json.pop("stream_options", None)
+                    payload = json.dumps(request_json).encode("utf-8")
+            except Exception:
+                bridge_stream = False
+
         # Intentionally DO NOT forward Authorization or any other caller headers.
         conn = http.client.HTTPSConnection(UPSTREAM, timeout=180)
         conn.request(self.command, PREFIX + target, body=payload, headers=headers)
         res = conn.getresponse()
+
+        if bridge_stream and 200 <= res.status < 300:
+            raw = res.read()
+            conn.close()
+            try:
+                data = json.loads(raw.decode("utf-8"))
+                choices = []
+                for idx, choice in enumerate(data.get("choices") or []):
+                    message = choice.get("message") or {}
+                    delta = {"role": message.get("role") or "assistant"}
+                    if message.get("content") is not None:
+                        delta["content"] = message.get("content")
+                    if message.get("reasoning_content") is not None:
+                        delta["reasoning_content"] = message.get("reasoning_content")
+                    calls = message.get("tool_calls")
+                    if isinstance(calls, list):
+                        normalized = []
+                        for call_idx, call in enumerate(calls):
+                            item = dict(call)
+                            item.setdefault("index", call_idx)
+                            normalized.append(item)
+                        delta["tool_calls"] = normalized
+                    choices.append({
+                        "index": choice.get("index", idx),
+                        "delta": delta,
+                        "finish_reason": choice.get("finish_reason"),
+                    })
+                chunk = {
+                    "id": data.get("id") or "seven-relay",
+                    "object": "chat.completion.chunk",
+                    "created": data.get("created", 0),
+                    "model": data.get("model") or request_json.get("model"),
+                    "choices": choices,
+                }
+                self.send_response(200)
+                self.send_header("Content-Type", "text/event-stream")
+                self.send_header("Cache-Control", "no-cache")
+                self.send_header("Connection", "close")
+                self.end_headers()
+                self.wfile.write(("data: " + json.dumps(chunk, separators=(",", ":")) + "\n\n").encode())
+                self.wfile.write(b"data: [DONE]\n\n")
+                self.wfile.flush()
+                return
+            except Exception as exc:
+                body = json.dumps({"error": {"message": f"stream-bridge-decode-failed: {exc}"}}).encode()
+                self.send_response(502)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
 
         self.send_response(res.status)
         for key, value in res.getheaders():
