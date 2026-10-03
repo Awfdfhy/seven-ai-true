@@ -2,7 +2,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const srcRoot = new URL("../../", import.meta.url).pathname;
+const srcRoot = join(process.cwd(), "src");
 
 function walk(dir: string): string[] {
   const out: string[] = [];
