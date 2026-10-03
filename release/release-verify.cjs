@@ -211,6 +211,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       await page.waitForFunction(()=>window.SevenIntelligence&&typeof SevenIntelligence.settings==='function');
       const state=await page.evaluate(()=>SevenIntelligence.settings());
       assert.equal(state.engine,'auto');
+      await page.waitForFunction(()=>window.SevenRemake&&typeof SevenRemake.searchSettings==='function');
       await page.evaluate(()=>SevenRemake.searchSettings());
       await page.waitForFunction(()=>!!document.querySelector('.s-modal .s-dialog'));
       const ui=await page.evaluate(()=>({options:[...document.querySelectorAll('#s-search-engine option')].map(o=>o.value),keyFields:[...document.querySelectorAll('.s-modal input[type="password"],.s-modal [id*="key" i]')].length}));
