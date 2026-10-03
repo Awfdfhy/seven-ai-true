@@ -81,7 +81,7 @@ describe("Phase 1-2 hardening", () => {
       chat.send("race-room", "second", immediateTransport),
     ).rejects.toMatchObject({
       code: "VALIDATION",
-      message: "A chat task is already active for this room.",
+      message: "Task owner is already active or reserved.",
     });
 
     repository.release();
