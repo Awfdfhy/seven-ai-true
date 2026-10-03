@@ -73,19 +73,32 @@ export function assertValidModelDescriptor(
     });
   }
 
-  const textFields = [
+  const identityFields = [
     ["id", model.id],
     ["providerId", model.providerId],
-    ["displayName", model.displayName],
   ] as const;
 
-  for (const [field, value] of textFields) {
-    if (typeof value !== "string" || !value.trim()) {
+  for (const [field, value] of identityFields) {
+    if (
+      typeof value !== "string" ||
+      !value.trim() ||
+      value !== value.trim()
+    ) {
       throw new SevenError({
         code: "VALIDATION",
-        message: `Model ${field} must not be empty.`,
+        message: `Model ${field} must be a canonical non-empty string.`,
       });
     }
+  }
+
+  if (
+    typeof model.displayName !== "string" ||
+    !model.displayName.trim()
+  ) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Model displayName must not be empty.",
+    });
   }
 
   if (!Number.isSafeInteger(model.contextWindow) || model.contextWindow <= 0) {
