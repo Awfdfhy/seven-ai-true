@@ -174,6 +174,24 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       await page.evaluate(()=>window.SevenWorkspaces?.close());
       await page.close();
     });
+    await test('mode and depth dialogs stay usable on smallest RTL night phone',async()=>{
+      const page=await browser.newPage({viewport:{width:320,height:800}});
+      await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');});
+      await page.goto(origin,{waitUntil:'domcontentloaded'});
+      await page.waitForFunction(()=>window.SevenRemake&&window.SevenTheme&&typeof SevenRemake.modeDialog==='function'&&typeof SevenRemake.depthDialog==='function');
+      await page.evaluate(()=>{document.documentElement.dir='rtl';document.body.dir='rtl';SevenTheme.setPreference('night');});
+      for(const name of ['modeDialog','depthDialog']){
+        await page.evaluate(n=>SevenRemake[n](),name);
+        await page.waitForFunction(()=>!!document.querySelector('.s-modal .s-dialog'));
+        const state=await page.evaluate(()=>{const m=document.querySelector('.s-modal'),d=m.querySelector('.s-dialog'),r=d.getBoundingClientRect();const controls=[...d.querySelectorAll('button,input,select,textarea')].filter(x=>{const b=x.getBoundingClientRect(),s=getComputedStyle(x);return !x.hidden&&s.display!=='none'&&s.visibility!=='hidden'&&b.width>0&&b.height>0});return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,w:innerWidth,h:innerHeight,overflow:d.scrollWidth<=d.clientWidth+1,controls:controls.length,theme:document.documentElement.dataset.sevenTheme,dir:document.documentElement.dir}}); 
+        assert.equal(state.overflow,true,name+' overflow');
+        assert.ok(state.left>=-2&&state.right<=state.w+2&&state.top>=-2&&state.bottom<=state.h+2,name+' clipped: '+JSON.stringify(state));
+        assert.ok(state.controls>=2,name+' controls missing');
+        assert.equal(state.theme,'night');assert.equal(state.dir,'rtl');
+        await page.evaluate(()=>SevenRemake.closeDialog());
+      }
+      await page.close();
+    });
     await test('modern model and workspace menus stay inside viewport',async()=>{
       const page=await browser.newPage({viewport:{width:360,height:800}});
       await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');});
