@@ -188,7 +188,7 @@ Status: **PASS**
   - Manager PR #70 merged; post-merge Remake CI PASS.
   - Android installed-APK/native round-trip evidence remains a final release gate; browser CI does not pretend to replace device evidence.
 
-- 11/12 AppKernel + Recovery + Observability: CLOSURE CANDIDATE
+- 11/12 AppKernel + Recovery + Observability: COMPLETE
   - One AppKernel owns service boot/shutdown.
   - Deterministic dependency graph with cycle/missing-dependency rejection.
   - Concurrent boot callers share one promise.
@@ -199,7 +199,7 @@ Status: **PASS**
   - Normal path now boots through createSevenRuntime; React no longer constructs TaskManager/ShellStore/ThemeService/AppKernel owners.
   - Individual gates: Remake CI PASS; Legacy Seven + verified release artifact PASS.
 
-- 12/12 Release Assurance + Final Closure: CLOSURE CANDIDATE
+- 12/12 Release Assurance + Final Closure: COMPLETE
   - Deterministic release payload manifests.
   - SHA-256 payload identity.
   - Exact installed artifact id/version/payload comparison.
@@ -208,11 +208,17 @@ Status: **PASS**
   - Final closure requires evidence-bearing completion records for all 12 phases.
   - Individual gates: rebased Remake CI PASS — 27/27 files, 251/251 tests; Legacy Seven + verified legacy release artifact PASS.
 
-- Final Manager 11+12: IN PROGRESS
+- Final Manager 11+12: COMPLETE
   - normal application path uses one SevenRuntime/AppKernel.
   - boot failure remains recoverable.
   - UI contains no duplicate runtime-owner construction.
   - 12/12 implementation truth is separated from installed-remake release evidence.
-  - Awaiting combined Remake CI + Legacy Seven + merge/post-merge CI.
+  - Combined Remake CI: PASS — 28/28 test files, 255/255 tests, strict typecheck/build PASS, dependency audits 0 vulnerabilities.
+  - Combined Legacy Seven + verified legacy release artifact: PASS.
+  - Final Manager PR #74 merged; post-merge Remake CI PASS.
+  - Normal application boot is now owned by one SevenRuntime/AppKernel.
+  - Current installed-remake release readiness remains INCONCLUSIVE until a real remake APK packaging/device gate provides exact payload identity + installed smoke evidence.
 
-**REMAKE_PROGRESS=10/12_COMPLETE + 11-12_CLOSURE_CANDIDATES**
+**REMAKE_PROGRESS=12/12**
+
+**RELEASE_READY=INCONCLUSIVE** — implementation is complete, but installed-remake Android artifact identity/smoke evidence does not yet exist.
