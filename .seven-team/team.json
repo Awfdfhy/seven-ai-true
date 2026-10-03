@@ -5,7 +5,9 @@
   "orchestrator": {
     "primary": "agent-of-empires/agent-of-empires",
     "mode": "compatibility-first",
-    "persistentHostRequiredForLiveTeam": true
+    "persistentHostRequiredForLiveTeam": true,
+    "liveMode": "persistent-host-or-ephemeral-ci-burst",
+    "binarySmokeWorkflow": ".github/workflows/agent-team-binary-smoke.yml"
   },
   "workers": [
     {
@@ -53,9 +55,9 @@
     {
       "id": "07",
       "branch": "agent/07-security-selfdev",
-      "project": "block/goose",
+      "project": "aaif-goose/goose",
       "role": "Security, GitHub Self-Dev, MCP and integration boundaries",
-      "probe": "git ls-remote https://github.com/block/goose.git HEAD"
+      "probe": "git ls-remote https://github.com/aaif-goose/goose.git HEAD"
     },
     {
       "id": "08",

@@ -1,0 +1,105 @@
+name: Seven Agent Team Binary Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/agent-team-binary-smoke.yml'
+      - '.seven-team/**'
+
+permissions:
+  contents: read
+
+jobs:
+  orchestrator-smoke:
+    name: Agent of Empires runtime
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install prerequisites
+        run: sudo apt-get update && sudo apt-get install -y tmux
+      - name: Install Agent of Empires
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/agent-of-empires/agent-of-empires/main/scripts/install.sh | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+      - name: Probe Agent of Empires
+        run: |
+          export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
+          aoe --version || aoe --help
+
+  worker-binary-smoke:
+    name: Install ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: '01'
+            name: Cline
+            install: npm install -g cline
+            probe: cline --version
+          - id: '02'
+            name: Codex
+            install: npm install -g @openai/codex
+            probe: codex --version
+          - id: '03'
+            name: Gemini CLI
+            install: npm install -g @google/gemini-cli
+            probe: gemini --version
+          - id: '04'
+            name: OpenHands Agent Canvas
+            install: npm install -g @openhands/agent-canvas
+            probe: agent-canvas --help
+          - id: '05'
+            name: OpenCode
+            install: npm install -g opencode-ai@latest
+            probe: opencode --version
+          - id: '06'
+            name: Aider
+            install: python -m pip install --upgrade pip && python -m pip install aider-chat
+            probe: aider --version
+          - id: '07'
+            name: Goose
+            install: curl -fsSL https://github.com/aaif-goose/goose/releases/download/stable/download_cli.sh | CONFIGURE=false bash
+            probe: export PATH="$HOME/.local/bin:$HOME/bin:$PATH"; goose --version
+          - id: '08'
+            name: mini-SWE-agent
+            install: python -m pip install --upgrade pip && python -m pip install mini-swe-agent
+            probe: mini --help
+          - id: '09'
+            name: Qwen Code
+            install: npm install -g @qwen-code/qwen-code@latest
+            probe: qwen --version
+          - id: '10'
+            name: Hermes Agent
+            install: curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+            probe: export PATH="$HOME/.local/bin:$HOME/bin:$PATH"; hermes --help
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install worker
+        shell: bash
+        env:
+          PIP_DISABLE_PIP_VERSION_CHECK: '1'
+        run: |
+          set -euo pipefail
+          ${{ matrix.install }}
+
+      - name: Probe worker binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          ${{ matrix.probe }}
