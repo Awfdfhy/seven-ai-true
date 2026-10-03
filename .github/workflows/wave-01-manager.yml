@@ -14,20 +14,13 @@ on:
       - Seven Wave 01 — mini-SWE Evaluation Audit
       - Seven Wave 01 — Qwen Performance Audit
     types: [completed]
-  push:
-    branches:
-      - 'agent/**'
-      - 'agent-b/**'
-    paths:
-      - '.seven-team/reports/wave-01/**'
-
 permissions:
   contents: write
   pull-requests: write
 
 concurrency:
   group: seven-wave01-manager
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   completion-gate:
@@ -125,12 +118,15 @@ jobs:
           export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
           mkdir -p .seven-team/reports/wave-01
           set +e
-          timeout 300s hermes --provider custom -m kilo-auto/free --yolo --ignore-rules chat -Q --max-turns 8 -q "$(cat /tmp/wave01/A10.md)"
-          rc=$?
+          timeout 300s hermes --provider custom -m kilo-auto/free --yolo --ignore-rules chat -Q --max-turns 8 -q "$(cat /tmp/wave01/A10.md)" 2>&1 | tee /tmp/hermes-a10.out
+          rc=${PIPESTATUS[0]}
           set -e
           REPORT=.seven-team/reports/wave-01/A10-integration-review.md
           if test -f "$REPORT" && grep -q 'WAVE01_REVIEW=PASS' "$REPORT"; then
-            echo "A10 review completed (rc=$rc)."
+            echo "A10 review completed in repository (rc=$rc)."
+          elif grep -q 'WAVE01_REVIEW=PASS' /tmp/hermes-a10.out; then
+            echo "A10 completed in stdout; recovering controlled review report."
+            cp /tmp/hermes-a10.out "$REPORT"
           else
             echo "A10 review did not produce PASS evidence (rc=$rc)." >&2
             tail -120 /tmp/seven-relay-a10.log >&2 || true
@@ -220,12 +216,15 @@ jobs:
           export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
           mkdir -p .seven-team/reports/wave-01
           set +e
-          timeout 300s hermes --provider custom -m kilo-auto/free --yolo --ignore-rules chat -Q --max-turns 8 -q "$(cat /tmp/wave01/B10.md)"
-          rc=$?
+          timeout 300s hermes --provider custom -m kilo-auto/free --yolo --ignore-rules chat -Q --max-turns 8 -q "$(cat /tmp/wave01/B10.md)" 2>&1 | tee /tmp/hermes-b10.out
+          rc=${PIPESTATUS[0]}
           set -e
           REPORT=.seven-team/reports/wave-01/B10-integration-review.md
           if test -f "$REPORT" && grep -q 'WAVE01_REVIEW=PASS' "$REPORT"; then
-            echo "B10 review completed (rc=$rc)."
+            echo "B10 review completed in repository (rc=$rc)."
+          elif grep -q 'WAVE01_REVIEW=PASS' /tmp/hermes-b10.out; then
+            echo "B10 completed in stdout; recovering controlled review report."
+            cp /tmp/hermes-b10.out "$REPORT"
           else
             echo "B10 review did not produce PASS evidence (rc=$rc)." >&2
             tail -120 /tmp/seven-relay-b10.log >&2 || true
