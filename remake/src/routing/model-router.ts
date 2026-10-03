@@ -283,25 +283,27 @@ export class ModelRouter {
     }
 
     const preferred = preferences.preferredModelId;
-    const preferredMatches =
-      preferred === null
-        ? []
-        : models.filter(
-            (model) =>
-              modelKey(model) === preferred ||
-              (!preferred.includes("::") && model.id === preferred),
-          );
+    let resolvedPreferredKey: string | null = null;
 
-    if (
-      preferred !== null &&
-      !preferred.includes("::") &&
-      preferredMatches.length > 1
-    ) {
-      throw new SevenError({
-        code: "VALIDATION",
-        message:
-          "preferredModelId is ambiguous across providers; use providerId::modelId.",
-      });
+    if (preferred !== null) {
+      const exactQualified = models.find(
+        (model) => modelKey(model) === preferred,
+      );
+      if (exactQualified) {
+        resolvedPreferredKey = modelKey(exactQualified);
+      } else {
+        const bareMatches = models.filter((model) => model.id === preferred);
+        if (bareMatches.length > 1) {
+          throw new SevenError({
+            code: "VALIDATION",
+            message:
+              "preferredModelId is ambiguous across providers; use modelKey(model).",
+          });
+        }
+        if (bareMatches.length === 1) {
+          resolvedPreferredKey = modelKey(bareMatches[0]!);
+        }
+      }
     }
 
     const candidates = models
@@ -333,9 +335,8 @@ export class ModelRouter {
           });
         }
         const isPreferred =
-          preferred !== null &&
-          (modelKey(model) === preferred ||
-            (!preferred.includes("::") && model.id === preferred));
+          resolvedPreferredKey !== null &&
+          modelKey(model) === resolvedPreferredKey;
         const preferredBonus = isPreferred ? 10_000 : 0;
 
         return Object.freeze({
