@@ -13,6 +13,7 @@ import type {
   ChatStreamContext,
   ChatTransport,
 } from "../../application/chat/chat-service";
+import type { ProviderContextSource } from "../../application/context/memory-context-service";
 
 export type ProviderMap = ReadonlyMap<string, ProviderAdapter>;
 
@@ -82,6 +83,9 @@ function validatePlan(plan: RoutePlan): void {
     if (
       !isCanonicalId(candidate.providerId) ||
       !isCanonicalId(candidate.modelId) ||
+      typeof candidate.contextWindow !== "number" ||
+      !Number.isSafeInteger(candidate.contextWindow) ||
+      candidate.contextWindow <= 0 ||
       typeof candidate.score !== "number" ||
       !Number.isFinite(candidate.score)
     ) {
@@ -111,6 +115,7 @@ function snapshotPlan(plan: RoutePlan): RoutePlan {
         Object.freeze({
           providerId: candidate.providerId,
           modelId: candidate.modelId,
+          contextWindow: candidate.contextWindow,
           score: candidate.score,
         }),
       ),
@@ -210,6 +215,7 @@ export class RoutedChatTransport implements ChatTransport {
     private readonly systemPrompt = "You are Seven, a precise and helpful AI assistant.",
     private readonly health?: ProviderHealthTracker,
     private readonly now: () => number = Date.now,
+    private readonly contextSource?: ProviderContextSource,
   ) {
     this.plan = snapshotPlan(plan);
     this.providers = snapshotProviders(providers);
@@ -239,21 +245,21 @@ export class RoutedChatTransport implements ChatTransport {
         message: "Provider clock must be a function.",
       });
     }
+    if (
+      contextSource !== undefined &&
+      (!contextSource ||
+        typeof contextSource !== "object" ||
+        typeof contextSource.prepare !== "function")
+    ) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Provider context source is malformed.",
+      });
+    }
   }
 
   async *stream(context: ChatStreamContext): AsyncIterable<string> {
     validateContext(context);
-
-    const messages: ProviderMessage[] = [
-      Object.freeze({ role: "system", content: this.systemPrompt }),
-      ...context.room.messages.map((message) =>
-        Object.freeze({
-          role: message.role,
-          content: message.content,
-        }),
-      ),
-    ];
-    assertValidProviderMessages(messages);
 
     const failures: string[] = [];
 
@@ -271,6 +277,31 @@ export class RoutedChatTransport implements ChatTransport {
         failures.push(`${candidate.providerId}:provider-id-mismatch`);
         continue;
       }
+
+      const messages: readonly ProviderMessage[] =
+        this.contextSource === undefined
+          ? [
+              Object.freeze({
+                role: "system" as const,
+                content: this.systemPrompt,
+              }),
+              ...context.room.messages.map((message) =>
+                Object.freeze({
+                  role: message.role,
+                  content: message.content,
+                }),
+              ),
+            ]
+          : (
+              await this.contextSource.prepare({
+                room: context.room,
+                systemPrompt: this.systemPrompt,
+                contextWindow: candidate.contextWindow,
+                signal: context.signal,
+              })
+            ).messages;
+
+      assertValidProviderMessages(messages);
 
       const attemptToken = this.health?.beginAttempt(provider.id);
 
