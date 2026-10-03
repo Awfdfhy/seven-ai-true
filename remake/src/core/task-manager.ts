@@ -25,12 +25,14 @@ export type TaskSnapshot = Readonly<{
   finishedAt?: number;
   deadlineAt?: number;
   cancelReason?: string;
+  cancellationSealed: boolean;
   error?: SevenError;
 }>;
 
 export type TaskContext = Readonly<{
   taskId: string;
   signal: AbortSignal;
+  sealCancellation: () => boolean;
 }>;
 
 export type TaskSpec = Readonly<{
@@ -54,6 +56,7 @@ type MutableTask = {
   finishedAt?: number;
   deadlineAt?: number;
   cancelReason?: string;
+  cancellationSealed: boolean;
   error?: SevenError;
   controller: AbortController;
   timeoutId?: ReturnType<typeof setTimeout>;
@@ -61,9 +64,26 @@ type MutableTask = {
 
 type Listener = (snapshot: TaskSnapshot) => void;
 
+export type TaskManagerOptions = Readonly<{
+  maxRetainedCompleted?: number;
+}>;
+
 export class TaskManager {
   private readonly tasks = new Map<string, MutableTask>();
   private readonly listeners = new Set<Listener>();
+  private readonly completedOrder: string[] = [];
+  private readonly maxRetainedCompleted: number;
+
+  constructor(options: TaskManagerOptions = {}) {
+    const limit = options.maxRetainedCompleted ?? 128;
+    if (!Number.isInteger(limit) || limit < 0) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "maxRetainedCompleted must be a non-negative integer.",
+      });
+    }
+    this.maxRetainedCompleted = limit;
+  }
 
   subscribe(listener: Listener): () => void {
     this.listeners.add(listener);
@@ -88,6 +108,17 @@ export class TaskManager {
     spec: TaskSpec,
     executor: (context: TaskContext) => Promise<T>,
   ): TaskRun<T> {
+    const timeoutMs = spec.timeoutMs;
+    if (
+      timeoutMs !== undefined &&
+      (!Number.isFinite(timeoutMs) || timeoutMs <= 0)
+    ) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "timeoutMs must be a positive finite number.",
+      });
+    }
+
     const taskId = crypto.randomUUID();
     const startedAt = Date.now();
     const controller = new AbortController();
@@ -98,26 +129,21 @@ export class TaskManager {
       ownerId: spec.ownerId,
       status: "starting",
       startedAt,
+      cancellationSealed: false,
       controller,
     };
 
-    if (spec.timeoutMs !== undefined) {
-      if (!Number.isFinite(spec.timeoutMs) || spec.timeoutMs <= 0) {
-        throw new SevenError({
-          code: "VALIDATION",
-          message: "timeoutMs must be a positive finite number.",
-        });
-      }
-      task.deadlineAt = startedAt + spec.timeoutMs;
+    if (timeoutMs !== undefined) {
+      task.deadlineAt = startedAt + timeoutMs;
     }
 
     this.tasks.set(taskId, task);
     this.emit(task);
 
-    if (spec.timeoutMs !== undefined) {
+    if (timeoutMs !== undefined) {
       task.timeoutId = setTimeout(() => {
         this.requestCancel(task, "deadline");
-      }, spec.timeoutMs);
+      }, timeoutMs);
     }
 
     const result = Promise.resolve()
@@ -127,11 +153,18 @@ export class TaskManager {
         }
         task.status = "running";
         this.emit(task);
-        return executor({ taskId, signal: controller.signal });
+        return executor({
+          taskId,
+          signal: controller.signal,
+          sealCancellation: () => this.sealCancellation(task),
+        });
       })
       .then(
         (value) => {
-          if (controller.signal.aborted || task.status === "cancelling") {
+          if (
+            !task.cancellationSealed &&
+            (controller.signal.aborted || task.status === "cancelling")
+          ) {
             const code =
               task.cancelReason === "deadline"
                 ? "DEADLINE_EXCEEDED"
@@ -151,7 +184,10 @@ export class TaskManager {
           return value;
         },
         (error: unknown) => {
-          if (controller.signal.aborted || task.status === "cancelling") {
+          if (
+            !task.cancellationSealed &&
+            (controller.signal.aborted || task.status === "cancelling")
+          ) {
             const code =
               task.cancelReason === "deadline"
                 ? "DEADLINE_EXCEEDED"
@@ -186,8 +222,25 @@ export class TaskManager {
     return task ? this.requestCancel(task, reason) : false;
   }
 
+  private sealCancellation(task: MutableTask): boolean {
+    if (
+      task.cancellationSealed ||
+      task.status === "cancelling" ||
+      task.status === "cancelled" ||
+      task.status === "failed" ||
+      task.status === "succeeded" ||
+      task.controller.signal.aborted
+    ) {
+      return false;
+    }
+    task.cancellationSealed = true;
+    this.emit(task);
+    return true;
+  }
+
   private requestCancel(task: MutableTask, reason: string): boolean {
     if (
+      task.cancellationSealed ||
       task.status === "cancelled" ||
       task.status === "succeeded" ||
       task.status === "failed" ||
@@ -216,6 +269,12 @@ export class TaskManager {
     task.status = status;
     task.finishedAt = Date.now();
     this.emit(task);
+
+    this.completedOrder.push(task.taskId);
+    while (this.completedOrder.length > this.maxRetainedCompleted) {
+      const oldest = this.completedOrder.shift();
+      if (oldest !== undefined) this.tasks.delete(oldest);
+    }
   }
 
   private snapshot(task: MutableTask): TaskSnapshot {
@@ -225,6 +284,7 @@ export class TaskManager {
       ownerId: task.ownerId,
       status: task.status,
       startedAt: task.startedAt,
+      cancellationSealed: task.cancellationSealed,
       ...(task.finishedAt !== undefined
         ? { finishedAt: task.finishedAt }
         : {}),
@@ -240,6 +300,12 @@ export class TaskManager {
 
   private emit(task: MutableTask): void {
     const snapshot = this.snapshot(task);
-    for (const listener of this.listeners) listener(snapshot);
+    for (const listener of this.listeners) {
+      try {
+        listener(snapshot);
+      } catch {
+        // Observers must never be able to corrupt task lifecycle.
+      }
+    }
   }
 }
