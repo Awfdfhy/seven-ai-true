@@ -28,12 +28,12 @@ jobs:
       matrix:
         include:
           - name: Bug Hunt A02 Codex Android audit
-            branch: agent/02-android-build
+            branch: bughunt/a02
             prompt_path: .seven-team/prompts/bughunt/A02.md
             report: .seven-team/reports/bughunt/A02.md
             commit_message: Bug Hunt A02 Android evidence audit
           - name: Bug Hunt B02 Codex RPG Android audit
-            branch: bughunt/a02
+            branch: bughunt/b02
             prompt_path: .seven-team/prompts/bughunt/B02.md
             report: .seven-team/reports/bughunt/B02.md
             commit_message: Bug Hunt B02 RPG Android audit
