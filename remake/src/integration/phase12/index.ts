@@ -149,11 +149,12 @@ export class RoutedChatTransport implements ChatTransport {
           });
         }
 
-        this.health?.recordFailure(provider.id, failedAt, {
-          ...(retryAfterMs(error) !== undefined
-            ? { retryAfterMs: retryAfterMs(error) }
-            : {}),
-        });
+        const retryAfter = retryAfterMs(error);
+        this.health?.recordFailure(
+          provider.id,
+          failedAt,
+          retryAfter === undefined ? {} : { retryAfterMs: retryAfter },
+        );
 
         if (meaningfulOutputStarted) {
           if (error instanceof SevenError) throw error;
