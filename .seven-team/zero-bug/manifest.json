@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "targetBranch": "remake-manager/zero-bug-pass-01",
-  "targetHead": "3db8d8247b95b5bad6aed593991bfaeb93603fd4",
+  "targetHead": "10d389aab9beb63d7c646ed7fcea3b3d9a58be65",
   "scope": "Seven Remake Phase 1-2 only",
   "marker": "ZERO_AUDIT_JSON=",
   "auditors": [
@@ -133,5 +133,12 @@
       "id": "Z32",
       "focus": "Holistic adversarial review: find any concrete bug not covered by the other focused audits"
     }
-  ]
+  ],
+  "auditVersion": 2,
+  "validation": {
+    "exactTargetSha": true,
+    "rejectPromptEcho": true,
+    "rejectPlaceholders": true,
+    "requireConcreteEvidence": true
+  }
 }
