@@ -1,0 +1,300 @@
+name: Seven Remake — 32-Agent Zero Bug Audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - remake-manager/zero-bug-pass-01
+    paths:
+      - '.seven-team/zero-bug/manifest.json'
+      - '.github/workflows/seven-remake-zero-bug-audit.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: seven-remake-zero-bug-audit
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Zero Bug Audit ${{ matrix.id }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        include:
+          - id: Z01
+          - id: Z02
+          - id: Z03
+          - id: Z04
+          - id: Z05
+          - id: Z06
+          - id: Z07
+          - id: Z08
+          - id: Z09
+          - id: Z10
+          - id: Z11
+          - id: Z12
+          - id: Z13
+          - id: Z14
+          - id: Z15
+          - id: Z16
+          - id: Z17
+          - id: Z18
+          - id: Z19
+          - id: Z20
+          - id: Z21
+          - id: Z22
+          - id: Z23
+          - id: Z24
+          - id: Z25
+          - id: Z26
+          - id: Z27
+          - id: Z28
+          - id: Z29
+          - id: Z30
+          - id: Z31
+          - id: Z32
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: remake-manager/zero-bug-pass-01
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Codex
+        run: npm install -g @openai/codex@latest
+
+      - name: Materialize audit contract and bridges
+        env:
+          AUDITOR_ID: ${{ matrix.id }}
+        run: |
+          set -euo pipefail
+          git show HEAD:.seven-team/zero-bug/manifest.json > /tmp/manifest.json
+          git show HEAD:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/kilo_anonymous_relay.py
+          git show HEAD:.seven-team/runtime/codex_responses_bridge.py > /tmp/codex_responses_bridge.py
+          python - <<'PY'
+          import json,os,pathlib
+          d=json.load(open('/tmp/manifest.json'))
+          aid=os.environ['AUDITOR_ID']
+          a=next(x for x in d['auditors'] if x['id']==aid)
+          prompt=f"""
+          You are independent adversarial auditor {aid} for Seven Remake Phase 1-2.
+
+          TARGET:
+          - Audit ONLY the current repository checkout, especially remake/src/core, domain/chat,
+            storage, application/chat, providers, routing and integration/phase12.
+          - Legacy Seven is out of scope except when proving accidental coupling from the Remake.
+          - Your focus: {a['focus']}
+
+          RULES:
+          1. READ ONLY. Do not modify files.
+          2. Search deeply and reason from exact code. Do not invent bugs.
+          3. A finding must include concrete file/function evidence and a plausible deterministic
+             repro/test idea. If you cannot prove it, omit it.
+          4. Distinguish incomplete future features from bugs. Do not report future milestones as bugs.
+          5. Check existing tests before claiming missing behavior.
+          6. Prioritize correctness, races, persistence integrity, cancellation, malformed runtime
+             inputs, resource leaks and cross-module contract mismatches.
+          7. Output exactly one final machine-readable line and nothing after it:
+          ZERO_AUDIT_JSON={{"id":"{aid}","status":"PASS","findings":[]}}
+          or, if bugs are proven:
+          ZERO_AUDIT_JSON={{"id":"{aid}","status":"BUG","findings":[{{"severity":"CRITICAL|HIGH|MEDIUM|LOW","title":"short title","evidence":"file/function and concrete reason","repro":"deterministic test/repro","fix":"minimal root-cause fix"}}]}}
+          Keep the JSON valid and findings <= 8.
+          """
+          pathlib.Path('/tmp/prompt.txt').write_text(prompt,encoding='utf-8')
+          PY
+
+      - name: Start free-model relay
+        run: |
+          set -euo pipefail
+          python /tmp/kilo_anonymous_relay.py >/tmp/relay.log 2>&1 &
+          ready=0
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8877/v1/models >/tmp/models.json; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" -eq 1
+
+      - name: Select distributed healthy direct model
+        env:
+          AUDITOR_ID: ${{ matrix.id }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,os,urllib.request
+          base="http://127.0.0.1:8877/v1"
+          payload=json.load(open('/tmp/models.json'))
+          rows=payload.get('data',payload if isinstance(payload,list) else [])
+          ids=[]
+          for row in rows:
+              mid=row.get('id') if isinstance(row,dict) else row if isinstance(row,str) else None
+              if isinstance(mid,str) and ':free' in mid and not mid.startswith('kilo-auto/'):
+                  ids.append(mid)
+          def rank(mid):
+              low=mid.lower()
+              pref=("qwen","z-ai/glm","minimax/","nvidia/nemotron","moonshot","google/")
+              for i,key in enumerate(pref):
+                  if key in low:return (i,mid)
+              return (20,mid)
+          ids=sorted(dict.fromkeys(ids),key=rank)
+          if not ids: raise SystemExit('No direct free models')
+          slot=int(os.environ['AUDITOR_ID'][1:])-1
+          rotated=ids[slot%len(ids):]+ids[:slot%len(ids)]
+          selected=None
+          for mid in rotated[:10]:
+              body=json.dumps({"model":mid,"messages":[{"role":"user","content":"Reply exactly OK"}],"temperature":0,"max_tokens":12,"stream":False}).encode()
+              req=urllib.request.Request(base+"/chat/completions",data=body,headers={"Content-Type":"application/json"})
+              try:
+                  with urllib.request.urlopen(req,timeout=30) as res:data=json.load(res)
+                  msg=((data.get('choices') or [{}])[0].get('message') or {})
+                  text=(msg.get('content') or msg.get('reasoning_content') or '').strip()
+                  if text:
+                      selected=mid; break
+              except Exception:
+                  pass
+          if not selected: raise SystemExit('No healthy direct model')
+          print('Selected',selected)
+          with open(os.environ['GITHUB_ENV'],'a',encoding='utf-8') as f:
+              f.write('AUDIT_MODEL='+selected+'\n')
+          PY
+
+      - name: Start model-pinned Codex bridge
+        run: |
+          set -euo pipefail
+          SEVEN_CODEX_MODEL="$AUDIT_MODEL" python /tmp/codex_responses_bridge.py >/tmp/codex-bridge.log 2>&1 &
+          ready=0
+          for i in {1..20}; do
+            if curl -fsS http://127.0.0.1:8878/v1/models >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" -eq 1
+
+      - name: Run read-only adversarial audit
+        env:
+          SEVEN_CODEX_KEY: local-dummy-key
+          CODEX_HOME: /tmp/seven-zero-audit-${{ matrix.id }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$CODEX_HOME"
+          : > /tmp/audit.out
+          success=0
+          for attempt in 1 2; do
+            set +e
+            timeout 300s codex exec               --skip-git-repo-check               -m "$AUDIT_MODEL"               -c 'approval_policy="never"'               -c 'sandbox_mode="read-only"'               -c 'model_provider="seven"'               -c 'model_providers.seven={name="Seven Local Bridge",base_url="http://127.0.0.1:8878/v1",env_key="SEVEN_CODEX_KEY",wire_api="responses",requires_openai_auth=false,supports_websockets=false,request_max_retries=2,stream_max_retries=2}'               "$(cat /tmp/prompt.txt)" 2>&1 | tee /tmp/audit.out
+            rc=${PIPESTATUS[0]}
+            set -e
+            if grep -q '^ZERO_AUDIT_JSON=' /tmp/audit.out; then success=1; break; fi
+            echo "audit attempt $attempt incomplete rc=$rc" >&2
+          done
+          test "$success" -eq 1
+
+      - name: Extract validated report
+        env:
+          AUDITOR_ID: ${{ matrix.id }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,os,re
+          text=open('/tmp/audit.out',encoding='utf-8',errors='replace').read()
+          matches=re.findall(r'^ZERO_AUDIT_JSON=(\{.*\})\s*$',text,re.M)
+          if not matches: raise SystemExit('marker missing')
+          data=json.loads(matches[-1])
+          if data.get('id') != os.environ['AUDITOR_ID']: raise SystemExit('wrong auditor id')
+          if data.get('status') not in {'PASS','BUG'}: raise SystemExit('bad status')
+          findings=data.get('findings')
+          if not isinstance(findings,list): raise SystemExit('findings must be list')
+          if data['status']=='PASS' and findings: raise SystemExit('PASS cannot contain findings')
+          if data['status']=='BUG' and not findings: raise SystemExit('BUG must contain findings')
+          open('/tmp/report.json','w',encoding='utf-8').write(json.dumps(data,ensure_ascii=False,indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zero-audit-${{ matrix.id }}
+          path: /tmp/report.json
+          retention-days: 7
+
+  aggregate:
+    name: Zero Bug Audit Aggregate
+    needs: audit
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: remake-manager/zero-bug-pass-01
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: zero-audit-*
+          path: /tmp/reports
+
+      - name: Build audit summary
+        run: |
+          python - <<'PY'
+          import json,glob,pathlib
+          files=glob.glob('/tmp/reports/**/report.json',recursive=True)
+          reports=[]
+          for f in files:
+              try: reports.append(json.load(open(f,encoding='utf-8')))
+              except Exception: pass
+          reports.sort(key=lambda x:x.get('id',''))
+          findings=[]
+          lines=['# Seven Remake — 32-Agent Zero Bug Audit','',
+                 f'Valid auditor reports: {len(reports)}/32','',
+                 '## Auditor status']
+          for r in reports:
+              lines.append(f"- {r['id']}: {r['status']} ({len(r.get('findings',[]))} findings)")
+              for finding in r.get('findings',[]):
+                  findings.append((r['id'],finding))
+          lines += ['', '## Findings']
+          if findings:
+              for aid,f in findings:
+                  lines += [
+                    f"### {aid} — {f.get('severity','?')} — {f.get('title','Untitled')}",
+                    f"- Evidence: {f.get('evidence','')}",
+                    f"- Repro: {f.get('repro','')}",
+                    f"- Fix: {f.get('fix','')}",
+                    ''
+                  ]
+          else:
+              lines.append('No concrete bugs reported by valid auditors.')
+          lines += [
+            '',
+            f'Raw findings: {len(findings)}',
+            f'AUDIT_REPORTS={len(reports)}/32',
+            f'AUDIT_FINDINGS={len(findings)}',
+            'ZERO_BUG_AUDIT=COMPLETE' if len(reports)==32 else 'ZERO_BUG_AUDIT=INCOMPLETE',
+            ''
+          ]
+          out=pathlib.Path('.seven-team/zero-bug/AUDIT_SUMMARY.md')
+          out.parent.mkdir(parents=True,exist_ok=True)
+          out.write_text('\n'.join(lines),encoding='utf-8')
+          print('\n'.join(lines[-6:]))
+          PY
+
+      - name: Commit summary to audit branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git add -f .seven-team/zero-bug/AUDIT_SUMMARY.md
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name 'Seven Zero Bug Audit'
+          git config user.email 'actions@users.noreply.github.com'
+          git commit -m 'Collect 32-agent zero-bug audit'
+          git fetch origin remake-manager/zero-bug-pass-01
+          git rebase origin/remake-manager/zero-bug-pass-01
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:remake-manager/zero-bug-pass-01
