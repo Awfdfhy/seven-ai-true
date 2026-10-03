@@ -101,6 +101,23 @@ function validatePlan(plan: RoutePlan): void {
   }
 }
 
+function snapshotPlan(plan: RoutePlan): RoutePlan {
+  validatePlan(plan);
+  return Object.freeze({
+    createdAt: plan.createdAt,
+    mode: plan.mode,
+    candidates: Object.freeze(
+      plan.candidates.map((candidate) =>
+        Object.freeze({
+          providerId: candidate.providerId,
+          modelId: candidate.modelId,
+          score: candidate.score,
+        }),
+      ),
+    ),
+  });
+}
+
 function snapshotProviders(providers: ProviderMap): ReadonlyMap<string, ProviderAdapter> {
   if (
     !providers ||
@@ -113,18 +130,18 @@ function snapshotProviders(providers: ProviderMap): ReadonlyMap<string, Provider
     });
   }
 
-  let snapshot: Map<string, ProviderAdapter>;
+  let entries: Array<readonly [string, ProviderAdapter]>;
   try {
-    snapshot = new Map(providers);
-  } catch (error) {
+    entries = [...providers.entries()];
+  } catch {
     throw new SevenError({
       code: "VALIDATION",
       message: "Provider map could not be materialized.",
-      cause: error,
     });
   }
 
-  for (const [key, provider] of snapshot) {
+  const snapshot = new Map<string, ProviderAdapter>();
+  for (const [key, provider] of entries) {
     if (!isCanonicalId(key)) {
       throw new SevenError({
         code: "VALIDATION",
@@ -143,6 +160,15 @@ function snapshotProviders(providers: ProviderMap): ReadonlyMap<string, Provider
         message: `Provider adapter ${key} is malformed.`,
       });
     }
+
+    snapshot.set(
+      key,
+      Object.freeze({
+        id: key,
+        listModels: provider.listModels.bind(provider),
+        stream: provider.stream.bind(provider),
+      }),
+    );
   }
 
   return snapshot;
@@ -175,16 +201,17 @@ function validateContext(context: ChatStreamContext): void {
 }
 
 export class RoutedChatTransport implements ChatTransport {
+  private readonly plan: RoutePlan;
   private readonly providers: ReadonlyMap<string, ProviderAdapter>;
 
   constructor(
-    private readonly plan: RoutePlan,
+    plan: RoutePlan,
     providers: ProviderMap,
     private readonly systemPrompt = "You are Seven, a precise and helpful AI assistant.",
     private readonly health?: ProviderHealthTracker,
     private readonly now: () => number = Date.now,
   ) {
-    validatePlan(plan);
+    this.plan = snapshotPlan(plan);
     this.providers = snapshotProviders(providers);
 
     if (typeof systemPrompt !== "string" || !systemPrompt.trim()) {
@@ -345,7 +372,6 @@ export class RoutedChatTransport implements ChatTransport {
           throw new SevenError({
             code: "PROVIDER",
             message: "Provider stream failed after output began.",
-            cause: error,
           });
         }
 
