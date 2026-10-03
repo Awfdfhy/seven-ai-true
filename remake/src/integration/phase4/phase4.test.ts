@@ -2,9 +2,9 @@ import "fake-indexeddb/auto";
 import { describe, expect, it, vi } from "vitest";
 import { TaskManager } from "../../core/task-manager";
 import { AttachmentService, SingleFlightPdfParserLoader } from "../../application/attachments/attachment-service";
-import { IndexedDbAttachmentRepository, InMemoryAttachmentRepository } from "../../storage/attachment-repository";
+import { IndexedDbAttachmentRepository, InMemoryAttachmentRepository, type AttachmentRepository } from "../../storage/attachment-repository";
 
-function service(repository = new InMemoryAttachmentRepository(), parserText = "PDF text") {
+function service(repository: AttachmentRepository = new InMemoryAttachmentRepository(), parserText = "PDF text") {
   const parser = { parse: vi.fn(async () => parserText) };
   const factory = vi.fn(async () => parser);
   return {
