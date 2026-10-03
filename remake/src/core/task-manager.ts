@@ -302,9 +302,9 @@ export class TaskManager {
                     "Task executor aborted without TaskManager cancellation.",
                 })
               : toSevenError(error);
-          task.error = this.publicTaskError(normalized);
+          task.error = normalized;
           this.finish(task, "failed");
-          throw task.error;
+          throw normalized;
         },
       );
 
