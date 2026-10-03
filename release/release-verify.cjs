@@ -294,9 +294,9 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       assert.match(state.h1,/البرمجة/);assert.equal(state.importText,'استيراد ملفات');assert.match(state.placeholder,/صف/);assert.equal(state.doc,true);
 
       await page.evaluate(()=>SevenRemake.openWorkspace('research'));
-      await page.waitForFunction(()=>document.documentElement.dataset.sevenWorkspace==='research'&&document.querySelector('.seven-workspace-root h1')?.textContent.trim()==='البحث',null,{timeout:10000});
-      state=await page.evaluate(()=>({h1:document.querySelector('.seven-workspace-root h1')?.textContent.trim(),importText:document.querySelector('[data-research-import]')?.textContent.trim(),runText:document.querySelector('[data-research-run]')?.textContent.trim(),doc:document.documentElement.scrollWidth<=innerWidth+2}));
-      assert.equal(state.h1,'البحث');assert.equal(state.importText,'استيراد الأدلة');assert.equal(state.runText,'ابحث عبر الويب');assert.equal(state.doc,true);
+      await page.waitForFunction(()=>document.documentElement.dataset.sevenWorkspace==='research'&&document.querySelector('.seven-workspace-root h1')?.textContent.trim()==='تتبّع الدليل.',null,{timeout:10000});
+      state=await page.evaluate(()=>({h1:document.querySelector('.seven-workspace-root h1')?.textContent.trim(),importText:document.querySelector('[data-research-import]')?.textContent.trim(),runText:document.querySelector('[data-research-run]')?.textContent.trim(),placeholder:document.querySelector('[data-research-task]')?.placeholder,doc:document.documentElement.scrollWidth<=innerWidth+2}));
+      assert.equal(state.h1,'تتبّع الدليل.');assert.equal(state.importText,'استيراد حزمة');assert.equal(state.runText,'بحث موسع');assert.match(state.placeholder,/ماذا تريد/);assert.equal(state.doc,true);
 
       await page.evaluate(()=>SevenRemake.openWorkspace('rpg'));
       await page.waitForFunction(()=>document.documentElement.dataset.sevenWorkspace==='rpg'&&!!document.querySelector('.seven-rpg-chatbar'),null,{timeout:10000});
