@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { commitMessage, createRoom, type Room } from "../../domain/chat";
-import { createContextSummary } from "../../domain/memory";
+import { createContextSummary, createMemoryRecord } from "../../domain/memory";
 import { InMemoryMemoryRepository } from "../../storage/memory-repository";
+import { InMemoryContextPolicyRepository } from "../../storage/context-policy-repository";
 import { MemoryContextService, type ContextPrepareInput } from "./memory-context-service";
 
 function history(): Room {
@@ -53,7 +54,7 @@ describe("MemoryContextService", () => {
   });
   it("does not overwrite durable truth with an oversized provider summary", async () => {
     const repository = new InMemoryMemoryRepository([], [prior()]);
-    const put = vi.spyOn(repository, "putSummary");
+    const put = vi.spyOn(repository, "compareAndSwapSummary");
     await expect(new MemoryContextService(repository, { summarize: async () => "x".repeat(5000) }).prepare(input())).rejects.toMatchObject({ code: "PROVIDER" });
     expect(put).not.toHaveBeenCalled();
     expect(await repository.getSummary("room")).toEqual(prior());
@@ -62,9 +63,9 @@ describe("MemoryContextService", () => {
     const repository = new InMemoryMemoryRepository();
     const started = deferred<void>();
     const write = deferred<void>();
-    const original = repository.putSummary.bind(repository);
-    vi.spyOn(repository, "putSummary").mockImplementation(async (summary, signal) => {
-      started.resolve(); await write.promise; await original(summary, signal);
+    const original = repository.compareAndSwapSummary.bind(repository);
+    vi.spyOn(repository, "compareAndSwapSummary").mockImplementation(async (roomId, expected, next, signal) => {
+      started.resolve(); await write.promise; return original(roomId, expected, next, signal);
     });
     let complete = false;
     const result = new MemoryContextService(repository, { summarize: async () => "Prior discussion." }).prepare(input()).then(value => { complete = true; return value; });
@@ -76,7 +77,7 @@ describe("MemoryContextService", () => {
   });
   it("propagates write failure without returning unpersisted truth", async () => {
     const repository = new InMemoryMemoryRepository();
-    vi.spyOn(repository, "putSummary").mockRejectedValue(new Error("disk full"));
+    vi.spyOn(repository, "compareAndSwapSummary").mockRejectedValue(new Error("disk full"));
     await expect(new MemoryContextService(repository, { summarize: async () => "Prior discussion." }).prepare(input())).rejects.toThrow("disk full");
     expect(await repository.getSummary("room")).toBe(null);
   });
@@ -96,7 +97,7 @@ describe("MemoryContextService", () => {
     const hang = () => { started.resolve(); return pending.promise; };
     if (stage === "read") vi.spyOn(repository, "getSummary").mockImplementation(hang);
     if (stage === "summarize") summarize.mockImplementation(hang);
-    if (stage === "write") vi.spyOn(repository, "putSummary").mockImplementation(hang);
+    if (stage === "write") vi.spyOn(repository, "compareAndSwapSummary").mockImplementation(hang);
     const controller = new AbortController();
     const result = new MemoryContextService(repository, { summarize }).prepare(input(history(), controller.signal));
     const assertion = expect(result).rejects.toMatchObject({ name: "AbortError" });
@@ -109,7 +110,7 @@ describe("MemoryContextService", () => {
     const repository = new InMemoryMemoryRepository();
     const started = deferred<void>();
     const pending = deferred<string>();
-    const put = vi.spyOn(repository, "putSummary");
+    const put = vi.spyOn(repository, "compareAndSwapSummary");
     const controller = new AbortController();
     const result = new MemoryContextService(repository, { summarize: async () => { started.resolve(); return pending.promise; } }).prepare(input(history(), controller.signal));
     const assertion = expect(result).rejects.toMatchObject({ name: "AbortError" });
@@ -120,11 +121,34 @@ describe("MemoryContextService", () => {
     await Promise.resolve();
     expect(put).not.toHaveBeenCalled();
   });
-  it("rejects stale through-message identity without invoking the summarizer", async () => {
+  it("removes a stale through-message summary and rebuilds instead of failing the request", async () => {
     const repository = new InMemoryMemoryRepository([], [createContextSummary({ roomId: "room", content: "Stale history.", throughMessageId: "deleted-message", now: 2 })]);
-    const summarize = vi.fn(async () => "unused");
-    await expect(new MemoryContextService(repository, { summarize }).prepare(input())).rejects.toMatchObject({ code: "VALIDATION" });
-    expect(summarize).not.toHaveBeenCalled();
+    const summarize = vi.fn(async () => "Recovered earlier history.");
+    const result = await new MemoryContextService(repository, { summarize }).prepare(input());
+    expect(result.summaryUsed).toBe(true);
+    expect(summarize).toHaveBeenCalledTimes(1);
+    expect((await repository.getSummary("room"))?.throughMessageId).toBe("old-answer");
+  });
+
+  it("detects edited history by source fingerprint and rebuilds the summary", async () => {
+    const repository = new InMemoryMemoryRepository();
+    const firstSummarize = vi.fn(async () => "Original compact history.");
+    const firstService = new MemoryContextService(repository, { summarize: firstSummarize });
+    const original = history();
+    await firstService.prepare(input(original));
+    const durable = await repository.getSummary("room");
+    expect(durable?.sourceFingerprint).toMatch(/^v1:/);
+
+    const edited = {
+      ...original,
+      messages: original.messages.map((message, index) =>
+        index === 0 ? Object.freeze({ ...message, content: "edited source ".repeat(100) }) : message),
+    } as Room;
+    const rebuilt = vi.fn(async () => "Rebuilt after edit.");
+    const result = await new MemoryContextService(repository, { summarize: rebuilt }).prepare(input(edited));
+    expect(result.summaryUsed).toBe(true);
+    expect(rebuilt).toHaveBeenCalledTimes(1);
+    expect((await repository.getSummary("room"))?.content).toBe("Rebuilt after edit.");
   });
   it("keeps summary timestamps monotonic if the clock moves backward", async () => {
     const repository = new InMemoryMemoryRepository([], [createContextSummary({ roomId: "room", content: "Earlier topic.", throughMessageId: "old-user", now: 100 })]);
@@ -192,6 +216,39 @@ describe("MemoryContextService", () => {
     await expect(service.prepare(input())).rejects.toMatchObject({ code: "VALIDATION", retryable: true });
     pending.resolve("Earlier topic.");
     await first;
+  });
+
+  it("applies persisted context policy and lets explicit request policy override it", async () => {
+    const repository = new InMemoryMemoryRepository([
+      createMemoryRecord({ id: "saved", scope: "global", content: "PERSISTED_MEMORY_MARKER", now: 1 }),
+    ]);
+    const settings = new InMemoryContextPolicyRepository({
+      reservedOutputTokens: 100,
+      memoryTokenBudget: 1000,
+      summaryTokenBudget: 350,
+      maxMemoryItems: 0,
+    });
+    const service = new MemoryContextService(
+      repository,
+      { summarize: async () => "Earlier history." },
+      undefined,
+      { policyRepository: settings },
+    );
+    const base = input();
+    const withoutInlinePolicy = {
+      room: base.room,
+      signal: base.signal,
+      systemPrompt: base.systemPrompt,
+      contextWindow: base.contextWindow,
+    };
+    const persisted = await service.prepare(withoutInlinePolicy);
+    expect(persisted.selectedMemoryIds).toEqual([]);
+
+    const overridden = await service.prepare({
+      ...withoutInlinePolicy,
+      policy: { maxMemoryItems: 1, memoryTokenBudget: 1000 },
+    });
+    expect(overridden.selectedMemoryIds).toEqual(["saved"]);
   });
 
 });
