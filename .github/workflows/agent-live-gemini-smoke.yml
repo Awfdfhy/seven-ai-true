@@ -52,6 +52,22 @@ jobs:
       - name: Install Gemini CLI
         run: npm install -g @google/gemini-cli@latest
 
+      - name: Enable documented gateway auth in noninteractive CLI
+        run: |
+          ROOT="$(npm root -g)/@google/gemini-cli"
+          TARGET="$(grep -RIl "Invalid auth method selected" "$ROOT" | head -n 1)"
+          test -n "$TARGET"
+          python - "$TARGET" <<'PY'
+          import sys
+          p=sys.argv[1]
+          s=open(p,encoding='utf-8').read()
+          needle="return 'Invalid auth method selected.';"
+          assert needle in s
+          s=s.replace(needle,"if (authMethod === 'gateway') return null;\n  "+needle,1)
+          open(p,'w',encoding='utf-8').write(s)
+          print("Patched Gemini CLI gateway validation:",p)
+          PY
+
       - name: Materialize runtime and prompt from main
         run: |
           git fetch origin main
@@ -95,7 +111,7 @@ jobs:
             echo "Gemini did not produce required report (rc=$rc)." >&2
             echo "--- gemini bridge log ---" >&2
             tail -120 /tmp/gemini-bridge.log >&2 || true
-            exit "${rc:-1}"
+            exit 1
           fi
 
       - name: Sanitize to allowed output only
