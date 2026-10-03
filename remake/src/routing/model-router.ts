@@ -141,10 +141,12 @@ type InternalHealth = ProviderHealth &
     revision: number;
     lastFailureAt: number | null;
     latestAttemptStartedAt: number | null;
+    latestAppliedAttemptToken: number | null;
   }>;
 
 export class ProviderHealthTracker {
   private readonly states = new Map<string, InternalHealth>();
+  private nextAttemptToken = 1;
 
   snapshot(providerIds: readonly string[] = []): readonly ProviderHealth[] {
     if (!Array.isArray(providerIds)) {
@@ -162,12 +164,7 @@ export class ProviderHealthTracker {
       ids
         .sort()
         .map((providerId) => {
-          if (typeof providerId !== "string" || !providerId.trim() || providerId !== providerId.trim()) {
-            throw new SevenError({
-              code: "VALIDATION",
-              message: "providerId must not be empty.",
-            });
-          }
+          this.validateProviderId(providerId);
           const state = this.states.get(providerId);
           return Object.freeze({
             providerId,
@@ -178,20 +175,27 @@ export class ProviderHealthTracker {
     );
   }
 
-  recordSuccess(providerId: string, attemptStartedAt = Date.now()): void {
-    if (typeof providerId !== "string" || !providerId.trim() || providerId !== providerId.trim()) {
+  beginAttempt(providerId: string): number {
+    this.validateProviderId(providerId);
+    if (!Number.isSafeInteger(this.nextAttemptToken)) {
       throw new SevenError({
         code: "VALIDATION",
-        message: "providerId must not be empty.",
+        message: "Provider attempt token space is exhausted.",
       });
     }
-    requireFiniteNonNegative(attemptStartedAt, "Provider attempt start timestamp");
-    const current = this.states.get(providerId);
+    const token = this.nextAttemptToken;
+    this.nextAttemptToken += 1;
+    return token;
+  }
 
+  recordAttemptSuccess(providerId: string, attemptToken: number): void {
+    this.validateProviderId(providerId);
+    this.validateAttemptToken(attemptToken);
+    const current = this.states.get(providerId);
     if (
-      current?.latestAttemptStartedAt !== null &&
-      current?.latestAttemptStartedAt !== undefined &&
-      attemptStartedAt < current.latestAttemptStartedAt
+      current?.latestAppliedAttemptToken !== null &&
+      current?.latestAppliedAttemptToken !== undefined &&
+      attemptToken <= current.latestAppliedAttemptToken
     ) {
       return;
     }
@@ -205,7 +209,94 @@ export class ProviderHealthTracker {
         cooldownUntil: null,
         revision: (current?.revision ?? 0) + 1,
         lastFailureAt: current?.lastFailureAt ?? null,
+        latestAttemptStartedAt: current?.latestAttemptStartedAt ?? null,
+        latestAppliedAttemptToken: attemptToken,
+      }),
+    );
+  }
+
+  recordAttemptFailure(
+    providerId: string,
+    attemptToken: number,
+    now: number,
+    options: Omit<ProviderFailureOptions, "attemptStartedAt"> = {},
+  ): void {
+    this.validateProviderId(providerId);
+    this.validateAttemptToken(attemptToken);
+    this.validateFailureOptions(options);
+    requireFiniteNonNegative(now, "Provider failure timestamp");
+
+    const current = this.states.get(providerId);
+    if (
+      current?.latestAppliedAttemptToken !== null &&
+      current?.latestAppliedAttemptToken !== undefined &&
+      attemptToken <= current.latestAppliedAttemptToken
+    ) {
+      return;
+    }
+
+    const addedPenalty =
+      options.penalty === undefined
+        ? 50
+        : requireFiniteNonNegative(options.penalty, "Provider failure penalty");
+    const retryAfterMs =
+      options.retryAfterMs === undefined
+        ? 0
+        : requireFiniteNonNegative(options.retryAfterMs, "retryAfterMs");
+    const requestedCooldown =
+      retryAfterMs > 0 ? now + retryAfterMs : null;
+    if (requestedCooldown !== null && !Number.isFinite(requestedCooldown)) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Provider cooldown timestamp overflowed.",
+      });
+    }
+
+    const previousCooldown = current?.cooldownUntil ?? null;
+    const cooldownUntil =
+      requestedCooldown === null
+        ? previousCooldown
+        : Math.max(previousCooldown ?? 0, requestedCooldown);
+
+    this.states.set(
+      providerId,
+      Object.freeze({
+        providerId,
+        penalty: Math.min(1000, (current?.penalty ?? 0) + addedPenalty),
+        cooldownUntil,
+        revision: (current?.revision ?? 0) + 1,
+        lastFailureAt: Math.max(current?.lastFailureAt ?? 0, now),
+        latestAttemptStartedAt: current?.latestAttemptStartedAt ?? null,
+        latestAppliedAttemptToken: attemptToken,
+      }),
+    );
+  }
+
+  recordSuccess(providerId: string, attemptStartedAt = Date.now()): void {
+    this.validateProviderId(providerId);
+    requireFiniteNonNegative(attemptStartedAt, "Provider attempt start timestamp");
+    const current = this.states.get(providerId);
+
+    if (
+      current?.latestAttemptStartedAt !== null &&
+      current?.latestAttemptStartedAt !== undefined &&
+      attemptStartedAt < current.latestAttemptStartedAt
+    ) {
+      return;
+    }
+
+    const token = this.beginAttempt(providerId);
+    const nextPenalty = Math.max(0, (current?.penalty ?? 0) - 25);
+    this.states.set(
+      providerId,
+      Object.freeze({
+        providerId,
+        penalty: nextPenalty,
+        cooldownUntil: null,
+        revision: (current?.revision ?? 0) + 1,
+        lastFailureAt: current?.lastFailureAt ?? null,
         latestAttemptStartedAt: attemptStartedAt,
+        latestAppliedAttemptToken: token,
       }),
     );
   }
@@ -215,18 +306,8 @@ export class ProviderHealthTracker {
     now: number,
     options: ProviderFailureOptions = {},
   ): void {
-    if (!options || typeof options !== "object" || Array.isArray(options)) {
-      throw new SevenError({
-        code: "VALIDATION",
-        message: "Provider failure options must be an object.",
-      });
-    }
-    if (typeof providerId !== "string" || !providerId.trim() || providerId !== providerId.trim()) {
-      throw new SevenError({
-        code: "VALIDATION",
-        message: "providerId must not be empty.",
-      });
-    }
+    this.validateProviderId(providerId);
+    this.validateFailureOptions(options);
     requireFiniteNonNegative(now, "Provider failure timestamp");
 
     const current = this.states.get(providerId);
@@ -246,6 +327,7 @@ export class ProviderHealthTracker {
       return;
     }
 
+    const token = this.beginAttempt(providerId);
     const addedPenalty =
       options.penalty === undefined
         ? 50
@@ -254,13 +336,9 @@ export class ProviderHealthTracker {
       options.retryAfterMs === undefined
         ? 0
         : requireFiniteNonNegative(options.retryAfterMs, "retryAfterMs");
-
     const requestedCooldown =
       retryAfterMs > 0 ? now + retryAfterMs : null;
-    if (
-      requestedCooldown !== null &&
-      !Number.isFinite(requestedCooldown)
-    ) {
+    if (requestedCooldown !== null && !Number.isFinite(requestedCooldown)) {
       throw new SevenError({
         code: "VALIDATION",
         message: "Provider cooldown timestamp overflowed.",
@@ -282,8 +360,42 @@ export class ProviderHealthTracker {
         revision: (current?.revision ?? 0) + 1,
         lastFailureAt: Math.max(current?.lastFailureAt ?? 0, now),
         latestAttemptStartedAt: attemptStartedAt,
+        latestAppliedAttemptToken: token,
       }),
     );
+  }
+
+  private validateProviderId(providerId: string): void {
+    if (
+      typeof providerId !== "string" ||
+      !providerId.trim() ||
+      providerId !== providerId.trim()
+    ) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "providerId must be a canonical non-empty string.",
+      });
+    }
+  }
+
+  private validateAttemptToken(attemptToken: number): void {
+    if (!Number.isSafeInteger(attemptToken) || attemptToken <= 0) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Provider attempt token must be a positive safe integer.",
+      });
+    }
+  }
+
+  private validateFailureOptions(
+    options: Omit<ProviderFailureOptions, "attemptStartedAt"> | ProviderFailureOptions,
+  ): void {
+    if (!options || typeof options !== "object" || Array.isArray(options)) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Provider failure options must be an object.",
+      });
+    }
   }
 }
 
