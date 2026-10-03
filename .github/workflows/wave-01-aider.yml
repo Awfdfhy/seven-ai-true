@@ -88,7 +88,7 @@ jobs:
         run: |
           set -u
           git show origin/main:.seven-team/prompts/wave-01/A06.md > /tmp/team-a-aider.md
-          mkdir -p .seven-team/reports
+          mkdir -p .seven-team/reports/wave-01
           touch .seven-team/reports/wave-01/A06-persisted-ui-state.md
           set +e
           timeout 150s aider .seven-team/reports/wave-01/A06-persisted-ui-state.md \
@@ -109,7 +109,7 @@ jobs:
             echo "Agent produced required report; accepting output (agent rc=$rc)."
           else
             echo "Agent did not produce required PASS report (agent rc=$rc)." >&2
-            exit "${rc:-1}"
+            exit 1
           fi
       - name: Sanitize to allowed output only
         run: |
@@ -183,7 +183,7 @@ jobs:
         run: |
           set -u
           git show origin/main:.seven-team/prompts/wave-01/B06.md > /tmp/team-b-aider.md
-          mkdir -p .seven-team/reports
+          mkdir -p .seven-team/reports/wave-01
           touch .seven-team/reports/wave-01/B06-rpg-memory.md
           set +e
           timeout 150s aider .seven-team/reports/wave-01/B06-rpg-memory.md \
@@ -205,7 +205,7 @@ jobs:
             echo "Agent produced required report; accepting output (agent rc=$rc)."
           else
             echo "Agent did not produce required PASS report (agent rc=$rc)." >&2
-            exit "${rc:-1}"
+            exit 1
           fi
       - name: Sanitize to allowed output only
         run: |
