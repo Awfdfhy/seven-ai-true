@@ -91,9 +91,29 @@ jobs:
             cd android
             ./gradlew --no-daemon :app:connectedDebugAndroidTest
             cd ..
-            rm -rf visual-evidence
-            mkdir -p visual-evidence
-            adb pull /data/local/tmp/seven-visual/. visual-evidence/ || true
+            rm -rf visual-evidence/android16
+            mkdir -p visual-evidence/android16
+            adb pull /data/local/tmp/seven-visual/. visual-evidence/android16/ || true
+
+      - name: Android 14 WebView UI regression test
+        uses: reactivecircus/android-emulator-runner@v2.38.0
+        with:
+          api-level: 34
+          arch: x86_64
+          target: default
+          profile: pixel_6
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: |
+            adb shell settings put system font_scale 1.15 || true
+            rm -rf /data/local/tmp/seven-visual || true
+            mkdir -p /data/local/tmp/seven-visual
+            cd android
+            ./gradlew --no-daemon :app:connectedDebugAndroidTest
+            cd ..
+            rm -rf visual-evidence/android14
+            mkdir -p visual-evidence/android14
+            adb pull /data/local/tmp/seven-visual/. visual-evidence/android14/ || true
 
       - name: Upload Android UI visual evidence
         uses: actions/upload-artifact@v7
