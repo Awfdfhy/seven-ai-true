@@ -2,10 +2,18 @@ import { SevenError } from "../core/errors";
 import { cloneRoom, isRoom, type Room } from "../domain/chat";
 
 export interface RoomRepository {
-  get(roomId: string): Promise<Room | null>;
-  put(room: Room): Promise<void>;
-  list(): Promise<readonly Room[]>;
-  delete(roomId: string): Promise<void>;
+  get(roomId: string, signal?: AbortSignal): Promise<Room | null>;
+  put(room: Room, signal?: AbortSignal): Promise<void>;
+  list(signal?: AbortSignal): Promise<readonly Room[]>;
+  delete(roomId: string, signal?: AbortSignal): Promise<void>;
+}
+
+function abortError(): DOMException {
+  return new DOMException("Aborted", "AbortError");
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw abortError();
 }
 
 function requireRoomId(roomId: string): string {
@@ -53,27 +61,36 @@ export class InMemoryRoomRepository implements RoomRepository {
     }
   }
 
-  async get(roomId: string): Promise<Room | null> {
+  async get(roomId: string, signal?: AbortSignal): Promise<Room | null> {
+    throwIfAborted(signal);
     const id = requireRoomId(roomId);
     const room = this.rooms.get(id);
+    throwIfAborted(signal);
     return room ? cloneRoom(room) : null;
   }
 
-  async put(room: Room): Promise<void> {
+  async put(room: Room, signal?: AbortSignal): Promise<void> {
+    throwIfAborted(signal);
     assertRoom(room);
     this.rooms.set(room.id, cloneRoom(room));
+    throwIfAborted(signal);
   }
 
-  async list(): Promise<readonly Room[]> {
-    return Object.freeze(
+  async list(signal?: AbortSignal): Promise<readonly Room[]> {
+    throwIfAborted(signal);
+    const result = Object.freeze(
       [...this.rooms.values()]
         .map(cloneRoom)
         .sort((a, b) => b.updatedAt - a.updatedAt || compareText(a.id, b.id)),
     );
+    throwIfAborted(signal);
+    return result;
   }
 
-  async delete(roomId: string): Promise<void> {
+  async delete(roomId: string, signal?: AbortSignal): Promise<void> {
+    throwIfAborted(signal);
     this.rooms.delete(requireRoomId(roomId));
+    throwIfAborted(signal);
   }
 }
 
@@ -116,11 +133,15 @@ export class IndexedDbRoomRepository implements RoomRepository {
     this.version = version;
   }
 
-  async get(roomId: string): Promise<Room | null> {
+  async get(roomId: string, signal?: AbortSignal): Promise<Room | null> {
     const id = requireRoomId(roomId);
-    const db = await this.open();
-    const raw = await this.request<unknown>(
-      db.transaction("rooms", "readonly").objectStore("rooms").get(id),
+    const db = await this.withSignal(this.open(), signal);
+    throwIfAborted(signal);
+    const tx = db.transaction("rooms", "readonly");
+    const raw = await this.request(
+      tx.objectStore("rooms").get(id),
+      tx,
+      signal,
     );
     if (raw === undefined) return null;
     if (!isRoom(raw)) {
@@ -133,18 +154,23 @@ export class IndexedDbRoomRepository implements RoomRepository {
     return cloneRoom(raw);
   }
 
-  async put(room: Room): Promise<void> {
+  async put(room: Room, signal?: AbortSignal): Promise<void> {
     assertRoom(room);
-    const db = await this.open();
+    const db = await this.withSignal(this.open(), signal);
+    throwIfAborted(signal);
     const tx = db.transaction("rooms", "readwrite");
     tx.objectStore("rooms").put(cloneRoom(room));
-    await this.transaction(tx);
+    await this.transaction(tx, signal);
   }
 
-  async list(): Promise<readonly Room[]> {
-    const db = await this.open();
-    const raw = await this.request<unknown[]>(
-      db.transaction("rooms", "readonly").objectStore("rooms").getAll(),
+  async list(signal?: AbortSignal): Promise<readonly Room[]> {
+    const db = await this.withSignal(this.open(), signal);
+    throwIfAborted(signal);
+    const tx = db.transaction("rooms", "readonly");
+    const raw = await this.request(
+      tx.objectStore("rooms").getAll(),
+      tx,
+      signal,
     );
     const rooms = raw.map((value) => {
       if (!isRoom(value)) {
@@ -162,12 +188,13 @@ export class IndexedDbRoomRepository implements RoomRepository {
     );
   }
 
-  async delete(roomId: string): Promise<void> {
+  async delete(roomId: string, signal?: AbortSignal): Promise<void> {
     const id = requireRoomId(roomId);
-    const db = await this.open();
+    const db = await this.withSignal(this.open(), signal);
+    throwIfAborted(signal);
     const tx = db.transaction("rooms", "readwrite");
     tx.objectStore("rooms").delete(id);
-    await this.transaction(tx);
+    await this.transaction(tx, signal);
   }
 
   async close(): Promise<void> {
@@ -249,43 +276,152 @@ export class IndexedDbRoomRepository implements RoomRepository {
     return promise;
   }
 
-  private request<T>(request: IDBRequest<T>): Promise<T> {
+  private withSignal<T>(
+    promise: Promise<T>,
+    signal?: AbortSignal,
+  ): Promise<T> {
+    if (!signal) return promise;
+    if (signal.aborted) return Promise.reject(abortError());
+
     return new Promise<T>((resolve, reject) => {
-      request.onsuccess = () => resolve(request.result);
+      let settled = false;
+      const cleanup = () => signal.removeEventListener("abort", onAbort);
+      const onAbort = () => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        reject(abortError());
+      };
+
+      signal.addEventListener("abort", onAbort, { once: true });
+      promise.then(
+        (value) => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          resolve(value);
+        },
+        (error: unknown) => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          reject(error);
+        },
+      );
+    });
+  }
+
+  private request<T>(
+    request: IDBRequest<T>,
+    tx: IDBTransaction,
+    signal?: AbortSignal,
+  ): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      let settled = false;
+      const cleanup = () => signal?.removeEventListener("abort", onAbort);
+      const finishResolve = (value: T) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        resolve(value);
+      };
+      const finishReject = (error: unknown) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        reject(error);
+      };
+      const onAbort = () => {
+        if (settled) return;
+        try {
+          tx.abort();
+        } catch {
+          // The transaction may already be completing.
+        }
+        finishReject(abortError());
+      };
+
+      if (signal?.aborted) {
+        onAbort();
+        return;
+      }
+      signal?.addEventListener("abort", onAbort, { once: true });
+
+      request.onsuccess = () => finishResolve(request.result);
       request.onerror = () =>
-        reject(
+        finishReject(
           new SevenError({
             code: "STORAGE",
             message: "Room storage request failed.",
             cause: request.error,
           }),
         );
+      tx.onabort = () => {
+        if (signal?.aborted) {
+          finishReject(abortError());
+          return;
+        }
+        finishReject(
+          new SevenError({
+            code: "STORAGE",
+            message: "Room storage transaction was aborted.",
+            cause: tx.error,
+          }),
+        );
+      };
     });
   }
 
-  private transaction(tx: IDBTransaction): Promise<void> {
+  private transaction(
+    tx: IDBTransaction,
+    signal?: AbortSignal,
+  ): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       let settled = false;
-      tx.oncomplete = () => {
+      const cleanup = () => signal?.removeEventListener("abort", onAbort);
+      const finishResolve = () => {
         if (settled) return;
         settled = true;
+        cleanup();
         resolve();
       };
-      tx.onerror = () => {
+      const finishReject = (error: unknown) => {
         if (settled) return;
         settled = true;
-        reject(
+        cleanup();
+        reject(error);
+      };
+      const onAbort = () => {
+        if (settled) return;
+        try {
+          tx.abort();
+        } catch {
+          // The transaction may already be completing.
+        }
+        finishReject(abortError());
+      };
+
+      if (signal?.aborted) {
+        onAbort();
+        return;
+      }
+      signal?.addEventListener("abort", onAbort, { once: true });
+
+      tx.oncomplete = finishResolve;
+      tx.onerror = () =>
+        finishReject(
           new SevenError({
             code: "STORAGE",
             message: "Room storage transaction failed.",
             cause: tx.error,
           }),
         );
-      };
       tx.onabort = () => {
-        if (settled) return;
-        settled = true;
-        reject(
+        if (signal?.aborted) {
+          finishReject(abortError());
+          return;
+        }
+        finishReject(
           new SevenError({
             code: "STORAGE",
             message: "Room storage transaction was aborted.",
