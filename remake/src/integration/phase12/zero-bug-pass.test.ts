@@ -544,6 +544,47 @@ describe("Zero-bug regressions", () => {
     });
   });
 
+  it("rejects forged or cross-provider health attempt tokens", () => {
+    const health = new ProviderHealthTracker();
+    const token = health.beginAttempt("provider-a");
+
+    expect(() =>
+      health.recordAttemptSuccess("provider-b", token),
+    ).toThrow(/attempt token/);
+
+    expect(() =>
+      health.recordAttemptFailure(
+        "provider-a",
+        { providerId: "provider-a", sequence: token.sequence } as never,
+        100,
+      ),
+    ).toThrow(/attempt token/);
+  });
+
+  it("rejects non-canonical model keys and preferred model ids", () => {
+    expect(() =>
+      modelKey({ providerId: " provider ", id: "model" }),
+    ).toThrow(/Model key/);
+    expect(() =>
+      modelKey({ providerId: "provider", id: " model " }),
+    ).toThrow(/Model key/);
+
+    const descriptor = model("provider", "model");
+    expect(() =>
+      new ModelRouter().plan(
+        [descriptor],
+        [],
+        {
+          mode: "balanced",
+          preferredModelId: " model ",
+          requireStreaming: true,
+          now: 1,
+          maxAttempts: 1,
+        },
+      ),
+    ).toThrow(/preferredModelId/);
+  });
+
   it("rejects non-string stream deltas and falls back before meaningful output", async () => {
     const badModel = model("bad", "m1");
     const goodModel = model("good", "m2");
