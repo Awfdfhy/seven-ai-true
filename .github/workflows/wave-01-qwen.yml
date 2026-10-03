@@ -30,11 +30,13 @@ jobs:
         include:
           - name: Wave 01 A09 Qwen UI performance audit
             branch: agent/09-performance
+            final_only: '0'
             prompt_path: .seven-team/prompts/wave-01/A09.md
             report: .seven-team/reports/wave-01/A09-ui-performance.md
             commit_message: Wave 01 A09 UI performance audit
           - name: Wave 01 B09 Qwen RPG performance audit
             branch: agent-b/09-rpg-performance
+            final_only: '1'
             prompt_path: .seven-team/prompts/wave-01/B09.md
             report: .seven-team/reports/wave-01/B09-rpg-performance.md
             commit_message: Wave 01 B09 RPG performance audit
@@ -110,6 +112,7 @@ jobs:
       - name: Start compatibility relay
         env:
           SEVEN_RELAY_BRIDGE_STREAM: '1'
+          SEVEN_RELAY_FINAL_ONLY: ${{ matrix.final_only || '0' }}
         run: |
           python /tmp/kilo_anonymous_relay.py > /tmp/seven-relay.log 2>&1 &
           ready=0
