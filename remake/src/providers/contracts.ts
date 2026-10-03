@@ -41,6 +41,57 @@ export interface ProviderAdapter {
   ): AsyncIterable<ProviderChunk>;
 }
 
+export function modelKey(model: Pick<ModelDescriptor, "providerId" | "id">): string {
+  return `${model.providerId}::${model.id}`;
+}
+
+export function assertValidModelDescriptor(model: ModelDescriptor): void {
+  const textFields = [
+    ["id", model.id],
+    ["providerId", model.providerId],
+    ["displayName", model.displayName],
+  ] as const;
+
+  for (const [field, value] of textFields) {
+    if (!value.trim()) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: `Model ${field} must not be empty.`,
+      });
+    }
+  }
+
+  if (!Number.isInteger(model.contextWindow) || model.contextWindow <= 0) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Model contextWindow must be a positive integer.",
+    });
+  }
+
+  for (const [field, value] of [
+    ["qualityScore", model.qualityScore],
+    ["speedScore", model.speedScore],
+  ] as const) {
+    if (!Number.isFinite(value) || value < 0) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: `Model ${field} must be a non-negative finite number.`,
+      });
+    }
+  }
+
+  if (
+    typeof model.capabilities.streaming !== "boolean" ||
+    typeof model.capabilities.tools !== "boolean" ||
+    typeof model.capabilities.vision !== "boolean"
+  ) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Model capabilities must be booleans.",
+    });
+  }
+}
+
 export function assertValidProviderMessages(
   messages: readonly ProviderMessage[],
 ): void {
