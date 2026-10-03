@@ -13,7 +13,6 @@ function assertRoom(room: Room): void {
     throw new SevenError({
       code: "VALIDATION",
       message: "Room failed schema validation before persistence.",
-      details: { roomId: room?.id },
     });
   }
 }
