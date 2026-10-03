@@ -4,10 +4,10 @@
 Team B / B06 / Aider
 
 ## B06 Mission
-Validate that RPG V2 offers a meaningful choice within three visible actions, updates persistent world state, reflects that update in later narration, and preserves it across exit and re-entry without a JSON pack import. Confirm that Character B cannot access knowledge revealed only to Character A.
+Validate RPG V2’s persistent 10-minute story slice: within three visible actions, a meaningful choice changes world state, later narration reflects that change, and state survives exit and re-entry without a JSON pack import. Confirm knowledge revealed only to Character A remains inaccessible to Character B.
 
 ## Memory and Persistence Risks
-1. Character-local knowledge may leak across characters or into shared state.
+1. Character-local knowledge may leak across characters or enter shared state.
 2. World-state changes may be lost or corrupted during persistence or session re-entry.
 3. Migrations may overwrite valid state, weaken knowledge isolation, or fail silently.
 
