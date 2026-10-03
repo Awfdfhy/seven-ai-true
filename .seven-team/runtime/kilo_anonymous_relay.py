@@ -17,6 +17,7 @@ import json
 import os
 import socketserver
 import sys
+import time
 from urllib.parse import urlsplit
 
 HOST = os.environ.get("SEVEN_RELAY_HOST", "127.0.0.1")
@@ -70,9 +71,45 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 bridge_stream = False
 
         # Intentionally DO NOT forward Authorization or any other caller headers.
-        conn = http.client.HTTPSConnection(UPSTREAM, timeout=180)
-        conn.request(self.command, PREFIX + target, body=payload, headers=headers)
-        res = conn.getresponse()
+        # The anonymous free upstream is occasionally rate-limited/transiently unavailable
+        # when multiple Seven agents start together. Retry only transient statuses/errors;
+        # never hide deterministic 4xx failures.
+        res = None
+        conn = None
+        transient_statuses = {429, 500, 502, 503, 504}
+        last_exc = None
+        for attempt in range(1, 5):
+            try:
+                conn = http.client.HTTPSConnection(UPSTREAM, timeout=180)
+                conn.request(self.command, PREFIX + target, body=payload, headers=headers)
+                res = conn.getresponse()
+                if res.status not in transient_statuses or attempt == 4:
+                    break
+                retry_after = res.getheader("Retry-After")
+                try:
+                    delay = min(20, max(1, int(retry_after))) if retry_after else 2 ** attempt
+                except Exception:
+                    delay = 2 ** attempt
+                res.read()
+                conn.close()
+                conn = None
+                sys.stderr.write(f"[seven-relay] transient upstream {res.status}; retry {attempt}/4 after {delay}s\n")
+                time.sleep(delay)
+            except (OSError, http.client.HTTPException) as exc:
+                last_exc = exc
+                if conn:
+                    try:
+                        conn.close()
+                    except Exception:
+                        pass
+                conn = None
+                if attempt == 4:
+                    raise
+                delay = 2 ** attempt
+                sys.stderr.write(f"[seven-relay] transient upstream error {exc!r}; retry {attempt}/4 after {delay}s\n")
+                time.sleep(delay)
+        if res is None:
+            raise RuntimeError(f"upstream unavailable after retries: {last_exc!r}")
 
         if bridge_stream and 200 <= res.status < 300:
             raw = res.read()
