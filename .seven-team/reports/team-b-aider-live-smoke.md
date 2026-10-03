@@ -4,12 +4,12 @@
 Team B / B06 / Aider
 
 ## B06 Mission
-Validate RPG V2’s 10-minute persistent interactive story: a meaningful choice must change world state within three visible actions, later narration must reflect that change, and state must survive exit and re-entry without a JSON pack import. Information revealed exclusively to Character A must remain inaccessible to Character B.
+Validate RPG V2’s persistent 10-minute interactive story, ensuring meaningful choices change world state within three visible actions, later narration reflects those changes, and state survives exit and re-entry without a JSON pack import while preserving character-local knowledge boundaries.
 
 ## Memory and Persistence Risks
-1. Character-local knowledge may leak across characters or be incorrectly stored in shared state, violating knowledge boundaries.
-2. World-state changes may be lost, corrupted, or fail to load during persistence or session re-entry.
-3. State migrations may overwrite valid state, weaken knowledge isolation, or fail silently.
+1. Character-local knowledge could leak across characters or be written into shared state.
+2. World-state changes could be lost, corrupted, or fail to restore after session re-entry.
+3. State migrations could overwrite valid state, weaken knowledge isolation, or fail silently.
 
 ## Branch
 agent-b/06-rpg-memory
