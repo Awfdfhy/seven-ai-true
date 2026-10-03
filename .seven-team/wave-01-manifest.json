@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "workerMarker": "WAVE01=COMPLETE",
+  "reviewMarker": "WAVE01_REVIEW=PASS",
+  "workers": [
+    {"id":"A01","team":"A","worker":"Cline","branch":"agent/01-ui-ux","report":".seven-team/reports/wave-01/A01-ui-ownership.md"},
+    {"id":"A02","team":"A","worker":"Codex CLI","branch":"agent/02-android-build","report":".seven-team/reports/wave-01/A02-android-evidence.md"},
+    {"id":"A03","team":"A","worker":"Gemini CLI","branch":"agent/03-search","report":".seven-team/reports/wave-01/A03-localization-cohesion.md"},
+    {"id":"A04","team":"A","worker":"OpenHands","branch":"agent/04-research","report":".seven-team/reports/wave-01/A04-design-system-map.md"},
+    {"id":"A05","team":"A","worker":"OpenCode","branch":"agent/05-runtime-models","report":".seven-team/reports/wave-01/A05-runtime-controls.md"},
+    {"id":"A06","team":"A","worker":"Aider","branch":"agent/06-memory-context","report":".seven-team/reports/wave-01/A06-persisted-ui-state.md"},
+    {"id":"A07","team":"A","worker":"Goose","branch":"agent/07-security-selfdev","report":".seven-team/reports/wave-01/A07-selfdev-security.md"},
+    {"id":"A08","team":"A","worker":"mini-SWE","branch":"agent/08-testing-ci","report":".seven-team/reports/wave-01/A08-ui-evaluation-harness.md"},
+    {"id":"A09","team":"A","worker":"Qwen Code","branch":"agent/09-performance","report":".seven-team/reports/wave-01/A09-ui-performance.md"},
+    {"id":"B01","team":"B","worker":"Cline","branch":"agent-b/01-rpg-ux","report":".seven-team/reports/wave-01/B01-rpg-ux.md"},
+    {"id":"B02","team":"B","worker":"Codex CLI","branch":"agent-b/02-android-rpg","report":".seven-team/reports/wave-01/B02-rpg-android.md"},
+    {"id":"B03","team":"B","worker":"Gemini CLI","branch":"agent-b/03-canon-retrieval","report":".seven-team/reports/wave-01/B03-canon-grounding.md"},
+    {"id":"B04","team":"B","worker":"OpenHands","branch":"agent-b/04-rpg-engine","report":".seven-team/reports/wave-01/B04-rpg-engine-map.md"},
+    {"id":"B05","team":"B","worker":"OpenCode","branch":"agent-b/05-rpg-runtime","report":".seven-team/reports/wave-01/B05-rpg-runtime.md"},
+    {"id":"B06","team":"B","worker":"Aider","branch":"agent-b/06-rpg-memory","report":".seven-team/reports/wave-01/B06-rpg-memory.md"},
+    {"id":"B07","team":"B","worker":"Goose","branch":"agent-b/07-rpg-integrity","report":".seven-team/reports/wave-01/B07-rpg-integrity.md"},
+    {"id":"B08","team":"B","worker":"mini-SWE","branch":"agent-b/08-rpg-testing","report":".seven-team/reports/wave-01/B08-rpg-evaluation-harness.md"},
+    {"id":"B09","team":"B","worker":"Qwen Code","branch":"agent-b/09-rpg-performance","report":".seven-team/reports/wave-01/B09-rpg-performance.md"}
+  ],
+  "reviewers": [
+    {"id":"A10","team":"A","worker":"Hermes Agent","branch":"agent/10-integration-review","report":".seven-team/reports/wave-01/A10-integration-review.md"},
+    {"id":"B10","team":"B","worker":"Hermes Agent","branch":"agent-b/10-rpg-review","report":".seven-team/reports/wave-01/B10-integration-review.md"}
+  ]
+}
