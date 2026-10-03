@@ -29,9 +29,9 @@ jobs:
       - name: Pin green target and build evidence pack
         run: |
           set -euo pipefail
-          echo "TARGET_SHA=215310e473df6b4016a57630f2f9bca690cf70ac" >> "$GITHUB_ENV"
+          echo "TARGET_SHA=4bce46c60b09f040d586c80a84232c87e12ae354" >> "$GITHUB_ENV"
           git show HEAD:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/kilo_anonymous_relay.py
-          git checkout --detach 215310e473df6b4016a57630f2f9bca690cf70ac
+          git checkout --detach 4bce46c60b09f040d586c80a84232c87e12ae354
           python - <<'PY'
           from pathlib import Path
           roots=[
@@ -102,7 +102,7 @@ jobs:
           import concurrent.futures as cf
           import json, pathlib, time, urllib.request
 
-          target='215310e473df6b4016a57630f2f9bca690cf70ac'
+          target='4bce46c60b09f040d586c80a84232c87e12ae354'
           evidence=pathlib.Path('/tmp/evidence.txt').read_text(encoding='utf-8')
           focuses=[
             "TaskManager lifecycle, terminal states, cancellation sealing, retention and owner isolation",
@@ -283,7 +283,7 @@ jobs:
           lines=[
               '# Seven Remake — Final32 Zero-Bug Audit',
               '',
-              'Target SHA: 215310e473df6b4016a57630f2f9bca690cf70ac',
+              'Target SHA: 4bce46c60b09f040d586c80a84232c87e12ae354',
               f'Valid reports: {len(results)}/32',
               f'Concrete findings: {len(findings)}',
               '',
@@ -307,7 +307,7 @@ jobs:
               '',
               'VALID_REPORTS=32/32',
               f'CONCRETE_FINDINGS={len(findings)}',
-              'TARGET_SHA=215310e473df6b4016a57630f2f9bca690cf70ac',
+              'TARGET_SHA=4bce46c60b09f040d586c80a84232c87e12ae354',
               'ZERO_BUG_FINAL32=COMPLETE',
               ''
           ]
