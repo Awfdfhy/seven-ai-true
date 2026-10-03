@@ -186,7 +186,7 @@ Status: **PASS**
   - Combined Remake CI: PASS — 25/25 test files, 237/237 tests, strict typecheck/build PASS, dependency audits 0 vulnerabilities.
   - Combined Legacy Seven + verified release artifact: PASS.
   - Manager PR #70 merged; post-merge Remake CI PASS.
-  - Android installed-APK/native round-trip evidence remains a final release gate; browser CI does not pretend to replace device evidence.
+  - Android installed-APK/native round-trip evidence was later closed by the dedicated Remake Android release gate.
 
 - 11/12 AppKernel + Recovery + Observability: COMPLETE
   - One AppKernel owns service boot/shutdown.
@@ -234,3 +234,23 @@ Status: **PASS**
 **REMAKE_PROGRESS=12/12**
 
 **RELEASE_READY=PASS** — real Remake APK packaging, exact installed payload identity, native bridge round-trip and installed Android smoke are proven on API 34 and API 36.
+
+
+## Final Android Release Gate — COMPLETE
+
+- Dedicated application id: `ai.seven.remake.v3`.
+- Dedicated Capacitor packaging from `remake/dist`; legacy `www` is not used.
+- Real `SevenRemakeNative` Capacitor transport wired into the Phase 7 bridge.
+- Deterministic SHA-256 release manifest embedded in the APK.
+- Installed package/version and every installed web-payload file verified against the manifest.
+- Installed WebView boot smoke passed.
+- Real native bridge round-trip passed.
+- Android 14 installed gate: PASS.
+- Android 16 installed gate: PASS.
+- Post-merge Android release-gate run `37160934350`: PASS.
+- Post-merge Remake CI run `37160934367`: PASS.
+- Release artifact: `Seven-Remake-V3.apk`.
+
+**REMAKE_PROGRESS=12/12**
+
+**RELEASE_READY=PASS**
