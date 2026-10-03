@@ -38,6 +38,10 @@ export type RoutePlan = Readonly<{
   candidates: readonly RouteCandidate[];
 }>;
 
+function compareText(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
 function requireFiniteNonNegative(value: number, field: string): number {
   if (!Number.isFinite(value) || value < 0) {
     throw new SevenError({
@@ -140,6 +144,12 @@ export class ProviderHealthTracker {
   private readonly states = new Map<string, InternalHealth>();
 
   snapshot(providerIds: readonly string[] = []): readonly ProviderHealth[] {
+    if (!Array.isArray(providerIds)) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "providerIds must be an array.",
+      });
+    }
     const ids =
       providerIds.length > 0
         ? [...new Set(providerIds)]
@@ -201,6 +211,12 @@ export class ProviderHealthTracker {
     now: number,
     options: ProviderFailureOptions = {},
   ): void {
+    if (!options || typeof options !== "object" || Array.isArray(options)) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Provider failure options must be an object.",
+      });
+    }
     if (typeof providerId !== "string" || !providerId.trim()) {
       throw new SevenError({
         code: "VALIDATION",
@@ -280,11 +296,12 @@ export class ModelRouter {
     }
     if (
       preferences.preferredModelId !== null &&
-      typeof preferences.preferredModelId !== "string"
+      (typeof preferences.preferredModelId !== "string" ||
+        !preferences.preferredModelId.trim())
     ) {
       throw new SevenError({
         code: "VALIDATION",
-        message: "preferredModelId must be a string or null.",
+        message: "preferredModelId must be a non-empty string or null.",
       });
     }
     if (!Array.isArray(models) || !Array.isArray(health)) {
@@ -397,8 +414,8 @@ export class ModelRouter {
       .sort(
         (a, b) =>
           b.score - a.score ||
-          a.providerId.localeCompare(b.providerId) ||
-          a.modelId.localeCompare(b.modelId),
+          compareText(a.providerId, b.providerId) ||
+          compareText(a.modelId, b.modelId),
       )
       .slice(0, preferences.maxAttempts);
 
