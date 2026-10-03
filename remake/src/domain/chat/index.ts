@@ -37,6 +37,13 @@ function requireText(value: string, field: string): string {
   return normalized;
 }
 
+function requireFiniteTime(value: number, field: string): number {
+  if (!Number.isFinite(value) || value < 0) {
+    throw new Error(`${field} must be a non-negative finite timestamp.`);
+  }
+  return value;
+}
+
 function cloneMessage(message: ChatMessage): ChatMessage {
   return Object.freeze({ ...message });
 }
@@ -49,13 +56,22 @@ export function cloneRoom(room: Room): Room {
 }
 
 export function createRoom(options: CreateRoomOptions = {}): Room {
-  const now = options.now ?? Date.now();
+  const now = requireFiniteTime(options.now ?? Date.now(), "room timestamp");
   const title = options.title?.trim() || "New chat";
+  const id =
+    options.id === undefined
+      ? crypto.randomUUID()
+      : requireText(options.id, "room id");
+  const modelId =
+    options.modelId === undefined || options.modelId === null
+      ? null
+      : requireText(options.modelId, "model id");
+
   return Object.freeze({
     schemaVersion: 1 as const,
-    id: options.id ?? crypto.randomUUID(),
+    id,
     title,
-    modelId: options.modelId ?? null,
+    modelId,
     messages: Object.freeze([]),
     createdAt: now,
     updatedAt: now,
@@ -67,9 +83,18 @@ export function commitMessage(
   options: CommitMessageOptions,
 ): Room {
   const content = requireText(options.content, "message content");
-  const now = options.now ?? Date.now();
+  const now = requireFiniteTime(options.now ?? Date.now(), "message timestamp");
+  const id =
+    options.id === undefined
+      ? crypto.randomUUID()
+      : requireText(options.id, "message id");
+
+  if (room.messages.some((message) => message.id === id)) {
+    throw new Error(`message id ${id} already exists in room ${room.id}.`);
+  }
+
   const message: ChatMessage = Object.freeze({
-    id: options.id ?? crypto.randomUUID(),
+    id,
     role: options.role,
     content,
     createdAt: now,
@@ -82,41 +107,72 @@ export function commitMessage(
   });
 }
 
-export function withRoomModel(room: Room, modelId: string | null): Room {
+export function withRoomModel(
+  room: Room,
+  modelId: string | null,
+  now = Date.now(),
+): Room {
+  const normalizedModelId =
+    modelId === null ? null : requireText(modelId, "model id");
+  const timestamp = requireFiniteTime(now, "room timestamp");
+
   return Object.freeze({
     ...cloneRoom(room),
-    modelId,
-    updatedAt: Date.now(),
+    modelId: normalizedModelId,
+    updatedAt: Math.max(room.updatedAt, timestamp),
   });
 }
 
 export function isRoom(value: unknown): value is Room {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<Room>;
+
   if (
     candidate.schemaVersion !== 1 ||
     typeof candidate.id !== "string" ||
+    candidate.id.trim().length === 0 ||
     typeof candidate.title !== "string" ||
+    candidate.title.trim().length === 0 ||
     typeof candidate.createdAt !== "number" ||
+    !Number.isFinite(candidate.createdAt) ||
+    candidate.createdAt < 0 ||
     typeof candidate.updatedAt !== "number" ||
+    !Number.isFinite(candidate.updatedAt) ||
+    candidate.updatedAt < candidate.createdAt ||
     !Array.isArray(candidate.messages)
   ) {
     return false;
   }
 
-  if (!(candidate.modelId === null || typeof candidate.modelId === "string")) {
+  if (
+    !(
+      candidate.modelId === null ||
+      (typeof candidate.modelId === "string" &&
+        candidate.modelId.trim().length > 0)
+    )
+  ) {
     return false;
   }
 
+  const ids = new Set<string>();
   return candidate.messages.every((message) => {
     if (!message || typeof message !== "object") return false;
     const item = message as Partial<ChatMessage>;
-    return (
-      typeof item.id === "string" &&
-      (item.role === "user" || item.role === "assistant") &&
-      typeof item.content === "string" &&
-      item.content.trim().length > 0 &&
-      typeof item.createdAt === "number"
-    );
+    if (
+      typeof item.id !== "string" ||
+      item.id.trim().length === 0 ||
+      ids.has(item.id) ||
+      (item.role !== "user" && item.role !== "assistant") ||
+      typeof item.content !== "string" ||
+      item.content.trim().length === 0 ||
+      typeof item.createdAt !== "number" ||
+      !Number.isFinite(item.createdAt) ||
+      item.createdAt < candidate.createdAt! ||
+      item.createdAt > candidate.updatedAt!
+    ) {
+      return false;
+    }
+    ids.add(item.id);
+    return true;
   });
 }
