@@ -32,13 +32,13 @@ jobs:
             prompt_path: .seven-team/prompts/live-smoke/team-a-cline.md
             report: .seven-team/reports/team-a-cline-live-smoke.md
             commit_message: Agent A01 Cline live runtime smoke report
-            data_dir: /tmp/cline-a
+            config_dir: /tmp/cline-config-a
           - name: Team B Cline live edit
             branch: agent-b/01-rpg-ux
             prompt_path: .seven-team/prompts/live-smoke/team-b-cline.md
             report: .seven-team/reports/team-b-cline-live-smoke.md
             commit_message: Agent B01 Cline live runtime smoke report
-            data_dir: /tmp/cline-b
+            config_dir: /tmp/cline-config-b
 
     steps:
       - uses: actions/checkout@v4
@@ -73,11 +73,24 @@ jobs:
       # openai-compatible is required here; openai-native follows OpenAI-specific transport.
       - name: Configure isolated OpenAI-compatible provider
         run: |
-          cline --data-dir "${{ matrix.data_dir }}" auth \
+          cline --config "${{ matrix.config_dir }}" auth \
             --provider openai-compatible \
             --apikey local-dummy-key \
             --modelid kilo-auto/free \
             --baseurl http://127.0.0.1:8877/v1
+
+      - name: Verify persisted custom endpoint
+        run: |
+          SETTINGS="$(find "${{ matrix.config_dir }}" -type f -name providers.json -print -quit)"
+          test -n "$SETTINGS"
+          python - "$SETTINGS" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1]))
+          raw=json.dumps(d)
+          assert "http://127.0.0.1:8877/v1" in raw
+          assert "kilo-auto/free" in raw
+          print("Cline custom endpoint persisted")
+          PY
 
       - name: Run real Cline agent
         run: |
@@ -85,7 +98,7 @@ jobs:
           mkdir -p "$(dirname "${{ matrix.report }}")"
           set +e
           timeout 150s cline \
-            --data-dir "${{ matrix.data_dir }}" \
+            --config "${{ matrix.config_dir }}" \
             --yolo \
             --timeout 120 \
             --retries 1 \
