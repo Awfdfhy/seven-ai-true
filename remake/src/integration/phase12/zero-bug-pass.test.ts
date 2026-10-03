@@ -249,14 +249,14 @@ describe("Zero-bug regressions", () => {
       { timeoutMs: 50 },
     );
 
+    const captured = run.result.catch((error: unknown) => error);
     await finalWriteGate;
     expect(run.cancel("too-late")).toBe(false);
-    const deadlineResult = expect(run.result).rejects.toMatchObject({
-      code: "DEADLINE_EXCEEDED",
-    });
     await vi.advanceTimersByTimeAsync(50);
 
-    await deadlineResult;
+    await expect(captured).resolves.toMatchObject({
+      code: "DEADLINE_EXCEEDED",
+    });
     expect(state.messages.map((message) => message.role)).toEqual(["user"]);
     vi.useRealTimers();
   });
