@@ -1793,6 +1793,64 @@ describe("Zero-bug regressions", () => {
     expect(saved?.messages.map((message) => message.role)).toEqual(["user"]);
   });
 
+  it("rejects malformed AbortSignal values at repository boundaries", async () => {
+    const repository = new InMemoryRoomRepository([
+      createRoom({ id: "signal-room", now: 1 }),
+    ]);
+
+    await expect(
+      repository.get("signal-room", { aborted: false } as never),
+    ).rejects.toMatchObject({
+      code: "VALIDATION",
+      message: "AbortSignal is malformed.",
+    });
+  });
+
+  it("does not consult the provider health clock when no health tracker is configured", async () => {
+    const descriptor = model("clockless", "m1");
+    const failing = provider(
+      "clockless",
+      [descriptor],
+      async function* () {
+        throw new Error("upstream failed");
+      },
+    );
+    const plan = new ModelRouter().plan(
+      [descriptor],
+      [],
+      {
+        mode: "balanced",
+        preferredModelId: null,
+        requireStreaming: true,
+        now: 1,
+        maxAttempts: 1,
+      },
+    );
+    const transport = new RoutedChatTransport(
+      plan,
+      new Map([["clockless", failing]]),
+      "system",
+      undefined,
+      () => {
+        throw new Error("clock must not run");
+      },
+    );
+
+    const consume = async () => {
+      for await (const _chunk of transport.stream({
+        room: createRoom({ id: "clockless-room", now: 1 }),
+        signal: new AbortController().signal,
+      })) {
+        // no-op
+      }
+    };
+
+    await expect(consume()).rejects.toMatchObject({
+      code: "PROVIDER",
+      retryable: true,
+    });
+  });
+
   it("isolates task listeners and bounds completed task retention", async () => {
     const manager = new TaskManager({ maxRetainedCompleted: 2 });
     manager.subscribe(() => {
