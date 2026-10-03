@@ -21,10 +21,10 @@ jobs:
   mini-swe-live:
     name: ${{ matrix.name }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: 1
       matrix:
         include:
           - name: Wave 01 A08 mini-SWE UI evaluation audit
@@ -65,7 +65,7 @@ jobs:
               You are a controlled repository worker. Follow the task literally, minimize actions, and do not explore unrelated files.
             instance_template: |
               {{task}}
-            step_limit: 4
+            step_limit: 8
             cost_limit: 3
             mode: yolo
           environment:
@@ -112,7 +112,7 @@ jobs:
           set -u
           mkdir -p "$(dirname "${{ matrix.report }}")"
           set +e
-          timeout 150s mini \
+          timeout 300s mini \
             -c /tmp/seven-mini.yaml \
             -m openai/kilo-auto/free \
             -t "$(cat /tmp/mini-prompt.md)" \
@@ -123,7 +123,7 @@ jobs:
             echo "mini-SWE produced required report; accepting output (rc=$rc)."
           else
             echo "mini-SWE did not produce required report (rc=$rc)." >&2
-            exit "${rc:-1}"
+            exit 1
           fi
 
       - name: Sanitize to allowed output only
