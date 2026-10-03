@@ -3,7 +3,7 @@
 if(!r||!r.document)return;
 const d=r.document,$=s=>d.querySelector(s),qa=s=>Array.from(d.querySelectorAll(s));
 const S={version:'3.1.0',ready:false,observer:null,workspaceLoading:null,githubLoading:null,attachmentWarm:false,events:false};
-const AR=()=>/^ar\b/i.test(d.documentElement.lang||'');
+const AR=()=>String(d.documentElement.lang||'').toLowerCase().startsWith('ar');
 const T=(en,ar)=>AR()?ar:en;
 function visible(el){if(!el||el.hidden)return false;const c=r.getComputedStyle?r.getComputedStyle(el):null;return !c||c.display!=='none';}
 function mark(){d.documentElement.dataset.sevenShellFinal='1';if(d.body)d.body.dataset.sevenShellFinal='1';}
@@ -14,7 +14,7 @@ function cleanChrome(){
   qa('.app-name').forEach(el=>{if(/^seven(?:\s+ai|\.ai)?$/i.test(String(el.textContent||'').trim()))el.textContent='seven.ai'});
 }
 function qaWithin(root,s){try{return Array.from(root.querySelectorAll(s))}catch(_){return[]}}
-function nativeNewChat(){return qa('button,[role="button"]').find(x=>!x.classList.contains('seven-shell-new')&&!x.closest('.seven-shell-primary-nav')&&/^new chat$/i.test(String(x.textContent||x.getAttribute('aria-label')||x.title||'').trim()));}
+function nativeNewChat(){return qa('button,[role="button"]').find(x=>!x.classList.contains('seven-shell-new')&&!x.closest('.seven-shell-primary-nav')&&/^(new chat|محادثة جديدة)$/i.test(String(x.textContent||x.getAttribute('aria-label')||x.title||'').trim()));}
 function loadWorkspaces(){
   if(r.SevenWorkspaces)return Promise.resolve(r.SevenWorkspaces);
   if(S.workspaceLoading)return S.workspaceLoading;
@@ -47,7 +47,7 @@ function ensureNav(){
   let nav=$('.seven-shell-primary-nav');
   if(!nav){nav=d.createElement('nav');nav.className='seven-shell-primary-nav';nav.setAttribute('aria-label',T('Seven spaces','مساحات Seven'));
     const fresh=d.createElement('button');fresh.type='button';fresh.className='seven-shell-nav-btn seven-shell-nav-new';fresh.innerHTML='<span aria-hidden="true">＋</span><span>'+T('New chat','محادثة جديدة')+'</span>';fresh.onclick=()=>{const n=nativeNewChat();if(n)n.click();else try{if(typeof r.createNewChat==='function')r.createNewChat()}catch(_){}};nav.appendChild(fresh);
-    nav.appendChild(navButton('chat','◌',T('Chat','الدردشة')));nav.appendChild(navButton('coding','⌘',T('Code','البرمجة')));nav.appendChild(navButton('research','⌕',T('Research','البحث')));nav.appendChild(navButton('rpg','✦','RPG'));const dev=d.createElement('button');dev.type='button';dev.className='seven-shell-nav-btn';dev.dataset.sevenGithubSelfdev='1';dev.innerHTML='<span aria-hidden="true">⌁</span><span>Self Dev</span>';dev.setAttribute('aria-label','GitHub Self Development');dev.onclick=()=>loadGithubSelfDev().then(x=>x.openPanel()).catch(()=>{});nav.appendChild(dev);
+    nav.appendChild(navButton('chat','◌',T('Chat','الدردشة')));nav.appendChild(navButton('coding','⌘',T('Code','البرمجة')));nav.appendChild(navButton('research','⌕',T('Research','البحث')));nav.appendChild(navButton('rpg','✦','RPG'));const dev=d.createElement('button');dev.type='button';dev.className='seven-shell-nav-btn';dev.dataset.sevenGithubSelfdev='1';dev.innerHTML='<span aria-hidden="true">⌁</span><span>'+T('Self Dev','تطوير ذاتي')+'</span>';dev.setAttribute('aria-label',T('GitHub Self Development','التطوير الذاتي عبر GitHub'));dev.onclick=()=>loadGithubSelfDev().then(x=>x.openPanel()).catch(()=>{});nav.appendChild(dev);
     const anchor=$('.seven-shell-section-label')||$('#roomList')||side.lastElementChild;anchor&&anchor.parentNode?anchor.parentNode.insertBefore(nav,anchor):side.appendChild(nav);
   }
   syncNav();
