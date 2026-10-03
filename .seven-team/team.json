@@ -94,5 +94,20 @@
       "commitSha",
       "dependenciesBlockers"
     ]
+  },
+  "cohesionPass": {
+    "active": true,
+    "featureFreeze": true,
+    "exceptions": [
+      "release blockers",
+      "security fixes",
+      "test infrastructure required to evaluate cohesion"
+    ],
+    "priorities": [
+      "UI Foundation V2",
+      "RPG V2 Vertical Slice",
+      "Evaluation Gate",
+      "Independent Integration Review"
+    ]
   }
 }
