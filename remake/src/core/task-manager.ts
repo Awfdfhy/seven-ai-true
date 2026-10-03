@@ -212,7 +212,7 @@ export class TaskManager {
     status: "cancelled" | "succeeded" | "failed",
   ): void {
     if (task.timeoutId !== undefined) clearTimeout(task.timeoutId);
-    task.timeoutId = undefined;
+    delete task.timeoutId;
     task.status = status;
     task.finishedAt = Date.now();
     this.emit(task);
