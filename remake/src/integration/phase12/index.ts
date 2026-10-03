@@ -14,6 +14,7 @@ import type {
   ChatTransport,
 } from "../../application/chat/chat-service";
 import type { ProviderContextSource } from "../../application/context/memory-context-service";
+import type { ContextBuildResult } from "../../context/context-builder";
 
 export type ProviderMap = ReadonlyMap<string, ProviderAdapter>;
 
@@ -205,6 +206,64 @@ function validateContext(context: ChatStreamContext): void {
   }
 }
 
+function validatePreparedContext(
+  value: ContextBuildResult,
+  contextWindow: number,
+): readonly ProviderMessage[] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Prepared context must be an object.",
+    });
+  }
+  if (!Array.isArray(value.messages)) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Prepared context messages must be an array.",
+    });
+  }
+  if (
+    !Number.isSafeInteger(value.estimatedInputTokens) ||
+    value.estimatedInputTokens < 0 ||
+    !Number.isSafeInteger(value.maxInputTokens) ||
+    value.maxInputTokens <= 0 ||
+    value.maxInputTokens > contextWindow ||
+    value.estimatedInputTokens > value.maxInputTokens
+  ) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Prepared context token budget is invalid.",
+    });
+  }
+  if (
+    !Array.isArray(value.selectedMemoryIds) ||
+    !Array.isArray(value.omittedMessages) ||
+    typeof value.summaryUsed !== "boolean"
+  ) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Prepared context metadata is malformed.",
+    });
+  }
+  const ids = new Set<string>();
+  for (const id of value.selectedMemoryIds) {
+    if (
+      typeof id !== "string" ||
+      !id.trim() ||
+      id !== id.trim() ||
+      ids.has(id)
+    ) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Prepared context memory ids are malformed.",
+      });
+    }
+    ids.add(id);
+  }
+  assertValidProviderMessages(value.messages);
+  return value.messages;
+}
+
 export class RoutedChatTransport implements ChatTransport {
   private readonly plan: RoutePlan;
   private readonly providers: ReadonlyMap<string, ProviderAdapter>;
@@ -292,14 +351,15 @@ export class RoutedChatTransport implements ChatTransport {
                 }),
               ),
             ]
-          : (
+          : validatePreparedContext(
               await this.contextSource.prepare({
                 room: context.room,
                 systemPrompt: this.systemPrompt,
                 contextWindow: candidate.contextWindow,
                 signal: context.signal,
-              })
-            ).messages;
+              }),
+              candidate.contextWindow,
+            );
 
       assertValidProviderMessages(messages);
 
