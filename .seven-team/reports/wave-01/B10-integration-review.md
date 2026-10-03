@@ -19,9 +19,9 @@ Scope: the AUDIT PACKAGE as an implementation plan. Not a claim that RPG V2 is b
 All nine present, non-empty, WAVE01=COMPLETE-terminated. Contracts read: product contract,
 EVALUATION_GATE (A-D), SEVEN_COHESION_PASS, manifest.
 
-Weak/missing: no worker ran a test, so the package holds zero runtime evidence (B03, B06, B09 say
-so). No measured baseline exists for the B09 budgets. B06 lists 16 explicit unknowns. B08 leaves one
-item open: whether SevenWorkspaces already restores the last active workspace.
+Weak: no worker executed a test, so runtime evidence is zero (B03, B06, B09). No measured
+baseline for the B09 budgets. B06 lists 16 unknowns. B08 leaves open whether SevenWorkspaces
+already restores the last active workspace.
 
 ## 2. Independently corroborated facts (high confidence)
 
@@ -34,7 +34,7 @@ item open: whether SevenWorkspaces already restores the last active workspace.
 
 ## 3. Conflicts (resolved by citation)
 
-1. Storage key: B02 `seven.rpg.v2.session` vs B08 `seven_rpg_session_v2` vs B07 `seven_rpg_session_v1`. Ratify one.
+1. Storage key: four proposed — B02 `seven.rpg.v2.session`, B08 `seven_rpg_session_v2`, B07 `seven_rpg_session_v1`, B06 `seven_rpg_state_v1`. Ratify one.
 2. Test substrate: B08 mandates built dist (engines are inlined, not raw-HTML globals); B02 implies driving the workspace directly. B08 wins for shipped-surface proof.
 3. Suites: B02, B04, B08 each propose different RPG suites. Consolidate; unregistered suites (B04) are unproven state.
 4. CI ownership: B04 says all.cjs is outside the Team B lease and blocks registration; B08 assumes access. B04's constraint stands.
@@ -69,7 +69,7 @@ item open: whether SevenWorkspaces already restores the last active workspace.
 - Gate C: shared navigation/tokens and the ratified persistence convention; Arabic renders as Arabic; no parallel settings or modal surface.
 - Gate D: automated output, before/after note, known limitations, independent verdict, both engine suites green unmodified.
 - Semantic tier, non-blocking in CI: RPG-02/03/05/06 prose verdicts from an opt-in live run; stub runs labelled STUB; host/emulator tier labelled; PHYSICAL_DEVICE stays UNMEASURED.
-- Determinism: no Math.random/Date.now in harness, explicit ids/positions, identical digest across two runs, no characterKnowledge in serialized context.
+- Determinism: no Math.random/Date.now in the harness, identical digest across two runs, no characterKnowledge in serialized context.
 
 ## 7. Audit-package vs product-release readiness
 
@@ -77,8 +77,8 @@ Audit package: READY. Coherent, evidence-cited, contract-mapped, honest about it
 reports converge on the same root causes and none overclaims a finished product.
 
 Product (RPG V2): NOT READY. RPG-01, RPG-04, RPG-05, RPG-07 fail by direct inspection; RPG-02 fails
-because no bounded context reaches the model; RPG-03/RPG-06 are testable today but the in-app path is
-BLOCKED and the gate is unauthenticated; RPG automated coverage is zero today.
+because no bounded context reaches the model; RPG-03/RPG-06 are testable today but the in-app path
+is BLOCKED and the gate is unauthenticated; RPG automated coverage is zero today.
 
 ## 8. Verdict
 
