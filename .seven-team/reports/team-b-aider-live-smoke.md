@@ -4,12 +4,12 @@
 Team B / B06 / Aider
 
 ## B06 Mission
-Validate that RPG V2 maintains persistent memory and narrative continuity without requiring a JSON pack import. The system must demonstrate meaningful player choices that alter world state, are reflected in subsequent narration, and survive session exit/re-entry. Additionally, character-specific knowledge must remain isolated between characters to prevent information leakage.
+Validate RPG V2's persistent memory and narrative continuity for a compelling 10-minute interactive-story vertical slice. Confirm that meaningful player choices alter world state, appear in subsequent narration, and survive session exit/re-entry without requiring a JSON pack import.
 
 ## Memory and Persistence Risks
-1. Character-local knowledge could inadvertently leak into another character's context or global shared state, breaking narrative isolation.
-2. World state changes could be lost or corrupted during session persistence, exit/re-entry cycles, or system upgrades.
-3. Data migration processes could overwrite valid state, weaken knowledge boundaries, or fail silently without detection.
+1. Character-local knowledge may leak across characters or into shared global state, violating knowledge boundaries.
+2. World-state changes may be lost or corrupted during persistence, exit/re-entry, or system upgrades.
+3. Migrations may overwrite valid state, weaken knowledge isolation, or fail silently without detection.
 
 ## Branch
 agent-b/06-rpg-memory
