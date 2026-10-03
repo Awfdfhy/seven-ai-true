@@ -5,8 +5,10 @@ import {
   type ContextSummary,
 } from "../../domain/memory";
 import type { MemoryRepository } from "../../storage/memory-repository";
+import type { ContextPolicyRepository } from "../../storage/context-policy-repository";
 import {
   ContextBuilder,
+  normalizeContextPolicy,
   type ContextBuildResult,
   type ContextPolicy,
 } from "../../context/context-builder";
@@ -38,6 +40,7 @@ export interface ProviderContextSource {
 export type MemoryContextServiceOptions = Readonly<{
   maxSummaryPasses?: number;
   now?: () => number;
+  policyRepository?: ContextPolicyRepository;
 }>;
 
 function validateSignal(signal: AbortSignal): void {
@@ -97,6 +100,35 @@ function targetSummaryTokens(policy?: Partial<ContextPolicy>): number {
   return value;
 }
 
+function summaryFingerprint(room: Room, throughMessageId: string): string | null {
+  const end = room.messages.findIndex((message) => message.id === throughMessageId);
+  if (end < 0) return null;
+  let first = 0x811c9dc5;
+  let second = 0x9e3779b9;
+  let length = 0;
+  for (let index = 0; index <= end; index += 1) {
+    const message = room.messages[index];
+    if (!message) continue;
+    const source = `${message.id}\u0000${message.role}\u0000${message.createdAt}\u0000${message.content}\u0001`;
+    length += source.length;
+    for (let offset = 0; offset < source.length; offset += 1) {
+      const code = source.charCodeAt(offset);
+      first ^= code;
+      first = Math.imul(first, 0x01000193) >>> 0;
+      second = (second + code + Math.imul(second ^ code, 0x85ebca6b)) >>> 0;
+    }
+  }
+  return `v1:${end + 1}:${length}:${first.toString(16).padStart(8, "0")}:${second.toString(16).padStart(8, "0")}`;
+}
+
+function summaryConflict(): SevenError {
+  return new SevenError({
+    code: "STORAGE",
+    message: "Context summary changed concurrently. Retry with fresh durable state.",
+    retryable: true,
+  });
+}
+
 // Fail fast instead of accumulating an unbounded queue or letting two service
 // instances overwrite each other's summaries on the same repository connection.
 const activeRooms = new WeakMap<MemoryRepository, Set<string>>();
@@ -104,6 +136,7 @@ const activeRooms = new WeakMap<MemoryRepository, Set<string>>();
 export class MemoryContextService implements ProviderContextSource {
   private readonly maxSummaryPasses: number;
   private readonly now: () => number;
+  private readonly policyRepository: ContextPolicyRepository | null;
   private readonly roomTails = new Map<string, Promise<void>>();
   private readonly roomPending = new Map<string, number>();
 
@@ -118,7 +151,8 @@ export class MemoryContextService implements ProviderContextSource {
       typeof repository !== "object" ||
       typeof repository.listForRoom !== "function" ||
       typeof repository.getSummary !== "function" ||
-      typeof repository.putSummary !== "function"
+      typeof repository.putSummary !== "function" ||
+      typeof repository.compareAndSwapSummary !== "function"
     ) {
       throw new SevenError({
         code: "VALIDATION",
@@ -168,8 +202,24 @@ export class MemoryContextService implements ProviderContextSource {
       });
     }
 
+    const policyRepository = options.policyRepository ?? null;
+    if (
+      policyRepository !== null &&
+      (!policyRepository ||
+        typeof policyRepository !== "object" ||
+        typeof policyRepository.get !== "function" ||
+        typeof policyRepository.put !== "function" ||
+        typeof policyRepository.clear !== "function")
+    ) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "MemoryContextService policyRepository is malformed.",
+      });
+    }
+
     this.maxSummaryPasses = passes;
     this.now = now;
+    this.policyRepository = policyRepository;
   }
 
   async prepare(input: ContextPrepareInput): Promise<ContextBuildResult> {
@@ -229,20 +279,55 @@ export class MemoryContextService implements ProviderContextSource {
   }
 
   private async prepareSnapshot(input: ContextPrepareInput): Promise<ContextBuildResult> {
-    const [memories, initialSummary] = await abortable(Promise.all([
+    const [memories, initialSummary, persistedPolicy] = await abortable(Promise.all([
       this.repository.listForRoom(input.room.id, input.signal),
       this.repository.getSummary(input.room.id, input.signal),
+      this.policyRepository === null
+        ? Promise.resolve(null)
+        : this.policyRepository.get(input.signal),
     ]), input.signal);
     throwIfAborted(input.signal);
 
+    const effectivePolicy = normalizeContextPolicy({
+      ...(persistedPolicy ?? {}),
+      ...(input.policy ?? {}),
+    });
+
     let summary: ContextSummary | null = initialSummary;
+    if (summary !== null) {
+      const fingerprint = summaryFingerprint(input.room, summary.throughMessageId);
+      if (fingerprint === null || (summary.sourceFingerprint !== null && summary.sourceFingerprint !== fingerprint)) {
+        const removed = await abortable(
+          this.repository.compareAndSwapSummary(input.room.id, summary, null, input.signal),
+          input.signal,
+        );
+        if (!removed) throw summaryConflict();
+        summary = null;
+      } else if (summary.sourceFingerprint === null) {
+        const upgraded = createContextSummary({
+          roomId: summary.roomId,
+          content: summary.content,
+          throughMessageId: summary.throughMessageId,
+          sourceFingerprint: fingerprint,
+          createdAt: summary.createdAt,
+          now: summary.updatedAt,
+        });
+        const migrated = await abortable(
+          this.repository.compareAndSwapSummary(input.room.id, summary, upgraded, input.signal),
+          input.signal,
+        );
+        if (!migrated) throw summaryConflict();
+        summary = upgraded;
+      }
+    }
+
     let result = this.builder.build({
       room: input.room,
       systemPrompt: input.systemPrompt,
       contextWindow: input.contextWindow,
       memories,
       summary,
-      ...(input.policy !== undefined ? { policy: input.policy } : {}),
+      policy: effectivePolicy,
     });
 
     let pass = 0;
@@ -260,7 +345,7 @@ export class MemoryContextService implements ProviderContextSource {
       const lastOmitted = omitted.at(-1);
       if (!lastOmitted) break;
 
-      const targetTokens = targetSummaryTokens(input.policy);
+      const targetTokens = targetSummaryTokens(effectivePolicy);
       // If the old summary did not fit this model, omittedMessages already
       // includes its original source prefix. Combining both would double count.
       const previousSummary = result.summaryUsed ? summary : null;
@@ -298,6 +383,7 @@ export class MemoryContextService implements ProviderContextSource {
         roomId: input.room.id,
         content: summaryText,
         throughMessageId: lastOmitted.id,
+        sourceFingerprint: summaryFingerprint(input.room, lastOmitted.id),
         ...(summary !== null ? { createdAt: summary.createdAt } : {}),
         now: Math.max(now, summary?.updatedAt ?? 0),
       });
@@ -310,7 +396,7 @@ export class MemoryContextService implements ProviderContextSource {
         contextWindow: input.contextWindow,
         memories,
         summary: nextSummary,
-        ...(input.policy !== undefined ? { policy: input.policy } : {}),
+        policy: effectivePolicy,
       });
 
       if (!next.summaryUsed) {
@@ -321,7 +407,16 @@ export class MemoryContextService implements ProviderContextSource {
       }
 
       throwIfAborted(input.signal);
-      await abortable(this.repository.putSummary(nextSummary, input.signal), input.signal);
+      const written = await abortable(
+        this.repository.compareAndSwapSummary(
+          input.room.id,
+          summary,
+          nextSummary,
+          input.signal,
+        ),
+        input.signal,
+      );
+      if (!written) throw summaryConflict();
       throwIfAborted(input.signal);
       summary = nextSummary;
       result = next;
