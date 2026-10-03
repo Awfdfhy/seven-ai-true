@@ -918,19 +918,6 @@
                         <div class="settings-helper" style="margin:0">Seven automatically uses anonymous free providers first. Providers that require credentials are used only when credentials were embedded by the build. You never need to paste an API key.</div>
                     </div>
                     <div class="settings-helper" id="searchGatewayStatus">Web Search works without setup through built-in DDG/Wikipedia sources. A managed gateway is used automatically only when supplied by the build.</div>
-                    <div id="sevenManagedProviderCompat" hidden aria-hidden="true">
-                        <input type="checkbox" id="providerGroqEnabled"><input type="hidden" id="apiKeyInput">
-                        <input type="checkbox" id="providerNvidiaEnabled"><input type="hidden" id="nvidiaApiKeyInput">
-                        <input type="checkbox" id="providerOpenrouterEnabled"><input type="hidden" id="openrouterApiKeyInput">
-                        <input type="checkbox" id="providerGeminiEnabled"><input type="hidden" id="geminiApiKeyInput">
-                        <input type="checkbox" id="providerKiloEnabled">
-                        <input type="checkbox" id="providerLlm7Enabled"><input type="hidden" id="llm7TokenInput">
-                        <input type="checkbox" id="providerAionEnabled"><input type="hidden" id="aionApiKeyInput">
-                        <input type="checkbox" id="providerMistralEnabled"><input type="hidden" id="mistralApiKeyInput">
-                        <input type="checkbox" id="providerZaiEnabled"><input type="hidden" id="zaiApiKeyInput">
-                        <input type="checkbox" id="providerCloudflareEnabled"><input type="hidden" id="cloudflareApiTokenInput"><input type="hidden" id="cloudflareAccountIdInput">
-                        <input type="hidden" id="searchGatewayUrlInput"><input type="hidden" id="searchGatewayKeyInput">
-                    </div>
                 </div>
             </details>
 
@@ -1934,10 +1921,11 @@
         }
 
         function checkUserName() {
-            if (localStorage.getItem('user_name_asked')) return;
+            // Modern Seven starts directly in zero-room. Keep legacy stored names,
+            // but never interrupt a fresh install with the old capture modal.
+            if (!localStorage.getItem('user_name_asked')) localStorage.setItem('user_name_asked', '1');
             const modal = document.getElementById("nameModal");
-            modal.style.display = "flex";
-            setTimeout(() => { const el = document.getElementById("nameInput"); if (el) el.focus(); }, 50);
+            if (modal) modal.style.display = "none";
         }
 
         function saveUserName() {
@@ -2398,23 +2386,7 @@
 
         function openSettings() {
             document.getElementById("settingsModal").style.display = "flex";
-            document.getElementById("apiKeyInput").value = GROQ_API_KEY;
-            document.getElementById("nvidiaApiKeyInput").value = NVIDIA_API_KEY;
-            document.getElementById("openrouterApiKeyInput").value = OPENROUTER_API_KEY;
-            document.getElementById("geminiApiKeyInput").value = GEMINI_API_KEY;
-            document.getElementById("llm7TokenInput").value = LLM7_API_TOKEN;
-            document.getElementById("aionApiKeyInput").value = AION_API_KEY;
-            document.getElementById("mistralApiKeyInput").value = MISTRAL_API_KEY;
-            document.getElementById("zaiApiKeyInput").value = ZAI_API_KEY;
-            document.getElementById("cloudflareApiTokenInput").value = CLOUDFLARE_API_TOKEN;
-            document.getElementById("cloudflareAccountIdInput").value = CLOUDFLARE_ACCOUNT_ID;
-            document.getElementById("searchGatewayUrlInput").value = SEARCH_GATEWAY_URL;
-            document.getElementById("searchGatewayKeyInput").value = SEARCH_GATEWAY_KEY;
             renderSearchGatewayStatusV2();
-            for (const id of Object.keys(FREE_PROVIDER_REGISTRY)) {
-                const box = document.getElementById("provider" + id.charAt(0).toUpperCase() + id.slice(1) + "Enabled");
-                if (box) box.checked = isFreeProviderEnabled(id);
-            }
             document.getElementById("routingModeSelect").value = currentRoutingMode;
             document.getElementById("freeFallbackToggle").checked = freeFallbackEnabled;
             populateFreeModelSelect(currentModel);
@@ -2491,7 +2463,7 @@
             const listDiv = document.getElementById("knowledgeFileList");
             if (!statusDiv || !listDiv) return;
 
-            const files = room.knowledgeFiles || [];
+            const files = room && Array.isArray(room.knowledgeFiles) ? room.knowledgeFiles : [];
             if (files.length === 0) {
                 statusDiv.textContent = "No knowledge files loaded.";
                 listDiv.innerHTML = "";
@@ -2610,6 +2582,7 @@
 
         function removeKnowledgeFile(index) {
             const room = rooms[currentRoom];
+            if (!room || !Array.isArray(room.knowledgeFiles)) return;
             room.knowledgeFiles.splice(index, 1);
             rebuildKnowledge(room);
             saveRooms();
@@ -2618,6 +2591,10 @@
 
         function clearKnowledge() {
             const room = rooms[currentRoom];
+            if (!room) {
+                renderKnowledgeStatus();
+                return;
+            }
             room.knowledgeFiles = [];
             room.knowledge = "";
             saveRooms();
@@ -2625,11 +2602,18 @@
         }
 
         function toggleTheme() {
-            document.body.classList.toggle('light');
-            localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');
+            const current = document.documentElement.dataset.sevenTheme || "day";
+            const next = current === "night" ? "day" : "night";
+            if (window.SevenTheme && typeof window.SevenTheme.setPreference === "function") {
+                window.SevenTheme.setPreference(next);
+                return;
+            }
+            document.documentElement.dataset.sevenTheme = next;
+            localStorage.setItem("theme", next);
         }
         function loadTheme() {
-            if (localStorage.getItem('theme') === 'light') document.body.classList.add('light');
+            // Theme boot owns initial state. This legacy hook intentionally does not
+            // mutate body classes, preventing a second independent theme system.
         }
 
         // ---------- Sidebar ----------
