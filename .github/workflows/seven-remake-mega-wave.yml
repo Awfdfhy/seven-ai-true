@@ -1,0 +1,257 @@
+name: Seven Remake — Mega Wave 01
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - seven-remake-v3
+    paths:
+      - '.seven-team/remake-mega/manifest.json'
+      - '.github/workflows/seven-remake-mega-wave.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: seven-remake-mega-wave-01
+  cancel-in-progress: false
+
+jobs:
+  implement:
+    name: Remake Mega ${{ matrix.id }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        include:
+          - id: A01
+            branch: remake-agent/a01-chat-domain
+          - id: A02
+            branch: remake-agent/a02-chat-application
+          - id: A03
+            branch: remake-agent/a03-storage
+          - id: A04
+            branch: remake-agent/a04-providers
+          - id: A05
+            branch: remake-agent/a05-routing
+          - id: A06
+            branch: remake-agent/a06-memory
+          - id: A07
+            branch: remake-agent/a07-research
+          - id: A08
+            branch: remake-agent/a08-testing
+          - id: A09
+            branch: remake-agent/a09-performance
+          - id: A10
+            branch: remake-agent/a10-contracts
+          - id: B01
+            branch: remake-agent/b01-attachments
+          - id: B02
+            branch: remake-agent/b02-android-bridge
+          - id: B03
+            branch: remake-agent/b03-deep-think
+          - id: B04
+            branch: remake-agent/b04-github
+          - id: B05
+            branch: remake-agent/b05-rpg
+          - id: B06
+            branch: remake-agent/b06-shell
+          - id: B07
+            branch: remake-agent/b07-ui-system
+          - id: B08
+            branch: remake-agent/b08-release
+          - id: B09
+            branch: remake-agent/b09-observability
+          - id: B10
+            branch: remake-agent/b10-kernel
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Remake dependencies
+        working-directory: remake
+        run: npm install --package-lock=false --ignore-scripts --no-audit --no-fund
+
+      - name: Install Codex worker
+        run: npm install -g @openai/codex@latest
+
+      - name: Materialize wave contract and relay
+        env:
+          WORKER_ID: ${{ matrix.id }}
+        run: |
+          set -euo pipefail
+          git fetch origin seven-remake-v3
+          git show origin/seven-remake-v3:.seven-team/remake-mega/manifest.json > /tmp/remake-mega-manifest.json
+          git show origin/seven-remake-v3:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/kilo_anonymous_relay.py
+          git show origin/seven-remake-v3:.seven-team/runtime/codex_responses_bridge.py > /tmp/codex_responses_bridge.py
+          python - <<'PY'
+          import json,os,pathlib
+          d=json.load(open('/tmp/remake-mega-manifest.json'))
+          wid=os.environ['WORKER_ID']
+          w=next(x for x in d['workers'] if x['id']==wid)
+          report=f".seven-team/reports/remake-mega/{wid}.md"
+          prompt=f"""
+          You are Seven Remake production worker {wid}. Work extremely hard and use the full useful execution budget.
+
+          BASELINE:
+          - This is a clean-room rewrite under remake/.
+          - Read remake/ARCHITECTURE.md and remake/README.md first.
+          - Legacy Seven is behavioral reference only. Do NOT copy legacy runtime code or recreate global patching.
+          - Existing remake/src/core is trusted shared infrastructure and is READ-ONLY for you.
+
+          YOUR ONLY WRITE SCOPE:
+          {w['scope']}/**
+
+          YOUR PRODUCTION TASK:
+          {w['task']}
+
+          HARD REQUIREMENTS:
+          1. Implement real production TypeScript, not a plan or report-only response.
+          2. Add thorough deterministic tests inside your write scope.
+          3. Keep strict TypeScript and exactOptionalPropertyTypes clean.
+          4. Do not add dependencies or modify package.json, tsconfig, Vite config, UI App, core files, workflows, or other workers' directories.
+          5. Prefer pure functions, immutable snapshots, explicit state machines and typed ports.
+          6. Every async API must make cancellation/timeout/error behavior explicit where relevant.
+          7. Reject invalid state rather than silently guessing.
+          8. Do not weaken existing tests.
+          9. You may READ any repository file needed for context.
+          10. Keep fixing until your implementation is coherent.
+
+          REQUIRED REPORT:
+          Before finishing, create {report} containing Objective, production code implemented, tests added,
+          invariants enforced, files changed, commands/tests run, and remaining risks/integration notes.
+          The FINAL line must be exactly:
+          REMAKE_MEGA=COMPLETE
+
+          Do not commit or push; the controlled workflow will validate and commit.
+          """
+          pathlib.Path('/tmp/remake-agent-prompt.md').write_text(prompt,encoding='utf-8')
+          pathlib.Path('/tmp/remake-scope.txt').write_text(w['scope'],encoding='utf-8')
+          pathlib.Path('/tmp/remake-report.txt').write_text(report,encoding='utf-8')
+          print(wid,w['scope'],report)
+          PY
+
+      - name: Start guarded free-model bridges
+        run: |
+          set -euo pipefail
+          python /tmp/kilo_anonymous_relay.py >/tmp/seven-relay.log 2>&1 &
+          python /tmp/codex_responses_bridge.py >/tmp/codex-bridge.log 2>&1 &
+          ready=0
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8878/v1/models >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          if test "$ready" -ne 1; then
+            tail -120 /tmp/seven-relay.log || true
+            tail -120 /tmp/codex-bridge.log || true
+            exit 1
+          fi
+
+      - name: Run maximum-effort isolated coding agent
+        env:
+          SEVEN_CODEX_KEY: local-dummy-key
+          CODEX_HOME: /tmp/seven-remake-codex-${{ matrix.id }}
+        run: |
+          set -u
+          mkdir -p "$CODEX_HOME" "$(dirname "$(cat /tmp/remake-report.txt)")"
+          success=0
+          for attempt in 1 2; do
+            echo "===== ${{ matrix.id }} implementation attempt $attempt/2 ====="
+            set +e
+            timeout 430s codex exec               --skip-git-repo-check               -m kilo-auto/free               -c 'approval_policy="never"'               -c 'sandbox_mode="danger-full-access"'               -c 'model_provider="seven"'               -c 'model_providers.seven={name="Seven Local Bridge",base_url="http://127.0.0.1:8878/v1",env_key="SEVEN_CODEX_KEY",wire_api="responses",requires_openai_auth=false,supports_websockets=false,request_max_retries=2,stream_max_retries=2}'               "$(cat /tmp/remake-agent-prompt.md)"
+            rc=$?
+            set -e
+            REPORT="$(cat /tmp/remake-report.txt)"
+            if test -f "$REPORT" && grep -q '^REMAKE_MEGA=COMPLETE$' "$REPORT"; then
+              success=1
+              echo "Worker produced controlled completion report (rc=$rc)."
+              break
+            fi
+            echo "Worker incomplete after attempt $attempt (rc=$rc)." >&2
+          done
+          if test "$success" -ne 1; then
+            echo "--- relay tail ---" >&2
+            tail -120 /tmp/seven-relay.log >&2 || true
+            echo "--- responses bridge tail ---" >&2
+            tail -120 /tmp/codex-bridge.log >&2 || true
+            exit 1
+          fi
+
+      - name: Enforce exclusive write ownership
+        run: |
+          set -euo pipefail
+          SCOPE="$(cat /tmp/remake-scope.txt)"
+          REPORT="$(cat /tmp/remake-report.txt)"
+          rm -rf remake/dist
+          mapfile -t changed < <(
+            {
+              git diff --name-only
+              git ls-files --others --exclude-standard
+            } | sort -u
+          )
+          if test "${#changed[@]}" -eq 0; then
+            echo "No implementation changes produced." >&2
+            exit 1
+          fi
+          prod=0
+          tests=0
+          for f in "${changed[@]}"; do
+            echo "changed: $f"
+            if [[ "$f" == "$REPORT" ]]; then
+              continue
+            fi
+            if [[ "$f" != "$SCOPE/"* ]]; then
+              echo "WRITE OWNERSHIP VIOLATION: $f is outside $SCOPE" >&2
+              exit 1
+            fi
+            if [[ "$f" =~ \.test\.(ts|tsx)$ ]]; then
+              tests=$((tests+1))
+            elif [[ "$f" =~ \.(ts|tsx)$ ]]; then
+              prod=$((prod+1))
+            fi
+          done
+          test "$prod" -ge 1
+          test "$tests" -ge 1
+          grep -q '^REMAKE_MEGA=COMPLETE$' "$REPORT"
+
+      - name: Strict TypeScript gate
+        working-directory: remake
+        run: npm run typecheck
+
+      - name: Full Remake test gate
+        working-directory: remake
+        run: npm test
+
+      - name: Production build gate
+        working-directory: remake
+        run: npm run build
+
+      - name: Commit validated worker output
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          SCOPE="$(cat /tmp/remake-scope.txt)"
+          REPORT="$(cat /tmp/remake-report.txt)"
+          rm -rf remake/dist
+          git add "$SCOPE" "$REPORT"
+          if git diff --cached --quiet; then
+            echo "Nothing to commit." >&2
+            exit 1
+          fi
+          git config user.name 'Seven Remake Mega Worker'
+          git config user.email 'actions@users.noreply.github.com'
+          git commit -m "Remake Mega ${{ matrix.id }} validated implementation"
+          git fetch origin "${{ matrix.branch }}"
+          git rebase "origin/${{ matrix.branch }}"
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:"${{ matrix.branch }}"
