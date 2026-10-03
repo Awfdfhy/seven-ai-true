@@ -244,14 +244,18 @@ if (!gradle.includes("androidTestImplementation 'androidx.test.ext:junit:1.2.1'"
 }
 fs.writeFileSync(gradlePath, gradle);
 
-const testDir = path.join(
+const androidTestJavaRoot = path.join(
   ANDROID,
   "app",
   "src",
   "androidTest",
   "java",
-  ...APP_ID.split("."),
 );
+// Capacitor's generated template includes ExampleInstrumentedTest under
+// com.getcapacitor.myapp and asserts the template package id. The Remake owns
+// the installed-app release gate, so discard template tests before materializing it.
+fs.rmSync(androidTestJavaRoot, { recursive: true, force: true });
+const testDir = path.join(androidTestJavaRoot, ...APP_ID.split("."));
 fs.mkdirSync(testDir, { recursive: true });
 
 const test = `package ${APP_ID};
