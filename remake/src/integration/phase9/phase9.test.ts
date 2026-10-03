@@ -2,7 +2,7 @@ import "fake-indexeddb/auto";
 import { describe, expect, it } from "vitest";
 import { TaskManager } from "../../core/task-manager";
 import { RpgCanonService } from "../../rpg/rpg-canon-service";
-import { IndexedDbRpgRepository, InMemoryRpgRepository } from "../../rpg/repository";
+import { IndexedDbRpgRepository, InMemoryRpgRepository } from "../../storage/rpg-repository";
 
 function create(service: RpgCanonService) {
   return service.create({
