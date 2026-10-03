@@ -19,10 +19,6 @@ permissions:
   pull-requests: write
   actions: write
 
-concurrency:
-  group: seven-24-7-superloop
-  cancel-in-progress: false
-
 env:
   SEVEN_PRODUCT_BRANCH: seven-remake-v3
   SEVEN_SUPERLOOP_BRANCH: autoloop/seven-24h-work
@@ -55,6 +51,9 @@ jobs:
   cycle:
     if: github.event_name != 'pull_request'
     needs: validate-control
+    concurrency:
+      group: seven-24-7-superloop-cycle
+      cancel-in-progress: false
     runs-on: ubuntu-24.04
     timeout-minutes: 350
     steps:
