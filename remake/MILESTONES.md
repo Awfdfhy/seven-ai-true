@@ -217,8 +217,25 @@ Status: **PASS**
   - Combined Legacy Seven + verified legacy release artifact: PASS.
   - Final Manager PR #74 merged; post-merge Remake CI PASS.
   - Normal application boot is now owned by one SevenRuntime/AppKernel.
-  - Current installed-remake release readiness remains INCONCLUSIVE until a real remake APK packaging/device gate provides exact payload identity + installed smoke evidence.
+  - Installed-remake Android release evidence is now complete.
+
+- Android Release Closure: COMPLETE
+  - Dedicated non-legacy Capacitor package: `ai.seven.remake.v3`.
+  - Production Phase 7 bridge wired to `SevenRemakeNative`.
+  - Deterministic built web payload manifest and SHA-256 identity.
+  - Built APK re-opened and checked for the exact embedded release manifest.
+  - Installed APK re-hashed on Android against every manifest file.
+  - Exact installed package id/version/payload identity verified.
+  - Native bridge round-trip verified from the installed WebView.
+  - Android 14 instrumentation: PASS.
+  - Android 16 instrumentation: PASS.
+  - PR #79 merged into `seven-remake-v3` as `a8000ca65ff766a22c510454a3fa8d914f97a314`.
+  - Post-merge Remake CI run `37160934367`: PASS.
+  - Post-merge Android release gate run `37160934350`: PASS.
+  - Release payload SHA-256: `d4a3c955eac087e43747e3471925e42a971b62211264563171234f84ce268dd7`.
+  - Final APK artifact: `Seven-Remake-V3.apk`.
+  - Final APK artifact digest: `sha256:aa75260a9f713a474a5f02d04c78479a60397b69c26977a896ff86a19ca7b445`.
 
 **REMAKE_PROGRESS=12/12**
 
-**RELEASE_READY=INCONCLUSIVE** — implementation is complete, but installed-remake Android artifact identity/smoke evidence does not yet exist.
+**RELEASE_READY=PASS**
