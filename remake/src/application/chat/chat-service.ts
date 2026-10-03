@@ -59,6 +59,32 @@ export class ChatService {
     transport: ChatTransport,
     options: ChatSendOptions = {},
   ): Promise<ChatRun> {
+    if (!options || typeof options !== "object") {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Chat options must be an object.",
+      });
+    }
+    if (
+      !transport ||
+      typeof transport !== "object" ||
+      typeof transport.stream !== "function"
+    ) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Chat transport must provide a stream function.",
+      });
+    }
+    if (
+      options.onDraft !== undefined &&
+      typeof options.onDraft !== "function"
+    ) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "onDraft must be a function when provided.",
+      });
+    }
+
     const timeoutMs = normalizeTimeout(options.timeoutMs);
 
     if (this.tasks.listActive(roomId).length > 0) {
