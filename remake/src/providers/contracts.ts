@@ -61,7 +61,7 @@ export function assertValidModelDescriptor(model: ModelDescriptor): void {
     }
   }
 
-  if (!Number.isInteger(model.contextWindow) || model.contextWindow <= 0) {
+  if (!Number.isSafeInteger(model.contextWindow) || model.contextWindow <= 0) {
     throw new SevenError({
       code: "VALIDATION",
       message: "Model contextWindow must be a positive integer.",
@@ -106,6 +106,16 @@ export function assertValidProviderMessages(
   for (let index = 0; index < messages.length; index += 1) {
     const message = messages[index];
     if (!message) continue;
+    if (
+      message.role !== "system" &&
+      message.role !== "user" &&
+      message.role !== "assistant"
+    ) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: `Provider message ${index} has an invalid role.`,
+      });
+    }
     if (!message.content.trim()) {
       throw new SevenError({
         code: "VALIDATION",
