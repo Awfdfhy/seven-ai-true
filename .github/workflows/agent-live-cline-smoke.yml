@@ -70,6 +70,7 @@ jobs:
           done
           test "$ready" -eq 1
 
+      # openai-compatible is required here; openai-native follows OpenAI-specific transport.
       - name: Configure isolated OpenAI-compatible provider
         run: |
           cline --data-dir "${{ matrix.data_dir }}" auth \

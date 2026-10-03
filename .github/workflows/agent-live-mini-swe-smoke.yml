@@ -104,6 +104,9 @@ jobs:
         env:
           OPENAI_API_BASE: http://127.0.0.1:8877/v1
           OPENAI_API_KEY: local-dummy-key
+          MSWEA_CONFIGURED: 'true'
+          MSWEA_MODEL_NAME: openai/kilo-auto/free
+          MSWEA_SILENT_STARTUP: '1'
           MSWEA_COST_TRACKING: ignore_errors
         run: |
           set -u
