@@ -120,10 +120,17 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 for idx, choice in enumerate(data.get("choices") or []):
                     message = choice.get("message") or {}
                     delta = {"role": message.get("role") or "assistant"}
-                    if message.get("content") is not None:
-                        delta["content"] = message.get("content")
-                    if message.get("reasoning_content") is not None:
-                        delta["reasoning_content"] = message.get("reasoning_content")
+                    content = message.get("content")
+                    reasoning = message.get("reasoning_content")
+                    if content is not None:
+                        delta["content"] = content
+                    elif isinstance(reasoning, str) and reasoning.strip():
+                        # Some anonymous reasoning routes return a reasoning-only
+                        # final message. Qwen Code requires visible content and
+                        # otherwise rejects an otherwise valid completion as empty.
+                        delta["content"] = reasoning
+                    if reasoning is not None:
+                        delta["reasoning_content"] = reasoning
                     calls = message.get("tool_calls")
                     if isinstance(calls, list):
                         normalized = []
