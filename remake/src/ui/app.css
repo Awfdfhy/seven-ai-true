@@ -1,0 +1,103 @@
+:root {
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  color: #f6f7fb;
+  background: #0b0c0f;
+  font-synthesis: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(124, 92, 255, 0.2), transparent 32rem),
+    #0b0c0f;
+}
+
+button {
+  font: inherit;
+}
+
+.seven-app {
+  width: min(100%, 72rem);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding:
+    max(1.25rem, env(safe-area-inset-top))
+    max(1.25rem, env(safe-area-inset-right))
+    max(1.25rem, env(safe-area-inset-bottom))
+    max(1.25rem, env(safe-area-inset-left));
+}
+
+.seven-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.seven-header h1 {
+  margin: 0;
+  font-size: clamp(2rem, 7vw, 4.5rem);
+  letter-spacing: -0.06em;
+}
+
+.seven-eyebrow,
+.seven-kicker {
+  margin: 0 0 0.35rem;
+  color: #a9a4ff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.seven-status {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 0.55rem 0.8rem;
+  color: #c9cbd6;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.seven-stage {
+  max-width: 48rem;
+  margin-top: clamp(5rem, 16vh, 10rem);
+}
+
+.seven-stage h2 {
+  margin: 0;
+  max-width: 12ch;
+  font-size: clamp(2.5rem, 9vw, 6.5rem);
+  line-height: 0.92;
+  letter-spacing: -0.065em;
+}
+
+.seven-stage p:not(.seven-kicker) {
+  max-width: 46rem;
+  color: #aeb0bb;
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+.seven-stage button {
+  margin-top: 1rem;
+  border: 0;
+  border-radius: 1rem;
+  padding: 0.9rem 1.1rem;
+  color: #0b0c0f;
+  background: #f6f7fb;
+  font-weight: 800;
+  cursor: pointer;
+}
