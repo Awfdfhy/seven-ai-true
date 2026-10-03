@@ -389,6 +389,46 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       assert.equal(picker,true);
       await page.close();
     });
+    await test('GitHub Self Dev panel inherits theme localizes and isolates background',async()=>{
+      const page=await browser.newPage({viewport:{width:320,height:800}});
+      await page.addInitScript(()=>{localStorage.setItem('seven_ui_language','ar');localStorage.setItem('user_name_asked','1');});
+      await page.goto(origin,{waitUntil:'domcontentloaded'});
+      await page.waitForFunction(()=>window.SevenRemake&&window.SevenTheme&&document.documentElement.lang==='ar');
+      await page.evaluate(()=>SevenTheme.setPreference('day'));
+      await page.addScriptTag({content:fs.readFileSync(path.join(dist,'github-self-dev.js'),'utf8')});
+      await page.waitForFunction(()=>!!window.SevenGitHubSelfDev);
+      await page.evaluate(()=>SevenGitHubSelfDev.openPanel());
+      await page.waitForFunction(()=>!!document.querySelector('#seven-app > #seven-github-selfdev .seven-gh-panel'));
+      const state=await page.evaluate(()=>{
+        const app=document.getElementById('seven-app'),back=document.getElementById('seven-github-selfdev'),p=back.querySelector('.seven-gh-panel'),r=p.getBoundingClientRect(),cs=getComputedStyle(p);
+        const siblings=[...app.children].filter(x=>x!==back);
+        return{
+          parent:back.parentElement?.id||'',
+          title:back.querySelector('#seven-gh-title')?.textContent.trim(),
+          close:back.querySelector('.seven-gh-close')?.getAttribute('aria-label'),
+          connection:back.querySelector('.seven-gh-card strong')?.textContent.trim(),
+          task:back.querySelector('.seven-gh-task')?.placeholder,
+          bg:cs.backgroundColor,
+          border:cs.borderStyle,
+          bounded:r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2,
+          overflow:p.scrollWidth<=p.clientWidth+1,
+          isolated:siblings.length>0&&siblings.every(x=>x.inert)
+        };
+      });
+      assert.equal(state.parent,'seven-app');
+      assert.match(state.title,/التطوير الذاتي/);
+      assert.equal(state.close,'إغلاق');
+      assert.equal(state.connection,'الاتصال');
+      assert.match(state.task,/مثال/);
+      assert.notEqual(state.bg,'rgba(0, 0, 0, 0)');
+      assert.equal(state.border,'solid');
+      assert.equal(state.bounded,true);
+      assert.equal(state.overflow,true);
+      assert.equal(state.isolated,true);
+      await page.click('.seven-gh-close');
+      assert.equal(await page.evaluate(()=>!document.getElementById('seven-github-selfdev')&&[...document.getElementById('seven-app').children].every(x=>!x.inert)),true);
+      await page.close();
+    });
     await test('settings expose no manual credential entry points',async()=>{
       const page=await browser.newPage({viewport:{width:390,height:844}});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
