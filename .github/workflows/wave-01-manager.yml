@@ -2,6 +2,18 @@ name: Seven Wave 01 — Manager Review and Integration
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows:
+      - Seven Wave 01 — Cline Product Audit
+      - Seven Wave 01 — Codex Android Audit
+      - Seven Wave 01 — Gemini Cohesion Audit
+      - Seven Wave 01 — OpenHands Architecture Audit
+      - Seven Wave 01 — OpenCode Runtime Audit
+      - Seven Wave 01 — Aider Persistence Audit
+      - Seven Wave 01 — Goose Integrity Audit
+      - Seven Wave 01 — mini-SWE Evaluation Audit
+      - Seven Wave 01 — Qwen Performance Audit
+    types: [completed]
   push:
     branches:
       - 'agent/**'
