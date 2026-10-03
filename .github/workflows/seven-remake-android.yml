@@ -1,0 +1,148 @@
+name: Seven Remake Android Release Gate
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - seven-remake-v3
+    paths:
+      - 'remake/**'
+      - 'apk/remake-*'
+      - '.github/workflows/seven-remake-android.yml'
+  pull_request:
+    paths:
+      - 'remake/**'
+      - 'apk/remake-*'
+      - '.github/workflows/seven-remake-android.yml'
+
+concurrency:
+  group: seven-remake-android-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  android-release-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.1.0
+
+      - name: Node 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Java 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install root Capacitor tooling
+        run: npm install --no-audit --no-fund
+
+      - name: Install Remake dependencies
+        working-directory: remake
+        run: npm install --no-audit --no-fund
+
+      - name: Remake strict compile tests and production build
+        working-directory: remake
+        run: |
+          set -euo pipefail
+          npm audit --omit=dev --audit-level=moderate
+          npm audit --audit-level=moderate
+          npm run typecheck
+          npm test
+          npm run build
+
+      - name: Build deterministic Remake payload identity
+        run: node apk/remake-build-release-manifest.mjs
+
+      - name: Generate dedicated Remake Android project
+        run: |
+          set -euo pipefail
+          rm -rf remake/android
+          (
+            cd remake
+            ../node_modules/.bin/cap add android
+            ../node_modules/.bin/cap sync android
+          )
+          node apk/remake-materialize-android.cjs
+
+      - name: Android lint unit tests and APK build
+        working-directory: remake/android
+        run: ./gradlew --no-daemon lintDebug testDebugUnitTest assembleDebug
+
+      - name: Verify APK contains Remake release identity
+        run: |
+          set -euo pipefail
+          APK='remake/android/app/build/outputs/apk/debug/app-debug.apk'
+          test -f "$APK"
+          unzip -l "$APK" | grep -F 'assets/public/seven-remake-release.json'
+          unzip -p "$APK" assets/public/seven-remake-release.json > /tmp/installed-manifest.json
+          cmp remake/dist/seven-remake-release.json /tmp/installed-manifest.json
+          node - <<'NODE'
+          const fs=require('fs');
+          const manifest=JSON.parse(fs.readFileSync('/tmp/installed-manifest.json','utf8'));
+          if(manifest.schemaVersion!==1)throw Error('release manifest schema mismatch');
+          if(manifest.artifactId!=='ai.seven.remake.v3')throw Error('wrong Remake artifact id');
+          if(!/^[a-f0-9]{64}$/.test(manifest.payloadSha256))throw Error('invalid payload hash');
+          console.log('Remake APK embedded payload identity: PASS',manifest.payloadSha256);
+          NODE
+
+      - name: Prepare named Remake release artifacts
+        run: |
+          set -euo pipefail
+          mkdir -p remake/release-artifacts
+          cp remake/android/app/build/outputs/apk/debug/app-debug.apk remake/release-artifacts/Seven-Remake-V3.apk
+          cp remake/dist/seven-remake-release.json remake/release-artifacts/Seven-Remake-V3-Release-Identity.json
+
+      - name: Upload built Seven Remake candidate APK
+        uses: actions/upload-artifact@v7
+        with:
+          path: remake/release-artifacts/Seven-Remake-V3.apk
+          archive: false
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload built Remake candidate identity
+        uses: actions/upload-artifact@v7
+        with:
+          path: remake/release-artifacts/Seven-Remake-V3-Release-Identity.json
+          archive: false
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Android 14 installed Remake identity bridge and smoke gate
+        uses: reactivecircus/android-emulator-runner@v2.38.0
+        with:
+          api-level: 34
+          arch: x86_64
+          target: default
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: cd remake/android && ./gradlew --no-daemon :app:connectedDebugAndroidTest
+
+      - name: Android 16 installed Remake identity bridge and smoke gate
+        uses: reactivecircus/android-emulator-runner@v2.38.0
+        with:
+          api-level: 36
+          arch: x86_64
+          target: default
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: cd remake/android && ./gradlew --no-daemon :app:connectedDebugAndroidTest
+

@@ -70,7 +70,7 @@ function canonical(value: unknown, field: string, max = 512): string {
 export function createBridgeRequest<T>(
   method: string,
   payload: T,
-  requestId = crypto.randomUUID(),
+  requestId: string = crypto.randomUUID(),
 ): BridgeRequest<T> {
   return Object.freeze({
     requestId: canonical(requestId, "Bridge requestId"),
