@@ -73,7 +73,7 @@ jobs:
       - name: Configure isolated OpenAI-compatible provider
         run: |
           cline --data-dir "${{ matrix.data_dir }}" auth \
-            --provider openai-native \
+            --provider openai-compatible \
             --apikey local-dummy-key \
             --modelid kilo-auto/free \
             --baseurl http://127.0.0.1:8877/v1
