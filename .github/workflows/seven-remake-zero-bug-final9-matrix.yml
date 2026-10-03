@@ -23,7 +23,7 @@ jobs:
           - id: F03
             focus: Timeout deadline bounds timer cleanup clock rollback and abort semantics
           - id: F05
-            focus: Task retention memory resource growth listener leaks and timer leaks
+            focus: Room message invariants immutable snapshots timestamps duplicate IDs and malformed runtime values
           - id: F09
             focus: Chat persistence failures before user write after user write and during assistant commit
           - id: F14
@@ -49,7 +49,7 @@ jobs:
         run: |
           set -euo pipefail
           git show HEAD:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/kilo_anonymous_relay.py
-          git checkout --detach 215310e473df6b4016a57630f2f9bca690cf70ac
+          git checkout --detach 4bce46c60b09f040d586c80a84232c87e12ae354
           python - <<'PY'
           from pathlib import Path
           files=[
@@ -194,7 +194,7 @@ jobs:
           if ids!=expected: raise SystemExit(f'Expected {expected}, got {ids}')
           findings=[(r['id'],f) for r in results for f in r['report']['findings']]
           lines=['# Seven Remake — Final9 Matrix Recovery','',
-                 'Target SHA: 215310e473df6b4016a57630f2f9bca690cf70ac',
+                 'Target SHA: 4bce46c60b09f040d586c80a84232c87e12ae354',
                  'Valid reports: 9/9',
                  f'Concrete findings: {len(findings)}','']
           for r in results:
