@@ -8,7 +8,7 @@ import {
   type RpgCanonSnapshot,
   type RpgChangeSet,
 } from "./domain";
-import type { RpgRepository } from "./repository";
+import type { RpgRepository } from "../storage/rpg-repository";
 
 export type RpgRun = Readonly<{
   taskId: string;
