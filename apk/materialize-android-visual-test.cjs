@@ -81,7 +81,7 @@ public class SevenVisualEvidenceTest {
     try {
       try(ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)){
         WebView webView=webView(scenario);
-        waitFor(webView,"Boolean(window.SevenPerformance&&SevenPerformance.state.ready&&window.SevenTheme&&document.getElementById('userInput'))");
+        waitFor(webView,"Boolean(window.SevenPerformance&&SevenPerformance.state.ready&&window.SevenTheme&&window.SevenRemake&&window.SevenShell&&document.getElementById('userInput'))");
 
         theme(webView,"day");
         assertEquals("true",js(webView,"getComputedStyle(document.getElementById('seven-app')).getPropertyValue('--s-bg').trim()==='#f5f7f5'"));
@@ -89,6 +89,25 @@ public class SevenVisualEvidenceTest {
         theme(webView,"night");
         assertEquals("true",js(webView,"(()=>{const root=document.getElementById('seven-app'),main=document.querySelector('.main'),composer=document.querySelector('.composer');const rs=getComputedStyle(root),ms=getComputedStyle(main),cs=getComputedStyle(composer);return rs.getPropertyValue('--s-bg').trim()==='#111815'&&ms.backgroundColor==='rgb(23, 33, 29)'&&cs.backgroundColor==='rgb(23, 33, 29)'&&rs.color!=='rgb(0, 0, 0)'})()"));
         shot("chat-night");
+
+        js(webView,"(()=>{const b=document.querySelector('.seven-shell-model-chip');if(b)b.click();return true})()");
+        waitFor(webView,"Boolean(document.querySelector('.seven-shell-model-menu')&&!document.querySelector('.seven-shell-model-menu').hidden)");
+        shot("model-menu-night");
+        js(webView,"(()=>{document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));return true})()");Thread.sleep(80);
+
+        js(webView,"(()=>{SevenRemake.modeDialog();return true})()");waitFor(webView,"Boolean(document.querySelector('#seven-app > .s-modal .s-dialog'))");shot("mode-dialog-night");js(webView,"(()=>{SevenRemake.closeDialog();return true})()");Thread.sleep(80);
+        js(webView,"(()=>{SevenRemake.depthDialog();return true})()");waitFor(webView,"Boolean(document.querySelector('#seven-app > .s-modal .s-dialog'))");shot("depth-dialog-night");js(webView,"(()=>{SevenRemake.closeDialog();return true})()");Thread.sleep(80);
+        js(webView,"(()=>{SevenRemake.searchSettings();return true})()");waitFor(webView,"Boolean(document.querySelector('#seven-app > .s-modal .s-dialog'))");shot("search-dialog-night");js(webView,"(()=>{SevenRemake.closeDialog();return true})()");Thread.sleep(80);
+
+        js(webView,"(()=>{window.__sevenAttachVisual='loading';SevenAttachmentLoader.load().then(()=>{document.querySelector('[data-seven-attach-trigger]')?.click();window.__sevenAttachVisual='ok'}).catch(()=>window.__sevenAttachVisual='error');return true})()");
+        waitFor(webView,"window.__sevenAttachVisual==='ok'&&Boolean(document.querySelector('.seven-attach-menu')&&!document.querySelector('.seven-attach-menu').hidden)");
+        shot("attachments-night");
+        js(webView,"(()=>{document.querySelector('[data-seven-attach-trigger]')?.click();return true})()");Thread.sleep(80);
+
+        js(webView,"(()=>{window.__sevenGhVisual='loading';if(window.SevenGitHubSelfDev){SevenGitHubSelfDev.openPanel();window.__sevenGhVisual='ok';return true}const s=document.createElement('script');s.src='./github-self-dev.js';s.onload=()=>{if(window.SevenGitHubSelfDev){SevenGitHubSelfDev.openPanel();window.__sevenGhVisual='ok'}else window.__sevenGhVisual='bad'};s.onerror=()=>window.__sevenGhVisual='error';document.head.appendChild(s);return true})()");
+        waitFor(webView,"window.__sevenGhVisual==='ok'&&Boolean(document.querySelector('#seven-github-selfdev .seven-gh-panel'))");
+        shot("github-selfdev-night");
+        js(webView,"(()=>{document.querySelector('#seven-github-selfdev .seven-gh-close')?.click();return true})()");Thread.sleep(80);
 
         assertEquals("true",js(webView,"(()=>{openSettings();const panel=id=>document.getElementById(id)?.closest('[role=tabpanel]')?.id||'';return panel('temperatureRange')==='s-settings-generation'&&panel('reasoningEffort')==='s-settings-generation'&&panel('pinnedNotes')==='s-settings-context'&&panel('providersSection')==='s-settings-models'&&panel('advancedSection')==='s-settings-data'&&panel('s-theme')==='s-settings-data'})()"));
         assertEquals("true",js(webView,"(()=>{const m=document.querySelector('#settingsModal .modal-content'),r=m.getBoundingClientRect();return m.scrollWidth<=m.clientWidth+1&&r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2})()"));
@@ -99,6 +118,10 @@ public class SevenVisualEvidenceTest {
         js(webView,"(()=>{closeSettings();return true})()");Thread.sleep(80);
 
         ensureWorkspaces(webView);
+        js(webView,"(()=>{SevenWorkspaces.openLauncher();return true})()");
+        waitFor(webView,"Boolean(document.querySelector('.seven-ws-launcher .seven-ws-picker'))");
+        shot("workspace-picker-night");
+        js(webView,"(()=>{document.querySelector('.seven-ws-close')?.click();return true})()");Thread.sleep(80);
         workspace(webView,"coding");shot("coding");
         workspace(webView,"research");shot("research");
         workspace(webView,"rpg");shot("rpg");
@@ -107,9 +130,10 @@ public class SevenVisualEvidenceTest {
         waitFor(webView,"document.documentElement.dir==='rtl'&&document.documentElement.lang==='ar-IQ'&&getComputedStyle(document.documentElement).direction==='rtl'");
         Thread.sleep(380);
         assertEquals("true",js(webView,"(()=>{const r=document.querySelector('.sidebar').getBoundingClientRect();return r.left>=innerWidth-2})()"));
-        js(webView,"(()=>{document.querySelector('.sidebar').classList.add('open');return true})()");
+        js(webView,"(()=>{window.SevenShell?.sync?.();document.querySelector('.sidebar').classList.add('open');return true})()");
         Thread.sleep(380);
-        assertEquals("true",js(webView,"(()=>{const r=document.querySelector('.sidebar').getBoundingClientRect();return r.left>=-2&&r.right<=innerWidth+2})()"));
+        assertEquals("true",js(webView,"(()=>{const r=document.querySelector('.sidebar').getBoundingClientRect(),b=document.querySelector('.seven-shell-backdrop');return r.left>=-2&&r.right<=innerWidth+2&&b&&!b.hidden&&b.parentElement?.id==='seven-app'})()"));
+        shot("sidebar-rtl-night");
         js(webView,"(()=>{document.querySelector('.sidebar').classList.remove('open');return true})()");
         Thread.sleep(380);
         Thread.sleep(120);shot("arabic-rtl");
