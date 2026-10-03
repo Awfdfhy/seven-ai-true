@@ -491,6 +491,150 @@ describe("Zero-bug regressions", () => {
     expect(output).toBe("fallback");
   });
 
+  it("updates provider health automatically from routed execution", async () => {
+    const primaryModel = model("primary-health", "m1");
+    const fallbackModel = model("fallback-health", "m2");
+    const health = new ProviderHealthTracker();
+    let clock = 100;
+
+    const primary = provider(
+      "primary-health",
+      [primaryModel],
+      async function* () {
+        throw new Error("upstream");
+      },
+    );
+    const fallback = provider(
+      "fallback-health",
+      [fallbackModel],
+      async function* () {
+        yield { delta: "ok" };
+      },
+    );
+
+    const plan = new ModelRouter().plan(
+      [primaryModel, fallbackModel],
+      health.snapshot(["primary-health", "fallback-health"]),
+      {
+        mode: "balanced",
+        preferredModelId: "primary-health::m1",
+        requireStreaming: true,
+        now: clock,
+        maxAttempts: 2,
+      },
+    );
+
+    const transport = new RoutedChatTransport(
+      plan,
+      new Map([
+        ["primary-health", primary],
+        ["fallback-health", fallback],
+      ]),
+      "system",
+      health,
+      () => clock++,
+    );
+
+    let output = "";
+    for await (const chunk of transport.stream({
+      room: createRoom({ id: "health-room", now: 1 }),
+      signal: new AbortController().signal,
+    })) {
+      output += chunk;
+    }
+
+    expect(output).toBe("ok");
+    expect(health.snapshot(["primary-health", "fallback-health"])).toEqual([
+      {
+        providerId: "fallback-health",
+        penalty: 0,
+        cooldownUntil: null,
+      },
+      {
+        providerId: "primary-health",
+        penalty: 50,
+        cooldownUntil: null,
+      },
+    ]);
+  });
+
+  it("uses retryAfterMs from structured provider failures to create cooldown", async () => {
+    const descriptor = model("rate-limited", "m1");
+    const health = new ProviderHealthTracker();
+    let clock = 1000;
+
+    const limited = provider(
+      "rate-limited",
+      [descriptor],
+      async function* () {
+        throw Object.assign(
+          new (await import("../../core/errors")).SevenError({
+            code: "PROVIDER",
+            message: "rate limited",
+            retryable: true,
+            details: { retryAfterMs: 5000 },
+          }),
+        );
+      },
+    );
+
+    const plan = new ModelRouter().plan(
+      [descriptor],
+      health.snapshot(["rate-limited"]),
+      {
+        mode: "balanced",
+        preferredModelId: null,
+        requireStreaming: true,
+        now: clock,
+        maxAttempts: 1,
+      },
+    );
+
+    const transport = new RoutedChatTransport(
+      plan,
+      new Map([["rate-limited", limited]]),
+      "system",
+      health,
+      () => clock,
+    );
+
+    const consume = async () => {
+      for await (const _chunk of transport.stream({
+        room: createRoom({ id: "rate-room", now: 1 }),
+        signal: new AbortController().signal,
+      })) {
+        // no-op
+      }
+    };
+
+    await expect(consume()).rejects.toMatchObject({ code: "PROVIDER" });
+    expect(health.snapshot(["rate-limited"])[0]).toEqual({
+      providerId: "rate-limited",
+      penalty: 50,
+      cooldownUntil: 6000,
+    });
+  });
+
+  it("rejects malformed TaskManager runtime contracts before creating tasks", () => {
+    const manager = new TaskManager();
+
+    expect(() =>
+      manager.run(
+        { kind: "chat", ownerId: "" },
+        async () => "no",
+      ),
+    ).toThrow(/ownerId/);
+
+    expect(() =>
+      manager.run(
+        { kind: "invalid" as never, ownerId: "owner" },
+        async () => "no",
+      ),
+    ).toThrow(/kind/);
+
+    expect(manager.listActive()).toHaveLength(0);
+  });
+
   it("isolates task listeners and bounds completed task retention", async () => {
     const manager = new TaskManager({ maxRetainedCompleted: 2 });
     manager.subscribe(() => {
