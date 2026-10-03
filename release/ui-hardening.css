@@ -1,0 +1,63 @@
+/* Seven 2.4.2 UI Hardening */
+html,body{max-width:100%;overflow-x:hidden}
+#seven-app{box-sizing:border-box;min-width:0;max-width:100%;min-height:100%;overflow-x:clip}
+#seven-app *{box-sizing:border-box}
+#seven-app .main,#seven-app #chat,#seven-app .input-area,#seven-app .composer,#seven-app .topbar{min-width:0;max-width:100%}
+#seven-app .main{overflow-x:clip}
+#seven-app #chat{overflow-x:hidden}
+#seven-app #roomTitle,#seven-app .title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#seven-app .message,#seven-app .bubble,#seven-app .markdown,#seven-app p,#seven-app li,#seven-app td,#seven-app th{min-width:0;max-width:100%;overflow-wrap:anywhere}
+#seven-app pre{max-width:100%;overflow:auto;overscroll-behavior-x:contain}
+#seven-app img,#seven-app video,#seven-app canvas,#seven-app svg{max-width:100%}
+#seven-app .composer{width:100%;overflow:hidden}
+#seven-app .composer-row{min-width:0}
+#seven-app .composer-tools{min-width:0;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none}
+#seven-app .composer-tools::-webkit-scrollbar{display:none}
+#seven-app .composer-send{flex:0 0 auto}
+#seven-app textarea,#seven-app input,#seven-app select,#seven-app button{max-width:100%}
+#settingsModal{padding:max(8px,env(safe-area-inset-top,0px)) max(8px,env(safe-area-inset-right,0px)) max(8px,env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+#settingsModal .modal-content{width:min(540px,100%);max-width:100%;max-height:calc(var(--seven-visual-height,100dvh) - 16px);overflow:auto;overscroll-behavior:contain}
+#settingsModal .settings-section,#settingsModal .settings-section-body,#settingsModal .settings-row{min-width:0}
+#settingsModal summary,#settingsModal button,.topbar button,.composer button,.seven-shell-nav-btn{touch-action:manipulation}
+.seven-shell-model-menu,.seven-ws-picker,[role="dialog"]{max-width:calc(100vw - 16px);max-height:calc(var(--seven-visual-height,100dvh) - 16px);overflow:auto}
+[dir="rtl"] #seven-app .bubble,[dir="rtl"] #seven-app .markdown{text-align:start}
+#seven-app[data-seven-theme="night"],html[data-seven-theme="night"] #seven-app{
+ --s-bg:#111815;--s-panel:#17211d;--s-panel-2:#1c2923;--s-text:#edf5f0;--s-muted:#a8b8af;--s-border:#33443b;--s-accent:#4ad8ad;
+ --bg:#111815;--surface:#17211d;--surface2:#1c2923;--text:#edf5f0;--muted:#a8b8af;--border:#33443b;--accent:#4ad8ad;
+ background:#111815!important;color:#edf5f0!important
+}
+html[data-seven-theme="night"] body{background:#111815!important;color:#edf5f0!important}
+html[data-seven-theme="night"] #seven-app .main,
+html[data-seven-theme="night"] #seven-app .topbar,
+html[data-seven-theme="night"] #seven-app .input-area,
+html[data-seven-theme="night"] #seven-app .composer,
+html[data-seven-theme="night"] #settingsModal .modal-content,
+html[data-seven-theme="night"] #settingsModal .settings-section,
+html[data-seven-theme="night"] .seven-shell-model-menu,
+html[data-seven-theme="night"] .seven-ws-picker{background:#17211d!important;color:#edf5f0!important;border-color:#33443b!important}
+html[data-seven-theme="night"] #seven-app input,
+html[data-seven-theme="night"] #seven-app select,
+html[data-seven-theme="night"] #seven-app textarea{background:#111815!important;color:#edf5f0!important;border-color:#33443b!important}
+@media(max-width:820px){
+ #seven-app .sidebar{position:fixed!important;top:0!important;bottom:0!important;width:min(86vw,320px)!important;max-width:calc(100vw - 44px)!important;z-index:10020!important;will-change:transform}
+ html[dir="ltr"] #seven-app .sidebar.collapsed{transform:translateX(-105%)!important}
+ html[dir="rtl"] #seven-app .sidebar.collapsed{transform:translateX(105%)!important}
+ #seven-app .sidebar:not(.collapsed){transform:translateX(0)!important}
+ #seven-app .main{width:100%!important;margin-inline:0!important}
+ #seven-app .topbar{gap:8px;padding-inline:12px}
+ #seven-app .input-area{padding-inline:8px}
+ #seven-app .composer{border-radius:24px}
+}
+@media(max-width:420px){
+ #seven-app .composer{padding:10px}
+ #seven-app .composer-tools{gap:4px}
+ #seven-app .tool-btn{min-width:40px}
+ #settingsModal .modal-content{padding:14px}
+ #settingsModal .settings-section-body{padding:10px}
+}
+@media(max-width:340px){
+ #seven-app .topbar{padding-inline:8px}
+ #seven-app .composer{border-radius:20px}
+ #seven-app .composer-tools span{display:none}
+}
+@media(prefers-reduced-motion:reduce){#seven-app *,#settingsModal *{scroll-behavior:auto!important;transition-duration:.001ms!important;animation-duration:.001ms!important}}
