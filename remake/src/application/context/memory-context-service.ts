@@ -64,7 +64,8 @@ function targetSummaryTokens(policy?: Partial<ContextPolicy>): number {
   if (!Number.isSafeInteger(value) || value <= 0) {
     throw new SevenError({
       code: "VALIDATION",
-      message: "summaryTokenBudget must be a positive safe integer for summarization.",
+      message:
+        "summaryTokenBudget must be a positive safe integer for summarization.",
     });
   }
   return value;
@@ -73,6 +74,7 @@ function targetSummaryTokens(policy?: Partial<ContextPolicy>): number {
 export class MemoryContextService implements ProviderContextSource {
   private readonly maxSummaryPasses: number;
   private readonly now: () => number;
+  private readonly roomTails = new Map<string, Promise<void>>();
 
   constructor(
     private readonly repository: MemoryRepository,
@@ -105,7 +107,8 @@ export class MemoryContextService implements ProviderContextSource {
     if (
       !builder ||
       typeof builder !== "object" ||
-      typeof builder.build !== "function"
+      typeof builder.build !== "function" ||
+      typeof builder.estimateText !== "function"
     ) {
       throw new SevenError({
         code: "VALIDATION",
@@ -152,6 +155,16 @@ export class MemoryContextService implements ProviderContextSource {
       });
     }
     validateSignal(input.signal);
+    throwIfAborted(input.signal);
+
+    return this.withRoomLock(input.room.id, input.signal, () =>
+      this.prepareLocked(input),
+    );
+  }
+
+  private async prepareLocked(
+    input: ContextPrepareInput,
+  ): Promise<ContextBuildResult> {
     throwIfAborted(input.signal);
 
     const [memories, initialSummary] = await Promise.all([
@@ -252,5 +265,60 @@ export class MemoryContextService implements ProviderContextSource {
     }
 
     return result;
+  }
+
+  private async withRoomLock<T>(
+    roomId: string,
+    signal: AbortSignal,
+    operation: () => Promise<T>,
+  ): Promise<T> {
+    const previous = this.roomTails.get(roomId) ?? Promise.resolve();
+    const safePrevious = previous.catch(() => undefined);
+
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const tail = safePrevious.then(() => gate);
+    this.roomTails.set(roomId, tail);
+
+    try {
+      await this.waitFor(safePrevious, signal);
+      throwIfAborted(signal);
+      return await operation();
+    } finally {
+      release();
+      if (this.roomTails.get(roomId) === tail) {
+        this.roomTails.delete(roomId);
+      }
+    }
+  }
+
+  private waitFor(promise: Promise<unknown>, signal: AbortSignal): Promise<void> {
+    if (signal.aborted) {
+      return Promise.reject(new DOMException("Aborted", "AbortError"));
+    }
+
+    return new Promise<void>((resolve, reject) => {
+      let settled = false;
+      const cleanup = () => signal.removeEventListener("abort", onAbort);
+      const finishResolve = () => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        resolve();
+      };
+      const finishReject = (error: unknown) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        reject(error);
+      };
+      const onAbort = () =>
+        finishReject(new DOMException("Aborted", "AbortError"));
+
+      signal.addEventListener("abort", onAbort, { once: true });
+      promise.then(finishResolve, finishReject);
+    });
   }
 }
