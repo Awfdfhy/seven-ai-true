@@ -201,6 +201,65 @@ describe("Zero-bug regressions", () => {
     });
   });
 
+  it("keeps the deadline active after cancellation is sealed and aborts a blocked final write", async () => {
+    vi.useFakeTimers();
+    const initial = createRoom({ id: "sealed-deadline-room", now: 1 });
+    let state = initial;
+    let putCount = 0;
+    let finalWriteStarted: (() => void) | undefined;
+    const finalWriteGate = new Promise<void>((resolve) => {
+      finalWriteStarted = resolve;
+    });
+
+    const repository: RoomRepository = {
+      async get() {
+        return state;
+      },
+      async put(room, signal) {
+        putCount += 1;
+        if (putCount === 2) {
+          finalWriteStarted?.();
+          await new Promise<void>((_resolve, reject) => {
+            const fail = () =>
+              reject(new DOMException("Aborted", "AbortError"));
+            if (signal?.aborted) {
+              fail();
+              return;
+            }
+            signal?.addEventListener("abort", fail, { once: true });
+          });
+        }
+        state = room;
+      },
+      async list() {
+        return [state];
+      },
+      async delete() {},
+    };
+
+    const chat = new ChatService(new TaskManager(), repository);
+    const run = await chat.send(
+      "sealed-deadline-room",
+      "hello",
+      {
+        async *stream() {
+          yield "done";
+        },
+      },
+      { timeoutMs: 50 },
+    );
+
+    await finalWriteGate;
+    expect(run.cancel("too-late")).toBe(false);
+    await vi.advanceTimersByTimeAsync(50);
+
+    await expect(run.result).rejects.toMatchObject({
+      code: "DEADLINE_EXCEEDED",
+    });
+    expect(state.messages.map((message) => message.role)).toEqual(["user"]);
+    vi.useRealTimers();
+  });
+
   it("falls back when a provider emits only whitespace then fails", async () => {
     const firstModel = model("first", "m1");
     const secondModel = model("second", "m2");
