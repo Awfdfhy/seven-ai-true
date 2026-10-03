@@ -106,7 +106,8 @@ export class TaskManager {
   }
 
   get(taskId: string): TaskSnapshot | undefined {
-    const task = this.tasks.get(taskId);
+    const id = this.validateTaskId(taskId);
+    const task = this.tasks.get(id);
     return task ? this.snapshot(task) : undefined;
   }
 
@@ -303,15 +304,40 @@ export class TaskManager {
   }
 
   cancel(taskId: string, reason = "user"): boolean {
-    const task = this.tasks.get(taskId);
-    return task ? this.requestCancel(task, reason) : false;
+    const id = this.validateTaskId(taskId);
+    if (typeof reason !== "string" || !reason.trim()) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Cancellation reason must be a non-empty string.",
+      });
+    }
+    const task = this.tasks.get(id);
+    return task ? this.requestCancel(task, reason.trim()) : false;
+  }
+
+  private validateTaskId(taskId: string): string {
+    if (
+      typeof taskId !== "string" ||
+      !taskId.trim() ||
+      taskId !== taskId.trim()
+    ) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "taskId must be a canonical non-empty string.",
+      });
+    }
+    return taskId;
   }
 
   private validateOwnerId(ownerId: string): void {
-    if (typeof ownerId !== "string" || !ownerId.trim()) {
+    if (
+      typeof ownerId !== "string" ||
+      !ownerId.trim() ||
+      ownerId !== ownerId.trim()
+    ) {
       throw new SevenError({
         code: "VALIDATION",
-        message: "Task ownerId must not be empty.",
+        message: "Task ownerId must be a canonical non-empty string.",
       });
     }
   }
