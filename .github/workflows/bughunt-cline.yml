@@ -28,13 +28,13 @@ jobs:
       matrix:
         include:
           - name: Bug Hunt A01 Cline UI audit
-            branch: agent/01-ui-ux
+            branch: bughunt/a01
             prompt_path: .seven-team/prompts/bughunt/A01.md
             report: .seven-team/reports/bughunt/A01.md
             commit_message: Bug Hunt A01 UI ownership audit
             config_dir: /tmp/cline-config-a
           - name: Bug Hunt B01 Cline RPG UX audit
-            branch: bughunt/a01
+            branch: bughunt/b01
             prompt_path: .seven-team/prompts/bughunt/B01.md
             report: .seven-team/reports/bughunt/B01.md
             commit_message: Bug Hunt B01 RPG UX audit
