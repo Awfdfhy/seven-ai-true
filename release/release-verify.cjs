@@ -236,10 +236,20 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
         assert.deepEqual(state,{overflow:true,bounded:true});
         await page.evaluate(()=>SevenRemake.closeDialog());
 
+        await page.evaluate(()=>SevenRemake.searchSettings());
+        await page.waitForFunction(()=>!!document.querySelector('#seven-app > .s-modal .s-dialog'));
+        state=await page.evaluate(()=>{const e=document.querySelector('.s-dialog'),r=e.getBoundingClientRect();return{overflow:e.scrollWidth<=e.clientWidth+1,bounded:r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2,scrollable:e.scrollHeight>=e.clientHeight}});
+        assert.equal(state.overflow,true);assert.equal(state.bounded,true);
+        await page.evaluate(()=>SevenRemake.closeDialog());
+
         await page.evaluate(()=>SevenRemake.openWorkspace('coding'));
         await page.waitForFunction(()=>document.documentElement.dataset.sevenWorkspace==='coding',null,{timeout:10000});
         state=await page.evaluate(()=>{const e=document.querySelector('.seven-workspace-root'),r=e.getBoundingClientRect();return{doc:document.documentElement.scrollWidth<=innerWidth+2,bounded:r.left>=-2&&r.right<=innerWidth+2,scroll:e.scrollWidth<=Math.max(e.clientWidth+2,innerWidth+2)}});
         assert.deepEqual(state,{doc:true,bounded:true,scroll:true});
+        await page.evaluate(()=>{SevenWorkspaces.close();SevenWorkspaces.openLauncher();});
+        await page.waitForFunction(()=>!!document.querySelector('.seven-ws-picker'));
+        state=await page.evaluate(()=>{const e=document.querySelector('.seven-ws-picker'),r=e.getBoundingClientRect();return{overflow:e.scrollWidth<=e.clientWidth+1,bounded:r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2}});
+        assert.deepEqual(state,{overflow:true,bounded:true});
         await page.close();
       }
     });
