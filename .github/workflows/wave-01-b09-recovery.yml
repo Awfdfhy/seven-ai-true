@@ -3,24 +3,24 @@ name: Seven Wave 01 — B09 Recovery Audit
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
       - '.github/workflows/wave-01-b09-recovery.yml'
-      - '.seven-team/prompts/wave-01/B09.md'
-      - '.seven-team/runtime/kilo_anonymous_relay.py'
 
 permissions:
   contents: write
 
 concurrency:
   group: seven-wave01-b09-recovery
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  b09-qwen-recovery:
-    name: B09 Qwen RPG performance recovery
+  b09-recovery:
+    name: B09 direct-free Qwen recovery
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 20
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -35,13 +35,14 @@ jobs:
       - name: Install Qwen Code
         run: npm install -g @qwen-code/qwen-code@latest
 
-      - name: Materialize guarded runtime and B09 prompt
+      - name: Materialize current runtime and prompt
         run: |
+          set -euo pipefail
           git fetch origin main
           git show origin/main:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/kilo_anonymous_relay.py
           git show origin/main:.seven-team/prompts/wave-01/B09.md > /tmp/b09-prompt.md
 
-      - name: Build bounded RPG performance evidence pack
+      - name: Build bounded evidence
         run: |
           set -euo pipefail
           : > /tmp/b09-evidence.txt
@@ -49,73 +50,132 @@ jobs:
             echo "===== $file =====" >> /tmp/b09-evidence.txt
             if test -f "$file"; then
               wc -lc "$file" >> /tmp/b09-evidence.txt
-              grep -nE 'localStorage|sessionStorage|persist|save|restore|context|history|message|turn|state|canon|world|knowledge|fetch|generate|render|JSON\.stringify|JSON\.parse' "$file" | head -n 140 >> /tmp/b09-evidence.txt || true
+              grep -nE 'localStorage|sessionStorage|persist|save|restore|context|history|message|turn|state|canon|world|knowledge|fetch|generate|render|JSON\\.stringify|JSON\\.parse' "$file" | head -n 32 >> /tmp/b09-evidence.txt || true
             else
               echo "ABSENT" >> /tmp/b09-evidence.txt
             fi
           done
-          head -c 28000 /tmp/b09-evidence.txt > /tmp/b09-evidence-bounded.txt
+          head -c 7000 /tmp/b09-evidence.txt > /tmp/b09-evidence-bounded.txt
+          {
+            cat /tmp/b09-prompt.md
+            echo
+            echo 'RECOVERY OVERRIDE — ONE-SHOT MODE:'
+            echo 'Do not call tools or inspect files. Using ONLY the evidence below, output the complete B09 report body directly as plain text.'
+            echo 'Keep it <= 45 lines and <= 3200 characters. Cover all mission topics, cite supplied file/line evidence, mark unknowns, and end exactly WAVE01=COMPLETE.'
+            cat /tmp/b09-evidence-bounded.txt
+          } > /tmp/b09-effective-prompt.md
 
-      - name: Start compatibility relay
+      - name: Start final-only relay
         env:
           SEVEN_RELAY_BRIDGE_STREAM: '1'
+          SEVEN_RELAY_FINAL_ONLY: '1'
         run: |
+          set -euo pipefail
           python /tmp/kilo_anonymous_relay.py > /tmp/seven-relay.log 2>&1 &
-          ready=0
-          for i in {1..30}; do
-            if curl -fsS http://127.0.0.1:8877/v1/models >/dev/null; then ready=1; break; fi
+          for i in {1..20}; do
+            if curl -fsS http://127.0.0.1:8877/v1/models >/dev/null; then
+              exit 0
+            fi
             sleep 1
           done
-          test "$ready" -eq 1
+          cat /tmp/seven-relay.log >&2 || true
+          exit 1
 
-      - name: Run B09 real Qwen agent with recovery
+      - name: Select healthy direct free model
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, urllib.request
+
+          base = "http://127.0.0.1:8877/v1"
+          with urllib.request.urlopen(base + "/models", timeout=20) as response:
+              payload = json.load(response)
+
+          rows = payload.get("data", payload if isinstance(payload, list) else [])
+          ids = []
+          for row in rows:
+              if isinstance(row, dict):
+                  model_id = row.get("id") or row.get("model")
+              elif isinstance(row, str):
+                  model_id = row
+              else:
+                  model_id = None
+              if isinstance(model_id, str) and ":free" in model_id and not model_id.startswith("kilo-auto/"):
+                  ids.append(model_id)
+
+          def rank(model_id):
+              low = model_id.lower()
+              order = ("z-ai/glm", "minimax/", "moonshot", "qwen", "google/")
+              for idx, token in enumerate(order):
+                  if token in low:
+                      return (idx, model_id)
+              return (20, model_id)
+
+          ids = sorted(dict.fromkeys(ids), key=rank)
+          print("Direct-free candidates:", ", ".join(ids[:20]))
+          for model_id in ids[:12]:
+              body = json.dumps({
+                  "model": model_id,
+                  "messages": [{"role": "user", "content": "Reply exactly OK"}],
+                  "temperature": 0,
+                  "max_tokens": 12,
+                  "stream": False
+              }).encode()
+              req = urllib.request.Request(
+                  base + "/chat/completions",
+                  data=body,
+                  headers={"Content-Type": "application/json"},
+                  method="POST"
+              )
+              try:
+                  with urllib.request.urlopen(req, timeout=35) as response:
+                      data = json.load(response)
+                  choices = data.get("choices") or []
+                  message = (choices[0].get("message") or {}) if choices else {}
+                  visible = message.get("content") or message.get("reasoning_content") or ""
+                  if isinstance(visible, str) and visible.strip():
+                      with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env:
+                          env.write(f"B09_MODEL={model_id}\\n")
+                      print("Selected:", model_id)
+                      raise SystemExit(0)
+              except Exception as exc:
+                  print("Probe failed:", model_id, type(exc).__name__, exc)
+
+          raise SystemExit("No healthy direct free model passed probe")
+          PY
+
+      - name: Run B09 Qwen synthesis
         env:
           OPENAI_API_KEY: local-dummy-key
           OPENAI_BASE_URL: http://127.0.0.1:8877/v1
-          OPENAI_MODEL: kilo-auto/free
           QWEN_CODE_SUPPRESS_YOLO_WARNING: 'true'
         run: |
-          set -u
+          set -euo pipefail
           REPORT=.seven-team/reports/wave-01/B09-rpg-performance.md
           mkdir -p "$(dirname "$REPORT")"
-          rc=1
-          for attempt in 1 2 3 4 5; do
-            echo "B09 recovery attempt $attempt/5"
+          for attempt in 1 2 3; do
+            echo "B09 recovery attempt $attempt/3 with $B09_MODEL"
             rm -f /tmp/b09-qwen.out
             set +e
-            DIRECT_PROMPT="$(cat /tmp/b09-prompt.md)
-
-RECOVERY OVERRIDE — ONE-SHOT MODE:
-Do not call tools, do not inspect files, and do not attempt repository writes. The evidence pack below was collected deterministically from the repository for you. Using ONLY this evidence, output the COMPLETE B09 audit report body directly as plain text. Keep it <= 100 lines and <= 5500 characters. Include exact file/line evidence where supplied, mark unknowns rather than guessing, cover every topic from the mission, and make the FINAL line exactly WAVE01=COMPLETE.
-
-EVIDENCE PACK:
-$(cat /tmp/b09-evidence-bounded.txt)"
-            timeout 120s qwen -p "$DIRECT_PROMPT" \
+            timeout 100s qwen -p "$(cat /tmp/b09-effective-prompt.md)" \
               --approval-mode yolo \
               --output-format text \
-              --model kilo-auto/free \
+              --model "$B09_MODEL" \
               --openai-api-key local-dummy-key \
               --openai-base-url http://127.0.0.1:8877/v1 2>&1 | tee /tmp/b09-qwen.out
             rc=${PIPESTATUS[0]}
             set -e
-            if test -f "$REPORT" && grep -q 'WAVE01=COMPLETE' "$REPORT"; then
-              rc=0
-              break
-            fi
             if grep -q 'WAVE01=COMPLETE' /tmp/b09-qwen.out; then
               cp /tmp/b09-qwen.out "$REPORT"
-              rc=0
-              break
+              exit 0
             fi
-            sleep $((attempt * 4))
+            sleep $((attempt * 3))
           done
-          if test "$rc" -ne 0 || ! test -f "$REPORT" || ! grep -q 'WAVE01=COMPLETE' "$REPORT"; then
-            echo "B09 recovery did not produce complete evidence." >&2
-            tail -160 /tmp/seven-relay.log >&2 || true
-            exit 1
-          fi
+          echo "B09 recovery failed." >&2
+          tail -120 /tmp/seven-relay.log >&2 || true
+          exit ${rc:-1}
 
-      - name: Sanitize and push B09 report
+      - name: Sanitize and push report
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
