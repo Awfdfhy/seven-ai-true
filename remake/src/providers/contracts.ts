@@ -42,7 +42,7 @@ export interface ProviderAdapter {
 }
 
 export function modelKey(model: Pick<ModelDescriptor, "providerId" | "id">): string {
-  return `${model.providerId}::${model.id}`;
+  return `${encodeURIComponent(model.providerId)}::${encodeURIComponent(model.id)}`;
 }
 
 export function assertValidModelDescriptor(model: ModelDescriptor): void {
