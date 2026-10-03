@@ -1,0 +1,44 @@
+name: Seven Remake V3 CI
+
+on:
+  push:
+    branches:
+      - seven-remake-v3
+    paths:
+      - 'remake/**'
+      - '.github/workflows/seven-remake-ci.yml'
+  pull_request:
+    paths:
+      - 'remake/**'
+      - '.github/workflows/seven-remake-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: remake
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: remake/package-lock.json
+
+      - name: Install
+        run: npm install
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
