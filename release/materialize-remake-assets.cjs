@@ -55,10 +55,12 @@ function applyCompatibilityFixes(name,raw){
     if(!text.includes(saveOld))throw new Error("Seven UI Remake save-key anchor missing");
     text=text.replace(saveOld,saveNew);
 
-    const settingsOld="let current='models';const children=[...content.childNodes];for(const node of children){if(node===buttons||node.nodeType!==1)continue;if(node.tagName==='LABEL'&&node.nextElementSibling?.id==='temperatureRange')current='generation';if(node.tagName==='LABEL'&&node.nextElementSibling?.id==='pinnedNotes')current='context';if(node.querySelector?.('[onclick=\\\"exportRooms()\\\"]'))current='data';sections[current].appendChild(node)}";
+    const settingsStart="let current='models';const children=[...content.childNodes];";
+    const settingsEnd="sections[current].appendChild(node)}";
     const settingsNew="const core=content.querySelector('.settings-core');if(core){let coreTarget='models';for(const node of [...core.childNodes]){if(node.nodeType!==1)continue;if(node.tagName==='LABEL'&&node.nextElementSibling?.id==='temperatureRange')coreTarget='generation';sections[coreTarget].appendChild(node)}core.remove()}const providers=content.querySelector('#providersSection');if(providers)sections.models.appendChild(providers);const memory=content.querySelector('#memoryDataSection');if(memory)sections.context.appendChild(memory);const advanced=content.querySelector('#advancedSection');if(advanced)sections.data.appendChild(advanced);for(const node of [...content.childNodes]){if(node===buttons||node===heading||node.nodeType!==1)continue;if(node.matches?.('.settings-core,#providersSection,#memoryDataSection,#advancedSection'))continue;sections.models.appendChild(node)}";
-    if(!text.includes(settingsOld))throw new Error("Seven UI Remake settings layout anchor missing");
-    text=text.replace(settingsOld,settingsNew);
+    const settingsAt=text.indexOf(settingsStart),settingsEndAt=settingsAt<0?-1:text.indexOf(settingsEnd,settingsAt);
+    if(settingsAt<0||settingsEndAt<0)throw new Error("Seven UI Remake settings layout anchors missing");
+    text=text.slice(0,settingsAt)+settingsNew+text.slice(settingsEndAt+settingsEnd.length);
 
     const freshnessOld="T('Freshness · Brave / SearXNG','حداثة النتائج · Brave / SearXNG')";
     const freshnessNew="T('Freshness · SearXNG','حداثة النتائج · SearXNG')";
