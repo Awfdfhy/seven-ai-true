@@ -1,0 +1,314 @@
+name: Seven Wave 01 — Manager Review and Integration
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'agent/**'
+      - 'agent-b/**'
+    paths:
+      - '.seven-team/reports/wave-01/**'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: seven-wave01-manager
+  cancel-in-progress: true
+
+jobs:
+  completion-gate:
+    name: 18-worker completion gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    outputs:
+      ready: ${{ steps.gate.outputs.ready }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Fetch all worker branches
+        run: git fetch origin '+refs/heads/*:refs/remotes/origin/*'
+      - id: gate
+        name: Check Wave 01 worker evidence
+        run: |
+          set -euo pipefail
+          python .seven-team/runtime/check_wave01.py --phase workers --soft | tee /tmp/wave01-gate.log
+          if grep -q '^WAVE01_READY=1$' /tmp/wave01-gate.log; then
+            echo 'ready=1' >> "$GITHUB_OUTPUT"
+          else
+            echo 'ready=0' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Upload current gate status
+        uses: actions/upload-artifact@v4
+        with:
+          name: seven-wave01-worker-gate
+          path: /tmp/seven-wave01-status.json
+          if-no-files-found: error
+          retention-days: 14
+
+  review-team-a:
+    name: A10 Hermes independent UI review
+    needs: completion-gate
+    if: needs.completion-gate.outputs.ready == '1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/10-integration-review
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fetch main and all worker branches
+        run: git fetch origin '+refs/heads/*:refs/remotes/origin/*'
+
+      - name: Materialize Team A evidence and contracts
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/wave01/team-a /tmp/wave01/contracts
+          git show origin/main:.seven-team/wave-01-manifest.json > /tmp/wave01/manifest.json
+          python - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          m=json.load(open('/tmp/wave01/manifest.json'))
+          for r in m['workers']:
+              if r['team']!='A': continue
+              p=subprocess.run(['git','show',f"origin/{r['branch']}:{r['report']}"],text=True,capture_output=True,check=True)
+              Path('/tmp/wave01/team-a',Path(r['report']).name).write_text(p.stdout)
+          PY
+          for f in SEVEN_COHESION_PASS.md UI_FOUNDATION_V2.md EVALUATION_GATE.md; do
+            git show "origin/main:.seven-team/cohesion/$f" > "/tmp/wave01/contracts/$f"
+          done
+          git show origin/main:.seven-team/prompts/wave-01/A10.md > /tmp/wave01/A10.md
+          git show origin/main:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/wave01/kilo_anonymous_relay.py
+
+      - name: Install Hermes Agent
+        run: |
+          curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+
+      - name: Start guarded relay
+        run: |
+          python /tmp/wave01/kilo_anonymous_relay.py > /tmp/seven-relay-a10.log 2>&1 &
+          ready=0
+          for i in {1..20}; do
+            if curl -fsS http://127.0.0.1:8877/v1/models >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" -eq 1
+
+      - name: Run A10 independent review
+        env:
+          CUSTOM_BASE_URL: http://127.0.0.1:8877/v1
+          OPENAI_BASE_URL: http://127.0.0.1:8877/v1
+          OPENAI_API_KEY: local-dummy-key
+          HERMES_YOLO_MODE: '1'
+        run: |
+          set -u
+          export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
+          mkdir -p .seven-team/reports/wave-01
+          set +e
+          timeout 300s hermes --provider custom -m kilo-auto/free --yolo --ignore-rules chat -Q --max-turns 8 -q "$(cat /tmp/wave01/A10.md)"
+          rc=$?
+          set -e
+          REPORT=.seven-team/reports/wave-01/A10-integration-review.md
+          if test -f "$REPORT" && grep -q 'WAVE01_REVIEW=PASS' "$REPORT"; then
+            echo "A10 review completed (rc=$rc)."
+          else
+            echo "A10 review did not produce PASS evidence (rc=$rc)." >&2
+            tail -120 /tmp/seven-relay-a10.log >&2 || true
+            exit 1
+          fi
+
+      - name: Sanitize and push A10 report
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          REPORT=.seven-team/reports/wave-01/A10-integration-review.md
+          cp "$REPORT" /tmp/A10-integration-review.md
+          git reset --hard HEAD
+          git clean -fdx
+          mkdir -p "$(dirname "$REPORT")"
+          cp /tmp/A10-integration-review.md "$REPORT"
+          git add -f "$REPORT"
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name 'Seven Wave Manager'
+          git config user.email 'actions@users.noreply.github.com'
+          git commit -m 'Wave 01 A10 independent integration review'
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:agent/10-integration-review
+
+  review-team-b:
+    name: B10 Hermes independent RPG review
+    needs: completion-gate
+    if: needs.completion-gate.outputs.ready == '1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent-b/10-rpg-review
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fetch main and all worker branches
+        run: git fetch origin '+refs/heads/*:refs/remotes/origin/*'
+
+      - name: Materialize Team B evidence and contracts
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/wave01/team-b /tmp/wave01/contracts
+          git show origin/main:.seven-team/wave-01-manifest.json > /tmp/wave01/manifest.json
+          python - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          m=json.load(open('/tmp/wave01/manifest.json'))
+          for r in m['workers']:
+              if r['team']!='B': continue
+              p=subprocess.run(['git','show',f"origin/{r['branch']}:{r['report']}"],text=True,capture_output=True,check=True)
+              Path('/tmp/wave01/team-b',Path(r['report']).name).write_text(p.stdout)
+          PY
+          for f in SEVEN_COHESION_PASS.md RPG_V2_PRODUCT_CONTRACT.md EVALUATION_GATE.md; do
+            git show "origin/main:.seven-team/cohesion/$f" > "/tmp/wave01/contracts/$f"
+          done
+          git show origin/main:.seven-team/prompts/wave-01/B10.md > /tmp/wave01/B10.md
+          git show origin/main:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/wave01/kilo_anonymous_relay.py
+
+      - name: Install Hermes Agent
+        run: |
+          curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+
+      - name: Start guarded relay
+        run: |
+          python /tmp/wave01/kilo_anonymous_relay.py > /tmp/seven-relay-b10.log 2>&1 &
+          ready=0
+          for i in {1..20}; do
+            if curl -fsS http://127.0.0.1:8877/v1/models >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" -eq 1
+
+      - name: Run B10 independent review
+        env:
+          CUSTOM_BASE_URL: http://127.0.0.1:8877/v1
+          OPENAI_BASE_URL: http://127.0.0.1:8877/v1
+          OPENAI_API_KEY: local-dummy-key
+          HERMES_YOLO_MODE: '1'
+        run: |
+          set -u
+          export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
+          mkdir -p .seven-team/reports/wave-01
+          set +e
+          timeout 300s hermes --provider custom -m kilo-auto/free --yolo --ignore-rules chat -Q --max-turns 8 -q "$(cat /tmp/wave01/B10.md)"
+          rc=$?
+          set -e
+          REPORT=.seven-team/reports/wave-01/B10-integration-review.md
+          if test -f "$REPORT" && grep -q 'WAVE01_REVIEW=PASS' "$REPORT"; then
+            echo "B10 review completed (rc=$rc)."
+          else
+            echo "B10 review did not produce PASS evidence (rc=$rc)." >&2
+            tail -120 /tmp/seven-relay-b10.log >&2 || true
+            exit 1
+          fi
+
+      - name: Sanitize and push B10 report
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          REPORT=.seven-team/reports/wave-01/B10-integration-review.md
+          cp "$REPORT" /tmp/B10-integration-review.md
+          git reset --hard HEAD
+          git clean -fdx
+          mkdir -p "$(dirname "$REPORT")"
+          cp /tmp/B10-integration-review.md "$REPORT"
+          git add -f "$REPORT"
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name 'Seven Wave Manager'
+          git config user.email 'actions@users.noreply.github.com'
+          git commit -m 'Wave 01 B10 independent integration review'
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:agent-b/10-rpg-review
+
+  integration-merge-gate:
+    name: 20-agent integration and merge gate
+    needs: [review-team-a, review-team-b]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Fetch all agent branches
+        run: git fetch origin '+refs/heads/*:refs/remotes/origin/*'
+
+      - name: Verify and collect all 20 reports
+        run: |
+          rm -rf .seven-team/reports/wave-01
+          mkdir -p .seven-team/reports/wave-01
+          python .seven-team/runtime/check_wave01.py --phase all --collect .seven-team/reports/wave-01
+
+      - name: Write manager summary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.load(open('/tmp/seven-wave01-status.json'))
+          lines=[
+            '# Seven Production Wave 01 — Manager Summary',
+            '',
+            f"Verified agents: {d['readyCount']}/{d['total']}",
+            '',
+            'Scope: integration of the Wave 01 audit/review evidence package. This does not claim the UI Foundation V2 or RPG V2 implementation itself is finished.',
+            '',
+            '## Evidence',
+          ]
+          for r in d['entries']:
+              lines.append(f"- {r['id']} — {r['worker']} — {Path(r['report']).name} — {'PASS' if r['ready'] else 'FAIL'}")
+          lines += [
+            '',
+            '## Gates',
+            '- 18 worker audit reports: PASS',
+            '- A10 independent Team A review: PASS',
+            '- B10 independent Team B review: PASS',
+            '- Cross-team evidence collection: PASS',
+            '- Main regression suite: required before merge',
+            '',
+            'WAVE01_MANAGER=PASS',
+            ''
+          ]
+          Path('.seven-team/cohesion/WAVE01_MANAGER_SUMMARY.md').write_text('\n'.join(lines),encoding='utf-8')
+          PY
+
+      - name: Run Seven main regression suite
+        run: npm test
+
+      - name: Commit integrated evidence to main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git add -f .seven-team/reports/wave-01 .seven-team/cohesion/WAVE01_MANAGER_SUMMARY.md
+          if git diff --cached --quiet; then
+            echo 'Wave 01 evidence already integrated.'
+            exit 0
+          fi
+          git config user.name 'Seven Wave Manager'
+          git config user.email 'actions@users.noreply.github.com'
+          git commit -m 'Integrate Seven Production Wave 01 evidence package'
+          git fetch origin main
+          git rebase origin/main
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main
