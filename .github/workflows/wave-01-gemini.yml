@@ -21,10 +21,10 @@ jobs:
   gemini-live:
     name: ${{ matrix.name }}
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 25
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: 1
       matrix:
         include:
           - name: Wave 01 A03 Gemini localization audit
@@ -104,7 +104,7 @@ jobs:
           set -u
           mkdir -p "$(dirname "${{ matrix.report }}")"
           set +e
-          timeout 150s gemini \
+          timeout 300s gemini \
             -p "$(cat /tmp/gemini-prompt.md)" \
             --approval-mode=yolo \
             --skip-trust \
