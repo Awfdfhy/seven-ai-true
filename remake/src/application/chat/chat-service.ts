@@ -51,7 +51,32 @@ export class ChatService {
   constructor(
     private readonly tasks: TaskManager,
     private readonly rooms: RoomRepository,
-  ) {}
+  ) {
+    if (
+      !tasks ||
+      typeof tasks !== "object" ||
+      typeof tasks.run !== "function" ||
+      typeof tasks.listActive !== "function"
+    ) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "ChatService requires a valid TaskManager.",
+      });
+    }
+    if (
+      !rooms ||
+      typeof rooms !== "object" ||
+      typeof rooms.get !== "function" ||
+      typeof rooms.put !== "function" ||
+      typeof rooms.list !== "function" ||
+      typeof rooms.delete !== "function"
+    ) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "ChatService requires a valid RoomRepository.",
+      });
+    }
+  }
 
   async send(
     roomId: string,
@@ -127,11 +152,22 @@ export class ChatService {
         }
 
         let draft = "";
-
-        for await (const delta of stream({
+        const output = stream({
           room: withUser,
           signal,
-        })) {
+        });
+        if (
+          !output ||
+          (typeof output !== "object" && typeof output !== "function") ||
+          typeof output[Symbol.asyncIterator] !== "function"
+        ) {
+          throw new SevenError({
+            code: "PROVIDER",
+            message: "Chat transport did not return an AsyncIterable.",
+          });
+        }
+
+        for await (const delta of output) {
           if (signal.aborted) {
             throw new DOMException("Aborted", "AbortError");
           }
