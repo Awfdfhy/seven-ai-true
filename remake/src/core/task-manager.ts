@@ -240,8 +240,9 @@ export class TaskManager {
       .then(
         (value) => {
           if (
-            !task.cancellationSealed &&
-            (controller.signal.aborted || task.status === "cancelling")
+            (task.cancelReason === "deadline" && controller.signal.aborted) ||
+            (!task.cancellationSealed &&
+              (controller.signal.aborted || task.status === "cancelling"))
           ) {
             const code =
               task.cancelReason === "deadline"
@@ -263,8 +264,9 @@ export class TaskManager {
         },
         (error: unknown) => {
           if (
-            !task.cancellationSealed &&
-            (controller.signal.aborted || task.status === "cancelling")
+            (task.cancelReason === "deadline" && controller.signal.aborted) ||
+            (!task.cancellationSealed &&
+              (controller.signal.aborted || task.status === "cancelling"))
           ) {
             const code =
               task.cancelReason === "deadline"
@@ -366,7 +368,7 @@ export class TaskManager {
 
   private requestCancel(task: MutableTask, reason: string): boolean {
     if (
-      task.cancellationSealed ||
+      (task.cancellationSealed && reason !== "deadline") ||
       task.status === "cancelled" ||
       task.status === "succeeded" ||
       task.status === "failed" ||
