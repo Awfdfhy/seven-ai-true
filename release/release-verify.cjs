@@ -287,8 +287,8 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       const page=await browser.newPage({viewport:{width:360,height:800}});
       await page.addInitScript(()=>{localStorage.setItem('seven_ui_language','ar');localStorage.setItem('user_name_asked','1');});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenRemake&&document.documentElement.lang==='ar'&&document.documentElement.dir==='rtl');
-      await page.evaluate(()=>SevenRemake.openWorkspace('coding'));
+      await page.waitForFunction(()=>window.SevenRemake&&window.SevenTheme&&document.documentElement.lang==='ar'&&document.documentElement.dir==='rtl');
+      await page.evaluate(()=>{SevenTheme.setPreference('night');return SevenRemake.openWorkspace('coding')});
       await page.waitForFunction(()=>document.documentElement.dataset.sevenWorkspace==='coding'&&document.querySelector('.seven-workspace-root h1')?.textContent.includes('البرمجة'),null,{timeout:10000});
       let state=await page.evaluate(()=>({h1:document.querySelector('.seven-workspace-root h1')?.textContent.trim(),importText:document.querySelector('[data-code-import]')?.textContent.trim(),placeholder:document.querySelector('[data-code-task]')?.placeholder,doc:document.documentElement.scrollWidth<=innerWidth+2}));
       assert.match(state.h1,/البرمجة/);assert.equal(state.importText,'استيراد ملفات');assert.match(state.placeholder,/صف/);assert.equal(state.doc,true);
@@ -305,8 +305,8 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
 
       await page.evaluate(()=>{SevenWorkspaces.close();SevenWorkspaces.openLauncher();});
       await page.waitForFunction(()=>document.querySelector('#seven-ws-launcher-title')?.textContent.trim()==='اختر مساحة عمل',null,{timeout:10000});
-      state=await page.evaluate(()=>{const p=document.querySelector('.seven-ws-picker'),r=p.getBoundingClientRect();return{title:document.querySelector('#seven-ws-launcher-title').textContent.trim(),close:document.querySelector('[data-ws-close]')?.getAttribute('aria-label'),coding:document.querySelector('[data-ws="coding"] strong')?.textContent.trim(),research:document.querySelector('[data-ws="research"] strong')?.textContent.trim(),bounded:r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2}});
-      assert.equal(state.title,'اختر مساحة عمل');assert.equal(state.close,'إغلاق');assert.match(state.coding,/البرمجة/);assert.equal(state.research,'البحث');assert.equal(state.bounded,true);
+      state=await page.evaluate(()=>{const launcher=document.querySelector('.seven-ws-launcher'),p=document.querySelector('.seven-ws-picker'),r=p.getBoundingClientRect(),cs=getComputedStyle(p);return{title:document.querySelector('#seven-ws-launcher-title').textContent.trim(),close:document.querySelector('[data-ws-close]')?.getAttribute('aria-label'),coding:document.querySelector('[data-ws="coding"] strong')?.textContent.trim(),research:document.querySelector('[data-ws="research"] strong')?.textContent.trim(),parent:launcher.parentElement?.id,bg:cs.backgroundColor,border:cs.borderStyle,bounded:r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2}});
+      assert.equal(state.title,'اختر مساحة عمل');assert.equal(state.close,'إغلاق');assert.match(state.coding,/البرمجة/);assert.equal(state.research,'البحث');assert.equal(state.parent,'seven-app');assert.notEqual(state.bg,'rgba(0, 0, 0, 0)');assert.equal(state.border,'solid');assert.equal(state.bounded,true);
       await page.close();
     });
     await test('mode and depth dialogs stay usable on smallest RTL night phone',async()=>{
