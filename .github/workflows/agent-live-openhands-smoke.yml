@@ -1,0 +1,125 @@
+name: Seven OpenHands Live Agent Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.seven-team/runtime/openhands_live.py'
+      - '.seven-team/prompts/live-smoke/team-a-openhands.md'
+      - '.seven-team/prompts/live-smoke/team-b-openhands.md'
+      - '.github/workflows/agent-live-openhands-smoke.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: seven-openhands-live-smoke
+  cancel-in-progress: true
+
+jobs:
+  openhands-live:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - name: Team A OpenHands live edit
+            branch: agent/04-research
+            prompt_path: .seven-team/prompts/live-smoke/team-a-openhands.md
+            report: .seven-team/reports/team-a-openhands-live-smoke.md
+            commit_message: Agent A04 OpenHands live runtime smoke report
+          - name: Team B OpenHands live edit
+            branch: agent-b/04-rpg-engine
+            prompt_path: .seven-team/prompts/live-smoke/team-b-openhands.md
+            report: .seven-team/reports/team-b-openhands-live-smoke.md
+            commit_message: Agent B04 OpenHands live runtime smoke report
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install OpenHands SDK
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "openhands-sdk @ git+https://github.com/OpenHands/software-agent-sdk.git@main#subdirectory=openhands-sdk"
+          python -m pip install "openhands-tools @ git+https://github.com/OpenHands/software-agent-sdk.git@main#subdirectory=openhands-tools"
+
+      - name: Materialize runtime and prompt from main
+        run: |
+          git fetch origin main
+          git show origin/main:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/kilo_anonymous_relay.py
+          git show origin/main:.seven-team/runtime/openhands_live.py > /tmp/openhands_live.py
+          git show origin/main:${{ matrix.prompt_path }} > /tmp/openhands-prompt.md
+
+      - name: Start guarded relay
+        run: |
+          python /tmp/kilo_anonymous_relay.py > /tmp/seven-relay.log 2>&1 &
+          ready=0
+          for i in {1..20}; do
+            if curl -fsS http://127.0.0.1:8877/v1/models >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" -eq 1
+
+      - name: Run real OpenHands agent
+        env:
+          LLM_API_KEY: local-dummy-key
+          LLM_MODEL: openai/kilo-auto/free
+          LLM_BASE_URL: http://127.0.0.1:8877/v1
+          SEVEN_AGENT_PROMPT: /tmp/openhands-prompt.md
+        run: |
+          set -u
+          mkdir -p "$(dirname "${{ matrix.report }}")"
+          set +e
+          timeout 180s python /tmp/openhands_live.py
+          rc=$?
+          set -e
+          if test -f "${{ matrix.report }}" && grep -q 'LIVE_AGENT_SMOKE=PASS' "${{ matrix.report }}"; then
+            echo "OpenHands produced required report; accepting output (rc=$rc)."
+          else
+            echo "OpenHands did not produce required report (rc=$rc)." >&2
+            exit "${rc:-1}"
+          fi
+
+      - name: Sanitize to allowed output only
+        run: |
+          set -euo pipefail
+          EXPECTED='${{ matrix.report }}'
+          cp "$EXPECTED" /tmp/seven-agent-report.md
+          git reset --hard HEAD
+          git clean -fdx
+          mkdir -p "$(dirname "$EXPECTED")"
+          cp /tmp/seven-agent-report.md "$EXPECTED"
+          git add -f "$EXPECTED"
+          count="$(git diff --cached --name-only | wc -l)"
+          test "$count" -le 1
+          if test "$count" -eq 1; then
+            test "$(git diff --cached --name-only)" = "$EXPECTED"
+            echo "REPORT_CHANGED=1" >> "$GITHUB_ENV"
+          else
+            echo "REPORT_CHANGED=0" >> "$GITHUB_ENV"
+          fi
+
+      - name: Commit and push controlled report
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if test "${REPORT_CHANGED:-0}" = "0"; then
+            echo "Report already matches branch; idempotent success."
+            exit 0
+          fi
+          git config user.name 'Seven Team Runtime'
+          git config user.email 'actions@users.noreply.github.com'
+          git commit -m "${{ matrix.commit_message }}"
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:${{ matrix.branch }}
