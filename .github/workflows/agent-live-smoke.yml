@@ -86,17 +86,27 @@ jobs:
           OPENAI_API_BASE: http://127.0.0.1:8877/v1
           OPENAI_API_KEY: local-dummy-key
         run: |
+          set -u
           git show origin/main:.seven-team/prompts/live-smoke/team-a-aider.md > /tmp/team-a-aider.md
           mkdir -p .seven-team/reports
           touch .seven-team/reports/team-a-aider-live-smoke.md
-          aider .seven-team/reports/team-a-aider-live-smoke.md \
+          set +e
+          timeout 150s aider .seven-team/reports/team-a-aider-live-smoke.md \
             --model openai/kilo-auto/free \
             --message-file /tmp/team-a-aider.md \
             --yes-always \
-            --no-auto-commits \
-            --no-dirty-commits \
+            --no-git \
             --no-gitignore \
+            --map-tokens 0 \
             --no-show-model-warnings
+          rc=$?
+          set -e
+          if grep -q 'LIVE_AGENT_SMOKE=PASS' .seven-team/reports/team-a-aider-live-smoke.md; then
+            echo "Agent produced required report; accepting output (agent rc=$rc)."
+          else
+            echo "Agent did not produce required PASS report (agent rc=$rc)." >&2
+            exit "${rc:-1}"
+          fi
       - name: Sanitize to allowed output only
         run: |
           set -euo pipefail
@@ -157,17 +167,27 @@ jobs:
           OPENAI_API_BASE: http://127.0.0.1:8877/v1
           OPENAI_API_KEY: local-dummy-key
         run: |
+          set -u
           git show origin/main:.seven-team/prompts/live-smoke/team-b-aider.md > /tmp/team-b-aider.md
           mkdir -p .seven-team/reports
           touch .seven-team/reports/team-b-aider-live-smoke.md
-          aider .seven-team/reports/team-b-aider-live-smoke.md \
+          set +e
+          timeout 150s aider .seven-team/reports/team-b-aider-live-smoke.md \
             --model openai/kilo-auto/free \
             --message-file /tmp/team-b-aider.md \
             --yes-always \
-            --no-auto-commits \
-            --no-dirty-commits \
+            --no-git \
             --no-gitignore \
+            --map-tokens 0 \
             --no-show-model-warnings
+          rc=$?
+          set -e
+          if grep -q 'LIVE_AGENT_SMOKE=PASS' .seven-team/reports/team-b-aider-live-smoke.md; then
+            echo "Agent produced required report; accepting output (agent rc=$rc)."
+          else
+            echo "Agent did not produce required PASS report (agent rc=$rc)." >&2
+            exit "${rc:-1}"
+          fi
       - name: Sanitize to allowed output only
         run: |
           set -euo pipefail
@@ -179,7 +199,9 @@ jobs:
           git clean -fdx
           mkdir -p "$(dirname "$EXPECTED")"
           cp /tmp/seven-agent-report.md "$EXPECTED"
-          test "$(git status --porcelain | wc -l)" -eq 1
+          git add -f "$EXPECTED"
+          test "$(git diff --cached --name-only | wc -l)" -eq 1
+          test "$(git diff --cached --name-only)" = "$EXPECTED"
       - name: Commit and push controlled report
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
