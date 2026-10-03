@@ -64,6 +64,8 @@ type MutableTask = {
 
 type Listener = (snapshot: TaskSnapshot) => void;
 
+const MAX_TIMEOUT_MS = 2_147_483_647;
+
 export type TaskManagerOptions = Readonly<{
   maxRetainedCompleted?: number;
 }>;
@@ -138,11 +140,13 @@ export class TaskManager {
     const timeoutMs = spec.timeoutMs;
     if (
       timeoutMs !== undefined &&
-      (!Number.isFinite(timeoutMs) || timeoutMs <= 0)
+      (!Number.isFinite(timeoutMs) ||
+        timeoutMs <= 0 ||
+        timeoutMs > MAX_TIMEOUT_MS)
     ) {
       throw new SevenError({
         code: "VALIDATION",
-        message: "timeoutMs must be a positive finite number.",
+        message: "timeoutMs must be a positive finite timer-safe number.",
       });
     }
 
