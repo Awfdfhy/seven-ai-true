@@ -10,6 +10,7 @@ import {
 } from "../../domain/chat";
 import {
   assertValidProviderMessages,
+  modelKey,
   type ModelDescriptor,
   type ProviderAdapter,
   type ProviderStreamRequest,
@@ -633,6 +634,65 @@ describe("Zero-bug regressions", () => {
     ).toThrow(/kind/);
 
     expect(manager.listActive()).toHaveLength(0);
+  });
+
+  it("rejects timer values that overflow browser timeout semantics", () => {
+    const manager = new TaskManager();
+    expect(() =>
+      manager.run(
+        {
+          kind: "system",
+          ownerId: "timer-owner",
+          timeoutMs: 2_147_483_648,
+        },
+        async () => "never",
+      ),
+    ).toThrow(/timer-safe/);
+    expect(manager.listActive()).toHaveLength(0);
+  });
+
+  it("keeps appended message timestamps monotonic if the wall clock moves backward", () => {
+    const room = createRoom({ id: "clock-room", now: 100 });
+    const first = commitMessage(room, {
+      id: "first",
+      role: "user",
+      content: "one",
+      now: 200,
+    });
+    const second = commitMessage(first, {
+      id: "second",
+      role: "assistant",
+      content: "two",
+      now: 150,
+    });
+
+    expect(second.messages[0]?.createdAt).toBe(200);
+    expect(second.messages[1]?.createdAt).toBe(200);
+    expect(second.updatedAt).toBe(200);
+  });
+
+  it("uses collision-safe model keys even when provider and model ids contain delimiters", () => {
+    const left = model("a::b", "c");
+    const right = model("a", "b::c");
+    expect(modelKey(left)).not.toBe(modelKey(right));
+
+    const router = new ModelRouter();
+    const plan = router.plan(
+      [left, right],
+      [],
+      {
+        mode: "balanced",
+        preferredModelId: modelKey(right),
+        requireStreaming: true,
+        now: 1,
+        maxAttempts: 2,
+      },
+    );
+
+    expect(plan.candidates[0]).toMatchObject({
+      providerId: "a",
+      modelId: "b::c",
+    });
   });
 
   it("isolates task listeners and bounds completed task retention", async () => {
