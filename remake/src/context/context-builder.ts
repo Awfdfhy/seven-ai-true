@@ -150,6 +150,10 @@ export class ContextBuilder {
     }
   }
 
+  estimateText(text: string): number {
+    return this.estimator.estimateText(text);
+  }
+
   build(input: ContextBuildInput): ContextBuildResult {
     if (!input || typeof input !== "object" || Array.isArray(input)) {
       throw new SevenError({
