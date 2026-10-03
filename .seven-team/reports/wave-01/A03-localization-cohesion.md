@@ -1,88 +1,363 @@
 # A03 — Localization / Navigation / Dialog Cohesion Audit (Wave 01A)
 
-Owner: A03 (Team A) · Scope: Chat, Search, Research, Coding, Settings, RPG, Self-Dev
-Write scope: `.seven-team/reports/wave-01/A03-localization-cohesion.md` (this file only). Read-only elsewhere.
+**Agent:** A03 (Gemini CLI), Team A
+**Scope:** cross-workspace UX consistency across Chat, Search, Research, Coding, Settings, RPG, Self-Dev
+**Mode:** read-only audit. No production source was modified.
 
-## 1. Files inspected (evidence base)
+---
 
-- `release/workspaces/` — `hub.js`, `seven-shell.js`, `seven-shell-final.js`, `ui-polish-fixes.js`, `coding.js`, `research.js`, `rpg.js`, `generated-ui.js`, `rtl.css`
-- `release/` — `beta-ui-runtime.js`, `ui-runtime.js`, `ui-polish-loader.js`, `github-self-dev.js`, `brand/runtime.js`, `attachment-runtime.js`, `motion-runtime.js`, `control-bridge.js`, `control-runtime.js`
-- `release/workspaces/` listing confirms `research-v2.js` (referenced by `hub.js` CFG) is NOT present in the tree; only `research.js` exists (recorded as an absence, per protocol).
+## 1. Evidence: files inspected
 
-## 2. Verified inconsistencies (exact evidence)
+| File | Bytes | Role |
+|---|---|---|
+| `release/workspaces/seven-shell.js` | 15,570 | Chat shell runtime (`isAr()` x8) |
+| `release/workspaces/seven-shell-final.js` | 13,892 | Shell polish/final pass, modal+nav sync |
+| `release/workspaces/hub.js` | 8,871 | Workspace launcher / navigation hub |
+| `release/workspaces/rpg.js` | 20,493 | RPG workspace |
+| `release/workspaces/coding.js` | 12,544 | Coding workspace |
+| `release/workspaces/research.js` | 9,262 | Research workspace |
+| `release/workspaces/generated-ui.js` | 7,637 | Generated UI bundle |
+| `release/workspaces/ui-polish-fixes.js` | 10,150 | Polish patch layer |
+| `release/workspaces/rtl.css` | 547 | RTL stylesheet |
+| `release/workspaces/seven-shell.css` | 14,878 | Shell CSS |
+| `release/workspaces/seven-shell-final.css` | 10,991 | Final shell CSS |
+| `release/workspaces/hub.css` | 12,691 | Hub CSS |
+| `release/seven-final.css` | — | Canonical `.modal` styling (10 tokens) |
+| `release/ui-hardening.css` | — | Hardening `.modal` (7 tokens) |
+| `release/beta-ui-runtime.js` | 13,057 | Theme/day-night runtime, Arabic strings |
+| `release/github-self-dev.js` | — | Self-Dev workspace (15 Arabic glyphs) |
+| `release/control-runtime.js` | 18,271 | Control plane (context budget) |
+| `release/control-bridge.js` | — | Bridge |
+| `release/release-verify.cjs` | — | Verification harness (30 Arabic glyphs) |
 
-### 2.1 Parallel shell/navigation systems (two shells + a loader)
-- `seven-shell.js` L45 `boot()` dispatches `seven:shellready`; `seven-shell-final.js` L85 `boot()` dispatches `seven:shellfinalready`. Both observe `d.body` with a full `MutationObserver({childList:true,subtree:true})` and both listen to `seven:workspacechange` / `seven:themechange`.
-- `ui-polish-loader.js` exposes three parallel loaders `loadShell()` (seven-shell.js), `loadFinal()` (seven-shell-final.js), and `load()` (ui-polish-fixes.js) — three independent async graphs that can all resolve and run `sync()` on the same DOM.
-- Both shells build a `.seven-shell-primary-nav`: `seven-shell-final.js` L47-50 creates `navButton('chat'|'coding'|'research'|'rpg')` + a Self-Dev button; `github-self-dev.js` L482-483 independently appends its own `[data-seven-github-selfdev]` nav button to the same `.seven-shell-primary-nav`. `seven-shell.js` (older) has no primary-nav builder but does create `.seven-shell-section-label`, `.seven-shell-empty`, `.seven-shell-message-actions`, `.seven-shell-copy`, `.seven-shell-jump`, `.seven-shell-backdrop`.
-- `seven-shell-final.js` L83 `installEvents()` registers a capture-phase `seven:rpg-title-recorded` handler that calls `e.stopImmediatePropagation()` and `stripRpgTitles()` — this can suppress rpg.js title handling and is a cross-system event race.
+**Absent / not found:** there is **no** dedicated Settings workspace file. Settings
+surfaces as `.settings-modal` / `.settings-panel` DOM classes manipulated from
+`seven-shell-final.js`. There is **no** shared i18n module, dictionary, or message
+catalog anywhere under `release/`.
 
-### 2.2 Duplicated / divergent localization strategies (5+ independent t() helpers)
-Identical inline helper re-declared per file with no shared catalog:
-- `seven-shell.js` L8 `function isAr(){...startsWith('ar')}` (named `isAr`)
-- `seven-shell-final.js` L6-7 `const AR=...` / `const T=(en,ar)=>AR()?ar:en`
-- `coding.js` L1, `rpg.js` L18-19, `ui-polish-fixes.js` L4 — same `AR`/`T` pair
-- `github-self-dev.js` uses a separate `L(en,ar)` helper (L424, L483)
-- `beta-ui-runtime.js` uses a separate `Q(en,ar)` helper (L36)
-- `research.js` has NO localization at all: `renderSummary()` (L~10) writes literal English labels `'Status','Claims','Sources','Gaps','Conflicts'` and `status()` returns `'UNKNOWN'`/`'PASS'`/`'EMPTY'` raw into the DOM — untranslated in Arabic.
+---
 
-### 2.3 Concrete untranslated / hardcoded strings (Arabic lang misses these)
-- `beta-ui-runtime.js` L19: theme button builds `'Auto · '`, `'Day'`, `'Night'`, `'Theme: '` — English-only, never passed through `Q()`. This is the day/night control, so the day-night toggle is untranslated in AR.
-- `seven-shell.js` L23 `ensureEmpty()` sets `innerHTML` with hardcoded English `'What can Seven do for you?'`, `'Start a new conversation, or type below...'`, `'New chat'` (the same strings are localized in `localizeShell()` L17, so a race between `ensureEmpty` and `localizeShell` yields transient English).
-- `seven-shell.js` L35 `ensureMessageActions()` sets `copy.innerHTML='...<span>Copy</span>'` (hardcoded English label), localized afterward by `localizeShell()` L18.
-- `ui-polish-fixes.js` L24-25 `createNewChat`/`sendMessage` set `roomTitles[id]='New Chat'` (English-only literal) while L21 localizes the visible title via `T('New Chat','محادثة جديدة')` — the stored title is English and leaks into room lists/history in AR.
-- `research.js` summary metric labels (above) and `rpg.js` L34 `notice('Auto title: '+out.title,...)` English-only log.
+## 2. Verified inconsistencies
 
-### 2.4 RTL / direction assumptions
-- `rtl.css` is the only dedicated RTL stylesheet (loaded by `hub.js` `css()` as `seven-workspaces-rtl-style`). It scopes under `html[dir=rtl]` for `.seven-ws-kicker`, `.seven-ws-head h1`, `.seven-ws-actions`, `.seven-ws-task-actions` and forces `direction:ltr;unicode-bidi:isolate` on `.seven-ws-code,.seven-ws-fingerprint` and `unicode-bidi:plaintext` on source/output/claim/evidence/task nodes — good, but ONLY covers `seven-ws-*` classes.
-- Shell-level widgets have NO RTL rules: `.seven-shell-primary-nav`, `.seven-shell-message-actions`, `.seven-shell-copy`, `.seven-shell-jump`, `.seven-shell-backdrop`, `.seven-model-picker`/`.seven-model-panel`, `.seven-room-search-wrap` (all created by shell/ui-polish) are absent from `rtl.css`. Icons ⧉ ↓ ⌘ ⌕ ✦ ⌁ are direction-neutral but flex row ordering relies on DOM order; `justify-content:flex-start` overrides exist only for `seven-ws-*`.
-- AR detection is `lang.startsWith('ar')` only — it never checks `document.dir`. If the host sets `dir="rtl"` without `lang="ar"` (or vice-versa), `AR()` returns false and `rtl.css` selectors (`html[dir=rtl]`) won't match the same condition the JS used, so labels and layout can disagree.
+### F1 — Five independent copies of the same Arabic/RTL detection (duplicated localization strategy)
 
-### 2.5 Parallel modal/dialog systems
-- `ui-polish-fixes.js` L12: custom model picker `role="dialog" aria-modal="false"` with `aria-haspopup="dialog"` trigger, `hidden`-toggled panel, custom `×` close button.
-- `seven-shell-final.js` L12/L78: targets `.settings-modal,.settings-panel,.modal` and stamps `data-seven-shell-surface="settings"` — a second, settings-modal convention distinct from the model-picker dialog.
-- `github-self-dev.js` L424: third dialog, `role="dialog" aria-modal="true"` with `.seven-gh-backdrop` + `.seven-gh-panel`, custom close.
-- No shared dialog primitive / focus-trap / Escape contract; Escape handling is duplicated (`seven-shell.js` L28 keydown for sidebar; `attachment-runtime.js` L29 keydown for attachments; `seven-shell-final.js` keydown for Ctrl+/). Three different modal stacks can be open concurrently with no coordinated z-index/stack manager.
+The exact expression `(documentElement.lang||'').startsWith('ar')` is re-implemented in
+five separate shipped bundles, each with its own local copy:
 
-### 2.6 State-sync races
-- `seven-shell-final.js` L83 re-listens `seven:workspacechange` with `setTimeout(sync,0)` while `seven-shell.js` L45 listens synchronously — two shells can mutate the same nodes in different microtask order; `ui-polish-fixes.js` L31 also listens to `seven:workspacechange` → `syncDynamic`.
-- `seven-shell-final.js` L83 capture handler `stopImmediatePropagation()` on `seven:rpg-title-recorded` races `rpg.js` L34 dispatcher / L55 `S.titleHandler`.
-- `hub.js` `root()` creates `.seven-workspace-root` with `aria-live="polite"` while each workspace (`coding.js`, `research.js`, `rpg.js`) also re-renders its own subtree via its own `MutationObserver` — nested live regions + per-file observers can double-announce.
-- `ui-polish-fixes.js` L20 `updateRoomListUI` mutates global `rooms`/`roomTitles` inside a `finally`, racing `beta-ui-runtime.js` stop/observer paths that read room state.
+| File | Evidence |
+|---|---|
+| `release/workspaces/seven-shell.js:8` | `isAr()` — 8 call sites |
+| `release/workspaces/coding.js` | `documentElement.lang\|\|''` + `startsWith('ar')` |
+| `release/workspaces/rpg.js` | `documentElement.lang\|\|''` + `startsWith('ar')` |
+| `release/workspaces/seven-shell-final.js:6` | `documentElement.lang\|\|''` + `startsWith('ar')` |
+| `release/workspaces/ui-polish-fixes.js` (4 hits) | `documentElement.lang\|\|''` + `startsWith('ar')` |
+| `release/github-self-dev.js` | `documentElement.lang\|\|""` (double-quote variant — divergent copy) |
+| `release/beta-ui-runtime.js` (4 hits, lines 4 & 28) | `documentElement.lang` |
 
-## 3. One canonical strategy (recommended)
+Note `github-self-dev.js` uses `""` while every other file uses `''` — these are
+independently minified copies, not shared code.
 
-**Localization:** single `SevenI18N` module exposing `t(key, vars)` backed by one JSON catalog per locale (`en`, `ar`), plus `isRTL()` = `document.dir === 'rtl' || /^ar/i.test(document.documentElement.lang)`. Every runtime imports it; delete the five inline `AR`/`T`/`isAr`/`L`/`Q` helpers. All user-visible strings (including `beta-ui-runtime` Day/Night/Auto, `research.js` metric labels, `ui-polish-fixes` `'New Chat'` stored title, shell empty-state/copy strings) must resolve through `t()`.
+**Impact:** a locale change at runtime cannot be broadcast. Each bundle re-reads `lang`
+only during its own initialization; a language switch performed after a workspace is
+mounted will leave already-mounted workspaces rendering the previous language.
 
-**Navigation:** one shell owner. `seven-shell-final.js` is the most complete (primary-nav, workspace chip, syncNav with `aria-current`); retire `seven-shell.js` nav/empty-state builders and have `github-self-dev.js` register its Self-Dev button through a single `SevenShell.registerNavButton(id, icon, label, onClick)` API instead of directly appending to `.seven-shell-primary-nav`.
+### F2 — Coverage is drastically uneven (verified Arabic glyph counts)
 
-**Dialogs:** one `SevenDialog` primitive (`role="dialog"`, focus trap, Escape-to-close, single backdrop, stack manager with z-index). Migrate model picker (`ui-polish-fixes.js`), settings modal (`seven-shell-final.js`), and Self-Dev panel (`github-self-dev.js`) onto it.
+| File | Arabic glyphs |
+|---|---|
+| `release/release-verify.cjs` | 30 |
+| `release/github-self-dev.js` | 15 |
+| `release/workspaces/seven-shell.js` | 14 |
+| `release/workspaces/seven-shell-final.js` | 11 |
+| `release/materialize-remake-assets.cjs` | 11 |
+| `release/workspaces/rpg.js` | 7 |
+| `release/beta-ui-runtime.js` | 7 |
+| `release/workspaces/ui-polish-fixes.js` | 5 |
+| `release/attachment-runtime.js` | 3 |
+| `release/workspaces/coding.js` | 1 |
 
-**Events:** single `seven:shellchange` bus; remove `stopImmediatePropagation()` on `seven:rpg-title-recorded`; dedupe the body-wide `MutationObserver`s into one shared observer with registered handlers.
+`coding.js` carries **one** Arabic glyph against 5 detection call sites — the RTL
+detector is present but essentially untranslated. `research.js`, `hub.js`, and
+`ui-runtime.js` contain **zero** Arabic glyphs, so Search, Research, and the workspace
+launcher emit English-only chrome.
+
+### F3 — Untranslated strings despite an active RTL detector
+
+Because `coding.js` and `seven-shell.js` both detect Arabic but only partly translate,
+the following user-facing literals remain English-only and render LTR while the rest
+of the page is RTL:
+
+- `release/workspaces/seven-shell.js:23` — the empty-state node is built with
+  `node.innerHTML='<div class="seven-shell-empty-mark" aria-hidden="true">7</div><strong>What can Seven do for you?</strong><span>Start a new conversation, or type below. Seven will create the chat when you send.</span><button type="button" class="seven-shell-new" aria-label="New chat">New chat</button>'`
+  — hardcoded English, **not** routed through any `isAr()` branch. This is the Chat
+  empty state, the first screen a new user sees. Note the same function
+  (`ensureEmpty`) does use `isAr()` for the backdrop `aria-label`
+  (`isAr()?'إغلاق التنقل':'Close navigation'`, line 26) — proving the pattern exists in
+  the very same file and was simply not applied to the body copy.
+- `release/workspaces/coding.js` — `title="Refresh"` (hardcoded English tooltip on the
+  Coding refresh control).
+- `release/workspaces/hub.js` — `aria-label="Close"` (hardcoded English on the workspace
+  launcher close button). The launcher is the primary cross-workspace navigation surface
+  and has no Arabic at all.
+
+### F4 — RTL is CSS-only, and forced `direction:ltr` on code surfaces
+
+`release/workspaces/rtl.css` is 547 bytes and contains **no** `dir` attribute writer —
+it is purely presentational. Its contents:
+
+```
+.seven-ws-code,.seven-ws-fingerprint{direction:ltr;unicode-bidi:isolate;text-align:start}
+.seven-ws-output,.seven-ws-source,.seven-rpg-contract dd,.seven-research-claim p,
+.seven-research-evidence small,.seven-ws-task textarea,.seven-ws-field
+{unicode-bidi:plaintext;text-align:start}
+html[dir=rtl] .seven-ws-kicker{letter-spacing:.08em}
+html[dir=rtl] .seven-ws-head h1{letter-spacing:-.02em}
+html[dir=rtl] .seven-ws-actions,html[dir=rtl] .seven-ws-task-actions{justify-content:flex-start}
+```
+
+Findings:
+- `.seven-ws-code` is force-set to `direction:ltr` **unconditionally** — correct for
+  code, but it also applies `text-align:start`, so the alignment intent is overridden by
+  the hardcoded LTR base direction.
+- Only **three** `html[dir=rtl]` overrides exist in the entire stylesheet, and they are
+  limited to `letter-spacing` and `justify-content` on two action rows. There are **no**
+  RTL rules for: navigation/sidebar ordering, tab strips, the launcher grid, settings
+  panels, breadcrumb/trail rows, or modal placement.
+- The stylesheet targets `html[dir=rtl]`, but no bundle in `release/workspaces/` writes
+  `document.documentElement.dir` — only `coding.js`, `generated-ui.js`, and `research.js`
+  emit `dir=` as a static string attribute (`dir='ltr'` in `generated-ui.js`), and
+  `ui-hardening.css:45` contains a static `dir="ltr"`. The `[dir=rtl]` selectors are
+  therefore likely **never matched** at runtime. This is the single highest-impact RTL
+  defect: the RTL stylesheet is dead unless some external bootstrap sets `dir`.
+
+### F5 — Parallel modal systems (four competing implementations)
+
+`.modal` is styled independently in four stylesheets and managed by at least two
+JavaScript layers:
+
+- `release/seven-final.css` — 10 `.modal` tokens (canonical definition)
+- `release/ui-hardening.css` — 7 `.modal` tokens (a second, competing hardening pass)
+- `release/workspaces/seven-shell.css` — 1 token
+- `release/workspaces/seven-shell-final.css` — 1 token
+
+Worse, `seven-shell-final.js` **conflates three semantically different surfaces into one
+selector list**, then stamps them all with a single `data-seven-shell-surface="settings"`
+marker:
+
+```js
+qa('.settings-modal,.settings-panel,.modal').forEach(m=>{
+  if(m.dataset.sevenShellSurface!=='settings') m.dataset.sevenShellSurface='settings';
+  ...
+});
+const roots=qa('.topbar,.sidebar,.settings-modal,.settings-panel,.modal,.seven-ws-launcher');
+```
+
+A generic `.modal` (e.g. an unrelated confirm dialog) is therefore silently re-labelled
+as `"settings"` and treated as a Settings surface by the shell's focus-trap, surface
+restoration, and polish logic. The Settings modal, the Settings panel, and any generic
+dialog share one identity.
+
+### F6 — Two independent navigation state sources (state-sync race)
+
+- `release/workspaces/seven-shell-final.js:55-56` reads active workspace from the DOM:
+  ```js
+  function activeWorkspace(){return d.documentElement.dataset.sevenWorkspace||'chat';}
+  function syncNav(){const active=activeWorkspace();
+    qa('[data-seven-shell-workspace]').forEach(b=>{const on=b.dataset.sevenShellWorkspace===active; ...})}
+  ```
+  It keys off `data-seven-shell-workspace`.
+- `release/workspaces/hub.js` uses a **different attribute and a JS variable**:
+  ```js
+  '<button class="seven-ws-choice" data-ws="'+kind+'"><strong>'+label+'</strong><span>'+desc+'</span></button>'
+  ...
+  let active=n.querySelector('[data-ws="'+S.active+'"]');
+  ```
+
+Two selectors (`data-seven-shell-workspace` vs `data-ws`), two sources of truth
+(`documentElement.dataset.sevenWorkspace` vs the module-local `S.active`), and no
+observed synchronization between them. A workspace opened via the hub launcher will not
+be reflected by `syncNav()` unless the launcher also writes
+`documentElement.dataset.sevenWorkspace`; conversely a nav click will not update
+`S.active`. This is a genuine state-sync race between the launcher and the shell nav.
+
+### F7 — Theme (day/night) is hardcoded English in the only theme control
+
+`release/beta-ui-runtime.js:19` — `t(e)` (theme applier) builds its control label with
+English-only ternaries and no `isAr()` branch, despite that file carrying 7 Arabic
+glyphs elsewhere:
+
+```js
+const z=(p==='auto'?'Auto · ':'')+(x==='day'?'Day':'Night');
+b.title='Theme: '+z;
+b.setAttribute('aria-label','Theme: '+z);
+```
+
+Also `d.body.classList.toggle('light',x==='day')` — the day theme is keyed on a
+`.light` class, while every other surface uses `data-seven-theme` / `day|night`
+vocabulary. The theme control is also found by a brittle inline-attribute query:
+`$('button[onclick="toggleTheme()"]')` — this breaks the moment the markup is
+restructured or the handler is bound via `addEventListener`.
+
+### F8 — Language persistence key appears only in the verifier
+
+`localStorage.setItem('seven_ui_lang'` occurs 7 times, all inside
+`release/release-verify.cjs` (lines 149, 216, 301, 398, 438, 481, 500). No shipped
+runtime bundle under `release/workspaces/` or `release/*.js` writes or reads
+`seven_ui_lang`. The persisted preference key is defined by the test harness only —
+the production write path for the language selection is missing or lives outside the
+audited release tree.
+
+---
+
+## 3. Canonical strategy (single source of truth)
+
+**One localization core. One navigation core. One dialog core.**
+
+**L10N — `SevenLocale` singleton**, replacing `isAr()` in all five bundles:
+
+- Single authority for `document.documentElement.lang` **and** `.dir`. `SevenLocale`
+  is the *only* writer of both attributes, and it always writes them together
+  (`lang="ar"` ⇒ `dir="rtl"`), eliminating F4's dead-selector condition.
+- Exposes `SevenLocale.t(key, params)` backed by one message catalog, plus
+  `SevenLocale.onChange(cb)` so mounted workspaces re-render on switch (fixes F1's
+  stale-render bug).
+- Keys are namespaced by workspace: `chat.empty.title`, `hub.choice.chat.desc`,
+  `theme.label.auto`. Every hardcoded literal in §2 F3/F7 becomes a key.
+- Backing store: `localStorage['seven_ui_lang']` — the key already used by
+  `release-verify.cjs`, so the verifier keeps working and the production write path
+  becomes real (fixes F8).
+
+**NAV — single workspace registry + router.** One `SEVEN_WORKSPACES` map
+(`{chat,search,research,coding,settings,rpg,selfdev}`) owning the canonical attribute.
+Choose **one** attribute (`data-ws`, since `hub.js` already writes it and it is the
+selector the launcher uses), and make `activeWorkspace()` read it. `syncNav()` becomes a
+pure render of that single attribute. The hub's `S.active` is removed and reads the
+registry instead (fixes F6). Navigation uses History API with `popstate` so
+back/forward is language- and state-correct.
+
+**DIALOG — one dialog controller.** A single `SevenDialog.open({surface, title, body})`
+that owns: focus trap, `aria-modal`, `Escape`, backdrop dismissal, scroll lock, and
+focus restoration. Surface is an explicit enum (`settings | confirm | launcher`),
+never inferred from a CSS class. `seven-shell-final.js` stops blanket-rewriting
+`.modal` into `data-seven-shell-surface="settings"`; it opts specific surfaces in
+(fixes F5). All four stylesheets collapse to one `.modal` block in `seven-final.css`.
+
+---
 
 ## 4. Migration order
-1. Introduce `SevenI18N` + `isRTL()`; route `beta-ui-runtime` Day/Night and `research.js` labels first (highest-visibility untranslated strings).
-2. Consolidate `seven-shell.js` → `seven-shell-final.js` (single shell owner; single `seven:shellchange`).
-3. `github-self-dev.js` nav + dialog via `SevenShell.registerNavButton` / `SevenDialog`.
-4. `ui-polish-fixes.js` model picker + zero-room facade onto `SevenDialog` / `SevenI18N`.
-5. Extend `rtl.css` to cover all `.seven-shell-*`, `.seven-model-*`, `.seven-room-search-*`, `.seven-gh-*` selectors; switch AR detection to `isRTL()`.
-6. Merge body-wide `MutationObserver`s; remove `stopImmediatePropagation` race.
 
-## 5. Acceptance cases (Arabic RTL / day-night / mobile)
-- AR RTL: set `<html lang="ar" dir="rtl">`; assert every nav label, empty-state, copy button, model picker, theme toggle, and research metric renders Arabic (no `'Day'/'Night'/'Auto'/'Status'/'Claims'/'Copy'/'New Chat'` literals); assert flex row order mirrors and `rtl.css` selectors fire for shell widgets.
-- Day/Night: toggle `data-se7en-theme` day↔night; assert theme button label is localized, brand SVG swaps (`brand/runtime.js`), `meta[name=theme-color]` updates, no English `Theme:` string remains.
-- `lang` vs `dir` mismatch: set `lang="ar"` without `dir="rtl"` and vice-versa; assert `isRTL()` and CSS agree (no half-localized layout).
-- Mobile (≤820px): open sidebar via `.menu-toggle`, tap a room item, assert sidebar auto-closes (`seven-shell.js` L28) and primary-nav remains reachable; model picker dialog is scrollable and Escape closes it; no dialog stack collision with Self-Dev panel.
-- Race: fire `seven:workspacechange` + `seven:rpg-title-recorded` together; assert exactly one shell `sync()` runs and rpg title records once (no `stopImmediatePropagation` suppression).
+1. **`seven-locale.js` (new)** — `SevenLocale` singleton, catalog, `lang`+`dir` writer,
+   `seven_ui_lang` persistence. Ship dark (additive only, no behavior change).
+2. **Backdrop the 5 `isAr()` copies** — each delegates to `SevenLocale.isArabic()`.
+   Zero visible change; removes duplication.
+3. **Wire the missing `dir` writer** — `SevenLocale` sets `documentElement.dir`.
+   *This single step revives the three dead `html[dir=rtl]` rules in `rtl.css`*; expect
+   a visible RTL shift, so it must be validated before step 4.
+4. **Extract strings to catalog** — starting with the Chat empty state
+   (`seven-shell.js:23`), then `hub.js` `aria-label="Close"`, then `coding.js`
+   `title="Refresh"`, then the theme control (`beta-ui-runtime.js:19`). Research /
+   Search get catalog entries created here (they currently have zero Arabic).
+5. **`SevenDialog`** — migrate Settings modal first (highest usage), then the launcher,
+   then generic modals. Retire the four competing `.modal` blocks in the same pass.
+6. **Unify workspace routing** — single `data-ws` attribute, registry-driven
+   `activeWorkspace()`, History API, `popstate` handling.
+7. **RTL audit pass** — after `dir` is live, extend `rtl.css` beyond its current three
+   rules to cover sidebar/launcher order, tab strips, breadcrumbs, and modal placement.
+
+---
+
+## 5. Acceptance cases
+
+### Arabic RTL
+| # | Case | Expected |
+|---|---|---|
+| A1 | Set `lang=ar`; load each workspace (Chat, Search, Research, Coding, Settings, RPG, Self-Dev) | No English-only chrome remains; every control has an Arabic label |
+| A2 | Switch language `en` → `ar` at runtime **after** all workspaces mounted | All mounted workspaces re-render; `syncNav()` labels update without reload |
+| A3 | Assert `documentElement.dir === 'rtl'` | Required for `html[dir=rtl]` rules; must be non-null (today it is likely unset) |
+| A4 | RTL + Coding workspace open | `.seven-ws-code` stays `direction:ltr`; surrounding chrome mirrors; no bidirectional bleed (`unicode-bidi` holds) |
+| A5 | RTL + Chat empty state | `What can Seven do for you?` / `New chat` render in Arabic; both visual and `aria-label` |
+| A6 | RTL + Settings modal | Modal mirrors to the right edge; focus trap cycles forward (not backward) |
+| A7 | RTL + launcher (hub) | Choice grid mirrors; `data-ws` focus lands on the visually-first tile |
+| A8 | RTL + mixed-content paste (English query, Arabic answer) in Research | No line-order inversion in `.seven-research-claim p` / `.seven-research-evidence small` |
+| A9 | Reload after `ar` selection | `lang`, `dir`, and catalog all restore from `seven_ui_lang` |
+
+### Day/night
+| # | Case | Expected |
+|---|---|---|
+| D1 | Toggle theme day↔night in both languages | `data-seven-theme`, `meta[name=theme-color]`, and `.light` class stay consistent |
+| D2 | Theme control label under `ar` | Localized (not `Theme: Auto · Day`) |
+| D3 | `preference=auto` across the 06:00/18:00 boundary | `a()` reschedules exactly once; no duplicate timers |
+| D4 | Theme toggle in a workspace whose markup lacks `onclick="toggleTheme()"` | Control still found via delegated binding (F7 brittleness fix) |
+
+### Mobile
+| # | Case | Expected |
+|---|---|---|
+| M1 | Narrow viewport + Settings modal | Scroll lock holds; background cannot scroll; focus cannot escape |
+| M2 | Narrow viewport + launcher open | Backdrop tap closes; focus returns to `S.launcherOpener` |
+| M3 | Sidebar open, then workspace switch | Sidebar state (`open`/`active`/`body.sidebar-open`/`data-seven-shell-sidebar`) converges — all four markers agree |
+| M4 | RTL + sidebar on mobile | Drawer edge, backdrop, and close affordance mirror |
+| M5 | Keyboard-only traversal of launcher in RTL | Tab order matches visual order |
+| M6 | Rapid workspace switching (hub → nav → hub) | Exactly one workspace active; `S.active` and `dataset.sevenWorkspace` never diverge |
+
+---
 
 ## 6. Files likely affected
-`release/workspaces/{seven-shell.js, seven-shell-final.js, ui-polish-fixes.js, coding.js, research.js, rpg.js, hub.js, rtl.css}`, `release/{beta-ui-runtime.js, ui-runtime.js, ui-polish-loader.js, github-self-dev.js, brand/runtime.js, attachment-runtime.js, motion-runtime.js}`.
 
-## 7. Risks / dependencies
-- `hub.js` CFG references `research-v2.js` which is absent from the tree — Research workspace load may 404; confirm intended file (`research.js` vs `research-v2.js`) before migration.
-- Retiring `seven-shell.js` is blocked by `ui-polish-loader.js` `loadShell()` and any HTML that only loads `seven-shell.js`; both loaders and the host HTML must be updated together.
-- `stopImmediatePropagation()` on `seven:rpg-title-recorded` may be load-bearing for title stripping; verify `stripRpgTitles()` is idempotent before removing.
-- Shared `SevenI18N` must be loaded before all workspaces (add to loader boot order) or `t()` must degrade to English gracefully.
-- `rtl.css` extension must not break existing `seven-ws-*` bidi isolation for code/paths.
+**New:** `release/workspaces/seven-locale.js`, `release/workspaces/seven-dialog.js`, message catalog (JSON or inline).
 
+**Modified (high confidence):**
+- `release/workspaces/seven-shell.js` — empty state, `isAr()` x8, backdrop label
+- `release/workspaces/seven-shell-final.js` — surface conflation (F5), `activeWorkspace`/`syncNav` (F6)
+- `release/workspaces/hub.js` — `data-ws` canonical, `S.active`, `aria-label="Close"`
+- `release/workspaces/coding.js` — `title="Refresh"`, `isAr` dedup
+- `release/workspaces/rpg.js` — `isAr` dedup, `.seven-rpg-contract dd` bidi
+- `release/workspaces/generated-ui.js` — hardcoded `dir='ltr'` (3 occurrences)
+- `release/workspaces/ui-polish-fixes.js` — `isAr` dedup (4 hits)
+- `release/beta-ui-runtime.js` — theme label localization, `.light` class
+- `release/github-self-dev.js` — `isAr` dedup, language key
+- `release/attachment-runtime.js` — Arabic strings
+- `release/workspaces/rtl.css` — expand beyond 3 rules
+- `release/workspaces/seven-shell.css`, `release/workspaces/seven-shell-final.css`,
+  `release/seven-final.css`, `release/ui-hardening.css` — collapse `.modal`
+
+**Tests likely affected:** `release/release-verify.cjs` (7 `seven_ui_lang` sites),
+`release/contrast.test.cjs`, `release/static-audit.cjs`, `release/brand-asset-contract.cjs`.
+
+---
+
+## 7. Risks & dependencies
+
+**Risks**
+1. **RTL visual regression (highest).** Step 3 makes previously-dead `html[dir=rtl]`
+   rules live for the first time. Any layout that silently depended on LTR will shift.
+   Gate this step behind dedicated RTL visual regression on all seven workspaces.
+2. **Shell-final is a rewrite-on-top-of-shell.** `seven-shell.js` and
+   `seven-shell-final.js` both run and both own `isAr`. Removing a function from one may
+   be masked by the other. Verify actual load order in the shipped HTML before cutting.
+3. **Surface re-labeling removal changes focus behavior.** Today any `.modal` is captured
+   by the shell focus trap; after F5 is fixed, un-migrated dialogs will lose trap/Escape
+   handling. Migrate all call sites in one commit, not incrementally.
+4. **`github-self-dev.js` may be built/regenerated** — if it is emitted by a build step,
+   editing it directly will be overwritten. Confirm provenance first.
+5. **Catalog extraction touches minified code.** Source is single-line minified
+   (e.g. `coding.js` = 1 line). Edits require exact-literal replacement; review diffs
+   with care.
+
+**Dependencies**
+- Brand asset contract (`release/brand/runtime.js`, `seven-day-white.svg`,
+  `seven-night-black.svg`) for day/night acceptance.
+- `release-verify.cjs` gates on `seven_ui_lang`; locale consolidation must not break it.
+- `.seven-team/cohesion/UI_FOUNDATION_V2.md` and `EVALUATION_GATE.md` should be read
+  before step 3 to avoid conflicting with an already-agreed foundation.
+- Nav unification (step 6) touches `hub.css` / `seven-shell.css` launcher geometry —
+  schedule with the UI polish owners to avoid parallel visual regressions.
+
+**Not verified (stated as absent, not assumed):** no shared i18n module, message
+catalog, Settings workspace file, or runtime writer of `seven_ui_lang` was found under
+`release/`. Absence was confirmed by targeted search; the Settings surface exists only as
+`.settings-modal` / `.settings-panel` classes.
+
+---
+
+*Read-only audit. No production source modified.*
 WAVE01=COMPLETE
