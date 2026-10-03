@@ -104,7 +104,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       await page.goto(origin,{waitUntil:'domcontentloaded'});
       await page.waitForFunction(()=>window.SevenRemake&&document.getElementById('settingsModal'));
       const state=await page.evaluate(()=>{openSettings();const sec=document.getElementById('providersSection');sec.open=true;const visible=[...sec.querySelectorAll('input,textarea,select')].filter(el=>{const cs=getComputedStyle(el),b=el.getBoundingClientRect();return!el.hidden&&cs.display!=='none'&&cs.visibility!=='hidden'&&b.width>0&&b.height>0});return{visible:visible.map(x=>x.id),kilo:isFreeProviderConfigured('kilo'),llm7:isFreeProviderConfigured('llm7'),route:hasAnyConfiguredFreeProvider(),text:sec.innerText}}); 
-      assert.deepEqual(state.visible,[]);assert.equal(state.kilo,true);assert.equal(state.llm7,true);assert.equal(state.route,true);assert.ok(/never need to paste an API key/i.test(state.text));
+      assert.deepEqual(state.visible,[]);assert.equal(state.kilo,true);assert.equal(state.llm7,true);assert.equal(state.route,true);assert.ok(/never need to paste an API key|لن تحتاج إلى لصق مفتاح API/i.test(state.text));
       await page.close();
     });
     await test('settings tabs map every control to the correct modern section',async()=>{
