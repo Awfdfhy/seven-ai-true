@@ -26,6 +26,7 @@ export type TaskSnapshot = Readonly<{
   deadlineAt?: number;
   cancelReason?: string;
   cancellationSealed: boolean;
+  deadlineSealed: boolean;
   error?: SevenError;
 }>;
 
@@ -33,6 +34,7 @@ export type TaskContext = Readonly<{
   taskId: string;
   signal: AbortSignal;
   sealCancellation: () => boolean;
+  sealDeadline: () => boolean;
 }>;
 
 export type TaskSpec = Readonly<{
@@ -57,6 +59,7 @@ type MutableTask = {
   deadlineAt?: number;
   cancelReason?: string;
   cancellationSealed: boolean;
+  deadlineSealed: boolean;
   error?: SevenError;
   controller: AbortController;
   timeoutId?: ReturnType<typeof setTimeout>;
@@ -208,6 +211,7 @@ export class TaskManager {
       status: "starting",
       startedAt,
       cancellationSealed: false,
+      deadlineSealed: false,
       controller,
     };
 
@@ -242,7 +246,9 @@ export class TaskManager {
       .then(
         (value) => {
           if (
-            (task.cancelReason === "deadline" && controller.signal.aborted) ||
+            (!task.deadlineSealed &&
+              task.cancelReason === "deadline" &&
+              controller.signal.aborted) ||
             (!task.cancellationSealed &&
               (controller.signal.aborted || task.status === "cancelling"))
           ) {
@@ -266,7 +272,9 @@ export class TaskManager {
         },
         (error: unknown) => {
           if (
-            (task.cancelReason === "deadline" && controller.signal.aborted) ||
+            (!task.deadlineSealed &&
+              task.cancelReason === "deadline" &&
+              controller.signal.aborted) ||
             (!task.cancellationSealed &&
               (controller.signal.aborted || task.status === "cancelling"))
           ) {
@@ -402,8 +410,29 @@ export class TaskManager {
     return true;
   }
 
+  private sealDeadline(task: MutableTask): boolean {
+    if (
+      task.deadlineSealed ||
+      task.status === "cancelling" ||
+      task.status === "cancelled" ||
+      task.status === "failed" ||
+      task.status === "succeeded" ||
+      task.controller.signal.aborted
+    ) {
+      return false;
+    }
+    task.deadlineSealed = true;
+    if (task.timeoutId !== undefined) {
+      clearTimeout(task.timeoutId);
+      delete task.timeoutId;
+    }
+    this.emit(task);
+    return true;
+  }
+
   private requestCancel(task: MutableTask, reason: string): boolean {
     if (
+      (reason === "deadline" && task.deadlineSealed) ||
       (task.cancellationSealed && reason !== "deadline") ||
       task.status === "cancelled" ||
       task.status === "succeeded" ||
@@ -449,6 +478,7 @@ export class TaskManager {
       status: task.status,
       startedAt: task.startedAt,
       cancellationSealed: task.cancellationSealed,
+      deadlineSealed: task.deadlineSealed,
       ...(task.finishedAt !== undefined
         ? { finishedAt: task.finishedAt }
         : {}),
