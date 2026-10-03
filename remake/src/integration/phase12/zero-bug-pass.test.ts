@@ -892,6 +892,68 @@ describe("Zero-bug regressions", () => {
     ]);
   });
 
+  it("rejects malformed routing and chat runtime inputs with structured validation errors", async () => {
+    const router = new ModelRouter();
+    const descriptor = model("runtime", "m1");
+
+    expect(() =>
+      router.plan(
+        [descriptor],
+        [],
+        {
+          mode: "invalid" as never,
+          preferredModelId: null,
+          requireStreaming: true,
+          now: 1,
+          maxAttempts: 1,
+        },
+      ),
+    ).toThrow(/mode/);
+
+    expect(() =>
+      router.plan(
+        [descriptor],
+        [],
+        {
+          mode: "balanced",
+          preferredModelId: null,
+          requireStreaming: "yes" as never,
+          now: 1,
+          maxAttempts: 1,
+        },
+      ),
+    ).toThrow(/requireStreaming/);
+
+    const registry = new ModelRegistry();
+    expect(() =>
+      registry.replaceProviderModels("runtime", null as never),
+    ).toThrow(/array/);
+
+    const chat = new ChatService(
+      new TaskManager(),
+      new InMemoryRoomRepository([
+        createRoom({ id: "bad-chat-input", now: 1 }),
+      ]),
+    );
+
+    await expect(
+      chat.send(
+        "bad-chat-input",
+        "hello",
+        null as never,
+      ),
+    ).rejects.toMatchObject({ code: "VALIDATION" });
+
+    await expect(
+      chat.send(
+        "bad-chat-input",
+        "hello",
+        immediateTransportForTest(),
+        { onDraft: "bad" as never },
+      ),
+    ).rejects.toMatchObject({ code: "VALIDATION" });
+  });
+
   it("isolates task listeners and bounds completed task retention", async () => {
     const manager = new TaskManager({ maxRetainedCompleted: 2 });
     manager.subscribe(() => {
