@@ -1,0 +1,43 @@
+name: One-time Seven artifact cleanup
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/one-time-cleanup-artifacts.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  prune:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Delete old workflow artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KEEP_SHA: 87d8efcd87c964fa83103dcc08776113371f0130
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp)"
+          gh api --paginate "/repos/${GITHUB_REPOSITORY}/actions/artifacts?per_page=100"             --jq '.artifacts[] | [.id, .workflow_run.head_sha, .name] | @tsv' > "$tmp"
+
+          deleted=0
+          kept=0
+          while IFS=$'\t' read -r id sha name; do
+            [ -z "${id:-}" ] && continue
+            if [ "$sha" = "$KEEP_SHA" ]; then
+              echo "Keeping current artifact: $id $name ($sha)"
+              kept=$((kept + 1))
+            else
+              echo "Deleting old artifact: $id $name ($sha)"
+              gh api -X DELETE "/repos/${GITHUB_REPOSITORY}/actions/artifacts/$id"
+              deleted=$((deleted + 1))
+            fi
+          done < "$tmp"
+
+          echo "Deleted $deleted old artifacts; kept $kept current artifacts."
