@@ -25,7 +25,7 @@ import {
   IndexedDbRoomRepository,
   type RoomRepository,
 } from "../../storage/room-repository";
-import { RoutedChatTransport } from "./index";
+import { RoutedChatTransport, roomConversationText } from "./index";
 
 function model(
   providerId: string,
@@ -1083,6 +1083,153 @@ describe("Zero-bug regressions", () => {
     expect(() =>
       manager.run(null as never, async () => "no"),
     ).toThrow(/specification/);
+  });
+
+  it("rejects non-string custom transport deltas instead of coercing them", async () => {
+    const repository = new InMemoryRoomRepository([
+      createRoom({ id: "bad-custom-delta", now: 1 }),
+    ]);
+    const chat = new ChatService(new TaskManager(), repository);
+    const run = await chat.send("bad-custom-delta", "hello", {
+      async *stream() {
+        yield 42 as never;
+      },
+    });
+
+    await expect(run.result).rejects.toMatchObject({
+      code: "PROVIDER",
+    });
+    const saved = await repository.get("bad-custom-delta");
+    expect(saved?.messages.map((message) => message.role)).toEqual(["user"]);
+  });
+
+  it("validates public chat-domain inputs instead of leaking TypeError", () => {
+    expect(() => createRoom(null as never)).toThrow(/options/);
+    expect(() =>
+      commitMessage(
+        null as never,
+        { role: "user", content: "hello", now: 1 },
+      ),
+    ).toThrow(/Room failed schema/);
+    expect(() => roomConversationText(null as never)).toThrow(/schema/);
+  });
+
+  it("orders equal-time rooms deterministically without locale-sensitive comparison", async () => {
+    const repository = new InMemoryRoomRepository([
+      createRoom({ id: "a", now: 1 }),
+      createRoom({ id: "Z", now: 1 }),
+    ]);
+    const rooms = await repository.list();
+    expect(rooms.map((room) => room.id)).toEqual(["Z", "a"]);
+  });
+
+  it("rejects malformed repository construction inputs and duplicate seed ids", () => {
+    expect(() => new InMemoryRoomRepository(null as never)).toThrow(/seed/);
+    expect(() =>
+      new InMemoryRoomRepository([
+        createRoom({ id: "dup", now: 1 }),
+        createRoom({ id: "dup", now: 1 }),
+      ]),
+    ).toThrow(/Duplicate seed room id/);
+    expect(() => new IndexedDbRoomRepository(null as never)).toThrow(/options/);
+    expect(() =>
+      new IndexedDbRoomRepository({ databaseName: " bad " }),
+    ).toThrow(/databaseName/);
+  });
+
+  it("validates task lookup and cancellation identities and reasons", () => {
+    const manager = new TaskManager();
+    expect(() => manager.get(" ")).toThrow(/taskId/);
+    expect(() => manager.cancel(" ")).toThrow(/taskId/);
+    expect(() => manager.cancel("missing", " ")).toThrow(/reason/);
+  });
+
+  it("rejects malformed routed constructor inputs and stream contexts", async () => {
+    const descriptor = model("provider", "model");
+    const plan = new ModelRouter().plan(
+      [descriptor],
+      [],
+      {
+        mode: "balanced",
+        preferredModelId: null,
+        requireStreaming: true,
+        now: 1,
+        maxAttempts: 1,
+      },
+    );
+
+    expect(() =>
+      new RoutedChatTransport(plan, null as never),
+    ).toThrow(/Provider map/);
+
+    expect(() =>
+      new RoutedChatTransport(
+        { ...plan, candidates: [] } as never,
+        new Map(),
+      ),
+    ).toThrow(/candidate/);
+
+    const transport = new RoutedChatTransport(
+      plan,
+      new Map([
+        [
+          "provider",
+          provider(
+            "provider",
+            [descriptor],
+            async function* () {
+              yield { delta: "ok" };
+            },
+          ),
+        ],
+      ]),
+    );
+
+    const consume = async () => {
+      for await (const _chunk of transport.stream(null as never)) {
+        // no-op
+      }
+    };
+    await expect(consume()).rejects.toMatchObject({ code: "VALIDATION" });
+  });
+
+  it("allows a large meaningful first provider chunk that exceeds only the whitespace-prelude cap", async () => {
+    const descriptor = model("large-first", "m1");
+    const plan = new ModelRouter().plan(
+      [descriptor],
+      [],
+      {
+        mode: "balanced",
+        preferredModelId: null,
+        requireStreaming: true,
+        now: 1,
+        maxAttempts: 1,
+      },
+    );
+    const transport = new RoutedChatTransport(
+      plan,
+      new Map([
+        [
+          "large-first",
+          provider(
+            "large-first",
+            [descriptor],
+            async function* () {
+              yield { delta: "x".repeat(20_000) };
+            },
+          ),
+        ],
+      ]),
+    );
+
+    let output = "";
+    for await (const chunk of transport.stream({
+      room: createRoom({ id: "large-first-room", now: 1 }),
+      signal: new AbortController().signal,
+    })) {
+      output += chunk;
+    }
+    expect(output).toHaveLength(20_000);
   });
 
   it("isolates task listeners and bounds completed task retention", async () => {
