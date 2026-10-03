@@ -22,6 +22,16 @@ export type MemoryRecord = Readonly<{
 }>;
 
 export type ContextSummary = Readonly<{
+  schemaVersion: 2;
+  roomId: string;
+  content: string;
+  throughMessageId: string;
+  sourceFingerprint: string | null;
+  createdAt: number;
+  updatedAt: number;
+}>;
+
+type LegacyContextSummaryV1 = Readonly<{
   schemaVersion: 1;
   roomId: string;
   content: string;
@@ -43,6 +53,7 @@ export type CreateSummaryOptions = Readonly<{
   roomId: string;
   content: string;
   throughMessageId: string;
+  sourceFingerprint?: string | null;
   createdAt?: number;
   now?: number;
 }>;
@@ -179,14 +190,19 @@ export function createContextSummary(
     options.createdAt ?? now,
     "Summary creation timestamp",
   );
+  const sourceFingerprint =
+    options.sourceFingerprint === undefined || options.sourceFingerprint === null
+      ? null
+      : canonicalText(options.sourceFingerprint, "Summary sourceFingerprint");
   return Object.freeze({
-    schemaVersion: 1 as const,
+    schemaVersion: 2 as const,
     roomId: canonicalText(options.roomId, "Summary roomId"),
     content: contentText(options.content, "Summary content", MEMORY_LIMITS.summaryCharacters),
     throughMessageId: canonicalText(
       options.throughMessageId,
       "Summary throughMessageId",
     ),
+    sourceFingerprint,
     createdAt,
     updatedAt: Math.max(createdAt, now),
   });
@@ -214,8 +230,9 @@ export function cloneContextSummary(summary: ContextSummary): ContextSummary {
     });
   }
   return Object.freeze({
-    schemaVersion: 1, roomId: summary.roomId, content: summary.content,
+    schemaVersion: 2, roomId: summary.roomId, content: summary.content,
     throughMessageId: summary.throughMessageId,
+    sourceFingerprint: summary.sourceFingerprint,
     createdAt: summary.createdAt, updatedAt: summary.updatedAt,
   });
 }
@@ -255,10 +272,41 @@ export function isContextSummary(value: unknown): value is ContextSummary {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const item = value as Partial<ContextSummary>;
   return (
-    item.schemaVersion === 1 &&
+    item.schemaVersion === 2 &&
     typeof item.roomId === "string" &&
     item.roomId.trim().length > 0 &&
         item.roomId.length <= MEMORY_LIMITS.idCharacters &&
+    item.roomId === item.roomId.trim() &&
+    typeof item.content === "string" &&
+    item.content.trim().length > 0 &&
+    item.content.length <= MEMORY_LIMITS.summaryCharacters &&
+    typeof item.throughMessageId === "string" &&
+    item.throughMessageId.trim().length > 0 &&
+    item.throughMessageId.length <= MEMORY_LIMITS.idCharacters &&
+    item.throughMessageId === item.throughMessageId.trim() &&
+    (item.sourceFingerprint === null ||
+      (typeof item.sourceFingerprint === "string" &&
+        item.sourceFingerprint.trim().length > 0 &&
+        item.sourceFingerprint.length <= MEMORY_LIMITS.idCharacters &&
+        item.sourceFingerprint === item.sourceFingerprint.trim())) &&
+    typeof item.createdAt === "number" &&
+    Number.isFinite(item.createdAt) &&
+    item.createdAt >= 0 &&
+    typeof item.updatedAt === "number" &&
+    Number.isFinite(item.updatedAt) &&
+    item.updatedAt >= item.createdAt
+  );
+}
+
+
+function isLegacyContextSummaryV1(value: unknown): value is LegacyContextSummaryV1 {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const item = value as Partial<LegacyContextSummaryV1>;
+  return (
+    item.schemaVersion === 1 &&
+    typeof item.roomId === "string" &&
+    item.roomId.trim().length > 0 &&
+    item.roomId.length <= MEMORY_LIMITS.idCharacters &&
     item.roomId === item.roomId.trim() &&
     typeof item.content === "string" &&
     item.content.trim().length > 0 &&
@@ -274,4 +322,18 @@ export function isContextSummary(value: unknown): value is ContextSummary {
     Number.isFinite(item.updatedAt) &&
     item.updatedAt >= item.createdAt
   );
+}
+
+export function migrateContextSummary(value: unknown): ContextSummary | null {
+  if (isContextSummary(value)) return cloneContextSummary(value);
+  if (!isLegacyContextSummaryV1(value)) return null;
+  return Object.freeze({
+    schemaVersion: 2 as const,
+    roomId: value.roomId,
+    content: value.content,
+    throughMessageId: value.throughMessageId,
+    sourceFingerprint: null,
+    createdAt: value.createdAt,
+    updatedAt: value.updatedAt,
+  });
 }
