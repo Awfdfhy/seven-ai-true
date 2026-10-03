@@ -59,95 +59,99 @@ export class ChatService {
     options: ChatSendOptions = {},
   ): Promise<ChatRun> {
     const timeoutMs = normalizeTimeout(options.timeoutMs);
-    const releaseOwner = this.tasks.claimExclusiveOwner(roomId);
-    let ownerClaimHeld = true;
 
-    try {
-      const current = await this.rooms.get(roomId);
-      if (!current) {
-        throw new SevenError({
-          code: "VALIDATION",
-          message: "Room does not exist.",
-          details: { roomId },
-        });
-      }
-
-      const withUser = commitMessage(current, {
-        role: "user",
-        content,
+    if (this.tasks.listActive(roomId).length > 0) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "A chat task is already active for this room.",
+        details: { roomId },
       });
-      await this.rooms.put(withUser);
+    }
 
-      // Release the preflight claim and synchronously replace it with the
-      // registered task. No other JS turn can interleave between these calls.
-      releaseOwner();
-      ownerClaimHeld = false;
+    const run: TaskRun<Room> = this.tasks.run(
+      {
+        kind: "chat",
+        ownerId: roomId,
+        timeoutMs,
+      },
+      async ({ taskId, signal, sealCancellation }) => {
+        const current = await this.rooms.get(roomId);
+        if (signal.aborted) {
+          throw new DOMException("Aborted", "AbortError");
+        }
+        if (!current) {
+          throw new SevenError({
+            code: "VALIDATION",
+            message: "Room does not exist.",
+            details: { roomId },
+          });
+        }
 
-      const run: TaskRun<Room> = this.tasks.run(
-        {
-          kind: "chat",
-          ownerId: roomId,
-          timeoutMs,
-        },
-        async ({ taskId, signal, sealCancellation }) => {
-          let draft = "";
+        const withUser = commitMessage(current, {
+          role: "user",
+          content,
+        });
+        await this.rooms.put(withUser);
 
-          for await (const delta of transport.stream({
-            room: withUser,
-            signal,
-          })) {
-            if (signal.aborted) {
-              throw new DOMException("Aborted", "AbortError");
-            }
-            if (!delta) continue;
-            draft += delta;
+        if (signal.aborted) {
+          throw new DOMException("Aborted", "AbortError");
+        }
 
-            if (options.onDraft) {
-              try {
-                options.onDraft(
-                  Object.freeze({
-                    roomId,
-                    taskId,
-                    content: draft,
-                  }),
-                );
-              } catch {
-                // UI/observer callbacks are intentionally isolated from generation.
-              }
-            }
-          }
+        let draft = "";
 
+        for await (const delta of transport.stream({
+          room: withUser,
+          signal,
+        })) {
           if (signal.aborted) {
             throw new DOMException("Aborted", "AbortError");
           }
-          if (!draft.trim()) {
-            throw new SevenError({
-              code: "PROVIDER",
-              message: "Provider completed without assistant content.",
-              retryable: true,
-            });
-          }
+          if (!delta) continue;
+          draft += delta;
 
-          if (!sealCancellation()) {
-            throw new DOMException("Aborted", "AbortError");
+          if (options.onDraft) {
+            try {
+              options.onDraft(
+                Object.freeze({
+                  roomId,
+                  taskId,
+                  content: draft,
+                }),
+              );
+            } catch {
+              // UI/observer callbacks are intentionally isolated from generation.
+            }
           }
+        }
 
-          const completed = commitMessage(withUser, {
-            role: "assistant",
-            content: draft,
+        if (signal.aborted) {
+          throw new DOMException("Aborted", "AbortError");
+        }
+        if (!draft.trim()) {
+          throw new SevenError({
+            code: "PROVIDER",
+            message: "Provider completed without assistant content.",
+            retryable: true,
           });
-          await this.rooms.put(completed);
-          return completed;
-        },
-      );
+        }
 
-      return Object.freeze({
-        taskId: run.taskId,
-        result: run.result,
-        cancel: run.cancel,
-      });
-    } finally {
-      if (ownerClaimHeld) releaseOwner();
-    }
+        if (!sealCancellation()) {
+          throw new DOMException("Aborted", "AbortError");
+        }
+
+        const completed = commitMessage(withUser, {
+          role: "assistant",
+          content: draft,
+        });
+        await this.rooms.put(completed);
+        return completed;
+      },
+    );
+
+    return Object.freeze({
+      taskId: run.taskId,
+      result: run.result,
+      cancel: run.cancel,
+    });
   }
 }
