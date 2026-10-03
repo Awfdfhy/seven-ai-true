@@ -1044,7 +1044,7 @@
             kilo: Object.freeze({
                 id: "kilo", name: "Kilo Code Free", kind: "anonymous_free", priority: 96,
                 chatUrl: "https://api.kilo.ai/api/gateway/chat/completions",
-                modelsUrl: null, credentialOptional: true, defaultEnabled: true
+                modelsUrl: "https://api.kilo.ai/api/gateway/models", credentialOptional: true, defaultEnabled: true
             }),
             llm7: Object.freeze({
                 id: "llm7", name: "LLM7.io Free", kind: "anonymous_free", priority: 82,
@@ -1109,10 +1109,8 @@
             Object.freeze({ provider:"gemini", id:"gemini-3.6-flash", label:"Gemini 3.6 Flash", free:true, freeBasis:"free_tier", contextWindow:1048576, maxTokens:65536, effort:null, defaultEffort:null, quality:96, speed:90, tasks:{general:96,coding:97,reasoning:96,research:95,planning:97}, capabilities:{stream:true,tools:true,vision:true,structured:true} }),
             Object.freeze({ provider:"gemini", id:"gemini-3.5-flash", label:"Gemini 3.5 Flash", free:true, freeBasis:"free_tier", contextWindow:1048576, maxTokens:65536, effort:null, defaultEffort:null, quality:94, speed:92, tasks:{general:95,coding:95,reasoning:94,research:94,planning:95}, capabilities:{stream:true,tools:true,vision:true,structured:true} }),
 
-            // Awesome Free LLM APIs pack: verified permanent/free-mode routes.
-            // Anonymous routes require an explicit user opt-in before Seven can send prompts.
-            Object.freeze({ provider:"kilo", id:"kilo-auto/free", label:"Kilo Auto Free", free:true, freeBasis:"anonymous_free_pool", contextWindow:131072, maxTokens:16384, effort:null, defaultEffort:null, quality:90, speed:84, tasks:{general:91,coding:93,reasoning:90,research:87,planning:91}, capabilities:{stream:true,tools:false,vision:false,structured:false}, requiresExplicitEnable:true }),
-
+            // Zero-key routes. Kilo free models are discovered live from its
+            // unauthenticated /models endpoint; LLM7 keeps conservative anonymous seeds.
             Object.freeze({ provider:"llm7", id:"gpt-oss:20b", label:"LLM7 GPT-OSS 20B", free:true, freeBasis:"anonymous_free_tier", contextWindow:131072, maxTokens:16384, effort:null, defaultEffort:null, quality:80, speed:84, tasks:{general:82,coding:84,reasoning:82,research:77,planning:81}, capabilities:{stream:true,tools:false,vision:false,structured:false}, requiresExplicitEnable:false }),
             Object.freeze({ provider:"llm7", id:"mistral-Nemo-Instruct-2407", label:"LLM7 Mistral Nemo", free:true, freeBasis:"anonymous_free_tier", contextWindow:131072, maxTokens:16384, effort:null, defaultEffort:null, quality:76, speed:88, tasks:{general:79,coding:77,reasoning:75,research:75,planning:77}, capabilities:{stream:true,tools:false,vision:false,structured:false}, requiresExplicitEnable:false }),
             Object.freeze({ provider:"llm7", id:"minimax-m2.7", label:"LLM7 MiniMax M2.7", free:true, freeBasis:"anonymous_free_tier", contextWindow:180000, maxTokens:16384, effort:null, defaultEffort:null, quality:89, speed:76, tasks:{general:90,coding:90,reasoning:94,research:88,planning:92}, capabilities:{stream:true,tools:false,vision:false,structured:false}, requiresExplicitEnable:false }),
@@ -3314,9 +3312,36 @@
             });
         }
 
+        function kiloRawToFreeDescriptor(raw) {
+            if (!raw || typeof raw !== "object" || typeof raw.id !== "string") return null;
+            const id = sanitizeDiscoveredText(raw.id);
+            if (!id) return null;
+            const pricing = raw.pricing && typeof raw.pricing === "object" ? raw.pricing : null;
+            const zeroPricing = !!pricing && isExplicitZeroPrice(pricing.prompt) && isExplicitZeroPrice(pricing.completion);
+            if (!id.endsWith(":free") && !zeroPricing) return null;
+            const contextWindow = Math.max(2048, Number(raw.context_length || raw.context_window) || 131072);
+            const maxTokens = Math.max(1024, Number(raw.max_completion_tokens || raw.top_provider?.max_completion_tokens) || Math.min(32768,contextWindow));
+            const tasks = inferDynamicTaskScores(id, raw.name);
+            const quality = Math.max(tasks.general,tasks.reasoning,tasks.coding);
+            return cloneFreeModelDescriptor({
+                provider:"kilo", id, label:sanitizeDiscoveredText(raw.name,id), free:true,
+                freeBasis:"anonymous_free_pool", contextWindow, maxTokens, effort:null, defaultEffort:null,
+                quality, speed:82, tasks,
+                capabilities:{stream:true,tools:true,vision:/image|vision/.test(JSON.stringify(raw).toLowerCase()),structured:true},
+                discovered:true, updatedAt:Date.now()
+            });
+        }
+
+        async function discoverKiloFreeModels() {
+            if (!isFreeProviderConfigured("kilo")) return [];
+            const rows = await fetchProviderModelList("kilo");
+            return rows.map(kiloRawToFreeDescriptor).filter(Boolean).slice(0,60);
+        }
+
         async function fetchProviderModelList(providerId) {
             const provider = FREE_PROVIDER_REGISTRY[providerId];
-            if (!provider || !provider.modelsUrl || !getFreeProviderCredential(providerId)) return [];
+            if (!provider || !provider.modelsUrl) return [];
+            if (provider.credentialOptional !== true && !getFreeProviderCredential(providerId)) return [];
             const response = await fetch(provider.modelsUrl, { headers: providerAuthHeaders(providerId) });
             if (!response.ok) { const e=new Error(providerDisplayName(providerId)+" model discovery failed: "+response.status); e.status=response.status; throw e; }
             const json = await response.json();
@@ -3360,6 +3385,7 @@
                 return { cached:true, catalogSize:getFreeModelCatalog().length, providersChecked:0, errors:[] };
             }
             const jobs = [];
+            if (isFreeProviderConfigured("kilo")) jobs.push(["kilo", discoverKiloFreeModels()]);
             if (isFreeProviderConfigured("openrouter")) jobs.push(["openrouter", discoverOpenRouterFreeModels()]);
             for (const id of ["groq","nvidia","gemini","aion","mistral","zai"]) if (isFreeProviderConfigured(id)) jobs.push([id, discoverSeedProviderAvailability(id)]);
             const results = await Promise.allSettled(jobs.map(x=>x[1]));
@@ -3373,6 +3399,9 @@
             // dynamic zero-price OpenRouter entries; seeds are always retained separately.
             if (!jobs.some(x=>x[0]==="openrouter") || results[jobs.findIndex(x=>x[0]==="openrouter")]?.status === "rejected") {
                 next.push(...discoveredFreeModels.filter(m=>m.provider==="openrouter" && m.freeBasis==="zero_price"));
+            }
+            if (!jobs.some(x=>x[0]==="kilo") || results[jobs.findIndex(x=>x[0]==="kilo")]?.status === "rejected") {
+                next.push(...discoveredFreeModels.filter(m=>m.provider==="kilo" && m.freeBasis==="anonymous_free_pool"));
             }
             const dedup = new Map();
             for (const m of next.map(cloneFreeModelDescriptor).filter(Boolean)) {
