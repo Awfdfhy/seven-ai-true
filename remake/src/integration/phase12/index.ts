@@ -21,7 +21,7 @@ const MAX_PROVIDER_CHUNK_CHARS = 1_000_000;
 
 function failureLabel(error: unknown): string {
   if (error instanceof SevenError) return error.code;
-  if (error instanceof Error) return error.name || "Error";
+  if (error instanceof Error) return "Error";
   return "failed";
 }
 
