@@ -225,16 +225,12 @@ export class MemoryContextService implements ProviderContextSource {
         now,
       });
 
-      await this.repository.putSummary(nextSummary, input.signal);
-      throwIfAborted(input.signal);
-      summary = nextSummary;
-
       const next = this.builder.build({
         room: input.room,
         systemPrompt: input.systemPrompt,
         contextWindow: input.contextWindow,
         memories,
-        summary,
+        summary: nextSummary,
         ...(input.policy !== undefined ? { policy: input.policy } : {}),
       });
 
@@ -248,6 +244,9 @@ export class MemoryContextService implements ProviderContextSource {
         });
       }
 
+      await this.repository.putSummary(nextSummary, input.signal);
+      throwIfAborted(input.signal);
+      summary = nextSummary;
       result = next;
       pass += 1;
     }
