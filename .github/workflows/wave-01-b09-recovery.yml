@@ -135,7 +135,7 @@ jobs:
                   visible = message.get("content") or message.get("reasoning_content") or ""
                   if isinstance(visible, str) and visible.strip():
                       with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env:
-                          env.write(f"B09_MODEL={model_id}\\n")
+                          env.write(f"B09_MODEL={model_id}\n")
                       print("Selected:", model_id)
                       raise SystemExit(0)
               except Exception as exc:
