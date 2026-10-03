@@ -1460,7 +1460,11 @@ describe("Zero-bug regressions", () => {
   it("does not let callers spoof the internal deadline cancellation path", async () => {
     const manager = new TaskManager();
     let sealed: (() => boolean) | undefined;
+    let signalStarted: (() => void) | undefined;
     let release: (() => void) | undefined;
+    const started = new Promise<void>((resolve) => {
+      signalStarted = resolve;
+    });
     const gate = new Promise<void>((resolve) => {
       release = resolve;
     });
@@ -1469,12 +1473,13 @@ describe("Zero-bug regressions", () => {
       { kind: "system", ownerId: "deadline-spoof", timeoutMs: 10_000 },
       async ({ sealCancellation }) => {
         sealed = sealCancellation;
+        signalStarted?.();
         await gate;
         return "done";
       },
     );
 
-    await Promise.resolve();
+    await started;
     expect(sealed?.()).toBe(true);
     expect(() => run.cancel("deadline")).toThrow(/reserved internally/);
     expect(manager.get(run.taskId)).toMatchObject({
