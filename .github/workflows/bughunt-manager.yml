@@ -13,6 +13,7 @@ on:
       - Seven Bug Hunt — mini-SWE Evaluation Audit
       - Seven Bug Hunt — Qwen Stress Audit
       - Seven Bug Hunt — Hermes Holistic Audit
+      - Seven Bug Hunt — Recovery Synthesis
     types: [completed]
 permissions:
   contents: write
