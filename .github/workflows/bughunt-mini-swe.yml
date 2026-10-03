@@ -102,6 +102,32 @@ jobs:
           MSWEA_COST_TRACKING=ignore_errors
           ENV
 
+      - name: Select healthy direct free model
+        run: |
+          curl -fsS http://127.0.0.1:8877/v1/models > /tmp/models.json
+          python - <<'PY'
+          import json,os,urllib.request
+          d=json.load(open('/tmp/models.json'))
+          ids=[x.get('id') for x in d.get('data',[]) if isinstance(x,dict) and isinstance(x.get('id'),str) and ':free' in x['id'] and not x['id'].startswith('kilo-auto/')]
+          def rank(mid):
+              low=mid.lower()
+              order=('qwen','cohere/','nvidia/nemotron-3-super','nvidia/nemotron-3-ultra','stepfun/')
+              for i,t in enumerate(order):
+                  if t in low:return (i,mid)
+              return (20,mid)
+          for mid in sorted(dict.fromkeys(ids),key=rank)[:16]:
+              req=urllib.request.Request('http://127.0.0.1:8877/v1/chat/completions',data=json.dumps({'model':mid,'messages':[{'role':'user','content':'Reply OK'}],'max_tokens':8,'stream':False}).encode(),headers={'Content-Type':'application/json'})
+              try:
+                  with urllib.request.urlopen(req,timeout=30) as r:out=json.load(r)
+                  m=((out.get('choices') or [{}])[0].get('message') or {})
+                  if (m.get('content') or m.get('reasoning_content') or '').strip():
+                      with open(os.environ['GITHUB_ENV'],'a') as env:env.write('BUG_MODEL='+mid+'\n')
+                      print('Selected',mid)
+                      raise SystemExit(0)
+              except Exception as e:print('probe',mid,e)
+          raise SystemExit('no healthy direct free model')
+          PY
+
       - name: Build bounded evaluation evidence
         run: |
           set -euo pipefail
@@ -159,7 +185,7 @@ jobs:
           import json,os,pathlib,urllib.request
           prompt=pathlib.Path('/tmp/mini-prompt.md').read_text(encoding='utf-8')
           ev=pathlib.Path('/tmp/mini-evidence-bounded.txt').read_text(encoding='utf-8',errors='replace')
-          body=json.dumps({'model':'kilo-auto/free','messages':[
+          body=json.dumps({'model':os.environ['BUG_MODEL'],'messages':[
             {'role':'system','content':'Produce a concrete Seven AI test-gap/regression bug audit from supplied repository evidence. Plain Markdown only. Include bug IDs matching the requested agent ID, Severity, Confidence, affected test/product surface, evidence, deterministic reproduction/test idea, fix direction, regression test. Do not emit tool traces. End exactly BUGHUNT=COMPLETE.'},
             {'role':'user','content':prompt+'\n\nEVIDENCE:\n'+ev}
           ],'temperature':0,'max_tokens':6500,'stream':False}).encode()
