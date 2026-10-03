@@ -53,8 +53,8 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   assert.deepEqual(r,{allFree:true,selection:true,format:'seven-canonical-backup',version:2,secret:false});
  });
  await test('awesome free api pack is zero-key by default',async()=>{
-  const r=await page.evaluate(()=>{const providers=['kilo','llm7','aion','mistral','zai'];const catalog=getFreeModelCatalog();return {providers:providers.every(id=>!!FREE_PROVIDER_REGISTRY[id]),seeds:['kilo-auto/free','gpt-oss:20b','aion-labs/aion-3.0','mistral-small-latest','glm-4.7-flash'].every(id=>catalog.some(m=>m.id===id)),kilo:isFreeProviderConfigured('kilo'),llm7:isFreeProviderConfigured('llm7'),route:hasAnyConfiguredFreeProvider()}});
-  assert.deepEqual(r,{providers:true,seeds:true,kilo:true,llm7:true,route:true});
+  const r=await page.evaluate(()=>{const providers=['kilo','llm7','aion','mistral','zai'];const catalog=getFreeModelCatalog();return {providers:providers.every(id=>!!FREE_PROVIDER_REGISTRY[id]),seeds:['gpt-oss:20b','aion-labs/aion-3.0','mistral-small-latest','glm-4.7-flash'].every(id=>catalog.some(m=>m.id===id)),kilo:isFreeProviderConfigured('kilo'),llm7:isFreeProviderConfigured('llm7'),route:hasAnyConfiguredFreeProvider(),kiloModels:FREE_PROVIDER_REGISTRY.kilo.modelsUrl,kiloStatic:catalog.some(m=>m.provider==='kilo'&&!m.discovered)}});
+  assert.deepEqual(r,{providers:true,seeds:true,kilo:true,llm7:true,route:true,kiloModels:'https://api.kilo.ai/api/gateway/models',kiloStatic:false});
  });
 
  await test('model intelligence v3 detects multi-intent requests with confidence',async()=>{
