@@ -94,8 +94,11 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       assert.ok(closed.left>=closed.innerWidth-2,'closed RTL sidebar must be fully off-screen to the right: '+JSON.stringify(closed));
       await page.evaluate(()=>document.querySelector('.sidebar').classList.add('open'));
       await page.waitForTimeout(380);
-      const opened=await page.evaluate(()=>{const s=document.querySelector('.sidebar'),r=s.getBoundingClientRect();return{left:r.left,right:r.right,innerWidth:innerWidth,transform:getComputedStyle(s).transform}});
+      const opened=await page.evaluate(()=>{const s=document.querySelector('.sidebar'),r=s.getBoundingClientRect(),b=document.querySelector('.seven-shell-backdrop'),bs=b?getComputedStyle(b):null;return{left:r.left,right:r.right,innerWidth:innerWidth,transform:getComputedStyle(s).transform,backdrop:!!b&&!b.hidden,parent:b?.parentElement?.id||'',backdropBg:bs?.backgroundColor||''}});
       assert.ok(opened.left>=-2&&opened.right<=opened.innerWidth+2,'open RTL sidebar must fit viewport: '+JSON.stringify(opened));
+      assert.equal(opened.backdrop,true,'mobile sidebar backdrop must be visible');
+      assert.equal(opened.parent,'seven-app','mobile sidebar backdrop must inherit Seven theme/root styles');
+      assert.notEqual(opened.backdropBg,'rgba(0, 0, 0, 0)','mobile sidebar backdrop must not be transparent');
       await page.close();
     });
     await test('zero-key settings expose no manual credential controls',async()=>{
@@ -355,11 +358,15 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       const page=await browser.newPage({viewport:{width:360,height:800}});
       await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenRemake&&document.querySelector('.seven-shell-model-chip')&&document.querySelector('.seven-shell-workspace-chip'));
+      await page.waitForFunction(()=>window.SevenRemake&&window.SevenTheme&&document.querySelector('.seven-shell-model-chip')&&document.querySelector('.seven-shell-workspace-chip'));
+      await page.evaluate(()=>SevenTheme.setPreference('night'));
       await page.click('.seven-shell-model-chip');
       await page.waitForTimeout(60);
-      const model=await page.evaluate(()=>{const e=document.querySelector('.seven-shell-model-menu'),r=e?.getBoundingClientRect();return!!r&&r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2});
-      assert.equal(model,true);
+      const model=await page.evaluate(()=>{const e=document.querySelector('.seven-shell-model-menu'),r=e?.getBoundingClientRect(),cs=e?getComputedStyle(e):null;return{bounded:!!r&&r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2,parent:e?.parentElement?.id||'',bg:cs?.backgroundColor||'',border:cs?.borderStyle||''}});
+      assert.equal(model.bounded,true);
+      assert.equal(model.parent,'seven-app');
+      assert.notEqual(model.bg,'rgba(0, 0, 0, 0)');
+      assert.equal(model.border,'solid');
       await page.keyboard.press('Escape');
       // The top workspace chip is intentionally hidden on mobile because Seven
       // exposes workspace navigation in the mobile shell. Exercise the picker
