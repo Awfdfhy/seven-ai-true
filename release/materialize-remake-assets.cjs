@@ -73,11 +73,11 @@ function applyCompatibilityFixes(name,raw){
     text=text.replace(translationTail,translationTailNew);
 
     const appInertOn="d.body.appendChild(modal);$('.app').inert=true;modal.querySelector('button').focus();return modal";
-    const appInertOnFixed="d.body.appendChild(modal);const inertRoot=d.getElementById('seven-app')||d.body;inertRoot.inert=true;modal.querySelector('button').focus();return modal";
+    const appInertOnFixed="const portalRoot=d.getElementById('seven-app')||d.body;portalRoot.appendChild(modal);modal.__sevenInertSiblings=[...portalRoot.children].filter(x=>x!==modal).map(x=>[x,Boolean(x.inert)]);for(const [el]of modal.__sevenInertSiblings)el.inert=true;modal.querySelector('button').focus();return modal";
     if(!text.includes(appInertOn))throw new Error("Seven UI Remake dialog inert-on anchor missing");
     text=text.replace(appInertOn,appInertOnFixed);
     const appInertOff="function closeDialog(){if(!modal)return;modal.remove();modal=null;$('.app').inert=false;opener?.isConnected&&opener.focus();opener=null}";
-    const appInertOffFixed="function closeDialog(){if(!modal)return;modal.remove();modal=null;const inertRoot=d.getElementById('seven-app')||d.body;inertRoot.inert=false;opener?.isConnected&&opener.focus();opener=null}";
+    const appInertOffFixed="function closeDialog(){if(!modal)return;const siblings=modal.__sevenInertSiblings||[];modal.remove();for(const [el,was]of siblings)if(el?.isConnected)el.inert=was;modal=null;opener?.isConnected&&opener.focus();opener=null}";
     if(!text.includes(appInertOff))throw new Error("Seven UI Remake dialog inert-off anchor missing");
     text=text.replace(appInertOff,appInertOffFixed);
 
