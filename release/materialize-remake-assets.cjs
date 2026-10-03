@@ -20,7 +20,10 @@ function applyCompatibilityFixes(name,raw){
     text=text.split('#seven-app body').join('#seven-app');
     const hardening=fs.readFileSync(path.join(ROOT,"ui-hardening.css"),"utf8");
     if(!hardening.includes("Seven 2.4.2 UI Hardening"))throw new Error("Seven UI hardening marker missing");
-    if(!text.includes("Seven 2.4.2 UI Hardening"))text+="\n"+hardening;
+    // The compressed remake source can contain an older hardening snapshot with
+    // the same marker. Always append the repository's current hardening layer so
+    // the generated asset ends with authoritative theme/mobile/RTL rules.
+    text+="\n/* Seven current hardening authority */\n"+hardening;
   }
   if(name==="intelligence.js"){
     const prefsOld="p.engine=['auto','brave','searxng','wikipedia'].includes(p.engine)?p.engine:'auto';";
