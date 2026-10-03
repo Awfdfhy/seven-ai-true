@@ -40,9 +40,9 @@ html[data-seven-theme="night"] #seven-app select,
 html[data-seven-theme="night"] #seven-app textarea{background:#111815!important;color:#edf5f0!important;border-color:#33443b!important}
 @media(max-width:820px){
  #seven-app .sidebar{position:fixed!important;top:0!important;bottom:0!important;width:min(86vw,320px)!important;max-width:calc(100vw - 44px)!important;z-index:10020!important;will-change:transform}
- html[dir="ltr"] #seven-app .sidebar.collapsed{transform:translateX(-105%)!important}
- html[dir="rtl"] #seven-app .sidebar.collapsed{transform:translateX(105%)!important}
- #seven-app .sidebar:not(.collapsed){transform:translateX(0)!important}
+ html[dir="ltr"] #seven-app .sidebar.collapsed:not(.open):not(.active){transform:translateX(-105%)!important}
+ html[dir="rtl"] #seven-app .sidebar.collapsed:not(.open):not(.active){transform:translateX(105%)!important}
+ #seven-app .sidebar.open,#seven-app .sidebar.active,#seven-app .sidebar:not(.collapsed),html[data-seven-shell-sidebar="open"] #seven-app .sidebar,#seven-app[data-seven-shell-sidebar="open"] .sidebar{transform:translateX(0)!important}
  #seven-app .main{width:100%!important;margin-inline:0!important}
  #seven-app .topbar{gap:8px;padding-inline:12px}
  #seven-app .input-area{padding-inline:8px}
