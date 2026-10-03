@@ -128,7 +128,6 @@ function build(){
   html=replaceRequired(html,oldExtraction,newExtraction,'attachment extraction bridge');
   if(!html.includes('id="seven-app"')) html=replaceRequired(html,'<body>','<body>\n<div id="seven-app" data-seven-remake="1">','Seven UI Remake app root');
   const css=compactCss(read('seven-final.css'));
-  const uiHardening=compactCss(read('ui-hardening.css'));
   const betaCss=compactCss(read('beta-ui.css'));
   const canon=compactJs(read('canon-simulator.js'));
   const world=compactJs(read('world-runtime.js'));
@@ -150,9 +149,9 @@ function build(){
   const attachmentDigest=digest(attachments);
   const brandSource=fs.existsSync(BRAND_DIR)?fs.readdirSync(BRAND_DIR).sort().map(name=>fs.readFileSync(path.join(BRAND_DIR,name))).join(''):'';
   const brandDigest=digest(brandSource);
-  const fingerprint=digest(css+betaCss+uiHardening+research+performance+control+bridge+execution+pdfRuntime+motion+ui+attachmentLoader+attachmentDigest+betaUi+uiPolishLoader+githubSelfDev+THEME_BOOT+pdf.version+workspaceDigest+brandDigest);
-  const startupBytes=[css,betaCss,uiHardening,research,performance,control,bridge,execution,pdfRuntime,motion,ui,attachmentLoader,betaUi,uiPolishLoader].reduce((n,x)=>n+Buffer.byteLength(x),0)+Buffer.byteLength(THEME_BOOT);
-  const head=`\n<!-- ${MARK}:${fingerprint} -->\n${embeddedCredentialsScript()}<meta id="seven-theme-color" name="theme-color" content="#0f0d1d">\n${THEME_BOOT}\n<style id="seven-final-style">${css}</style>\n<style id="seven-beta-ui-style">${betaCss}</style>\n<link rel="stylesheet" href="./workspaces/remake.css" id="seven-remake-style">\n<style id="seven-ui-hardening">${uiHardening}</style>\n<script id="seven-intelligence-runtime" src="./workspaces/intelligence.js"></script>\n`;
+  const fingerprint=digest(css+betaCss+research+performance+control+bridge+execution+pdfRuntime+motion+ui+attachmentLoader+attachmentDigest+betaUi+uiPolishLoader+githubSelfDev+THEME_BOOT+pdf.version+workspaceDigest+brandDigest);
+  const startupBytes=[css,betaCss,research,performance,control,bridge,execution,pdfRuntime,motion,ui,attachmentLoader,betaUi,uiPolishLoader].reduce((n,x)=>n+Buffer.byteLength(x),0)+Buffer.byteLength(THEME_BOOT);
+  const head=`\n<!-- ${MARK}:${fingerprint} -->\n${embeddedCredentialsScript()}<meta id="seven-theme-color" name="theme-color" content="#0f0d1d">\n${THEME_BOOT}\n<style id="seven-final-style">${css}</style>\n<style id="seven-beta-ui-style">${betaCss}</style>\n<link rel="stylesheet" href="./workspaces/remake.css" id="seven-remake-style">\n<script id="seven-intelligence-runtime" src="./workspaces/intelligence.js"></script>\n`;
   const body=`\n<script id="seven-research-runtime">${research}</script>\n<script id="seven-performance-runtime">${performance}</script>\n<script id="seven-control-runtime">${control}</script>\n<script id="seven-control-bridge">${bridge}</script>\n<script id="seven-execution-bridge">${execution}</script>\n<script id="seven-pdf-runtime">${pdfRuntime}</script>\n<script id="seven-motion-runtime">${motion}</script>\n<script id="seven-ui-runtime">${ui}</script>\n<script id="seven-attachment-loader">${attachmentLoader}</script>\n<script id="seven-beta-ui-runtime">${betaUi}</script>\n<script id="seven-ui-polish-loader">${uiPolishLoader}</script>\n<script id="seven-brand-runtime" src="./brand/runtime.js"></script>\n<script id="seven-remake-runtime" src="./workspaces/remake.js"></script>\n<!-- /${MARK}:${fingerprint} -->\n`;
   html=injectBeforeLast(html,'</head>',head);
   html=injectBeforeLast(html,'</body>','\n</div><!-- /seven-app -->\n');
