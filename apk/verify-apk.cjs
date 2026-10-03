@@ -10,8 +10,10 @@ const generatedGradlePath=path.join(ROOT,'android','app','build.gradle');
 assert.ok(fs.existsSync(generatedGradlePath),'generated Android build.gradle missing');
 const generatedGradle=fs.readFileSync(generatedGradlePath,'utf8');
 assert.match(generatedGradle,new RegExp('versionCode\\s+'+EXPECTED_VERSION_CODE+'(?:\\s|$)'),'generated Android versionCode does not match package.json');
-assert.match(generatedGradle,new RegExp('versionName\\s+["\\\']'+EXPECTED_VERSION_NAME.replace(/[.*+?^$\\{}()|[\\]\\\\]/g,'\\\\const ROOT=path.resolve(__dirname,'..');
-')+'["\\\']'),'generated Android versionName does not match package.json');
+assert.ok(
+  generatedGradle.includes('versionName "'+EXPECTED_VERSION_NAME+'"')||generatedGradle.includes("versionName '"+EXPECTED_VERSION_NAME+"'"),
+  'generated Android versionName does not match package.json'
+);
 const DEFAULT_APK=path.join(ROOT,'android','app','build','outputs','apk','debug','app-debug.apk');
 const APK=path.resolve(process.env.SEVEN_APK_PATH||process.argv[2]||DEFAULT_APK);
 assert.ok(fs.existsSync(APK),`APK missing: ${APK}`);
