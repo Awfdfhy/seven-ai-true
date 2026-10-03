@@ -1898,6 +1898,40 @@ describe("Zero-bug regressions", () => {
     expect(Object.isFrozen(committed.messages[0])).toBe(true);
   });
 
+  it("preserves retry metadata on internal task results while keeping public snapshots sanitized", async () => {
+    const manager = new TaskManager();
+    const run = manager.run(
+      { kind: "system", ownerId: "retry-metadata" },
+      async () => {
+        throw new SevenError({
+          code: "PROVIDER",
+          message: "rate limited",
+          retryable: true,
+          details: { retryAfterMs: 5000 },
+        });
+      },
+    );
+
+    try {
+      await run.result;
+      throw new Error("expected provider failure");
+    } catch (error) {
+      expect(error).toBeInstanceOf(SevenError);
+      const seven = error as SevenError;
+      expect(seven.code).toBe("PROVIDER");
+      expect(seven.retryable).toBe(true);
+      expect(seven.details).toEqual({ retryAfterMs: 5000 });
+    }
+
+    const snapshot = manager.get(run.taskId);
+    expect(snapshot?.error).toMatchObject({
+      code: "PROVIDER",
+      retryable: true,
+      message: "Provider operation failed.",
+    });
+    expect(snapshot?.error?.details).toBeUndefined();
+  });
+
   it("isolates task listeners and bounds completed task retention", async () => {
     const manager = new TaskManager({ maxRetainedCompleted: 2 });
     manager.subscribe(() => {
