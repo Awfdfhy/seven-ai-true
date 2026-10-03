@@ -51,8 +51,9 @@ function policyRecord(value: unknown): StoredContextPolicy | null {
   if (
     item.schemaVersion !== 1 ||
     item.key !== POLICY_KEY ||
+    typeof item.updatedAt !== "number" ||
     !Number.isFinite(item.updatedAt) ||
-    (item.updatedAt as number) < 0 ||
+    item.updatedAt < 0 ||
     !item.policy ||
     typeof item.policy !== "object" ||
     Array.isArray(item.policy)
@@ -175,6 +176,7 @@ export class IndexedDbContextPolicyRepository implements ContextPolicyRepository
 
   private open(): Promise<IDBDatabase> {
     if (this.dbPromise) return this.dbPromise;
+    let settled = false;
     const promise = new Promise<IDBDatabase>((resolve, reject) => {
       if (typeof indexedDB === "undefined") {
         reject(new SevenError({ code: "STORAGE", message: "IndexedDB is unavailable." }));
@@ -194,6 +196,8 @@ export class IndexedDbContextPolicyRepository implements ContextPolicyRepository
       };
       request.onsuccess = () => {
         const db = request.result;
+        if (settled) { db.close(); return; }
+        settled = true;
         try {
           if (db.transaction("settings", "readonly").objectStore("settings").keyPath !== "key") {
             throw new Error("wrong keyPath");
@@ -208,8 +212,16 @@ export class IndexedDbContextPolicyRepository implements ContextPolicyRepository
         db.onclose = invalidate;
         resolve(db);
       };
-      request.onerror = () => reject(new SevenError({ code: "STORAGE", message: "Failed to open context policy storage.", cause: request.error }));
-      request.onblocked = () => reject(new SevenError({ code: "STORAGE", message: "Context policy storage upgrade is blocked.", retryable: true }));
+      request.onerror = () => {
+        if (settled) return;
+        settled = true;
+        reject(new SevenError({ code: "STORAGE", message: "Failed to open context policy storage.", cause: request.error }));
+      };
+      request.onblocked = () => {
+        if (settled) return;
+        settled = true;
+        reject(new SevenError({ code: "STORAGE", message: "Context policy storage upgrade is blocked.", retryable: true }));
+      };
     }).catch((error: unknown) => {
       if (this.dbPromise === promise) this.dbPromise = null;
       throw error;
