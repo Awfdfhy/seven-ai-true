@@ -1,0 +1,238 @@
+name: Seven Remake Current32 Recovery8 Consensus
+
+on:
+  push:
+    branches:
+      - remake-manager/zero-bug-pass-01
+    paths:
+      - '.github/workflows/seven-remake-current32-recovery8.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: seven-remake-current32-recovery8
+  cancel-in-progress: true
+
+jobs:
+  recover8:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: remake-manager/zero-bug-pass-01
+          fetch-depth: 0
+
+      - name: Build pinned production evidence
+        run: |
+          set -euo pipefail
+          git show HEAD:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/kilo_anonymous_relay.py
+          git checkout --detach 9564b2bdcfa7695a2e97668e1fb192818189557d
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          files=[
+            'remake/src/core/errors.ts',
+            'remake/src/core/task-manager.ts',
+            'remake/src/domain/chat/index.ts',
+            'remake/src/storage/room-repository.ts',
+            'remake/src/application/chat/chat-service.ts',
+            'remake/src/providers/contracts.ts',
+            'remake/src/routing/model-router.ts',
+            'remake/src/integration/phase12/index.ts',
+          ]
+          blocks=[]
+          for name in files:
+              p=Path(name)
+              blocks.append(f"===== {name} =====\n{p.read_text(encoding='utf-8',errors='replace')}\n")
+          Path('/tmp/evidence.txt').write_text('\n'.join(blocks),encoding='utf-8')
+          Path('/tmp/paths.json').write_text(json.dumps(files),encoding='utf-8')
+          PY
+
+      - name: Start direct-model relay
+        run: |
+          set -euo pipefail
+          python /tmp/kilo_anonymous_relay.py >/tmp/relay.log 2>&1 &
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8877/v1/models >/tmp/models.json; then exit 0; fi
+            sleep 1
+          done
+          exit 1
+
+      - name: Run Recovery8 consensus
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import concurrent.futures as cf
+          import json,pathlib,urllib.request
+
+          focuses={
+            'C05': 'Room and message invariants immutable snapshots canonical IDs timestamps duplicate IDs and malformed runtime values',
+            'C10': 'Streaming draft final commit exactly once cancellation partial responses and durable commit boundary',
+            'C12': 'Provider message invariant malformed roles content and exactly one leading system message',
+            'C19': 'ModelRouter quick balanced deep determinism tie breaks numeric overflow and capability filtering',
+            'C22': 'Routing runtime boundary validation modes booleans arrays IDs timestamps plans candidates and provider maps',
+            'C25': 'Architecture invariants no mutable Seven globals storage ownership and domain adapter boundaries',
+            'C29': 'TypeScript runtime mismatch attacks using malformed JavaScript values at all public boundaries',
+            'C30': 'Cross-module contract consistency among chat TaskManager repository router provider health and transport',
+          }
+          evidence=pathlib.Path('/tmp/evidence.txt').read_text(encoding='utf-8')
+          valid_paths=set(json.load(open('/tmp/paths.json')))
+          catalog=json.load(open('/tmp/models.json'))
+          rows=catalog.get('data',catalog if isinstance(catalog,list) else [])
+          available=[]
+          for row in rows:
+              mid=row.get('id') if isinstance(row,dict) else row if isinstance(row,str) else None
+              if isinstance(mid,str) and ':free' in mid and not mid.startswith('kilo-auto/'):
+                  available.append(mid)
+
+          preferred=[
+            'nvidia/nemotron-3-ultra-550b-a55b:free',
+            'nvidia/nemotron-3.5-lightning:free',
+            'poolside/laguna-s-2.1:free',
+            'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
+          ]
+          models=[m for m in preferred if m in available] or available[:8]
+          if not models:
+              raise SystemExit('No direct audit models')
+
+          base='http://127.0.0.1:8877/v1'
+          banned={
+            'DETERMINISTIC REPRODUCTION',
+            'MINIMAL ROOT CAUSE FIX',
+            'short title',
+            'file/function and concrete reason',
+          }
+
+          def ask(model,prompt,max_tokens=1400,timeout=70):
+              body=json.dumps({
+                'model':model,
+                'messages':[
+                  {'role':'system','content':'You are a precise adversarial TypeScript auditor. Use only supplied source. Never invent bugs. Missing future features and missing tests are not bugs.'},
+                  {'role':'user','content':prompt},
+                ],
+                'temperature':0,'max_tokens':max_tokens,'stream':False
+              }).encode()
+              req=urllib.request.Request(base+'/chat/completions',data=body,headers={'Content-Type':'application/json'})
+              with urllib.request.urlopen(req,timeout=timeout) as res:
+                  data=json.load(res)
+              choices=data.get('choices') or []
+              msg=(choices[0].get('message') or {}) if choices else {}
+              vals=[v for v in (msg.get('content'),msg.get('reasoning_content')) if isinstance(v,str) and v.strip()]
+              text='\n'.join(vals).strip()
+              if not text: raise ValueError('empty')
+              return text
+
+          def validate_finding(f):
+              if not isinstance(f,dict): raise ValueError('finding object')
+              sev=f.get('severity'); path=f.get('evidence') or f.get('path')
+              title=f.get('title'); repro=f.get('repro'); fix=f.get('fix')
+              if sev not in {'CRITICAL','HIGH','MEDIUM','LOW'}: raise ValueError('severity')
+              if path not in valid_paths: raise ValueError('path')
+              for value,minlen in ((title,10),(repro,35),(fix,25)):
+                  if not isinstance(value,str) or len(value.strip())<minlen: raise ValueError('weak field')
+              joined=' '.join([title,repro,fix])
+              if any(token in joined for token in banned): raise ValueError('placeholder')
+              return {'severity':sev,'evidence':path,'title':title.strip(),'repro':repro.strip(),'fix':fix.strip()}
+
+          def parse(raw):
+              text=raw.strip()
+              if ''.join(text.split()).upper() in {'0','PASS','PASS0','PASS:0'}:
+                  return {'status':'PASS','findings':[]}
+              cleaned=text
+              if cleaned.startswith('```'):
+                  cleaned=cleaned.strip('`').strip()
+                  if cleaned.lower().startswith('json'): cleaned=cleaned[4:].strip()
+              start=cleaned.find('{'); end=cleaned.rfind('}')
+              if start>=0 and end>start:
+                  try:
+                      data=json.loads(cleaned[start:end+1])
+                      status=str(data.get('status','')).upper()
+                      if status=='PASS' and data.get('findings')==[]:
+                          return {'status':'PASS','findings':[]}
+                      if status=='BUG':
+                          fs=[validate_finding(x) for x in data.get('findings',[])[:5]]
+                          if fs:return {'status':'BUG','findings':fs}
+                  except Exception:
+                      pass
+              fs=[]
+              for line in text.splitlines():
+                  line=line.strip()
+                  if line.startswith('BUG|'): line='1|'+line[4:]
+                  if not line.startswith('1|'): continue
+                  parts=line.split('|',5)
+                  if len(parts)!=6: continue
+                  _,sev,path,title,repro,fix=parts
+                  try:
+                      fs.append(validate_finding({'severity':sev,'evidence':path,'title':title,'repro':repro,'fix':fix}))
+                  except Exception:
+                      pass
+              if fs:return {'status':'BUG','findings':fs[:5]}
+              raise ValueError('invalid protocol')
+
+          def audit_one(aid,focus):
+              prompt=(
+                f'AUDIT {aid}. FOCUS: {focus}. '
+                'Audit ONLY current Phase 1-2 behavior below. A bug must be a deterministic current production defect. '
+                'If none is provable output exactly 0. If a bug is provable output only: '
+                '1|SEVERITY|EXACT EXISTING FILE PATH|SPECIFIC TITLE|DETERMINISTIC REPRO WITH FUNCTION INPUT EXPECTED ACTUAL|SPECIFIC MINIMAL FIX. '
+                'Never use placeholders.\n\nSOURCE:\n'+evidence
+              )
+              reports=[]; used=set(); errors=[]
+              for attempt in range(14):
+                  model=models[attempt%len(models)]
+                  try:
+                      report=parse(ask(model,prompt))
+                      reports.append({'model':model,**report})
+                      used.add(model)
+                      print('VALID',aid,len(reports),model,report['status'],len(report['findings']),flush=True)
+                      if len(reports)>=2 and (len(used)>=2 or len(models)==1):
+                          break
+                  except Exception as exc:
+                      errors.append(model+':'+type(exc).__name__)
+              if len(reports)<2:
+                  raise RuntimeError(aid+' needs two valid reports; '+','.join(errors))
+              findings=[]
+              for report in reports[:2]: findings.extend(report['findings'])
+              return {'id':aid,'status':'BUG' if findings else 'PASS','reports':reports[:2],'findings':findings}
+
+          results=[]; errors=[]
+          with cf.ThreadPoolExecutor(max_workers=4) as ex:
+              futs={ex.submit(audit_one,aid,focus):aid for aid,focus in focuses.items()}
+              for fut in cf.as_completed(futs):
+                  aid=futs[fut]
+                  try:
+                      r=fut.result(); results.append(r)
+                      print('RECOVERY8',aid,r['status'],len(r['findings']),flush=True)
+                  except Exception as exc:
+                      errors.append((aid,str(exc)))
+                      print('RECOVERY8_FAIL',aid,str(exc),flush=True)
+
+          results.sort(key=lambda x:x['id'])
+          pathlib.Path('/tmp/recovery8.json').write_text(json.dumps(results,ensure_ascii=False,indent=2),encoding='utf-8')
+          if errors:
+              pathlib.Path('/tmp/recovery8-errors.json').write_text(json.dumps(errors,ensure_ascii=False,indent=2),encoding='utf-8')
+              raise SystemExit('Recovery8 invalid: '+','.join(a for a,_ in errors))
+          if len(results)!=8: raise SystemExit(f'Expected 8, got {len(results)}')
+          findings=[(r['id'],f) for r in results for f in r['findings']]
+          pathlib.Path('/tmp/count.json').write_text(json.dumps({'findings':len(findings)}))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: current32-recovery8
+          path: |
+            /tmp/recovery8.json
+            /tmp/count.json
+          retention-days: 7
+
+      - name: Enforce Recovery8 zero findings
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('/tmp/count.json'))
+          assert d['findings']==0,d
+          print('RECOVERY8 ZERO-BUG GATE PASS')
+          PY
