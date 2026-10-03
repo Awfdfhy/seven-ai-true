@@ -122,6 +122,93 @@ jobs:
           done
           test "$ready" -eq 1
 
+      - name: Select healthy direct free model for B09
+        if: matrix.branch == 'agent-b/09-rpg-performance'
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, urllib.request, urllib.error
+
+          base = "http://127.0.0.1:8877/v1"
+          with urllib.request.urlopen(base + "/models", timeout=20) as response:
+              payload = json.load(response)
+
+          rows = payload.get("data", payload if isinstance(payload, list) else [])
+          ids = []
+          for row in rows:
+              if isinstance(row, dict):
+                  model_id = row.get("id") or row.get("model")
+              elif isinstance(row, str):
+                  model_id = row
+              else:
+                  model_id = None
+              if isinstance(model_id, str) and ":free" in model_id and not model_id.startswith("kilo-auto/"):
+                  ids.append(model_id)
+
+          # Prefer model families already documented by Kilo as direct anonymous-free routes,
+          # while still probing the live catalog so availability changes do not break Wave 01.
+          def rank(model_id):
+              low = model_id.lower()
+              preferred = (
+                  (0, "z-ai/glm"),
+                  (1, "minimax/"),
+                  (2, "moonshot"),
+                  (3, "qwen"),
+                  (4, "google/"),
+              )
+              for score, prefix in preferred:
+                  if prefix in low:
+                      return (score, model_id)
+              return (10, model_id)
+
+          ids = sorted(dict.fromkeys(ids), key=rank)
+          if not ids:
+              raise SystemExit("No direct :free models returned by Kilo catalog")
+
+          print("B09 direct-free candidates:", ", ".join(ids[:20]))
+          selected = None
+          errors = []
+          for model_id in ids[:12]:
+              body = json.dumps({
+                  "model": model_id,
+                  "messages": [{"role": "user", "content": "Reply exactly OK"}],
+                  "temperature": 0,
+                  "max_tokens": 12,
+                  "stream": False,
+              }).encode("utf-8")
+              req = urllib.request.Request(
+                  base + "/chat/completions",
+                  data=body,
+                  headers={"Content-Type": "application/json"},
+                  method="POST",
+              )
+              try:
+                  with urllib.request.urlopen(req, timeout=35) as response:
+                      data = json.load(response)
+                  choices = data.get("choices") or []
+                  content = ""
+                  if choices:
+                      message = choices[0].get("message") or {}
+                      content = message.get("content") or message.get("reasoning_content") or ""
+                  if isinstance(content, str) and content.strip():
+                      selected = model_id
+                      print(f"B09 selected healthy direct free model: {model_id}")
+                      break
+                  errors.append(f"{model_id}: empty response")
+              except Exception as exc:
+                  errors.append(f"{model_id}: {type(exc).__name__}: {exc}")
+                  print("B09 probe failed:", errors[-1])
+
+          if not selected:
+              print("B09 model probe failures:")
+              for item in errors:
+                  print(" -", item)
+              raise SystemExit("No healthy direct free model passed B09 probe")
+
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env:
+              env.write(f"B09_MODEL={selected}\n")
+          PY
+
       - name: Run real Qwen Code agent
         env:
           OPENAI_API_KEY: local-dummy-key
@@ -132,6 +219,8 @@ jobs:
           set -u
           mkdir -p "$(dirname "${{ matrix.report }}")"
           rc=1
+          MODEL="${B09_MODEL:-kilo-auto/free}"
+          echo "Qwen model selected for ${{ matrix.branch }}: $MODEL"
           for attempt in 1 2 3; do
             echo "Qwen live attempt $attempt/3"
             rm -f /tmp/qwen-wave01.out
@@ -139,7 +228,7 @@ jobs:
             timeout 100s qwen -p "$(cat /tmp/qwen-effective-prompt.md)" \
               --approval-mode yolo \
               --output-format text \
-              --model kilo-auto/free \
+              --model "$MODEL" \
               --openai-api-key local-dummy-key \
               --openai-base-url http://127.0.0.1:8877/v1 2>&1 | tee /tmp/qwen-wave01.out
             rc=${PIPESTATUS[0]}
