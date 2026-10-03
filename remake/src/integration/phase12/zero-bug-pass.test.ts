@@ -1398,6 +1398,73 @@ describe("Zero-bug regressions", () => {
     ).toThrow();
   });
 
+  it("does not expose provider-controlled Error.name in fallback diagnostics", async () => {
+    const descriptor = model("privacy-provider", "m1");
+    const adapter = provider(
+      "privacy-provider",
+      [descriptor],
+      async function* () {
+        const error = new Error("sensitive upstream detail");
+        error.name = "SECRET_PROVIDER_NAME";
+        throw error;
+      },
+    );
+    const plan = new ModelRouter().plan(
+      [descriptor],
+      [],
+      {
+        mode: "balanced",
+        preferredModelId: null,
+        requireStreaming: true,
+        now: 1,
+        maxAttempts: 1,
+      },
+    );
+    const transport = new RoutedChatTransport(
+      plan,
+      new Map([["privacy-provider", adapter]]),
+    );
+
+    const consume = async () => {
+      for await (const _chunk of transport.stream({
+        room: createRoom({ id: "privacy-room", now: 1 }),
+        signal: new AbortController().signal,
+      })) {
+        // no-op
+      }
+    };
+
+    try {
+      await consume();
+      throw new Error("expected provider failure");
+    } catch (error) {
+      expect(error).toBeInstanceOf(SevenError);
+      const seven = error as SevenError;
+      expect(seven.details?.failures).toEqual([
+        "privacy-provider:Error",
+      ]);
+      expect(JSON.stringify(seven.details)).not.toContain("SECRET_PROVIDER_NAME");
+      expect(JSON.stringify(seven.details)).not.toContain("sensitive upstream detail");
+    }
+  });
+
+  it("sanitizes raw task error causes from public task snapshots", async () => {
+    const manager = new TaskManager();
+    const raw = new Error("private provider detail");
+    const run = manager.run(
+      { kind: "system", ownerId: "snapshot-privacy" },
+      async () => {
+        throw raw;
+      },
+    );
+
+    await expect(run.result).rejects.toMatchObject({ code: "UNKNOWN" });
+    const snapshot = manager.get(run.taskId);
+    expect(snapshot?.error).toBeInstanceOf(SevenError);
+    expect((snapshot?.error as Error & { cause?: unknown }).cause).toBeUndefined();
+    expect(snapshot?.error?.message).toBe("private provider detail");
+  });
+
   it("isolates task listeners and bounds completed task retention", async () => {
     const manager = new TaskManager({ maxRetainedCompleted: 2 });
     manager.subscribe(() => {
