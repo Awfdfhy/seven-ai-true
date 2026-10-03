@@ -192,9 +192,21 @@ jobs:
           banned={'short title','file/function and concrete reason','deterministic test/repro','minimal root-cause fix','CRITICAL|HIGH|MEDIUM|LOW'}
 
           def validate(aid,raw):
-              markers=[line.strip() for line in raw.splitlines() if line.strip().startswith('ZERO_AUDIT_JSON=')]
-              if len(markers)!=1: raise ValueError('exactly one marker required')
-              data=json.loads(markers[0][len('ZERO_AUDIT_JSON='):])
+              text=raw.strip()
+              markers=[line.strip() for line in text.splitlines() if line.strip().startswith('ZERO_AUDIT_JSON=')]
+              if markers:
+                  if len(markers)!=1: raise ValueError('multiple markers')
+                  payload=markers[0][len('ZERO_AUDIT_JSON='):]
+              else:
+                  if text.startswith('\\`\\`\\`'):
+                      text=text.strip('\\`').strip()
+                      if text.startswith('json'):
+                          text=text[4:].strip()
+                  start=text.find('{')
+                  end=text.rfind('}')
+                  if start<0 or end<=start: raise ValueError('json object missing')
+                  payload=text[start:end+1]
+              data=json.loads(payload)
               if data.get('id')!=aid: raise ValueError('wrong id')
               if data.get('status') not in {'PASS','BUG'}: raise ValueError('bad status')
               fs=data.get('findings')
@@ -240,7 +252,7 @@ jobs:
               raise RuntimeError(aid+' invalid results '+','.join(errors))
 
           results=[]; errors=[]
-          with cf.ThreadPoolExecutor(max_workers=10) as ex:
+          with cf.ThreadPoolExecutor(max_workers=8) as ex:
               futs={ex.submit(run_auditor,i):i for i in range(32)}
               for fut in cf.as_completed(futs):
                   i=futs[fut]; aid=f'F{i+1:02d}'
