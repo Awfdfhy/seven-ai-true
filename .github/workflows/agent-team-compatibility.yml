@@ -1,0 +1,91 @@
+name: Seven Agent Team Compatibility
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.seven-team/**'
+      - '.github/workflows/agent-team-compatibility.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  source-compatibility:
+    name: Probe ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Cline
+            kind: npm
+            target: cline
+          - name: Codex
+            kind: npm
+            target: '@openai/codex'
+          - name: Gemini CLI
+            kind: npm
+            target: '@google/gemini-cli'
+          - name: OpenHands Agent Canvas
+            kind: npm
+            target: '@openhands/agent-canvas'
+          - name: OpenCode
+            kind: npm
+            target: opencode-ai
+          - name: Aider
+            kind: pip
+            target: aider-chat
+          - name: Goose
+            kind: git
+            target: https://github.com/block/goose.git
+          - name: mini-SWE-agent
+            kind: pip
+            target: mini-swe-agent
+          - name: Qwen Code
+            kind: npm
+            target: '@qwen-code/qwen-code'
+          - name: Hermes Agent
+            kind: git
+            target: https://github.com/NousResearch/hermes-agent.git
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        if: matrix.kind == 'npm'
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-python@v5
+        if: matrix.kind == 'pip'
+        with:
+          python-version: '3.12'
+
+      - name: Probe source
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "${{ matrix.kind }}" in
+            npm)
+              npm view "${{ matrix.target }}" version
+              ;;
+            pip)
+              python -m pip index versions "${{ matrix.target }}" | head -n 5
+              ;;
+            git)
+              git ls-remote "${{ matrix.target }}" HEAD
+              ;;
+            *)
+              echo "Unknown probe kind" >&2
+              exit 2
+              ;;
+          esac
+
+  control-plane-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate team manifest
+        run: |
+          node -e "const t=require('./.seven-team/team.json'); if(t.workers.length!==10) throw new Error('Expected 10 workers'); const b=new Set(t.workers.map(x=>x.branch)); if(b.size!==10) throw new Error('Duplicate branches'); console.log('10-agent manifest OK')"

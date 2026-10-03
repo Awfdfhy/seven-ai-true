@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "manager": "ChatGPT",
+  "managerMode": "coordination-only",
+  "orchestrator": {
+    "primary": "agent-of-empires/agent-of-empires",
+    "mode": "compatibility-first",
+    "persistentHostRequiredForLiveTeam": true
+  },
+  "workers": [
+    {
+      "id": "01",
+      "branch": "agent/01-ui-ux",
+      "project": "cline/cline",
+      "role": "UI/UX, CSS, RTL, themes, accessibility, mobile visual regressions",
+      "probe": "npm view cline version"
+    },
+    {
+      "id": "02",
+      "branch": "agent/02-android-build",
+      "project": "openai/codex",
+      "role": "Android, Capacitor, Gradle, APK, signing, emulator/build debugging",
+      "probe": "npm view @openai/codex version"
+    },
+    {
+      "id": "03",
+      "branch": "agent/03-search",
+      "project": "google-gemini/gemini-cli",
+      "role": "Web search pipeline, retrieval, ranking, citations",
+      "probe": "npm view @google/gemini-cli version"
+    },
+    {
+      "id": "04",
+      "branch": "agent/04-research",
+      "project": "OpenHands/OpenHands",
+      "role": "Deep Research and large autonomous multi-file tasks",
+      "probe": "npm view @openhands/agent-canvas version"
+    },
+    {
+      "id": "05",
+      "branch": "agent/05-runtime-models",
+      "project": "anomalyco/opencode",
+      "role": "Runtime, models, providers, cancellation and concurrency",
+      "probe": "npm view opencode-ai version"
+    },
+    {
+      "id": "06",
+      "branch": "agent/06-memory-context",
+      "project": "Aider-AI/aider",
+      "role": "Memory, context, persistence and disciplined git edits",
+      "probe": "python -m pip index versions aider-chat"
+    },
+    {
+      "id": "07",
+      "branch": "agent/07-security-selfdev",
+      "project": "block/goose",
+      "role": "Security, GitHub Self-Dev, MCP and integration boundaries",
+      "probe": "git ls-remote https://github.com/block/goose.git HEAD"
+    },
+    {
+      "id": "08",
+      "branch": "agent/08-testing-ci",
+      "project": "SWE-agent/mini-swe-agent",
+      "role": "Bug reproduction, regression tests and CI triage",
+      "probe": "python -m pip index versions mini-swe-agent"
+    },
+    {
+      "id": "09",
+      "branch": "agent/09-performance",
+      "project": "QwenLM/qwen-code",
+      "role": "Performance, latency, streaming, startup and refactors",
+      "probe": "npm view @qwen-code/qwen-code version"
+    },
+    {
+      "id": "10",
+      "branch": "agent/10-integration-review",
+      "project": "NousResearch/hermes-agent",
+      "role": "Independent review, cross-agent compatibility and merge readiness",
+      "probe": "git ls-remote https://github.com/NousResearch/hermes-agent.git HEAD"
+    }
+  ],
+  "rules": {
+    "mainIsSourceOfTruth": true,
+    "oneWorkerPerBranch": true,
+    "workersDoNotMergeMain": true,
+    "reviewerDoesNotImplementFeatures": true,
+    "reportFields": [
+      "objective",
+      "filesChanged",
+      "testsRun",
+      "failuresRisks",
+      "commitSha",
+      "dependenciesBlockers"
+    ]
+  }
+}
