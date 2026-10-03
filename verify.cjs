@@ -52,9 +52,9 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   const r=await page.evaluate(()=>{const old=localStorage.getItem('groq_api_key');localStorage.setItem('groq_api_key','sentinel-secret');const catalog=getFreeModelCatalog();const backup=buildCanonicalBackupPayload();if(old===null)localStorage.removeItem('groq_api_key');else localStorage.setItem('groq_api_key',old);return {allFree:catalog.length>0&&catalog.every(m=>m.free===true&&m.freeBasis!=='paid'),selection:isValidFreeModelSelection(currentModel),format:backup.format,version:backup.version,secret:JSON.stringify(backup).includes('sentinel-secret')}});
   assert.deepEqual(r,{allFree:true,selection:true,format:'seven-canonical-backup',version:2,secret:false});
  });
- await test('awesome free api pack is wired and LLM7 anonymous fallback is available by default',async()=>{
-  const r=await page.evaluate(()=>{const providers=['kilo','llm7','aion','mistral','zai'];const catalog=getFreeModelCatalog();const before={kilo:isFreeProviderConfigured('kilo'),llm7:isFreeProviderConfigured('llm7')};const old=freeProviderPrefs;freeProviderPrefs=Object.assign({},old,{kilo:true,llm7:true});const after={kilo:isFreeProviderConfigured('kilo'),llm7:isFreeProviderConfigured('llm7')};freeProviderPrefs=old;return {providers:providers.every(id=>!!FREE_PROVIDER_REGISTRY[id]),seeds:['kilo-auto/free','gpt-oss:20b','aion-labs/aion-3.0','mistral-small-latest','glm-4.7-flash'].every(id=>catalog.some(m=>m.id===id)),before,after,ui:providers.every(id=>!!document.getElementById('provider'+id.charAt(0).toUpperCase()+id.slice(1)+'Enabled'))}});
-  assert.deepEqual(r,{providers:true,seeds:true,before:{kilo:false,llm7:true},after:{kilo:true,llm7:true},ui:true});
+ await test('awesome free api pack is zero-key by default',async()=>{
+  const r=await page.evaluate(()=>{const providers=['kilo','llm7','aion','mistral','zai'];const catalog=getFreeModelCatalog();return {providers:providers.every(id=>!!FREE_PROVIDER_REGISTRY[id]),seeds:['kilo-auto/free','gpt-oss:20b','aion-labs/aion-3.0','mistral-small-latest','glm-4.7-flash'].every(id=>catalog.some(m=>m.id===id)),kilo:isFreeProviderConfigured('kilo'),llm7:isFreeProviderConfigured('llm7'),route:hasAnyConfiguredFreeProvider()}});
+  assert.deepEqual(r,{providers:true,seeds:true,kilo:true,llm7:true,route:true});
  });
 
  await test('model intelligence v3 detects multi-intent requests with confidence',async()=>{
@@ -180,9 +180,9 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   assert.deepEqual(r,{updated:true,valid:true,scope:'project',ref:'export-project',access:'private'});
  });
 
- await test('ui simplification keeps core routing controls visible and advanced groups collapsed',async()=>{
-  const r=await page.evaluate(()=>{openSettings();const ids=['routingModeSelect','modelSelect','temperatureRange','reasoningEffort','maxTokens','freeFallbackToggle','providerGroqEnabled','providerNvidiaEnabled','providerOpenrouterEnabled','providerGeminiEnabled','pinnedNotes','knowledgeStatus'];const core=['routingModeSelect','modelSelect','temperatureRange','reasoningEffort','maxTokens'].every(id=>{const el=document.getElementById(id);return !!el&&el.closest('details')===null});return {all:ids.every(id=>!!document.getElementById(id)),core,providers:document.getElementById('providersSection').open,memory:document.getElementById('memoryDataSection').open,advanced:document.getElementById('advancedSection').open}});
-  assert.deepEqual(r,{all:true,core:true,providers:false,memory:false,advanced:false});
+ await test('ui simplification removes manual credentials and keeps core controls',async()=>{
+  const r=await page.evaluate(()=>{openSettings();const ids=['routingModeSelect','modelSelect','temperatureRange','reasoningEffort','maxTokens','freeFallbackToggle','pinnedNotes','knowledgeStatus'];const core=['routingModeSelect','modelSelect','temperatureRange','reasoningEffort','maxTokens'].every(id=>{const el=document.getElementById(id);return !!el&&el.closest('details')===null});const providers=document.getElementById('providersSection');providers.open=true;const visible=[...providers.querySelectorAll('input,textarea,select')].filter(el=>{const cs=getComputedStyle(el),b=el.getBoundingClientRect();return!el.hidden&&cs.display!=='none'&&cs.visibility!=='hidden'&&b.width>0&&b.height>0}).map(el=>el.id);return{all:ids.every(id=>!!document.getElementById(id)),core,visible,memory:document.getElementById('memoryDataSection').open,advanced:document.getElementById('advancedSection').open}});
+  assert.deepEqual(r,{all:true,core:true,visible:[],memory:false,advanced:false});
  });
  await test('ui simplification route status is semantic and reflects runtime health',async()=>{
   const r=await page.evaluate(()=>{openSettings();renderFreeModelFabricStatus();const card=document.getElementById('routeStatusCard'),badge=document.getElementById('routeStateBadge'),text=document.getElementById('freeModelStatus');return {role:card.getAttribute('role'),live:card.getAttribute('aria-live'),state:card.dataset.state,label:badge.textContent.trim(),text:text.textContent.trim()}});
