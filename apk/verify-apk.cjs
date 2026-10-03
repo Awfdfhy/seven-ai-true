@@ -28,4 +28,10 @@ assert.ok(!html.stdout.includes('id="apiKeyInput"')&&!html.stdout.includes('id="
 const bundledRemakeCss=spawnSync('unzip',['-p',APK,'assets/public/workspaces/remake.css'],{encoding:'utf8',maxBuffer:4*1024*1024});
 assert.equal(bundledRemakeCss.status,0,bundledRemakeCss.stderr);
 assert.ok(bundledRemakeCss.stdout.includes('--seven-ui-hardening-v242:1'),'APK missing bundled UI hardening layer');
+const bundledRemakeJs=spawnSync('unzip',['-p',APK,'assets/public/workspaces/remake.js'],{encoding:'utf8',maxBuffer:4*1024*1024});
+assert.equal(bundledRemakeJs.status,0,bundledRemakeJs.stderr);
+assert.ok(!bundledRemakeJs.stdout.includes('s-brave-key'),'APK still contains manual Brave key control');
+assert.ok(!bundledRemakeJs.stdout.includes('Brave API key'),'APK still asks for a Brave API key');
+assert.ok(!bundledRemakeJs.stdout.includes('Enter API key'),'APK still contains manual API-key prompt');
+
 console.log(`apk package gate: PASS (${path.basename(APK)}, ${bytes} bytes)`);
