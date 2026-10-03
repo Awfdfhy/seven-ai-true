@@ -3,11 +3,13 @@ import { afterEach, describe, expect, it } from "vitest";
 import { ChatService, type ChatTransport } from "../../application/chat/chat-service";
 import { TaskManager } from "../../core/task-manager";
 import {
+  commitMessage,
   createRoom,
   isRoom,
   type Room,
 } from "../../domain/chat";
 import {
+  assertValidProviderMessages,
   type ModelDescriptor,
   type ProviderAdapter,
   type ProviderStreamRequest,
@@ -15,6 +17,7 @@ import {
 import {
   ModelRegistry,
   ModelRouter,
+  ProviderHealthTracker,
 } from "../../routing/model-router";
 import {
   InMemoryRoomRepository,
@@ -328,6 +331,164 @@ describe("Zero-bug regressions", () => {
         ],
       }),
     ).toBe(false);
+  });
+
+  it("preserves exact message content while still rejecting blank messages and invalid roles", () => {
+    const room = createRoom({ id: "fidelity", now: 1 });
+    const content = "  keep leading and trailing whitespace  \n";
+    const updated = commitMessage(room, {
+      id: "m1",
+      role: "user",
+      content,
+      now: 2,
+    });
+
+    expect(updated.messages[0]?.content).toBe(content);
+    expect(() =>
+      commitMessage(updated, {
+        id: "m2",
+        role: "user",
+        content: "   ",
+        now: 3,
+      }),
+    ).toThrow();
+
+    expect(() =>
+      commitMessage(updated, {
+        id: "m3",
+        role: "tool" as never,
+        content: "bad role",
+        now: 3,
+      }),
+    ).toThrow();
+  });
+
+  it("rejects invalid provider roles at runtime", () => {
+    expect(() =>
+      assertValidProviderMessages([
+        { role: "system", content: "system" },
+        { role: "tool" as never, content: "not supported" },
+      ]),
+    ).toThrow(/invalid role/);
+  });
+
+  it("ignores stale provider successes that began before a newer failure", () => {
+    const health = new ProviderHealthTracker();
+    health.recordFailure("p", 100, {
+      retryAfterMs: 1000,
+      penalty: 100,
+    });
+
+    health.recordSuccess("p", 50);
+    expect(health.snapshot(["p"])[0]).toEqual({
+      providerId: "p",
+      penalty: 100,
+      cooldownUntil: 1100,
+    });
+
+    health.recordSuccess("p", 101);
+    expect(health.snapshot(["p"])[0]).toEqual({
+      providerId: "p",
+      penalty: 75,
+      cooldownUntil: null,
+    });
+  });
+
+  it("rejects non-string stream deltas and falls back before meaningful output", async () => {
+    const badModel = model("bad", "m1");
+    const goodModel = model("good", "m2");
+
+    const bad: ProviderAdapter = {
+      id: "bad",
+      async listModels() {
+        return [badModel];
+      },
+      async *stream() {
+        yield { delta: 123 as never };
+      },
+    };
+    const good = provider(
+      "good",
+      [goodModel],
+      async function* () {
+        yield { delta: "valid" };
+      },
+    );
+
+    const plan = new ModelRouter().plan(
+      [badModel, goodModel],
+      [],
+      {
+        mode: "balanced",
+        preferredModelId: "bad::m1",
+        requireStreaming: true,
+        now: 1,
+        maxAttempts: 2,
+      },
+    );
+    const transport = new RoutedChatTransport(
+      plan,
+      new Map([
+        ["bad", bad],
+        ["good", good],
+      ]),
+    );
+
+    let output = "";
+    for await (const chunk of transport.stream({
+      room: createRoom({ id: "invalid-chunk", now: 1 }),
+      signal: new AbortController().signal,
+    })) {
+      output += chunk;
+    }
+    expect(output).toBe("valid");
+  });
+
+  it("bounds meaningless provider prelude and falls back instead of accumulating forever", async () => {
+    const badModel = model("spaces", "m1");
+    const goodModel = model("good", "m2");
+    const spaces = provider(
+      "spaces",
+      [badModel],
+      async function* () {
+        yield { delta: " ".repeat(20_000) };
+      },
+    );
+    const good = provider(
+      "good",
+      [goodModel],
+      async function* () {
+        yield { delta: "fallback" };
+      },
+    );
+
+    const plan = new ModelRouter().plan(
+      [badModel, goodModel],
+      [],
+      {
+        mode: "balanced",
+        preferredModelId: "spaces::m1",
+        requireStreaming: true,
+        now: 1,
+        maxAttempts: 2,
+      },
+    );
+    const transport = new RoutedChatTransport(
+      plan,
+      new Map([
+        ["spaces", spaces],
+        ["good", good],
+      ]),
+    );
+
+    let output = "";
+    for await (const chunk of transport.stream({
+      room: createRoom({ id: "prelude-bound", now: 1 }),
+      signal: new AbortController().signal,
+    })) {
+      output += chunk;
+    }
+    expect(output).toBe("fallback");
   });
 
   it("isolates task listeners and bounds completed task retention", async () => {
