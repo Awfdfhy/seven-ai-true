@@ -73,7 +73,7 @@ jobs:
           GOOSE_MODEL: kilo-auto/free
           GOOSE_MODE: auto
           GOOSE_CONTEXT_STRATEGY: summarize
-          GOOSE_MAX_TURNS: '4'
+          GOOSE_MAX_TURNS: '12'
           GOOSE_DISABLE_SESSION_NAMING: 'true'
           OPENAI_API_KEY: local-dummy-key
           OPENAI_HOST: http://127.0.0.1:8877
