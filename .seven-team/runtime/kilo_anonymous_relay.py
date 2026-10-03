@@ -149,26 +149,32 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self.send_header("Cache-Control", "no-cache")
                 self.send_header("Connection", "close")
                 self.end_headers()
-                # Emit payload deltas first, then an explicit terminal chunk.
-                # Qwen Code rejects streams that reach [DONE] without observing a
-                # non-null finish_reason, even when the upstream full response left
-                # it null. Infer the OpenAI finish reason conservatively.
-                first = dict(chunk)
-                for item in first["choices"]:
-                    item["finish_reason"] = None
-                self.wfile.write(("data: " + json.dumps(first, separators=(",", ":")) + "\n\n").encode())
+                # Qwen Code requires a non-null finish_reason on a chunk that it
+                # actually consumes. Some client versions ignore an otherwise-empty
+                # terminal delta, so attach the inferred finish reason to the payload
+                # chunk itself and also emit a terminal chunk for standards parity.
+                if not chunk["choices"]:
+                    chunk["choices"] = [{
+                        "index": 0,
+                        "delta": {"role": "assistant", "content": ""},
+                        "finish_reason": "stop",
+                    }]
+                else:
+                    source_choices = data.get("choices") or []
+                    for idx, item in enumerate(chunk["choices"]):
+                        source = source_choices[idx] if idx < len(source_choices) else {}
+                        message = source.get("message") or {}
+                        finish = source.get("finish_reason")
+                        if not finish:
+                            finish = "tool_calls" if message.get("tool_calls") else "stop"
+                        item["finish_reason"] = finish
+                self.wfile.write(("data: " + json.dumps(chunk, separators=(",", ":")) + "\n\n").encode())
 
-                terminal_choices = []
-                for idx, choice in enumerate(data.get("choices") or []):
-                    message = choice.get("message") or {}
-                    finish = choice.get("finish_reason")
-                    if not finish:
-                        finish = "tool_calls" if message.get("tool_calls") else "stop"
-                    terminal_choices.append({
-                        "index": choice.get("index", idx),
-                        "delta": {},
-                        "finish_reason": finish,
-                    })
+                terminal_choices = [{
+                    "index": item.get("index", idx),
+                    "delta": {},
+                    "finish_reason": item.get("finish_reason") or "stop",
+                } for idx, item in enumerate(chunk["choices"])]
                 terminal = {
                     "id": data.get("id") or "seven-relay",
                     "object": "chat.completion.chunk",
