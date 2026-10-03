@@ -1,3 +1,5 @@
+import { SevenError } from "../../core/errors";
+
 export type ChatRole = "user" | "assistant";
 
 export type ChatMessage = Readonly<{
@@ -31,15 +33,26 @@ export type CommitMessageOptions = Readonly<{
   now?: number;
 }>;
 
-function requireText(value: string, field: string): string {
-  const normalized = value.trim();
-  if (!normalized) throw new Error(`${field} must not be empty.`);
-  return normalized;
+function requireNonBlank(
+  value: string,
+  field: string,
+  normalize: boolean,
+): string {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: `${field} must not be empty.`,
+    });
+  }
+  return normalize ? value.trim() : value;
 }
 
 function requireFiniteTime(value: number, field: string): number {
   if (!Number.isFinite(value) || value < 0) {
-    throw new Error(`${field} must be a non-negative finite timestamp.`);
+    throw new SevenError({
+      code: "VALIDATION",
+      message: `${field} must be a non-negative finite timestamp.`,
+    });
   }
   return value;
 }
@@ -57,15 +70,18 @@ export function cloneRoom(room: Room): Room {
 
 export function createRoom(options: CreateRoomOptions = {}): Room {
   const now = requireFiniteTime(options.now ?? Date.now(), "room timestamp");
-  const title = options.title?.trim() || "New chat";
+  const title =
+    options.title === undefined
+      ? "New chat"
+      : requireNonBlank(options.title, "room title", true);
   const id =
     options.id === undefined
       ? crypto.randomUUID()
-      : requireText(options.id, "room id");
+      : requireNonBlank(options.id, "room id", true);
   const modelId =
     options.modelId === undefined || options.modelId === null
       ? null
-      : requireText(options.modelId, "model id");
+      : requireNonBlank(options.modelId, "model id", true);
 
   return Object.freeze({
     schemaVersion: 1 as const,
@@ -82,15 +98,31 @@ export function commitMessage(
   room: Room,
   options: CommitMessageOptions,
 ): Room {
-  const content = requireText(options.content, "message content");
+  const content = requireNonBlank(options.content, "message content", false);
   const now = requireFiniteTime(options.now ?? Date.now(), "message timestamp");
+  if (now < room.createdAt) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Message timestamp cannot precede room creation.",
+    });
+  }
+  if (options.role !== "user" && options.role !== "assistant") {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Message role must be user or assistant.",
+    });
+  }
+
   const id =
     options.id === undefined
       ? crypto.randomUUID()
-      : requireText(options.id, "message id");
+      : requireNonBlank(options.id, "message id", true);
 
   if (room.messages.some((message) => message.id === id)) {
-    throw new Error(`message id ${id} already exists in room ${room.id}.`);
+    throw new SevenError({
+      code: "VALIDATION",
+      message: `message id ${id} already exists in room ${room.id}.`,
+    });
   }
 
   const message: ChatMessage = Object.freeze({
@@ -113,7 +145,7 @@ export function withRoomModel(
   now = Date.now(),
 ): Room {
   const normalizedModelId =
-    modelId === null ? null : requireText(modelId, "model id");
+    modelId === null ? null : requireNonBlank(modelId, "model id", true);
   const timestamp = requireFiniteTime(now, "room timestamp");
 
   return Object.freeze({
