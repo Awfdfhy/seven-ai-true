@@ -58,7 +58,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: agent/06-memory-context
+          ref: bughunt/a06
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-python@v5
@@ -90,10 +90,11 @@ jobs:
           set -u
           git show origin/main:.seven-team/prompts/bughunt/A06.md > /tmp/team-a-aider.md
           mkdir -p .seven-team/reports/wave-01
-          touch .seven-team/reports/wave-01/A06-persisted-ui-state.md
+          touch .seven-team/reports/bughunt/A06.md
           set +e
-          timeout 300s aider .seven-team/reports/wave-01/A06-persisted-ui-state.md \
+          timeout 300s aider .seven-team/reports/bughunt/A06.md \
             --read memory.cjs \
+            --read seven_ai-final.html \
             --read release/workspaces/seven-shell.js \
             --read release/workspaces/ui-polish-fixes.js \
             --read verify.cjs \
@@ -106,7 +107,7 @@ jobs:
             --no-show-model-warnings
           rc=$?
           set -e
-          if grep -q 'BUGHUNT=COMPLETE' .seven-team/reports/wave-01/A06-persisted-ui-state.md; then
+          if grep -q 'BUGHUNT=COMPLETE' .seven-team/reports/bughunt/A06.md; then
             echo "Agent produced required report; accepting output (agent rc=$rc)."
           else
             echo "Agent did not produce required PASS report (agent rc=$rc)." >&2
@@ -115,7 +116,7 @@ jobs:
       - name: Sanitize to allowed output only
         run: |
           set -euo pipefail
-          EXPECTED='.seven-team/reports/wave-01/A06-persisted-ui-state.md'
+          EXPECTED='.seven-team/reports/bughunt/A06.md'
           test -f "$EXPECTED"
           grep -q 'BUGHUNT=COMPLETE' "$EXPECTED"
           cp "$EXPECTED" /tmp/seven-agent-report.md
@@ -142,11 +143,11 @@ jobs:
           fi
           git config user.name 'Seven Team Runtime'
           git config user.email 'actions@users.noreply.github.com'
-          git add .seven-team/reports/wave-01/A06-persisted-ui-state.md
+          git add .seven-team/reports/bughunt/A06.md
           git commit -m 'Bug Hunt A06 persisted UI-state audit'
-          git fetch origin agent/06-memory-context
-          git rebase origin/agent/06-memory-context
-          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:agent/06-memory-context
+          git fetch origin bughunt/a06
+          git rebase origin/bughunt/a06
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:bughunt/a06
 
   aider-team-b-live:
     needs: aider-live
@@ -156,7 +157,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: agent-b/06-rpg-memory
+          ref: bughunt/b06
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-python@v5
@@ -188,14 +189,14 @@ jobs:
           set -u
           git show origin/main:.seven-team/prompts/bughunt/B06.md > /tmp/team-b-aider.md
           mkdir -p .seven-team/reports/wave-01
-          touch .seven-team/reports/wave-01/B06-rpg-memory.md
+          touch .seven-team/reports/bughunt/B06.md
           set +e
-          timeout 300s aider .seven-team/reports/wave-01/B06-rpg-memory.md \
-            --read memory.cjs \
-            --read plans/MEMORY_SCOPE_HARDENING.md \
-            --read release/workspaces/rpg.js \
-            --read release/world-runtime.js \
-            --read release/canon-simulator.js \
+          timeout 300s aider .seven-team/reports/bughunt/B06.md \
+            --read seven_ai-final.html \
+            --read release/workspaces/coding.js \
+            --read release/github-self-dev.js \
+            --read release/native-bridge.js \
+            --read native-security-policy.cjs \
             --model openai/kilo-auto/free \
             --message-file /tmp/team-b-aider.md \
             --yes-always \
@@ -205,7 +206,7 @@ jobs:
             --no-show-model-warnings
           rc=$?
           set -e
-          if grep -q 'BUGHUNT=COMPLETE' .seven-team/reports/wave-01/B06-rpg-memory.md; then
+          if grep -q 'BUGHUNT=COMPLETE' .seven-team/reports/bughunt/B06.md; then
             echo "Agent produced required report; accepting output (agent rc=$rc)."
           else
             echo "Agent did not produce required PASS report (agent rc=$rc)." >&2
@@ -214,7 +215,7 @@ jobs:
       - name: Sanitize to allowed output only
         run: |
           set -euo pipefail
-          EXPECTED='.seven-team/reports/wave-01/B06-rpg-memory.md'
+          EXPECTED='.seven-team/reports/bughunt/B06.md'
           test -f "$EXPECTED"
           grep -q 'BUGHUNT=COMPLETE' "$EXPECTED"
           cp "$EXPECTED" /tmp/seven-agent-report.md
@@ -241,8 +242,8 @@ jobs:
           fi
           git config user.name 'Seven Team Runtime'
           git config user.email 'actions@users.noreply.github.com'
-          git add .seven-team/reports/wave-01/B06-rpg-memory.md
+          git add .seven-team/reports/bughunt/B06.md
           git commit -m 'Bug Hunt B06 RPG memory audit'
-          git fetch origin agent-b/06-rpg-memory
-          git rebase origin/agent-b/06-rpg-memory
-          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:agent-b/06-rpg-memory
+          git fetch origin bughunt/b06
+          git rebase origin/bughunt/b06
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:bughunt/b06
