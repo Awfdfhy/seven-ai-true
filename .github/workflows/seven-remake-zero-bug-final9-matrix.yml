@@ -121,12 +121,39 @@ jobs:
               return '\n'.join(vals).strip()
 
           def parse(raw):
-              normalized=' '.join(raw.split())
-              if normalized=='PASS':
+              text=raw.strip()
+              lines=[line.strip() for line in text.splitlines() if line.strip()]
+              if any(line=='PASS' for line in lines):
+                  if any(line.startswith('BUG|') for line in lines):
+                      raise ValueError('mixed PASS and BUG')
                   return {'id':aid,'status':'PASS','findings':[]}
+
+              start=text.find('{'); end=text.rfind('}')
+              if start>=0 and end>start:
+                  try:
+                      data=json.loads(text[start:end+1])
+                      if data.get('id') not in {None,aid}: raise ValueError('wrong id')
+                      status=data.get('status')
+                      findings=data.get('findings')
+                      if status=='PASS' and findings==[]:
+                          return {'id':aid,'status':'PASS','findings':[]}
+                      if status=='BUG' and isinstance(findings,list) and findings:
+                          valid=[]
+                          for finding in findings[:5]:
+                              if not isinstance(finding,dict): continue
+                              sev=finding.get('severity'); path=finding.get('evidence','')
+                              title=finding.get('title',''); repro=finding.get('repro',''); fix=finding.get('fix','')
+                              if sev not in {'CRITICAL','HIGH','MEDIUM','LOW'}: continue
+                              if 'remake/src/' not in path: continue
+                              if len(title.strip())<8 or len(repro.strip())<15 or len(fix.strip())<12: continue
+                              valid.append({'severity':sev,'title':title.strip(),'evidence':path.strip(),'repro':repro.strip(),'fix':fix.strip()})
+                          if valid:
+                              return {'id':aid,'status':'BUG','findings':valid}
+                  except (json.JSONDecodeError,TypeError,AttributeError):
+                      pass
+
               fs=[]
-              for line in raw.splitlines():
-                  line=line.strip()
+              for line in lines:
                   if not line.startswith('BUG|'): continue
                   parts=line.split('|',5)
                   if len(parts)!=6: continue
