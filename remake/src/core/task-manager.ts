@@ -302,9 +302,10 @@ export class TaskManager {
                     "Task executor aborted without TaskManager cancellation.",
                 })
               : toSevenError(error);
-          task.error = normalized;
+          const resultError = this.resultTaskError(normalized);
+          task.error = resultError;
           this.finish(task, "failed");
-          throw normalized;
+          throw resultError;
         },
       );
 
@@ -510,6 +511,23 @@ export class TaskManager {
             error: this.publicTaskError(task.error),
           }
         : {}),
+    });
+  }
+
+  private resultTaskError(error: SevenError): SevenError {
+    const retryAfterMs = error.details?.retryAfterMs;
+    const safeDetails =
+      typeof retryAfterMs === "number" &&
+      Number.isFinite(retryAfterMs) &&
+      retryAfterMs >= 0
+        ? { retryAfterMs }
+        : undefined;
+
+    return new SevenError({
+      code: error.code,
+      message: this.publicErrorMessage(error.code),
+      retryable: error.retryable,
+      ...(safeDetails !== undefined ? { details: safeDetails } : {}),
     });
   }
 
