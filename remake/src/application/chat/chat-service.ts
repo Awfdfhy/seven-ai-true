@@ -101,7 +101,7 @@ export class ChatService {
         ownerId: roomId,
         timeoutMs,
       },
-      async ({ taskId, signal, sealCancellation }) => {
+      async ({ taskId, signal, sealCancellation, sealDeadline }) => {
         const current = await this.rooms.get(roomId, signal);
         if (signal.aborted) {
           throw new DOMException("Aborted", "AbortError");
@@ -183,6 +183,9 @@ export class ChatService {
           content: draft,
         });
         await this.rooms.put(completed, signal);
+        if (!sealDeadline()) {
+          throw new DOMException("Aborted", "AbortError");
+        }
         return completed;
       },
     );
