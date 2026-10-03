@@ -76,12 +76,13 @@ jobs:
           CODEX_HOME: /tmp/seven-codex-home
         run: |
           set -u
-          mkdir -p "$(dirname "${{ matrix.report }}")"
+          mkdir -p "$(dirname "${{ matrix.report }}")" "$CODEX_HOME"
           set +e
           timeout 150s codex exec \
             --skip-git-repo-check \
-            --full-auto \
             -m kilo-auto/free \
+            -c 'approval_policy="never"' \
+            -c 'sandbox_mode="workspace-write"' \
             -c 'model_provider="seven"' \
             -c 'model_providers.seven={name="Seven Local Bridge",base_url="http://127.0.0.1:8878/v1",env_key="SEVEN_CODEX_KEY",wire_api="responses",requires_openai_auth=false,supports_websockets=false,request_max_retries=1,stream_max_retries=1}' \
             "$(cat /tmp/codex-prompt.md)"
