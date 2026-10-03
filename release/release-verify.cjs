@@ -207,6 +207,39 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
         await page.close();
       }
     });
+    await test('landscape large-text and keyboard-height surfaces stay usable',async()=>{
+      for(const [width,height] of [[800,360],[390,430]]){
+        const page=await browser.newPage({viewport:{width,height}});
+        await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');localStorage.setItem('seven_ui_language','ar');});
+        await page.goto(origin,{waitUntil:'domcontentloaded'});
+        await page.waitForFunction(()=>window.SevenRemake&&window.SevenTheme);
+        await page.evaluate(()=>{document.documentElement.style.fontSize='150%';SevenTheme.setPreference('night');document.querySelector('.sidebar')?.classList.add('collapsed');});
+        await page.waitForTimeout(120);
+        let state=await page.evaluate(()=>{
+          const rect=s=>document.querySelector(s)?.getBoundingClientRect();
+          const top=rect('.topbar'),main=rect('.main'),composer=rect('.composer');
+          return{doc:document.documentElement.scrollWidth<=innerWidth+2,top:!!top&&top.left>=-2&&top.right<=innerWidth+2,main:!!main&&main.left>=-2&&main.right<=innerWidth+2,composer:!!composer&&composer.left>=-2&&composer.right<=innerWidth+2&&composer.bottom<=innerHeight+2};
+        });
+        assert.deepEqual(state,{doc:true,top:true,main:true,composer:true},'base '+width+'x'+height+' '+JSON.stringify(state));
+
+        await page.evaluate(()=>openSettings());
+        state=await page.evaluate(()=>{const e=document.querySelector('#settingsModal .modal-content'),r=e.getBoundingClientRect();return{overflow:e.scrollWidth<=e.clientWidth+1,bounded:r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2,scrollable:e.scrollHeight>=e.clientHeight}});
+        assert.equal(state.overflow,true);assert.equal(state.bounded,true);
+        await page.evaluate(()=>closeSettings());
+
+        await page.evaluate(()=>SevenRemake.modeDialog());
+        await page.waitForFunction(()=>!!document.querySelector('#seven-app > .s-modal .s-dialog'));
+        state=await page.evaluate(()=>{const e=document.querySelector('.s-dialog'),r=e.getBoundingClientRect();return{overflow:e.scrollWidth<=e.clientWidth+1,bounded:r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2}});
+        assert.deepEqual(state,{overflow:true,bounded:true});
+        await page.evaluate(()=>SevenRemake.closeDialog());
+
+        await page.evaluate(()=>SevenRemake.openWorkspace('coding'));
+        await page.waitForFunction(()=>document.documentElement.dataset.sevenWorkspace==='coding',null,{timeout:10000});
+        state=await page.evaluate(()=>{const e=document.querySelector('.seven-workspace-root'),r=e.getBoundingClientRect();return{doc:document.documentElement.scrollWidth<=innerWidth+2,bounded:r.left>=-2&&r.right<=innerWidth+2,scroll:e.scrollWidth<=Math.max(e.clientWidth+2,innerWidth+2)}});
+        assert.deepEqual(state,{doc:true,bounded:true,scroll:true});
+        await page.close();
+      }
+    });
     await test('fresh install stays zero-room with no legacy name modal',async()=>{
       const context=await browser.newContext({viewport:{width:390,height:844}});
       const page=await context.newPage();
