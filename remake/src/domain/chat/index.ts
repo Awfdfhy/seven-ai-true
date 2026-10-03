@@ -57,8 +57,16 @@ function requireFiniteTime(value: number, field: string): number {
   return value;
 }
 
-function cloneMessage(message: ChatMessage): ChatMessage {
-  return Object.freeze({ ...message });
+function freezeMessageSnapshot(message: ChatMessage): ChatMessage {
+  return Object.isFrozen(message)
+    ? message
+    : Object.freeze({ ...message });
+}
+
+function freezeMessagesSnapshot(
+  messages: readonly ChatMessage[],
+): readonly ChatMessage[] {
+  return Object.freeze(messages.map(freezeMessageSnapshot));
 }
 
 export function cloneRoom(room: Room): Room {
@@ -70,7 +78,11 @@ export function cloneRoom(room: Room): Room {
   }
   return Object.freeze({
     ...room,
-    messages: Object.freeze(room.messages.map(cloneMessage)),
+    messages:
+      Object.isFrozen(room.messages) &&
+      room.messages.every((message) => Object.isFrozen(message))
+        ? room.messages
+        : freezeMessagesSnapshot(room.messages),
   });
 }
 
@@ -161,9 +173,15 @@ export function commitMessage(
     createdAt: now,
   });
 
+  const existingMessages =
+    Object.isFrozen(room.messages) &&
+    room.messages.every((existing) => Object.isFrozen(existing))
+      ? room.messages
+      : freezeMessagesSnapshot(room.messages);
+
   return Object.freeze({
     ...room,
-    messages: Object.freeze([...room.messages.map(cloneMessage), message]),
+    messages: Object.freeze([...existingMessages, message]),
     updatedAt: Math.max(room.updatedAt, now),
   });
 }
