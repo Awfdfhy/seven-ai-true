@@ -153,6 +153,8 @@ jobs:
           git config user.name 'Seven Wave Manager'
           git config user.email 'actions@users.noreply.github.com'
           git commit -m 'Wave 01 A10 independent integration review'
+          git fetch origin agent/10-integration-review
+          git rebase origin/agent/10-integration-review
           git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:agent/10-integration-review
 
   review-team-b:
@@ -246,6 +248,8 @@ jobs:
           git config user.name 'Seven Wave Manager'
           git config user.email 'actions@users.noreply.github.com'
           git commit -m 'Wave 01 B10 independent integration review'
+          git fetch origin agent-b/10-rpg-review
+          git rebase origin/agent-b/10-rpg-review
           git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:agent-b/10-rpg-review
 
   integration-merge-gate:
