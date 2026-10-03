@@ -13,6 +13,7 @@ on:
       - Seven Wave 01 — Goose Integrity Audit
       - Seven Wave 01 — mini-SWE Evaluation Audit
       - Seven Wave 01 — Qwen Performance Audit
+      - Seven Wave 01 — B09 Recovery Audit
     types: [completed]
 permissions:
   contents: write
