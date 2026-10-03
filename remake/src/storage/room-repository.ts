@@ -8,11 +8,24 @@ export interface RoomRepository {
   delete(roomId: string): Promise<void>;
 }
 
+function assertRoom(room: Room): void {
+  if (!isRoom(room)) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Room failed schema validation before persistence.",
+      details: { roomId: room?.id },
+    });
+  }
+}
+
 export class InMemoryRoomRepository implements RoomRepository {
   private readonly rooms = new Map<string, Room>();
 
   constructor(seed: readonly Room[] = []) {
-    for (const room of seed) this.rooms.set(room.id, cloneRoom(room));
+    for (const room of seed) {
+      assertRoom(room);
+      this.rooms.set(room.id, cloneRoom(room));
+    }
   }
 
   async get(roomId: string): Promise<Room | null> {
@@ -21,13 +34,16 @@ export class InMemoryRoomRepository implements RoomRepository {
   }
 
   async put(room: Room): Promise<void> {
+    assertRoom(room);
     this.rooms.set(room.id, cloneRoom(room));
   }
 
   async list(): Promise<readonly Room[]> {
-    return [...this.rooms.values()]
-      .map(cloneRoom)
-      .sort((a, b) => b.updatedAt - a.updatedAt || a.id.localeCompare(b.id));
+    return Object.freeze(
+      [...this.rooms.values()]
+        .map(cloneRoom)
+        .sort((a, b) => b.updatedAt - a.updatedAt || a.id.localeCompare(b.id)),
+    );
   }
 
   async delete(roomId: string): Promise<void> {
@@ -46,8 +62,15 @@ export class IndexedDbRoomRepository implements RoomRepository {
   private dbPromise: Promise<IDBDatabase> | null = null;
 
   constructor(options: IndexedDbRoomRepositoryOptions = {}) {
-    this.databaseName = options.databaseName ?? "seven-remake";
-    this.version = options.version ?? 1;
+    this.databaseName = options.databaseName?.trim() || "seven-remake";
+    const version = options.version ?? 1;
+    if (!Number.isInteger(version) || version <= 0) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "IndexedDB version must be a positive integer.",
+      });
+    }
+    this.version = version;
   }
 
   async get(roomId: string): Promise<Room | null> {
@@ -67,6 +90,7 @@ export class IndexedDbRoomRepository implements RoomRepository {
   }
 
   async put(room: Room): Promise<void> {
+    assertRoom(room);
     const db = await this.open();
     const tx = db.transaction("rooms", "readwrite");
     tx.objectStore("rooms").put(cloneRoom(room));
@@ -87,8 +111,10 @@ export class IndexedDbRoomRepository implements RoomRepository {
       }
       return cloneRoom(value);
     });
-    return rooms.sort(
-      (a, b) => b.updatedAt - a.updatedAt || a.id.localeCompare(b.id),
+    return Object.freeze(
+      rooms.sort(
+        (a, b) => b.updatedAt - a.updatedAt || a.id.localeCompare(b.id),
+      ),
     );
   }
 
@@ -97,6 +123,18 @@ export class IndexedDbRoomRepository implements RoomRepository {
     const tx = db.transaction("rooms", "readwrite");
     tx.objectStore("rooms").delete(roomId);
     await this.transaction(tx);
+  }
+
+  async close(): Promise<void> {
+    const pending = this.dbPromise;
+    this.dbPromise = null;
+    if (!pending) return;
+    try {
+      const db = await pending;
+      db.close();
+    } catch {
+      // A failed/blocked open has no usable database handle to close.
+    }
   }
 
   private open(): Promise<IDBDatabase> {
@@ -108,16 +146,35 @@ export class IndexedDbRoomRepository implements RoomRepository {
       });
     }
 
-    this.dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
+    let settled = false;
+    const promise = new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open(this.databaseName, this.version);
+
       request.onupgradeneeded = () => {
         const db = request.result;
         if (!db.objectStoreNames.contains("rooms")) {
           db.createObjectStore("rooms", { keyPath: "id" });
         }
       };
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () =>
+
+      request.onsuccess = () => {
+        const db = request.result;
+        if (settled) {
+          db.close();
+          return;
+        }
+
+        settled = true;
+        db.onversionchange = () => {
+          db.close();
+          if (this.dbPromise === promise) this.dbPromise = null;
+        };
+        resolve(db);
+      };
+
+      request.onerror = () => {
+        if (settled) return;
+        settled = true;
         reject(
           new SevenError({
             code: "STORAGE",
@@ -125,7 +182,11 @@ export class IndexedDbRoomRepository implements RoomRepository {
             cause: request.error,
           }),
         );
-      request.onblocked = () =>
+      };
+
+      request.onblocked = () => {
+        if (settled) return;
+        settled = true;
         reject(
           new SevenError({
             code: "STORAGE",
@@ -133,12 +194,14 @@ export class IndexedDbRoomRepository implements RoomRepository {
             retryable: true,
           }),
         );
+      };
     }).catch((error: unknown) => {
-      this.dbPromise = null;
+      if (this.dbPromise === promise) this.dbPromise = null;
       throw error;
     });
 
-    return this.dbPromise;
+    this.dbPromise = promise;
+    return promise;
   }
 
   private request<T>(request: IDBRequest<T>): Promise<T> {
@@ -157,8 +220,15 @@ export class IndexedDbRoomRepository implements RoomRepository {
 
   private transaction(tx: IDBTransaction): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      tx.oncomplete = () => resolve();
-      tx.onerror = () =>
+      let settled = false;
+      tx.oncomplete = () => {
+        if (settled) return;
+        settled = true;
+        resolve();
+      };
+      tx.onerror = () => {
+        if (settled) return;
+        settled = true;
         reject(
           new SevenError({
             code: "STORAGE",
@@ -166,7 +236,10 @@ export class IndexedDbRoomRepository implements RoomRepository {
             cause: tx.error,
           }),
         );
-      tx.onabort = () =>
+      };
+      tx.onabort = () => {
+        if (settled) return;
+        settled = true;
         reject(
           new SevenError({
             code: "STORAGE",
@@ -174,6 +247,7 @@ export class IndexedDbRoomRepository implements RoomRepository {
             cause: tx.error,
           }),
         );
+      };
     });
   }
 }
