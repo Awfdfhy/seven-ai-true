@@ -1,0 +1,40 @@
+name: Seven Superloop Watchdog
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/30 * * * *'
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Restart Superloop only when the chain is not alive
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          active="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow seven-24h-superloop.yml --limit 20 --json status --jq '[.[] | select(.status=="in_progress" or .status=="queued" or .status=="waiting" or .status=="requested" or .status=="pending")] | length')"
+          if [[ "$active" != "0" ]]; then
+            echo "Seven Superloop is alive ($active active/queued run(s)); no restart."
+            exit 0
+          fi
+
+          last_updated="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow seven-24h-superloop.yml --limit 1 --json updatedAt --jq '.[0].updatedAt // empty')"
+          if [[ -n "$last_updated" ]]; then
+            now="$(date -u +%s)"
+            last="$(date -u -d "$last_updated" +%s)"
+            age="$((now-last))"
+            if (( age < 1200 )); then
+              echo "Last Superloop run changed only $age seconds ago; avoiding duplicate restart."
+              exit 0
+            fi
+          fi
+
+          gh workflow run seven-24h-superloop.yml --repo "$GITHUB_REPOSITORY" --ref main
+          echo "Seven Superloop watchdog dispatched a recovery cycle."
