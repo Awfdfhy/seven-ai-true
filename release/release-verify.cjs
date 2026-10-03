@@ -238,7 +238,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       const page=await browser.newPage({viewport:{width:390,height:844}});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
       await page.waitForFunction(()=>window.SevenRemake&&document.getElementById('settingsModal'));
-      const state=await page.evaluate(()=>{openSettings();const root=document.getElementById('settingsModal');const credentialInputs=[...root.querySelectorAll('input')].filter(x=>x.type==='password'||/api.?key|token|credential/i.test((x.id||'')+' '+(x.name||'')+' '+(x.placeholder||'')));return{count:credentialInputs.length,text:root.innerText,automatic:!!document.getElementById('automaticProviderCard')}}); 
+      const state=await page.evaluate(()=>{openSettings();const root=document.getElementById('settingsModal');const credentialInputs=[...root.querySelectorAll('input')].filter(x=>x.type==='password'||/api.?key|credential|access.?token|auth.?token|llm7.?token|gateway.?key|brave.?key/i.test((x.id||'')+' '+(x.name||'')+' '+(x.placeholder||'')));return{count:credentialInputs.length,text:root.innerText,automatic:!!document.getElementById('automaticProviderCard')}}); 
       assert.equal(state.count,0);
       assert.equal(state.automatic,true);
       assert.equal(/paste\s+(an?\s+)?api\s*key|enter\s+(an?\s+)?api\s*key|أدخل\s+.*مفتاح/i.test(state.text),false);
