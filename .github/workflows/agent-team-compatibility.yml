@@ -3,6 +3,8 @@ name: Seven Agent Team Compatibility
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     paths:
       - '.seven-team/team.json'
       - '.seven-team/runtime/**'
