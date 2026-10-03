@@ -107,4 +107,39 @@ Status: **PASS**
   - Closure-candidate evidence: Seven Remake V3 CI #188 SUCCESS; 16/16 test files PASS; 190/190 tests PASS; strict typecheck PASS; build PASS; dependency audits 0 vulnerabilities.
   - Closure gates passed: final-head legacy regression PASS; PR #61 merged; post-merge Remake CI PASS.
 
-**REMAKE_PROGRESS=3/12**
+- 4/12 Attachments: CLOSURE CANDIDATE
+  - TXT/PDF ingestion with MIME/content sniffing.
+  - Bounded raw bytes and extracted text.
+  - Realm-safe immutable byte snapshots.
+  - Single-flight PDF parser runtime loading.
+  - SHA-256 attachment identity.
+  - Cancellation-safe durable persistence.
+  - In-memory + IndexedDB repositories with restart/restore.
+  - Individual gates: Remake CI PASS; Legacy Seven PASS.
+
+- 5/12 Research + Citations: CLOSURE CANDIDATE
+  - Canonical citation schema with URL/title/snippet/timestamps/content hash/provider identity.
+  - Concurrent bounded research sources.
+  - Deterministic citation deduplication.
+  - Partial source failures remain visible.
+  - Total network/provider failure cannot become silent no-evidence success.
+  - Durable research cache with age bounds and explicit bypass.
+  - Individual gates: Remake CI PASS; Legacy Seven PASS.
+
+- 6/12 Deep Think: CLOSURE CANDIDATE
+  - Two-pass application transport.
+  - Planner output is internal and never directly emitted to the user.
+  - Planner/final context is rebuilt for each model window.
+  - Exactly one leading system message per pass.
+  - Bounded planning brief injected as untrusted JSON data.
+  - Final payload is revalidated after planning data is added.
+  - Cancellation between passes prevents final provider dispatch.
+  - Individual gates: Remake CI PASS; Legacy Seven PASS.
+
+- Waves 4+5+6 manager integration: IN PROGRESS
+  - attachment-derived evidence → research → Deep Think journey.
+  - cross-task cancellation isolation.
+  - independent persistence restart/restore.
+  - Awaiting combined Remake CI + Legacy Seven + merge/post-merge CI.
+
+**REMAKE_PROGRESS=3/12_COMPLETE + 4-6_CLOSURE_CANDIDATES**
