@@ -361,16 +361,16 @@ export class RoutedChatTransport implements ChatTransport {
       } catch (error) {
         if (context.signal.aborted) throw error;
 
-        const failedAt = this.now();
-        if (!Number.isFinite(failedAt) || failedAt < 0) {
-          throw new SevenError({
-            code: "VALIDATION",
-            message: "Provider health clock returned an invalid timestamp.",
-          });
-        }
-
-        const retryAfter = retryAfterMs(error);
         if (this.health !== undefined && attemptToken !== undefined) {
+          const failedAt = this.now();
+          if (!Number.isFinite(failedAt) || failedAt < 0) {
+            throw new SevenError({
+              code: "VALIDATION",
+              message: "Provider health clock returned an invalid timestamp.",
+            });
+          }
+
+          const retryAfter = retryAfterMs(error);
           this.health.recordAttemptFailure(
             provider.id,
             attemptToken,
