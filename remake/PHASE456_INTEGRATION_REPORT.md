@@ -43,4 +43,4 @@ The manager integration suite additionally covers:
 2. task cancellation isolation between attachments and research
 3. independent IndexedDB restart/restore for attachment and research domains
 
-Phases 4–6 are closure candidates until this combined branch passes Remake CI + Legacy Seven and the manager PR is merged with post-merge CI green.
+Phases 4–6 are **COMPLETE**. Combined Remake CI passed with 20/20 test files and 209/209 tests, strict typecheck/build and dependency audits green; Legacy Seven and release artifact passed; manager PR #65 merged; post-merge Remake CI passed. Official progress: **6/12**.
