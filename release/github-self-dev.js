@@ -389,6 +389,16 @@ async function selfDevelop(task,options){
   }finally{S.busy=false;render()}
 }
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
+function isArabic(){return /^ar\b/i.test(String(d.documentElement.lang||""))}
+function L(en,ar){return isArabic()?ar:en}
+function closePanel(){
+  const back=$("#seven-github-selfdev");if(!back)return;
+  const saved=back.__sevenInertSiblings||[];
+  back.remove();
+  for(const item of saved){const el=item&&item[0];if(el&&el.isConnected)el.inert=!!item[1]}
+  S.panel=null;
+}
+
 function ensureStyle(){
   if($("#seven-github-selfdev-style"))return;
   const style=d.createElement("style");style.id="seven-github-selfdev-style";style.textContent=`
@@ -403,7 +413,7 @@ function ensureStyle(){
   .seven-gh-task{width:100%;min-height:92px;resize:vertical;border:1px solid var(--sb-b,#34334a);border-radius:12px;background:var(--sb-s,#171625);color:inherit;padding:10px;font:inherit;box-sizing:border-box}
   .seven-gh-log{max-height:210px;overflow:auto;display:grid;gap:5px;font:600 .68rem ui-monospace,monospace}.seven-gh-log div{padding:6px 8px;border-radius:8px;background:rgba(255,255,255,.035);white-space:pre-wrap;word-break:break-word}.seven-gh-log [data-kind=error]{color:#ff9ca6}.seven-gh-log [data-kind=ok]{color:#8fe3b3}.seven-gh-log [data-kind=warn]{color:#ffd78a}
   .seven-gh-nav{margin-top:6px}.seven-gh-switch{display:flex;gap:7px;align-items:center;font-size:.72rem}.seven-gh-switch input{width:auto}
-  @media(max-width:620px){.seven-gh-backdrop{padding:6px;align-items:flex-end}.seven-gh-panel{max-height:94dvh;border-radius:18px 18px 10px 10px}.seven-gh-body{padding:12px}}
+  @media(max-width:620px){.seven-gh-backdrop{padding:max(6px,env(safe-area-inset-top,0px)) max(6px,env(safe-area-inset-right,0px)) max(6px,env(safe-area-inset-bottom,0px)) max(6px,env(safe-area-inset-left,0px));align-items:flex-end}.seven-gh-panel{max-height:calc(var(--seven-visual-height,100dvh) - 12px);border-radius:18px 18px 10px 10px}.seven-gh-body{padding:12px}}
   @media(prefers-reduced-motion:reduce){.seven-gh-panel,.seven-gh-btn{transition:none!important;animation:none!important}}
   `;d.head.appendChild(style);
 }
@@ -411,9 +421,11 @@ function openPanel(task){
   ensureStyle();
   let back=$("#seven-github-selfdev");
   if(!back){
-    back=d.createElement("div");back.id="seven-github-selfdev";back.className="seven-gh-backdrop";back.innerHTML='<section class="seven-gh-panel" role="dialog" aria-modal="true" aria-labelledby="seven-gh-title"><div class="seven-gh-head"><div><h2 id="seven-gh-title">Seven · GitHub Self Development</h2><div class="seven-gh-muted">Secure Device Flow · '+esc(REPO)+'</div></div><button class="seven-gh-close" aria-label="Close">×</button></div><div class="seven-gh-body"></div></section>';
-    back.addEventListener("click",e=>{if(e.target===back||e.target.closest(".seven-gh-close"))back.remove()});
-    d.body.appendChild(back);
+    back=d.createElement("div");back.id="seven-github-selfdev";back.className="seven-gh-backdrop";back.innerHTML='<section class="seven-gh-panel" role="dialog" aria-modal="true" aria-labelledby="seven-gh-title"><div class="seven-gh-head"><div><h2 id="seven-gh-title">'+esc(L("Seven · GitHub Self Development","Seven · التطوير الذاتي عبر GitHub"))+'</h2><div class="seven-gh-muted">'+esc(L("Secure Device Flow","تدفق جهاز آمن"))+' · '+esc(REPO)+'</div></div><button class="seven-gh-close" aria-label="'+esc(L("Close","إغلاق"))+'">×</button></div><div class="seven-gh-body"></div></section>';
+    back.addEventListener("click",e=>{if(e.target===back||e.target.closest(".seven-gh-close"))closePanel()});
+    back.addEventListener("keydown",e=>{if(e.key==="Escape"){e.preventDefault();closePanel()}});
+    const host=d.getElementById("seven-app")||d.body;host.appendChild(back);
+    back.__sevenInertSiblings=[...host.children].filter(x=>x!==back).map(x=>[x,!!x.inert]);for(const [el]of back.__sevenInertSiblings)el.inert=true;
   }
   S.panel=back;
   if(task){const area=back.querySelector(".seven-gh-task");if(area)area.value=task}
@@ -424,32 +436,32 @@ function openPanel(task){
 function render(){
   const back=$("#seven-github-selfdev");if(!back)return;
   const body=back.querySelector(".seven-gh-body");if(!body)return;
-  const identity=S.identity?esc(S.identity.login+" · "+S.identity.repo):"Not verified";
-  const device=S.device?'<div class="seven-gh-card"><div class="seven-gh-muted">Authorize this device on GitHub</div><div class="seven-gh-row" style="margin-top:8px"><span class="seven-gh-code">'+esc(S.device.userCode)+'</span><button class="seven-gh-btn" data-gh-open>Open GitHub</button></div><div class="seven-gh-muted" style="margin-top:8px">Seven never asks you to paste the access token. GitHub sends authorization to the native app after you approve this code.</div></div>':"";
+  const identity=S.identity?esc(S.identity.login+" · "+S.identity.repo):esc(L("Not verified","غير متحقق"));
+  const device=S.device?'<div class="seven-gh-card"><div class="seven-gh-muted">'+esc(L("Authorize this device on GitHub","اسمح لهذا الجهاز عبر GitHub"))+'</div><div class="seven-gh-row" style="margin-top:8px"><span class="seven-gh-code">'+esc(S.device.userCode)+'</span><button class="seven-gh-btn" data-gh-open>'+esc(L("Open GitHub","فتح GitHub"))+'</button></div><div class="seven-gh-muted" style="margin-top:8px">'+esc(L("Seven never asks you to paste the access token. GitHub sends authorization to the native app after you approve this code.","لن يطلب منك Seven لصق رمز الوصول. يرسل GitHub التفويض إلى التطبيق بعد موافقتك على هذا الرمز."))+'</div></div>':"";
   const logs=S.log.slice(-60).map(x=>'<div data-kind="'+esc(x.kind)+'">'+esc(x.message)+'</div>').join("");
   const last=S.last&&S.last.prUrl?'<div class="seven-gh-muted">PR #'+esc(S.last.prNumber)+' · '+esc(S.last.prUrl)+(S.last.merged?" · merged":"")+'</div>':"";
   body.innerHTML=`
     <div class="seven-gh-card">
-      <div class="seven-gh-row"><strong>Connection</strong><span class="seven-gh-muted">${S.connected?"Connected · "+identity:"Disconnected"}</span></div>
+      <div class="seven-gh-row"><strong>${esc(L("Connection","الاتصال"))}</strong><span class="seven-gh-muted">${S.connected?esc(L("Connected","متصل"))+" · "+identity:esc(L("Disconnected","غير متصل"))}</span></div>
       <div class="seven-gh-row" style="margin-top:10px">
-        <button class="seven-gh-btn primary" data-gh-connect ${S.busy?"disabled":""}>${S.connected?"Re-authorize":"Connect GitHub"}</button>
-        <button class="seven-gh-btn" data-gh-refresh>Check access</button>
-        <button class="seven-gh-btn" data-gh-disconnect ${S.connected?"":"disabled"}>Disconnect</button>
+        <button class="seven-gh-btn primary" data-gh-connect ${S.busy?"disabled":""}>${esc(S.connected?L("Re-authorize","إعادة التفويض"):L("Connect GitHub","ربط GitHub"))}</button>
+        <button class="seven-gh-btn" data-gh-refresh>${esc(L("Check access","فحص الوصول"))}</button>
+        <button class="seven-gh-btn" data-gh-disconnect ${S.connected?"":"disabled"}>${esc(L("Disconnect","قطع الاتصال"))}</button>
       </div>
     </div>
     ${device}
     <div class="seven-gh-card">
-      <strong>Autonomous Development</strong>
-      <div class="seven-gh-muted" style="margin:6px 0 10px">Seven creates an isolated branch, edits code, runs CI, reads failed job logs, repairs up to two times, and opens a pull request. Evaluators, CI definitions, credentials, and the GitHub authorization boundary are protected from autonomous edits.</div>
-      <textarea class="seven-gh-task" placeholder="Example: Improve long-context memory retrieval without weakening tests."></textarea>
+      <strong>${esc(L("Autonomous Development","التطوير الذاتي"))}</strong>
+      <div class="seven-gh-muted" style="margin:6px 0 10px">${esc(L("Seven creates an isolated branch, edits code, runs CI, reads failed job logs, repairs up to two times, and opens a pull request. Evaluators, CI definitions, credentials, and the GitHub authorization boundary are protected from autonomous edits.","ينشئ Seven فرعًا معزولًا ويعدل الكود ويشغّل CI ويقرأ سجلات الفشل ويجري محاولتي إصلاح بحد أقصى ثم يفتح Pull Request. تبقى الاختبارات وتعريفات CI وبيانات الاعتماد وحدود تفويض GitHub محمية من التعديل الذاتي."))}</div>
+      <textarea class="seven-gh-task" placeholder="${esc(L("Example: Improve long-context memory retrieval without weakening tests.","مثال: حسّن استرجاع الذاكرة طويلة السياق دون إضعاف الاختبارات."))}"></textarea>
       <div class="seven-gh-row" style="margin-top:9px">
-        <label class="seven-gh-switch"><input type="checkbox" data-gh-auto-merge> Auto-merge only after green CI</label>
-        <label class="seven-gh-switch"><input type="checkbox" data-gh-build-apk> Build APK after green CI</label>
+        <label class="seven-gh-switch"><input type="checkbox" data-gh-auto-merge> ${esc(L("Auto-merge only after green CI","دمج تلقائي فقط بعد نجاح CI"))}</label>
+        <label class="seven-gh-switch"><input type="checkbox" data-gh-build-apk> ${esc(L("Build APK after green CI","بناء APK بعد نجاح CI"))}</label>
       </div>
-      <div class="seven-gh-row" style="margin-top:10px"><button class="seven-gh-btn primary" data-gh-run ${(!S.connected||S.busy)?"disabled":""}>${S.busy?"Working…":"Self Develop"}</button><span class="seven-gh-muted">Stage: ${esc(S.stage)}</span></div>
+      <div class="seven-gh-row" style="margin-top:10px"><button class="seven-gh-btn primary" data-gh-run ${(!S.connected||S.busy)?"disabled":""}>${esc(S.busy?L("Working…","جارٍ العمل…"):L("Self Develop","تطوير ذاتي"))}</button><span class="seven-gh-muted">${esc(L("Stage","المرحلة"))}: ${esc(S.stage)}</span></div>
       ${last}
     </div>
-    <div class="seven-gh-card"><strong>Run log</strong><div class="seven-gh-log" style="margin-top:8px">${logs||'<div>No development run yet.</div>'}</div></div>
+    <div class="seven-gh-card"><strong>${esc(L("Run log","سجل التشغيل"))}</strong><div class="seven-gh-log" style="margin-top:8px">${logs||'<div>'+esc(L("No development run yet.","لا توجد عملية تطوير بعد."))+'</div>'}</div></div>
   `;
   const q=sel=>body.querySelector(sel);
   q("[data-gh-connect]")?.addEventListener("click",()=>connect().catch(e=>pushLog(e.message,"error")));
@@ -468,7 +480,7 @@ function render(){
 }
 function ensureNav(){
   const nav=$(".seven-shell-primary-nav");if(!nav||nav.querySelector("[data-seven-github-selfdev]"))return;
-  const b=d.createElement("button");b.type="button";b.className="seven-shell-nav-btn seven-gh-nav";b.dataset.sevenGithubSelfdev="1";b.innerHTML='<span aria-hidden="true">⌁</span><span>Self Dev</span>';b.setAttribute("aria-label","GitHub Self Development");b.onclick=()=>openPanel();nav.appendChild(b);
+  const b=d.createElement("button");b.type="button";b.className="seven-shell-nav-btn seven-gh-nav";b.dataset.sevenGithubSelfdev="1";b.innerHTML='<span aria-hidden="true">⌁</span><span>'+esc(L("Self Dev","تطوير ذاتي"))+'</span>';b.setAttribute("aria-label",L("GitHub Self Development","التطوير الذاتي عبر GitHub"));b.onclick=()=>openPanel();nav.appendChild(b);
 }
 function wrapCommand(){
   if(S.commandWrapped||typeof r.sendMessage!=="function")return;
