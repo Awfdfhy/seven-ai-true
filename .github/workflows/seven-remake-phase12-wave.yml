@@ -122,13 +122,85 @@ jobs:
           pathlib.Path('/tmp/report.txt').write_text(report,encoding='utf-8')
           PY
 
-      - name: Start guarded bridges
+      - name: Start guarded relay
         run: |
           set -euo pipefail
           python /tmp/kilo_anonymous_relay.py >/tmp/relay.log 2>&1 &
-          python /tmp/codex_responses_bridge.py >/tmp/codex-bridge.log 2>&1 &
           ready=0
           for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8877/v1/models >/tmp/models.json; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" -eq 1
+
+      - name: Select distributed healthy direct model
+        env:
+          WORKER_ID: ${{ matrix.id }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, urllib.request
+
+          base="http://127.0.0.1:8877/v1"
+          payload=json.load(open("/tmp/models.json"))
+          rows=payload.get("data",payload if isinstance(payload,list) else [])
+          ids=[]
+          for row in rows:
+              mid=row.get("id") if isinstance(row,dict) else row if isinstance(row,str) else None
+              if isinstance(mid,str) and ":free" in mid and not mid.startswith("kilo-auto/"):
+                  ids.append(mid)
+
+          def rank(mid):
+              low=mid.lower()
+              preferred=("qwen","z-ai/glm","minimax/","nvidia/nemotron","moonshot","google/")
+              for i,key in enumerate(preferred):
+                  if key in low: return (i,mid)
+              return (20,mid)
+
+          ids=sorted(dict.fromkeys(ids),key=rank)
+          if not ids:
+              raise SystemExit("No direct free models available")
+
+          slot=max(0,int(os.environ["WORKER_ID"][1:])-1)
+          rotated=ids[slot%len(ids):]+ids[:slot%len(ids)]
+          selected=None
+          errors=[]
+          for mid in rotated[:12]:
+              req=urllib.request.Request(
+                  base+"/chat/completions",
+                  data=json.dumps({
+                    "model":mid,
+                    "messages":[{"role":"user","content":"Reply exactly OK"}],
+                    "temperature":0,
+                    "max_tokens":12,
+                    "stream":False
+                  }).encode(),
+                  headers={"Content-Type":"application/json"},
+              )
+              try:
+                  with urllib.request.urlopen(req,timeout=35) as response:
+                      data=json.load(response)
+                  msg=((data.get("choices") or [{}])[0].get("message") or {})
+                  text=(msg.get("content") or msg.get("reasoning_content") or "").strip()
+                  if text:
+                      selected=mid
+                      break
+                  errors.append(mid+": empty")
+              except Exception as exc:
+                  errors.append(mid+": "+type(exc).__name__)
+          if not selected:
+              raise SystemExit("No healthy direct model: "+"; ".join(errors))
+          print("Selected",selected,"for",os.environ["WORKER_ID"])
+          with open(os.environ["GITHUB_ENV"],"a",encoding="utf-8") as env:
+              env.write("PHASE12_MODEL="+selected+"\n")
+          PY
+
+      - name: Start model-pinned Codex bridge
+        run: |
+          set -euo pipefail
+          SEVEN_CODEX_MODEL="$PHASE12_MODEL" python /tmp/codex_responses_bridge.py >/tmp/codex-bridge.log 2>&1 &
+          ready=0
+          for i in {1..20}; do
             if curl -fsS http://127.0.0.1:8878/v1/models >/dev/null; then ready=1; break; fi
             sleep 1
           done
@@ -144,7 +216,7 @@ jobs:
           ok=0
           for attempt in 1 2; do
             set +e
-            timeout 430s codex exec               --skip-git-repo-check               -m kilo-auto/free               -c 'approval_policy="never"'               -c 'sandbox_mode="danger-full-access"'               -c 'model_provider="seven"'               -c 'model_providers.seven={name="Seven Local Bridge",base_url="http://127.0.0.1:8878/v1",env_key="SEVEN_CODEX_KEY",wire_api="responses",requires_openai_auth=false,supports_websockets=false,request_max_retries=2,stream_max_retries=2}'               "$(cat /tmp/prompt.md)"
+            timeout 430s codex exec               --skip-git-repo-check               -m "$PHASE12_MODEL"               -c 'approval_policy="never"'               -c 'sandbox_mode="danger-full-access"'               -c 'model_provider="seven"'               -c 'model_providers.seven={name="Seven Local Bridge",base_url="http://127.0.0.1:8878/v1",env_key="SEVEN_CODEX_KEY",wire_api="responses",requires_openai_auth=false,supports_websockets=false,request_max_retries=2,stream_max_retries=2}'               "$(cat /tmp/prompt.md)"
             rc=$?
             set -e
             REPORT="$(cat /tmp/report.txt)"
