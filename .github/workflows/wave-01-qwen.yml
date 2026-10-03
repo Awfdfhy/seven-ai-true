@@ -58,6 +58,52 @@ jobs:
           git fetch origin main
           git show origin/main:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/kilo_anonymous_relay.py
           git show origin/main:${{ matrix.prompt_path }} > /tmp/qwen-prompt.md
+          cp /tmp/qwen-prompt.md /tmp/qwen-effective-prompt.md
+
+      - name: Prepare B09 one-shot evidence and disable tools
+        if: matrix.branch == 'agent-b/09-rpg-performance'
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.qwen"
+          cat > "$HOME/.qwen/settings.json" <<'JSON'
+          {
+            "tools": {
+              "core": ["structured_output"],
+              "disabled": [
+                "tool_search","tool_call","agent","list_agents","run_shell_command",
+                "read_file","read_many_files","glob","grep_search","write_file",
+                "replace","web_fetch","save_memory","enter_plan_mode","exit_plan_mode",
+                "task_stop","send_message"
+              ]
+            },
+            "skills": {"disabledLevels": ["project","user","extension","bundled"]},
+            "slashCommands": {"disabled": ["auth","mcp","extensions","ide"]}
+          }
+          JSON
+          : > /tmp/b09-evidence.txt
+          for file in release/workspaces/rpg.js release/world-runtime.js release/canon-simulator.js memory.cjs; do
+            echo "===== $file =====" >> /tmp/b09-evidence.txt
+            if test -f "$file"; then
+              wc -lc "$file" >> /tmp/b09-evidence.txt
+              grep -nE 'localStorage|sessionStorage|persist|save|restore|context|history|message|turn|state|canon|world|knowledge|fetch|generate|render|JSON\.stringify|JSON\.parse' "$file" | head -n 140 >> /tmp/b09-evidence.txt || true
+            else
+              echo "ABSENT" >> /tmp/b09-evidence.txt
+            fi
+          done
+          head -c 28000 /tmp/b09-evidence.txt > /tmp/b09-evidence-bounded.txt
+          {
+            cat /tmp/qwen-prompt.md
+            cat <<'EOF'
+
+          RECOVERY OVERRIDE — ONE-SHOT MODE:
+          Do not call tools or inspect files. A deterministic evidence pack follows.
+          Using ONLY that evidence, output the COMPLETE B09 audit report body as plain text.
+          Keep it <= 100 lines and <= 5500 characters. Cover every required topic, cite exact
+          file/line evidence where supplied, mark unknowns instead of guessing, and make the
+          FINAL line exactly WAVE01=COMPLETE.
+          EOF
+            cat /tmp/b09-evidence-bounded.txt
+          } > /tmp/qwen-effective-prompt.md
 
       - name: Start compatibility relay
         env:
@@ -85,7 +131,7 @@ jobs:
             echo "Qwen live attempt $attempt/3"
             rm -f /tmp/qwen-wave01.out
             set +e
-            timeout 100s qwen -p "$(cat /tmp/qwen-prompt.md)" \
+            timeout 100s qwen -p "$(cat /tmp/qwen-effective-prompt.md)" \
               --approval-mode yolo \
               --output-format text \
               --model kilo-auto/free \
