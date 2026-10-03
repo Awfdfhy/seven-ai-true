@@ -5,7 +5,10 @@ import {
   type ProviderAdapter,
   type ProviderMessage,
 } from "../../providers/contracts";
-import type { RoutePlan } from "../../routing/model-router";
+import {
+  ProviderHealthTracker,
+  type RoutePlan,
+} from "../../routing/model-router";
 import type {
   ChatStreamContext,
   ChatTransport,
@@ -21,11 +24,21 @@ function failureLabel(error: unknown): string {
   return "failed";
 }
 
+function retryAfterMs(error: unknown): number | undefined {
+  if (!(error instanceof SevenError)) return undefined;
+  const value = error.details?.retryAfterMs;
+  return typeof value === "number" && Number.isFinite(value) && value >= 0
+    ? value
+    : undefined;
+}
+
 export class RoutedChatTransport implements ChatTransport {
   constructor(
     private readonly plan: RoutePlan,
     private readonly providers: ProviderMap,
     private readonly systemPrompt = "You are Seven, a precise and helpful AI assistant.",
+    private readonly health?: ProviderHealthTracker,
+    private readonly now: () => number = Date.now,
   ) {
     if (!systemPrompt.trim()) {
       throw new SevenError({
@@ -62,6 +75,14 @@ export class RoutedChatTransport implements ChatTransport {
       if (provider.id !== candidate.providerId) {
         failures.push(`${candidate.providerId}:provider-id-mismatch`);
         continue;
+      }
+
+      const attemptStartedAt = this.now();
+      if (!Number.isFinite(attemptStartedAt) || attemptStartedAt < 0) {
+        throw new SevenError({
+          code: "VALIDATION",
+          message: "Provider attempt clock returned an invalid timestamp.",
+        });
       }
 
       let meaningfulOutputStarted = false;
@@ -110,10 +131,29 @@ export class RoutedChatTransport implements ChatTransport {
           yield chunk.delta;
         }
 
-        if (meaningfulOutputStarted) return;
+        if (meaningfulOutputStarted) {
+          this.health?.recordSuccess(provider.id, attemptStartedAt);
+          return;
+        }
+
+        this.health?.recordFailure(provider.id, this.now());
         failures.push(`${candidate.providerId}:empty`);
       } catch (error) {
         if (context.signal.aborted) throw error;
+
+        const failedAt = this.now();
+        if (!Number.isFinite(failedAt) || failedAt < 0) {
+          throw new SevenError({
+            code: "VALIDATION",
+            message: "Provider health clock returned an invalid timestamp.",
+          });
+        }
+
+        this.health?.recordFailure(provider.id, failedAt, {
+          ...(retryAfterMs(error) !== undefined
+            ? { retryAfterMs: retryAfterMs(error) }
+            : {}),
+        });
 
         if (meaningfulOutputStarted) {
           if (error instanceof SevenError) throw error;
