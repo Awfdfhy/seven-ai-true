@@ -98,7 +98,7 @@ describe("TaskManager", () => {
 
     await vi.advanceTimersByTimeAsync(1000);
 
-    await expect(run.result).rejects.toMatchObject<SevenError>({
+    await expect(run.result).rejects.toMatchObject({
       code: "DEADLINE_EXCEEDED",
     });
     expect(manager.get(run.taskId)?.status).toBe("cancelled");
