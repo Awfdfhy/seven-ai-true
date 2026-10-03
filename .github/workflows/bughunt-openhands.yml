@@ -28,12 +28,12 @@ jobs:
       matrix:
         include:
           - name: Bug Hunt A04 OpenHands architecture audit
-            branch: agent/04-research
+            branch: bughunt/a04
             prompt_path: .seven-team/prompts/bughunt/A04.md
             report: .seven-team/reports/bughunt/A04.md
             commit_message: Bug Hunt A04 design-system map
           - name: Bug Hunt B04 OpenHands RPG engine audit
-            branch: bughunt/a04
+            branch: bughunt/b04
             prompt_path: .seven-team/prompts/bughunt/B04.md
             report: .seven-team/reports/bughunt/B04.md
             commit_message: Bug Hunt B04 RPG engine map
