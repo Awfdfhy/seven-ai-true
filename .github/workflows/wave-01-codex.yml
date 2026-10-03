@@ -78,7 +78,7 @@ jobs:
           set -u
           mkdir -p "$(dirname "${{ matrix.report }}")" "$CODEX_HOME"
           set +e
-          timeout 150s codex exec \
+          timeout 260s codex exec \
             --skip-git-repo-check \
             -m kilo-auto/free \
             -c 'approval_policy="never"' \
