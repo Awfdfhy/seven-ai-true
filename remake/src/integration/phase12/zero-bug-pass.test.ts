@@ -1932,6 +1932,32 @@ describe("Zero-bug regressions", () => {
     expect(snapshot?.error?.details).toBeUndefined();
   });
 
+  it("snapshots task listeners so subscriptions added during an emit wait for the next event", async () => {
+    const manager = new TaskManager();
+    let primaryCalls = 0;
+    let lateCalls = 0;
+    let added = false;
+
+    manager.subscribe(() => {
+      primaryCalls += 1;
+      if (!added) {
+        added = true;
+        manager.subscribe(() => {
+          lateCalls += 1;
+        });
+      }
+    });
+
+    const run = manager.run(
+      { kind: "system", ownerId: "listener-snapshot" },
+      async () => "ok",
+    );
+    await expect(run.result).resolves.toBe("ok");
+
+    expect(primaryCalls).toBe(3);
+    expect(lateCalls).toBe(2);
+  });
+
   it("isolates task listeners and bounds completed task retention", async () => {
     const manager = new TaskManager({ maxRetainedCompleted: 2 });
     manager.subscribe(() => {
