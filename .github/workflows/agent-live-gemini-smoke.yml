@@ -73,7 +73,8 @@ jobs:
       - name: Run real Gemini CLI agent
         env:
           GOOGLE_GEMINI_BASE_URL: http://127.0.0.1:8879
-          GEMINI_API_KEY: ''
+          GEMINI_DEFAULT_AUTH_TYPE: gemini-api-key
+          GEMINI_API_KEY: local-dummy-key
           GOOGLE_GENAI_API_VERSION: v1beta
           GEMINI_TELEMETRY_ENABLED: 'false'
         run: |
