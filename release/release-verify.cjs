@@ -117,6 +117,20 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       assert.ok(state.box.left>=-2&&state.box.right<=state.box.w+2&&state.box.top>=-2&&state.box.bottom<=state.box.h+2,JSON.stringify(state.box));
       await page.close();
     });
+    await test('legacy Brave search preference migrates to zero-key Auto',async()=>{
+      const context=await browser.newContext({viewport:{width:360,height:800}});
+      const page=await context.newPage();
+      await page.addInitScript(()=>{localStorage.setItem('seven_intelligence_preferences_v1',JSON.stringify({engine:'brave',depth:'balanced',maxQueries:3,readPages:true}));localStorage.setItem('user_name_asked','1');});
+      await page.goto(origin,{waitUntil:'domcontentloaded'});
+      await page.waitForFunction(()=>window.SevenIntelligence&&typeof SevenIntelligence.settings==='function');
+      const state=await page.evaluate(()=>SevenIntelligence.settings());
+      assert.equal(state.engine,'auto');
+      await page.evaluate(()=>SevenRemake.searchSettings());
+      await page.waitForFunction(()=>!!document.querySelector('.s-modal .s-dialog'));
+      const ui=await page.evaluate(()=>({options:[...document.querySelectorAll('#s-search-engine option')].map(o=>o.value),keyFields:[...document.querySelectorAll('.s-modal input[type="password"],.s-modal [id*="key" i]')].length}));
+      assert.equal(ui.options.includes('brave'),false);assert.equal(ui.keyFields,0);
+      await context.close();
+    });
     await test('responsive UI matrix stays bounded on phone widths themes and directions',async()=>{
       const sizes=[[320,800],[360,800],[390,844],[412,915]];
       for(const [width,height] of sizes)for(const dir of ['ltr','rtl'])for(const theme of ['day','night']){
