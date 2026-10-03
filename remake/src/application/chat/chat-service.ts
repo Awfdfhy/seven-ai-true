@@ -33,18 +33,20 @@ const DEFAULT_CHAT_DEADLINE_MS = 60_000;
 
 function normalizeTimeout(timeoutMs: number | undefined): number {
   const value = timeoutMs ?? DEFAULT_CHAT_DEADLINE_MS;
-  if (!Number.isFinite(value) || value <= 0) {
+  if (
+    !Number.isFinite(value) ||
+    value <= 0 ||
+    value > 2_147_483_647
+  ) {
     throw new SevenError({
       code: "VALIDATION",
-      message: "timeoutMs must be a positive finite number.",
+      message: "timeoutMs must be a positive finite timer-safe number.",
     });
   }
   return value;
 }
 
 export class ChatService {
-  private readonly startingRooms = new Set<string>();
-
   constructor(
     private readonly tasks: TaskManager,
     private readonly rooms: RoomRepository,
@@ -57,19 +59,9 @@ export class ChatService {
     options: ChatSendOptions = {},
   ): Promise<ChatRun> {
     const timeoutMs = normalizeTimeout(options.timeoutMs);
+    const releaseOwner = this.tasks.claimExclusiveOwner(roomId);
+    let ownerClaimHeld = true;
 
-    if (
-      this.startingRooms.has(roomId) ||
-      this.tasks.listActive(roomId).length > 0
-    ) {
-      throw new SevenError({
-        code: "VALIDATION",
-        message: "A chat task is already active for this room.",
-        details: { roomId },
-      });
-    }
-
-    this.startingRooms.add(roomId);
     try {
       const current = await this.rooms.get(roomId);
       if (!current) {
@@ -85,6 +77,11 @@ export class ChatService {
         content,
       });
       await this.rooms.put(withUser);
+
+      // Release the preflight claim and synchronously replace it with the
+      // registered task. No other JS turn can interleave between these calls.
+      releaseOwner();
+      ownerClaimHeld = false;
 
       const run: TaskRun<Room> = this.tasks.run(
         {
@@ -150,7 +147,7 @@ export class ChatService {
         cancel: run.cancel,
       });
     } finally {
-      this.startingRooms.delete(roomId);
+      if (ownerClaimHeld) releaseOwner();
     }
   }
 }
