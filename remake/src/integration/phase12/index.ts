@@ -33,13 +33,16 @@ function retryAfterMs(error: unknown): number | undefined {
 }
 
 export class RoutedChatTransport implements ChatTransport {
+  private readonly providers: ReadonlyMap<string, ProviderAdapter>;
+
   constructor(
     private readonly plan: RoutePlan,
-    private readonly providers: ProviderMap,
+    providers: ProviderMap,
     private readonly systemPrompt = "You are Seven, a precise and helpful AI assistant.",
     private readonly health?: ProviderHealthTracker,
     private readonly now: () => number = Date.now,
   ) {
+    this.providers = new Map(providers);
     if (!systemPrompt.trim()) {
       throw new SevenError({
         code: "VALIDATION",
