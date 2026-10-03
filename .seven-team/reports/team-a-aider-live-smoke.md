@@ -3,7 +3,7 @@
 Identity: Team A / A06 / Aider
 
 ## Team A mission
-Rebuild UI Foundation V2 as one coherent Seven AI experience by consolidating overlapping CSS into shared design tokens and reusable components while preserving behavior across features, locales, themes, platforms, and screen sizes.
+Rebuild UI Foundation V2 so Seven AI behaves like one coherent application: replace overlapping CSS patch layers with canonical shared design tokens and reusable components, preserving behavior across features, locales, themes, platforms, and screen sizes.
 
 ## Integration risks
 1. Settings and persistence changes could desynchronize UI state across sessions, devices, and migration paths.
