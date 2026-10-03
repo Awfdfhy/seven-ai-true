@@ -911,44 +911,26 @@
             </div>
 
             <details class="settings-section" id="providersSection">
-                <summary>Providers</summary>
+                <summary>Automatic Providers</summary>
                 <div class="settings-section-body">
-                    <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerGroqEnabled" style="width:auto;margin:0;"> Groq free/developer tier</label>
-                    <input type="password" id="apiKeyInput" placeholder="Groq API key">
-
-                    <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerNvidiaEnabled" style="width:auto;margin:0;"> NVIDIA NIM free development endpoints</label>
-                    <input type="password" id="nvidiaApiKeyInput" placeholder="NVIDIA API key">
-
-                    <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerOpenrouterEnabled" style="width:auto;margin:0;"> OpenRouter zero-price models</label>
-                    <input type="password" id="openrouterApiKeyInput" placeholder="OpenRouter API key">
-
-                    <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerGeminiEnabled" style="width:auto;margin:0;"> Google Gemini free tier</label>
-                    <input type="password" id="geminiApiKeyInput" placeholder="Gemini API key">
-
-                    <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerKiloEnabled" style="width:auto;margin:0;"> Kilo Code free pool</label>
-
-                    <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerLlm7Enabled" style="width:auto;margin:0;"> LLM7.io anonymous/free tier</label>
-                    <input type="password" id="llm7TokenInput" placeholder="LLM7 free token (optional)">
-
-                    <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerAionEnabled" style="width:auto;margin:0;"> Aion Labs permanent free tier</label>
-                    <input type="password" id="aionApiKeyInput" placeholder="Aion Labs API key">
-
-                    <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerMistralEnabled" style="width:auto;margin:0;"> Mistral free mode</label>
-                    <input type="password" id="mistralApiKeyInput" placeholder="Mistral API key">
-
-                    <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerZaiEnabled" style="width:auto;margin:0;"> Z.AI / GLM permanent free models</label>
-                    <input type="password" id="zaiApiKeyInput" placeholder="Z.AI API key">
-
-                    <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="providerCloudflareEnabled" style="width:auto;margin:0;"> Cloudflare free allocation</label>
-                    <input type="password" id="cloudflareApiTokenInput" placeholder="Cloudflare API token">
-                    <input type="text" id="cloudflareAccountIdInput" placeholder="Cloudflare Account ID">
-
-                    <label>Web Search Gateway</label>
-                    <input type="text" id="searchGatewayUrlInput" placeholder="https://seven-search.example.workers.dev">
-                    <input type="password" id="searchGatewayKeyInput" placeholder="Gateway client key (optional)">
-                    <div class="settings-helper" id="searchGatewayStatus">Optional. Enables general-web results and controlled page reading. Without it, Search stays on DDG/Wikipedia knowledge sources.</div>
-
-                    <div class="settings-helper">Provider credentials stay outside prompts, health telemetry, and room exports. Anonymous providers remain opt-in.</div>
+                    <div class="route-status-card" id="automaticProviderCard" data-state="ready" role="status" aria-live="polite">
+                        <div class="route-status-head"><span class="route-status-title">Zero-Key routing</span><span class="route-state-badge">Automatic</span></div>
+                        <div class="settings-helper" style="margin:0">Seven automatically uses anonymous free providers first. Providers that require credentials are used only when credentials were embedded by the build. You never need to paste an API key.</div>
+                    </div>
+                    <div class="settings-helper" id="searchGatewayStatus">Web Search works without setup through built-in DDG/Wikipedia sources. A managed gateway is used automatically only when supplied by the build.</div>
+                    <div id="sevenManagedProviderCompat" hidden aria-hidden="true">
+                        <input type="checkbox" id="providerGroqEnabled"><input type="hidden" id="apiKeyInput">
+                        <input type="checkbox" id="providerNvidiaEnabled"><input type="hidden" id="nvidiaApiKeyInput">
+                        <input type="checkbox" id="providerOpenrouterEnabled"><input type="hidden" id="openrouterApiKeyInput">
+                        <input type="checkbox" id="providerGeminiEnabled"><input type="hidden" id="geminiApiKeyInput">
+                        <input type="checkbox" id="providerKiloEnabled">
+                        <input type="checkbox" id="providerLlm7Enabled"><input type="hidden" id="llm7TokenInput">
+                        <input type="checkbox" id="providerAionEnabled"><input type="hidden" id="aionApiKeyInput">
+                        <input type="checkbox" id="providerMistralEnabled"><input type="hidden" id="mistralApiKeyInput">
+                        <input type="checkbox" id="providerZaiEnabled"><input type="hidden" id="zaiApiKeyInput">
+                        <input type="checkbox" id="providerCloudflareEnabled"><input type="hidden" id="cloudflareApiTokenInput"><input type="hidden" id="cloudflareAccountIdInput">
+                        <input type="hidden" id="searchGatewayUrlInput"><input type="hidden" id="searchGatewayKeyInput">
+                    </div>
                 </div>
             </details>
 
@@ -1010,8 +992,10 @@
 
     <script>
         // ========== CONFIGURATION ==========
-        // API credentials live only in this browser's localStorage. Seven's
-        // Free Model Fabric never intentionally routes to a paid model.
+        // Seven 2.4.2 Zero-Key UX: users never need to type provider credentials.
+        // Anonymous free routes are enabled automatically. Build-managed credentials,
+        // when present, are preferred; legacy localStorage values are compatibility-only.
+        // The Free Model Fabric never intentionally routes to a paid model.
         const SEVEN_EMBEDDED_CREDENTIALS = Object.freeze(
             window.__SEVEN_EMBEDDED_CREDENTIALS && typeof window.__SEVEN_EMBEDDED_CREDENTIALS === "object"
                 ? window.__SEVEN_EMBEDDED_CREDENTIALS
@@ -1021,18 +1005,18 @@
             const value = SEVEN_EMBEDDED_CREDENTIALS[name];
             return typeof value === "string" ? value : "";
         };
-        let GROQ_API_KEY = localStorage.getItem('groq_api_key') || embeddedCredentialV1("GROQ_API_KEY") || "";
-        let NVIDIA_API_KEY = localStorage.getItem('nvidia_api_key') || embeddedCredentialV1("NVIDIA_API_KEY") || "";
-        let OPENROUTER_API_KEY = localStorage.getItem('openrouter_api_key') || embeddedCredentialV1("OPENROUTER_API_KEY") || "";
-        let GEMINI_API_KEY = localStorage.getItem('gemini_api_key') || embeddedCredentialV1("GEMINI_API_KEY") || "";
-        let LLM7_API_TOKEN = localStorage.getItem('llm7_api_token') || embeddedCredentialV1("LLM7_API_TOKEN") || "";
-        let AION_API_KEY = localStorage.getItem('aion_api_key') || embeddedCredentialV1("AION_API_KEY") || "";
-        let MISTRAL_API_KEY = localStorage.getItem('mistral_api_key') || embeddedCredentialV1("MISTRAL_API_KEY") || "";
-        let ZAI_API_KEY = localStorage.getItem('zai_api_key') || embeddedCredentialV1("ZAI_API_KEY") || "";
-        let CLOUDFLARE_API_TOKEN = localStorage.getItem('cloudflare_api_token') || embeddedCredentialV1("CLOUDFLARE_API_TOKEN") || "";
-        let CLOUDFLARE_ACCOUNT_ID = localStorage.getItem('cloudflare_account_id') || embeddedCredentialV1("CLOUDFLARE_ACCOUNT_ID") || "";
-        let SEARCH_GATEWAY_URL = localStorage.getItem('search_gateway_url') || embeddedCredentialV1("SEARCH_GATEWAY_URL") || "";
-        let SEARCH_GATEWAY_KEY = localStorage.getItem('search_gateway_key') || embeddedCredentialV1("SEARCH_GATEWAY_KEY") || "";
+        let GROQ_API_KEY = embeddedCredentialV1("GROQ_API_KEY") || localStorage.getItem('groq_api_key') || "";
+        let NVIDIA_API_KEY = embeddedCredentialV1("NVIDIA_API_KEY") || localStorage.getItem('nvidia_api_key') || "";
+        let OPENROUTER_API_KEY = embeddedCredentialV1("OPENROUTER_API_KEY") || localStorage.getItem('openrouter_api_key') || "";
+        let GEMINI_API_KEY = embeddedCredentialV1("GEMINI_API_KEY") || localStorage.getItem('gemini_api_key') || "";
+        let LLM7_API_TOKEN = embeddedCredentialV1("LLM7_API_TOKEN") || localStorage.getItem('llm7_api_token') || "";
+        let AION_API_KEY = embeddedCredentialV1("AION_API_KEY") || localStorage.getItem('aion_api_key') || "";
+        let MISTRAL_API_KEY = embeddedCredentialV1("MISTRAL_API_KEY") || localStorage.getItem('mistral_api_key') || "";
+        let ZAI_API_KEY = embeddedCredentialV1("ZAI_API_KEY") || localStorage.getItem('zai_api_key') || "";
+        let CLOUDFLARE_API_TOKEN = embeddedCredentialV1("CLOUDFLARE_API_TOKEN") || localStorage.getItem('cloudflare_api_token') || "";
+        let CLOUDFLARE_ACCOUNT_ID = embeddedCredentialV1("CLOUDFLARE_ACCOUNT_ID") || localStorage.getItem('cloudflare_account_id') || "";
+        let SEARCH_GATEWAY_URL = embeddedCredentialV1("SEARCH_GATEWAY_URL") || localStorage.getItem('search_gateway_url') || "";
+        let SEARCH_GATEWAY_KEY = embeddedCredentialV1("SEARCH_GATEWAY_KEY") || localStorage.getItem('search_gateway_key') || "";
 
         const FREE_MODEL_FABRIC_CONTRACT = Object.freeze({
             version: 2,
@@ -1073,7 +1057,7 @@
             kilo: Object.freeze({
                 id: "kilo", name: "Kilo Code Free", kind: "anonymous_free", priority: 96,
                 chatUrl: "https://api.kilo.ai/api/gateway/chat/completions",
-                modelsUrl: null, credentialOptional: true, defaultEnabled: false
+                modelsUrl: null, credentialOptional: true, defaultEnabled: true
             }),
             llm7: Object.freeze({
                 id: "llm7", name: "LLM7.io Free", kind: "anonymous_free", priority: 82,
@@ -1272,14 +1256,21 @@
         let currentRoutingMode = localStorage.getItem(FREE_ROUTING_MODE_KEY) === "manual" ? "manual" : "auto";
         let freeFallbackEnabled = localStorage.getItem(FREE_FALLBACK_KEY) !== "0";
 
+        function automaticProviderPrefs() {
+            const out = {};
+            for (const [providerId, provider] of Object.entries(FREE_PROVIDER_REGISTRY)) {
+                if (providerId === "cloudflare") { out[providerId] = false; continue; }
+                out[providerId] = provider.credentialOptional === true || !!getFreeProviderCredential(providerId);
+            }
+            return out;
+        }
+
         function isFreeProviderEnabled(providerId) {
             const provider = FREE_PROVIDER_REGISTRY[providerId];
             if (!provider) return false;
-            if (Object.prototype.hasOwnProperty.call(freeProviderPrefs, providerId)) return freeProviderPrefs[providerId] === true;
-            if (typeof provider.defaultEnabled === "boolean") return provider.defaultEnabled;
-            // Cloudflare can bill past its daily free allocation on paid
-            // accounts, so strict-free mode requires explicit opt-in.
-            return providerId !== "cloudflare";
+            if (providerId === "cloudflare") return false;
+            if (provider.credentialOptional === true) return true;
+            return !!getFreeProviderCredential(providerId);
         }
 
         function getFreeProviderCredential(providerId) {
@@ -2350,7 +2341,7 @@
             if(quota)details.push(quota+" near soft limit");
             const healthText=details.length?details.join(" • "):"providers healthy";
             el.textContent=mode+" • "+routeState.label+" • "+catalog.length+" verified-free models • "+configured.length+
-                " configured providers • "+healthText+" • paid fallback OFF";
+                " automatic providers • "+healthText+" • paid fallback OFF";
         }
 
         // Populates reasoning/output controls from the registry rather than a
@@ -2402,18 +2393,7 @@
         }
 
         function readProviderPrefsFromSettings() {
-            return {
-                groq: document.getElementById("providerGroqEnabled").checked,
-                nvidia: document.getElementById("providerNvidiaEnabled").checked,
-                openrouter: document.getElementById("providerOpenrouterEnabled").checked,
-                gemini: document.getElementById("providerGeminiEnabled").checked,
-                kilo: document.getElementById("providerKiloEnabled").checked,
-                llm7: document.getElementById("providerLlm7Enabled").checked,
-                aion: document.getElementById("providerAionEnabled").checked,
-                mistral: document.getElementById("providerMistralEnabled").checked,
-                zai: document.getElementById("providerZaiEnabled").checked,
-                cloudflare: document.getElementById("providerCloudflareEnabled").checked
-            };
+            return automaticProviderPrefs();
         }
 
         function openSettings() {
@@ -2443,7 +2423,7 @@
             document.getElementById("tempValue").textContent = currentTemperature;
             refreshModelDependentControls(currentModel, currentReasoningEffort, currentMaxTokens);
             onRoutingModeChange();
-            document.getElementById("pinnedNotes").value = rooms[currentRoom].pinned || "";
+            document.getElementById("pinnedNotes").value = rooms[currentRoom]?.pinned || "";
             renderKnowledgeStatus();
             renderFreeModelFabricStatus();
             updateRoomListUI();
@@ -2454,63 +2434,19 @@
         }
 
         async function refreshFreeModelCatalogFromSettings() {
-            renderFreeModelFabricStatus("Refreshing verified-free catalog…");
-            // Use unsaved fields too, so a newly pasted key can be tested before Save.
-            const previous = { groq:GROQ_API_KEY, nvidia:NVIDIA_API_KEY, openrouter:OPENROUTER_API_KEY, gemini:GEMINI_API_KEY, llm7:LLM7_API_TOKEN, aion:AION_API_KEY, mistral:MISTRAL_API_KEY, zai:ZAI_API_KEY, cloudflare:CLOUDFLARE_API_TOKEN, account:CLOUDFLARE_ACCOUNT_ID, searchGatewayUrl:SEARCH_GATEWAY_URL, searchGatewayKey:SEARCH_GATEWAY_KEY, prefs:freeProviderPrefs };
-            GROQ_API_KEY = document.getElementById("apiKeyInput").value.trim();
-            NVIDIA_API_KEY = document.getElementById("nvidiaApiKeyInput").value.trim();
-            OPENROUTER_API_KEY = document.getElementById("openrouterApiKeyInput").value.trim();
-            GEMINI_API_KEY = document.getElementById("geminiApiKeyInput").value.trim();
-            LLM7_API_TOKEN = document.getElementById("llm7TokenInput").value.trim();
-            AION_API_KEY = document.getElementById("aionApiKeyInput").value.trim();
-            MISTRAL_API_KEY = document.getElementById("mistralApiKeyInput").value.trim();
-            ZAI_API_KEY = document.getElementById("zaiApiKeyInput").value.trim();
-            CLOUDFLARE_API_TOKEN = document.getElementById("cloudflareApiTokenInput").value.trim();
-            CLOUDFLARE_ACCOUNT_ID = document.getElementById("cloudflareAccountIdInput").value.trim();
-            SEARCH_GATEWAY_URL = normalizeSearchGatewayUrlV2(document.getElementById("searchGatewayUrlInput").value) || "";
-            SEARCH_GATEWAY_KEY = document.getElementById("searchGatewayKeyInput").value.trim();
-            freeProviderPrefs = readProviderPrefsFromSettings();
+            renderFreeModelFabricStatus("Refreshing automatic free routes…");
+            freeProviderPrefs = automaticProviderPrefs();
             try {
                 const report = await refreshFreeModelCatalog({ force:true });
                 populateFreeModelSelect(currentModel);
-                renderFreeModelFabricStatus(`Refresh complete • ${report.catalogSize} verified-free models • ${report.providersChecked} providers checked • ${report.errors.length} provider errors`);
+                renderFreeModelFabricStatus(`Refresh complete • ${report.catalogSize} verified-free models • ${report.providersChecked} managed providers checked • ${report.errors.length} provider errors`);
             } catch (e) {
                 renderFreeModelFabricStatus("Refresh failed safely: " + sanitizeDiscoveredText(e && e.message, "unknown error"));
-            } finally {
-                GROQ_API_KEY=previous.groq; NVIDIA_API_KEY=previous.nvidia; OPENROUTER_API_KEY=previous.openrouter; GEMINI_API_KEY=previous.gemini; LLM7_API_TOKEN=previous.llm7; AION_API_KEY=previous.aion; MISTRAL_API_KEY=previous.mistral; ZAI_API_KEY=previous.zai; CLOUDFLARE_API_TOKEN=previous.cloudflare; CLOUDFLARE_ACCOUNT_ID=previous.account; SEARCH_GATEWAY_URL=previous.searchGatewayUrl; SEARCH_GATEWAY_KEY=previous.searchGatewayKey; freeProviderPrefs=previous.prefs;
             }
         }
 
         function saveSettings() {
-            const previousSearchGatewayUrl=SEARCH_GATEWAY_URL;
-            const previousSearchGatewayKey=SEARCH_GATEWAY_KEY;
-            GROQ_API_KEY = document.getElementById("apiKeyInput").value.trim();
-            NVIDIA_API_KEY = document.getElementById("nvidiaApiKeyInput").value.trim();
-            OPENROUTER_API_KEY = document.getElementById("openrouterApiKeyInput").value.trim();
-            GEMINI_API_KEY = document.getElementById("geminiApiKeyInput").value.trim();
-            LLM7_API_TOKEN = document.getElementById("llm7TokenInput").value.trim();
-            AION_API_KEY = document.getElementById("aionApiKeyInput").value.trim();
-            MISTRAL_API_KEY = document.getElementById("mistralApiKeyInput").value.trim();
-            ZAI_API_KEY = document.getElementById("zaiApiKeyInput").value.trim();
-            CLOUDFLARE_API_TOKEN = document.getElementById("cloudflareApiTokenInput").value.trim();
-            CLOUDFLARE_ACCOUNT_ID = document.getElementById("cloudflareAccountIdInput").value.trim();
-            SEARCH_GATEWAY_URL = normalizeSearchGatewayUrlV2(document.getElementById("searchGatewayUrlInput").value) || "";
-            SEARCH_GATEWAY_KEY = document.getElementById("searchGatewayKeyInput").value.trim();
-            if(previousSearchGatewayUrl!==SEARCH_GATEWAY_URL||previousSearchGatewayKey!==SEARCH_GATEWAY_KEY)clearSearchCacheV2();
-            localStorage.setItem('groq_api_key', GROQ_API_KEY);
-            localStorage.setItem('nvidia_api_key', NVIDIA_API_KEY);
-            localStorage.setItem('openrouter_api_key', OPENROUTER_API_KEY);
-            localStorage.setItem('gemini_api_key', GEMINI_API_KEY);
-            localStorage.setItem('llm7_api_token', LLM7_API_TOKEN);
-            localStorage.setItem('aion_api_key', AION_API_KEY);
-            localStorage.setItem('mistral_api_key', MISTRAL_API_KEY);
-            localStorage.setItem('zai_api_key', ZAI_API_KEY);
-            localStorage.setItem('cloudflare_api_token', CLOUDFLARE_API_TOKEN);
-            localStorage.setItem('cloudflare_account_id', CLOUDFLARE_ACCOUNT_ID);
-            localStorage.setItem('search_gateway_url', SEARCH_GATEWAY_URL);
-            localStorage.setItem('search_gateway_key', SEARCH_GATEWAY_KEY);
-
-            freeProviderPrefs = readProviderPrefsFromSettings();
+            freeProviderPrefs = automaticProviderPrefs();
             currentRoutingMode = document.getElementById("routingModeSelect").value === "manual" ? "manual" : "auto";
             freeFallbackEnabled = document.getElementById("freeFallbackToggle").checked;
             localStorage.setItem(FREE_PROVIDER_PREFS_KEY, JSON.stringify(freeProviderPrefs));
@@ -2527,7 +2463,7 @@
             if (isNaN(maxTokensInput)) maxTokensInput = limits.maxTokens;
             currentMaxTokens = Math.min(limits.maxTokens, Math.max(100, maxTokensInput));
             currentReasoningEffort = limits.effort ? document.getElementById("reasoningEffort").value : null;
-            rooms[currentRoom].pinned = document.getElementById("pinnedNotes").value.trim();
+            if (currentRoom && rooms[currentRoom]) rooms[currentRoom].pinned = document.getElementById("pinnedNotes").value.trim();
             localStorage.setItem('model', currentModel);
             localStorage.setItem('temperature', currentTemperature);
             localStorage.setItem('max_tokens', currentMaxTokens);
@@ -3891,7 +3827,7 @@
         async function callFreeModelFabric(config) {
             const route=buildFreeRouteCandidates(config);
             if(!route.candidates.length){
-                const err=new Error("No configured verified-free model can satisfy this request right now. Check free provider keys, cooldowns, or context size."); err.code="NO_FREE_ROUTE"; throw err;
+                const err=new Error("No automatic verified-free route can satisfy this request right now. Check your connection or try again shortly."); err.code="NO_FREE_ROUTE"; throw err;
             }
             const attempts=[];
             for(let i=0;i<route.candidates.length;i++){
@@ -4015,7 +3951,7 @@
                     detail = "Title error";
                 } else if (purpose === "chat") {
                     if (response.status === 401) {
-                        detail = "Invalid API key. Check the key in Settings (⚙️).";
+                        detail = "The managed Groq credential was rejected. Seven will try another automatic free route.";
                     } else if (response.status === 429) {
                         detail = "Rate limited by Groq — you're sending requests too fast, or hit your quota. Wait a moment and try again. (" + detail + ")";
                     }
@@ -4667,8 +4603,8 @@
             if(message){el.textContent=message;return;}
             const normalized=normalizeSearchGatewayUrlV2(SEARCH_GATEWAY_URL);
             el.textContent=normalized
-                ?"General Web Gateway configured. Search can request web results and controlled page reads."
-                :"Optional. Enables general-web results and controlled page reading. Without it, Search stays on DDG/Wikipedia knowledge sources.";
+                ?"Managed General Web Gateway active. Search can request web results and controlled page reads."
+                :"Built-in DDG/Wikipedia search requires no setup. A managed general-web gateway is used automatically when available.";
         }
 
         async function searchGatewayCandidatesV2(queryObj,intent){
