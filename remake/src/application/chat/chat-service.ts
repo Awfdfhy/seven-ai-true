@@ -30,6 +30,7 @@ export type ChatRun = Readonly<{
 }>;
 
 const DEFAULT_CHAT_DEADLINE_MS = 60_000;
+const MAX_ASSISTANT_DRAFT_CHARS = 1_000_000;
 
 function normalizeTimeout(timeoutMs: number | undefined): number {
   const value = timeoutMs ?? DEFAULT_CHAT_DEADLINE_MS;
@@ -108,6 +109,12 @@ export class ChatService {
           }
           if (!delta) continue;
           draft += delta;
+          if (draft.length > MAX_ASSISTANT_DRAFT_CHARS) {
+            throw new SevenError({
+              code: "PROVIDER",
+              message: "Assistant response exceeded the safe draft size limit.",
+            });
+          }
 
           if (options.onDraft) {
             try {
