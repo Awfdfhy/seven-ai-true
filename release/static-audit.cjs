@@ -8,7 +8,7 @@ const built=build();
 const html=fs.readFileSync(built.output,'utf8');
 // Only hot release-layer assets belong in this startup audit. Canon + World are RPG-only
 // lazy workspace runtimes; the universal attachment parser/UX is also lazy behind a tiny hot loader.
-const assetNames=['seven-final.css','beta-ui.css','ui-hardening.css','research-runtime.js','performance-runtime.js','control-runtime.js','control-bridge.js','execution-bridge.js','pdf-runtime.js','motion-runtime.js','ui-runtime.js','attachment-loader.js','beta-ui-runtime.js'];
+const assetNames=['seven-final.css','beta-ui.css','research-runtime.js','performance-runtime.js','control-runtime.js','control-bridge.js','execution-bridge.js','pdf-runtime.js','motion-runtime.js','ui-runtime.js','attachment-loader.js','beta-ui-runtime.js'];
 const assets=assetNames.map(name=>({name,bytes:fs.statSync(path.join(__dirname,name)).size}));
 const workspaceAssets=(built.workspaceFiles||[]).map(x=>({...x,text:fs.readFileSync(path.join(ROOT,'dist',x.path),'utf8')}));
 const issues=[];const warnings=[];const apkBlockers=[];
