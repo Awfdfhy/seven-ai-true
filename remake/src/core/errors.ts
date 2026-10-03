@@ -26,7 +26,10 @@ export class SevenError extends Error {
     this.name = "SevenError";
     this.code = options.code;
     this.retryable = options.retryable ?? false;
-    this.details = options.details;
+    this.details =
+      options.details === undefined
+        ? undefined
+        : Object.freeze({ ...options.details });
   }
 }
 
@@ -49,6 +52,9 @@ export function toSevenError(error: unknown): SevenError {
   return new SevenError({
     code: "UNKNOWN",
     message: "Unknown error.",
-    details: { value: error },
+    details: {
+      valueType:
+        error === null ? "null" : Array.isArray(error) ? "array" : typeof error,
+    },
   });
 }
