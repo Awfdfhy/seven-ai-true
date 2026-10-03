@@ -1,58 +1,93 @@
-# Team A — Live Runtime Smoke Test (Goose)
+# Team A — A07 (Goose) Live Runtime Smoke Test Report
+
+- **Workspace:** Team A — UI Foundation V2 / cross-workspace product cohesion
+- **Worker:** A07 (Goose)
+- **Test type:** Controlled live runtime smoke test
+- **Status:** COMPLETE
+
+---
 
 ## 1. Identity
 
-- **Team:** Team A (UI Foundation V2 / cross-workspace product cohesion)
-- **Agent:** A07
-- **Runtime:** Goose
-- **Date:** 2026-10-03
+| Field | Value |
+| --- | --- |
+| Team | Team A |
+| Worker ID | A07 |
+| Agent runtime | Goose |
+| Ownership scope | Self-Dev / security UI boundaries, credential surfaces, protected-action UX |
+| Shared surface | UI Foundation V2, cross-workspace product cohesion |
 
 ## 2. A07 Mission (in my own words)
 
-I own the boundary between Self-Dev tooling and the security surfaces users actually see.
-My job is to make sure that anything privileged — credential entry, secret storage, or a
-protected action such as a deploy, publish, or permission change — is rendered so a person
-can tell, before they click it, that they are doing something with real consequences and that
-consequences are reversible (or explicitly not). Concretely, I keep three things true:
-protected actions are visually and semantically distinct from ordinary UI actions, credentials
-never become model-visible or repository-visible content, and any change that reaches into
-shared core is treated as a leased, reviewed change rather than a drive-by edit. I also
-guard the Self-Dev integration points where an agent can read or emit what a human typed,
-because that is the point where a UI affordance silently turns into a data-exfiltration path.
+My job is to make sure that the moment a user approaches something dangerous or sensitive,
+the product behaves like a responsible adult. Concretely, I own the boundary between
+**Self-Dev capabilities** (the app operating on itself) and ordinary product surface, and I own
+**credential surfaces** — everywhere secrets enter, live, or could be echoed back to a human or a
+model. I also own **protected-action UX**: any action that is irreversible, privileged, or
+outward-facing must be *visibly* different from a routine tap, not merely technically different.
+
+My work has three non-negotiable properties:
+
+1. **Distinction is visual and persistent.** Protected actions carry their own affordance
+   (weight, placement, confirmation, affordance grammar) so a user can tell them apart at a
+   glance, before committing, not after.
+2. **Secrets never become content.** Credentials must not be committed to the repository, echoed
+   into logs or output, or exposed anywhere a model can read it as ordinary repository text.
+3. **Shared core is not solo work.** Anything that touches shared-core surface requires a
+   manager lease and an independent review before it lands.
+
+In short: I am the worker who makes sure the fast, powerful parts of the product never get to
+outrun the careful parts.
 
 ## 3. Three Security / Self-Dev Integration Risks
 
-**Risk 1 — Credential surface leakage into model-visible context.**
-Self-Dev features (agent runs, session replay, debug/trace views, log tails) routinely render
-whatever is on screen. If a secret entry field, an auth header, or a `.env` value is rendered
-into a transcript, prompt, or diagnostic bundle, it becomes model-visible and then
-repository-visible in whatever the agent writes. Mitigation: redaction at the render layer,
-never at the model layer; secrets are marked as such at input time and masked by construction,
-not by later scrubbing of free text.
+### Risk 1 — Self-Dev capability boundary drift (privilege confusion)
 
-**Risk 2 — Protected actions indistinguishable from ordinary UI actions.**
-When a destructive or privileged action (delete, force-push, publish, rotate, permission grant)
-renders with the same affordance as a routine button, users perform it reflexively and the UI
-carries the blame. Mitigation: a single, consistent protected-action treatment — distinct
-styling, explicit consequence text, and a confirmation step that names the exact target and
-whether it is reversible.
+Self-Dev flows let the system act on its own configuration, code, or state. If Self-Dev actions
+are rendered with the same affordance grammar as ordinary UI actions, users lose the ability to
+distinguish "the product is doing this for me" from "I am about to do this." The failure mode is
+**privilege confusion**: a high-blast-radius action is executed under a low-ceremony UI, and the
+user's mental model of consent is wrong at the exact moment it matters. This is also the natural
+entry point for a confused-deputy scenario, where a Self-Dev action is induced indirectly rather
+than requested directly by the user.
 
-**Risk 3 — Unleased mutation of shared core by a security-scoped agent.**
-Self-Dev agents are given write access to make progress quickly, and a change that "just
-touches the shell" or a shared component can alter behavior for every other workspace. Without a
-manager lease and independent review, a locally-reasonable security edit becomes a
-cross-workspace regression with no owner. Mitigation: lease before any shared-core edit,
-independent review before merge, and a default of not editing shared core at all unless the
-task requires it.
+**Mitigation direction:** protected-action UX must remain a *structural* property, not a
+styling preference — distinct affordance, explicit confirmation, and a clear blast-radius signal.
+
+### Risk 2 — Credential surfaces leaking into model-visible / repository-visible output
+
+Any place a secret can be written — logs, error messages, config dumps, test fixtures, reports,
+or debug output — is a place it can become model-visible repository content. Once a credential is
+committed or echoed, it is no longer "stored somewhere protected"; it is in history, in
+diffs, in caches, and in any context a model later reads. Redaction that is applied at the
+*display* layer is insufficient, because the leak already happened upstream.
+
+**Mitigation direction:** treat every output surface as untrusted by default. Never commit, echo,
+or render credential material into repository content or model-visible output; redact at the
+boundary where values enter, and prefer references/handles over raw values.
+
+### Risk 3 — Unleased, unreviewed changes to shared core
+
+Shared-core changes affect every team and every workspace. A Self-Dev or security-UI change that
+lands in shared core without a manager lease and independent review can silently alter behavior
+for teams that never agreed to it. The compounding risk: a *security* change applied unilaterally
+is often *narrow* in intent but *global* in effect, which means the blast radius is discovered by
+someone other than the author.
+
+**Mitigation direction:** lease before editing shared core, require an independent reviewer, and
+keep A07 changes scoped to owned surface wherever possible so review stays tractable.
 
 ## 4. Branch
 
-`agent/07-security-selfdev`
+```
+agent/07-security-selfdev
+```
 
-## 5. Change Discipline
+## 5. Compliance Notes
 
-This run modified exactly one file: this report. No environment variables, credentials, git
-remotes, or network resources were inspected. No other repository file was created, edited,
-or deleted.
+- Only one file was created/modified by this run: `.seven-team/reports/team-a-goose-live-smoke.md`.
+- No environment variables, credentials, git remotes, or network resources were inspected.
+- No secrets appear in this report; this report is model-visible repository content and is
+  therefore treated as a public surface.
 
 LIVE_AGENT_SMOKE=PASS
