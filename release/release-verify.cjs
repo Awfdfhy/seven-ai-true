@@ -268,6 +268,30 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       }
       await page.close();
     });
+    await test('modern dialogs inherit Seven theme and isolate background interaction',async()=>{
+      const page=await browser.newPage({viewport:{width:320,height:800}});
+      await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');});
+      await page.goto(origin,{waitUntil:'domcontentloaded'});
+      await page.waitForFunction(()=>window.SevenRemake&&window.SevenTheme);
+      await page.evaluate(()=>{SevenTheme.setPreference('night');SevenRemake.modeDialog();});
+      await page.waitForFunction(()=>!!document.querySelector('#seven-app > .s-modal .s-dialog'));
+      const state=await page.evaluate(()=>{
+        const root=document.getElementById('seven-app'),modal=root.querySelector(':scope > .s-modal'),dialog=modal.querySelector('.s-dialog');
+        const siblings=[...root.children].filter(x=>x!==modal);
+        const cs=getComputedStyle(dialog),button=getComputedStyle(dialog.querySelector('.s-mode-option'));
+        return{parent:modal.parentElement.id,modalInert:modal.inert,background:cs.backgroundColor,color:cs.color,border:button.borderStyle,rounded:parseFloat(button.borderRadius)>0,siblingsInert:siblings.length>0&&siblings.every(x=>x.inert)};
+      });
+      assert.equal(state.parent,'seven-app');
+      assert.equal(state.modalInert,false);
+      assert.equal(state.background,'rgb(23, 33, 29)');
+      assert.match(state.color,/rgb\((?:237, 245, 240|238, 246, 241)\)/);
+      assert.notEqual(state.border,'none');
+      assert.equal(state.rounded,true);
+      assert.equal(state.siblingsInert,true);
+      await page.evaluate(()=>SevenRemake.closeDialog());
+      assert.equal(await page.evaluate(()=>[...document.getElementById('seven-app').children].every(x=>!x.inert)),true);
+      await page.close();
+    });
     await test('modern model and workspace menus stay inside viewport',async()=>{
       const page=await browser.newPage({viewport:{width:360,height:800}});
       await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');});
