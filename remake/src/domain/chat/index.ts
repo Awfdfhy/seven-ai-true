@@ -74,8 +74,6 @@ export function createRoom(options: CreateRoomOptions = {}): Room {
     options.title === undefined
       ? "New chat"
       : requireNonBlank(options.title, "room title", true);
-  const now = Math.max(room.updatedAt, requestedTime);
-
   const id =
     options.id === undefined
       ? crypto.randomUUID()
@@ -117,6 +115,8 @@ export function commitMessage(
       message: "Message role must be user or assistant.",
     });
   }
+
+  const now = Math.max(room.updatedAt, requestedTime);
 
   const id =
     options.id === undefined
