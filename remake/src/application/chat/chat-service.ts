@@ -86,6 +86,8 @@ export class ChatService {
     }
 
     const timeoutMs = normalizeTimeout(options.timeoutMs);
+    const stream = transport.stream.bind(transport);
+    const onDraft = options.onDraft;
 
     if (this.tasks.listActive(roomId).length > 0) {
       throw new SevenError({
@@ -126,7 +128,7 @@ export class ChatService {
 
         let draft = "";
 
-        for await (const delta of transport.stream({
+        for await (const delta of stream({
           room: withUser,
           signal,
         })) {
@@ -148,9 +150,9 @@ export class ChatService {
           }
           draft += delta;
 
-          if (options.onDraft) {
+          if (onDraft) {
             try {
-              options.onDraft(
+              onDraft(
                 Object.freeze({
                   roomId,
                   taskId,
