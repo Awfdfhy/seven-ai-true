@@ -85,22 +85,24 @@ jobs:
             echo "===== $file =====" >> /tmp/b09-evidence.txt
             if test -f "$file"; then
               wc -lc "$file" >> /tmp/b09-evidence.txt
-              grep -nE 'localStorage|sessionStorage|persist|save|restore|context|history|message|turn|state|canon|world|knowledge|fetch|generate|render|JSON\.stringify|JSON\.parse' "$file" | head -n 140 >> /tmp/b09-evidence.txt || true
+              grep -nE 'localStorage|sessionStorage|persist|save|restore|context|history|message|turn|state|canon|world|knowledge|fetch|generate|render|JSON\.stringify|JSON\.parse' "$file" | head -n 32 >> /tmp/b09-evidence.txt || true
             else
               echo "ABSENT" >> /tmp/b09-evidence.txt
             fi
           done
-          head -c 28000 /tmp/b09-evidence.txt > /tmp/b09-evidence-bounded.txt
+          head -c 7000 /tmp/b09-evidence.txt > /tmp/b09-evidence-bounded.txt
           {
             cat /tmp/qwen-prompt.md
             cat <<'EOF'
 
           RECOVERY OVERRIDE — ONE-SHOT MODE:
           Do not call tools or inspect files. A deterministic evidence pack follows.
-          Using ONLY that evidence, output the COMPLETE B09 audit report body as plain text.
-          Keep it <= 100 lines and <= 5500 characters. Cover every required topic, cite exact
-          file/line evidence where supplied, mark unknowns instead of guessing, and make the
-          FINAL line exactly WAVE01=COMPLETE.
+          Answer immediately and do not spend the response budget on hidden analysis.
+          Using ONLY that evidence, output a concise but COMPLETE B09 audit as plain text.
+          Keep it <= 45 lines and <= 3200 characters. Cover current costs/risks, bounded-context
+          policy, latency/token/persistence budgets, a 20-turn measurement plan, exact seams,
+          first optimization slice, and correctness guardrails. Cite supplied file/line evidence,
+          mark unknowns instead of guessing, and make the FINAL line exactly WAVE01=COMPLETE.
           EOF
             cat /tmp/b09-evidence-bounded.txt
           } > /tmp/qwen-effective-prompt.md
