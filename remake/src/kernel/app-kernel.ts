@@ -149,7 +149,7 @@ export class AppKernel {
           retryable: normalized.retryable,
         });
       } finally {
-        if (this.startPromise === pending) this.startPromise = null;
+        this.startPromise = null;
         if (this.startController === controller) this.startController = null;
       }
     })();
@@ -207,7 +207,7 @@ export class AppKernel {
       }
       return this.snapshot();
     })().finally(() => {
-      if (this.stopPromise === pending) this.stopPromise = null;
+      this.stopPromise = null;
     });
     this.stopPromise = pending;
     return pending;
@@ -267,7 +267,12 @@ export class AppKernel {
     attributes?: Readonly<Record<string, unknown>>,
   ): void {
     try {
-      this.diagnostics?.record({ level, category, name, attributes });
+      this.diagnostics?.record({
+        level,
+        category,
+        name,
+        ...(attributes !== undefined ? { attributes } : {}),
+      });
     } catch {
       // Diagnostics must never become a lifecycle dependency.
     }
