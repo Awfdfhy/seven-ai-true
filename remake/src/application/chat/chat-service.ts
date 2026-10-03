@@ -31,6 +31,17 @@ export type ChatRun = Readonly<{
 
 const DEFAULT_CHAT_DEADLINE_MS = 60_000;
 
+function normalizeTimeout(timeoutMs: number | undefined): number {
+  const value = timeoutMs ?? DEFAULT_CHAT_DEADLINE_MS;
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "timeoutMs must be a positive finite number.",
+    });
+  }
+  return value;
+}
+
 export class ChatService {
   private readonly startingRooms = new Set<string>();
 
@@ -45,6 +56,8 @@ export class ChatService {
     transport: ChatTransport,
     options: ChatSendOptions = {},
   ): Promise<ChatRun> {
+    const timeoutMs = normalizeTimeout(options.timeoutMs);
+
     if (
       this.startingRooms.has(roomId) ||
       this.tasks.listActive(roomId).length > 0
@@ -73,14 +86,13 @@ export class ChatService {
       });
       await this.rooms.put(withUser);
 
-      const timeoutMs = options.timeoutMs ?? DEFAULT_CHAT_DEADLINE_MS;
       const run: TaskRun<Room> = this.tasks.run(
         {
           kind: "chat",
           ownerId: roomId,
           timeoutMs,
         },
-        async ({ taskId, signal }) => {
+        async ({ taskId, signal, sealCancellation }) => {
           let draft = "";
 
           for await (const delta of transport.stream({
@@ -92,13 +104,20 @@ export class ChatService {
             }
             if (!delta) continue;
             draft += delta;
-            options.onDraft?.(
-              Object.freeze({
-                roomId,
-                taskId,
-                content: draft,
-              }),
-            );
+
+            if (options.onDraft) {
+              try {
+                options.onDraft(
+                  Object.freeze({
+                    roomId,
+                    taskId,
+                    content: draft,
+                  }),
+                );
+              } catch {
+                // UI/observer callbacks are intentionally isolated from generation.
+              }
+            }
           }
 
           if (signal.aborted) {
@@ -110,6 +129,10 @@ export class ChatService {
               message: "Provider completed without assistant content.",
               retryable: true,
             });
+          }
+
+          if (!sealCancellation()) {
+            throw new DOMException("Aborted", "AbortError");
           }
 
           const completed = commitMessage(withUser, {
