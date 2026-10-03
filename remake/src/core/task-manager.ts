@@ -131,6 +131,22 @@ export class TaskManager {
       })
       .then(
         (value) => {
+          if (controller.signal.aborted || task.status === "cancelling") {
+            const code =
+              task.cancelReason === "deadline"
+                ? "DEADLINE_EXCEEDED"
+                : "CANCELLED";
+            task.error = new SevenError({
+              code,
+              message:
+                code === "DEADLINE_EXCEEDED"
+                  ? "Task deadline exceeded."
+                  : "Task cancelled.",
+            });
+            this.finish(task, "cancelled");
+            throw task.error;
+          }
+
           this.finish(task, "succeeded");
           return value;
         },
