@@ -23,6 +23,7 @@ from urllib.parse import urlsplit
 HOST = os.environ.get("SEVEN_RELAY_HOST", "127.0.0.1")
 PORT = int(os.environ.get("SEVEN_RELAY_PORT", "8877"))
 BRIDGE_STREAM = os.environ.get("SEVEN_RELAY_BRIDGE_STREAM", "").strip().lower() in {"1", "true", "yes"}
+FINAL_ONLY = os.environ.get("SEVEN_RELAY_FINAL_ONLY", "").strip().lower() in {"1", "true", "yes"}
 UPSTREAM = "api.kilo.ai"
 PREFIX = "/api/gateway"
 
@@ -66,6 +67,21 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 if bridge_stream:
                     request_json["stream"] = False
                     request_json.pop("stream_options", None)
+                    if FINAL_ONLY:
+                        # Qwen Code's full agent system/tool schema can cause some
+                        # anonymous reasoning routes to end without visible text
+                        # on synthesis-only tasks. Keep Qwen Code as the caller,
+                        # but reduce the provider request to the final user task.
+                        messages = request_json.get("messages") or []
+                        last_user = next((m for m in reversed(messages) if isinstance(m, dict) and m.get("role") == "user"), None)
+                        request_json["messages"] = [
+                            {"role": "system", "content": "Return the requested final repository audit directly as plain text. Do not call tools. Do not emit hidden reasoning. Follow the user's required final marker exactly."},
+                            last_user or {"role": "user", "content": "Return the final answer now."},
+                        ]
+                        request_json.pop("tools", None)
+                        request_json.pop("tool_choice", None)
+                        request_json["temperature"] = 0
+                        request_json["max_tokens"] = min(int(request_json.get("max_tokens") or 2400), 2400)
                     payload = json.dumps(request_json).encode("utf-8")
             except Exception:
                 bridge_stream = False
