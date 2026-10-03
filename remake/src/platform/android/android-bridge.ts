@@ -88,19 +88,23 @@ export class AndroidBridgeClient {
               onAbort();
               return;
             }
-            assertBridgeResponse<TResult>(raw, request.requestId);
-            if (raw.result.ok) {
-              finishResolve(raw.result.value);
-              return;
+            try {
+              assertBridgeResponse<TResult>(raw, request.requestId);
+              if (raw.result.ok) {
+                finishResolve(raw.result.value);
+                return;
+              }
+              finishReject(
+                new SevenError({
+                  code: "BRIDGE",
+                  message: raw.result.error.message,
+                  retryable: raw.result.error.retryable,
+                  details: { nativeCode: raw.result.error.code },
+                }),
+              );
+            } catch (error) {
+              finishReject(error);
             }
-            finishReject(
-              new SevenError({
-                code: "BRIDGE",
-                message: raw.result.error.message,
-                retryable: raw.result.error.retryable,
-                details: { nativeCode: raw.result.error.code },
-              }),
-            );
           },
           (error: unknown) => {
             if (signal.aborted) {
