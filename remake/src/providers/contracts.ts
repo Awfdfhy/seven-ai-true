@@ -52,8 +52,10 @@ export function modelKey(
     !isRecord(model) ||
     typeof model.providerId !== "string" ||
     !model.providerId.trim() ||
+    model.providerId !== model.providerId.trim() ||
     typeof model.id !== "string" ||
-    !model.id.trim()
+    !model.id.trim() ||
+    model.id !== model.id.trim()
   ) {
     throw new SevenError({
       code: "VALIDATION",
