@@ -22,24 +22,40 @@ jobs:
       max-parallel: 1
       matrix:
         include:
-          - {name: "Bug Hunt A09 Qwen performance audit", branch: "bughunt/a09", prompt: ".seven-team/prompts/bughunt/A09.md", report: ".seven-team/reports/bughunt/A09.md"}
-          - {name: "Bug Hunt B09 Qwen race audit", branch: "bughunt/b09", prompt: ".seven-team/prompts/bughunt/B09.md", report: ".seven-team/reports/bughunt/B09.md"}
+          - name: Bug Hunt A09 Qwen performance audit
+            branch: bughunt/a09
+            prompt: .seven-team/prompts/bughunt/A09.md
+            report: .seven-team/reports/bughunt/A09.md
+          - name: Bug Hunt B09 Qwen race audit
+            branch: bughunt/b09
+            prompt: .seven-team/prompts/bughunt/B09.md
+            report: .seven-team/reports/bughunt/B09.md
     steps:
       - uses: actions/checkout@v4
-        with: {ref: "${{ matrix.branch }}", fetch-depth: 0, persist-credentials: false}
+        with:
+          ref: ${{ matrix.branch }}
+          fetch-depth: 0
+          persist-credentials: false
       - uses: actions/setup-node@v4
-        with: {node-version: '22'}
-      - run: npm install -g @qwen-code/qwen-code@latest
+        with:
+          node-version: '22'
+      - name: Install Qwen Code
+        run: npm install -g @qwen-code/qwen-code@latest
       - name: Materialize runtime and prompt
         run: |
           git fetch origin main
           git show origin/main:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/relay.py
           git show origin/main:${{ matrix.prompt }} > /tmp/prompt.md
       - name: Start relay
-        env: {SEVEN_RELAY_BRIDGE_STREAM: '1', SEVEN_RELAY_FINAL_ONLY: '1'}
+        env:
+          SEVEN_RELAY_BRIDGE_STREAM: '1'
+          SEVEN_RELAY_FINAL_ONLY: '1'
         run: |
           python /tmp/relay.py >/tmp/relay.log 2>&1 &
-          for i in {1..20}; do curl -fsS http://127.0.0.1:8877/v1/models >/tmp/models.json && exit 0; sleep 1; done
+          for i in {1..20}; do
+            if curl -fsS http://127.0.0.1:8877/v1/models >/tmp/models.json; then exit 0; fi
+            sleep 1
+          done
           exit 1
       - name: Select healthy direct free model
         run: |
@@ -54,44 +70,72 @@ jobs:
                   with urllib.request.urlopen(req,timeout=30) as r: out=json.load(r)
                   msg=((out.get('choices') or [{}])[0].get('message') or {})
                   if (msg.get('content') or msg.get('reasoning_content') or '').strip():
-                      open(os.environ['GITHUB_ENV'],'a').write('BUG_MODEL='+mid+'\n'); print(mid); break
-              except Exception as e: print('probe',mid,e)
-          else: raise SystemExit('no healthy direct free model')
+                      with open(os.environ['GITHUB_ENV'],'a',encoding='utf-8') as env:
+                          env.write('BUG_MODEL='+mid+'\n')
+                      print('Selected',mid)
+                      raise SystemExit(0)
+              except Exception as e:
+                  print('probe failed',mid,type(e).__name__,e)
+          raise SystemExit('no healthy direct free model')
           PY
       - name: Run Qwen audit
         env:
+          REPORT: ${{ matrix.report }}
           OPENAI_API_KEY: local-dummy-key
           OPENAI_BASE_URL: http://127.0.0.1:8877/v1
           QWEN_CODE_SUPPRESS_YOLO_WARNING: 'true'
         run: |
           set -euo pipefail
-          REPORT='${{ matrix.report }}'; mkdir -p "$(dirname "$REPORT")"
+          mkdir -p "$(dirname "$REPORT")"
           set +e
-          timeout 180s qwen -p "$(cat /tmp/prompt.md)" --approval-mode yolo --output-format text --model "$BUG_MODEL" --openai-api-key local-dummy-key --openai-base-url http://127.0.0.1:8877/v1 2>&1 | tee /tmp/qwen.out
+          timeout 180s qwen -p "$(cat /tmp/prompt.md)" \
+            --approval-mode yolo \
+            --output-format text \
+            --model "$BUG_MODEL" \
+            --openai-api-key local-dummy-key \
+            --openai-base-url http://127.0.0.1:8877/v1 2>&1 | tee /tmp/qwen.out
           rc=${PIPESTATUS[0]}
           set -e
           if grep -q 'BUGHUNT=COMPLETE' /tmp/qwen.out; then cp /tmp/qwen.out "$REPORT"; fi
           if ! (test -f "$REPORT" && grep -q 'BUGHUNT=COMPLETE' "$REPORT"); then
             python - <<'PY'
           import json,os,pathlib,urllib.request
-          prompt=pathlib.Path('/tmp/prompt.md').read_text()
-          req=urllib.request.Request('http://127.0.0.1:8877/v1/chat/completions',data=json.dumps({'model':os.environ['BUG_MODEL'],'messages':[{'role':'system','content':'Return only the requested bug-audit report. End exactly BUGHUNT=COMPLETE.'},{'role':'user','content':prompt}],'temperature':0,'max_tokens':5000,'stream':False}).encode(),headers={'Content-Type':'application/json'})
+          prompt=pathlib.Path('/tmp/prompt.md').read_text(encoding='utf-8')
+          req=urllib.request.Request(
+              'http://127.0.0.1:8877/v1/chat/completions',
+              data=json.dumps({
+                  'model':os.environ['BUG_MODEL'],
+                  'messages':[
+                      {'role':'system','content':'Return only the requested bug-audit report. End exactly BUGHUNT=COMPLETE.'},
+                      {'role':'user','content':prompt}
+                  ],
+                  'temperature':0,'max_tokens':5000,'stream':False
+              }).encode(),
+              headers={'Content-Type':'application/json'}
+          )
           with urllib.request.urlopen(req,timeout=160) as r: d=json.load(r)
           m=((d.get('choices') or [{}])[0].get('message') or {})
           t=(m.get('content') or m.get('reasoning_content') or '').strip()
           if 'BUGHUNT=COMPLETE' not in t: t=t.rstrip()+'\nBUGHUNT=COMPLETE'
-          pathlib.Path(os.environ['REPORT']).write_text(t+'\n')
+          pathlib.Path(os.environ['REPORT']).write_text(t+'\n',encoding='utf-8')
           PY
           fi
           grep -q 'BUGHUNT=COMPLETE' "$REPORT"
-        env:
-          REPORT: "${{ matrix.report }}"
-          OPENAI_API_KEY: local-dummy-key
-          OPENAI_BASE_URL: http://127.0.0.1:8877/v1
-          QWEN_CODE_SUPPRESS_YOLO_WARNING: 'true'
       - name: Sanitize and push
-        env: {GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          R='${{ matrix.report }}'; cp "$R" /tmp/report.md; git reset --hard HEAD; git clean -fdx; mkdir -p "$(dirname "$R")"; cp /tmp/report.md "$R"; git add -f "$R"
+          R='${{ matrix.report }}'
+          cp "$R" /tmp/report.md
+          git reset --hard HEAD
+          git clean -fdx
+          mkdir -p "$(dirname "$R")"
+          cp /tmp/report.md "$R"
+          git add -f "$R"
           if git diff --cached --quiet; then exit 0; fi
-          git config user.name 'Seven Bug Hunt'; git config user.email 'actions@users.noreply.github.com'; git commit -m "Bug Hunt ${{ matrix.name }}"; git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:${{ matrix.branch }}
+          git config user.name 'Seven Bug Hunt'
+          git config user.email 'actions@users.noreply.github.com'
+          git commit -m "Bug Hunt ${{ matrix.name }}"
+          git fetch origin "${{ matrix.branch }}"
+          git rebase "origin/${{ matrix.branch }}"
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:${{ matrix.branch }}
