@@ -4,6 +4,9 @@ import { AppKernel } from "./app-kernel";
 import { DiagnosticsBuffer } from "../observability/diagnostics";
 import { ShellStore, type ShellSnapshot } from "../ui/shell/shell-store";
 import { ThemeService, type ThemeScheduler } from "../ui/system/theme-service";
+import { AndroidBridgeClient } from "../platform/android/android-bridge";
+import { createCapacitorAndroidNativeTransport } from "../platform/android/capacitor-native-transport";
+import { AndroidPlatformService } from "../application/android/android-platform-service";
 
 export type SevenRuntime = Readonly<{
   taskManager: TaskManager;
@@ -11,6 +14,7 @@ export type SevenRuntime = Readonly<{
   theme: ThemeService;
   diagnostics: DiagnosticsBuffer;
   kernel: AppKernel;
+  android: AndroidPlatformService | null;
 }>;
 
 export type SevenRuntimeOptions = Readonly<{
@@ -41,6 +45,11 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
     ? new ThemeService(shell, themeNow)
     : new ThemeService(shell, themeNow, options.themeScheduler);
 
+  const nativeTransport = createCapacitorAndroidNativeTransport();
+  const android = nativeTransport
+    ? new AndroidPlatformService(taskManager, new AndroidBridgeClient(nativeTransport))
+    : null;
+
   const kernel = new AppKernel(diagnostics);
   kernel.register({
     id: "theme",
@@ -58,5 +67,6 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
     theme,
     diagnostics,
     kernel,
+    android,
   });
 }
