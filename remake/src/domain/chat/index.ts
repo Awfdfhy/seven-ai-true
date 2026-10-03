@@ -62,6 +62,12 @@ function cloneMessage(message: ChatMessage): ChatMessage {
 }
 
 export function cloneRoom(room: Room): Room {
+  if (!isRoom(room)) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Room failed schema validation.",
+    });
+  }
   return Object.freeze({
     ...room,
     messages: Object.freeze(room.messages.map(cloneMessage)),
@@ -69,6 +75,12 @@ export function cloneRoom(room: Room): Room {
 }
 
 export function createRoom(options: CreateRoomOptions = {}): Room {
+  if (!options || typeof options !== "object" || Array.isArray(options)) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Create-room options must be an object.",
+    });
+  }
   const now = requireFiniteTime(options.now ?? Date.now(), "room timestamp");
   const title =
     options.title === undefined
@@ -98,6 +110,18 @@ export function commitMessage(
   room: Room,
   options: CommitMessageOptions,
 ): Room {
+  if (!isRoom(room)) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Room failed schema validation before message commit.",
+    });
+  }
+  if (!options || typeof options !== "object" || Array.isArray(options)) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Message options must be an object.",
+    });
+  }
   const content = requireNonBlank(options.content, "message content", false);
   const requestedTime = requireFiniteTime(
     options.now ?? Date.now(),
@@ -149,6 +173,12 @@ export function withRoomModel(
   modelId: string | null,
   now = Date.now(),
 ): Room {
+  if (!isRoom(room)) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Room failed schema validation before model update.",
+    });
+  }
   const normalizedModelId =
     modelId === null ? null : requireNonBlank(modelId, "model id", true);
   const timestamp = requireFiniteTime(now, "room timestamp");
