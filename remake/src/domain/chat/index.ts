@@ -74,6 +74,8 @@ export function createRoom(options: CreateRoomOptions = {}): Room {
     options.title === undefined
       ? "New chat"
       : requireNonBlank(options.title, "room title", true);
+  const now = Math.max(room.updatedAt, requestedTime);
+
   const id =
     options.id === undefined
       ? crypto.randomUUID()
@@ -99,8 +101,11 @@ export function commitMessage(
   options: CommitMessageOptions,
 ): Room {
   const content = requireNonBlank(options.content, "message content", false);
-  const now = requireFiniteTime(options.now ?? Date.now(), "message timestamp");
-  if (now < room.createdAt) {
+  const requestedTime = requireFiniteTime(
+    options.now ?? Date.now(),
+    "message timestamp",
+  );
+  if (requestedTime < room.createdAt) {
     throw new SevenError({
       code: "VALIDATION",
       message: "Message timestamp cannot precede room creation.",
