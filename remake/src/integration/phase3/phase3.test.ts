@@ -540,12 +540,12 @@ describe("Phase 3 memory + context", () => {
 
   it("summarizes through a real ProviderAdapter with one leading system message", async () => {
     const descriptor = model("summary-provider", "summary-model", 8_000);
-    let captured: ProviderStreamRequest | null = null;
+    const capture: { request?: ProviderStreamRequest } = {};
     const provider = adapter(
       "summary-provider",
       [descriptor],
       async function* (request) {
-        captured = request;
+        capture.request = request;
         yield { delta: "Compact " };
         yield { delta: "summary." };
       },
@@ -578,14 +578,16 @@ describe("Phase 3 memory + context", () => {
     });
 
     expect(output).toBe("Compact summary.");
-    expect(captured?.modelId).toBe("summary-model");
-    expect(captured?.messages.filter((message) => message.role === "system"))
+    const request = capture.request;
+    if (!request) throw new Error("summary provider request was not captured");
+    expect(request.modelId).toBe("summary-model");
+    expect(request.messages.filter((message) => message.role === "system"))
       .toHaveLength(1);
-    expect(captured?.messages[0]?.role).toBe("system");
-    expect(captured?.messages[1]?.content).toContain(
+    expect(request.messages[0]?.role).toBe("system");
+    expect(request.messages[1]?.content).toContain(
       "Earlier architecture work is complete.",
     );
-    expect(captured?.messages[1]?.content).toContain(
+    expect(request.messages[1]?.content).toContain(
       "We decided to keep one system message.",
     );
   });
