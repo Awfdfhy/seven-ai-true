@@ -56,7 +56,12 @@ function freezeModel(model: ModelDescriptor): ModelDescriptor {
 }
 
 function validateHealth(entry: ProviderHealth): void {
-  if (!entry.providerId.trim()) {
+  if (
+    !entry ||
+    typeof entry !== "object" ||
+    typeof entry.providerId !== "string" ||
+    !entry.providerId.trim()
+  ) {
     throw new SevenError({
       code: "VALIDATION",
       message: "Provider health providerId must not be empty.",
@@ -81,10 +86,17 @@ export class ModelRegistry {
     providerId: string,
     models: readonly ModelDescriptor[],
   ): void {
-    if (!providerId.trim()) {
+    if (typeof providerId !== "string" || !providerId.trim()) {
       throw new SevenError({
         code: "VALIDATION",
         message: "providerId must not be empty.",
+      });
+    }
+
+    if (!Array.isArray(models)) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Provider models must be an array.",
       });
     }
 
@@ -137,7 +149,7 @@ export class ProviderHealthTracker {
       ids
         .sort()
         .map((providerId) => {
-          if (!providerId.trim()) {
+          if (typeof providerId !== "string" || !providerId.trim()) {
             throw new SevenError({
               code: "VALIDATION",
               message: "providerId must not be empty.",
@@ -154,7 +166,7 @@ export class ProviderHealthTracker {
   }
 
   recordSuccess(providerId: string, attemptStartedAt = Date.now()): void {
-    if (!providerId.trim()) {
+    if (typeof providerId !== "string" || !providerId.trim()) {
       throw new SevenError({
         code: "VALIDATION",
         message: "providerId must not be empty.",
@@ -189,7 +201,7 @@ export class ProviderHealthTracker {
     now: number,
     options: ProviderFailureOptions = {},
   ): void {
-    if (!providerId.trim()) {
+    if (typeof providerId !== "string" || !providerId.trim()) {
       throw new SevenError({
         code: "VALIDATION",
         message: "providerId must not be empty.",
@@ -244,7 +256,44 @@ export class ModelRouter {
     health: readonly ProviderHealth[],
     preferences: RoutePreferences,
   ): RoutePlan {
-    if (!Number.isInteger(preferences.maxAttempts) || preferences.maxAttempts <= 0) {
+    if (!preferences || typeof preferences !== "object") {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Route preferences must be an object.",
+      });
+    }
+    if (
+      preferences.mode !== "quick" &&
+      preferences.mode !== "balanced" &&
+      preferences.mode !== "deep"
+    ) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Route mode must be quick, balanced, or deep.",
+      });
+    }
+    if (typeof preferences.requireStreaming !== "boolean") {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "requireStreaming must be a boolean.",
+      });
+    }
+    if (
+      preferences.preferredModelId !== null &&
+      typeof preferences.preferredModelId !== "string"
+    ) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "preferredModelId must be a string or null.",
+      });
+    }
+    if (!Array.isArray(models) || !Array.isArray(health)) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Models and provider health must be arrays.",
+      });
+    }
+    if (!Number.isSafeInteger(preferences.maxAttempts) || preferences.maxAttempts <= 0) {
       throw new SevenError({
         code: "VALIDATION",
         message: "maxAttempts must be a positive integer.",
