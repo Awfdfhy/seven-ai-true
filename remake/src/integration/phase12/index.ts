@@ -18,7 +18,14 @@ export class RoutedChatTransport implements ChatTransport {
     private readonly plan: RoutePlan,
     private readonly providers: ProviderMap,
     private readonly systemPrompt = "You are Seven, a precise and helpful AI assistant.",
-  ) {}
+  ) {
+    if (!systemPrompt.trim()) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "System prompt must not be empty.",
+      });
+    }
+  }
 
   async *stream(context: ChatStreamContext): AsyncIterable<string> {
     const messages: ProviderMessage[] = [
@@ -44,8 +51,14 @@ export class RoutedChatTransport implements ChatTransport {
         failures.push(`${candidate.providerId}:missing`);
         continue;
       }
+      if (provider.id !== candidate.providerId) {
+        failures.push(`${candidate.providerId}:provider-id-mismatch`);
+        continue;
+      }
 
-      let emitted = false;
+      let meaningfulOutputStarted = false;
+      let prelude = "";
+
       try {
         for await (const chunk of provider.stream(
           {
@@ -58,14 +71,24 @@ export class RoutedChatTransport implements ChatTransport {
             throw new DOMException("Aborted", "AbortError");
           }
           if (!chunk.delta) continue;
-          emitted = true;
+
+          if (!meaningfulOutputStarted) {
+            prelude += chunk.delta;
+            if (!prelude.trim()) continue;
+            meaningfulOutputStarted = true;
+            yield prelude;
+            prelude = "";
+            continue;
+          }
+
           yield chunk.delta;
         }
-        if (emitted) return;
+
+        if (meaningfulOutputStarted) return;
         failures.push(`${candidate.providerId}:empty`);
       } catch (error) {
         if (context.signal.aborted) throw error;
-        if (emitted) throw error;
+        if (meaningfulOutputStarted) throw error;
         failures.push(
           `${candidate.providerId}:${error instanceof Error ? error.message : "failed"}`,
         );
@@ -76,7 +99,7 @@ export class RoutedChatTransport implements ChatTransport {
       code: "PROVIDER",
       message: "All planned provider routes failed before producing output.",
       retryable: true,
-      details: { failures },
+      details: { failures: Object.freeze([...failures]) },
     });
   }
 }
