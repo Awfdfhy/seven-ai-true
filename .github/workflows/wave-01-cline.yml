@@ -21,10 +21,10 @@ jobs:
   cline-live:
     name: ${{ matrix.name }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: 1
       matrix:
         include:
           - name: Wave 01 A01 Cline UI audit
@@ -97,10 +97,10 @@ jobs:
           set -u
           mkdir -p "$(dirname "${{ matrix.report }}")"
           set +e
-          timeout 150s cline \
+          timeout 300s cline \
             --config "${{ matrix.config_dir }}" \
             --yolo \
-            --timeout 120 \
+            --timeout 240 \
             --retries 1 \
             -P openai-compatible \
             -m kilo-auto/free \
@@ -112,7 +112,7 @@ jobs:
             echo "Cline produced required report; accepting output (rc=$rc)."
           else
             echo "Cline did not produce required report (rc=$rc)." >&2
-            exit "${rc:-1}"
+            exit 1
           fi
 
       - name: Sanitize to allowed output only
