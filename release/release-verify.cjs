@@ -399,6 +399,25 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       assert.equal(/paste\s+(an?\s+)?api\s*key|enter\s+(an?\s+)?api\s*key|أدخل\s+.*مفتاح/i.test(state.text),false);
       await page.close();
     });
+    await test('long-chat jump control is themed localized and rooted correctly',async()=>{
+      const page=await browser.newPage({viewport:{width:360,height:800}});
+      await page.addInitScript(()=>{localStorage.setItem('seven_ui_language','ar');localStorage.setItem('user_name_asked','1');});
+      await page.goto(origin,{waitUntil:'domcontentloaded'});
+      await page.waitForFunction(()=>window.SevenRemake&&!!document.querySelector('.seven-shell-jump'));
+      await page.evaluate(()=>{
+        const chat=document.getElementById('chat');
+        chat.innerHTML=Array.from({length:32},(_,i)=>'<div class="message assistant"><div class="bubble"><p>رسالة طويلة '+i+' '.repeat(12)+'</p><p>'+('نص '.repeat(40))+'</p></div></div>').join('');
+        chat.scrollTop=0;
+        chat.dispatchEvent(new Event('scroll'));
+      });
+      await page.waitForFunction(()=>document.querySelector('.seven-shell-jump')?.classList.contains('show'));
+      const state=await page.evaluate(()=>{
+        const b=document.querySelector('.seven-shell-jump'),r=b.getBoundingClientRect(),cs=getComputedStyle(b);
+        return{parent:b.parentElement?.id,aria:b.getAttribute('aria-label'),bg:cs.backgroundColor,border:cs.borderStyle,bounded:r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2};
+      });
+      assert.equal(state.parent,'seven-app');assert.equal(state.aria,'الانتقال إلى أحدث رسالة');assert.notEqual(state.bg,'rgba(0, 0, 0, 0)');assert.equal(state.border,'solid');assert.equal(state.bounded,true);
+      await page.close();
+    });
     await test('attachment menu is localized themed and bounded on mobile',async()=>{
       const page=await browser.newPage({viewport:{width:320,height:800}});
       await page.addInitScript(()=>{localStorage.setItem('seven_ui_language','ar');localStorage.setItem('user_name_asked','1');});
