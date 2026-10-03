@@ -202,6 +202,12 @@ export class MemoryContextService implements ProviderContextSource {
           message: "Context summarizer returned an empty summary.",
         });
       }
+      if (this.builder.estimateText(summaryText) > targetTokens) {
+        throw new SevenError({
+          code: "PROVIDER",
+          message: "Context summarizer exceeded the summary token budget.",
+        });
+      }
 
       const now = this.now();
       if (!Number.isFinite(now) || now < 0) {
