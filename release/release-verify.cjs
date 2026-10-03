@@ -141,6 +141,27 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       assert.equal(state.bounded,true);
       await page.close();
     });
+    await test('Arabic settings localization is complete and RTL-safe',async()=>{
+      const page=await browser.newPage({viewport:{width:320,height:800}});
+      await page.addInitScript(()=>{localStorage.setItem('seven_ui_language','ar');localStorage.setItem('user_name_asked','1');});
+      await page.goto(origin,{waitUntil:'domcontentloaded'});
+      await page.waitForFunction(()=>window.SevenRemake&&document.getElementById('settingsModal'));
+      const state=await page.evaluate(()=>{
+        openSettings();
+        const texts=[...document.querySelectorAll('#settingsModal [role="tab"],#settingsModal summary,#settingsModal label,#settingsModal .settings-helper,#settingsModal .route-status-title,#settingsModal .route-state-badge')].map(x=>x.textContent.trim()).filter(Boolean);
+        const m=document.querySelector('#settingsModal .modal-content'),r=m.getBoundingClientRect();
+        return{dir:document.documentElement.dir,texts,bounded:m.scrollWidth<=m.clientWidth+1&&r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2};
+      });
+      assert.equal(state.dir,'rtl');
+      assert.equal(state.bounded,true);
+      assert.ok(state.texts.includes('المزودون التلقائيون'));
+      assert.ok(state.texts.includes('الذاكرة والبيانات'));
+      assert.ok(state.texts.includes('متقدم'));
+      assert.equal(state.texts.includes('Automatic Providers'),false);
+      assert.equal(state.texts.includes('Memory & Data'),false);
+      assert.equal(state.texts.includes('Advanced'),false);
+      await page.close();
+    });
     await test('search settings require no manual API key',async()=>{
       const page=await browser.newPage({viewport:{width:360,height:800}});
       await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');});
