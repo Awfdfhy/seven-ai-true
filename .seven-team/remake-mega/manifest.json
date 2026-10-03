@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "wave": "remake-mega-01",
+  "baseBranch": "seven-remake-v3",
+  "baseSha": "be5bc24f0172f8469fbb35988d6542678e64417b",
+  "marker": "REMAKE_MEGA=COMPLETE",
+  "policy": {
+    "allWorkersImplement": true,
+    "noSharedWrites": true,
+    "noNewDependencies": true,
+    "requiredGates": [
+      "scope",
+      "report",
+      "typecheck",
+      "tests",
+      "build"
+    ],
+    "integration": "manager-reviewed-only"
+  },
+  "workers": [
+    {
+      "id": "A01",
+      "branch": "remake-agent/a01-chat-domain",
+      "scope": "remake/src/domain/chat",
+      "task": "Implement the clean chat domain model: immutable committed messages, transient assistant draft representation, Room aggregate, IDs, timestamps, invariants, pure update functions, and thorough tests. No persistence or UI."
+    },
+    {
+      "id": "A02",
+      "branch": "remake-agent/a02-chat-application",
+      "scope": "remake/src/application/chat",
+      "task": "Implement the application-level chat orchestration layer around the existing TaskManager: send lifecycle, one active send per room policy, streaming draft accumulation, finalize/fail/cancel transitions, request ownership, and tests with fake executors. No provider-specific code."
+    },
+    {
+      "id": "A03",
+      "branch": "remake-agent/a03-storage",
+      "scope": "remake/src/storage",
+      "task": "Implement a clean storage port plus IndexedDB adapter architecture with transactional versioned records, atomic migration helper, corruption/error classification, interactive-recovery-friendly errors, and tests using deterministic in-memory/fake primitives where browser IndexedDB is unavailable."
+    },
+    {
+      "id": "A04",
+      "branch": "remake-agent/a04-providers",
+      "scope": "remake/src/providers",
+      "task": "Implement provider contracts and payload-shaping primitives: provider capabilities, normalized model descriptors, strict message validation requiring one leading system message, normalized errors, mock provider, and tests. Do not hard-code real secrets or network endpoints."
+    },
+    {
+      "id": "A05",
+      "branch": "remake-agent/a05-routing",
+      "scope": "remake/src/routing",
+      "task": "Implement a pure model router and provider health/cooldown planner with explicit route plans, fallback candidates, global wall-clock budget accounting, cooldown/429 handling metadata, deterministic scoring, and tests."
+    },
+    {
+      "id": "A06",
+      "branch": "remake-agent/a06-memory",
+      "scope": "remake/src/memory",
+      "task": "Implement memory/context domain primitives: versioned memory entries, immutable updates, deterministic context selection, token-budget abstraction that does not assume English-only ratios, migration contracts, and tests. No storage adapter edits."
+    },
+    {
+      "id": "A07",
+      "branch": "remake-agent/a07-research",
+      "scope": "remake/src/research",
+      "task": "Implement research evidence/citation contracts with canonical URL, retrievedAt, optional publishedAt, contentHash, evidence snippets, freshness classification, deduplication primitives, structured research failures, and tests."
+    },
+    {
+      "id": "A08",
+      "branch": "remake-agent/a08-testing",
+      "scope": "remake/src/testing",
+      "task": "Build reusable deterministic testing utilities for the remake: deferred promises, abort-aware fake streams, fake clocks/helpers, invariant assertions, scenario harness primitives, and self-tests. Do not change production domains."
+    },
+    {
+      "id": "A09",
+      "branch": "remake-agent/a09-performance",
+      "scope": "remake/src/performance",
+      "task": "Implement performance-budget primitives: monotonic deadlines, operation budgets, bounded queues, lightweight timing spans, long-task-safe scheduling abstractions, and tests. No global timers without ownership."
+    },
+    {
+      "id": "A10",
+      "branch": "remake-agent/a10-contracts",
+      "scope": "remake/src/contracts",
+      "task": "Implement reusable runtime contract/invariant validators for IDs, ISO timestamps, versioned payloads, discriminated result envelopes, serializable error shapes, exhaustive assertion helpers, and tests. Keep framework-agnostic."
+    },
+    {
+      "id": "B01",
+      "branch": "remake-agent/b01-attachments",
+      "scope": "remake/src/attachments",
+      "task": "Implement attachment ingestion domain primitives: immutable attachment metadata, hard byte budgets, MIME plus signature/content-sniff policy interfaces, single-flight loader primitive, cancellation-aware ingestion states, and race/retry tests. No UI."
+    },
+    {
+      "id": "B02",
+      "branch": "remake-agent/b02-android-bridge",
+      "scope": "remake/src/platform/android",
+      "task": "Implement TypeScript-side Android bridge contracts: typed request/response envelopes, request IDs, capability negotiation, cancellation token mapping, structured bridge errors, SAF grant state types, mock bridge, and contract tests. No Java/Kotlin yet."
+    },
+    {
+      "id": "B03",
+      "branch": "remake-agent/b03-deep-think",
+      "scope": "remake/src/thinking",
+      "task": "Implement provider-agnostic Deep Think orchestration primitives: two-pass reasoning, merge reasoning brief into the single leading system message, final payload revalidation hook, cancellation/deadline propagation, and tests proving no trailing system message can exist."
+    },
+    {
+      "id": "B04",
+      "branch": "remake-agent/b04-github",
+      "scope": "remake/src/github",
+      "task": "Implement GitHub Self-Dev domain/service primitives with token-state metadata only (never plaintext secrets), single-flight refresh coordinator, expiry skew logic, connection state machine, structured API errors, and concurrency tests using fake token providers."
+    },
+    {
+      "id": "B05",
+      "branch": "remake-agent/b05-rpg",
+      "scope": "remake/src/rpg",
+      "task": "Implement RPG/canon domain foundations: versioned immutable canonical snapshot, world/canon session identities, branch/title records, revision/checksum metadata, safe snapshot cloning, transactional change-set primitives, and tests. No UI or model calls."
+    },
+    {
+      "id": "B06",
+      "branch": "remake-agent/b06-shell",
+      "scope": "remake/src/ui/shell",
+      "task": "Implement one shell-state store abstraction for active workspace, sidebar, dialogs, locale/direction, theme preference and viewport/keyboard state. Use immutable snapshots/subscriptions, single ownership, no direct DOM mutation, and tests."
+    },
+    {
+      "id": "B07",
+      "branch": "remake-agent/b07-ui-system",
+      "scope": "remake/src/ui/system",
+      "task": "Implement clean UI system services for locale/direction and theme scheduling: one timer owner, visibility/resume reconciliation API, auto/day/night preference state, RTL derivation, composition-safe locale metadata, and fake-clock tests."
+    },
+    {
+      "id": "B08",
+      "branch": "remake-agent/b08-release",
+      "scope": "remake/src/release",
+      "task": "Implement release-assurance primitives: deterministic payload manifest types, SHA-256 verification abstraction, installed-artifact identity comparison logic, release gate result aggregation, and tests. Keep platform-specific extraction behind ports."
+    },
+    {
+      "id": "B09",
+      "branch": "remake-agent/b09-observability",
+      "scope": "remake/src/observability",
+      "task": "Implement privacy-safe structured observability primitives: event schema, bounded ring buffer, task lifecycle correlation IDs, redaction helpers, error serialization, diagnostic export model, and tests. Never log message contents or secrets by default."
+    },
+    {
+      "id": "B10",
+      "branch": "remake-agent/b10-kernel",
+      "scope": "remake/src/kernel",
+      "task": "Implement AppKernel lifecycle foundations: explicit service registration, single start/shutdown ownership, dependency ordering without globals, idempotent boot, lifecycle states, failure rollback hooks, and tests including delayed dependency startup."
+    }
+  ]
+}
