@@ -1,0 +1,14 @@
+{
+  "wave": "phase12-integration",
+  "baseline": "1e42d895456cefd54e7fdbf38208ab36374c8664",
+  "launchedAt": "2026-10-03",
+  "target": "Close Seven Remake milestones 1/12 and 2/12",
+  "required": [
+    "integration",
+    "race-tests",
+    "persistence-recovery",
+    "model-routing",
+    "provider-fallback",
+    "architecture-invariants"
+  ]
+}
