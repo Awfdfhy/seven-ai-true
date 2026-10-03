@@ -1,5 +1,9 @@
 import { SevenError } from "../core/errors";
-import type { ModelDescriptor } from "../providers/contracts";
+import {
+  assertValidModelDescriptor,
+  modelKey,
+  type ModelDescriptor,
+} from "../providers/contracts";
 
 export type RouteMode = "quick" | "balanced" | "deep";
 
@@ -34,11 +38,40 @@ export type RoutePlan = Readonly<{
   candidates: readonly RouteCandidate[];
 }>;
 
+function requireFiniteNonNegative(value: number, field: string): number {
+  if (!Number.isFinite(value) || value < 0) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: `${field} must be a non-negative finite number.`,
+    });
+  }
+  return value;
+}
+
 function freezeModel(model: ModelDescriptor): ModelDescriptor {
   return Object.freeze({
     ...model,
     capabilities: Object.freeze({ ...model.capabilities }),
   });
+}
+
+function validateHealth(entry: ProviderHealth): void {
+  if (!entry.providerId.trim()) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Provider health providerId must not be empty.",
+    });
+  }
+  requireFiniteNonNegative(entry.penalty, "Provider health penalty");
+  if (
+    entry.cooldownUntil !== null &&
+    (!Number.isFinite(entry.cooldownUntil) || entry.cooldownUntil < 0)
+  ) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Provider cooldownUntil must be null or a non-negative finite timestamp.",
+    });
+  }
 }
 
 export class ModelRegistry {
@@ -48,22 +81,36 @@ export class ModelRegistry {
     providerId: string,
     models: readonly ModelDescriptor[],
   ): void {
-    for (const [key, model] of this.models) {
-      if (model.providerId === providerId) this.models.delete(key);
+    if (!providerId.trim()) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "providerId must not be empty.",
+      });
     }
 
+    const incoming = new Map<string, ModelDescriptor>();
     for (const model of models) {
+      assertValidModelDescriptor(model);
       if (model.providerId !== providerId) {
         throw new SevenError({
           code: "VALIDATION",
           message: "Model provider does not match registry update provider.",
         });
       }
-      this.models.set(
-        `${model.providerId}::${model.id}`,
-        freezeModel(model),
-      );
+      const key = modelKey(model);
+      if (incoming.has(key)) {
+        throw new SevenError({
+          code: "VALIDATION",
+          message: `Duplicate model descriptor ${key}.`,
+        });
+      }
+      incoming.set(key, freezeModel(model));
     }
+
+    for (const [key, model] of this.models) {
+      if (model.providerId === providerId) this.models.delete(key);
+    }
+    for (const [key, model] of incoming) this.models.set(key, model);
   }
 
   list(): readonly ModelDescriptor[] {
@@ -71,8 +118,13 @@ export class ModelRegistry {
   }
 }
 
+type InternalHealth = ProviderHealth &
+  Readonly<{
+    revision: number;
+  }>;
+
 export class ProviderHealthTracker {
-  private readonly states = new Map<string, ProviderHealth>();
+  private readonly states = new Map<string, InternalHealth>();
 
   snapshot(providerIds: readonly string[] = []): readonly ProviderHealth[] {
     const ids =
@@ -84,6 +136,12 @@ export class ProviderHealthTracker {
       ids
         .sort()
         .map((providerId) => {
+          if (!providerId.trim()) {
+            throw new SevenError({
+              code: "VALIDATION",
+              message: "providerId must not be empty.",
+            });
+          }
           const state = this.states.get(providerId);
           return Object.freeze({
             providerId,
@@ -95,6 +153,12 @@ export class ProviderHealthTracker {
   }
 
   recordSuccess(providerId: string): void {
+    if (!providerId.trim()) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "providerId must not be empty.",
+      });
+    }
     const current = this.states.get(providerId);
     const nextPenalty = Math.max(0, (current?.penalty ?? 0) - 25);
     this.states.set(
@@ -103,6 +167,7 @@ export class ProviderHealthTracker {
         providerId,
         penalty: nextPenalty,
         cooldownUntil: null,
+        revision: (current?.revision ?? 0) + 1,
       }),
     );
   }
@@ -112,11 +177,36 @@ export class ProviderHealthTracker {
     now: number,
     options: ProviderFailureOptions = {},
   ): void {
+    if (!providerId.trim()) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "providerId must not be empty.",
+      });
+    }
+    requireFiniteNonNegative(now, "Provider failure timestamp");
+
     const current = this.states.get(providerId);
-    const addedPenalty = Math.max(1, options.penalty ?? 50);
-    const retryAfterMs = Math.max(0, options.retryAfterMs ?? 0);
+    const addedPenalty =
+      options.penalty === undefined
+        ? 50
+        : requireFiniteNonNegative(options.penalty, "Provider failure penalty");
+    const retryAfterMs =
+      options.retryAfterMs === undefined
+        ? 0
+        : requireFiniteNonNegative(options.retryAfterMs, "retryAfterMs");
+
     const requestedCooldown =
       retryAfterMs > 0 ? now + retryAfterMs : null;
+    if (
+      requestedCooldown !== null &&
+      !Number.isFinite(requestedCooldown)
+    ) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Provider cooldown timestamp overflowed.",
+      });
+    }
+
     const previousCooldown = current?.cooldownUntil ?? null;
     const cooldownUntil =
       requestedCooldown === null
@@ -129,6 +219,7 @@ export class ProviderHealthTracker {
         providerId,
         penalty: Math.min(1000, (current?.penalty ?? 0) + addedPenalty),
         cooldownUntil,
+        revision: (current?.revision ?? 0) + 1,
       }),
     );
   }
@@ -140,16 +231,65 @@ export class ModelRouter {
     health: readonly ProviderHealth[],
     preferences: RoutePreferences,
   ): RoutePlan {
-    if (preferences.maxAttempts <= 0) {
+    if (!Number.isInteger(preferences.maxAttempts) || preferences.maxAttempts <= 0) {
       throw new SevenError({
         code: "VALIDATION",
-        message: "maxAttempts must be greater than zero.",
+        message: "maxAttempts must be a positive integer.",
+      });
+    }
+    if (!Number.isFinite(preferences.now) || preferences.now < 0) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "Route time must be a non-negative finite timestamp.",
       });
     }
 
-    const healthByProvider = new Map(
-      health.map((entry) => [entry.providerId, entry] as const),
-    );
+    const modelKeys = new Set<string>();
+    for (const model of models) {
+      assertValidModelDescriptor(model);
+      const key = modelKey(model);
+      if (modelKeys.has(key)) {
+        throw new SevenError({
+          code: "VALIDATION",
+          message: `Duplicate route model ${key}.`,
+        });
+      }
+      modelKeys.add(key);
+    }
+
+    const healthByProvider = new Map<string, ProviderHealth>();
+    for (const entry of health) {
+      validateHealth(entry);
+      if (healthByProvider.has(entry.providerId)) {
+        throw new SevenError({
+          code: "VALIDATION",
+          message: `Duplicate provider health entry ${entry.providerId}.`,
+        });
+      }
+      healthByProvider.set(entry.providerId, entry);
+    }
+
+    const preferred = preferences.preferredModelId;
+    const preferredMatches =
+      preferred === null
+        ? []
+        : models.filter(
+            (model) =>
+              modelKey(model) === preferred ||
+              (!preferred.includes("::") && model.id === preferred),
+          );
+
+    if (
+      preferred !== null &&
+      !preferred.includes("::") &&
+      preferredMatches.length > 1
+    ) {
+      throw new SevenError({
+        code: "VALIDATION",
+        message:
+          "preferredModelId is ambiguous across providers; use providerId::modelId.",
+      });
+    }
 
     const candidates = models
       .filter(
@@ -166,20 +306,23 @@ export class ModelRouter {
       })
       .map((model): RouteCandidate => {
         const state = healthByProvider.get(model.providerId);
-        const penalty = Math.max(0, state?.penalty ?? 0);
+        const penalty = state?.penalty ?? 0;
         const modeWeight =
           preferences.mode === "quick"
             ? model.speedScore * 1.35 + model.qualityScore * 0.65
             : preferences.mode === "deep"
               ? model.qualityScore * 1.5 + model.speedScore * 0.5
               : model.qualityScore + model.speedScore;
-        const preferred =
-          model.id === preferences.preferredModelId ? 10_000 : 0;
+        const isPreferred =
+          preferred !== null &&
+          (modelKey(model) === preferred ||
+            (!preferred.includes("::") && model.id === preferred));
+        const preferredBonus = isPreferred ? 10_000 : 0;
 
         return Object.freeze({
           providerId: model.providerId,
           modelId: model.id,
-          score: preferred + modeWeight - penalty,
+          score: preferredBonus + modeWeight - penalty,
         });
       })
       .sort(
