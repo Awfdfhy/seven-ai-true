@@ -6,7 +6,7 @@ Team B / B06 / Aider
 
 ## B06 mission
 
-Validate RPG V2’s persistent 10-minute story, character-local knowledge, world-state continuity, and safe migration without requiring a JSON pack import. Confirm that a meaningful choice is available within three visible actions, changes subsequent world state and narration, and remains intact after exit and re-entry. Character B must not learn information revealed only to Character A.
+Validate RPG V2’s persistent 10-minute interactive story without a JSON pack import. Confirm that a meaningful choice is available within three visible actions, changes subsequent world state and narration, survives exit and re-entry, and preserves character-local knowledge. Character B must not learn information revealed only to Character A.
 
 ## Memory and persistence risks
 
