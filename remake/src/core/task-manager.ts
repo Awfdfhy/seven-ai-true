@@ -224,7 +224,7 @@ export class TaskManager {
 
     if (timeoutMs !== undefined) {
       task.timeoutId = setTimeout(() => {
-        this.requestCancel(task, "deadline");
+        this.requestCancel(task, "deadline", true);
       }, timeoutMs);
     }
 
@@ -312,7 +312,11 @@ export class TaskManager {
       taskId,
       result,
       cancel: (reason = "user") =>
-        this.requestCancel(task, this.validateCancelReason(reason)),
+        this.requestCancel(
+          task,
+          this.validateCancelReason(reason),
+          false,
+        ),
     };
   }
 
@@ -320,7 +324,9 @@ export class TaskManager {
     const id = this.validateTaskId(taskId);
     const normalizedReason = this.validateCancelReason(reason);
     const task = this.tasks.get(id);
-    return task ? this.requestCancel(task, normalizedReason) : false;
+    return task
+      ? this.requestCancel(task, normalizedReason, false)
+      : false;
   }
 
   private validateCancelReason(reason: string): string {
@@ -330,7 +336,14 @@ export class TaskManager {
         message: "Cancellation reason must be a non-empty string.",
       });
     }
-    return reason.trim();
+    const normalized = reason.trim();
+    if (normalized === "deadline") {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "The deadline cancellation reason is reserved internally.",
+      });
+    }
+    return normalized;
   }
 
   private validateTaskId(taskId: string): string {
@@ -430,10 +443,14 @@ export class TaskManager {
     return true;
   }
 
-  private requestCancel(task: MutableTask, reason: string): boolean {
+  private requestCancel(
+    task: MutableTask,
+    reason: string,
+    isDeadline: boolean,
+  ): boolean {
     if (
-      (reason === "deadline" && task.deadlineSealed) ||
-      (task.cancellationSealed && reason !== "deadline") ||
+      (isDeadline && task.deadlineSealed) ||
+      (task.cancellationSealed && !isDeadline) ||
       task.status === "cancelled" ||
       task.status === "succeeded" ||
       task.status === "failed" ||
@@ -443,11 +460,11 @@ export class TaskManager {
     }
 
     task.status = "cancelling";
-    task.cancelReason = reason;
+    task.cancelReason = isDeadline ? "deadline" : reason;
     this.emit(task);
 
     if (!task.controller.signal.aborted) {
-      task.controller.abort(reason);
+      task.controller.abort(task.cancelReason);
     }
 
     return true;
