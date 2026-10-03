@@ -28,12 +28,12 @@ jobs:
       matrix:
         include:
           - name: Bug Hunt A07 Goose security audit
-            branch: agent/07-security-selfdev
+            branch: bughunt/a07
             prompt_path: .seven-team/prompts/bughunt/A07.md
             report: .seven-team/reports/bughunt/A07.md
             commit_message: Bug Hunt A07 Self-Dev security audit
           - name: Bug Hunt B07 Goose integrity audit
-            branch: bughunt/a07
+            branch: bughunt/b07
             prompt_path: .seven-team/prompts/bughunt/B07.md
             report: .seven-team/reports/bughunt/B07.md
             commit_message: Bug Hunt B07 RPG integrity audit
