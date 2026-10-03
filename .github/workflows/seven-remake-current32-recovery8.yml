@@ -29,7 +29,7 @@ jobs:
         run: |
           set -euo pipefail
           git show HEAD:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/kilo_anonymous_relay.py
-          git checkout --detach 9564b2bdcfa7695a2e97668e1fb192818189557d
+          git checkout --detach b432bf6ac02e052043284cb8db3b607696a797fe
           python - <<'PY'
           from pathlib import Path
           import json
