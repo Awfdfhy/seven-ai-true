@@ -41,6 +41,21 @@ jobs:
           git show origin/main:.seven-team/runtime/kilo_anonymous_relay.py > /tmp/kilo_anonymous_relay.py
           git show origin/main:.seven-team/prompts/wave-01/B09.md > /tmp/b09-prompt.md
 
+      - name: Build bounded RPG performance evidence pack
+        run: |
+          set -euo pipefail
+          : > /tmp/b09-evidence.txt
+          for file in release/workspaces/rpg.js release/world-runtime.js release/canon-simulator.js memory.cjs; do
+            echo "===== $file =====" >> /tmp/b09-evidence.txt
+            if test -f "$file"; then
+              wc -lc "$file" >> /tmp/b09-evidence.txt
+              grep -nE 'localStorage|sessionStorage|persist|save|restore|context|history|message|turn|state|canon|world|knowledge|fetch|generate|render|JSON\.stringify|JSON\.parse' "$file" | head -n 140 >> /tmp/b09-evidence.txt || true
+            else
+              echo "ABSENT" >> /tmp/b09-evidence.txt
+            fi
+          done
+          head -c 28000 /tmp/b09-evidence.txt > /tmp/b09-evidence-bounded.txt
+
       - name: Start compatibility relay
         env:
           SEVEN_RELAY_BRIDGE_STREAM: '1'
@@ -68,7 +83,14 @@ jobs:
             echo "B09 recovery attempt $attempt/5"
             rm -f /tmp/b09-qwen.out
             set +e
-            timeout 120s qwen -p "$(cat /tmp/b09-prompt.md)" \
+            DIRECT_PROMPT="$(cat /tmp/b09-prompt.md)
+
+RECOVERY OVERRIDE — ONE-SHOT MODE:
+Do not call tools, do not inspect files, and do not attempt repository writes. The evidence pack below was collected deterministically from the repository for you. Using ONLY this evidence, output the COMPLETE B09 audit report body directly as plain text. Keep it <= 100 lines and <= 5500 characters. Include exact file/line evidence where supplied, mark unknowns rather than guessing, cover every topic from the mission, and make the FINAL line exactly WAVE01=COMPLETE.
+
+EVIDENCE PACK:
+$(cat /tmp/b09-evidence-bounded.txt)"
+            timeout 120s qwen -p "$DIRECT_PROMPT" \
               --approval-mode yolo \
               --output-format text \
               --model kilo-auto/free \
