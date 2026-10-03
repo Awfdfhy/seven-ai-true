@@ -219,7 +219,12 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       const model=await page.evaluate(()=>{const e=document.querySelector('.seven-shell-model-menu'),r=e?.getBoundingClientRect();return!!r&&r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2});
       assert.equal(model,true);
       await page.keyboard.press('Escape');
-      await page.click('.seven-shell-workspace-chip');
+      // The top workspace chip is intentionally hidden on mobile because Seven
+      // exposes workspace navigation in the mobile shell. Exercise the picker
+      // through the same public workspace runtime instead of clicking hidden UI.
+      await page.evaluate(()=>SevenRemake.openWorkspace('coding'));
+      await page.waitForFunction(()=>window.SevenWorkspaces&&document.documentElement.dataset.sevenWorkspace==='coding',null,{timeout:10000});
+      await page.evaluate(()=>{SevenWorkspaces.close();SevenWorkspaces.openLauncher();});
       await page.waitForFunction(()=>!!document.querySelector('.seven-ws-launcher'),null,{timeout:10000});
       const picker=await page.evaluate(()=>{const e=document.querySelector('.seven-ws-picker'),r=e?.getBoundingClientRect();return!!r&&r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2});
       assert.equal(picker,true);
