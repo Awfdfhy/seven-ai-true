@@ -82,23 +82,29 @@ Status: **PASS**
 - Foundation: COMPLETE
 - 1/12 Chat + Rooms + Persistence: COMPLETE
 - 2/12 Models + Routing: COMPLETE
-- 3/12 Memory + Context: IN PROGRESS — first green vertical checkpoint
+- 3/12 Memory + Context: CLOSURE CANDIDATE — functional scope complete; final merge gates pending
   - Versioned global + room memory domain.
   - In-memory and IndexedDB memory + summary persistence.
+  - Explicit manual-delete-only memory capacity policy; no silent eviction.
   - Explicit MemoryService CRUD surface.
+  - Durable normalized context-policy/settings repository with restart persistence.
+  - Persisted policy defaults consumed by MemoryContextService; request overrides remain deterministic.
   - Deterministic token estimator and bounded ContextBuilder.
   - Relevant-memory selection and one-leading-system-message invariant.
   - Contiguous recent-history retention.
   - Incremental durable conversation summary with bounded passes.
-  - Oversized/empty summary rejection before durable commit.
-  - Per-room summary mutation serialization.
-  - Provider-backed context summarizer with cancellation.
+  - Summary schema v2 with legacy v1 migration.
+  - Source-history fingerprints detect deleted or edited summarized history.
+  - Stale summaries are CAS-invalidated and rebuilt rather than crashing context preparation.
+  - Storage-level summary compare-and-swap prevents lost updates across tabs/repository instances.
+  - Provider-backed summarizer has context-window-aware bounded chunking and carry-forward summaries.
+  - Oversized/empty provider summaries are rejected before durable truth changes.
+  - Cancellation propagates through memory reads, policy reads, summarization and persistence.
   - Route candidates carry model contextWindow.
   - Fallback rebuilds context for each candidate's own window.
   - Prepared-context runtime validation before provider dispatch.
-  - Phase 3 integration tests included in the permanent suite.
-  - Checkpoint evidence: 7/7 test files PASS, 104/104 tests PASS, build PASS, dependency audits 0 vulnerabilities, legacy Seven tests PASS.
-  - Subsequent merged hardening checkpoint: 14/14 test files PASS, 176/176 tests PASS, strict typecheck and build PASS locally; final-commit CI pending. See PHASE3_HARDENING_REPORT.md for fixes and remaining limits.
-  - Remaining before 3/12 closure: persisted context policy/settings, memory capacity/eviction policy, stale-summary/version migration hardening, Phase 3 adversarial zero-bug pass, final merge/post-merge CI.
+  - Persistent/adversarial Phase 3 integration tests are included in the permanent suite.
+  - Closure-candidate evidence: Seven Remake V3 CI #188 SUCCESS; 16/16 test files PASS; 190/190 tests PASS; strict typecheck PASS; build PASS; dependency audits 0 vulnerabilities.
+  - Remaining before 3/12 closure: final-head legacy regression, PR #61 merge, post-merge Remake CI.
 
-**REMAKE_PROGRESS=2/12_COMPLETE + 3/12_IN_PROGRESS**
+**REMAKE_PROGRESS=2/12_COMPLETE + 3/12_CLOSURE_CANDIDATE**
