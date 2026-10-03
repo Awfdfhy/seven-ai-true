@@ -9,6 +9,11 @@ export type ProviderHealth = Readonly<{
   cooldownUntil: number | null;
 }>;
 
+export type ProviderFailureOptions = Readonly<{
+  retryAfterMs?: number;
+  penalty?: number;
+}>;
+
 export type RoutePreferences = Readonly<{
   mode: RouteMode;
   preferredModelId: string | null;
@@ -29,6 +34,13 @@ export type RoutePlan = Readonly<{
   candidates: readonly RouteCandidate[];
 }>;
 
+function freezeModel(model: ModelDescriptor): ModelDescriptor {
+  return Object.freeze({
+    ...model,
+    capabilities: Object.freeze({ ...model.capabilities }),
+  });
+}
+
 export class ModelRegistry {
   private readonly models = new Map<string, ModelDescriptor>();
 
@@ -39,6 +51,7 @@ export class ModelRegistry {
     for (const [key, model] of this.models) {
       if (model.providerId === providerId) this.models.delete(key);
     }
+
     for (const model of models) {
       if (model.providerId !== providerId) {
         throw new SevenError({
@@ -46,12 +59,78 @@ export class ModelRegistry {
           message: "Model provider does not match registry update provider.",
         });
       }
-      this.models.set(`${model.providerId}::${model.id}`, Object.freeze({ ...model }));
+      this.models.set(
+        `${model.providerId}::${model.id}`,
+        freezeModel(model),
+      );
     }
   }
 
   list(): readonly ModelDescriptor[] {
-    return Object.freeze([...this.models.values()].map((model) => Object.freeze({ ...model })));
+    return Object.freeze([...this.models.values()].map(freezeModel));
+  }
+}
+
+export class ProviderHealthTracker {
+  private readonly states = new Map<string, ProviderHealth>();
+
+  snapshot(providerIds: readonly string[] = []): readonly ProviderHealth[] {
+    const ids =
+      providerIds.length > 0
+        ? [...new Set(providerIds)]
+        : [...this.states.keys()];
+
+    return Object.freeze(
+      ids
+        .sort()
+        .map((providerId) => {
+          const state = this.states.get(providerId);
+          return Object.freeze({
+            providerId,
+            penalty: state?.penalty ?? 0,
+            cooldownUntil: state?.cooldownUntil ?? null,
+          });
+        }),
+    );
+  }
+
+  recordSuccess(providerId: string): void {
+    const current = this.states.get(providerId);
+    const nextPenalty = Math.max(0, (current?.penalty ?? 0) - 25);
+    this.states.set(
+      providerId,
+      Object.freeze({
+        providerId,
+        penalty: nextPenalty,
+        cooldownUntil: null,
+      }),
+    );
+  }
+
+  recordFailure(
+    providerId: string,
+    now: number,
+    options: ProviderFailureOptions = {},
+  ): void {
+    const current = this.states.get(providerId);
+    const addedPenalty = Math.max(1, options.penalty ?? 50);
+    const retryAfterMs = Math.max(0, options.retryAfterMs ?? 0);
+    const requestedCooldown =
+      retryAfterMs > 0 ? now + retryAfterMs : null;
+    const previousCooldown = current?.cooldownUntil ?? null;
+    const cooldownUntil =
+      requestedCooldown === null
+        ? previousCooldown
+        : Math.max(previousCooldown ?? 0, requestedCooldown);
+
+    this.states.set(
+      providerId,
+      Object.freeze({
+        providerId,
+        penalty: Math.min(1000, (current?.penalty ?? 0) + addedPenalty),
+        cooldownUntil,
+      }),
+    );
   }
 }
 
@@ -96,6 +175,7 @@ export class ModelRouter {
               : model.qualityScore + model.speedScore;
         const preferred =
           model.id === preferences.preferredModelId ? 10_000 : 0;
+
         return Object.freeze({
           providerId: model.providerId,
           modelId: model.id,
