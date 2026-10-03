@@ -289,3 +289,16 @@ html[data-seven-hidden="1"] *{animation-play-state:paused!important}
   .seven-theme-shift::before{display:none!important}
   .composer:focus-within{transform:none}
 }
+
+/* Authoritative resolved-theme bridge for core surfaces.
+   This inline layer must not depend on the lazily materialized remake root. */
+html[data-seven-theme="night"] body:not(.light) .main{
+  background:#17211d!important;
+  color:#edf5f0!important;
+}
+html[data-seven-theme="night"] body:not(.light) .composer{
+  background:#17211d!important;
+  color:#edf5f0!important;
+  border-color:#33443b!important;
+}
+
