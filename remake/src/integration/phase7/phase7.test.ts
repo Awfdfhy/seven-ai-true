@@ -61,8 +61,9 @@ describe("Phase 7 Android bridge", () => {
     const transport = new MockAndroidNativeTransport(async () => pending);
     const service = new AndroidPlatformService(new TaskManager(), new AndroidBridgeClient(transport));
     const run = service.negotiateCapabilities();
-    await Promise.resolve();
-    await Promise.resolve();
+    for (let index = 0; index < 12 && transport.requests.length === 0; index += 1) {
+      await Promise.resolve();
+    }
     expect(transport.requests).toHaveLength(1);
     const requestId = transport.requests[0]?.requestId;
     expect(requestId).toBeTruthy();
