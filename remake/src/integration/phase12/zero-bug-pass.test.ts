@@ -456,6 +456,23 @@ describe("Zero-bug regressions", () => {
     });
   });
 
+  it("ignores a late failure from an older provider attempt after a newer success", () => {
+    const health = new ProviderHealthTracker();
+
+    health.recordSuccess("p", 200);
+    health.recordFailure("p", 300, {
+      attemptStartedAt: 100,
+      penalty: 100,
+      retryAfterMs: 1000,
+    });
+
+    expect(health.snapshot(["p"])[0]).toEqual({
+      providerId: "p",
+      penalty: 0,
+      cooldownUntil: null,
+    });
+  });
+
   it("rejects non-string stream deltas and falls back before meaningful output", async () => {
     const badModel = model("bad", "m1");
     const goodModel = model("good", "m2");
