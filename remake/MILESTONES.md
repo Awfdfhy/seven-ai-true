@@ -82,6 +82,22 @@ Status: **PASS**
 - Foundation: COMPLETE
 - 1/12 Chat + Rooms + Persistence: COMPLETE
 - 2/12 Models + Routing: COMPLETE
-- 3/12 Memory + Context: NOT STARTED as an integrated milestone
+- 3/12 Memory + Context: IN PROGRESS — first green vertical checkpoint
+  - Versioned global + room memory domain.
+  - In-memory and IndexedDB memory + summary persistence.
+  - Explicit MemoryService CRUD surface.
+  - Deterministic token estimator and bounded ContextBuilder.
+  - Relevant-memory selection and one-leading-system-message invariant.
+  - Contiguous recent-history retention.
+  - Incremental durable conversation summary with bounded passes.
+  - Oversized/empty summary rejection before durable commit.
+  - Per-room summary mutation serialization.
+  - Provider-backed context summarizer with cancellation.
+  - Route candidates carry model contextWindow.
+  - Fallback rebuilds context for each candidate's own window.
+  - Prepared-context runtime validation before provider dispatch.
+  - Phase 3 integration tests included in the permanent suite.
+  - Checkpoint evidence: 7/7 test files PASS, 104/104 tests PASS, build PASS, dependency audits 0 vulnerabilities, legacy Seven tests PASS.
+  - Remaining before 3/12 closure: persisted context policy/settings, memory capacity/eviction policy, stale-summary/version migration hardening, Phase 3 adversarial zero-bug pass, final merge/post-merge CI.
 
-**REMAKE_PROGRESS=2/12**
+**REMAKE_PROGRESS=2/12_COMPLETE + 3/12_IN_PROGRESS**
