@@ -12,7 +12,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: seven-remake-zero-bug-final32
+  group: seven-remake-zero-bug-final32-v2
   cancel-in-progress: true
 
 jobs:
