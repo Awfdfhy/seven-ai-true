@@ -262,7 +262,15 @@ export class TaskManager {
             throw task.error;
           }
 
-          task.error = toSevenError(error);
+          task.error =
+            error instanceof DOMException && error.name === "AbortError"
+              ? new SevenError({
+                  code: "UNKNOWN",
+                  message:
+                    "Task executor aborted without TaskManager cancellation.",
+                  cause: error,
+                })
+              : toSevenError(error);
           this.finish(task, "failed");
           throw task.error;
         },
@@ -334,7 +342,7 @@ export class TaskManager {
     if (task.timeoutId !== undefined) clearTimeout(task.timeoutId);
     delete task.timeoutId;
     task.status = status;
-    task.finishedAt = Date.now();
+    task.finishedAt = Math.max(task.startedAt, Date.now());
     this.emit(task);
 
     this.completedOrder.push(task.taskId);
