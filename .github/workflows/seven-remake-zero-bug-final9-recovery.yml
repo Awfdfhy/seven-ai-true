@@ -69,7 +69,7 @@ jobs:
           evidence=pathlib.Path('/tmp/evidence.txt').read_text(encoding='utf-8')
           missing={
             'F03':"Timeout/deadline bounds, timer cleanup, clock rollback and abort semantics",
-            'F05':"Task retention, memory/resource growth, listener leaks and timer leaks",
+            'F05':"Room/message invariants, immutable snapshots, timestamps, duplicate IDs and malformed runtime values",
             'F09':"Chat persistence failures before user write, after user write and during assistant commit",
             'F14':"ProviderAdapter runtime contract, malformed chunks/models and adapter identity",
             'F15':"Fallback before meaningful output, whitespace prelude, empty output and malformed chunks",
