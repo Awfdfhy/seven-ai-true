@@ -1740,8 +1740,9 @@
                     show('Saved · IndexedDB'); document.body.inert=false;
                 } catch (_) {
                     failed=true;
-                    show('Storage unavailable or invalid. Original data preserved. Reload after resolving storage access.');
-                    // Keep editing blocked: never fall back to stale legacy data after IDB activation.
+                    document.body.inert=false;
+                    show('Storage unavailable or invalid. Original data preserved. Export if needed, then reload after resolving storage access.');
+                    // Persistence stays fail-closed via status().failed; the recovery UI must remain interactive.
                 }
             }
             function save() {
