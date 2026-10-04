@@ -26,7 +26,8 @@ function bindProposal(snapshot:RepositorySnapshot,proposal:ModelPatchProposal,ta
 function unique(paths:readonly string[]):readonly string[]{return Object.freeze([...new Set(paths)].sort())}
 
 export class CodingAgentService{
- constructor(private readonly workspace:CodingWorkspaceService,private readonly model:CodingAgentModel,private readonly verificationFactory:VerificationExecutorFactory,private readonly research?:CodingResearchPort){}
+ private readonly reviewer:CodingAgentModel;
+ constructor(private readonly workspace:CodingWorkspaceService,private readonly model:CodingAgentModel,private readonly verificationFactory:VerificationExecutorFactory,private readonly research?:CodingResearchPort,reviewer?:CodingAgentModel){this.reviewer=reviewer??model}
  async run(input:Readonly<{taskId:string;runId:string;task:string;repository:string;branch:string;inspectionPaths?:readonly string[];acceptanceCriteria:readonly string[];signal:AbortSignal;maxRepairAttempts?:number}>):Promise<CodingAgentResult>{
   let run=createCodingRun({runId:input.runId,taskId:input.taskId,acceptanceCriteria:input.acceptanceCriteria});
   let inspectionPaths=input.inspectionPaths?.length
@@ -79,7 +80,7 @@ export class CodingAgentService{
    continue;
   }
   run=transitionCodingRun(run,"VERIFY",{kind:"verification-pass",summary:`All ${lastVerification.results.length} selected verification gates passed.`});
-  const review=await this.model.review({task:input.task,snapshot,proposal,verification:lastVerification,diffReview,signal:input.signal});
+  const review=await this.reviewer.review({task:input.task,snapshot,proposal,verification:lastVerification,diffReview,signal:input.signal});
   lastReview=review;
   run=transitionCodingRun(run,"REVIEW",{kind:"independent-review",summary:review.summary});
   if(review.verdict==="PASS"){
