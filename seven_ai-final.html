@@ -7943,6 +7943,84 @@
             return checkpointExecutionStep(runId, stepId, status, checkpoint || {});
         }
 
+        function isRpgWorkspaceActiveV1() {
+            try {
+                return !!(window.SevenWorkspaces && typeof window.SevenWorkspaces.active === "function" &&
+                    window.SevenWorkspaces.active() === "rpg" &&
+                    window.SevenRpgWorkspace && typeof window.SevenRpgWorkspace.processGeneratedTurn === "function");
+            } catch (_) { return false; }
+        }
+
+        async function extractRpgTurnDeltaV1(payload, modelId) {
+            const instruction = [
+                "You are Seven's RPG state-delta extractor and consistency checker.",
+                "Return ONLY strict JSON with this exact top-level shape: {\"events\":[],\"violations\":[]}.",
+                "Extract only durable changes explicitly supported by an exact contiguous quote from userText or reply.",
+                "Each event must be {type,payload,actorId?,summary?,authority?,evidence:{source:\"user\"|\"assistant\",quote:\"exact quote\",explicitOverride?:true}}.",
+                "Allowed event types are supplied in allowedEventTypes. Never invent another type.",
+                "Never source a player-controlled character action, decision, thought, feeling, movement, promise, inventory transfer, ability use, or internal state from assistant narration. Only an exact user quote can establish the player's own action.",
+                "A canon.set event may only come from an exact user quote. HARD canon replacement requires explicit user override/retcon/canon wording; otherwise do not emit it.",
+                "Do not convert inference, atmospheric prose, metaphor, plans, possible futures, questions, or narrator speculation into facts.",
+                "For NPC changes, an exact assistant quote may support the event, but it still must be compatible with the supplied authoritative state.",
+                "Put a short violation object in violations when the reply itself contradicts player control, hard canon, knowledge boundaries, timeline, location/travel, inventory ownership, quest dependencies, or ability limits.",
+                "Do not expose hidden narrator truth in any violation wording intended for the user; use short machine-readable codes and entity IDs only."
+            ].join("\n");
+            const data = await requestAI({
+                messages: [
+                    { role: "system", content: instruction },
+                    { role: "user", content: JSON.stringify(payload) }
+                ],
+                temperature: 0,
+                maxTokens: 1800,
+                purpose: "memory",
+                model: modelId,
+                stream: false
+            });
+            return data?.choices?.[0]?.message?.content || '{"events":[],"violations":[]}';
+        }
+
+        async function repairRpgNarrativeV1(reply, rpgFailure, baseMessages, modelId) {
+            const details = {
+                reason: rpgFailure?.reason || rpgFailure?.eventReason || "rpg_validation_failed",
+                violations: Array.isArray(rpgFailure?.violations) ? rpgFailure.violations.slice(0, 8) : [],
+                eventId: rpgFailure?.eventId || null
+            };
+            const repairInstruction = [
+                "Rewrite the immediately previous RPG assistant response so it obeys the authoritative RPG runtime.",
+                "Preserve the user's intent and as much valid dialogue/narration as possible.",
+                "Do not decide actions, thoughts, feelings, dialogue, or irreversible choices for player-controlled characters.",
+                "Do not leak knowledge a character does not have.",
+                "Do not contradict hard canon, location/travel, timeline, inventory, abilities/costs/cooldowns, quest dependencies, or already-persisted consequences.",
+                "Do not mention validation, system rules, hidden state, or this repair request.",
+                "Return only the corrected in-world narrative."
+            ].join("\n");
+            const data = await requestAI({
+                messages: baseMessages.concat([
+                    { role: "assistant", content: reply },
+                    { role: "system", content: repairInstruction + "\nConflict metadata:\n" + JSON.stringify(details) }
+                ]),
+                temperature: Math.min(0.35, currentTemperature),
+                maxTokens: currentMaxTokens,
+                purpose: "chat",
+                model: modelId,
+                stream: false
+            });
+            const fixed = data?.choices?.[0]?.message?.content;
+            return typeof fixed === "string" && fixed.trim() ? fixed.trim() : null;
+        }
+
+        function shouldRepairRpgFailureV1(result) {
+            if (!result || result.ok === true) return false;
+            if (result.status === "REPAIR_REQUIRED") return true;
+            const code = result.eventReason || result.reason || "";
+            return [
+                "player-control","shared-control-consent","hard-canon-conflict","canon-precedence",
+                "spatial-conflict","character-in-transit","timeline-backwards","future-knowledge",
+                "ability-forbidden","ability-owner-mismatch","ability-cooldown","ability-resource-insufficient",
+                "quest-dependency-incomplete","travel-not-arrived","already-in-transit","not-in-transit"
+            ].includes(code);
+        }
+
         async function generateReply(text, roomId = currentRoom) {
             const state = getConversationState(roomId);
             if (!state) return;
@@ -8080,7 +8158,7 @@
                     return;
                 }
 
-                const reply = data?.choices?.[0]?.message?.content;
+                let reply = data?.choices?.[0]?.message?.content;
                 if (typeof reply !== "string") throw new Error("The model returned an invalid response.");
                 if (executionRunId) checkpointLiveExecution(executionRunId, "generate", "passed", { resultRef: "generation:" + roomId + ":assistant" });
 
@@ -8106,6 +8184,67 @@
                         throw new Error("Verification failed: " + code);
                     }
                     checkpointLiveExecution(executionRunId, "verify", "passed", { resultRef: "verification:pass" });
+                }
+
+                // RPG transaction runs only after generic verification passes.
+                // A rejected RPG delta has no persistence side effects because
+                // the RPG session manager commits its batch atomically.
+                if (isRpgWorkspaceActiveV1()) {
+                    const extractor = payload => extractRpgTurnDeltaV1(payload, controllerPlan.model.id);
+                    let rpgResult = await window.SevenRpgWorkspace.processGeneratedTurn({
+                        roomId: roomId,
+                        userText: text,
+                        reply: reply,
+                        extractor: extractor,
+                        applyWorldTick: true
+                    });
+                    if (shouldRepairRpgFailureV1(rpgResult)) {
+                        const repaired = await repairRpgNarrativeV1(reply, rpgResult, finalMessages, controllerPlan.model.id);
+                        if (repaired) {
+                            const repairVerification = createVerificationResult({
+                                controllerPlan,
+                                taskPlan,
+                                reply: repaired,
+                                messages: finalMessages,
+                                searchResult,
+                                executionRun: executionRunId ? getExecutionRunById(executionRunId) : null,
+                                roomValid: rooms[roomId] === room,
+                                stopped: stopRequested
+                            });
+                            if (!repairVerification || repairVerification.outcome !== "pass") {
+                                throw new Error("RPG repair verification failed.");
+                            }
+                            const repairedRpgResult = await window.SevenRpgWorkspace.processGeneratedTurn({
+                                roomId: roomId,
+                                userText: text,
+                                reply: repaired,
+                                extractor: extractor,
+                                applyWorldTick: true
+                            });
+                            if (repairedRpgResult && repairedRpgResult.ok === true) {
+                                reply = repaired;
+                                rpgResult = repairedRpgResult;
+                            } else {
+                                rpgResult = repairedRpgResult || rpgResult;
+                            }
+                        }
+                    }
+                    if (!rpgResult || rpgResult.ok !== true) {
+                        const arabic = /[\u0600-\u06FF]/.test(text);
+                        reply = arabic
+                            ? "لا يمكنني متابعة هذا الحدث بهذه الصيغة لأنه يتعارض مع حالة العالم أو قواعد التحكم الحالية."
+                            : "I can't continue that event in this form because it conflicts with the current world state or control rules.";
+                        const recordOnly = await window.SevenRpgWorkspace.processGeneratedTurn({
+                            roomId: roomId,
+                            userText: text,
+                            reply: reply,
+                            extractor: null,
+                            applyWorldTick: false
+                        });
+                        if (!recordOnly || recordOnly.ok !== true) {
+                            throw new Error("RPG state transaction could not be finalized.");
+                        }
+                    }
                 }
 
                 room.history.push({
