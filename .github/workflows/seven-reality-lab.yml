@@ -46,25 +46,52 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Download exact Android Gate APK
-        if: ${{ env.SOURCE_RUN != '' && env.SOURCE_RUN != 'manual' }}
-        uses: actions/download-artifact@v4
-        with:
-          name: Seven-Remake-V3.apk
-          path: reality-source-apk
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.repository }}
-          run-id: ${{ env.SOURCE_RUN }}
+      - name: Initialize Reality Lab evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p reality-evidence
+          git rev-parse HEAD | tee reality-evidence/source-sha.txt
+          printf '%s\n' "$SOURCE_RUN" > reality-evidence/source-run.txt
+          printf '%s\n' "ARTIFACT_BINDING_PENDING" > reality-evidence/status.txt
 
-      - name: Download exact Android Gate identity
+      - name: Download exact Android Gate artifacts via REST
         if: ${{ env.SOURCE_RUN != '' && env.SOURCE_RUN != 'manual' }}
-        uses: actions/download-artifact@v4
-        with:
-          name: Seven-Remake-V3-Release-Identity.json
-          path: reality-source-identity
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.repository }}
-          run-id: ${{ env.SOURCE_RUN }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p reality-source-apk reality-source-identity
+          api="https://api.github.com/repos/${GITHUB_REPOSITORY}"
+          artifacts_json="$(curl -fsSL --retry 8 --retry-all-errors --retry-delay 2 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "$api/actions/runs/$SOURCE_RUN/artifacts?per_page=100")"
+          apk_id="$(jq -r '.artifacts[] | select(.name=="Seven-Remake-V3.apk") | .id' <<<"$artifacts_json" | head -1)"
+          identity_id="$(jq -r '.artifacts[] | select(.name=="Seven-Remake-V3-Release-Identity.json") | .id' <<<"$artifacts_json" | head -1)"
+          test -n "$apk_id" && test "$apk_id" != null
+          test -n "$identity_id" && test "$identity_id" != null
+          printf '%s\n' "$apk_id" > reality-evidence/apk-artifact-id.txt
+          printf '%s\n' "$identity_id" > reality-evidence/identity-artifact-id.txt
+
+          download_artifact() {
+            local id="$1" destination="$2"
+            local zip="/tmp/artifact-$id.zip"
+            curl -fL --retry 10 --retry-all-errors --retry-delay 2 \
+              --connect-timeout 20 --max-time 180 \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "$api/actions/artifacts/$id/zip" -o "$zip"
+            unzip -t "$zip"
+            unzip -q "$zip" -d "$destination"
+          }
+
+          download_artifact "$apk_id" reality-source-apk
+          download_artifact "$identity_id" reality-source-identity
+          printf '%s\n' "ARTIFACTS_DOWNLOADED" > reality-evidence/status.txt
 
       - name: Bind exact release artifact evidence
         if: ${{ env.SOURCE_RUN != '' && env.SOURCE_RUN != 'manual' }}
@@ -80,7 +107,7 @@ jobs:
           cp "$identity" reality-evidence/release-identity.json
           sha256sum reality-evidence/candidate.apk | tee reality-evidence/apk.sha256
           git rev-parse HEAD | tee reality-evidence/source-sha.txt
-          printf '%s\n' "$SOURCE_RUN" > reality-evidence/source-run.txt
+          printf '%s\n' "ARTIFACT_IDENTITY_BOUND" > reality-evidence/status.txt
           unzip -p reality-evidence/candidate.apk assets/public/seven-remake-release.json > reality-evidence/embedded-release-identity.json
           cmp reality-evidence/release-identity.json reality-evidence/embedded-release-identity.json
           node - <<'NODE'
