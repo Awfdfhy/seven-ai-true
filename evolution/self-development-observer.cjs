@@ -173,7 +173,9 @@ class ObservationBuffer {
   }
 
   append(input) {
-    const record = input && input.schemaVersion === 1 && input.fingerprint ? input : createObservation(input);
+    // Never trust a caller-supplied "already normalized" record. Re-validating every
+    // append keeps the privacy/metric allowlists outside caller authority.
+    const record = createObservation(input);
     this.entries.push(record);
     if (this.entries.length > this.maxEntries) this.entries.splice(0, this.entries.length - this.maxEntries);
     return record;
