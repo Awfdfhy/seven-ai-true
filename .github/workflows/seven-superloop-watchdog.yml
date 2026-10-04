@@ -14,27 +14,32 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Restart Superloop only when the chain is not alive
+      - name: Enforce an unbroken running + successor chain
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          active="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow seven-24h-superloop.yml --limit 20 --json status --jq '[.[] | select(.status=="in_progress" or .status=="queued" or .status=="waiting" or .status=="requested" or .status=="pending")] | length')"
-          if [[ "$active" != "0" ]]; then
-            echo "Seven Superloop is alive ($active active/queued run(s)); no restart."
+          runs="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow seven-24h-superloop.yml --limit 30 --json status)"
+          running="$(jq '[.[] | select(.status=="in_progress")] | length' <<<"$runs")"
+          queued="$(jq '[.[] | select(.status=="queued" or .status=="waiting" or .status=="requested" or .status=="pending")] | length' <<<"$runs")"
+
+          echo "Superloop health: running=$running queued=$queued"
+
+          if (( running > 0 && queued > 0 )); then
+            echo "Healthy conveyor: an active cycle has a successor waiting."
             exit 0
           fi
 
-          last_updated="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow seven-24h-superloop.yml --limit 1 --json updatedAt --jq '.[0].updatedAt // empty')"
-          if [[ -n "$last_updated" ]]; then
-            now="$(date -u +%s)"
-            last="$(date -u -d "$last_updated" +%s)"
-            age="$((now-last))"
-            if (( age < 240 )); then
-              echo "Last Superloop run changed only $age seconds ago; avoiding duplicate restart."
-              exit 0
-            fi
+          if (( running > 0 && queued == 0 )); then
+            gh workflow run seven-24h-superloop.yml --repo "$GITHUB_REPOSITORY" --ref main
+            echo "Active cycle had no successor; watchdog queued one immediately."
+            exit 0
+          fi
+
+          if (( running == 0 && queued > 0 )); then
+            echo "A successor is already queued and will acquire the concurrency slot."
+            exit 0
           fi
 
           gh workflow run seven-24h-superloop.yml --repo "$GITHUB_REPOSITORY" --ref main
-          echo "Seven Superloop watchdog dispatched a recovery cycle."
+          echo "No active or queued cycle existed; watchdog restarted the conveyor."
