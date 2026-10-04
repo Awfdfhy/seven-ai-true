@@ -15,7 +15,8 @@ function canonicalRepo(v:string):string{if(!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/
 function sha(v:string):string{if(!/^[a-f0-9]{40}$/i.test(v))throw new Error("Invalid commit SHA.");return v.toLowerCase()}
 
 export class GitHubActionsVerificationPort implements VerificationExecutionPort{
- constructor(private readonly auth:GitHubAuthService,private readonly input:Readonly<{repository:string;baseSha:string;commitSha:string}>,private readonly fetchImpl:FetchLike=fetch,private readonly maxWaitMs=12*60*1000){canonicalRepo(input.repository);sha(input.baseSha);sha(input.commitSha)}
+ private dispatchPromise:Promise<void>|null=null;
+ constructor(private readonly auth:GitHubAuthService,private readonly input:Readonly<{repository:string;branch:string;baseSha:string;commitSha:string}>,private readonly fetchImpl:FetchLike=fetch,private readonly maxWaitMs=12*60*1000){canonicalRepo(input.repository);if(!input.branch.trim())throw new Error("Invalid branch.");sha(input.baseSha);sha(input.commitSha)}
  async execute(command:VerificationCommand,signal:AbortSignal):Promise<VerificationExecution>{
   const startedAt=Date.now();
   if(command.id==="repository-diff-check")return this.diffCheck(command,signal,startedAt);
@@ -35,7 +36,16 @@ export class GitHubActionsVerificationPort implements VerificationExecutionPort{
    return Object.freeze({commandId:command.id,exitCode:bad.length?1:0,stdout:bad.length?"":`Git diff check passed across ${files.length} changed files.`,stderr:bad.length?`Diff check failed: ${[...new Set(bad)].join(", ")}`:"",startedAt,completedAt:Date.now()});
   });
  }
+ private async ensureDispatched(signal:AbortSignal):Promise<void>{
+  if(!this.dispatchPromise){
+   this.dispatchPromise=this.auth.withAccessToken(signal,async(token,inner)=>{
+    await this.json(`/repos/${canonicalRepo(this.input.repository)}/actions/workflows/seven-remake-ci.yml/dispatches`,token,inner,{method:"POST",body:JSON.stringify({ref:this.input.branch})});
+   }).then(()=>undefined).catch(error=>{this.dispatchPromise=null;throw error;});
+  }
+  return this.dispatchPromise;
+ }
  private async waitForStep(stepName:string,signal:AbortSignal):Promise<string>{
+  await this.ensureDispatched(signal);
   const deadline=Date.now()+this.maxWaitMs;
   while(Date.now()<deadline){
    const result=await this.auth.withAccessToken(signal,(token,inner)=>this.json(`/repos/${canonicalRepo(this.input.repository)}/actions/runs?head_sha=${sha(this.input.commitSha)}&per_page=50`,token,inner));
@@ -52,8 +62,8 @@ export class GitHubActionsVerificationPort implements VerificationExecutionPort{
   }
   return "timed_out";
  }
- private async json(path:string,token:string,signal:AbortSignal):Promise<unknown>{
-  let response:Response;try{response=await this.fetchImpl(`https://api.github.com${path}`,{signal,headers:{Accept:"application/vnd.github+json",Authorization:`Bearer ${token}`,"X-GitHub-Api-Version":"2022-11-28"}})}catch(error){if(signal.aborted)throw new DOMException("Aborted","AbortError");throw new SevenError({code:"NETWORK",message:"GitHub Actions verification request failed.",retryable:true,cause:error})}
+ private async json(path:string,token:string,signal:AbortSignal,init:RequestInit={}):Promise<unknown>{
+  let response:Response;try{response=await this.fetchImpl(`https://api.github.com${path}`,{...init,signal,headers:{Accept:"application/vnd.github+json",Authorization:`Bearer ${token}`,"X-GitHub-Api-Version":"2022-11-28",...(init.body?{"Content-Type":"application/json"}:{}),...(init.headers??{})}})}catch(error){if(signal.aborted)throw new DOMException("Aborted","AbortError");throw new SevenError({code:"NETWORK",message:"GitHub Actions verification request failed.",retryable:true,cause:error})}
   const body=await response.text();if(!response.ok)throw new SevenError({code:response.status===401||response.status===403?"PERMISSION":"PROVIDER",message:`GitHub Actions verification HTTP ${response.status}.`,retryable:response.status>=500||response.status===429});try{return body?JSON.parse(body):{}}catch(error){throw new SevenError({code:"PROVIDER",message:"GitHub Actions verification returned invalid JSON.",cause:error})}
  }
 }
@@ -75,7 +85,7 @@ export class GitHubActionsVerificationFactory {
     void input.branch;
     return new GitHubActionsVerificationPort(
       this.auth,
-      { repository: input.repository, baseSha: input.baseSha, commitSha: input.commitSha },
+      { repository: input.repository, branch: input.branch, baseSha: input.baseSha, commitSha: input.commitSha },
       this.fetchImpl,
       this.maxWaitMs,
     );
