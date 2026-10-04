@@ -4,3 +4,7 @@ export * from "./workspace-truth";
 export * from "./patch-transaction";
 export * from "./test-selector";
 export * from "./run-controller";
+export * from "./repository-port";
+export * from "./repo-intelligence";
+export * from "./verification-runner";
+export * from "./diff-review";
