@@ -7,12 +7,12 @@ import { ProviderChatTransport } from "./provider-chat-transport";
 
 describe("ProviderChatTransport bounded context", () => {
   it("uses prepared bounded context instead of replaying the full room", async () => {
-    let captured: ProviderStreamRequest | null = null;
+    const captured: { value?: ProviderStreamRequest } = {};
     const provider: ProviderAdapter = {
       id: "test",
       async listModels() { return []; },
       async *stream(request) {
-        captured = request;
+        captured.value = request;
         yield { delta: "ok" };
       },
     };
@@ -55,9 +55,9 @@ describe("ProviderChatTransport bounded context", () => {
     for await (const delta of transport.stream({ room, signal: new AbortController().signal })) output.push(delta);
 
     expect(output).toEqual(["ok"]);
-    expect(captured).not.toBeNull();
-    expect((captured as ProviderStreamRequest).messages).toHaveLength(2);
-    expect((captured as ProviderStreamRequest).messages[0]?.content).toBe("SYSTEM + MEMORY + SUMMARY");
-    expect((captured as ProviderStreamRequest).messages.some(message => message.content.startsWith("old "))).toBe(false);
+    expect(captured.value).toBeDefined();
+    expect(captured.value?.messages).toHaveLength(2);
+    expect(captured.value?.messages[0]?.content).toBe("SYSTEM + MEMORY + SUMMARY");
+    expect(captured.value?.messages.some(message => message.content.startsWith("old "))).toBe(false);
   });
 });
