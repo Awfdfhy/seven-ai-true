@@ -13,6 +13,9 @@ import { ProviderChatTransport } from "../application/chat/provider-chat-transpo
 import { KiloAnonymousProviderAdapter } from "../providers/kilo-anonymous-adapter";
 import { IndexedDbMemoryFabricRepository } from "../storage/memory-fabric-repository";
 import { MemoryFabricService } from "../application/memory/memory-fabric-service";
+import { IndexedDbMemoryRepository } from "../storage/memory-repository";
+import { MemoryContextService } from "../application/context/memory-context-service";
+import { ProviderContextSummarizer } from "../context/provider-context-summarizer";
 
 export type SevenRuntime = Readonly<{
   taskManager: TaskManager;
@@ -65,11 +68,25 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
   const memory = new MemoryFabricService(memoryRepository);
   const chat = new ChatService(taskManager, rooms, memory);
   const kilo = new KiloAnonymousProviderAdapter();
+  const summaryRepository = new IndexedDbMemoryRepository({
+    databaseName: "seven-remake-context-summary-v2",
+    maxRecords: 1,
+    maxSummaries: 10_000,
+  });
+  const summarizer = new ProviderContextSummarizer(kilo, "kilo-auto/free", {
+    contextWindowTokens: 32_768,
+    maxChunks: 16,
+  });
+  const contextSource = new MemoryContextService(summaryRepository, summarizer, undefined, {
+    maxSummaryPasses: 8,
+  });
   const chatTransport = new ProviderChatTransport(
     kilo,
     "kilo-auto/free",
     "You are Seven, a precise and helpful AI assistant.",
     memory,
+    contextSource,
+    32_768,
   );
 
   const kernel = new AppKernel(diagnostics);
