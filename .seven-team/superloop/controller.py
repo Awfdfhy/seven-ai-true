@@ -256,6 +256,7 @@ def stage_prompt(
     agent: dict[str, str],
     manager_plan: str,
     evidence: str = "",
+    source_packs: dict[str, Any] | None = None,
 ) -> str:
     stage_instruction = {
         "research": "RESEARCH deeply. Produce a large evidence-grounded domain report with improvements, feature ideas, missing proof and release blockers. No production edits.",
@@ -294,6 +295,7 @@ def run_readonly_phase(
     manager_plan: str,
     evidence_by_agent: dict[str, str] | None,
     shared_node_modules: pathlib.Path,
+    source_packs: dict[str, Any] | None = None,
 ) -> dict[str, str]:
     log(f"{stage}: launching {len(AGENTS)} specialist agents")
     worktrees: dict[str, pathlib.Path] = {}
@@ -312,6 +314,7 @@ def run_readonly_phase(
             agent,
             manager_plan,
             (evidence_by_agent or {}).get(aid, ""),
+            source_packs,
         )
         output = run_codex(
             worktrees[aid],
