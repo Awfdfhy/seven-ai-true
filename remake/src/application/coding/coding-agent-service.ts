@@ -1,5 +1,5 @@
-import type { PatchPlan, RepositorySnapshot } from "./contracts";
-import { createCodingRun, transitionCodingRun, type CodingRun } from "./run-controller";
+import type { CodingRun, PatchPlan, RepositorySnapshot } from "./contracts";
+import { createCodingRun, transitionCodingRun } from "./run-controller";
 import { buildRepositoryMap } from "./repo-intelligence";
 import { reviewCandidateDiff, type DiffReview } from "./diff-review";
 import { applyPatchPlan } from "./patch-transaction";
@@ -10,7 +10,7 @@ import type { CodingAgentModel, CodingDiagnosis, CodingUnderstanding, ModelPatch
 
 export interface CodingResearchPort{research(query:string,signal:AbortSignal):Promise<Readonly<{text:string;sourceIds:readonly string[]}>>}
 export interface VerificationExecutorFactory{create(input:Readonly<{repository:string;branch:string;baseSha:string;commitSha:string}>):VerificationExecutionPort}
-export type CodingAgentResult=Readonly<{status:"PASS"|"FAIL"|"BLOCKED";run:CodingRun;commitSha?:string;verification?:VerificationEvidence;review?:Readonly<{verdict:string;summary:string;findings:readonly string[]}>;attempts:number;message:string}>;
+export type CodingAgentResult=Readonly<{status:"PASS"|"FAIL"|"BLOCKED";run:CodingRun;commitSha?:string|undefined;verification?:VerificationEvidence|undefined;review?:Readonly<{verdict:string;summary:string;findings:readonly string[]}>|undefined;attempts:number;message:string}>;
 
 function bindProposal(snapshot:RepositorySnapshot,proposal:ModelPatchProposal,taskId:string):PatchPlan{
  const byPath=new Map(snapshot.files.map(f=>[f.path,f]));
@@ -54,7 +54,7 @@ export class CodingAgentService{
    }
    if(!understanding)throw new Error("Coding understanding is missing.");
    const repoMap=buildRepositoryMap(snapshot,input.task,{maxEntries:24,charBudget:12000});
-   const proposal=await this.model.proposePatch({task:input.task,understanding,repoMap,snapshot,research:researchEvidence,repairInstruction,signal:input.signal});
+   const proposal=await this.model.proposePatch({task:input.task,understanding,repoMap,snapshot,research:researchEvidence,...(repairInstruction!==undefined?{repairInstruction}:{}),signal:input.signal});
   const plan=bindProposal(snapshot,proposal,input.taskId);
    if(attempt===1)run=transitionCodingRun(run,"PLAN",{kind:"patch-planned",summary:proposal.summary});
   const preview=await applyPatchPlan(snapshot,plan);
