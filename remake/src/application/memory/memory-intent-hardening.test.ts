@@ -6,6 +6,7 @@ describe("Memory intent first-person state hardening",()=>{
     "Where am I based these days?",
     "Where do I live?",
     "What am I studying?",
+    "What subject am I focusing on for school?",
     "What do I prefer?",
     "Which theme do I use?",
     "Who am I?",
