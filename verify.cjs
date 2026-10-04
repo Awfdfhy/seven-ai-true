@@ -14,6 +14,21 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  await page.goto(origin);
  await page.waitForFunction(()=>roomPersistence.status().ready);
  await test('initial IDB migration and UI boot',async()=>{assert.equal(await page.evaluate(()=>roomPersistence.status().revision),1);assert.deepEqual(errors,[])});
+ await test('composer IME composition blocks Enter send until composition ends',async()=>{
+  const r=await page.evaluate(()=>{
+    const input=document.getElementById('userInput'),old=sendMessage;let calls=0;
+    sendMessage=()=>{calls++};
+    try{
+      input.dispatchEvent(new CompositionEvent('compositionstart',{bubbles:true,data:'م'}));
+      input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+      const during=calls;
+      input.dispatchEvent(new CompositionEvent('compositionend',{bubbles:true,data:'مرحبا'}));
+      input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+      return {during,after:calls,composition:composerCompositionActive,inlineGrow:input.hasAttribute('oninput')};
+    }finally{sendMessage=old;composerCompositionActive=false}
+  });
+  assert.deepEqual(r,{during:0,after:1,composition:false,inlineGrow:false});
+ });
  await test('room commit/reload and untouched legacy keys',async()=>{
   await page.evaluate(async()=>{rooms.default.history.push({role:'user',content:'مرحبا Seven 123 /src/A.js'});await saveRooms()});
   assert.equal(await page.evaluate(()=>localStorage.getItem('chat_rooms_v6')),null);
@@ -270,10 +285,10 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
       const out=await runDeepThink([{role:'user',content:'Analyze this carefully'}],currentModel);
       const snap=SevenDeepThinkPerformance.snapshot();
       finishDeepThinkPerformanceV1('completed');
-      return {calls,captured,outLen:out.length,last:out[out.length-1].content,snap};
+      return {calls,captured,outLen:out.length,roles:out.map(x=>x.role),first:out[0]?.content||'',last:out[out.length-1]?.content||'',snap};
     }finally{requestAI=old;if(activeDeepThinkPerformance)finishDeepThinkPerformanceV1('cancelled');}
   });
-  assert.equal(r.calls,1);assert.equal(r.captured.purpose,'deepThink');assert.equal(r.captured.latencyPriority,true);assert.ok(r.captured.timeoutMs>=25000);assert.ok(r.captured.maxTokens>=512);assert.ok(r.captured.system.includes('compact decision brief'));assert.ok(!r.captured.system.toLowerCase().includes('step by step'));assert.ok(r.last.includes('compact synthetic brief'));assert.ok(r.snap.deepRoute.provider==='fixture');
+  assert.equal(r.calls,1);assert.equal(r.captured.purpose,'deepThink');assert.equal(r.captured.latencyPriority,true);assert.ok(r.captured.timeoutMs>=25000);assert.ok(r.captured.maxTokens>=512);assert.ok(r.captured.system.includes('compact decision brief'));assert.ok(!r.captured.system.toLowerCase().includes('step by step'));assert.equal(r.roles[0],'system');assert.ok(r.first.includes('compact synthetic brief'));assert.notEqual(r.roles[r.roles.length-1],'system');assert.ok(r.snap.deepRoute.provider==='fixture');
  });
  await test('deep think diagnostics expose timings and routes but no content or secrets',async()=>{
   const r=await page.evaluate(()=>{

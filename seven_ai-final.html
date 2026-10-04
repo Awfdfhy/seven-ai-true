@@ -834,7 +834,7 @@
         <!-- Input Area -->
         <div class="input-area">
             <div class="composer">
-                <textarea id="userInput" dir="auto" rows="1" placeholder="Message Seven AI..." onkeydown="if(event.key==='Enter' && !event.shiftKey && !event.isComposing){ event.preventDefault(); sendMessage(); }" oninput="autoGrowInput(this)"></textarea>
+                <textarea id="userInput" dir="auto" rows="1" placeholder="Message Seven AI..." oncompositionstart="composerCompositionActive=true" oncompositionend="composerCompositionActive=false" onkeydown="if(event.key==='Enter' && !event.shiftKey && !event.isComposing && event.keyCode!==229 && !composerCompositionActive){ event.preventDefault(); sendMessage(); }"></textarea>
                 <div class="composer-row">
                     <div class="composer-tools">
                         <button class="tool-btn" onclick="document.getElementById('fileInput').click()" title="Add a .txt or .pdf file to the AI's knowledge" aria-label="Attach a file">
@@ -2589,6 +2589,9 @@
             }
         }
 
+        // Explicit composition lifecycle supplements event.isComposing for Android IMEs.
+        let composerCompositionActive = false;
+
         // Grows the composer textarea as the user types multi-line text,
         // capped by the CSS max-height (which then scrolls instead).
         function autoGrowInput(el) {
@@ -4140,11 +4143,13 @@
             if(typeof reasoning!=="string") throw new Error("Deep Think reasoning pass returned an invalid response.");
 
             const finalMessages = messages.map(m => ({ ...m }));
-            finalMessages.push({
-                role: "system",
-                content: "Use this compact internal decision brief to improve the final answer. Do not quote it or expose private reasoning. " +
-                    "Apply its conclusions, constraints, edge cases, uncertainty notes, and checks:\n\n" + reasoning
-            });
+            const decisionBrief = "Use this compact internal decision brief to improve the final answer. Do not quote it or expose private reasoning. " +
+                "Apply its conclusions, constraints, edge cases, uncertainty notes, and checks:\n\n" + reasoning;
+            if (finalMessages[0] && finalMessages[0].role === "system") {
+                finalMessages[0] = { ...finalMessages[0], content: finalMessages[0].content + "\n\n" + decisionBrief };
+            } else {
+                finalMessages.unshift({ role: "system", content: decisionBrief });
+            }
             return finalMessages;
         }
 
