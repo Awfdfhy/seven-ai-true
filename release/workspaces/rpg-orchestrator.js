@@ -19,12 +19,12 @@ function evidenceGrounded(evidence,userText,reply){
 function sanitizeProposedEvents(input,userText,reply,state){
  const out=[];for(const [i,item] of arr(input&&input.events).entries()){
    if(!item||!ALLOWED.has(item.type)||!item.payload||typeof item.payload!=='object')continue;
-   const grounded=evidenceGrounded(item.evidence,userText,reply);
-   const evidenceSource=obj(item.evidence).source;
-   const source=grounded&&evidenceSource==='user'?'user':'runtime';
+   const grounded=evidenceGrounded(item.evidence,userText,reply);if(!grounded)continue;
+   const evidenceSource=obj(item.evidence).source;if(item.type==='canon.set'&&evidenceSource!=='user')continue;
+   const source=evidenceSource==='user'?'user':'runtime';
    const ev={id:'turn-'+String(state.revision+1)+'-'+String(i+1),type:item.type,source,countsAsTurn:false,payload:clone(item.payload),summary:short(item.summary||obj(item.evidence).quote,220)};
    if(text(item.actorId))ev.actorId=text(item.actorId);
-   if(source==='user'&&item.authority==='user-override'&&item.type==='canon.set'&&obj(item.evidence).explicitOverride===true)ev.authority='user-override';
+   if(source==='user'&&item.authority==='user-override'&&item.type==='canon.set'&&obj(item.evidence).explicitOverride===true&&/(override|retcon|change canon|make (?:this|it) canon|غيّر.*كانون|غير.*كانون|ريتكون|اعتبر.*كانون)/i.test(String(obj(item.evidence).quote||'')))ev.authority='user-override';
    out.push(ev);
  }
  return out.slice(0,24);
@@ -74,7 +74,7 @@ function createRuntime(options){
    const extractor=typeof x.extractor==='function'?x.extractor:null;let proposals={events:[]},extractionStatus='skipped';
    if(extractor){
      const narrator=contextApi.buildNarratorView(ready.session.state,stateApi,{maxChars:16000,canonLimit:24});
-     try{const raw=await extractor({userText:String(x.userText||''),reply:String(x.reply||''),state:narrator.view,allowedEventTypes:Array.from(ALLOWED)});const parsed=parseJson(raw);if(parsed){proposals=parsed;extractionStatus='parsed';}else extractionStatus='invalid-json';}catch(e){extractionStatus='error';}
+     try{const raw=await extractor({userText:String(x.userText||''),reply:String(x.reply||''),state:narrator.view,allowedEventTypes:Array.from(ALLOWED)});const parsed=parseJson(raw);if(parsed){proposals=parsed;extractionStatus='parsed';if(Array.isArray(parsed.violations)&&parsed.violations.length)return{ok:false,status:'REPAIR_REQUIRED',reason:'narrative-violation',violations:parsed.violations.slice(0,8),session:ready.session};}else extractionStatus='invalid-json';}catch(e){extractionStatus='error';}
    }
    const events=sanitizeProposedEvents(proposals,String(x.userText||''),String(x.reply||''),ready.session.state);
    if(plannerApi&&x.applyWorldTick===true)events.push(...plannerApi.worldTickProposals(ready.session.state,stateApi,{emotionDecay:.02,maxEvents:12}));
