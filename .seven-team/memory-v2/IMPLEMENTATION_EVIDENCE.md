@@ -53,3 +53,24 @@ Updated: 2026-10-04
 - 9aba69b — bilingual extraction precision corpus and 10,000-memory scale gate.
 
 These additions remain subject to the latest CI/Android exact-build gates. Do not mark them proven until the matching SHA is green.
+
+
+## Latest fixed candidate — 9aba69b
+
+CI #276: PASS
+- TypeScript strict compile: PASS
+- production dependency audit: PASS
+- full dependency moderate audit: PASS
+- production build: PASS
+- 43/43 test files PASS
+- 324/324 tests PASS
+- Memory scale suite: 4 tests PASS in 401ms total on GitHub CI, including 10,000-memory retrieval gate
+- Bilingual extraction corpus: 31 tests PASS in 22ms
+- Intent-gate candidate baseline: PASS in earlier CI #271
+- Generic lexical/association bridge hardening: PASS in CI #275
+
+Still pending for this exact candidate:
+- Android Release Gate on 9aba69b
+- Android 14 installed smoke
+- Android 16 installed smoke
+- exact-build Reality Lab
