@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680">
+<rect width="1200" height="680" fill="#f7f7f4"/>
+<text x="60" y="70" font-family="sans-serif" font-size="34" font-weight="700" fill="#161616">Seven Product Quality Ladder</text>
+<text x="60" y="110" font-family="sans-serif" font-size="18" fill="#555">A build can be technically green and still fail product quality.</text>
+<rect x="80" y="500" width="210" height="90" rx="18" fill="#e6e6e0"/>
+<text x="105" y="538" font-family="sans-serif" font-size="24" font-weight="700">0–4.9</text>
+<text x="105" y="568" font-family="sans-serif" font-size="16">Broken / incoherent</text>
+<rect x="310" y="420" width="210" height="170" rx="18" fill="#deded7"/>
+<text x="335" y="458" font-family="sans-serif" font-size="24" font-weight="700">5.0–6.9</text>
+<text x="335" y="488" font-family="sans-serif" font-size="16">Prototype / beta</text>
+<text x="335" y="520" font-family="sans-serif" font-size="14" fill="#555">Features exist</text>
+<text x="335" y="545" font-family="sans-serif" font-size="14" fill="#555">Product seams visible</text>
+<rect x="540" y="320" width="210" height="270" rx="18" fill="#d3d3cb"/>
+<text x="565" y="358" font-family="sans-serif" font-size="24" font-weight="700">7.0–8.1</text>
+<text x="565" y="388" font-family="sans-serif" font-size="16">Functional, not premium</text>
+<text x="565" y="425" font-family="sans-serif" font-size="14" fill="#555">Core works</text>
+<text x="565" y="450" font-family="sans-serif" font-size="14" fill="#555">Friction remains</text>
+<text x="565" y="475" font-family="sans-serif" font-size="14" fill="#555">Visual polish uneven</text>
+<rect x="770" y="205" width="210" height="385" rx="18" fill="#c5c5bc"/>
+<text x="795" y="243" font-family="sans-serif" font-size="24" font-weight="700">8.2–8.9</text>
+<text x="795" y="273" font-family="sans-serif" font-size="16">Release candidate</text>
+<text x="795" y="310" font-family="sans-serif" font-size="14" fill="#444">Coherent core flow</text>
+<text x="795" y="335" font-family="sans-serif" font-size="14" fill="#444">Strong mobile UX</text>
+<text x="795" y="360" font-family="sans-serif" font-size="14" fill="#444">Evidence complete</text>
+<rect x="1000" y="95" width="140" height="495" rx="18" fill="#b6b6ac"/>
+<text x="1020" y="135" font-family="sans-serif" font-size="24" font-weight="700">9+</text>
+<text x="1020" y="168" font-family="sans-serif" font-size="16">Premium</text>
+<text x="1020" y="208" font-family="sans-serif" font-size="13" fill="#333">Calm</text>
+<text x="1020" y="233" font-family="sans-serif" font-size="13" fill="#333">Fast</text>
+<text x="1020" y="258" font-family="sans-serif" font-size="13" fill="#333">Cohesive</text>
+<text x="1020" y="283" font-family="sans-serif" font-size="13" fill="#333">Trustworthy</text>
+<text x="1020" y="308" font-family="sans-serif" font-size="13" fill="#333">Delightful</text>
+<line x1="80" y1="615" x2="1140" y2="615" stroke="#777"/>
+<text x="80" y="650" font-family="sans-serif" font-size="14" fill="#555">Hard fail overrides score · exact-build evidence required · missing visual evidence = UNPROVEN</text>
+</svg>
