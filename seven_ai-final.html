@@ -3880,7 +3880,7 @@
         // Normalizes caller input into one consistent shape/defaults before
         // it reaches any provider function. Pure normalization only — no
         // behavior change (same defaults every call site already relied on).
-        function normalizeRequestConfig({ messages, temperature, maxTokens, purpose, model, stream, onToken, latencyPriority, latencyTier, timeoutMs } = {}) {
+        function normalizeRequestConfig({ messages, temperature, maxTokens, purpose, model, stream, onToken, latencyPriority, latencyTier, timeoutMs, requestDeadlineMs } = {}) {
             const targetModel = isValidFreeModelSelection(model) ? model : currentModel;
             const limits = modelLimits(targetModel);
             let safeTemperature = Number(temperature);
@@ -3900,7 +3900,7 @@
                 latencyPriority: latencyPriority === true,
                 latencyTier: ["low","medium","high","veryHigh"].includes(latencyTier) ? latencyTier : null,
                 timeoutMs: Number.isFinite(Number(timeoutMs)) ? Math.max(1000, Math.min(120000, Number(timeoutMs))) : null,
-                requestDeadlineMs: Number.isFinite(Number(arguments[0]?.requestDeadlineMs)) ? Math.max(5000, Math.min(90000, Number(arguments[0].requestDeadlineMs))) : null
+                requestDeadlineMs: Number.isFinite(Number(requestDeadlineMs)) ? Math.max(5000, Math.min(90000, Number(requestDeadlineMs))) : null
             };
         }
 
@@ -4074,12 +4074,12 @@
             return activeDeepThinkPerformance;
         }
 
-        function finishDeepThinkPerformanceV1(status) {
-            if (!activeDeepThinkPerformance) return null;
-            activeDeepThinkPerformance.status=status||"completed";
-            activeDeepThinkPerformance.totalMs=Math.max(0,Math.round(nowPerformanceMsV1()-activeDeepThinkPerformance.startedAt));
-            lastDeepThinkPerformance=Object.assign({},activeDeepThinkPerformance);
-            activeDeepThinkPerformance=null;
+        function finishDeepThinkPerformanceV1(status,target=activeDeepThinkPerformance) {
+            if (!target) return null;
+            target.status=status||"completed";
+            target.totalMs=Math.max(0,Math.round(nowPerformanceMsV1()-target.startedAt));
+            lastDeepThinkPerformance=Object.assign({},target);
+            if (activeDeepThinkPerformance===target) activeDeepThinkPerformance=null;
             return lastDeepThinkPerformance;
         }
 
@@ -4088,6 +4088,7 @@
             if(!src)return null;
             return {
                 version:src.version,
+                roomId:src.roomId,
                 status:src.status,
                 contextMs:src.contextMs,
                 deepThinkMs:src.deepThinkMs,
@@ -4110,12 +4111,12 @@
             snapshot:safeDeepThinkPerformanceSnapshotV1
         });
 
-        async function runDeepThink(messages, model = currentModel) {
+        async function runDeepThink(messages, model = currentModel, perf=activeDeepThinkPerformance) {
             const policy=deepThinkPolicyForRequest(messages,model);
-            if(activeDeepThinkPerformance){
-                activeDeepThinkPerformance.hiddenBudget=policy.hiddenMaxTokens;
-                activeDeepThinkPerformance.timeoutMs=policy.timeoutMs;
-                activeDeepThinkPerformance.complexity=policy.tier;
+            if(perf){
+                perf.hiddenBudget=policy.hiddenMaxTokens;
+                perf.timeoutMs=policy.timeoutMs;
+                perf.complexity=policy.tier;
             }
 
             const reasoningMessages = [
@@ -4142,12 +4143,12 @@
                 timeoutMs: policy.timeoutMs
             });
             if (stopRequested) throw new DOMException("Stopped", "AbortError");
-            if(activeDeepThinkPerformance){
-                activeDeepThinkPerformance.deepThinkMs=Math.max(0,Math.round(nowPerformanceMsV1()-started));
+            if(perf){
+                perf.deepThinkMs=Math.max(0,Math.round(nowPerformanceMsV1()-started));
                 const route=reasoningData&&reasoningData._sevenRoute;
                 if(route){
-                    activeDeepThinkPerformance.deepRoute={provider:route.provider,model:route.model};
-                    activeDeepThinkPerformance.deepAttempts=route.attempts||1;
+                    perf.deepRoute={provider:route.provider,model:route.model};
+                    perf.deepAttempts=route.attempts||1;
                 }
             }
 
@@ -7986,7 +7987,7 @@
                     if (bubble && bubble.isConnected) {
                         bubble.innerHTML = '<span class="typing-dots" aria-label="Reasoning"><span></span><span></span><span></span></span> <span>Reasoning…</span>';
                     }
-                    finalMessages = await runDeepThink(messages, controllerPlan.model.id);
+                    finalMessages = await runDeepThink(messages, controllerPlan.model.id, deepPerf);
                     if (executionRunId) checkpointLiveExecution(executionRunId, "deepThink", "passed", { resultRef: "reasoning:completed" });
                     if (stopRequested) throw new DOMException("Stopped", "AbortError");
                 }
@@ -8093,7 +8094,7 @@
                     checkpointLiveExecution(executionRunId, "result", "passed", { resultRef: "conversation:" + roomId + ":final" });
                     activeExecutionStep = null;
                 }
-                if (deepPerf && activeDeepThinkPerformance) finishDeepThinkPerformanceV1("completed");
+                if (deepPerf) finishDeepThinkPerformanceV1("completed",deepPerf);
 
                 await autoSummarizeIfNeeded(roomId);
                 if (wasFirstExchange) {
@@ -8101,8 +8102,8 @@
                 }
             } catch (error) {
                 cancelStreamingBubbleUpdate(false);
-                if (deepPerf && activeDeepThinkPerformance) {
-                    finishDeepThinkPerformanceV1((error?.name === "AbortError" || stopRequested) ? "cancelled" : "failed");
+                if (deepPerf) {
+                    finishDeepThinkPerformanceV1((error?.name === "AbortError" || stopRequested) ? "cancelled" : "failed",deepPerf);
                 }
                 if (executionRunId) {
                     const aborted = error?.name === "AbortError" || stopRequested;

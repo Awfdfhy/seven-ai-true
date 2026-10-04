@@ -298,6 +298,18 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   });
   assert.equal(r.calls,1);assert.equal(r.captured.purpose,'deepThink');assert.equal(r.captured.latencyPriority,true);assert.ok(r.captured.timeoutMs>=25000);assert.ok(r.captured.maxTokens>=512);assert.ok(r.captured.system.includes('compact decision brief'));assert.ok(!r.captured.system.toLowerCase().includes('step by step'));assert.equal(r.roles[0],'system');assert.ok(r.first.includes('compact synthetic brief'));assert.notEqual(r.roles[r.roles.length-1],'system');assert.ok(r.snap.deepRoute.provider==='fixture');
  });
+ await test('deep think performance ownership is request scoped',async()=>{
+  const r=await page.evaluate(()=>{
+    const a=beginDeepThinkPerformanceV1('room-a');
+    const b=beginDeepThinkPerformanceV1('room-b');
+    a.contextMs=11;b.contextMs=22;
+    const finishedA=finishDeepThinkPerformanceV1('completed',a);
+    const activeAfterA=SevenDeepThinkPerformance.snapshot();
+    const finishedB=finishDeepThinkPerformanceV1('completed',b);
+    return {finishedA,activeAfterA,finishedB,activeCleared:activeDeepThinkPerformance===null};
+  });
+  assert.equal(r.finishedA.roomId,'room-a');assert.equal(r.activeAfterA.roomId,'room-b');assert.equal(r.activeAfterA.contextMs,22);assert.equal(r.finishedB.roomId,'room-b');assert.equal(r.activeCleared,true);
+ });
  await test('deep think diagnostics expose timings and routes but no content or secrets',async()=>{
   const r=await page.evaluate(()=>{
     beginDeepThinkPerformanceV1('safe-room');
