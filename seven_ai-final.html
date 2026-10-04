@@ -1791,6 +1791,9 @@
 
         function switchRoom(id) {
             if (!own(rooms, id)) return;
+            if (isGenerating && activeGenerationRoomId && activeGenerationRoomId !== id) {
+                cancelActiveGeneration("room-switch");
+            }
             currentRoom = id;
             saveRooms();
             updateRoomTitle();
@@ -8190,14 +8193,17 @@
             wrapper.appendChild(btn);
         }
 
-        function stopGeneration() {
-            // Sets a flag instead of calling AbortController.abort() — some
-            // mobile WebViews throw "AbortSignal object could not be cloned"
-            // when a fetch's signal gets relayed internally via postMessage.
-            // The in-flight request still completes, but its result is
-            // discarded once this flag is checked.
+        function cancelActiveGeneration(reason = "user-stop") {
+            if (!isGenerating || !activeGenerationRoomId) return false;
             stopRequested = true;
-            if (activeAbortController) { try { activeAbortController.abort(); } catch (_) {} }
+            const controller = activeAbortController;
+            if (controller) { try { controller.abort(reason); } catch (_) { try { controller.abort(); } catch (_) {} } }
+            document.dispatchEvent(new CustomEvent("seven:generation-cancelled", { detail: { roomId: activeGenerationRoomId, reason } }));
+            return true;
+        }
+        function stopGeneration() {
+            if (currentRoom !== activeGenerationRoomId) return false;
+            return cancelActiveGeneration("user-stop");
         }
 
         // ---------- Canonical Backup / Import v2 ----------

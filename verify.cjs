@@ -35,6 +35,23 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   await page.reload();await page.waitForFunction(()=>roomPersistence.status().ready);
   assert.equal(await page.evaluate(()=>rooms.default.history[0].content),'مرحبا Seven 123 /src/A.js');
  });
+ await test('room switch cancels only the originating active generation',async()=>{
+  const r=await page.evaluate(()=>{
+    const originalRoom=currentRoom,other='room-switch-fixture';
+    rooms[other]=createEmptyRoom();roomTitles[other]='Other';
+    let aborts=0;activeAbortController={abort(){aborts++}};
+    isGenerating=true;activeGenerationRoomId=originalRoom;stopRequested=false;
+    switchRoom(other);
+    const first={room:currentRoom,stopped:stopRequested,aborts,origin:activeGenerationRoomId};
+    stopRequested=false;aborts=0;
+    const wrongRoomStop=stopGeneration();
+    const second={wrongRoomStop,stopped:stopRequested,aborts};
+    isGenerating=false;activeGenerationRoomId=null;activeAbortController=null;stopRequested=false;
+    delete rooms[other];delete roomTitles[other];currentRoom=originalRoom;updateRoomTitle();renderChatHistory();updateRoomListUI();
+    return {first,second};
+  });
+  assert.equal(r.first.stopped,true);assert.equal(r.first.aborts,1);assert.equal(r.first.origin,'default');assert.equal(r.second.wrongRoomStop,false);assert.equal(r.second.stopped,false);assert.equal(r.second.aborts,0);
+ });
  await test('queued snapshots maintain order',async()=>{
   const r=await page.evaluate(async()=>{roomTitles.default='one';const a=saveRooms();roomTitles.default='two';const b=saveRooms();return [await a,await b]});assert.deepEqual(r,[true,true]);
   await page.reload();await page.waitForFunction(()=>roomPersistence.status().ready);assert.equal(await page.evaluate(()=>roomTitles.default),'two');
