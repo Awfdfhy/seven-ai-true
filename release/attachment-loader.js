@@ -10,8 +10,8 @@ function load(){
     var old=d.getElementById('seven-attachment-runtime-lazy');
     if(old){old.addEventListener('load',done,{once:true});old.addEventListener('error',fail,{once:true});return}
     var s=d.createElement('script');s.id='seven-attachment-runtime-lazy';s.src='./attachment-runtime.js';s.async=true;s.onload=done;s.onerror=fail;d.head.appendChild(s);
-    function done(){if(!ready()){S.loading=null;return reject(new Error('Attachment runtime did not register'))}try{r.SevenAttachments.boot()}catch(_){}resolve(r.SevenAttachments)}
-    function fail(){S.loading=null;reject(new Error('Attachment runtime could not be loaded'))}
+    function done(){if(!ready()){S.loading=null;try{(d.getElementById('seven-attachment-runtime-lazy')||{}).remove()}catch(_){}return reject(new Error('Attachment runtime did not register'))}try{r.SevenAttachments.boot()}catch(_){}S.loading=null;resolve(r.SevenAttachments)}
+    function fail(){S.loading=null;try{(d.getElementById('seven-attachment-runtime-lazy')||{}).remove()}catch(_){}reject(new Error('Attachment runtime could not be loaded'))}
   });
   return S.loading;
 }
