@@ -167,7 +167,16 @@ jobs:
           apk="reality-evidence/candidate.apk"
           test -s "$apk"
           adb install -r "$apk"
-          pkg="$(aapt dump badging "$apk" | sed -n "s/package: name='\([^']*\)'.*/\1/p" | head -1)"
+          pkg="$(unzip -p "$apk" assets/capacitor.config.json | node -e '
+          let data="";
+          process.stdin.setEncoding("utf8");
+          process.stdin.on("data",chunk=>data+=chunk);
+          process.stdin.on("end",()=>{
+            const value=JSON.parse(data);
+            if(typeof value.appId!=="string"||!value.appId.trim())process.exit(2);
+            process.stdout.write(value.appId.trim());
+          });
+          ')"
           test -n "$pkg"
           printf '%s\n' "$pkg" > reality-evidence/package.txt
           adb shell monkey -p "$pkg" -c android.intent.category.LAUNCHER 1
