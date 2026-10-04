@@ -111,7 +111,7 @@ export class MemoryFabricService {
 
     const lockKey=`${fact.scope}:${fact.roomId??"*"}:${fact.canonicalKey}`;
     return this.withCanonicalLock(lockKey,async()=>{
-      const latest=(await this.repository.findActiveByCanonicalKey(fact.scope,fact.roomId,fact.canonicalKey,signal))
+      const latest=[...(await this.repository.findActiveByCanonicalKey(fact.scope,fact.roomId,fact.canonicalKey,signal))]
         .sort((a,b)=>b.validFrom-a.validFrom || b.updatedAt-a.updatedAt)[0];
       if(!latest || latest.id!==fact.id){
         throw new SevenError({code:"VALIDATION",message:"Memory changed before this edit could be saved.",retryable:true});
