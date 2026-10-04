@@ -5,49 +5,20 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(root){
   'use strict';
   const VERSION='1.1.0';
-  const CHECKPOINT_KIND='seven-execution-checkpoint-v2',LEGACY_CHECKPOINT_KIND='seven-execution-checkpoint-v1',MAX_CHECKPOINTS=32;
+  const CK='seven-execution-checkpoint-v2',OLD_CK='seven-execution-checkpoint-v1',MAX_CK=32;
   const TERMINAL=new Set(['COMPLETED','INCONCLUSIVE','FAILED','CANCELLED']);
   function clone(v){return v==null?v:JSON.parse(JSON.stringify(v));}
   function arr(v){return Array.isArray(v)?v:[];}
   function id(prefix){return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;}
-  function stableStringify(v){if(v===null||typeof v!=='object')return JSON.stringify(v);if(Array.isArray(v))return'['+v.map(stableStringify).join(',')+']';return'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+stableStringify(v[k])).join(',')+'}'}
-  function checkpointDigest(v){const t=stableStringify(v);let h=2166136261;for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,16777619)}return'fnv1a32:'+((h>>>0).toString(16).padStart(8,'0'))}
-  function validateCheckpoint(c,taskId){if(!c||c.kind!==CHECKPOINT_KIND||c.schemaVersion!==2)return{valid:false,reason:'unsupported-checkpoint'};const s=c.snapshot;if(!s||!s.task||!s.id)return{valid:false,reason:'missing-snapshot'};if(taskId&&c.taskId!==taskId)return{valid:false,reason:'task-mismatch'};if(c.taskId!==s.task.id||c.runId!==s.id||c.state!==s.task.state)return{valid:false,reason:'identity-mismatch'};if(c.digest!==checkpointDigest(s))return{valid:false,reason:'digest-mismatch'};return{valid:true,reason:'valid'}}
+  function checkpointDigest(v){const t=JSON.stringify(v);let h=2166136261;for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,16777619)}return'fnv1a32:'+((h>>>0).toString(16).padStart(8,'0'))}
+  function validateCheckpoint(c,taskId){if(!c||c.kind!==CK||c.schemaVersion!==2)return{valid:false,reason:'schema'};const s=c.snapshot;if(!s||!s.task||!s.id)return{valid:false,reason:'snapshot'};if(taskId&&c.taskId!==taskId)return{valid:false,reason:'task'};if(c.taskId!==s.task.id||c.runId!==s.id||c.state!==s.task.state)return{valid:false,reason:'identity'};if(c.digest!==checkpointDigest(s))return{valid:false,reason:'digest'};return{valid:true,reason:'valid'}}
   function control(){if(!root||!root.SevenControl)throw new Error('SevenControl runtime required');return root.SevenControl;}
   function runtime(){if(!root||!root.SevenRuntime)throw new Error('SevenRuntime v4 required');return root.SevenRuntime;}
   function isTerminal(run){return !!(run&&run.task&&TERMINAL.has(run.task.state));}
-  function canonicalPath(v){
-    const raw=String(v||'').trim().replace(/\\/g,'/').replace(/\/+/g,'/');
-    if(!raw)return {valid:true,path:''};
-    if(raw.startsWith('/')||/^[A-Za-z]:\//.test(raw))return {valid:false,path:'',reason:'absolute-path'};
-    const stack=[];
-    for(const part of raw.split('/')){
-      if(!part||part==='.')continue;
-      if(part==='..'){if(!stack.length)return {valid:false,path:'',reason:'path-traversal'};stack.pop();continue;}
-      if(part.includes('\0'))return {valid:false,path:'',reason:'nul-byte'};
-      stack.push(part);
-    }
-    return {valid:true,path:stack.join('/')};
-  }
-  function fileInScope(path,allowed){
-    const target=canonicalPath(path);if(!target.valid)return false;if(!target.path)return true;
-    const requested=arr(allowed);if(!requested.length)return true;
-    const list=requested.map(canonicalPath).filter(x=>x.valid&&x.path).map(x=>x.path);if(!list.length)return false;
-    return list.some(base=>target.path===base||target.path.startsWith(base.replace(/\/$/,'')+'/'));
-  }
-  function domainInScope(url,allowed){
-    if(!url)return true;const list=arr(allowed).map(x=>String(x||'').toLowerCase().replace(/^\.+/,'')).filter(Boolean);if(!list.length)return true;
-    let host;try{host=new URL(String(url)).hostname.toLowerCase();}catch{return false;}
-    return list.some(domain=>host===domain||host.endsWith('.'+domain));
-  }
-  function scopeDecision(task,args){
-    const scope=task&&task.scope||{};args=args||{};
-    const file=args.path||args.file||args.filePath||null;
-    const url=args.url||args.href||null;
-    if(file&&!fileInScope(file,scope.files))return {allowed:false,reason:'file-outside-task-scope'};
-    if(url&&!domainInScope(url,scope.externalDomains))return {allowed:false,reason:'domain-outside-task-scope'};
-    return {allowed:true,reason:'within-task-scope'};
-  }
+  function canonicalPath(v){const raw=String(v||'').trim().replace(/\\/g,'/').replace(/\/+/g,'/');if(!raw)return{valid:true,path:''};if(raw.startsWith('/')||/^[A-Za-z]:\//.test(raw))return{valid:false,path:'',reason:'absolute-path'};const stack=[];for(const part of raw.split('/')){if(!part||part==='.')continue;if(part==='..'){if(!stack.length)return{valid:false,path:'',reason:'path-traversal'};stack.pop();continue}if(part.includes('\0'))return{valid:false,path:'',reason:'nul-byte'};stack.push(part)}return{valid:true,path:stack.join('/')}}
+  function fileInScope(path,allowed){const t=canonicalPath(path);if(!t.valid)return false;if(!t.path)return true;const requested=arr(allowed);if(!requested.length)return true;const list=requested.map(canonicalPath).filter(x=>x.valid&&x.path).map(x=>x.path);if(!list.length)return false;return list.some(base=>t.path===base||t.path.startsWith(base.replace(/\/$/,'')+'/'))}
+  function domainInScope(url,allowed){if(!url)return true;const list=arr(allowed).map(x=>String(x||'').toLowerCase().replace(/^\.+/,'')).filter(Boolean);if(!list.length)return true;let host;try{host=new URL(String(url)).hostname.toLowerCase()}catch{return false}return list.some(domain=>host===domain||host.endsWith('.'+domain))}
+  function scopeDecision(task,args){const scope=task&&task.scope||{};args=args||{};const file=args.path||args.file||args.filePath||null,url=args.url||args.href||null;if(file&&!fileInScope(file,scope.files))return{allowed:false,reason:'file-outside-task-scope'};if(url&&!domainInScope(url,scope.externalDomains))return{allowed:false,reason:'domain-outside-task-scope'};return{allowed:true,reason:'within-task-scope'}}
   function authorizeTool({task,tool,args,grant}={}){
     if(!task||!tool)return {allowed:false,reason:'missing-task-or-tool'};
     const capability=String(tool.capability||tool.id||'').trim();
@@ -122,8 +93,8 @@
   function completeRun(run,evidenceRef){if(run.task.state!=='COMMITTING')throw new Error('completion requires COMMITTING state');run.task=control().transitionTask(run.task,'COMPLETED',{reason:'commit-complete',evidenceRef:evidenceRef||null});appendEvent(run,'run.completed',{evidenceRef:evidenceRef||null},{allowTerminal:true});return run;}
   function cancelRun(run,reason){if(isTerminal(run))return run;run.cancelIntent={at:new Date().toISOString(),reason:String(reason||'user-cancelled')};run.task=control().transitionTask(run.task,'CANCELLED',{reason:run.cancelIntent.reason});appendEvent(run,'run.cancelled',run.cancelIntent,{allowTerminal:true});return run;}
   function registerTools(tools){return runtime().registerTools(arr(tools));}
-  function persistCheckpoint(run,reason){if(!run||!run.task||!run.task.id)throw new Error('run required');const r=runtime(),current=r.readRuns(),snapshot=clone(run),checkpoint={schemaVersion:2,id:id('execution-checkpoint'),kind:CHECKPOINT_KIND,taskId:run.task.id,runId:run.id,state:run.task.state,reason:reason||null,at:new Date().toISOString(),snapshot,digest:checkpointDigest(snapshot)},objects=arr(current&&current.objects).map(clone),non=objects.filter(x=>!(x&&(x.kind===CHECKPOINT_KIND||x.kind===LEGACY_CHECKPOINT_KIND))),keep=objects.filter(x=>x&&x.kind===CHECKPOINT_KIND&&x.taskId!==run.task.id).sort((a,b)=>Date.parse(a.at||0)-Date.parse(b.at||0)).slice(-(MAX_CHECKPOINTS-1));if(!r.runLedger([...non,...keep,checkpoint],'EXECUTION_CHECKPOINT'))throw new Error('run ledger rejected checkpoint');return clone(checkpoint)}
-  function restoreLatest(taskId){const r=runtime(),current=r.readRuns(),xs=arr(current&&current.objects).filter(x=>x&&x.kind===CHECKPOINT_KIND&&x.taskId===taskId).sort((a,b)=>Date.parse(a.at||0)-Date.parse(b.at||0));if(!xs.length)return null;const latest=xs[xs.length-1],check=validateCheckpoint(latest,taskId);if(!check.valid)throw new Error('INVALID_EXECUTION_CHECKPOINT:'+check.reason);return clone(latest.snapshot)}
+  function persistCheckpoint(run,reason){if(!run||!run.task||!run.task.id)throw new Error('run required');const r=runtime(),current=r.readRuns(),snapshot=clone(run),checkpoint={schemaVersion:2,id:id('execution-checkpoint'),kind:CK,taskId:run.task.id,runId:run.id,state:run.task.state,reason:reason||null,at:new Date().toISOString(),snapshot,digest:checkpointDigest(snapshot)},objects=arr(current&&current.objects).map(clone),non=objects.filter(x=>!(x&&(x.kind===CK||x.kind===OLD_CK))),keep=objects.filter(x=>x&&x.kind===CK&&x.taskId!==run.task.id).sort((a,b)=>Date.parse(a.at||0)-Date.parse(b.at||0)).slice(-(MAX_CK-1));if(!r.runLedger([...non,...keep,checkpoint],'EXECUTION_CHECKPOINT'))throw new Error('run ledger rejected checkpoint');return clone(checkpoint)}
+  function restoreLatest(taskId){const r=runtime(),current=r.readRuns(),xs=arr(current&&current.objects).filter(x=>x&&x.kind===CK&&x.taskId===taskId).sort((a,b)=>Date.parse(a.at||0)-Date.parse(b.at||0));if(!xs.length)return null;const latest=xs[xs.length-1],check=validateCheckpoint(latest,taskId);if(!check.valid)throw new Error('INVALID_EXECUTION_CHECKPOINT:'+check.reason);return clone(latest.snapshot)}
 
   const state={version:VERSION,ready:false,error:null,bootedAt:null};
   function boot(){const c=control(),r=runtime();if(!c.state||!c.state.ready)throw new Error('SevenControl runtime not ready');if(Number(r.version)!==4)throw new Error('SevenRuntime v4 required');state.ready=true;state.error=null;state.bootedAt=new Date().toISOString();return clone(state);}
