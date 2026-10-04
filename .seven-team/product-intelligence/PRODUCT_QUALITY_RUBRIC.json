@@ -1,0 +1,153 @@
+{
+  "schemaVersion": 1,
+  "name": "Seven Premium AI Chat Product Gate",
+  "scale": {
+    "min": 0,
+    "max": 10,
+    "releaseCandidateMinimum": 8.2,
+    "premiumTarget": 9
+  },
+  "weights": {
+    "coreChat": 18,
+    "composer": 10,
+    "responseExperience": 10,
+    "visualCohesion": 10,
+    "navigationIA": 8,
+    "modelModeUX": 6,
+    "searchResearchUX": 6,
+    "memoryHistoryUX": 5,
+    "filesUX": 4,
+    "errorRecovery": 6,
+    "androidFeel": 6,
+    "arabicRTL": 5,
+    "performancePerception": 4,
+    "accessibility": 2
+  },
+  "hardFails": [
+    "Cannot complete a normal send -> stream -> stop/retry conversation",
+    "Shell/dashboard is the dominant experience while chat is hidden or secondary",
+    "Primary composer is obscured, broken, or unsafe with Android keyboard",
+    "Horizontal overflow or unusable touch targets on supported phone widths",
+    "Major screen has inconsistent/parallel design system or duplicate navigation/modal ownership",
+    "Arabic RTL makes core chat/composer/navigation materially harder to use",
+    "App loses committed conversation state across required restart/restore path",
+    "User-facing errors expose secrets or raw sensitive credentials",
+    "APK identity/evidence does not match evaluated build",
+    "Critical visual state has no exact-build screenshot evidence"
+  ],
+  "dimensions": {
+    "coreChat": [
+      "first-prompt clarity",
+      "conversation continuity",
+      "stream stability",
+      "stop/retry correctness",
+      "long-chat readability"
+    ],
+    "composer": [
+      "focus",
+      "thumb reach",
+      "attachment entry",
+      "multiline behavior",
+      "keyboard safety",
+      "send/stop clarity"
+    ],
+    "responseExperience": [
+      "hierarchy",
+      "markdown/code/table quality",
+      "citations/media",
+      "progress state",
+      "low reflow"
+    ],
+    "visualCohesion": [
+      "tokens",
+      "spacing",
+      "typography",
+      "icon grammar",
+      "surface hierarchy",
+      "day/night consistency"
+    ],
+    "navigationIA": [
+      "destination clarity",
+      "back behavior",
+      "progressive disclosure",
+      "no duplicate homes"
+    ],
+    "modelModeUX": [
+      "excellent default",
+      "clear Quick/Balanced/Deep",
+      "model choice not required",
+      "fallback explained"
+    ],
+    "searchResearchUX": [
+      "source status",
+      "citation mapping",
+      "freshness clarity",
+      "research depth without clutter"
+    ],
+    "memoryHistoryUX": [
+      "room ownership",
+      "history speed",
+      "memory explanation",
+      "restore behavior"
+    ],
+    "filesUX": [
+      "pick/upload/remove/preview",
+      "limits/errors",
+      "room ownership"
+    ],
+    "errorRecovery": [
+      "actionable errors",
+      "preserve user work",
+      "offline distinction",
+      "idempotent retry"
+    ],
+    "androidFeel": [
+      "launch",
+      "back",
+      "keyboard",
+      "permissions",
+      "lifecycle",
+      "safe areas",
+      "font scale"
+    ],
+    "arabicRTL": [
+      "natural Arabic",
+      "mixed-direction text",
+      "mirroring",
+      "layout",
+      "truncation",
+      "citations/code"
+    ],
+    "performancePerception": [
+      "input response",
+      "streaming start",
+      "scroll smoothness",
+      "long history",
+      "no blocking chrome"
+    ],
+    "accessibility": [
+      "contrast",
+      "focus",
+      "semantics",
+      "reduced motion",
+      "touch targets"
+    ]
+  },
+  "verdicts": {
+    "9.0-10": "Premium: coherent, confident, delightful; no material rough edges in core journeys.",
+    "8.2-8.9": "Release Candidate: strong product; only bounded non-core polish remains.",
+    "7.0-8.1": "Functional but not premium: visible cohesion/friction issues; do not call final.",
+    "5.0-6.9": "Prototype/beta quality: major UX or visual weaknesses.",
+    "0-4.9": "Broken/incoherent product experience."
+  },
+  "evidenceRequired": [
+    "exact build SHA",
+    "functional gate output",
+    "Android screenshots",
+    "RTL screenshot",
+    "day/night evidence",
+    "judge reports",
+    "known limitations"
+  ],
+  "judgeRule": "A score without concrete evidence is invalid. Any hard fail overrides weighted score."
+}
