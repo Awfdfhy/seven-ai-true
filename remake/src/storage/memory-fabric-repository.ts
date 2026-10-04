@@ -3,6 +3,8 @@ import { cloneMemoryFact, isMemoryFact, type MemoryFact, type MemoryWriteEvent }
 
 export interface MemoryFabricRepository {
   listForRoom(roomId: string, signal?: AbortSignal): Promise<readonly MemoryFact[]>;
+  listAll(signal?: AbortSignal): Promise<readonly MemoryFact[]>;
+  listEvents(signal?: AbortSignal): Promise<readonly MemoryWriteEvent[]>;
   findActiveByCanonicalKey(scope: "global"|"room", roomId: string | null, canonicalKey: string, signal?: AbortSignal): Promise<readonly MemoryFact[]>;
   commit(facts: readonly MemoryFact[], events: readonly MemoryWriteEvent[], signal?: AbortSignal): Promise<void>;
   deleteFact(memoryId: string, event: MemoryWriteEvent, signal?: AbortSignal): Promise<void>;
@@ -24,6 +26,14 @@ export class InMemoryMemoryFabricRepository implements MemoryFabricRepository {
   async listForRoom(roomId:string, signal?:AbortSignal):Promise<readonly MemoryFact[]> {
     throwIfAborted(signal); canonical(roomId,"roomId");
     return Object.freeze([...this.facts.values()].filter(f=>f.scope==="global" || f.roomId===roomId).map(cloneMemoryFact));
+  }
+  async listAll(signal?:AbortSignal):Promise<readonly MemoryFact[]>{
+    throwIfAborted(signal);
+    return Object.freeze([...this.facts.values()].map(cloneMemoryFact));
+  }
+  async listEvents(signal?:AbortSignal):Promise<readonly MemoryWriteEvent[]>{
+    throwIfAborted(signal);
+    return Object.freeze(this.events.map(event=>Object.freeze({...event})));
   }
   async findActiveByCanonicalKey(scope:"global"|"room",roomId:string|null,key:string,signal?:AbortSignal):Promise<readonly MemoryFact[]> {
     throwIfAborted(signal); canonical(key,"canonicalKey");
@@ -54,6 +64,41 @@ export class IndexedDbMemoryFabricRepository implements MemoryFabricRepository {
     const room=await this.getAllByIndex("facts","scopeRoom",`room:${roomId}`,signal);
     const decoded=[...global,...room].map(this.decodeFact);
     return Object.freeze(decoded);
+  }
+
+  async listAll(signal?:AbortSignal):Promise<readonly MemoryFact[]>{
+    throwIfAborted(signal);
+    const db=await this.open();
+    const rows=await new Promise<unknown[]>((resolve,reject)=>{
+      const tx=db.transaction("facts","readonly");
+      const request=tx.objectStore("facts").getAll();
+      request.onsuccess=()=>resolve(request.result as unknown[]);
+      request.onerror=()=>reject(new SevenError({code:"STORAGE",message:"Memory full-store read failed.",cause:request.error}));
+    });
+    return Object.freeze(rows.map(this.decodeFact));
+  }
+
+  async listEvents(signal?:AbortSignal):Promise<readonly MemoryWriteEvent[]>{
+    throwIfAborted(signal);
+    const db=await this.open();
+    const rows=await new Promise<unknown[]>((resolve,reject)=>{
+      const tx=db.transaction("events","readonly");
+      const request=tx.objectStore("events").getAll();
+      request.onsuccess=()=>resolve(request.result as unknown[]);
+      request.onerror=()=>reject(new SevenError({code:"STORAGE",message:"Memory event read failed.",cause:request.error}));
+    });
+    const out:MemoryWriteEvent[]=[];
+    for(const row of rows){
+      if(!row || typeof row!=="object" || Array.isArray(row))throw new SevenError({code:"STORAGE",message:"Stored memory event is malformed."});
+      const event=row as MemoryWriteEvent;
+      if(event.schemaVersion!==1 || typeof event.id!=="string" || typeof event.factId!=="string" ||
+         !["add","supersede","forget"].includes(event.type) || typeof event.at!=="number" ||
+         typeof event.sourceRoomId!=="string" || typeof event.sourceMessageId!=="string"){
+        throw new SevenError({code:"STORAGE",message:"Stored memory event failed schema validation."});
+      }
+      out.push(Object.freeze({...event}));
+    }
+    return Object.freeze(out);
   }
 
   async findActiveByCanonicalKey(scope:"global"|"room",roomId:string|null,key:string,signal?:AbortSignal):Promise<readonly MemoryFact[]>{
