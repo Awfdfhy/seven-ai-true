@@ -40,6 +40,11 @@ export type McpImportReport = Readonly<{
   connection: McpConnectionInfo;
   imported: readonly string[];
   skipped: readonly Readonly<{ remoteName: string; reason: string }>[];
+  catalogCache: Readonly<{
+    scope: "private" | "public";
+    ttlMs: number;
+    fromCache: boolean;
+  }>;
 }>;
 
 const outputSchema = z.object({
@@ -137,12 +142,30 @@ function taskResultAsImmediate(state: McpTaskState): McpImmediateToolResult {
   });
 }
 
+type CachedCatalog = Readonly<{
+  tools: readonly McpRemoteTool[];
+  scope: "private" | "public";
+  expiresAt: number;
+}>;
+
 export class McpToolImporter {
+  private catalogCache: CachedCatalog | null = null;
+
   constructor(
     private readonly registry: ToolRegistry,
     private readonly port: McpClientPort,
     private readonly taskPoller = new McpTaskPoller(),
-  ) {}
+    private readonly now: () => number = Date.now,
+    private readonly maxCatalogTtlMs = 60_000,
+  ) {
+    if (!Number.isSafeInteger(maxCatalogTtlMs) || maxCatalogTtlMs < 0 || maxCatalogTtlMs > 10 * 60_000) {
+      throw new SevenError({ code: "VALIDATION", message: "MCP catalog TTL cap is invalid." });
+    }
+  }
+
+  invalidateCatalog(): void {
+    this.catalogCache = null;
+  }
 
   async connectAndImport(
     policy: McpServerPolicy,
@@ -162,7 +185,8 @@ export class McpToolImporter {
       throw new SevenError({ code: "PERMISSION", message: "MCP protocol version is not allowed by local policy." });
     }
 
-    const catalog = await this.port.listTools(signal);
+    const catalogResult = await this.loadCatalog(signal);
+    const catalog = catalogResult.catalog;
     if (catalog.tools.length > 256) {
       throw new SevenError({ code: "TOOL", message: "MCP server advertised too many tools." });
     }
@@ -177,6 +201,15 @@ export class McpToolImporter {
         continue;
       }
       try {
+        if (policy.trust === "untrusted" && effectful(rule.annotations.risk)) {
+          skipped.push({ remoteName: remote.name, reason: "untrusted-server-effectful-tool" });
+          continue;
+        }
+        if (effectful(rule.annotations.risk) && rule.annotations.approval !== "always") {
+          skipped.push({ remoteName: remote.name, reason: "effectful-mcp-tool-requires-always-approval" });
+          continue;
+        }
+
         const inputSchema = compileMcpInputSchema(remote.inputSchema);
         const localId = rule.localId ?? `mcp.${serverSlug}.${slug(remote.name, "MCP tool name")}`;
         const title = boundedLocalText(rule.title, "MCP local title", 120);
@@ -221,6 +254,53 @@ export class McpToolImporter {
       connection,
       imported: Object.freeze(imported),
       skipped: Object.freeze(skipped.map(item => Object.freeze(item))),
+      catalogCache: Object.freeze({
+        scope: catalogResult.scope,
+        ttlMs: catalogResult.ttlMs,
+        fromCache: catalogResult.fromCache,
+      }),
+    });
+  }
+
+  private async loadCatalog(signal?: AbortSignal): Promise<Readonly<{
+    catalog: Readonly<{ tools: readonly McpRemoteTool[] }>;
+    scope: "private" | "public";
+    ttlMs: number;
+    fromCache: boolean;
+  }>> {
+    const now = this.now();
+    if (this.catalogCache && this.catalogCache.expiresAt > now) {
+      return Object.freeze({
+        catalog: Object.freeze({ tools: this.catalogCache.tools }),
+        scope: this.catalogCache.scope,
+        ttlMs: Math.max(0, this.catalogCache.expiresAt - now),
+        fromCache: true,
+      });
+    }
+
+    const raw = await this.port.listTools(signal);
+    const rawTtl = raw.ttlMs;
+    const ttlMs = Number.isSafeInteger(rawTtl) && (rawTtl ?? 0) > 0
+      ? Math.min(rawTtl as number, this.maxCatalogTtlMs)
+      : 0;
+    const scope = raw.cacheScope === "public" ? "public" : "private";
+    const tools = Object.freeze([...raw.tools]);
+
+    if (ttlMs > 0) {
+      this.catalogCache = Object.freeze({
+        tools,
+        scope,
+        expiresAt: now + ttlMs,
+      });
+    } else {
+      this.catalogCache = null;
+    }
+
+    return Object.freeze({
+      catalog: Object.freeze({ tools }),
+      scope,
+      ttlMs,
+      fromCache: false,
     });
   }
 
@@ -229,6 +309,26 @@ export class McpToolImporter {
     signal: AbortSignal,
   ): Promise<Readonly<{ items: readonly string[]; truncated: boolean }>> {
     if (isImmediate(outcome)) return normalizeImmediate(outcome);
+
+    if (outcome.kind === "input_required") {
+      // requestState is opaque attacker-controlled round-trip state in MCP 2026.
+      // Seven v1 does not auto-fulfil remote elicitation/sampling, so fail closed
+      // without logging, parsing, modifying, or echoing requestState.
+      if (
+        typeof outcome.requestState !== "string" ||
+        !outcome.requestState ||
+        outcome.requestState.length > 16_384 ||
+        !outcome.inputRequests ||
+        typeof outcome.inputRequests !== "object" ||
+        Array.isArray(outcome.inputRequests)
+      ) {
+        throw new SevenError({ code: "TOOL", message: "Remote MCP input-required result is malformed." });
+      }
+      throw new SevenError({
+        code: "PERMISSION",
+        message: "Remote MCP tool requested interactive input that Seven has not explicitly authorized.",
+      });
+    }
 
     const state = await this.taskPoller.settle(this.port, outcome.task, signal);
     switch (state.status) {

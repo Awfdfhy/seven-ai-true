@@ -25,6 +25,12 @@ export type McpImmediateToolResult = Readonly<{
   structuredContent?: unknown;
 }>;
 
+export type McpInputRequiredToolResult = Readonly<{
+  kind: "input_required";
+  requestState: string;
+  inputRequests: Readonly<Record<string, unknown>>;
+}>;
+
 export type McpTaskStatus =
   | "working"
   | "input_required"
@@ -50,13 +56,17 @@ export type McpTaskToolResult = Readonly<{
   task: McpTaskState;
 }>;
 
-export type McpToolCallOutcome = McpImmediateToolResult | McpTaskToolResult;
+export type McpToolCallOutcome =
+  | McpImmediateToolResult
+  | McpTaskToolResult
+  | McpInputRequiredToolResult;
 
 export interface McpClientPort {
   connect(signal?: AbortSignal): Promise<McpConnectionInfo>;
   listTools(signal?: AbortSignal): Promise<Readonly<{
     tools: readonly McpRemoteTool[];
     ttlMs?: number;
+    cacheScope?: "private" | "public";
   }>>;
   callTool(input: Readonly<{
     name: string;
