@@ -1,10 +1,11 @@
+import { expandAssociatedMemories } from "./memory-association";
 import type { MemoryFact } from "../../domain/memory/fabric";
 
 export type MemoryHit = Readonly<{
   fact: MemoryFact;
   score: number;
   lexical: number;
-  reason: "core" | "retrieved";
+  reason: "core" | "retrieved" | "associated";
 }>;
 
 export type MemorySearchOptions = Readonly<{
@@ -118,7 +119,18 @@ export class MemoryRetrievalEngine {
       .sort((a,b)=>b.score-a.score || b.fact.updatedAt-a.fact.updatedAt)
       .slice(0,maxRecall) : [];
 
-    return Object.freeze([...core,...recall]);
+    const direct=[...core,...recall];
+    const expansions = includeRecall
+      ? expandAssociatedMemories(active,direct.map(hit=>hit.fact),query,Math.min(4,maxRecall))
+          .filter(expansion=>!direct.some(hit=>hit.fact.id===expansion.fact.id))
+          .map(expansion=>Object.freeze({
+            fact: expansion.fact,
+            score: expansion.score,
+            lexical: lex.get(expansion.fact.id)??0,
+            reason: "associated" as const,
+          }))
+      : [];
+    return Object.freeze([...direct,...expansions].slice(0,maxCore+maxRecall));
   }
 }
 

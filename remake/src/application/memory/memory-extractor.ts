@@ -48,6 +48,13 @@ function secretLike(text: string): boolean {
     /\b\d{6}\b/.test(text) && /code|otp|رمز/.test(lower + " " + normalizeArabic(text));
 }
 
+function memoryTags(content:string, base:readonly string[]):readonly string[]{
+  const stop=new Set(["the","and","for","with","that","this","from","my","your","our","انا","أنا","هذا","هذه","من","في","على","مع"]);
+  const normalized=normalizeArabic(content.toLocaleLowerCase("en-US"));
+  const salient=(normalized.match(/[\\p{L}\\p{N}_-]{3,}/gu)??[]).filter(token=>!stop.has(token)&&!/^\\d+$/.test(token));
+  return Object.freeze([...new Set([...base,...salient])].slice(0,16));
+}
+
 function preferenceKey(subject: string): { key: string; tags: readonly string[] } {
   const n = normalizeArabic(subject.toLocaleLowerCase("en-US"));
   if (/\b(theme|mode|dark|light)\b/.test(n) || /مظهر|ثيم|داكن|فاتح|الوضع/.test(n)) {
@@ -74,7 +81,7 @@ function candidate(
 ): MemoryCandidate | null {
   const cleaned = clean(content);
   if (!cleaned || cleaned.length > 1200 || secretLike(cleaned) || instructionLike(cleaned)) return null;
-  return Object.freeze({ kind, tier, scope, canonicalKey, content: cleaned, tags: Object.freeze([...tags]), importance, confidence });
+  return Object.freeze({ kind, tier, scope, canonicalKey, content: cleaned, tags: memoryTags(cleaned,tags), importance, confidence });
 }
 
 export function extractMemoryCandidates(input: string): readonly MemoryCandidate[] {
