@@ -11,6 +11,8 @@ import { IndexedDbRoomRepository } from "../storage/room-repository";
 import { ChatService } from "../application/chat/chat-service";
 import { ProviderChatTransport } from "../application/chat/provider-chat-transport";
 import { KiloAnonymousProviderAdapter } from "../providers/kilo-anonymous-adapter";
+import { IndexedDbMemoryFabricRepository } from "../storage/memory-fabric-repository";
+import { MemoryFabricService } from "../application/memory/memory-fabric-service";
 
 export type SevenRuntime = Readonly<{
   taskManager: TaskManager;
@@ -22,6 +24,7 @@ export type SevenRuntime = Readonly<{
   rooms: IndexedDbRoomRepository;
   chat: ChatService;
   chatTransport: ProviderChatTransport;
+  memory: MemoryFabricService;
 }>;
 
 export type SevenRuntimeOptions = Readonly<{
@@ -58,9 +61,16 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
     : null;
 
   const rooms = new IndexedDbRoomRepository();
-  const chat = new ChatService(taskManager, rooms);
+  const memoryRepository = new IndexedDbMemoryFabricRepository();
+  const memory = new MemoryFabricService(memoryRepository);
+  const chat = new ChatService(taskManager, rooms, memory);
   const kilo = new KiloAnonymousProviderAdapter();
-  const chatTransport = new ProviderChatTransport(kilo, "kilo-auto/free");
+  const chatTransport = new ProviderChatTransport(
+    kilo,
+    "kilo-auto/free",
+    "You are Seven, a precise and helpful AI assistant.",
+    memory,
+  );
 
   const kernel = new AppKernel(diagnostics);
   kernel.register({
@@ -83,5 +93,6 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
     rooms,
     chat,
     chatTransport,
+    memory,
   });
 }
