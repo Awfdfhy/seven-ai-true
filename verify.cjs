@@ -14,6 +14,14 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  await page.goto(origin);
  await page.waitForFunction(()=>roomPersistence.status().ready);
  await test('initial IDB migration and UI boot',async()=>{assert.equal(await page.evaluate(()=>roomPersistence.status().revision),1);assert.deepEqual(errors,[])});
+ await test('auto context budget is bounded by the controller model window',async()=>{
+  const r=await page.evaluate(()=>{
+    const oldMode=currentRoutingMode;currentRoutingMode='auto';
+    try{const limits=modelLimits(currentModel),output=Math.min(currentMaxTokens,limits.maxTokens),budget=getContextInputTokenBudget(currentModel,output);return {budget,window:limits.contextWindow,output}}
+    finally{currentRoutingMode=oldMode}
+  });
+  assert.ok(r.budget+r.output+2048<=r.window);
+ });
  await test('composer IME composition blocks Enter send until composition ends',async()=>{
   const r=await page.evaluate(()=>{
     const input=document.getElementById('userInput'),old=sendMessage;let calls=0;

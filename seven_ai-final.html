@@ -6587,11 +6587,7 @@
                 ? Math.floor(outputTokens)
                 : modelLimits(model).maxTokens;
             const safety = 2048;
-            let contextWindow = modelLimits(model).contextWindow || CONTEXT_WINDOW_TOKENS;
-            if (currentRoutingMode === "auto") {
-                const configured = getFreeModelCatalog().filter(m => m.free === true && isFreePriceProofFresh(m) && isFreeProviderConfigured(m.provider) && (!m.requiresExplicitEnable || isFreeProviderEnabled(m.provider)));
-                if (configured.length) contextWindow = Math.max(...configured.map(m => m.contextWindow));
-            }
+            const contextWindow = modelLimits(model).contextWindow || CONTEXT_WINDOW_TOKENS;
             return Math.max(2048, contextWindow - Math.min(contextWindow - 2048, output) - safety);
         }
 
