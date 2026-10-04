@@ -7,6 +7,10 @@ import { ThemeService, type ThemeScheduler } from "../ui/system/theme-service";
 import { AndroidBridgeClient } from "../platform/android/android-bridge";
 import { createCapacitorAndroidNativeTransport } from "../platform/android/capacitor-native-transport";
 import { AndroidPlatformService } from "../application/android/android-platform-service";
+import { IndexedDbRoomRepository } from "../storage/room-repository";
+import { ChatService } from "../application/chat/chat-service";
+import { ProviderChatTransport } from "../application/chat/provider-chat-transport";
+import { KiloAnonymousProviderAdapter } from "../providers/kilo-anonymous-adapter";
 
 export type SevenRuntime = Readonly<{
   taskManager: TaskManager;
@@ -15,6 +19,9 @@ export type SevenRuntime = Readonly<{
   diagnostics: DiagnosticsBuffer;
   kernel: AppKernel;
   android: AndroidPlatformService | null;
+  rooms: IndexedDbRoomRepository;
+  chat: ChatService;
+  chatTransport: ProviderChatTransport;
 }>;
 
 export type SevenRuntimeOptions = Readonly<{
@@ -50,6 +57,11 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
     ? new AndroidPlatformService(taskManager, new AndroidBridgeClient(nativeTransport))
     : null;
 
+  const rooms = new IndexedDbRoomRepository();
+  const chat = new ChatService(taskManager, rooms);
+  const kilo = new KiloAnonymousProviderAdapter();
+  const chatTransport = new ProviderChatTransport(kilo, "kilo-auto/free");
+
   const kernel = new AppKernel(diagnostics);
   kernel.register({
     id: "theme",
@@ -68,5 +80,8 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
     diagnostics,
     kernel,
     android,
+    rooms,
+    chat,
+    chatTransport,
   });
 }
