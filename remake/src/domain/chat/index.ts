@@ -1,6 +1,7 @@
 import { SevenError } from "../../core/errors";
 
 export type ChatRole = "user" | "assistant";
+export type ChatMode = "quick" | "balanced" | "deep";
 
 export type ChatMessage = Readonly<{
   id: string;
@@ -14,6 +15,7 @@ export type Room = Readonly<{
   id: string;
   title: string;
   modelId: string | null;
+  mode?: ChatMode;
   messages: readonly ChatMessage[];
   createdAt: number;
   updatedAt: number;
@@ -23,6 +25,7 @@ export type CreateRoomOptions = Readonly<{
   id?: string;
   title?: string;
   modelId?: string | null;
+  mode?: ChatMode;
   now?: number;
 }>;
 
@@ -106,12 +109,20 @@ export function createRoom(options: CreateRoomOptions = {}): Room {
     options.modelId === undefined || options.modelId === null
       ? null
       : requireNonBlank(options.modelId, "model id", true);
+  const mode = options.mode ?? "balanced";
+  if (mode !== "quick" && mode !== "balanced" && mode !== "deep") {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Chat mode must be quick, balanced, or deep.",
+    });
+  }
 
   return Object.freeze({
     schemaVersion: 1 as const,
     id,
     title,
     modelId,
+    mode,
     messages: Object.freeze([]),
     createdAt: now,
     updatedAt: now,
@@ -186,6 +197,31 @@ export function commitMessage(
   });
 }
 
+export function withRoomMode(
+  room: Room,
+  mode: ChatMode,
+  now = Date.now(),
+): Room {
+  if (!isRoom(room)) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Room failed schema validation before mode update.",
+    });
+  }
+  if (mode !== "quick" && mode !== "balanced" && mode !== "deep") {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Chat mode must be quick, balanced, or deep.",
+    });
+  }
+  const timestamp = requireFiniteTime(now, "room timestamp");
+  return Object.freeze({
+    ...cloneRoom(room),
+    mode,
+    updatedAt: Math.max(room.updatedAt, timestamp),
+  });
+}
+
 export function withRoomModel(
   room: Room,
   modelId: string | null,
@@ -238,6 +274,14 @@ export function isRoom(value: unknown): value is Room {
         candidate.modelId.trim().length > 0 &&
         candidate.modelId === candidate.modelId.trim())
     )
+  ) {
+    return false;
+  }
+  if (
+    candidate.mode !== undefined &&
+    candidate.mode !== "quick" &&
+    candidate.mode !== "balanced" &&
+    candidate.mode !== "deep"
   ) {
     return false;
   }

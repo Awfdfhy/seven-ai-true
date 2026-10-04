@@ -1,6 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { SevenRuntime } from "../kernel/seven-runtime";
-import { commitMessage, createRoom, type Room } from "../domain/chat";
+import { commitMessage, createRoom, withRoomMode, type ChatMode, type Room } from "../domain/chat";
 import type { ChatRun } from "../application/chat/chat-service";
 import { type ThemePreference } from "./shell/shell-store";
 import type { MemoryFact } from "../domain/memory/fabric";
@@ -215,6 +215,20 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
       setError(reason instanceof Error ? reason.message : String(reason));
     } finally {
       setMemoryBusy(false);
+    }
+  };
+
+  const setChatMode = async (mode: ChatMode) => {
+    if (!currentRoom || activeRun) return;
+    try {
+      const updated = withRoomMode(currentRoom, mode);
+      await rooms.put(updated);
+      setCurrentRoom(updated);
+      setRoomList((existing) =>
+        existing.map((room) => room.id === updated.id ? updated : room),
+      );
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : String(reason));
     }
   };
 
@@ -500,12 +514,31 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
       )}
 
       <section className="seven-chat-shell">
-        <div className="seven-mode-row" aria-label={t("Seven modes", "أوضاع Seven")}>
+        <div className="seven-mode-row" aria-label={t("Seven workspaces", "مساحات Seven")}>
           <button type="button" aria-pressed={snapshot.activeWorkspace === "core"} onClick={() => shell.setWorkspace("core")}>{t("Chat", "دردشة")}</button>
           <button type="button" aria-pressed={snapshot.activeWorkspace === "research"} onClick={() => shell.setWorkspace("research")}>{t("Research", "بحث")}</button>
           <button type="button" aria-pressed={snapshot.activeWorkspace === "build"} onClick={() => shell.setWorkspace("build")}>{t("Build", "برمجة")}</button>
           <button type="button" aria-pressed={snapshot.activeWorkspace === "world"} onClick={() => shell.setWorkspace("world")}>{t("RPG", "RPG")}</button>
         </div>
+        {snapshot.activeWorkspace === "core" && currentRoom && (
+          <div className="seven-mode-row" aria-label={t("Model routing mode", "وضع توجيه النموذج")}>
+            {(["quick", "balanced", "deep"] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                disabled={!!activeRun}
+                aria-pressed={(currentRoom.mode ?? "balanced") === mode}
+                onClick={() => void setChatMode(mode)}
+              >
+                {mode === "quick"
+                  ? t("Quick", "سريع")
+                  : mode === "balanced"
+                    ? t("Balanced", "متوازن")
+                    : t("Deep", "عميق")}
+              </button>
+            ))}
+          </div>
+        )}
 
         {!workspaceIntegrated && (
           <div className="seven-tool-notice" role="status">

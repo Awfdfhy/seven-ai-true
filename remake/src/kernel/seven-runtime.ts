@@ -217,7 +217,7 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
     providerHealth,
     new Map([["kilo", kilo]]),
     {
-      mode: "balanced",
+      mode: (room) => room.mode ?? "balanced",
       maxAttempts: 3,
       systemPrompt: "You are Seven, a precise and helpful AI assistant.",
       contextSource: integratedContextSource,

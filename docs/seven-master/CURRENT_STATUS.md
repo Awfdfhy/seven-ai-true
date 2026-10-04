@@ -18,7 +18,8 @@ Implemented:
 - room, Memory Fabric and context-summary IndexedDB repositories are closed by AppKernel shutdown;
 - public error-category mapping added in `core/error-taxonomy.ts`;
 - Self-Development now fails closed unless Coding verification evidence is present and valid **before** credential acquisition/GitHub mutation;
-- Research/Build/RPG UI submissions no longer silently fall back to normal Chat while those workspace adapters are uncomposed.
+- Research/Build/RPG UI submissions no longer silently fall back to normal Chat while those workspace adapters are uncomposed;
+- Quick / Balanced / Deep is now a per-room persisted routing preference, and production RoutingChatTransport resolves it on every turn.
 
 ## Evidence
 Remake CI run **37238353163**: SUCCESS on commit `18598d63814990300a65206d47253c92e5d26dbd`.
