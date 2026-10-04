@@ -12,3 +12,4 @@ export * from "./discovery";
 export * from "./provider-coding-agent";
 export * from "./coding-agent-service";
 export * from "./research-adapter";
+export * from "./routed-coding-agent";
