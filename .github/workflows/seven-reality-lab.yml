@@ -1,6 +1,9 @@
 name: Seven Reality Lab
 
 on:
+  workflow_run:
+    workflows: ["Seven Remake Android Release Gate"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       candidate_ref:
@@ -18,13 +21,17 @@ permissions:
 
 jobs:
   installed-android-evidence:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-24.04
+    env:
+      CANDIDATE_REF: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.event.inputs.candidate_ref }}
+      SOURCE_RUN: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || github.event.inputs.source_run }}
     timeout-minutes: 75
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.candidate_ref }}
+          ref: ${{ env.CANDIDATE_REF }}
           fetch-depth: 0
 
       - name: Setup Node 22
@@ -69,7 +76,7 @@ jobs:
           cp "$apk" reality-evidence/candidate.apk
           sha256sum reality-evidence/candidate.apk | tee reality-evidence/apk.sha256
           git rev-parse HEAD | tee reality-evidence/source-sha.txt
-          printf '%s\n' "${{ inputs.source_run }}" > reality-evidence/source-run.txt
+          printf '%s\n' "$SOURCE_RUN" > reality-evidence/source-run.txt
 
       - name: Enable KVM
         run: |
