@@ -1,9 +1,10 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { SevenRuntime } from "../kernel/seven-runtime";
-import { createRoom, type Room } from "../domain/chat";
+import { commitMessage, createRoom, type Room } from "../domain/chat";
 import type { ChatRun } from "../application/chat/chat-service";
 import { type ThemePreference } from "./shell/shell-store";
 import type { MemoryFact } from "../domain/memory/fabric";
+import type { PendingToolAction } from "../application/tools/approval-coordinator";
 
 const THEMES: readonly ThemePreference[] = ["auto", "light", "dark"];
 
@@ -14,7 +15,7 @@ function shortTitle(room: Room): string {
 }
 
 export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
-  const { shell, theme, kernel, rooms, chat, chatTransport, memory } = runtime;
+  const { shell, theme, kernel, rooms, chat, chatTransport, memory, toolApprovalCoordinator } = runtime;
   const snapshot = useSyncExternalStore(shell.subscribe, shell.getSnapshot, shell.getSnapshot);
   const [roomList, setRoomList] = useState<readonly Room[]>([]);
   const [currentRoom, setCurrentRoom] = useState<Room | null>(null);
@@ -31,6 +32,10 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
   const [memoryNotice, setMemoryNotice] = useState<string | null>(null);
   const [editingMemoryId, setEditingMemoryId] = useState<string | null>(null);
   const [editingMemoryText, setEditingMemoryText] = useState("");
+  const [pendingToolAction, setPendingToolAction] = useState<PendingToolAction | null>(null);
+  const [pendingToolQuery, setPendingToolQuery] = useState<string | null>(null);
+  const [toolActionBusy, setToolActionBusy] = useState(false);
+  const [toolActionNotice, setToolActionNotice] = useState<string | null>(null);
   const isAr = snapshot.locale === "ar";
   const t = (en: string, ar: string) => isAr ? ar : en;
 
@@ -227,10 +232,80 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
     shell.setSidebarOpen(false);
   };
 
+  const recordToolActionTurn = async (userText: string, assistantText: string) => {
+    if (!currentRoom) return;
+    const latest = await rooms.get(currentRoom.id);
+    if (!latest) return;
+    const withUser = commitMessage(latest, { role: "user", content: userText });
+    const completed = commitMessage(withUser, { role: "assistant", content: assistantText });
+    await rooms.put(completed);
+    setCurrentRoom(completed);
+    await refreshRooms(completed.id);
+  };
+
+  const approveToolAction = async () => {
+    if (!pendingToolAction || toolActionBusy) return;
+    const action = pendingToolAction;
+    const query = pendingToolQuery ?? action.title;
+    setToolActionBusy(true);
+    setError(null);
+    try {
+      const result = await toolApprovalCoordinator.approve(action.actionId);
+      if (result.status !== "succeeded") {
+        throw new Error(
+          result.status === "effect_unknown"
+            ? t("The action may have started, but Seven cannot safely confirm its final state.", "قد يكون الإجراء قد بدأ، لكن Seven لا يستطيع تأكيد حالته النهائية بأمان.")
+            : t("The approved action could not be completed safely.", "تعذر إكمال الإجراء الموافق عليه بأمان."),
+        );
+      }
+      const message = action.toolId === "memory.forget"
+        ? t("The selected memory was forgotten.", "تم حذف الذاكرة المحددة.")
+        : ((action.args.tier === "core")
+          ? t("The selected memory is now pinned as Core memory.", "تم تثبيت الذاكرة المحددة كذاكرة Core.")
+          : t("The selected memory now uses Recall mode.", "أصبحت الذاكرة المحددة في وضع Recall."));
+      setPendingToolAction(null);
+      setPendingToolQuery(null);
+      setToolActionNotice(message);
+      await recordToolActionTurn(query, message);
+      await refreshMemory();
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setToolActionBusy(false);
+    }
+  };
+
+  const rejectToolAction = () => {
+    if (!pendingToolAction || toolActionBusy) return;
+    toolApprovalCoordinator.reject(pendingToolAction.actionId);
+    setPendingToolAction(null);
+    setPendingToolQuery(null);
+    setToolActionNotice(t("Action cancelled.", "تم إلغاء الإجراء."));
+  };
+
   const submit = async () => {
     const content = input.trim();
-    if (!currentRoom || !content || activeRun) return;
+    if (!currentRoom || !content || activeRun || pendingToolAction) return;
     setError(null);
+    setToolActionNotice(null);
+
+    try {
+      const action = await toolApprovalCoordinator.propose({
+        roomId: currentRoom.id,
+        taskId: `approval:${crypto.randomUUID()}`,
+        query: content,
+      });
+      if (action) {
+        setInput("");
+        setPendingToolAction(action);
+        setPendingToolQuery(content);
+        return;
+      }
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+      return;
+    }
+
     setInput("");
     setPendingUser(content);
     setAssistantDraft("");
@@ -464,12 +539,42 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
 
         {error && <div className="seven-error" role="alert">{error}</div>}
 
+        {pendingToolAction && (
+          <section className="seven-tool-approval" aria-live="polite" aria-label={t("Tool approval", "موافقة على أداة")}>
+            <div className="seven-tool-approval-head">
+              <strong>{pendingToolAction.risk === "destructive" ? t("Confirm destructive action", "تأكيد إجراء حذفي") : t("Confirm action", "تأكيد الإجراء")}</strong>
+              <span>{pendingToolAction.toolId}</span>
+            </div>
+            <p className="seven-tool-approval-title">{pendingToolAction.title}</p>
+            <div className="seven-tool-preview">
+              <small>{t("Exact memory target", "الذاكرة المستهدفة بالضبط")}</small>
+              <p>{pendingToolAction.memoryPreview}</p>
+            </div>
+            <p className="seven-tool-approval-note">{t(
+              "Seven will execute only this exact approved action. If the memory changes before execution, the action will be refused.",
+              "سينفذ Seven هذا الإجراء الموافق عليه بالضبط فقط. إذا تغيرت الذاكرة قبل التنفيذ فسيتم رفض الإجراء."
+            )}</p>
+            <div className="seven-tool-approval-actions">
+              <button type="button" disabled={toolActionBusy} onClick={() => void approveToolAction()}>
+                {toolActionBusy ? t("Working…", "جارٍ التنفيذ…") : t("Approve", "موافقة")}
+              </button>
+              <button type="button" disabled={toolActionBusy} onClick={rejectToolAction}>
+                {t("Cancel", "إلغاء")}
+              </button>
+            </div>
+          </section>
+        )}
+        {toolActionNotice && !pendingToolAction && (
+          <div className="seven-tool-notice" role="status">{toolActionNotice}</div>
+        )}
+
         <div className="seven-composer-wrap">
           <div className="seven-composer">
             <button className="seven-attach" type="button" aria-label={t("Attachments coming next", "المرفقات في الخطوة التالية")} title={t("Attachments coming next", "المرفقات في الخطوة التالية")}>＋</button>
             <textarea
               value={input}
               rows={1}
+              disabled={toolActionBusy || !!pendingToolAction}
               maxLength={32_000}
               placeholder={t("Message Seven", "اكتب إلى Seven")}
               aria-label={t("Message Seven", "اكتب إلى Seven")}
@@ -484,7 +589,7 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
             {activeRun ? (
               <button className="seven-send seven-stop" type="button" onClick={() => activeRun.cancel("user-stop")} aria-label={t("Stop", "إيقاف")}>■</button>
             ) : (
-              <button className="seven-send" type="button" disabled={!input.trim() || !currentRoom} onClick={() => void submit()} aria-label={t("Send", "إرسال")}>↑</button>
+              <button className="seven-send" type="button" disabled={!input.trim() || !currentRoom || toolActionBusy || !!pendingToolAction} onClick={() => void submit()} aria-label={t("Send", "إرسال")}>↑</button>
             )}
           </div>
           <div className="seven-composer-meta">
