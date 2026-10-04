@@ -17,7 +17,7 @@ describe("Memory semantic rewrite fallback",()=>{
       async rewrite(){return ["pet dog name","dog called name"];},
     };
     const memory=new MemoryFabricService(repo,undefined,rewriter);
-    const hits=await memory.search("r2","What is my pet called?");
+    const hits=await memory.search("r2","How should I address my canine?");
     expect(hits.some(hit=>hit.fact.id==="pet"&&hit.reason==="rewritten")).toBe(true);
   });
 
@@ -33,7 +33,7 @@ describe("Memory semantic rewrite fallback",()=>{
       async rewrite(){return ["blue notebook","pet animal name"];},
     };
     const memory=new MemoryFabricService(repo,undefined,rewriter);
-    const hits=await memory.search("r2","What is my pet called?");
+    const hits=await memory.search("r2","How should I address my canine?");
     expect(hits.some(hit=>hit.fact.id==="noise")).toBe(false);
   });
 
