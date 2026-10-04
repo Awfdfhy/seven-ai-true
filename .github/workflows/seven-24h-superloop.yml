@@ -21,7 +21,7 @@ permissions:
 
 env:
   SEVEN_PRODUCT_BRANCH: seven-remake-v3
-  SEVEN_SUPERLOOP_BRANCH: autoloop/seven-24h-work
+  SEVEN_SUPERLOOP_BRANCH: autoloop/seven-24h-work-v2
   SEVEN_SUPERLOOP_MAX_PARALLEL: '20'
   SEVEN_SUPERLOOP_MODEL: kilo-auto/free
   SEVEN_AGENT_READ_TIMEOUT: '360'
@@ -52,7 +52,7 @@ jobs:
     if: github.event_name != 'pull_request'
     needs: validate-control
     concurrency:
-      group: seven-24-7-superloop-cycle
+      group: seven-24-7-superloop-cycle-v2
       cancel-in-progress: false
     runs-on: ubuntu-24.04
     timeout-minutes: 350
