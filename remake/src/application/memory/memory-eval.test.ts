@@ -27,6 +27,18 @@ describe("Seven Memory Eval v2",()=>{
     expect(other.some(f=>f.content.includes("BLUE-17"))).toBe(false);
   });
 
+  it("retrieves a superseded fact only for explicit historical queries",async()=>{
+    const repo=new InMemoryMemoryFabricRepository();
+    const memory=new MemoryFabricService(repo);
+    await memory.observeUserMessage({roomId:"r1",messageId:"m1",content:"I prefer light mode",createdAt:100});
+    await memory.observeUserMessage({roomId:"r2",messageId:"m2",content:"I prefer dark mode",createdAt:200});
+    const current=await memory.search("r3","what theme do I prefer now?");
+    expect(current.some(h=>h.fact.content==="I prefer light mode")).toBe(false);
+    expect(current.some(h=>h.fact.content==="I prefer dark mode")).toBe(true);
+    const historical=await memory.search("r3","what theme did I prefer before?");
+    expect(historical.some(h=>h.fact.content==="I prefer light mode")).toBe(true);
+  });
+
   it("supports Arabic durable preference recall",async()=>{
     const repo=new InMemoryMemoryFabricRepository();
     const memory=new MemoryFabricService(repo);
