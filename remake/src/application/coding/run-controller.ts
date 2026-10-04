@@ -2,7 +2,7 @@ import type { CodingEvidenceEvent, CodingRun, CodingStage } from "./contracts";
 
 const TRANSITIONS: Readonly<Record<CodingStage, readonly CodingStage[]>> = {
   UNDERSTAND: ["INSPECT", "BLOCKED", "FAILED"],
-  INSPECT: ["RESEARCH", "PLAN", "BLOCKED", "FAILED"],
+  INSPECT: ["RESEARCH", "BLOCKED", "FAILED"],
   RESEARCH: ["PLAN", "BLOCKED", "FAILED"],
   PLAN: ["EDIT", "BLOCKED", "FAILED"],
   EDIT: ["TEST", "BLOCKED", "FAILED"],
