@@ -167,6 +167,33 @@ export class IndexedDbToolExecutionLedger implements ToolExecutionLedger {
     });
   }
 
+  async releasePrepared(
+    key:string,fingerprint:string,ownerCallId:string,signal?:AbortSignal,
+  ):Promise<boolean>{
+    throwIfAborted(signal);
+    const id=canonical(key,"idempotencyKey");
+    const fp=canonical(fingerprint,"invocationFingerprint");
+    const owner=canonical(ownerCallId,"ownerCallId");
+    const db=await this.open();
+    return new Promise<boolean>((resolve,reject)=>{
+      const tx=db.transaction("replay","readwrite");
+      const store=tx.objectStore("replay");
+      let released=false;
+      const request=store.get(id);
+      request.onsuccess=()=>{
+        if(!request.result)return;
+        const current=this.decode(request.result);
+        if(current.invocationFingerprint!==fp||current.ownerCallId!==owner||current.state!=="prepared")return;
+        store.delete(id);
+        released=true;
+      };
+      request.onerror=()=>reject(new SevenError({code:"STORAGE",message:"Prepared replay release lookup failed.",cause:request.error}));
+      tx.oncomplete=()=>resolve(released);
+      tx.onerror=()=>reject(new SevenError({code:"STORAGE",message:"Prepared replay release failed.",cause:tx.error}));
+      tx.onabort=()=>reject(signal?.aborted?abortError():new SevenError({code:"STORAGE",message:"Prepared replay release aborted.",cause:tx.error}));
+    });
+  }
+
   async completeReplay(
     key:string,fingerprint:string,result:ToolResult,persistOutput:boolean,signal?:AbortSignal,
   ):Promise<void>{
