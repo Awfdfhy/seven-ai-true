@@ -9,8 +9,11 @@ import { createCapacitorAndroidNativeTransport } from "../platform/android/capac
 import { AndroidPlatformService } from "../application/android/android-platform-service";
 import { IndexedDbRoomRepository } from "../storage/room-repository";
 import { ChatService } from "../application/chat/chat-service";
-import { ProviderChatTransport } from "../application/chat/provider-chat-transport";
+import { RoutingChatTransport } from "../application/chat/routed-chat-transport";
 import { KiloAnonymousProviderAdapter } from "../providers/kilo-anonymous-adapter";
+import { ModelRegistry, ModelRouter, ProviderHealthTracker } from "../routing/model-router";
+import { IntegratedChatContextSource } from "../application/context/integrated-chat-context-source";
+import { classifySevenError } from "../core/error-taxonomy";
 import { IndexedDbMemoryFabricRepository } from "../storage/memory-fabric-repository";
 import { MemoryFabricService } from "../application/memory/memory-fabric-service";
 import { IndexedDbMemoryRepository } from "../storage/memory-repository";
@@ -42,7 +45,10 @@ export type SevenRuntime = Readonly<{
   android: AndroidPlatformService | null;
   rooms: IndexedDbRoomRepository;
   chat: ChatService;
-  chatTransport: ProviderChatTransport;
+  chatTransport: RoutingChatTransport;
+  modelRegistry: ModelRegistry;
+  modelRouter: ModelRouter;
+  providerHealth: ProviderHealthTracker;
   memory: MemoryFabricService;
   toolRegistry: ToolRegistry;
   toolOrchestrator: ToolOrchestrator;
@@ -70,6 +76,21 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
     options.diagnosticsCapacity ?? 256,
     options.diagnosticsNow ?? Date.now,
   );
+  taskManager.subscribe((task) => {
+    const disposition = task.error ? classifySevenError(task.error) : null;
+    diagnostics.record({
+      level: task.status === "failed" ? "warn" : "info",
+      category: "task",
+      name: "lifecycle",
+      correlationId: task.taskId,
+      attributes: {
+        kind: task.kind,
+        status: task.status,
+        errorCategory: disposition?.category ?? null,
+        retryable: disposition?.retryable ?? false,
+      },
+    });
+  });
   const shell = new ShellStore(options.initialShell ?? {});
 
   const themeNow = options.themeNow ?? (() => new Date());
@@ -84,6 +105,18 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
 
   const rooms = new IndexedDbRoomRepository();
   const kilo = new KiloAnonymousProviderAdapter();
+  const modelRegistry = new ModelRegistry();
+  modelRegistry.replaceProviderModels("kilo", [Object.freeze({
+    id: "kilo-auto/free",
+    providerId: "kilo",
+    displayName: "Kilo Auto Free",
+    contextWindow: 131_072,
+    qualityScore: 50,
+    speedScore: 50,
+    capabilities: Object.freeze({ streaming: true, tools: true, vision: false }),
+  })]);
+  const modelRouter = new ModelRouter();
+  const providerHealth = new ProviderHealthTracker();
   const memoryRepository = new IndexedDbMemoryFabricRepository();
   const queryRewriter = new ProviderMemoryQueryRewriter(kilo, "kilo-auto/free");
   const memory = new MemoryFabricService(memoryRepository, new MemoryRetrievalEngine(), queryRewriter);
@@ -173,14 +206,39 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
   const contextSource = new MemoryContextService(summaryRepository, summarizer, undefined, {
     maxSummaryPasses: 8,
   });
-  const chatTransport = new ProviderChatTransport(
-    kilo,
-    "kilo-auto/free",
-    "You are Seven, a precise and helpful AI assistant.",
-    memory,
+  const integratedContextSource = new IntegratedChatContextSource(
     contextSource,
-    32_768,
+    memory,
     toolContextSource,
+  );
+  const chatTransport = new RoutingChatTransport(
+    modelRegistry,
+    modelRouter,
+    providerHealth,
+    new Map([["kilo", kilo]]),
+    {
+      mode: "balanced",
+      maxAttempts: 3,
+      systemPrompt: "You are Seven, a precise and helpful AI assistant.",
+      contextSource: integratedContextSource,
+      observer: {
+        record(event) {
+          diagnostics.record({
+            level: event.type === "attempt_failure" ? "warn" : "info",
+            category: "model",
+            name: event.type,
+            correlationId: event.taskId,
+            attributes: {
+              mode: event.mode,
+              providerId: event.providerId ?? null,
+              modelId: event.modelId ?? null,
+              reason: event.reason ?? null,
+              candidateCount: event.candidateCount ?? null,
+            },
+          });
+        },
+      },
+    },
   );
 
   const kernel = new AppKernel(diagnostics);
@@ -227,6 +285,18 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
   });
 
   kernel.register({
+    id: "runtime-storage",
+    async start() {},
+    async stop() {
+      await Promise.allSettled([
+        rooms.close(),
+        memoryRepository.close(),
+        summaryRepository.close(),
+      ]);
+    },
+  });
+
+  kernel.register({
     id: "theme",
     async start() {
       theme.start();
@@ -246,6 +316,9 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
     rooms,
     chat,
     chatTransport,
+    modelRegistry,
+    modelRouter,
+    providerHealth,
     memory,
     toolRegistry,
     toolOrchestrator,
