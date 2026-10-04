@@ -28,7 +28,7 @@ permissions:
 
 env:
   SEVEN_PRODUCT_BRANCH: seven-remake-v3
-  SEVEN_SUPERLOOP_BRANCH: autoloop/seven-24h-work-v4
+  SEVEN_SUPERLOOP_BRANCH: autoloop/seven-24h-work-v5
   SEVEN_SUPERLOOP_MAX_PARALLEL: '20'
   SEVEN_SUPERLOOP_MODEL: kilo-auto/free
   SEVEN_AGENT_READ_TIMEOUT: '600'
@@ -47,6 +47,14 @@ jobs:
           set -euo pipefail
           python -m py_compile .seven-team/superloop/controller.py .seven-team/superloop/autonomy_kernel.py .seven-team/superloop/domain_campaign.py .seven-team/superloop/domain_research_harvester.py
           python .seven-team/superloop/autonomy_kernel.py validate --root .
+          python - <<'PY'
+          import inspect, pathlib, sys
+          sys.path.insert(0,'.seven-team/superloop')
+          import controller
+          assert 'source_packs' in inspect.signature(controller.stage_prompt).parameters
+          assert 'source_packs' in inspect.signature(controller.run_readonly_phase).parameters
+          print('Seven domain source plumbing validation: PASS')
+          PY
           python - <<'PY'
           import pathlib,sys
           sys.path.insert(0,'.seven-team/superloop')
@@ -68,7 +76,7 @@ jobs:
     if: github.event_name != 'pull_request'
     needs: validate-control
     concurrency:
-      group: seven-24-7-superloop-cycle-v4
+      group: seven-24-7-superloop-cycle-v5
       cancel-in-progress: false
     runs-on: ubuntu-24.04
     timeout-minutes: 180
