@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { extractMemoryCandidates } from "./memory-extractor";
-import { MemoryRetrievalEngine } from "./memory-retrieval";
+import { formatMemoryContext, MemoryRetrievalEngine } from "./memory-retrieval";
 import { createMemoryFact } from "../../domain/memory/fabric";
 
 function fact(input: Partial<Parameters<typeof createMemoryFact>[0]> & Pick<Parameters<typeof createMemoryFact>[0],"canonicalKey"|"content">) {
@@ -32,6 +32,16 @@ describe("Memory Fabric retrieval",()=>{
     expect(hits.some(h=>h.fact.id===relevant.id)).toBe(true);
     expect(hits.some(h=>h.fact.id===noise.id)).toBe(false);
   });
+  it("keeps the bounded memory payload valid JSON instead of truncating an item",()=>{
+    const one=fact({canonicalKey:"fact:one",content:"one ".repeat(120),tags:["one"]});
+    const two=fact({canonicalKey:"fact:two",content:"two ".repeat(120),tags:["two"]});
+    const hits=new MemoryRetrievalEngine().search([one,two],"one two",{now:4000});
+    const rendered=formatMemoryContext(hits,700);
+    const json=rendered.slice(rendered.indexOf("\n")+1);
+    expect(()=>JSON.parse(json)).not.toThrow();
+    expect(rendered.length).toBeLessThanOrEqual(700);
+  });
+
   it("abstains from unrelated recall instead of forcing a memory",()=>{
     const only=fact({canonicalKey:"preference:food",content:"I like mango",tags:["preference","food"]});
     const hits=new MemoryRetrievalEngine().search([only],"explain quantum tunneling",{now:4000});
