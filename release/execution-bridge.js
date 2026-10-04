@@ -16,38 +16,10 @@
   function control(){if(!root||!root.SevenControl)throw new Error('SevenControl runtime required');return root.SevenControl;}
   function runtime(){if(!root||!root.SevenRuntime)throw new Error('SevenRuntime v4 required');return root.SevenRuntime;}
   function isTerminal(run){return !!(run&&run.task&&TERMINAL.has(run.task.state));}
-  function canonicalPath(v){
-    const raw=String(v||'').trim().replace(/\\/g,'/').replace(/\/+/g,'/');
-    if(!raw)return {valid:true,path:''};
-    if(raw.startsWith('/')||/^[A-Za-z]:\//.test(raw))return {valid:false,path:'',reason:'absolute-path'};
-    const stack=[];
-    for(const part of raw.split('/')){
-      if(!part||part==='.')continue;
-      if(part==='..'){if(!stack.length)return {valid:false,path:'',reason:'path-traversal'};stack.pop();continue;}
-      if(part.includes('\0'))return {valid:false,path:'',reason:'nul-byte'};
-      stack.push(part);
-    }
-    return {valid:true,path:stack.join('/')};
-  }
-  function fileInScope(path,allowed){
-    const target=canonicalPath(path);if(!target.valid)return false;if(!target.path)return true;
-    const requested=arr(allowed);if(!requested.length)return true;
-    const list=requested.map(canonicalPath).filter(x=>x.valid&&x.path).map(x=>x.path);if(!list.length)return false;
-    return list.some(base=>target.path===base||target.path.startsWith(base.replace(/\/$/,'')+'/'));
-  }
-  function domainInScope(url,allowed){
-    if(!url)return true;const list=arr(allowed).map(x=>String(x||'').toLowerCase().replace(/^\.+/,'')).filter(Boolean);if(!list.length)return true;
-    let host;try{host=new URL(String(url)).hostname.toLowerCase();}catch{return false;}
-    return list.some(domain=>host===domain||host.endsWith('.'+domain));
-  }
-  function scopeDecision(task,args){
-    const scope=task&&task.scope||{};args=args||{};
-    const file=args.path||args.file||args.filePath||null;
-    const url=args.url||args.href||null;
-    if(file&&!fileInScope(file,scope.files))return {allowed:false,reason:'file-outside-task-scope'};
-    if(url&&!domainInScope(url,scope.externalDomains))return {allowed:false,reason:'domain-outside-task-scope'};
-    return {allowed:true,reason:'within-task-scope'};
-  }
+  function canonicalPath(v){const raw=String(v||'').trim().replace(/\\/g,'/').replace(/\/+/g,'/');if(!raw)return{valid:true,path:''};if(raw.startsWith('/')||/^[A-Za-z]:\//.test(raw))return{valid:false,path:'',reason:'absolute-path'};const stack=[];for(const part of raw.split('/')){if(!part||part==='.')continue;if(part==='..'){if(!stack.length)return{valid:false,path:'',reason:'path-traversal'};stack.pop();continue}if(part.includes('\0'))return{valid:false,path:'',reason:'nul-byte'};stack.push(part)}return{valid:true,path:stack.join('/')}}
+  function fileInScope(path,allowed){const t=canonicalPath(path);if(!t.valid)return false;if(!t.path)return true;const requested=arr(allowed);if(!requested.length)return true;const list=requested.map(canonicalPath).filter(x=>x.valid&&x.path).map(x=>x.path);if(!list.length)return false;return list.some(base=>t.path===base||t.path.startsWith(base.replace(/\/$/,'')+'/'))}
+  function domainInScope(url,allowed){if(!url)return true;const list=arr(allowed).map(x=>String(x||'').toLowerCase().replace(/^\.+/,'')).filter(Boolean);if(!list.length)return true;let host;try{host=new URL(String(url)).hostname.toLowerCase()}catch{return false}return list.some(domain=>host===domain||host.endsWith('.'+domain))}
+  function scopeDecision(task,args){const scope=task&&task.scope||{};args=args||{};const file=args.path||args.file||args.filePath||null,url=args.url||args.href||null;if(file&&!fileInScope(file,scope.files))return{allowed:false,reason:'file-outside-task-scope'};if(url&&!domainInScope(url,scope.externalDomains))return{allowed:false,reason:'domain-outside-task-scope'};return{allowed:true,reason:'within-task-scope'}}
   function authorizeTool({task,tool,args,grant}={}){
     if(!task||!tool)return {allowed:false,reason:'missing-task-or-tool'};
     const capability=String(tool.capability||tool.id||'').trim();
