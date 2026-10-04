@@ -1,0 +1,26 @@
+const assert=require('assert/strict');
+const R=require('./workspaces/rpg-state.js');
+function base(){return R.createState({sessionId:'s1',worldId:'valen',timeline:{tick:5},world:{locations:{palace:{name:'Palace'},school:{name:'School'}}},characters:{ali:{control:'player',locationId:'palace',goals:[{id:'g1',description:'Protect Valen'}]},aria:{control:'ai',locationId:'palace'},vaelith:{control:'ai',locationId:'palace'}},items:{crown:{ownerId:'ali'}},canon:{entries:{secret:{level:'HARD',value:'Asterion pact',availableAtTick:10,public:false,entityIds:['ali']},king:{level:'HARD',value:'Aldren is king',public:true,entityIds:['ali']}}},quests:{q1:{title:'Prepare summit',status:'active',ownerIds:['ali']}}});}
+let s=base();s.characters.ali.inventory=['crown'];assert.equal(R.validateState(s).valid,true);
+assert.deepEqual(R.canCharacterKnow(s,'aria','secret'),{allowed:false,reason:'future-knowledge'});
+let r=R.applyEvent(s,{id:'e1',type:'character.move',source:'runtime',actorId:'ali',payload:{characterId:'ali',toLocationId:'school'}});assert.equal(r.status,'BLOCKED');assert.equal(r.reason,'player-control');
+r=R.applyEvent(s,{id:'e2',type:'character.move',source:'user',actorId:'ali',payload:{characterId:'ali',toLocationId:'school'}});assert.equal(r.ok,true);s=r.state;assert.equal(s.characters.ali.locationId,'school');
+r=R.applyEvent(s,{id:'e3',type:'scene.start',source:'runtime',payload:{locationId:'palace',participantIds:['ali','aria']}});assert.equal(r.reason,'spatial-conflict');
+r=R.applyEvent(s,{id:'e4',type:'time.advance',source:'runtime',payload:{by:5}});assert.equal(r.ok,true);s=r.state;assert.equal(s.timeline.tick,10);
+r=R.applyEvent(s,{id:'e5',type:'knowledge.learn',source:'runtime',payload:{characterId:'aria',factId:'secret',method:'told'}});assert.equal(r.ok,true);s=r.state;assert.equal(R.canCharacterKnow(s,'aria','secret').allowed,true);assert.equal(R.canCharacterKnow(s,'vaelith','secret').allowed,false);
+r=R.applyEvent(s,{id:'e6',type:'belief.set',source:'runtime',payload:{characterId:'vaelith',factId:'secret',value:'The pact is false',confidence:.8}});assert.equal(r.ok,true);s=r.state;assert.equal(R.beliefOf(s,'vaelith','secret').value,'The pact is false');assert.equal(R.canCharacterKnow(s,'vaelith','secret').allowed,false);
+r=R.applyEvent(s,{id:'e7',type:'relationship.change',source:'runtime',payload:{a:'aria',b:'vaelith',delta:{trust:.4,respect:.7,suspicion:.2},reason:'joint mission'}});assert.equal(r.ok,true);s=r.state;assert.equal(R.relationshipFor(s,'vaelith','aria').trust,.4);assert.equal(R.relationshipFor(s,'aria','vaelith').respect,.7);
+r=R.applyEvent(s,{id:'e8',type:'emotion.change',source:'runtime',payload:{characterId:'aria',delta:{anger:.3,affection:.8}}});assert.equal(r.ok,true);s=r.state;assert.equal(s.characters.aria.emotions.affection,.8);
+r=R.applyEvent(s,{id:'e9',type:'canon.set',source:'runtime',payload:{id:'king',entry:{level:'SOFT',value:'Someone else is king'}}});assert.equal(r.reason,'canon-precedence');
+r=R.applyEvent(s,{id:'e10',type:'canon.set',source:'runtime',payload:{id:'king',entry:{level:'HARD',value:'Someone else is king'}}});assert.equal(r.reason,'hard-canon-conflict');
+r=R.applyEvent(s,{id:'e11',type:'canon.set',source:'user',authority:'user-override',payload:{id:'king',entry:{level:'HARD',value:'Elowen is ruler'}}});assert.equal(r.ok,true);s=r.state;assert.equal(s.canon.entries.king.value,'Elowen is ruler');
+r=R.applyEvent(s,{id:'e12',type:'item.transfer',source:'user',payload:{itemId:'crown',fromOwnerId:'ali',toOwnerId:'aria'}});assert.equal(r.ok,true);s=r.state;assert.equal(s.items.crown.ownerId,'aria');assert.ok(s.characters.aria.inventory.includes('crown'));assert.ok(!s.characters.ali.inventory.includes('crown'));
+r=R.applyEvent(s,{id:'e13',type:'time.advance',source:'runtime',atTick:1,payload:{by:1}});assert.equal(r.reason,'timeline-backwards');
+r=R.applyEvent(s,{id:'e14',type:'character.move',source:'user',actorId:'ali',payload:{characterId:'ali',toLocationId:'palace'}});s=r.state;
+r=R.applyEvent(s,{id:'e15',type:'scene.start',source:'runtime',payload:{locationId:'palace',participantIds:['ali','aria','vaelith'],purpose:'Council'}});assert.equal(r.ok,true);s=r.state;
+const packet=R.buildContextPacket(s,{maxChars:12000});assert.equal(packet.characters.aria.knownFacts.secret.learnedAtTick,10);assert.equal(packet.characters.vaelith.knownFacts.secret,undefined);assert.equal(packet.controlRules.ali,'player');assert.equal(packet._diagnostics.bounded,true);
+for(let i=0;i<1000;i++){const x=R.applyEvent(s,{id:'loop-'+i,type:'world.set',source:'runtime',payload:{path:['flags','turn'+i],value:i}});assert.equal(x.ok,true);s=x.state;}
+const longPacket=R.buildContextPacket(s,{maxChars:9000,recentEventLimit:12});assert.equal(longPacket._diagnostics.bounded,true);assert.ok(longPacket.recentEvents.length<=12);assert.equal(R.validateState(s).valid,true);
+const mem=R.toMemoryRecords(s,{scopeRef:'rpg:valen'});assert.ok(mem.some(x=>x.kind==='WorldFact'));assert.ok(mem.some(x=>x.kind==='RelationshipEvent'));
+const props=R.proposeNpcActions(s,{characterIds:['ali','aria','vaelith']});assert.ok(!props.some(x=>x.characterId==='ali'));
+console.log('rpg state kernel: PASS',JSON.stringify({turn:s.turn,revision:s.revision,ledger:s.ledger.length,packetChars:longPacket._diagnostics.serializedChars}));
