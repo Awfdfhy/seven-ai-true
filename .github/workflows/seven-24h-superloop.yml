@@ -28,13 +28,14 @@ permissions:
 
 env:
   SEVEN_PRODUCT_BRANCH: seven-remake-v3
-  SEVEN_SUPERLOOP_BRANCH: autoloop/seven-24h-work-v5
+  SEVEN_SUPERLOOP_BRANCH: autoloop/seven-24h-work-v6
   SEVEN_SUPERLOOP_MAX_PARALLEL: '20'
   SEVEN_SUPERLOOP_MODEL: kilo-auto/free
-  SEVEN_AGENT_READ_TIMEOUT: '600'
-  SEVEN_AGENT_WRITE_TIMEOUT: '600'
-  SEVEN_MANAGER_TIMEOUT: '480'
+  SEVEN_AGENT_READ_TIMEOUT: '240'
+  SEVEN_AGENT_WRITE_TIMEOUT: '360'
+  SEVEN_MANAGER_TIMEOUT: '240'
   PYTHONDONTWRITEBYTECODE: '1'
+  SEVEN_AGENT_RETRY_ON_NO_DIFF: '0'
 
 jobs:
   validate-control:
@@ -76,7 +77,7 @@ jobs:
     if: github.event_name != 'pull_request'
     needs: validate-control
     concurrency:
-      group: seven-24-7-superloop-cycle-v5
+      group: seven-24-7-superloop-cycle-v6
       cancel-in-progress: false
     runs-on: ubuntu-24.04
     timeout-minutes: 180
