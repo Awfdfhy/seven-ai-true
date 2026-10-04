@@ -24,8 +24,27 @@ function tokens(value: string): string[] {
   return normalize(value).match(/[\p{L}\p{N}_-]{2,}/gu) ?? [];
 }
 
+function queryConceptTokens(query: string): string[] {
+  const n = normalize(query);
+  const out = new Set<string>(tokens(query));
+  const add = (...values: string[]) => values.forEach(value => out.add(value));
+  if (/\b(theme|appearance|look|mode|dark|light)\b/.test(n) || /مظهر|ثيم|داكن|فاتح|الوضع/.test(n)) add("theme","preference");
+  if (/\b(answer|response|reply|concise|verbose|brief|detailed)\b/.test(n) || /رد|اجابه|مختصر|مفصل|قصير|طويل/.test(n)) add("response-style","preference");
+  if (/\b(language|arabic|english)\b/.test(n) || /لغه|عربي|انجليزي/.test(n)) add("language","preference");
+  if (/\b(name|call me|called)\b/.test(n) || /اسمي|نادني|اسم/.test(n)) add("name","profile");
+  if (/\b(goal|aim|objective)\b/.test(n) || /هدف/.test(n)) add("goal");
+  if (/\b(study|studying|learn|learning|work|working|project)\b/.test(n) || /ادرس|تعلم|اعمل|مشروع/.test(n)) add("work","profile");
+  return [...out];
+}
+
+function asksForHistory(query: string): boolean {
+  const n = normalize(query);
+  return /\b(previous|previously|before|used to|old|formerly|past)\b/.test(n) ||
+    /سابق|سابقا|قبل|قديم|كنت افضل|كنت احب/.test(n);
+}
+
 function lexicalScores(facts: readonly MemoryFact[], query: string): Map<string, number> {
-  const queryTerms = [...new Set(tokens(query))];
+  const queryTerms = [...new Set(queryConceptTokens(query))];
   const docs = facts.map(f => tokens([f.content, ...f.tags].join(" ")));
   const avgLen = docs.reduce((n,d)=>n+d.length,0) / Math.max(1, docs.length);
   const df = new Map<string, number>();
@@ -64,13 +83,17 @@ export class MemoryRetrievalEngine {
     const maxCore = options.maxCore ?? 4;
     const maxRecall = options.maxRecall ?? 8;
     const minRecallScore = options.minRecallScore ?? 0.012;
-    const active = facts.filter(f => f.status === "active" && f.validFrom <= now && (f.validUntil === null || f.validUntil > now));
+    const historical = asksForHistory(query);
+    const active = facts.filter(f =>
+      f.validFrom <= now &&
+      (historical || (f.status === "active" && (f.validUntil === null || f.validUntil > now)))
+    );
     const lex = lexicalScores(active, query);
     const lexRank = rankMap(active, f=>lex.get(f.id)??0);
     const recRank = rankMap(active, f=>f.updatedAt);
     const impRank = rankMap(active, f=>f.importance*f.confidence);
 
-    const core = active.filter(f=>f.tier==="core")
+    const core = active.filter(f=>f.tier==="core" && (!historical || f.status==="active"))
       .sort((a,b)=>(b.importance*b.confidence)-(a.importance*a.confidence) || b.updatedAt-a.updatedAt)
       .slice(0,maxCore)
       .map(f=>Object.freeze({fact:f,score:1,lexical:lex.get(f.id)??0,reason:"core" as const}));
