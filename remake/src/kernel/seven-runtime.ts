@@ -262,6 +262,31 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
       },
     },
   );
+  const deepThinkTransport = new DeepThinkTransport(
+    { provider: kilo, modelId: "kilo-auto/free", contextWindow: 131_072 },
+    { provider: kilo, modelId: "kilo-auto/free", contextWindow: 131_072 },
+    integratedContextSource,
+    {
+      systemPrompt: "You are Seven, a precise and helpful AI assistant.",
+      plannerOutputTokens: 768,
+      finalOutputTokens: 2048,
+    },
+  );
+  const chatTransport = new ModeAwareChatTransport(
+    routedChatTransport,
+    deepThinkTransport,
+    {
+      record(event) {
+        diagnostics.record({
+          level: "info",
+          category: "model",
+          name: "transport_selected",
+          correlationId: event.taskId,
+          attributes: { transport: event.transport },
+        });
+      },
+    },
+  );
 
   const kernel = new AppKernel(diagnostics);
   kernel.register({
