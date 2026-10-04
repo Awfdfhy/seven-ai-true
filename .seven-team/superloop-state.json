@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "enabled": true,
+  "lastCompletedCycle": 1,
+  "lastCompletedAt": "2026-10-04T00:20:40.321348+00:00",
+  "workBranch": "autoloop/seven-24h-work",
+  "productBranch": "seven-remake-v3",
+  "runId": "37158555256",
+  "runNumber": "5",
+  "summary": {
+    "cycle": 1,
+    "featureCandidates": 12,
+    "featuresAccepted": 0,
+    "fixCandidates": 9,
+    "fixesAccepted": 0,
+    "polishAccepted": false,
+    "apkState": "BLOCKED",
+    "head": "0eac2b7df8b6dddb9786feefc7ae515968c778ad"
+  }
+}
