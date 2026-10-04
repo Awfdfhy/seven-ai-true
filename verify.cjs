@@ -264,7 +264,15 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  });
  await test('performance polish network projection is advisory and deterministic',async()=>{
   const r=await page.evaluate(()=>{const a=updateNetworkUiStateV1(false),da=document.documentElement.dataset.network,b=updateNetworkUiStateV1(true),db=document.documentElement.dataset.network;updateNetworkUiStateV1();return {a,da,b,db}});
-  assert.deepEqual(r,{a:'offline',da:'offline',b:'online',db:'online'});
+  assert.deepEqual(r,{a:'offline',da:'offline',b:'link-online',db:'link-online'});
+ });
+ await test('integration diagnostics normalize errors and bound trace data',async()=>{
+  const r=await page.evaluate(()=>{const timeout=Object.assign(new Error('hidden detail'),{code:'PROVIDER_TIMEOUT'}),rate=Object.assign(new Error('rate'),{status:429}),net=new TypeError('Failed to fetch'),t=SevenDiagnostics.begin('chat',{roomId:'diag-room',mode:'search'});SevenDiagnostics.event(t,'provider',{provider:'fixture',messageCount:3,secret:'must-not-appear'});SevenDiagnostics.finish(t,'failed',{code:'TIMEOUT',retryable:true});const snap=SevenDiagnostics.snapshot().at(-1),raw=JSON.stringify(snap);return{timeout:SevenDiagnostics.error(timeout,'model'),rate:SevenDiagnostics.error(rate,'model'),net:SevenDiagnostics.error(net,'model'),snap,leak:raw.includes('must-not-appear')}});
+  assert.equal(r.timeout.code,'TIMEOUT');assert.equal(r.rate.code,'RATE_LIMIT');assert.equal(r.net.code,'NETWORK_ERROR');assert.equal(r.snap.status,'failed');assert.equal(r.snap.roomId,'diag-room');assert.equal(r.leak,false);
+ });
+ await test('provider discovery failure enters health and success heals it',async()=>{
+  const r=await page.evaluate(async()=>{const oldFetch=fetchProviderWithTimeout,oldRaw=localStorage.getItem(FREE_MODEL_HEALTH_KEY),oldHealth=JSON.parse(JSON.stringify(freeModelHealth));try{fetchProviderWithTimeout=async()=>({ok:false,status:429,headers:{get:n=>String(n).toLowerCase()==='retry-after'?'1':null}});try{await fetchProviderModelList('kilo')}catch(_){}const failed=SevenProviderHealthV2.provider('kilo');fetchProviderWithTimeout=async()=>({ok:true,status:200,headers:{get:()=>null},json:async()=>({data:[]})});await fetchProviderModelList('kilo');const healed=SevenProviderHealthV2.provider('kilo');return{failed:failed.state,healed:healed.state}}finally{fetchProviderWithTimeout=oldFetch;freeModelHealth=oldHealth;if(oldRaw===null)localStorage.removeItem(FREE_MODEL_HEALTH_KEY);else localStorage.setItem(FREE_MODEL_HEALTH_KEY,oldRaw)}});
+  assert.equal(r.failed,'cooldown');assert.notEqual(r.healed,'cooldown');
  });
  await test('performance polish visual viewport and diagnostics initialize safely',async()=>{
   const r=await page.evaluate(()=>{const vv=updateVisualViewportV1(),snap=SevenAppReliability.snapshot(),raw=JSON.stringify(SevenAppReliability.snapshot());return {width:vv.width,height:vv.height,version:snap.version,visibility:snap.visibility,network:snap.network,hasRender:!!snap.renderWindow,secret:/gsk_|sk-or-|nvapi-|AIza|Authorization|Bearer/i.test(raw),content:/message-499|chunk-49|Relevant memories/.test(raw)}});

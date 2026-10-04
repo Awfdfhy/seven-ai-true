@@ -2095,7 +2095,8 @@
         const appReliabilityState={
             version:1,
             visibility:(typeof document!=="undefined"&&document.hidden)?"background":"foreground",
-            network:(typeof navigator!=="undefined"&&typeof navigator.onLine==="boolean")?(navigator.onLine?"online":"offline"):"unknown",
+            network:(typeof navigator!=="undefined"&&typeof navigator.onLine==="boolean")?(navigator.onLine?"link-online":"offline"):"unknown",
+            reachability:"unknown",lastReachabilityAt:0,
             visualViewport:{width:0,height:0,offsetTop:0,scale:1},
             lastResumeAt:0,
             lifecycleEvents:0
@@ -2116,7 +2117,8 @@
         function updateNetworkUiStateV1(onlineOverride) {
             const online=typeof onlineOverride==="boolean"?onlineOverride:
                 (typeof navigator.onLine==="boolean"?navigator.onLine:null);
-            appReliabilityState.network=online===null?"unknown":(online?"online":"offline");
+            appReliabilityState.network=online===null?"unknown":(online?"link-online":"offline");
+            if(online===false){appReliabilityState.reachability="unreachable";appReliabilityState.lastReachabilityAt=Date.now()}
             document.documentElement.dataset.network=appReliabilityState.network;
             try{
                 if(document.getElementById("settingsModal")?.style.display==="flex"&&typeof renderFreeModelFabricStatus==="function"){
@@ -2171,6 +2173,8 @@
                 version:1,
                 visibility:appReliabilityState.visibility,
                 network:appReliabilityState.network,
+                reachability:appReliabilityState.reachability,
+                lastReachabilityAt:appReliabilityState.lastReachabilityAt,
                 visualViewport:Object.assign({},appReliabilityState.visualViewport),
                 lastResumeAt:appReliabilityState.lastResumeAt,
                 lifecycleEvents:appReliabilityState.lifecycleEvents,
@@ -2819,6 +2823,21 @@
             } catch (e) {}
         }
 
+        const SEVEN_ERROR_CODES=Object.freeze(["MODEL_ERROR","NETWORK_ERROR","TOOL_ERROR","MEMORY_ERROR","FILE_ERROR","AUTH_ERROR","RATE_LIMIT","VALIDATION_ERROR","CANCELLED","TIMEOUT","INTERNAL_ERROR"]);
+        const sevenTraceStore=[];let sevenTraceSequence=0;
+        function normalizeSevenError(error,domain="internal"){
+            const status=Math.max(0,Number(error&&error.status)||0),kind=classifyProviderFailureV2(error);let code;
+            if(kind==="cancelled")code="CANCELLED";else if(kind==="timeout")code="TIMEOUT";else if(kind==="rate_limit")code="RATE_LIMIT";else if(kind==="auth")code="AUTH_ERROR";else if(kind==="network")code="NETWORK_ERROR";
+            else if(domain==="tool")code="TOOL_ERROR";else if(domain==="memory")code="MEMORY_ERROR";else if(domain==="file")code="FILE_ERROR";else if(domain==="model"||["server","client","not_found"].includes(kind))code="MODEL_ERROR";else if(error&&error.name==="TypeError")code="VALIDATION_ERROR";else code="INTERNAL_ERROR";
+            return Object.freeze({code,status,domain:String(domain||"internal"),retryable:["NETWORK_ERROR","RATE_LIMIT","TIMEOUT","MODEL_ERROR"].includes(code)&&status!==401&&status!==403,name:String(error&&error.name||"Error").slice(0,80),technicalCode:String(error&&error.code||"").slice(0,80)});
+        }
+        function safeTraceData(data){const out={};for(const [k,v] of Object.entries(data&&typeof data==="object"?data:{})){if(!/^(code|retryable|status|steps|messageCount|web|provider|model|attempts|durationMs)$/.test(k))continue;if(typeof v==="string")out[k]=v.slice(0,160);else if(typeof v==="number"||typeof v==="boolean"||v===null)out[k]=v}return out}
+        function beginSevenTrace(kind,meta){const m=meta&&typeof meta==="object"?meta:{},t={id:"trace-"+Date.now().toString(36)+"-"+(++sevenTraceSequence).toString(36),kind:String(kind||"request").slice(0,40),roomId:String(m.roomId||"").slice(0,120),executionRunId:String(m.executionRunId||"").slice(0,160),mode:String(m.mode||"").slice(0,30),startedAt:Date.now(),endedAt:null,status:"running",events:[]};sevenTraceStore.push(t);if(sevenTraceStore.length>100)sevenTraceStore.splice(0,sevenTraceStore.length-100);return t}
+        function traceSeven(t,phase,data){if(!t)return null;const e={phase:String(phase||"event").slice(0,60),at:Date.now(),data:safeTraceData(data)};t.events.push(e);if(t.events.length>50)t.events.splice(0,t.events.length-50);return e}
+        function finishSevenTrace(t,status,data){if(!t)return null;traceSeven(t,status,data);t.status=String(status||"completed").slice(0,40);t.endedAt=Date.now();return t}
+        function safeTraceSnapshot(){return sevenTraceStore.map(t=>({id:t.id,kind:t.kind,roomId:t.roomId,executionRunId:t.executionRunId,mode:t.mode,startedAt:t.startedAt,endedAt:t.endedAt,status:t.status,events:t.events.map(e=>({phase:e.phase,at:e.at,data:Object.assign({},e.data)}))}))}
+        window.SevenDiagnostics=Object.freeze({version:1,error:normalizeSevenError,begin:beginSevenTrace,event:traceSeven,finish:finishSevenTrace,snapshot:safeTraceSnapshot,errorCodes:SEVEN_ERROR_CODES.slice()});
+
         function classifyProviderFailureV2(error) {
             if (stopRequested === true || (error && error.name === "AbortError" && !error.code)) return "cancelled";
             const code = String(error && error.code || "");
@@ -2939,6 +2958,7 @@
         function recordFreeRouteSuccess(model, latencyMs) {
             if (!model) return;
             const now = Date.now();
+            if(typeof appReliabilityState!=="undefined"){appReliabilityState.reachability="reachable";appReliabilityState.lastReachabilityAt=now}
             recordHealthSuccessV2(model.provider, model.id, latencyMs, now);
             // Any real success demonstrates that the provider is reachable and
             // heals provider-wide degradation/circuit state.
@@ -2951,6 +2971,7 @@
             const errorClass = classifyProviderFailureV2(error);
             if (errorClass === "cancelled") return;
             const now = Date.now();
+            if(typeof appReliabilityState!=="undefined"&&["network","timeout"].includes(errorClass)){appReliabilityState.reachability="degraded";appReliabilityState.lastReachabilityAt=now}
             recordHealthFailureV2(model.provider, model.id, error, now);
 
             const providerOld = getFreeModelHealth(model.provider,"*");
@@ -3346,10 +3367,16 @@
             const provider = FREE_PROVIDER_REGISTRY[providerId];
             if (!provider || !provider.modelsUrl) return [];
             if (provider.credentialOptional !== true && !getFreeProviderCredential(providerId)) return [];
-            const response = await fetchProviderWithTimeout(provider.modelsUrl, { headers: providerAuthHeaders(providerId) }, 8000);
-            if (!response.ok) { const e=new Error(providerDisplayName(providerId)+" model discovery failed: "+response.status); e.status=response.status; const retry=response.headers&&response.headers.get?response.headers.get("Retry-After"):null; if(retry)e.retryAfterMs=/^\d+$/.test(retry)?Number(retry)*1000:null; throw e; }
-            const json = await response.json();
-            return Array.isArray(json?.data) ? json.data : (Array.isArray(json?.models) ? json.models : []);
+            const started=Date.now();
+            try {
+                const response = await fetchProviderWithTimeout(provider.modelsUrl, { headers: providerAuthHeaders(providerId) }, 8000);
+                if (!response.ok) { const e=new Error(providerDisplayName(providerId)+" model discovery failed: "+response.status); e.status=response.status; const retry=response.headers&&response.headers.get?response.headers.get("Retry-After"):null; if(retry)e.retryAfterMs=/^\d+$/.test(retry)?Number(retry)*1000:null; throw e; }
+                const json = await response.json();
+                recordHealthSuccessV2(providerId,"*",Math.max(0,Date.now()-started));saveFreeModelHealth();
+                return Array.isArray(json?.data) ? json.data : (Array.isArray(json?.models) ? json.models : []);
+            } catch (error) {
+                recordHealthFailureV2(providerId,"*",error);saveFreeModelHealth();throw error;
+            }
         }
 
         async function discoverOpenRouterFreeModels() {
@@ -3897,13 +3924,14 @@
                     recordFreeRouteFailure(model,error);
                     recordLatencySampleV2(model,attemptConfig,{success:false,totalMs,firstTokenMs});
                     recordFreeProviderUsage(model.provider,"failure");
-                    attempts.push({provider:model.provider,model:model.id,status:Number(error?.status)||0,error:sanitizeProviderError(error,model.provider)});
+                    attempts.push({provider:model.provider,model:model.id,status:Number(error?.status)||0,error:sanitizeProviderError(error,model.provider),retryAfterMs:Math.max(0,Number(error?.retryAfterMs)||0)});
                     if(error?.partialOutput===true)throw error;
                     if(!freeFallbackEnabled||stopRequested)throw error;
                 }
             }
             const err=new Error("All verified-free routes failed: "+attempts.map(a=>a.error).join(" • "));
-            err.code="FREE_ROUTES_EXHAUSTED"; err.attempts=attempts; throw err;
+            const retryDelays=attempts.map(a=>Math.max(0,Number(a.retryAfterMs)||0)).filter(Boolean);
+            err.code="FREE_ROUTES_EXHAUSTED";err.attempts=attempts;err.retryAfterMs=retryDelays.length?Math.min(...retryDelays):0;throw err;
         }
 
         // ---------- Model / Provider Fabric boundary (Tasks 4 + 146-150) ----------
@@ -7959,6 +7987,7 @@
             }
             const executionRun = addExecutionRun(taskPlan);
             const executionRunId = executionRun ? executionRun.id : null;
+            const requestTrace=beginSevenTrace("chat",{roomId,executionRunId,mode:currentResponseMode()});traceSeven(requestTrace,"planned",{steps:taskPlan.steps.length});
             const hasPlanStep = stepId => taskPlan.steps.some(step => step.id === stepId);
             if (!executionRun && typeof console !== "undefined" && console.warn) {
                 console.warn("Execution Fabric persistence unavailable; continuing this request without durable checkpoints.");
@@ -7999,6 +8028,7 @@
                 }
                 const contextStarted = deepPerf ? nowPerformanceMsV1() : 0;
                 const { messages, searchResult } = await buildContext(room, text, roomId, controllerPlan);
+                traceSeven(requestTrace,"context",{messageCount:Array.isArray(messages)?messages.length:0,web:!!searchResult});
                 if (deepPerf) deepPerf.contextMs = Math.max(0, Math.round(nowPerformanceMsV1() - contextStarted));
                 if (executionRunId && hasPlanStep("memory")) checkpointLiveExecution(executionRunId, "memory", "passed", { resultRef: "memory:context" });
                 if (executionRunId && hasPlanStep("web")) checkpointLiveExecution(executionRunId, "web", "passed", { resultRef: searchResult ? "web:results" : "web:none" });
@@ -8127,6 +8157,7 @@
                     activeExecutionStep = null;
                 }
                 if (deepPerf) finishDeepThinkPerformanceV1("completed",deepPerf);
+                finishSevenTrace(requestTrace,"completed",{durationMs:Date.now()-requestTrace.startedAt});
 
                 await autoSummarizeIfNeeded(roomId);
                 if (wasFirstExchange) {
@@ -8134,6 +8165,8 @@
                 }
             } catch (error) {
                 cancelStreamingBubbleUpdate(false);
+                const normalizedError=normalizeSevenError(error,"model");
+                finishSevenTrace(requestTrace,normalizedError.code==="CANCELLED"?"cancelled":"failed",{code:normalizedError.code,status:normalizedError.status,retryable:normalizedError.retryable,durationMs:Date.now()-requestTrace.startedAt});
                 if (deepPerf) {
                     finishDeepThinkPerformanceV1((error?.name === "AbortError" || stopRequested) ? "cancelled" : "failed",deepPerf);
                 }
@@ -8147,7 +8180,7 @@
                         const targetStatus = aborted ? "cancelled" : "failed";
                         for (const step of runNow.steps) {
                             if (step.status === "running") {
-                                checkpointLiveExecution(executionRunId, step.id, targetStatus, { errorCode: aborted ? "stopped" : "execution_error" });
+                                checkpointLiveExecution(executionRunId, step.id, targetStatus, { errorCode: normalizedError.code });
                             }
                         }
                     }
@@ -8182,6 +8215,7 @@
         // are already turned into readable Error objects before this point,
         // so this only fires for that raw network failure.
         function describeNetworkError(error) {
+            if(error&&Number(error.retryAfterMs)>0){const seconds=Math.max(1,Math.ceil(Number(error.retryAfterMs)/1000));return "All automatic free routes are temporarily unavailable. Retry in about "+seconds+" seconds."}
             if (error instanceof TypeError) {
                 let msg = "Couldn't reach the selected free model provider. Check your internet connection";
                 if (location.protocol === "file:") {
