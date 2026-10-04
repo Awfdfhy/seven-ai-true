@@ -32,6 +32,7 @@ MAX_PARALLEL = max(1, min(20, int(os.environ.get("SEVEN_SUPERLOOP_MAX_PARALLEL",
 READ_TIMEOUT = int(os.environ.get("SEVEN_AGENT_READ_TIMEOUT", "360"))
 WRITE_TIMEOUT = int(os.environ.get("SEVEN_AGENT_WRITE_TIMEOUT", "600"))
 MANAGER_TIMEOUT = int(os.environ.get("SEVEN_MANAGER_TIMEOUT", "480"))
+AUTO_REPAIR_ATTEMPTS = max(1, min(3, int(os.environ.get("SEVEN_AUTO_REPAIR_ATTEMPTS", "2"))))
 MODEL = os.environ.get("SEVEN_SUPERLOOP_MODEL", "kilo-auto/free")
 RUN_ID = os.environ.get("GITHUB_RUN_ID", "local")
 RUN_NUMBER = os.environ.get("GITHUB_RUN_NUMBER", "0")
@@ -624,6 +625,124 @@ commit or push.
     return True, output + "\n[controller] Polish accepted with full gates."
 
 
+def repair_final_gates(cycle: int, initial_log: str) -> tuple[bool, str]:
+    """Bounded self-healing loop for deterministic final-gate failures."""
+    evidence = initial_log
+    attempts: list[str] = []
+    for attempt in range(1, AUTO_REPAIR_ATTEMPTS + 1):
+        before = git_output("rev-parse", "HEAD")
+        prompt = f"""{MANAGER_CONTRACT}
+
+Cycle {cycle}, SELF-HEAL FINAL-GATES attempt {attempt}/{AUTO_REPAIR_ATTEMPTS}.
+
+The deterministic release gates failed. Diagnose the exact root cause from the evidence below and
+apply the smallest production/test fix needed. Do not add speculative features. Do not commit or push.
+Stay inside allowed Remake surfaces. Preserve architecture/security/release evidence.
+
+Strict TypeScript rule: ad-hoc globals must be explicitly typed; never create a probe that fails
+strict typecheck. Do not weaken tsconfig, tests, audits, or build gates to make them green.
+
+Failure evidence:
+{clip(evidence, 30000)}
+"""
+        output = run_codex(ROOT, prompt, MANAGER_TIMEOUT, f"c{cycle}-selfheal-gates-{attempt}")
+
+        if git_output("rev-parse", "HEAD") != before:
+            git("reset", "--hard", before)
+            git("clean", "-fd")
+            attempts.append(output + "\n[controller] rejected manager-created commit")
+            evidence = attempts[-1]
+            continue
+
+        ok_scope, bad = validate_uncommitted_scope()
+        if not ok_scope:
+            git("reset", "--hard", before)
+            git("clean", "-fd")
+            attempts.append(output + "\n[controller] rejected scope: " + ", ".join(bad))
+            evidence = attempts[-1]
+            continue
+
+        if not changed_paths(ROOT):
+            attempts.append(output + "\n[controller] no repair diff")
+            evidence = attempts[-1]
+            continue
+
+        ok, gate_log = full_gates(ROOT)
+        attempt_report = output + "\n\n[repair gates]\n" + gate_log
+        write_artifact(cycle, "self-heal-final-gates", f"attempt-{attempt}", attempt_report)
+
+        if ok:
+            commit_manager_changes(f"Superloop cycle {cycle} self-heal final gates attempt {attempt}")
+            return True, "\n\n".join(attempts + [attempt_report])
+
+        git("reset", "--hard", before)
+        git("clean", "-fd")
+        attempts.append(attempt_report + "\n[controller] repair failed; rolled back")
+        evidence = gate_log
+
+    return False, "\n\n".join(attempts)
+
+
+def repair_apk(cycle: int, initial_result: str) -> str:
+    """Bounded self-healing loop for APK packaging failures after full gates pass."""
+    evidence = initial_result
+    for attempt in range(1, AUTO_REPAIR_ATTEMPTS + 1):
+        before = git_output("rev-parse", "HEAD")
+        prompt = f"""{MANAGER_CONTRACT}
+
+Cycle {cycle}, SELF-HEAL APK attempt {attempt}/{AUTO_REPAIR_ATTEMPTS}.
+
+The Remake APK stage did not PASS. Diagnose the exact packaging/build/root-cause evidence below and
+apply the smallest safe fix. Do not weaken signing, installed-identity checks, tests, audits or release
+gates. Do not commit or push. Stay inside allowed Remake/Android packaging surfaces.
+
+APK failure evidence:
+{clip(evidence, 30000)}
+"""
+        output = run_codex(ROOT, prompt, MANAGER_TIMEOUT, f"c{cycle}-selfheal-apk-{attempt}")
+
+        if git_output("rev-parse", "HEAD") != before:
+            git("reset", "--hard", before)
+            git("clean", "-fd")
+            evidence = output + "\n[controller] rejected manager-created commit"
+            write_artifact(cycle, "self-heal-apk", f"attempt-{attempt}", evidence)
+            continue
+
+        ok_scope, bad = validate_uncommitted_scope()
+        if not ok_scope:
+            git("reset", "--hard", before)
+            git("clean", "-fd")
+            evidence = output + "\n[controller] rejected scope: " + ", ".join(bad)
+            write_artifact(cycle, "self-heal-apk", f"attempt-{attempt}", evidence)
+            continue
+
+        if not changed_paths(ROOT):
+            evidence = output + "\n[controller] no repair diff"
+            write_artifact(cycle, "self-heal-apk", f"attempt-{attempt}", evidence)
+            continue
+
+        gates_ok, gates = full_gates(ROOT)
+        if not gates_ok:
+            git("reset", "--hard", before)
+            git("clean", "-fd")
+            evidence = output + "\n\n[full gates failed after APK repair]\n" + gates
+            write_artifact(cycle, "self-heal-apk", f"attempt-{attempt}", evidence)
+            continue
+
+        result = attempt_apk(cycle)
+        report = output + "\n\n[apk retry]\n" + result
+        write_artifact(cycle, "self-heal-apk", f"attempt-{attempt}", report)
+        if "APK_STAGE=PASS" in result:
+            commit_manager_changes(f"Superloop cycle {cycle} self-heal APK attempt {attempt}")
+            return result
+
+        git("reset", "--hard", before)
+        git("clean", "-fd")
+        evidence = result
+
+    return initial_result + "\nSELF_HEAL_APK=EXHAUSTED"
+
+
 def attempt_apk(cycle: int) -> str:
     log("APK stage: checking for Remake Android packaging contract")
     pkg_path = ROOT / "remake" / "package.json"
@@ -792,9 +911,16 @@ BLOCKER/CRITICAL/HIGH regressions outrank new features.
     final_ok, final_gate_log = full_gates(ROOT)
     write_artifact(cycle, "final-gates", "automated", final_gate_log)
     if not final_ok:
-        raise RuntimeError("final cycle gates failed after validated integration")
+        log("final gates failed; entering bounded self-heal repair loop")
+        final_ok, repair_log = repair_final_gates(cycle, final_gate_log)
+        write_artifact(cycle, "final-gates", "self-heal", repair_log)
+    if not final_ok:
+        raise RuntimeError("final cycle gates failed after bounded self-heal attempts")
 
     apk_result = attempt_apk(cycle)
+    if "APK_STAGE=PASS" not in apk_result:
+        log("APK stage did not pass; entering bounded self-heal repair loop")
+        apk_result = repair_apk(cycle, apk_result)
 
     final_head = git_output("rev-parse", "HEAD")
     final_review = manager_readonly(
