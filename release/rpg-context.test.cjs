@@ -6,7 +6,8 @@ let s=State.createState({
   characters:{
     a:{control:'ai',locationId:'hall',knowledge:{secret:{learnedAtTick:15,sourceEventId:'tell-a'}},beliefs:{rumor:{value:'maybe'}}},
     b:{control:'ai',locationId:'hall'},
-    player:{control:'player',locationId:'hall'},\n    aria:{control:'ai',locationId:'hall'}
+    player:{control:'player',locationId:'hall'},
+    aria:{control:'ai',locationId:'hall'}
   },
   canon:{entries:{
     public:{level:'HARD',value:'public truth',public:true,entityIds:['hall']},
@@ -25,7 +26,8 @@ assert.ok(!b.view.knownCanon.some(x=>x.id==='secret'));
 assert.ok(b.view.knownCanon.some(x=>x.id==='public'));
 assert.equal(a.view.knowledgeRefs.secret.learnedAtTick,15);
 assert.equal(b.view.knowledgeRefs.secret,undefined);
-assert.equal(a.view.hidden.globalLedgerOmitted,true);\nassert.equal(a.view.relationships['aria::b'],undefined,'substring character IDs must not leak unrelated relationships');
+assert.equal(a.view.hidden.globalLedgerOmitted,true);
+assert.equal(a.view.relationships['aria::b'],undefined,'substring character IDs must not leak unrelated relationships');
 assert.equal(Ctx.validateNoKnowledgeLeak(a.view,s,State,'a').valid,true);
 assert.equal(Ctx.validateNoKnowledgeLeak(b.view,s,State,'b').valid,true);
 const narrator=Ctx.buildNarratorView(s,State,{maxChars:12000});assert.equal(narrator.view.access,'world-truth');assert.ok(narrator.view.canon.some(x=>x.id==='secret'));
