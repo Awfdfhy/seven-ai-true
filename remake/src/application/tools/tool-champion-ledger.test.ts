@@ -17,7 +17,7 @@ function grant():ToolGrant{
     issuedAt:now-1000,expiresAt:now+60_000,source:"user",
   };
 }
-function inv(key:string,callId=crypto.randomUUID()):ToolInvocation{
+function inv(key:string,callId:string=crypto.randomUUID()):ToolInvocation{
   return {
     callId,taskId:"task",roomId:"room",toolId:"demo.write",
     args:{value:"x"},idempotencyKey:key,requestedAt:Date.now(),
