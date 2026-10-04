@@ -21,8 +21,8 @@ function scoreCanon(entry,character,scene){
 function relationshipSlice(state,characterId,participantIds){
   const out={};const participants=new Set(uniq(participantIds));
   for(const [key,value] of Object.entries(obj(state.relationships))){
-    if(!key.includes(characterId))continue;
     const pieces=key.includes('->')?key.split('->'):key.split('::');
+    if(!pieces.includes(characterId))continue;
     const other=pieces.find(x=>x!==characterId);
     if(participants.size&&other&&!participants.has(other))continue;
     out[key]=clone(value);
