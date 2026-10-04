@@ -30,7 +30,7 @@ Therefore Self-Development MUST NOT use the legacy direct GitHub mutation path a
 ## Self-Development v1
 
 Tracking issue: #100
-Implementation branch: `self-development-v1-foundation`
+Implementation branch: `self-development-v1-phase1`
 
 ### Research / architecture
 - deep external research synthesis added under `.seven-team/self-development-v1/RESEARCH_SYNTHESIS.md`
@@ -65,12 +65,12 @@ Phase 1 scope is intentionally non-mutating:
 ## Current Verification State
 
 Phase 1 source and tests are on the isolated branch.
-Full existing repository CI/regression gate must pass on the exact branch head before the candidate can be considered verified.
+The first candidate PR (#101) was deliberately closed after base drift from `0c95a0a` to `f65a300`; the Phase 1 candidate was rebuilt from exact current baseline `f65a300`. Full existing repository CI/regression gate must pass on the fresh exact candidate before it can be considered verified.
 Independent review is still required before merging protected Self-Development/Evolution-plane changes.
 
 ## Next Actions
 
-1. Open PR for `self-development-v1-foundation`.
+1. Open PR for `self-development-v1-phase1`.
 2. Run existing full Seven CI/regression suite.
 3. Fix any Phase 1 failures.
 4. Record exact CI/evidence in `.seven-team/self-development-v1/IMPLEMENTATION_EVIDENCE.md`.
