@@ -243,7 +243,7 @@ def stage_prompt(
         "verify": "VERIFY the integrated version for compatibility, actual existence, ownership and behavior. Run meaningful commands. No production edits.",
         "bughunt": "BUGHUNT adversarially. Find reproducible bugs/root causes, especially cross-system failures and untested paths. No production edits.",
         "fix": "FIX the verified root cause(s) assigned by Manager. Add regression proof. Do not commit or push; the controller owns git.",
-        "explore": "EXPLORE like a demanding user/tester. Exercise realistic journeys and failure paths with available browser/CLI/build tooling. No production edits.",
+        "explore": "EXPLORE like a demanding user/tester. Exercise realistic journeys and failure paths with available browser/CLI/build tooling. Use .seven-team/product-intelligence/PRODUCT_QUALITY_RUBRIC.json plus relevant knowledge/visual references. Score only dimensions you have evidence for; missing exact-build visual evidence is UNPROVEN. No production edits.",
     }[stage]
     return f"""{AGENT_CONTRACT}
 
@@ -839,7 +839,9 @@ specialists. We are running a continuous loop:
 5 agent-driven exploratory testing, 6 polish+APK.
 Current branch sync note: {sync_note}
 Prioritize unresolved release readiness and user-visible product quality. Give all 20 agents distinct,
-non-duplicative research assignments.""",
+non-duplicative research assignments. Explicitly assign B10 to curate at least one evidence-backed
+product-intelligence lesson when a genuinely useful new reference or product lesson exists; otherwise
+B10 must report NO_NEW_INTELLIGENCE rather than inventing one.""",
     )
 
     research = run_readonly_phase(
@@ -923,6 +925,34 @@ BLOCKER/CRITICAL/HIGH regressions outrank new features.
         log("APK stage did not pass; entering bounded self-heal repair loop")
         apk_result = repair_apk(cycle, apk_result)
 
+    quality_head = git_output("rev-parse", "HEAD")
+    product_quality = manager_readonly(
+        cycle,
+        "manager-product-quality",
+        quality_head,
+        f"""Act as the independent product-quality synthesis judge.
+
+Read the complete product-intelligence system under .seven-team/product-intelligence/, especially
+PRODUCT_QUALITY_RUBRIC.json and JUDGE_PROTOCOL.md. Use the 20-agent exploratory evidence below,
+the compatibility verdict, and the APK state. Judge Seven as a complete AI chat product, not as a
+feature checklist. Preserve disagreements and mark missing visual/runtime evidence UNPROVEN.
+
+Compatibility:
+{clip(compatibility, 16000)}
+
+Exploratory evidence:
+{clip(summarize_reports(explore, 2200), 52000)}
+
+APK:
+{clip(apk_result, 8000)}
+
+Required final lines:
+PRODUCT_QUALITY_VERDICT=CHANGES_REQUIRED or RC or PREMIUM_CANDIDATE or UNPROVEN
+PRODUCT_QUALITY_SCORE=<0.0-10.0 or UNPROVEN>
+PRODUCT_QUALITY_HARD_FAILS=<integer>
+Do not award RC below the rubric threshold or when any hard fail exists.""",
+    )
+
     final_head = git_output("rev-parse", "HEAD")
     final_review = manager_readonly(
         cycle,
@@ -934,8 +964,22 @@ Fix integration: {json.dumps(fix_integration)}
 Polish accepted: {polished}
 APK result: {clip(apk_result, 6000)}
 
+Independent product-quality synthesis:
+{clip(product_quality, 12000)}
+
 Summarize what actually improved, what the team rejected, what remains unproven, and exact next-cycle
 research priorities. Do not call missing evidence PASS.""",
+    )
+
+    quality_verdict = next(
+        (line.split("=", 1)[1].strip() for line in product_quality.splitlines()
+         if line.startswith("PRODUCT_QUALITY_VERDICT=")),
+        "UNPROVEN",
+    )
+    quality_score = next(
+        (line.split("=", 1)[1].strip() for line in product_quality.splitlines()
+         if line.startswith("PRODUCT_QUALITY_SCORE=")),
+        "UNPROVEN",
     )
 
     summary = {
@@ -946,6 +990,8 @@ research priorities. Do not call missing evidence PASS.""",
         "fixesAccepted": len(fix_integration["accepted"]),
         "polishAccepted": polished,
         "apkState": next((line.split("=", 1)[1] for line in apk_result.splitlines() if line.startswith("APK_STAGE=")), "UNKNOWN"),
+        "productQualityVerdict": quality_verdict,
+        "productQualityScore": quality_score,
         "head": final_head,
     }
     tracked_history(
