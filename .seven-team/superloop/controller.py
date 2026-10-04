@@ -37,6 +37,8 @@ from domain_campaign import (
     domain_research_brief,
     audit_domain_research,
     campaign_prompt_summary,
+    extract_domain_plans,
+    render_domain_roadmaps,
 )
 from domain_research_harvester import harvest_campaign_sources
 
