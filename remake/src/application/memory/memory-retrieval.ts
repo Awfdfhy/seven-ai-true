@@ -5,7 +5,7 @@ export type MemoryHit = Readonly<{
   fact: MemoryFact;
   score: number;
   lexical: number;
-  reason: "core" | "retrieved" | "associated";
+  reason: "core" | "retrieved" | "associated" | "rewritten";
 }>;
 
 export type MemorySearchOptions = Readonly<{
