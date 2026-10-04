@@ -55,7 +55,7 @@ jobs:
       group: seven-24-7-superloop-cycle-v2
       cancel-in-progress: false
     runs-on: ubuntu-24.04
-    timeout-minutes: 350
+    timeout-minutes: 180
     steps:
       - name: Checkout control plane
         uses: actions/checkout@v4
