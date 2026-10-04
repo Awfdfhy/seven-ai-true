@@ -5,6 +5,8 @@ import { formatMemoryContext, MemoryRetrievalEngine, type MemoryHit } from "./me
 import { classifyMemoryIntent, type MemoryIntent } from "./memory-intent";
 
 export class MemoryFabricService {
+  private readonly canonicalLocks = new Map<string, Promise<void>>();
+
   constructor(
     private readonly repository: MemoryFabricRepository,
     private readonly retrieval = new MemoryRetrievalEngine(),
@@ -15,20 +17,55 @@ export class MemoryFabricService {
     const written:MemoryFact[]=[];
     for(const c of candidates){
       const roomId=c.scope==="room"?input.roomId:null;
-      const existing=await this.repository.findActiveByCanonicalKey(c.scope,roomId,c.canonicalKey,signal);
-      if(existing.some(f=>f.content===c.content)) continue;
-      const superseded=existing.map(f=>supersedeMemoryFact(f,input.createdAt));
-      const fact=createMemoryFact({
-        kind:c.kind,tier:c.tier,scope:c.scope,roomId,canonicalKey:c.canonicalKey,content:c.content,tags:c.tags,
-        importance:c.importance,confidence:c.confidence,observedAt:input.createdAt,
-        sourceRoomId:input.roomId,sourceMessageId:input.messageId,supersedes:existing.map(f=>f.id),
+      const lockKey=`${c.scope}:${roomId??"*"}:${c.canonicalKey}`;
+      const result=await this.withCanonicalLock(lockKey,async()=>{
+        const existing=[...(await this.repository.findActiveByCanonicalKey(c.scope,roomId,c.canonicalKey,signal))]
+          .sort((a,b)=>a.validFrom-b.validFrom || a.id.localeCompare(b.id));
+        if(existing.some(f=>this.sameContent(f.content,c.content))) return null;
+
+        const repairFacts:MemoryFact[]=[];
+        const repairEvents:ReturnType<typeof createMemoryWriteEvent>[]=[];
+        // Defensive repair: legacy/racy stores may already contain multiple active facts.
+        // Convert all but the newest one into a chronological chain before inserting.
+        for(let index=0;index<existing.length-1;index+=1){
+          const current=existing[index]!;
+          const next=existing[index+1]!;
+          const ended=supersedeMemoryFact(current,Math.max(current.validFrom,next.validFrom));
+          repairFacts.push(ended);
+          repairEvents.push(createMemoryWriteEvent(ended,"supersede",ended.validUntil??ended.updatedAt));
+        }
+        const current=existing.at(-1)??null;
+        const baseFact=createMemoryFact({
+          kind:c.kind,tier:c.tier,scope:c.scope,roomId,canonicalKey:c.canonicalKey,content:c.content,tags:c.tags,
+          importance:c.importance,confidence:c.confidence,observedAt:input.createdAt,
+          sourceRoomId:input.roomId,sourceMessageId:input.messageId,supersedes:current && current.validFrom<=input.createdAt?[current.id]:[],
+        });
+
+        if(current && current.validFrom>=input.createdAt){
+          // An older observation arrived after a newer one. Preserve it as history
+          // without allowing it to replace the current fact.
+          const historical=supersedeMemoryFact(baseFact,current.validFrom);
+          await this.repository.commit(
+            [...repairFacts,historical],
+            [...repairEvents,createMemoryWriteEvent(historical,"add",input.createdAt)],
+            signal,
+          );
+          return historical;
+        }
+
+        const ended=current?supersedeMemoryFact(current,input.createdAt):null;
+        await this.repository.commit(
+          [...repairFacts,...(ended?[ended]:[]),baseFact],
+          [
+            ...repairEvents,
+            ...(ended?[createMemoryWriteEvent(ended,"supersede",input.createdAt)]:[]),
+            createMemoryWriteEvent(baseFact,"add",input.createdAt),
+          ],
+          signal,
+        );
+        return baseFact;
       });
-      const events=[
-        ...superseded.map(f=>createMemoryWriteEvent(f,"supersede",input.createdAt)),
-        createMemoryWriteEvent(fact,"add",input.createdAt),
-      ];
-      await this.repository.commit([...superseded,fact],events,signal);
-      written.push(fact);
+      if(result) written.push(result);
     }
     return Object.freeze(written);
   }
@@ -44,6 +81,26 @@ export class MemoryFabricService {
     if(!fact)return false;
     await this.repository.deleteFact(memoryId,createMemoryWriteEvent(fact,"forget",Date.now()),signal);
     return true;
+  }
+
+  private sameContent(a:string,b:string):boolean{
+    const normalize=(value:string)=>value.normalize("NFKC").toLocaleLowerCase("en-US").replace(/[\s.,!?؟،؛;:]+/gu," ").trim();
+    return normalize(a)===normalize(b);
+  }
+
+  private async withCanonicalLock<T>(key:string,work:()=>Promise<T>):Promise<T>{
+    const previous=this.canonicalLocks.get(key)??Promise.resolve();
+    let release!:()=>void;
+    const gate=new Promise<void>(resolve=>{release=resolve;});
+    const tail=previous.then(()=>gate);
+    this.canonicalLocks.set(key,tail);
+    await previous;
+    try{
+      return await work();
+    }finally{
+      release();
+      if(this.canonicalLocks.get(key)===tail)this.canonicalLocks.delete(key);
+    }
   }
 
   intentForQuery(query:string):MemoryIntent{
