@@ -13,6 +13,11 @@ function normalize(value: string): string {
     .replace(/ة/g, "ه");
 }
 
+function hasToken(value:string, terms:readonly string[]):boolean {
+  const set=new Set(value.match(/[\p{L}\p{N}_-]+/gu)??[]);
+  return terms.some(term=>set.has(term));
+}
+
 export function classifyMemoryIntent(query: string): MemoryIntent {
   const q = normalize(query.trim());
   if (!q) return Object.freeze({ mode: "none", reasons: Object.freeze(["empty"]) });
@@ -31,10 +36,16 @@ export function classifyMemoryIntent(query: string): MemoryIntent {
     /تذكر|ذاكره|الذاكره|تتذكر|كما ناقشنا|كما تحدثنا|اكمل من|أكمل من/.test(q);
   if (explicitMemory) reasons.push("explicit-memory-reference");
 
+  const personalStateQuestion =
+    /\b(where do i live|where am i based|where am i from|who am i|what am i (?:studying|learning|working on)|what (?:subject|topic|course|class) am i (?:studying|learning|focusing on|working on)|what do i (?:study|learn|like|love|hate|prefer)|which .{0,32} do i (?:use|prefer|like)|do i have|have i told you)\b/.test(q) ||
+    /(?:اين|وين) (?:اسكن|اعيش|ساكن)|ماذا (?:ادرس|اتعلم|احب|اكره|افضل)|ما الذي (?:ادرسه|اتعلمه|احبه|اكرهه|افضله)|من انا|ما (?:اسمي|هدفي|مشروعي)|هل لدي|هل اخبرتك/.test(q);
+
   const personal =
     /\b(my|mine|me|for me|i prefer|i like|i love|i hate|my goal|my project|my device|my phone|my name)\b/.test(q) ||
     /\bwhat do i\b/.test(q) ||
-    /لي|خاصتي|اسمي|هدفي|مشروعي|هاتفي|جهازي|افضل|أفضّل|احب|أحب|اكره|أكره|ماذا تعرف عني|ما الذي تعرفه عني/.test(q);
+    personalStateQuestion ||
+    hasToken(q,["لي","خاصتي","اسمي","هدفي","مشروعي","هاتفي","جهازي","افضل","احب","اكره"]) ||
+    /ماذا تعرف عني|ما الذي تعرفه عني/.test(q);
   if (personal) reasons.push("personal-reference");
 
   const preference =
