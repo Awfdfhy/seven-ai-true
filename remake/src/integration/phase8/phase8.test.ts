@@ -6,6 +6,19 @@ import { GitHubSelfDevService } from "../../github/self-dev-service";
 const baseSha = "a".repeat(40);
 const commitSha = "b".repeat(40);
 
+const codingVerification = {
+  async verify(input: { repository: string; baseSha: string; files: readonly { path: string }[] }) {
+    return {
+      approved: true as const,
+      repository: input.repository,
+      baseSha: input.baseSha,
+      verifiedPaths: input.files.map((file) => file.path),
+      checks: ["typecheck", "tests"],
+      evidenceId: "test-evidence",
+    };
+  },
+};
+
 describe("Phase 8 GitHub Self-Dev", () => {
   it("shares one refresh across concurrent callers and never exposes the token in snapshots", async () => {
     let release!: () => void;
@@ -85,7 +98,7 @@ describe("Phase 8 GitHub Self-Dev", () => {
         changedPaths: ["src/a.ts"],
       })),
     };
-    const service = new GitHubSelfDevService(new TaskManager(), auth, mutation);
+    const service = new GitHubSelfDevService(new TaskManager(), auth, mutation, codingVerification);
     const result = await service.apply({
       repository: "owner/repo",
       baseSha,
@@ -99,7 +112,7 @@ describe("Phase 8 GitHub Self-Dev", () => {
       async apply() {
         return { commitSha, changedPaths: ["src/a.ts", "src/injected.ts"] };
       },
-    });
+    }, codingVerification);
     await expect(hostile.apply({
       repository: "owner/repo",
       baseSha,
@@ -117,7 +130,7 @@ describe("Phase 8 GitHub Self-Dev", () => {
     const auth = new GitHubAuthService({ refresh }, () => 100, 100);
     const service = new GitHubSelfDevService(new TaskManager(), auth, {
       async apply() { return { commitSha, changedPaths: ["x"] }; },
-    });
+    }, codingVerification);
 
     expect(() => service.apply({
       repository: "owner/repo",
@@ -136,6 +149,39 @@ describe("Phase 8 GitHub Self-Dev", () => {
     expect(refresh).not.toHaveBeenCalled();
   });
 
+  it("fails closed before credentials or mutation when Coding verification is missing or rejects", async () => {
+    const refresh = vi.fn(async () => ({ accessToken: "token", expiresAt: 10_000, scopes: ["repo"] }));
+    const auth = new GitHubAuthService({ refresh }, () => 100, 100);
+    const mutation = { apply: vi.fn(async () => ({ commitSha, changedPaths: ["src/a.ts"] })) };
+    const input = {
+      repository: "owner/repo",
+      baseSha,
+      message: "Update",
+      files: [{ path: "src/a.ts", content: "x" }],
+    };
+
+    const missing = new GitHubSelfDevService(new TaskManager(), auth, mutation);
+    await expect(missing.apply(input).result).rejects.toMatchObject({ code: "TOOL" });
+    expect(refresh).not.toHaveBeenCalled();
+    expect(mutation.apply).not.toHaveBeenCalled();
+
+    const rejected = new GitHubSelfDevService(new TaskManager(), auth, mutation, {
+      async verify(value) {
+        return {
+          approved: false,
+          repository: value.repository,
+          baseSha: value.baseSha,
+          verifiedPaths: value.files.map((file) => file.path),
+          checks: ["tests"],
+          evidenceId: "rejected",
+        };
+      },
+    });
+    await expect(rejected.apply(input).result).rejects.toMatchObject({ code: "TOOL" });
+    expect(refresh).not.toHaveBeenCalled();
+    expect(mutation.apply).not.toHaveBeenCalled();
+  });
+
   it("cancellation prevents a late GitHub mutation from becoming successful task truth", async () => {
     const auth = new GitHubAuthService({
       async refresh() {
@@ -149,7 +195,7 @@ describe("Phase 8 GitHub Self-Dev", () => {
         await gate;
         return { commitSha, changedPaths: ["src/a.ts"] };
       },
-    });
+    }, codingVerification);
     const run = service.apply({
       repository: "owner/repo",
       baseSha,

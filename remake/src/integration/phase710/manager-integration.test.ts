@@ -14,6 +14,19 @@ import { ThemeService, type ThemeScheduler } from "../../ui/system/theme-service
 const baseSha = "a".repeat(40);
 const commitSha = "b".repeat(40);
 
+const codingVerification = {
+  async verify(input: { repository: string; baseSha: string; files: readonly { path: string }[] }) {
+    return {
+      approved: true as const,
+      repository: input.repository,
+      baseSha: input.baseSha,
+      verifiedPaths: input.files.map((file) => file.path),
+      checks: ["typecheck", "tests"],
+      evidenceId: "manager-evidence",
+    };
+  },
+};
+
 describe("Waves 7-10 manager integration", () => {
   it("isolates Android cancellation from concurrent GitHub and RPG work on one TaskManager", async () => {
     const tasks = new TaskManager();
@@ -32,7 +45,7 @@ describe("Waves 7-10 manager integration", () => {
       async apply() {
         return { commitSha, changedPaths: ["src/a.ts"] };
       },
-    });
+    }, codingVerification);
 
     const rpg = new RpgCanonService(tasks, new InMemoryRpgRepository(), () => 100);
 
@@ -87,7 +100,7 @@ describe("Waves 7-10 manager integration", () => {
         observedToken = accessToken;
         return { commitSha, changedPaths: ["src/a.ts"] };
       },
-    });
+    }, codingVerification);
 
     const run = service.apply({
       repository: "owner/repo",
