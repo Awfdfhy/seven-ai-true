@@ -276,7 +276,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  });
  await test('performance polish visual viewport and diagnostics initialize safely',async()=>{
   const r=await page.evaluate(()=>{const vv=updateVisualViewportV1(),snap=SevenAppReliability.snapshot(),raw=JSON.stringify(SevenAppReliability.snapshot());return {width:vv.width,height:vv.height,version:snap.version,visibility:snap.visibility,network:snap.network,hasRender:!!snap.renderWindow,secret:/gsk_|sk-or-|nvapi-|AIza|Authorization|Bearer/i.test(raw),content:/message-499|chunk-49|Relevant memories/.test(raw)}});
-  assert.ok(r.width>0&&r.height>0);assert.equal(r.version,1);assert.ok(['foreground','background'].includes(r.visibility));assert.ok(['online','offline','unknown'].includes(r.network));assert.equal(r.hasRender,true);assert.equal(r.secret,false);assert.equal(r.content,false);
+  assert.ok(r.width>0&&r.height>0);assert.equal(r.version,1);assert.ok(['foreground','background'].includes(r.visibility));assert.ok(['link-online','offline','unknown'].includes(r.network));assert.equal(r.hasRender,true);assert.equal(r.secret,false);assert.equal(r.content,false);
  });
  await test('performance polish 320px chat and settings avoid horizontal overflow',async()=>{
   await page.setViewportSize({width:320,height:800});

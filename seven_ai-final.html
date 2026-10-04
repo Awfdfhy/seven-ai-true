@@ -2093,7 +2093,7 @@
         }
 
         const appReliabilityState={
-            version:1,
+            version:2,
             visibility:(typeof document!=="undefined"&&document.hidden)?"background":"foreground",
             network:(typeof navigator!=="undefined"&&typeof navigator.onLine==="boolean")?(navigator.onLine?"link-online":"offline"):"unknown",
             reachability:"unknown",lastReachabilityAt:0,
@@ -2168,9 +2168,9 @@
         }
 
         window.SevenAppReliability=Object.freeze({
-            version:1,
+            version:2,
             snapshot:()=>({
-                version:1,
+                version:2,
                 visibility:appReliabilityState.visibility,
                 network:appReliabilityState.network,
                 reachability:appReliabilityState.reachability,
