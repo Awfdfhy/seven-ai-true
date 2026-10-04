@@ -6,6 +6,7 @@ import type { RoomRepository } from "../../storage/room-repository";
 export type ChatStreamContext = Readonly<{
   room: Room;
   signal: AbortSignal;
+  taskId?: string;
 }>;
 
 export interface ChatTransport {
@@ -179,6 +180,7 @@ export class ChatService {
         const output = stream({
           room: withUser,
           signal,
+          taskId,
         });
         if (
           !output ||

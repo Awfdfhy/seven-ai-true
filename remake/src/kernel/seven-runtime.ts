@@ -19,6 +19,16 @@ import { ProviderContextSummarizer } from "../context/provider-context-summarize
 import { MemoryLegacyMigrationService } from "../application/memory/memory-legacy-migration-service";
 import { ProviderMemoryQueryRewriter } from "../application/memory/memory-query-rewriter";
 import { MemoryRetrievalEngine } from "../application/memory/memory-retrieval";
+import { ToolRegistry } from "../application/tools/registry";
+import { registerBuiltinReadTools } from "../application/tools/builtins";
+import { InMemoryToolAuthoritySource } from "../application/tools/authority";
+import { IndexedDbToolExecutionLedger } from "../storage/tool-execution-ledger";
+import { ToolExecutor } from "../application/tools/executor";
+import { ToolDiscovery } from "../application/tools/discovery";
+import { ProviderToolPlanner } from "../application/tools/planner";
+import { DefaultReadToolCapabilityPolicy } from "../application/tools/read-capability-policy";
+import { ToolOrchestrator } from "../application/tools/orchestrator";
+import { OrchestratedReadToolContextSource } from "../application/tools/chat-tool-context";
 
 export type SevenRuntime = Readonly<{
   taskManager: TaskManager;
@@ -31,6 +41,8 @@ export type SevenRuntime = Readonly<{
   chat: ChatService;
   chatTransport: ProviderChatTransport;
   memory: MemoryFabricService;
+  toolRegistry: ToolRegistry;
+  toolOrchestrator: ToolOrchestrator;
 }>;
 
 export type SevenRuntimeOptions = Readonly<{
@@ -81,6 +93,54 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
     memoryRepository,
   );
   const chat = new ChatService(taskManager, rooms, memory);
+
+  const toolRegistry = new ToolRegistry();
+  registerBuiltinReadTools(toolRegistry, { memory, rooms });
+  const toolAuthority = new InMemoryToolAuthoritySource();
+  toolAuthority.setGrant({
+    grantId: "seven-local-read-tools",
+    capabilities: Object.freeze(["memory.read", "rooms.read"]),
+    scope: Object.freeze({}),
+    issuedAt: 0,
+    expiresAt: Number.MAX_SAFE_INTEGER,
+    source: "system",
+  });
+  const toolLedger = new IndexedDbToolExecutionLedger();
+  const toolExecutor = new ToolExecutor(
+    toolRegistry,
+    taskManager,
+    toolAuthority,
+    undefined,
+    {
+      record(event) {
+        diagnostics.record({
+          level: event.status === "failed" || event.status === "effect_unknown" ? "warn" : "info",
+          category: "tools",
+          name: "tool_execution",
+          attributes: {
+            toolId: event.toolId,
+            status: event.status,
+            effectStarted: event.effectStarted,
+          },
+        });
+      },
+    },
+    256,
+    toolLedger,
+  );
+  const toolDiscovery = new ToolDiscovery(toolRegistry);
+  const toolPlanner = new ProviderToolPlanner(kilo, "kilo-auto/free");
+  const toolOrchestrator = new ToolOrchestrator(
+    toolDiscovery,
+    toolPlanner,
+    toolExecutor,
+    new DefaultReadToolCapabilityPolicy(),
+  );
+  const toolContextSource = new OrchestratedReadToolContextSource(
+    toolOrchestrator,
+    toolRegistry,
+  );
+
   const summaryRepository = new IndexedDbMemoryRepository({
     databaseName: "seven-remake-context-summary-v2",
     maxRecords: 1,
@@ -100,6 +160,7 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
     memory,
     contextSource,
     32_768,
+    toolContextSource,
   );
 
   const kernel = new AppKernel(diagnostics);
@@ -138,6 +199,14 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
   });
 
   kernel.register({
+    id: "tool-ledger",
+    async start() {},
+    async stop() {
+      await toolLedger.close();
+    },
+  });
+
+  kernel.register({
     id: "theme",
     async start() {
       theme.start();
@@ -158,5 +227,7 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
     chat,
     chatTransport,
     memory,
+    toolRegistry,
+    toolOrchestrator,
   });
 }
