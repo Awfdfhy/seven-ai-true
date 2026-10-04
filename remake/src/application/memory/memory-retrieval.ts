@@ -12,6 +12,9 @@ export type MemorySearchOptions = Readonly<{
   maxRecall?: number;
   minRecallScore?: number;
   now?: number;
+  includeCore?: boolean;
+  includeRecall?: boolean;
+  historical?: boolean;
 }>;
 
 function normalize(value: string): string {
@@ -83,7 +86,9 @@ export class MemoryRetrievalEngine {
     const maxCore = options.maxCore ?? 4;
     const maxRecall = options.maxRecall ?? 8;
     const minRecallScore = options.minRecallScore ?? 0.012;
-    const historical = asksForHistory(query);
+    const historical = options.historical ?? asksForHistory(query);
+    const includeCore = options.includeCore ?? true;
+    const includeRecall = options.includeRecall ?? true;
     const active = facts.filter(f =>
       f.validFrom <= now &&
       (historical || (f.status === "active" && (f.validUntil === null || f.validUntil > now)))
@@ -93,13 +98,13 @@ export class MemoryRetrievalEngine {
     const recRank = rankMap(active, f=>f.updatedAt);
     const impRank = rankMap(active, f=>f.importance*f.confidence);
 
-    const core = active.filter(f=>f.tier==="core" && (!historical || f.status==="active"))
+    const core = includeCore ? active.filter(f=>f.tier==="core" && (!historical || f.status==="active"))
       .sort((a,b)=>(b.importance*b.confidence)-(a.importance*a.confidence) || b.updatedAt-a.updatedAt)
       .slice(0,maxCore)
-      .map(f=>Object.freeze({fact:f,score:1,lexical:lex.get(f.id)??0,reason:"core" as const}));
+      .map(f=>Object.freeze({fact:f,score:1,lexical:lex.get(f.id)??0,reason:"core" as const})) : [];
 
     const coreIds=new Set(core.map(h=>h.fact.id));
-    const recall = active.filter(f=>
+    const recall = includeRecall ? active.filter(f=>
       !coreIds.has(f.id) &&
       (f.tier==="recall" || (historical && f.tier==="core" && f.status==="superseded"))
     ).map(f=>{
@@ -111,7 +116,7 @@ export class MemoryRetrievalEngine {
       return Object.freeze({fact:f,score:rrf+lexicalBoost+scopeBoost,lexical,reason:"retrieved" as const});
     }).filter(hit=>hit.lexical>0 && hit.score>=minRecallScore)
       .sort((a,b)=>b.score-a.score || b.fact.updatedAt-a.fact.updatedAt)
-      .slice(0,maxRecall);
+      .slice(0,maxRecall) : [];
 
     return Object.freeze([...core,...recall]);
   }

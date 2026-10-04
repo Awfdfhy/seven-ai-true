@@ -2,6 +2,7 @@ import { createMemoryFact, createMemoryWriteEvent, supersedeMemoryFact, type Mem
 import type { MemoryFabricRepository } from "../../storage/memory-fabric-repository";
 import { extractMemoryCandidates } from "./memory-extractor";
 import { formatMemoryContext, MemoryRetrievalEngine, type MemoryHit } from "./memory-retrieval";
+import { classifyMemoryIntent, type MemoryIntent } from "./memory-intent";
 
 export class MemoryFabricService {
   constructor(
@@ -45,13 +46,25 @@ export class MemoryFabricService {
     return true;
   }
 
+  intentForQuery(query:string):MemoryIntent{
+    return classifyMemoryIntent(query);
+  }
+
   async search(roomId:string,query:string,signal?:AbortSignal,excludeMessageId?:string):Promise<readonly MemoryHit[]>{
+    const intent=classifyMemoryIntent(query);
+    if(intent.mode==="none") return Object.freeze([]);
     const facts=await this.repository.listForRoom(roomId,signal);
     const filtered=excludeMessageId?facts.filter(f=>f.source.messageId!==excludeMessageId):facts;
-    return this.retrieval.search(filtered,query);
+    return this.retrieval.search(filtered,query,{
+      includeCore:intent.mode==="core" || intent.mode==="recall" || intent.mode==="history",
+      includeRecall:intent.mode==="recall" || intent.mode==="history" || intent.mode==="core",
+      historical:intent.mode==="history",
+    });
   }
 
   async contextForRoom(roomId:string,query:string,signal?:AbortSignal,excludeMessageId?:string):Promise<string>{
+    const intent=classifyMemoryIntent(query);
+    if(intent.mode==="none") return "";
     return formatMemoryContext(await this.search(roomId,query,signal,excludeMessageId));
   }
 }
