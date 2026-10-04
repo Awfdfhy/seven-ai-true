@@ -42,6 +42,17 @@ describe("coding workspace truth", () => {
       }),
     ).rejects.toThrow(/unsafe repository path/i);
   });
+
+  it("rejects Windows drive-absolute repository paths", async () => {
+    await expect(
+      createRepositorySnapshot({
+        repository: "Awfdfhy/seven-ai-true",
+        branch: "x",
+        headSha: HEAD,
+        files: [{ path: "C:\\temp\\escape.ts", content: "x" }],
+      }),
+    ).rejects.toThrow(/unsafe repository path/i);
+  });
 });
 
 describe("transactional patching", () => {
@@ -93,6 +104,19 @@ describe("transactional patching", () => {
       operations: [{ kind: "replace", path: file.path, expectedSha256: "0".repeat(64), content: "changed" }],
     });
     expect(result).toMatchObject({ status: "REJECTED", code: "STALE_FILE", path: file.path });
+  });
+
+  it("fails closed on malformed model patch operations", async () => {
+    const snapshot = await fixture();
+    const result = await applyPatchPlan(snapshot, {
+      version: 1,
+      planId: "plan-malformed",
+      taskId: "task-1",
+      baseSha: snapshot.headSha,
+      snapshotFingerprint: snapshot.fingerprint,
+      operations: [{ kind: "replace", path: "remake/src/a.ts", expectedSha256: 7, content: "changed" } as never],
+    });
+    expect(result).toMatchObject({ status: "REJECTED", code: "INVALID_PLAN" });
   });
 
   it("enforces the byte budget against resulting file bytes, not only replacement text", async () => {
@@ -211,9 +235,16 @@ describe("coding lifecycle", () => {
     expect(run.history).toHaveLength(10);
   });
 
+  it("requires a recorded RESEARCH stage before planning", () => {
+    let run = createCodingRun({ runId: "run-3", taskId: "task-3", acceptanceCriteria: ["verified"] });
+    run = transitionCodingRun(run, "INSPECT", { kind: "inspect", summary: "Inspected." });
+    expect(() => transitionCodingRun(run, "PLAN", { kind: "skip-research", summary: "Skipped research." })).toThrow(/illegal coding transition/i);
+  });
+
   it("rejects skipping directly from PLAN to VERIFY", () => {
     let run = createCodingRun({ runId: "run-2", taskId: "task-2", acceptanceCriteria: ["verified"] });
     run = transitionCodingRun(run, "INSPECT", { kind: "inspect", summary: "Inspected." });
+    run = transitionCodingRun(run, "RESEARCH", { kind: "research", summary: "Research accounted for." });
     run = transitionCodingRun(run, "PLAN", { kind: "plan", summary: "Planned." });
     expect(() => transitionCodingRun(run, "VERIFY", { kind: "skip", summary: "Invalid skip." })).toThrow(/illegal coding transition/i);
   });
