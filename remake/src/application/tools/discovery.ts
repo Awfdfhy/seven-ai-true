@@ -3,7 +3,7 @@ import type { ToolDefinition, ToolRisk } from "./contracts";
 import { ToolRegistry } from "./registry";
 
 export type ToolDiscoveryCandidate = Readonly<{
-  tool: ToolDefinition;
+  tool: ToolDefinition<any, any>;
   score: number;
   reasons: readonly string[];
 }>;
@@ -26,13 +26,33 @@ function normalize(value:string):string{
     .replace(/[أإآٱ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه");
 }
 
-function tokens(value:string):readonly string[]{
-  return Object.freeze([
-    ...new Set(
-      (normalize(value).match(/[\p{L}\p{N}_-]{2,}/gu)??[])
-        .filter(token=>!STOPWORDS.has(token)),
-    ),
-  ]);
+const QUERY_ALIASES:Readonly<Record<string,readonly string[]>>=Object.freeze({
+  remember:["memory"],
+  remembers:["memory"],
+  remembered:["memory"],
+  recall:["memory"],
+  preference:["memory"],
+  preferences:["memory"],
+  تذكر:["ذاكره","memory"],
+  تتذكر:["ذاكره","memory"],
+  ذاكره:["memory"],
+  الذاكره:["memory"],
+  سابقه:["rooms","chat"],
+  السابقه:["rooms","chat"],
+  history:["rooms","chat"],
+  previous:["rooms","chat"],
+});
+
+function tokens(value:string,expandAliases=false):readonly string[]{
+  const base=(normalize(value).match(/[\p{L}\p{N}_-]{2,}/gu)??[])
+    .filter(token=>!STOPWORDS.has(token));
+  if(!expandAliases)return Object.freeze([...new Set(base)]);
+  const expanded=[...base];
+  for(const token of base){
+    const aliases=QUERY_ALIASES[token];
+    if(aliases)expanded.push(...aliases);
+  }
+  return Object.freeze([...new Set(expanded)]);
 }
 
 function namespaceOf(id:string):string{
@@ -40,7 +60,7 @@ function namespaceOf(id:string):string{
   return index>0?id.slice(0,index):id;
 }
 
-function scoreTool(queryTokens:readonly string[],tool:ToolDefinition):ToolDiscoveryCandidate{
+function scoreTool(queryTokens:readonly string[],tool:ToolDefinition<any, any>):ToolDiscoveryCandidate{
   const idTokens=tokens(tool.id.replace(/[._-]+/g," "));
   const titleTokens=tokens(tool.title);
   const descriptionTokens=tokens(tool.description);
@@ -97,7 +117,7 @@ export class ToolDiscovery {
     const allowedRisks=new Set<ToolRisk>(
       request.allowedRisks??["pure","read","write","external","destructive"],
     );
-    const queryTokens=tokens(query);
+    const queryTokens=tokens(query,true);
 
     return Object.freeze(
       this.registry.list()
