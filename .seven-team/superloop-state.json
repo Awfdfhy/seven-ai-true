@@ -1,20 +1,49 @@
 {
   "schemaVersion": 1,
   "enabled": true,
-  "lastCompletedCycle": 1,
-  "lastCompletedAt": "2026-10-04T03:00:42.255565+00:00",
+  "lastCompletedCycle": 2,
+  "lastCompletedAt": "2026-10-04T05:16:11.400389+00:00",
   "workBranch": "autoloop/seven-24h-work-v2",
   "productBranch": "seven-remake-v3",
-  "runId": "37165187471",
-  "runNumber": "13",
+  "runId": "37172805527",
+  "runNumber": "25",
   "summary": {
-    "cycle": 1,
+    "cycle": 2,
     "featureCandidates": 5,
     "featuresAccepted": 0,
-    "fixCandidates": 6,
+    "fixCandidates": 3,
     "fixesAccepted": 0,
     "polishAccepted": false,
     "apkState": "BLOCKED",
-    "head": "1c60659766cabb6cd67186a4919e35a7b958fbe0"
+    "productQualityVerdict": "CHANGES_REQUIRED or RC or PREMIUM_CANDIDATE or UNPROVEN",
+    "productQualityScore": "<0.0-10.0 or UNPROVEN>",
+    "head": "ee3e4cbdea1a1ce37c26935a2353edf4bc747d51",
+    "autonomy": {
+      "schemaVersion": 1,
+      "cycle": 2,
+      "sourceSha": "ee3e4cbdea1a1ce37c26935a2353edf4bc747d51",
+      "proof": {
+        "deterministicFinalGates": true,
+        "apkBuilt": false,
+        "productQualityScored": false,
+        "productHardFailsKnown": false,
+        "realityLabExactInstalledEvidence": false,
+        "constitutionRuntimeCoverage": "PARTIAL",
+        "physicalDeviceEvidence": false
+      },
+      "productQualityScore": "<0.0-10.0 or UNPROVEN>",
+      "productHardFails": "<integer>",
+      "trustStatus": "UNPROVEN_OR_BLOCKED",
+      "championDecision": "HOLD_CHAMPION",
+      "missingProof": [
+        "apkBuilt",
+        "productQualityScored",
+        "productHardFailsKnown",
+        "realityLabExactInstalledEvidence",
+        "constitutionRuntimeCoverage",
+        "physicalDeviceEvidence"
+      ],
+      "note": "Aggregate score never overrides Constitution/product hard fails."
+    }
   }
 }
