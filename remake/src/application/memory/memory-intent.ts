@@ -37,7 +37,7 @@ export function classifyMemoryIntent(query: string): MemoryIntent {
   if (explicitMemory) reasons.push("explicit-memory-reference");
 
   const personalStateQuestion =
-    /\b(where do i live|where am i based|where am i from|who am i|what am i (?:studying|learning|working on)|what do i (?:study|learn|like|love|hate|prefer)|which .{0,32} do i (?:use|prefer|like)|do i have|have i told you)\b/.test(q) ||
+    /\b(where do i live|where am i based|where am i from|who am i|what am i (?:studying|learning|working on)|what (?:subject|topic|course|class) am i (?:studying|learning|focusing on|working on)|what do i (?:study|learn|like|love|hate|prefer)|which .{0,32} do i (?:use|prefer|like)|do i have|have i told you)\b/.test(q) ||
     /(?:اين|وين) (?:اسكن|اعيش|ساكن)|ماذا (?:ادرس|اتعلم|احب|اكره|افضل)|ما الذي (?:ادرسه|اتعلمه|احبه|اكرهه|افضله)|من انا|ما (?:اسمي|هدفي|مشروعي)|هل لدي|هل اخبرتك/.test(q);
 
   const personal =
