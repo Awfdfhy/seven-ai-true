@@ -48,7 +48,9 @@
         ".seven-team/memory-v2/RESEARCH_SYNTHESIS.md",
         ".seven-team/memory-v2/EXECUTION_PLAN.md",
         ".seven-team/memory-v2/STRIKE_TEAM.md",
-        ".seven-team/memory-v2/IMPLEMENTATION_EVIDENCE.md"
+        ".seven-team/memory-v2/IMPLEMENTATION_EVIDENCE.md",
+        ".seven-team/tools-v1/RESEARCH_SYNTHESIS.md",
+        ".seven-team/tools-v1/EXECUTION_PLAN.md"
       ]
     },
     {
@@ -81,7 +83,9 @@
       "knowledgePacks": [
         ".seven-team/product-intelligence/domains/A07_SECURITY_CREDENTIALS.md",
         ".seven-team/product-intelligence/patterns/SECURITY_PRIVACY.md",
-        ".seven-team/product-intelligence/patterns/TEST_EVIDENCE.md"
+        ".seven-team/product-intelligence/patterns/TEST_EVIDENCE.md",
+        ".seven-team/tools-v1/RESEARCH_SYNTHESIS.md",
+        ".seven-team/tools-v1/EXECUTION_PLAN.md"
       ]
     },
     {
@@ -95,7 +99,9 @@
         ".seven-team/memory-v2/RESEARCH_SYNTHESIS.md",
         ".seven-team/memory-v2/EXECUTION_PLAN.md",
         ".seven-team/memory-v2/STRIKE_TEAM.md",
-        ".seven-team/memory-v2/IMPLEMENTATION_EVIDENCE.md"
+        ".seven-team/memory-v2/IMPLEMENTATION_EVIDENCE.md",
+        ".seven-team/tools-v1/RESEARCH_SYNTHESIS.md",
+        ".seven-team/tools-v1/EXECUTION_PLAN.md"
       ]
     },
     {
@@ -184,7 +190,9 @@
       "knowledgePacks": [
         ".seven-team/product-intelligence/domains/B07_NETWORK_RESILIENCE.md",
         ".seven-team/product-intelligence/patterns/EMPTY_LOADING_ERROR_SUCCESS.md",
-        ".seven-team/product-intelligence/patterns/PERFORMANCE_OBSERVABILITY.md"
+        ".seven-team/product-intelligence/patterns/PERFORMANCE_OBSERVABILITY.md",
+        ".seven-team/tools-v1/RESEARCH_SYNTHESIS.md",
+        ".seven-team/tools-v1/EXECUTION_PLAN.md"
       ]
     },
     {
@@ -212,7 +220,9 @@
         ".seven-team/memory-v2/RESEARCH_SYNTHESIS.md",
         ".seven-team/memory-v2/EXECUTION_PLAN.md",
         ".seven-team/memory-v2/STRIKE_TEAM.md",
-        ".seven-team/memory-v2/IMPLEMENTATION_EVIDENCE.md"
+        ".seven-team/memory-v2/IMPLEMENTATION_EVIDENCE.md",
+        ".seven-team/tools-v1/RESEARCH_SYNTHESIS.md",
+        ".seven-team/tools-v1/EXECUTION_PLAN.md"
       ]
     },
     {
@@ -227,7 +237,9 @@
         ".seven-team/memory-v2/RESEARCH_SYNTHESIS.md",
         ".seven-team/memory-v2/EXECUTION_PLAN.md",
         ".seven-team/memory-v2/STRIKE_TEAM.md",
-        ".seven-team/memory-v2/IMPLEMENTATION_EVIDENCE.md"
+        ".seven-team/memory-v2/IMPLEMENTATION_EVIDENCE.md",
+        ".seven-team/tools-v1/RESEARCH_SYNTHESIS.md",
+        ".seven-team/tools-v1/EXECUTION_PLAN.md"
       ]
     }
   ]

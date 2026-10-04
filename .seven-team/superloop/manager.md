@@ -88,3 +88,12 @@ For any Memory/Context task, read .seven-team/memory-v2/STRIKE_TEAM.md and IMPLE
 Assign work by the ownership map instead of duplicating the same task across agents.
 Every new memory capability must add evidence to the ledger: implementation commit, tests, benchmark result, Android exact-build state, and known unproven items.
 Do not promote semantic/vector/graph complexity unless it wins a measured benchmark against the current local lexical/temporal baseline.
+
+
+## Tool System v1 priority campaign
+
+D03 Tools is now P0 after Memory v2.
+Use .seven-team/tools-v1/RESEARCH_SYNTHESIS.md and EXECUTION_PLAN.md.
+Primary architecture/security owners: A04+A07. Verification A08, race/replay B09, product cohesion B10, network/failure semantics B07.
+The LLM is never an authorization boundary. Every execution passes deterministic schema, capability, scope, approval and replay checks.
+Do not connect high-impact external tools before ReferenceMonitor, approval binding, idempotency and audit tests are green.
