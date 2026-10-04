@@ -67,9 +67,20 @@ function buildCharacterView(stateInput,stateApi,characterId,options){
   let serialized=JSON.stringify(view);const maxChars=Math.max(1200,Number(opts.maxChars)||18000);
   if(serialized.length>maxChars){
     view.knownCanon=view.knownCanon.slice(0,12);
+    const visibleFacts=new Set(view.knownCanon.map(x=>x&&x.id).filter(Boolean));
+    view.knowledgeRefs=Object.fromEntries(Object.entries(view.knowledgeRefs).filter(([id])=>visibleFacts.has(id)));
     view.quests=Object.fromEntries(Object.entries(view.quests).slice(0,8));
     view.relationships=Object.fromEntries(Object.entries(view.relationships).slice(0,12));
     view.inventory=view.inventory.slice(0,24);view.abilities=view.abilities.slice(0,24);
+    serialized=JSON.stringify(view);
+  }
+  if(serialized.length>maxChars){
+    view.knownCanon=view.knownCanon.slice(0,6);
+    const visibleFacts=new Set(view.knownCanon.map(x=>x&&x.id).filter(Boolean));
+    view.knowledgeRefs=Object.fromEntries(Object.entries(view.knowledgeRefs).filter(([id])=>visibleFacts.has(id)));
+    view.quests=Object.fromEntries(Object.entries(view.quests).slice(0,4));
+    view.relationships=Object.fromEntries(Object.entries(view.relationships).slice(0,6));
+    view.inventory=view.inventory.slice(0,12);view.abilities=view.abilities.slice(0,12);
     serialized=JSON.stringify(view);
   }
   view._diagnostics={serializedChars:serialized.length,bounded:serialized.length<=maxChars,canonCount:view.knownCanon.length};
