@@ -16,6 +16,7 @@ import { MemoryFabricService } from "../application/memory/memory-fabric-service
 import { IndexedDbMemoryRepository } from "../storage/memory-repository";
 import { MemoryContextService } from "../application/context/memory-context-service";
 import { ProviderContextSummarizer } from "../context/provider-context-summarizer";
+import { MemoryLegacyMigrationService } from "../application/memory/memory-legacy-migration-service";
 
 export type SevenRuntime = Readonly<{
   taskManager: TaskManager;
@@ -66,6 +67,15 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
   const rooms = new IndexedDbRoomRepository();
   const memoryRepository = new IndexedDbMemoryFabricRepository();
   const memory = new MemoryFabricService(memoryRepository);
+  const legacyMemoryRepository = new IndexedDbMemoryRepository({
+    databaseName: "seven-remake-memory",
+    maxRecords: 10_000,
+    maxSummaries: 10_000,
+  });
+  const legacyMigration = new MemoryLegacyMigrationService(
+    legacyMemoryRepository,
+    memoryRepository,
+  );
   const chat = new ChatService(taskManager, rooms, memory);
   const kilo = new KiloAnonymousProviderAdapter();
   const summaryRepository = new IndexedDbMemoryRepository({
@@ -90,6 +100,40 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
   );
 
   const kernel = new AppKernel(diagnostics);
+  kernel.register({
+    id: "memory-legacy-migration",
+    async start(signal) {
+      try {
+        const result = await legacyMigration.migrate(signal);
+        diagnostics.record({
+          level: "info",
+          category: "memory",
+          name: "legacy_migration_complete",
+          attributes: {
+            scanned: result.scanned,
+            migrated: result.migrated,
+            skippedExisting: result.skippedExisting,
+          },
+        });
+      } catch (error) {
+        if (signal.aborted) throw error;
+        diagnostics.record({
+          level: "warn",
+          category: "memory",
+          name: "legacy_migration_failed",
+          attributes: {
+            errorType: error instanceof Error ? error.name : "unknown",
+          },
+        });
+        // Legacy migration is recovery work, not a startup dependency.
+        // Existing v1 data remains untouched and Seven may continue normally.
+      }
+    },
+    async stop() {
+      await legacyMemoryRepository.close();
+    },
+  });
+
   kernel.register({
     id: "theme",
     async start() {

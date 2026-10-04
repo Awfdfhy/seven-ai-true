@@ -3,6 +3,7 @@ import type { MemoryFabricRepository } from "../../storage/memory-fabric-reposit
 import { extractMemoryCandidates } from "./memory-extractor";
 import { formatMemoryContext, MemoryRetrievalEngine, type MemoryHit } from "./memory-retrieval";
 import { classifyMemoryIntent, type MemoryIntent } from "./memory-intent";
+import { exportMemoryArchive, importMemoryArchive, type MemoryArchiveV1 } from "./memory-archive";
 
 export class MemoryFabricService {
   private readonly canonicalLocks = new Map<string, Promise<void>>();
@@ -68,6 +69,18 @@ export class MemoryFabricService {
       if(result) written.push(result);
     }
     return Object.freeze(written);
+  }
+
+  async exportArchive(signal?:AbortSignal):Promise<MemoryArchiveV1>{
+    return exportMemoryArchive(this.repository,Date.now(),signal);
+  }
+
+  async restoreArchive(value:unknown,signal?:AbortSignal):Promise<Readonly<{facts:number;events:number}>>{
+    return importMemoryArchive(this.repository,value,signal);
+  }
+
+  async clearAll(signal?:AbortSignal):Promise<void>{
+    await this.repository.clearAll(signal);
   }
 
   async listActive(roomId:string,signal?:AbortSignal):Promise<readonly MemoryFact[]>{

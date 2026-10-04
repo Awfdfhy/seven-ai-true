@@ -191,3 +191,16 @@ export function createMemoryWriteEvent(fact: MemoryFact, type: "add" | "supersed
     sourceMessageId: fact.source.messageId,
   });
 }
+
+
+export function isMemoryWriteEvent(value: unknown): value is MemoryWriteEvent {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const event=value as Partial<MemoryWriteEvent>;
+  return event.schemaVersion===1 &&
+    typeof event.id==="string" && !!event.id.trim() &&
+    typeof event.factId==="string" && !!event.factId.trim() &&
+    (event.type==="add" || event.type==="supersede" || event.type==="forget") &&
+    typeof event.at==="number" && Number.isFinite(event.at) && event.at>=0 &&
+    typeof event.sourceRoomId==="string" && !!event.sourceRoomId.trim() &&
+    typeof event.sourceMessageId==="string" && !!event.sourceMessageId.trim();
+}

@@ -162,3 +162,28 @@ button { min-width: 44px; min-height: 44px; touch-action: manipulation; }
   padding: .35rem .65rem; color: var(--seven-danger); background: transparent; cursor: pointer;
 }
 .seven-memory-item button:disabled { opacity: .45; cursor: default; }
+
+.seven-memory-tools {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .35rem;
+  margin: 0 .3rem .35rem;
+}
+.seven-memory-tools button, .seven-memory-import {
+  min-height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--seven-border);
+  border-radius: 10px;
+  padding: .4rem .5rem;
+  color: var(--seven-text);
+  background: var(--seven-panel-2);
+  cursor: pointer;
+  font-size: .72rem;
+}
+.seven-memory-import input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.seven-memory-tools .seven-memory-danger { color: var(--seven-danger); }
+.seven-memory-notice { margin: .15rem .3rem .55rem; font-size: .72rem; color: var(--seven-muted); }
+@media (max-width: 360px) {
+  .seven-memory-tools { grid-template-columns: 1fr; }
+}

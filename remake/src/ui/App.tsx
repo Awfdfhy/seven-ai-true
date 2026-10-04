@@ -28,6 +28,7 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
   const [showMemory, setShowMemory] = useState(false);
   const [memoryFacts, setMemoryFacts] = useState<readonly MemoryFact[]>([]);
   const [memoryBusy, setMemoryBusy] = useState(false);
+  const [memoryNotice, setMemoryNotice] = useState<string | null>(null);
   const isAr = snapshot.locale === "ar";
   const t = (en: string, ar: string) => isAr ? ar : en;
 
@@ -105,6 +106,66 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
     try {
       await memory.forget(memoryId, currentRoom.id);
       setMemoryFacts(await memory.listActive(currentRoom.id));
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setMemoryBusy(false);
+    }
+  };
+
+  const exportMemory = async () => {
+    if (memoryBusy) return;
+    setMemoryBusy(true);
+    setMemoryNotice(null);
+    try {
+      const archive = await memory.exportArchive();
+      const blob = new Blob([JSON.stringify(archive, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `seven-memory-${new Date().toISOString().slice(0, 10)}.json`;
+      anchor.click();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+      setMemoryNotice(t("Memory backup exported.", "تم تصدير نسخة الذاكرة."));
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setMemoryBusy(false);
+    }
+  };
+
+  const restoreMemory = async (file: File | null) => {
+    if (!file || memoryBusy) return;
+    setMemoryBusy(true);
+    setMemoryNotice(null);
+    try {
+      const raw = JSON.parse(await file.text()) as unknown;
+      const result = await memory.restoreArchive(raw);
+      if (currentRoom) setMemoryFacts(await memory.listActive(currentRoom.id));
+      setMemoryNotice(t(
+        `Restored ${result.facts} memories.`,
+        `تمت استعادة ${result.facts} ذاكرة.`,
+      ));
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setMemoryBusy(false);
+    }
+  };
+
+  const clearAllMemory = async () => {
+    if (memoryBusy) return;
+    const confirmed = window.confirm(t(
+      "Delete all saved Seven memory on this device? This cannot be undone unless you exported a backup.",
+      "حذف كل ذاكرة Seven المحفوظة على هذا الجهاز؟ لا يمكن التراجع إلا إذا صدّرت نسخة احتياطية.",
+    ));
+    if (!confirmed) return;
+    setMemoryBusy(true);
+    setMemoryNotice(null);
+    try {
+      await memory.clearAll();
+      setMemoryFacts([]);
+      setMemoryNotice(t("All saved memory was deleted.", "تم حذف كل الذاكرة المحفوظة."));
     } catch (reason: unknown) {
       setError(reason instanceof Error ? reason.message : String(reason));
     } finally {
@@ -213,6 +274,28 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
                   "Seven stores only selected durable facts locally. Core items stay available; recall items are retrieved only when relevant.",
                   "يحفظ Seven حقائق دائمة مختارة محليًا فقط. تبقى عناصر Core متاحة، بينما تُسترجع عناصر Recall عند الحاجة."
                 )}</p>
+                <div className="seven-memory-tools">
+                  <button type="button" disabled={memoryBusy} onClick={() => void exportMemory()}>
+                    {t("Export", "تصدير")}
+                  </button>
+                  <label className="seven-memory-import">
+                    <span>{t("Restore", "استعادة")}</span>
+                    <input
+                      type="file"
+                      accept="application/json,.json"
+                      disabled={memoryBusy}
+                      onChange={(event) => {
+                        const file = event.currentTarget.files?.[0] ?? null;
+                        void restoreMemory(file);
+                        event.currentTarget.value = "";
+                      }}
+                    />
+                  </label>
+                  <button className="seven-memory-danger" type="button" disabled={memoryBusy} onClick={() => void clearAllMemory()}>
+                    {t("Delete all", "حذف الكل")}
+                  </button>
+                </div>
+                {memoryNotice && <p className="seven-memory-notice" role="status">{memoryNotice}</p>}
                 {memoryBusy && memoryFacts.length === 0 ? (
                   <p className="seven-memory-empty">{t("Loading memory…", "جارٍ تحميل الذاكرة…")}</p>
                 ) : memoryFacts.length === 0 ? (
