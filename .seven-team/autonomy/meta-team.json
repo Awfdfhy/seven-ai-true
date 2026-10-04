@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "name": "Seven Meta-Team Evolution",
+  "mode": "OBSERVE_THEN_PROVE",
+  "capabilityDimensions": [
+    "domainAccuracy",
+    "implementationQuality",
+    "bugDiscovery",
+    "evidenceReliability",
+    "regressionRate",
+    "speed",
+    "calibration",
+    "crossSystemReasoning"
+  ],
+  "teamRules": [
+    "No single global Elo; capability is multidimensional by task family.",
+    "Role changes require shadow evidence over multiple comparable tasks.",
+    "Weakness history increases independent-review requirements rather than silently lowering gates.",
+    "Blind independent analysis precedes synthesis for high-impact ambiguous decisions.",
+    "Contradictions should produce discriminating tests instead of majority voting.",
+    "Meta-manager cannot change constitution/evaluators or grant itself repository authority."
+  ],
+  "strikeTeamTemplates": [
+    {
+      "id": "chat-race",
+      "lead": "B01",
+      "members": [
+        "B09",
+        "B08",
+        "A08",
+        "A10"
+      ]
+    },
+    {
+      "id": "android-ui",
+      "lead": "A02",
+      "members": [
+        "A01",
+        "A03",
+        "A08",
+        "A09"
+      ]
+    },
+    {
+      "id": "model-resilience",
+      "lead": "A05",
+      "members": [
+        "B07",
+        "B04",
+        "A07",
+        "A08"
+      ]
+    },
+    {
+      "id": "product-cohesion",
+      "lead": "B10",
+      "members": [
+        "A01",
+        "B01",
+        "A03",
+        "A08"
+      ]
+    },
+    {
+      "id": "persistence-recovery",
+      "lead": "B08",
+      "members": [
+        "A06",
+        "B09",
+        "A04",
+        "A08"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "categories": [
+    "TECHNICAL",
+    "PRODUCT",
+    "EVIDENCE",
+    "PROOF"
+  ],
+  "blockingSeverities": [
+    "BLOCKER",
+    "CRITICAL"
+  ],
+  "items": [],
+  "rule": "Debt is closed only with linked evidence; absence from a report does not imply resolution."
+}

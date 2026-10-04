@@ -1,0 +1,271 @@
+{
+  "schemaVersion": 1,
+  "name": "Seven Product Reality Lab",
+  "exactBuildRule": "Installed-artifact evidence must include source SHA and APK SHA256; rebuilt artifacts are SOURCE_BOUND unless byte identity is proven.",
+  "journeys": [
+    {
+      "id": "RL-01",
+      "name": "Fresh install and cold launch",
+      "severity": "BLOCKER",
+      "evidenceRequired": [
+        "exact source SHA",
+        "runtime result",
+        "screenshot or machine evidence when visual",
+        "known limitations"
+      ]
+    },
+    {
+      "id": "RL-02",
+      "name": "First useful chat",
+      "severity": "BLOCKER",
+      "evidenceRequired": [
+        "exact source SHA",
+        "runtime result",
+        "screenshot or machine evidence when visual",
+        "known limitations"
+      ]
+    },
+    {
+      "id": "RL-03",
+      "name": "Streaming stability",
+      "severity": "BLOCKER",
+      "evidenceRequired": [
+        "exact source SHA",
+        "runtime result",
+        "screenshot or machine evidence when visual",
+        "known limitations"
+      ]
+    },
+    {
+      "id": "RL-04",
+      "name": "Stop/cancel ownership",
+      "severity": "BLOCKER",
+      "evidenceRequired": [
+        "exact source SHA",
+        "runtime result",
+        "screenshot or machine evidence when visual",
+        "known limitations"
+      ]
+    },
+    {
+      "id": "RL-05",
+      "name": "Retry/regenerate idempotency",
+      "severity": "HIGH",
+      "evidenceRequired": [
+        "exact source SHA",
+        "runtime result",
+        "screenshot or machine evidence when visual",
+        "known limitations"
+      ]
+    },
+    {
+      "id": "RL-06",
+      "name": "Room switch during stream",
+      "severity": "BLOCKER",
+      "evidenceRequired": [
+        "exact source SHA",
+        "runtime result",
+        "screenshot or machine evidence when visual",
+        "known limitations"
+      ]
+    },
+    {
+      "id": "RL-07",
+      "name": "Quick/Balanced/Deep selection",
+      "severity": "HIGH",
+      "evidenceRequired": [
+        "exact source SHA",
+        "runtime result",
+        "screenshot or machine evidence when visual",
+        "known limitations"
+      ]
+    },
+    {
+      "id": "RL-08",
+      "name": "Model picker/default routing",
+      "severity": "HIGH",
+      "evidenceRequired": [
+        "exact source SHA",
+        "runtime result",
+        "screenshot or machine evidence when visual",
+        "known limitations"
+      ]
+    },
+    {
+      "id": "RL-09",
+      "name": "Web search + citations",
+      "severity": "HIGH",
+      "evidenceRequired": [
+        "exact source SHA",
+        "runtime result",
+        "screenshot or machine evidence when visual",
+        "known limitations"
+      ]
+    },
+    {
+      "id": "RL-10",
+      "name": "Attach/process/remove file",
+      "severity": "HIGH",
+      "evidenceRequired": [
+        "exact source SHA",
+        "runtime result",
+        "screenshot or machine evidence when visual",
+        "known limitations"
+      ]
+    },
+    {
+      "id": "RL-11",
+      "name": "Long chat scroll/performance",
+      "severity": "HIGH",
+      "evidenceRequired": [
+        "exact source SHA",
+        "runtime result",
+        "screenshot or machine evidence when visual",
+        "known limitations"
+      ]
+    },
+    {
+      "id": "RL-12",
+      "name": "Arabic RTL core flow",
+      "severity": "BLOCKER",
+      "evidenceRequired": [
+        "exact source SHA",
+        "runtime result",
+        "screenshot or machine evidence when visual",
+        "known limitations"
+      ]
+    },
+    {
+      "id": "RL-13",
+      "name": "Day/night themes",
+      "severity": "HIGH",
+      "evidenceRequired": [
+        "exact source SHA",
+        "runtime result",
+        "screenshot or machine evidence when visual",
+        "known limitations"
+      ]
+    },
+    {
+      "id": "RL-14",
+      "name": "Android keyboard/IME",
+      "severity": "BLOCKER",
+      "evidenceRequired": [
+        "exact source SHA",
+        "runtime result",
+        "screenshot or machine evidence when visual",
+        "known limitations"
+      ]
+    },
+    {
+      "id": "RL-15",
+      "name": "Offline/reconnect recovery",
+      "severity": "HIGH",
+      "evidenceRequired": [
+        "exact source SHA",
+        "runtime result",
+        "screenshot or machine evidence when visual",
+        "known limitations"
+      ]
+    },
+    {
+      "id": "RL-16",
+      "name": "Process kill/restore",
+      "severity": "BLOCKER",
+      "evidenceRequired": [
+        "exact source SHA",
+        "runtime result",
+        "screenshot or machine evidence when visual",
+        "known limitations"
+      ]
+    },
+    {
+      "id": "RL-17",
+      "name": "Back/predictive-back navigation",
+      "severity": "HIGH",
+      "evidenceRequired": [
+        "exact source SHA",
+        "runtime result",
+        "screenshot or machine evidence when visual",
+        "known limitations"
+      ]
+    },
+    {
+      "id": "RL-18",
+      "name": "Font scale/landscape",
+      "severity": "HIGH",
+      "evidenceRequired": [
+        "exact source SHA",
+        "runtime result",
+        "screenshot or machine evidence when visual",
+        "known limitations"
+      ]
+    },
+    {
+      "id": "RL-19",
+      "name": "Settings/product cohesion",
+      "severity": "MEDIUM",
+      "evidenceRequired": [
+        "exact source SHA",
+        "runtime result",
+        "screenshot or machine evidence when visual",
+        "known limitations"
+      ]
+    },
+    {
+      "id": "RL-20",
+      "name": "Provider timeout/rate-limit/error",
+      "severity": "HIGH",
+      "evidenceRequired": [
+        "exact source SHA",
+        "runtime result",
+        "screenshot or machine evidence when visual",
+        "known limitations"
+      ]
+    },
+    {
+      "id": "RL-21",
+      "name": "File permission revoked",
+      "severity": "HIGH",
+      "evidenceRequired": [
+        "exact source SHA",
+        "runtime result",
+        "screenshot or machine evidence when visual",
+        "known limitations"
+      ]
+    },
+    {
+      "id": "RL-22",
+      "name": "Rapid duplicate taps/race stress",
+      "severity": "HIGH",
+      "evidenceRequired": [
+        "exact source SHA",
+        "runtime result",
+        "screenshot or machine evidence when visual",
+        "known limitations"
+      ]
+    },
+    {
+      "id": "RL-23",
+      "name": "Search+file+deep combined journey",
+      "severity": "HIGH",
+      "evidenceRequired": [
+        "exact source SHA",
+        "runtime result",
+        "screenshot or machine evidence when visual",
+        "known limitations"
+      ]
+    },
+    {
+      "id": "RL-24",
+      "name": "Accessibility semantic/focus pass",
+      "severity": "HIGH",
+      "evidenceRequired": [
+        "exact source SHA",
+        "runtime result",
+        "screenshot or machine evidence when visual",
+        "known limitations"
+      ]
+    }
+  ]
+}

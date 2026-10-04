@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "levels": [
+    {
+      "id": "L0",
+      "name": "CLAIM",
+      "strength": 0,
+      "description": "Agent/model claim only."
+    },
+    {
+      "id": "L1",
+      "name": "SOURCE_INSPECTION",
+      "strength": 1,
+      "description": "Static source inspection tied to runtime path."
+    },
+    {
+      "id": "L2",
+      "name": "UNIT",
+      "strength": 2,
+      "description": "Deterministic unit/property proof."
+    },
+    {
+      "id": "L3",
+      "name": "INTEGRATION",
+      "strength": 3,
+      "description": "Cross-module integration proof."
+    },
+    {
+      "id": "L4",
+      "name": "BROWSER_E2E",
+      "strength": 4,
+      "description": "Browser end-to-end journey."
+    },
+    {
+      "id": "L5",
+      "name": "ANDROID_EMULATOR",
+      "strength": 5,
+      "description": "Installed Android emulator evidence."
+    },
+    {
+      "id": "L6",
+      "name": "CHAOS_DIFFERENTIAL",
+      "strength": 6,
+      "description": "Fault/chaos or Champion-vs-Challenger differential evidence."
+    },
+    {
+      "id": "L7",
+      "name": "MUTATION_SEMANTIC",
+      "strength": 7,
+      "description": "Mutation/semantic-regression proof that evaluators catch intentional breakage."
+    },
+    {
+      "id": "L8",
+      "name": "PHYSICAL_DEVICE",
+      "strength": 8,
+      "description": "Exact artifact physical-device evidence."
+    }
+  ],
+  "hardRules": [
+    "No proof bundle may claim a level higher than its strongest bound evidence.",
+    "Any CRITICAL constitution violation blocks promotion.",
+    "Evaluator identity must be locked before candidate evaluation.",
+    "Tests, baselines, constitution and judge rules are protected evaluator plane.",
+    "Rollback proof is mandatory for auto-promotion."
+  ],
+  "requiredBundle": [
+    "intent",
+    "sourceSha",
+    "changedPaths",
+    "affectedSubsystems",
+    "tests",
+    "constitutionCoverage",
+    "qualityEvidence",
+    "rollback",
+    "knownUnknowns"
+  ]
+}

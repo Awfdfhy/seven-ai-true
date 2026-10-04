@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "privacy": {
+    "promptContentDefault": "OFF",
+    "responseContentDefault": "OFF",
+    "secretCapture": "FORBIDDEN"
+  },
+  "metrics": [
+    "coldStartToUsableMs",
+    "inputFeedbackMs",
+    "sendToFirstTokenMs",
+    "streamDurationMs",
+    "roomSwitchMs",
+    "restoreToInteractiveMs",
+    "filePickToReadyMs",
+    "searchToFirstSourceMs",
+    "longTaskCount",
+    "retryCount",
+    "fallbackCount",
+    "errorRate",
+    "stateRestoreFailures",
+    "uiLayoutShiftCount"
+  ],
+  "traceStages": [
+    "user-action",
+    "controller",
+    "memory",
+    "routing",
+    "network",
+    "tool",
+    "evidence",
+    "verification",
+    "persistence",
+    "ui-render"
+  ],
+  "rule": "Metrics are diagnostic evidence, not permission to collect user content."
+}

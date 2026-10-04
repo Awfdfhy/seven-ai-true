@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "components": [
+    {
+      "id": "functional",
+      "weight": 0.18
+    },
+    {
+      "id": "productQuality",
+      "weight": 0.18
+    },
+    {
+      "id": "architecture",
+      "weight": 0.1
+    },
+    {
+      "id": "security",
+      "weight": 0.12
+    },
+    {
+      "id": "androidEvidence",
+      "weight": 0.1
+    },
+    {
+      "id": "proofCompleteness",
+      "weight": 0.12
+    },
+    {
+      "id": "reliabilityChaos",
+      "weight": 0.08
+    },
+    {
+      "id": "performance",
+      "weight": 0.07
+    },
+    {
+      "id": "rtlAccessibility",
+      "weight": 0.05
+    }
+  ],
+  "hardBlocks": [
+    "constitution CRITICAL violation",
+    "product hard fail",
+    "security hard fail",
+    "artifact identity mismatch",
+    "required evidence missing for a release-quality claim"
+  ],
+  "rule": "Weighted score is advisory; hard blocks dominate."
+}

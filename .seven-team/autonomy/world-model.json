@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "name": "Seven Engineering World Model",
+  "nodeTypes": [
+    "file",
+    "module",
+    "component",
+    "store",
+    "runtime",
+    "test",
+    "workflow",
+    "journey",
+    "invariant",
+    "bug",
+    "experiment",
+    "build",
+    "screenshot",
+    "metric",
+    "agent"
+  ],
+  "edgeTypes": [
+    "IMPORTS",
+    "OWNS",
+    "DEPENDS_ON",
+    "TESTED_BY",
+    "AFFECTS",
+    "RENDERS",
+    "PERSISTS_TO",
+    "ROUTES_TO",
+    "INTRODUCED_BY",
+    "FIXED_BY",
+    "REGRESSED_BY",
+    "PROVES",
+    "VIOLATES"
+  ],
+  "scanRoots": [
+    "remake",
+    "release",
+    "evolution",
+    "apk"
+  ],
+  "sourceExtensions": [
+    ".ts",
+    ".tsx",
+    ".js",
+    ".jsx",
+    ".mjs",
+    ".cjs"
+  ],
+  "maxFileBytes": 800000,
+  "outputs": [
+    "dependency graph",
+    "hotspots",
+    "subsystem inventory",
+    "blast-radius hints"
+  ],
+  "rule": "Predicted blast radius informs tests; it never substitutes for runtime evidence."
+}

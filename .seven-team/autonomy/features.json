@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "name": "Seven Autonomous Product Engineering Stack",
+  "rule": "A configured name is not proof. Every feature reports ACTIVE_GUARDED, ACTIVE_RECORDING, CONFIGURED, SCAFFOLDED, or UNPROVEN according to executable evidence.",
+  "systems": [
+    {
+      "id": "product-intelligence",
+      "status": "ACTIVE_GUARDED",
+      "purpose": "Shared domain-routed engineering/product encyclopedia and visual reference corpus."
+    },
+    {
+      "id": "product-quality-judges",
+      "status": "ACTIVE_GUARDED",
+      "purpose": "Independent product-quality verdict separate from build PASS."
+    },
+    {
+      "id": "self-healing",
+      "status": "ACTIVE_GUARDED",
+      "purpose": "Bounded final-gate and APK repair with rollback."
+    },
+    {
+      "id": "reality-lab",
+      "status": "CONFIGURED",
+      "purpose": "Exact-source Android installed-artifact capture and journey evidence via dedicated workflow.",
+      "activationProof": "successful Seven Reality Lab run bound to candidate SHA/APK SHA256"
+    },
+    {
+      "id": "evolution-arena",
+      "status": "ACTIVE_RECORDING",
+      "purpose": "Champion/challenger registry for isolated agent candidates; promotion blocked without comparative proof."
+    },
+    {
+      "id": "engineering-world-model",
+      "status": "ACTIVE_RECORDING",
+      "purpose": "Repository dependency graph, subsystem inventory, hotspots and blast-radius evidence."
+    },
+    {
+      "id": "constitution-proof",
+      "status": "ACTIVE_GUARDED",
+      "purpose": "Executable project invariants and proof-level policy; runtime invariant coverage grows over time."
+    },
+    {
+      "id": "meta-team-evolution",
+      "status": "ACTIVE_RECORDING",
+      "purpose": "Capability dimensions, strike-team policy, calibration history and shadow-role evolution without autonomous privilege escalation."
+    },
+    {
+      "id": "synthetic-users",
+      "status": "CONFIGURED",
+      "purpose": "Stable persona population for repeatable product journeys."
+    },
+    {
+      "id": "quality-debt-ledger",
+      "status": "ACTIVE_RECORDING",
+      "purpose": "Technical/product/evidence/proof debt taxonomy with blocking severities."
+    },
+    {
+      "id": "causal-learning",
+      "status": "ACTIVE_RECORDING",
+      "purpose": "Experiment lineage records observations and hypotheses; causal claims require controlled evidence."
+    },
+    {
+      "id": "observatory",
+      "status": "CONFIGURED",
+      "purpose": "Privacy-aware latency, reliability and GenAI operation metrics schema."
+    },
+    {
+      "id": "release-trust-score",
+      "status": "ACTIVE_GUARDED",
+      "purpose": "Evidence-weighted trust decision; any hard invariant failure blocks promotion."
+    }
+  ]
+}

@@ -25,6 +25,14 @@ import textwrap
 import time
 from typing import Any
 
+from autonomy_kernel import (
+    load_autonomy_contracts,
+    validate_autonomy_contracts,
+    build_cycle_snapshot,
+    record_arena_candidates,
+    finalize_cycle,
+)
+
 ROOT = pathlib.Path.cwd()
 PRODUCT_BRANCH = os.environ.get("SEVEN_PRODUCT_BRANCH", "seven-remake-v3")
 WORK_BRANCH = os.environ.get("SEVEN_SUPERLOOP_BRANCH", "autoloop/seven-24h-work")
@@ -43,6 +51,7 @@ TEAM = json.loads((CONTROL_ROOT / "team-v1.json").read_text(encoding="utf-8"))
 MANAGER_CONTRACT = (CONTROL_ROOT / "manager.md").read_text(encoding="utf-8")
 AGENT_CONTRACT = (CONTROL_ROOT / "agent.md").read_text(encoding="utf-8")
 AGENTS: list[dict[str, str]] = list(TEAM["agents"])
+AUTONOMY_CONTRACTS = load_autonomy_contracts(ROOT)
 
 ARTIFACT_ROOT = RUNNER_TEMP / "seven-superloop-artifacts"
 WORKTREE_ROOT = RUNNER_TEMP / "seven-superloop-worktrees"
@@ -829,6 +838,10 @@ def main() -> int:
     git("worktree", "prune", check=False)
 
     base_sha = git_output("rev-parse", "HEAD")
+    validate_autonomy_contracts(ROOT, AUTONOMY_CONTRACTS)
+    autonomy_context = build_cycle_snapshot(
+        ROOT, ARTIFACT_ROOT, cycle, base_sha, AUTONOMY_CONTRACTS, TEAM
+    )
     research_plan = manager_readonly(
         cycle,
         "manager-research-plan",
@@ -838,6 +851,8 @@ specialists. We are running a continuous loop:
 1 research, 2 implementation, 3 compatibility verification, 4 bug hunt+fix,
 5 agent-driven exploratory testing, 6 polish+APK.
 Current branch sync note: {sync_note}
+Autonomous engineering preflight: {autonomy_context}
+Honor the Seven Constitution and proof policy. Treat Reality Lab / visual / Android evidence as UNPROVEN when missing.
 Prioritize unresolved release readiness and user-visible product quality. Give all 20 agents distinct,
 non-duplicative research assignments. Explicitly assign B10 to curate at least one evidence-backed
 product-intelligence lesson when a genuinely useful new reference or product lesson exists; otherwise
@@ -861,6 +876,9 @@ Do not chase quantity; prioritize release blockers and strongest product improve
     feature_base = git_output("rev-parse", "HEAD")
     feature_commits, feature_outputs = run_write_phase(
         cycle, "execute", feature_base, execution_plan, research, shared_node_modules
+    )
+    arena_evidence = record_arena_candidates(
+        ARTIFACT_ROOT, cycle, feature_base, feature_commits, feature_outputs
     )
     feature_integration = integrate_candidates(
         cycle, "features", feature_base, feature_commits, execution_plan, feature_outputs
@@ -960,6 +978,7 @@ Do not award RC below the rubric threshold or when any hard fail exists.""",
         final_head,
         f"""Produce the final cycle review.
 Feature integration: {json.dumps(feature_integration)}
+Evolution Arena: {json.dumps(arena_evidence)}
 Fix integration: {json.dumps(fix_integration)}
 Polish accepted: {polished}
 APK result: {clip(apk_result, 6000)}
@@ -994,6 +1013,11 @@ research priorities. Do not call missing evidence PASS.""",
         "productQualityScore": quality_score,
         "head": final_head,
     }
+    autonomy_final = finalize_cycle(
+        ROOT, ARTIFACT_ROOT, cycle, summary, product_quality, apk_result, AUTONOMY_CONTRACTS
+    )
+    summary["autonomy"] = autonomy_final
+
     tracked_history(
         cycle,
         f"# Seven Superloop Cycle {cycle}\n\n"

@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "name": "Seven Evolution Arena",
+  "mode": "CHAMPION_CHALLENGER",
+  "candidateTypes": [
+    "agent-isolated",
+    "manager-synthesized",
+    "hybrid"
+  ],
+  "dimensions": [
+    "functional",
+    "productQuality",
+    "reliability",
+    "performance",
+    "efficiency",
+    "android",
+    "rtl",
+    "security",
+    "proofCompleteness"
+  ],
+  "rules": [
+    "Champion is never replaced by feature count alone.",
+    "Candidate with any CRITICAL regression is rejected.",
+    "Product score regression blocks promotion unless explicitly approved as a bounded tradeoff with stronger evidence.",
+    "Candidate evaluators are locked before candidate execution.",
+    "A challenger without comparable evidence remains SHADOW_ONLY.",
+    "Pareto-front candidates may be preserved for later synthesis.",
+    "Winner rationale and loser rationale are durable evidence."
+  ],
+  "promotion": {
+    "minimumProductScore": 8.2,
+    "requireNoHardFail": true,
+    "requireRollback": true,
+    "requireComparativeProof": true
+  }
+}

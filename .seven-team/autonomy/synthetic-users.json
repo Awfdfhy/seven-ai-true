@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "stablePopulation": true,
+  "personas": [
+    {
+      "id": "U001",
+      "name": "Arabic novice",
+      "locale": "ar-IQ",
+      "device": "small Android",
+      "skill": "novice",
+      "goals": [
+        "simple chat"
+      ],
+      "aversions": [
+        "clutter",
+        "provider jargon"
+      ]
+    },
+    {
+      "id": "U002",
+      "name": "Power researcher",
+      "locale": "en",
+      "device": "Android",
+      "skill": "expert",
+      "goals": [
+        "research",
+        "citations",
+        "files",
+        "deep think"
+      ],
+      "aversions": [
+        "hidden evidence"
+      ]
+    },
+    {
+      "id": "U003",
+      "name": "Mixed bidi user",
+      "locale": "ar-IQ+en",
+      "device": "small Android",
+      "skill": "intermediate",
+      "goals": [
+        "Arabic/English/code chat"
+      ],
+      "aversions": [
+        "bidi breakage"
+      ]
+    },
+    {
+      "id": "U004",
+      "name": "Developer",
+      "locale": "en",
+      "device": "Android",
+      "skill": "expert",
+      "goals": [
+        "coding",
+        "GitHub",
+        "files"
+      ],
+      "aversions": [
+        "slow navigation"
+      ]
+    },
+    {
+      "id": "U005",
+      "name": "Model-agnostic casual",
+      "locale": "en",
+      "device": "Android",
+      "skill": "novice",
+      "goals": [
+        "best default answer"
+      ],
+      "aversions": [
+        "model names"
+      ]
+    },
+    {
+      "id": "U006",
+      "name": "Accessibility keyboard user",
+      "locale": "en",
+      "device": "large-font Android",
+      "skill": "intermediate",
+      "goals": [
+        "chat",
+        "settings"
+      ],
+      "aversions": [
+        "focus traps"
+      ]
+    },
+    {
+      "id": "U007",
+      "name": "Low-bandwidth user",
+      "locale": "ar-IQ",
+      "device": "midrange Android",
+      "skill": "intermediate",
+      "goals": [
+        "reliable chat"
+      ],
+      "aversions": [
+        "silent retries",
+        "lost drafts"
+      ]
+    },
+    {
+      "id": "U008",
+      "name": "Long-chat user",
+      "locale": "en",
+      "device": "midrange Android",
+      "skill": "expert",
+      "goals": [
+        "hundreds of turns",
+        "memory"
+      ],
+      "aversions": [
+        "jank",
+        "lost position"
+      ]
+    },
+    {
+      "id": "U009",
+      "name": "File-heavy student",
+      "locale": "ar-IQ",
+      "device": "Android",
+      "skill": "intermediate",
+      "goals": [
+        "PDF/TXT",
+        "summaries"
+      ],
+      "aversions": [
+        "unclear upload state"
+      ]
+    },
+    {
+      "id": "U010",
+      "name": "Privacy-conscious user",
+      "locale": "en",
+      "device": "Android",
+      "skill": "expert",
+      "goals": [
+        "chat with minimal data exposure"
+      ],
+      "aversions": [
+        "mysterious telemetry"
+      ]
+    },
+    {
+      "id": "U011",
+      "name": "First-run evaluator",
+      "locale": "en",
+      "device": "small Android",
+      "skill": "novice",
+      "goals": [
+        "useful result under 60 seconds"
+      ],
+      "aversions": [
+        "setup detours"
+      ]
+    },
+    {
+      "id": "U012",
+      "name": "Returning daily user",
+      "locale": "ar-IQ",
+      "device": "Android",
+      "skill": "intermediate",
+      "goals": [
+        "resume room",
+        "fast composer"
+      ],
+      "aversions": [
+        "state loss"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,133 @@
+name: Seven Reality Lab
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_ref:
+        description: Exact candidate commit SHA or ref to evaluate
+        required: true
+        type: string
+      source_run:
+        description: Source Superloop run ID
+        required: false
+        default: manual
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  installed-android-evidence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.candidate_ref }}
+          fetch-depth: 0
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Prepare candidate APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f remake/package.json
+          cd remake
+          if [[ -f package-lock.json ]]; then npm ci; else npm install; fi
+          node - <<'NODE' > /tmp/seven-build-command
+          const p=require('./package.json');
+          const s=p.scripts||{};
+          for (const k of ['android:ci','android:build','android:generate']) {
+            if (s[k]) { console.log(k); process.exit(0); }
+          }
+          process.exit(2);
+          NODE
+          script="$(cat /tmp/seven-build-command)"
+          npm run "$script"
+          cd ..
+          if ! find . -type f -name '*.apk' -print -quit | grep -q .; then
+            if [[ -d remake/android ]]; then
+              (cd remake/android && ./gradlew --no-daemon assembleDebug)
+            elif [[ -d android ]]; then
+              (cd android && ./gradlew --no-daemon assembleDebug)
+            fi
+          fi
+          apk="$(find . -type f -name '*.apk' | head -1)"
+          test -n "$apk"
+          mkdir -p reality-evidence
+          cp "$apk" reality-evidence/candidate.apk
+          sha256sum reality-evidence/candidate.apk | tee reality-evidence/apk.sha256
+          git rev-parse HEAD | tee reality-evidence/source-sha.txt
+          printf '%s\n' "${{ inputs.source_run }}" > reality-evidence/source-run.txt
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm || true
+
+      - name: Installed-artifact Reality Lab
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            set -euo pipefail
+            apk="reality-evidence/candidate.apk"
+            adb install -r "$apk"
+            pkg="$(aapt dump badging "$apk" | sed -n "s/package: name='\([^']*\)'.*/\1/p" | head -1)"
+            test -n "$pkg"
+            echo "$pkg" > reality-evidence/package.txt
+            adb shell monkey -p "$pkg" -c android.intent.category.LAUNCHER 1
+            sleep 5
+            adb exec-out screencap -p > reality-evidence/cold-launch.png
+            adb shell uiautomator dump /sdcard/seven-ui.xml >/dev/null
+            adb pull /sdcard/seven-ui.xml reality-evidence/cold-launch-ui.xml
+            adb shell input keyevent KEYCODE_BACK || true
+            sleep 1
+            adb exec-out screencap -p > reality-evidence/after-back.png
+            adb shell am force-stop "$pkg"
+            adb shell monkey -p "$pkg" -c android.intent.category.LAUNCHER 1
+            sleep 3
+            adb exec-out screencap -p > reality-evidence/relaunch.png
+            adb shell cmd uimode night yes || true
+            adb shell am force-stop "$pkg"
+            adb shell monkey -p "$pkg" -c android.intent.category.LAUNCHER 1
+            sleep 3
+            adb exec-out screencap -p > reality-evidence/night.png
+            node - <<'NODE'
+            const fs=require('fs'),crypto=require('crypto');
+            const sha=fs.readFileSync('reality-evidence/apk.sha256','utf8').trim().split(/\s+/)[0];
+            const source=fs.readFileSync('reality-evidence/source-sha.txt','utf8').trim();
+            const files=fs.readdirSync('reality-evidence').sort();
+            fs.writeFileSync('reality-evidence/reality-summary.json',JSON.stringify({
+              schemaVersion:1,status:'INSTALLED_ARTIFACT_EVIDENCE_CAPTURED',
+              evidenceTier:'ANDROID_EMULATOR',sourceSha:source,apkSha256:sha,
+              journeysProven:['cold-launch','system-back-smoke','force-stop-relaunch','night-theme-launch-smoke'],
+              journeysNotYetProven:['full-chat','stream-stop','room-race','arabic-rtl','ime','files','search','process-state-assertion'],
+              files
+            },null,2));
+            NODE
+
+      - name: Upload Reality Lab evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seven-reality-lab-${{ github.run_number }}
+          path: reality-evidence
+          if-no-files-found: error
+          retention-days: 30

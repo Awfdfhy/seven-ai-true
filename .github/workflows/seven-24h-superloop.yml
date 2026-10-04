@@ -8,11 +8,17 @@ on:
       - '.github/workflows/seven-24h-superloop.yml'
       - '.github/workflows/seven-superloop-watchdog.yml'
       - '.seven-team/superloop/**'
+      - '.seven-team/autonomy/**'
+      - '.seven-team/product-intelligence/**'
+      - '.github/workflows/seven-reality-lab.yml'
   pull_request:
     paths:
       - '.github/workflows/seven-24h-superloop.yml'
       - '.github/workflows/seven-superloop-watchdog.yml'
       - '.seven-team/superloop/**'
+      - '.seven-team/autonomy/**'
+      - '.seven-team/product-intelligence/**'
+      - '.github/workflows/seven-reality-lab.yml'
 
 permissions:
   contents: write
@@ -37,7 +43,8 @@ jobs:
       - name: Validate controller and team manifest
         run: |
           set -euo pipefail
-          python -m py_compile .seven-team/superloop/controller.py
+          python -m py_compile .seven-team/superloop/controller.py .seven-team/superloop/autonomy_kernel.py
+          python .seven-team/superloop/autonomy_kernel.py validate --root .
           python - <<'PY'
           import json
           d=json.load(open('.seven-team/superloop/team-v1.json'))
@@ -134,6 +141,19 @@ jobs:
           set -euo pipefail
           test "$(git branch --show-current)" = "$SEVEN_SUPERLOOP_BRANCH"
           git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:"$SEVEN_SUPERLOOP_BRANCH"
+
+      - name: Dispatch Reality Lab for validated APK candidate
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if grep -Rqs '^APK_STAGE=PASS' "${RUNNER_TEMP}/seven-superloop-artifacts"; then
+            candidate_sha="$(git rev-parse HEAD)"
+            gh workflow run seven-reality-lab.yml --repo "$GITHUB_REPOSITORY" --ref main -f candidate_ref="$candidate_sha" -f source_run="$GITHUB_RUN_ID"
+            echo "Reality Lab dispatched for exact source SHA $candidate_sha."
+          else
+            echo "No APK_STAGE=PASS evidence; Reality Lab dispatch skipped."
+          fi
 
       - name: Create or update Superloop PR
         env:

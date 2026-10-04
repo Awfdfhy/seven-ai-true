@@ -1,0 +1,205 @@
+{
+  "schemaVersion": 1,
+  "name": "Seven Constitution",
+  "immutableDuringCandidateEvaluation": true,
+  "invariants": [
+    {
+      "id": "CONST-001",
+      "severity": "CRITICAL",
+      "domain": "chat",
+      "rule": "A task is permanently bound to the room that created it; completion may not write to another room.",
+      "proof": [
+        "integration",
+        "race"
+      ]
+    },
+    {
+      "id": "CONST-002",
+      "severity": "CRITICAL",
+      "domain": "tasks",
+      "rule": "Stop/cancel affects only the intended operation and a cancelled task may not commit late.",
+      "proof": [
+        "integration",
+        "race"
+      ]
+    },
+    {
+      "id": "CONST-003",
+      "severity": "CRITICAL",
+      "domain": "recovery",
+      "rule": "Provider/network failure may not delete the user's submitted prompt or committed conversation state.",
+      "proof": [
+        "fault",
+        "integration"
+      ]
+    },
+    {
+      "id": "CONST-004",
+      "severity": "CRITICAL",
+      "domain": "persistence",
+      "rule": "Committed chat state survives every restart/restore path promised by the product contract.",
+      "proof": [
+        "android",
+        "restart"
+      ]
+    },
+    {
+      "id": "CONST-005",
+      "severity": "CRITICAL",
+      "domain": "security",
+      "rule": "Secrets, tokens and credentials never enter model-visible context, repository evidence, screenshots or ordinary logs.",
+      "proof": [
+        "static",
+        "runtime",
+        "security"
+      ]
+    },
+    {
+      "id": "CONST-006",
+      "severity": "HIGH",
+      "domain": "architecture",
+      "rule": "UI is a projection of canonical runtime state and may not become a competing authority.",
+      "proof": [
+        "architecture",
+        "integration"
+      ]
+    },
+    {
+      "id": "CONST-007",
+      "severity": "CRITICAL",
+      "domain": "security",
+      "rule": "Fallback models/providers/tools may not silently gain permissions, data scope or authority.",
+      "proof": [
+        "policy",
+        "integration"
+      ]
+    },
+    {
+      "id": "CONST-008",
+      "severity": "HIGH",
+      "domain": "rtl",
+      "rule": "Arabic RTL is a first-class core release path, including composer, chat, navigation and errors.",
+      "proof": [
+        "visual",
+        "android",
+        "e2e"
+      ]
+    },
+    {
+      "id": "CONST-009",
+      "severity": "CRITICAL",
+      "domain": "release",
+      "rule": "No release-quality claim is valid without evidence bound to the evaluated source/artifact identity.",
+      "proof": [
+        "identity",
+        "evidence"
+      ]
+    },
+    {
+      "id": "CONST-010",
+      "severity": "HIGH",
+      "domain": "resilience",
+      "rule": "Core chat remains usable or fails safely if optional workspaces/features fail.",
+      "proof": [
+        "fault",
+        "integration"
+      ]
+    },
+    {
+      "id": "CONST-011",
+      "severity": "CRITICAL",
+      "domain": "self-dev",
+      "rule": "Candidate builders cannot modify protected evaluators, constitution, baselines or judge rules to win.",
+      "proof": [
+        "scope",
+        "eval-lock"
+      ]
+    },
+    {
+      "id": "CONST-012",
+      "severity": "HIGH",
+      "domain": "architecture",
+      "rule": "There is one canonical owner for task management, routing, persistence authority, native bridge and shell navigation.",
+      "proof": [
+        "architecture"
+      ]
+    },
+    {
+      "id": "CONST-013",
+      "severity": "HIGH",
+      "domain": "files",
+      "rule": "Attachment identity and permissions remain bound to the originating room/task.",
+      "proof": [
+        "integration",
+        "android"
+      ]
+    },
+    {
+      "id": "CONST-014",
+      "severity": "HIGH",
+      "domain": "research",
+      "rule": "Unsupported material claims are cited, qualified, or reported INCONCLUSIVE; citation count is not evidence quality.",
+      "proof": [
+        "semantic-eval"
+      ]
+    },
+    {
+      "id": "CONST-015",
+      "severity": "HIGH",
+      "domain": "memory",
+      "rule": "Summaries, embeddings and retrieved context are derived views and cannot silently overwrite canonical memory/state authority.",
+      "proof": [
+        "unit",
+        "integration"
+      ]
+    },
+    {
+      "id": "CONST-016",
+      "severity": "HIGH",
+      "domain": "rpg",
+      "rule": "The model may not invent the player's irreversible action, core intention or emotion.",
+      "proof": [
+        "semantic-eval",
+        "state"
+      ]
+    },
+    {
+      "id": "CONST-017",
+      "severity": "HIGH",
+      "domain": "performance",
+      "rule": "Background work may not make the primary composer materially unusable on supported mobile tiers.",
+      "proof": [
+        "performance",
+        "android"
+      ]
+    },
+    {
+      "id": "CONST-018",
+      "severity": "CRITICAL",
+      "domain": "release",
+      "rule": "A hard quality/security/invariant failure cannot be averaged away by a high aggregate score.",
+      "proof": [
+        "policy"
+      ]
+    },
+    {
+      "id": "CONST-019",
+      "severity": "HIGH",
+      "domain": "experiments",
+      "rule": "Champion promotion requires no critical regression and rollback/recovery readiness.",
+      "proof": [
+        "differential",
+        "rollback"
+      ]
+    },
+    {
+      "id": "CONST-020",
+      "severity": "HIGH",
+      "domain": "evidence",
+      "rule": "Missing required evidence is UNPROVEN, never PASS.",
+      "proof": [
+        "policy"
+      ]
+    }
+  ]
+}

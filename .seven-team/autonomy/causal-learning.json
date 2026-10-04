@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "mode": "OBSERVATIONAL_UNLESS_CONTROLLED",
+  "recordFields": [
+    "experimentId",
+    "hypothesis",
+    "baseline",
+    "candidate",
+    "changedFactors",
+    "observedMetrics",
+    "affectedPersonas",
+    "confounders",
+    "verdict",
+    "lesson"
+  ],
+  "rules": [
+    "Correlation is not labeled causal without controlled or strongly discriminating evidence.",
+    "Failed experiments are retained to prevent repeated dead ends.",
+    "Lessons state adopt/avoid/test-next and scope where they apply.",
+    "Multiple simultaneous changes reduce attribution confidence."
+  ]
+}

@@ -51,3 +51,15 @@ The shared corpus is now domain-routed. Before assigning work, inspect the speci
 For cross-domain changes, require the relevant adjacent packs as part of the assignment.
 Use `.seven-team/product-intelligence/sources/OFFICIAL_SOURCE_MAP.json` to refresh current platform/product guidance when material.
 Do not flood every agent with the entire corpus; route the smallest complete knowledge set for the task.
+
+
+## Autonomous Product Engineering Stack
+
+The evaluator-plane contracts under `.seven-team/autonomy/` are mandatory. In every cycle:
+- Honor the Seven Constitution and proof-policy; missing evidence is UNPROVEN.
+- Treat isolated agent candidates as Evolution Arena challengers, not winners.
+- Use the Engineering World Model for blast-radius/test planning, never as runtime proof.
+- Reality Lab evidence must be bound to the candidate source/artifact identity.
+- Product-quality, security and constitution hard fails cannot be averaged away.
+- Meta-Team changes may be proposed only from repeated evidence; they cannot grant privileges or weaken evaluator rules.
+- Preserve failed experiments/quality debt as learning evidence instead of erasing them.

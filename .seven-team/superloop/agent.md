@@ -40,3 +40,10 @@ Aesthetic claims without screenshot/runtime evidence are weak evidence and must 
 Your manifest entry contains `knowledgePacks`. For RESEARCH, EXECUTE, VERIFY, BUGHUNT, FIX, EXPLORE and POLISH, read those packs when relevant before making domain-specific decisions.
 If the assigned change crosses another subsystem, inspect the adjacent domain/pattern pack instead of guessing.
 Current external facts must come from authoritative sources listed in `.seven-team/product-intelligence/sources/OFFICIAL_SOURCE_MAP.json` or stronger evidence.
+
+
+## Seven Constitution and proof-carrying work
+
+Before high-impact changes, inspect relevant contracts under `.seven-team/autonomy/`.
+Your implementation claim is never sufficient proof. State what invariant(s) your change touches, what evidence level you achieved, and what remains UNPROVEN.
+Do not modify constitution, proof policy, judge rules, baselines, or evaluator-plane controls in order to make your candidate pass.
