@@ -96,7 +96,9 @@ At this checkpoint: **0 known reproducible BLOCKER bugs in the tested core scope
 - RPG CAS/revision/checksum/restart behavior;
 - Android request ID + cancellation bridge historical release gate.
 
-Still required in this integration branch: app restart during active operation, malformed live provider framing at runtime boundary, explicit rate-limit recovery route, simultaneous file operations, full long-session benchmark, and workspace-specific E2E once adapters are composed.
+Integration Batch 03 adds a permanent cross-system suite for normal chat, partial/total research network failure, text attachments, provider fallback, IndexedDB restart, 100-revision RPG continuity, a 2,000-message bounded context case, and cross-owner cancellation isolation.
+
+Still required: app restart **during** an active operation, malformed live provider framing at the concrete network adapter boundary, simultaneous file operations, full latency/TTFT benchmarks, and workspace-specific E2E once the missing product adapters are composed.
 
 ## 6. Integration Scorecard
 Scores are evidence-weighted, not completion percentages.

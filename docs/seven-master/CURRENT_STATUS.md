@@ -21,6 +21,19 @@ Implemented:
 - Research/Build/RPG UI submissions no longer silently fall back to normal Chat while those workspace adapters are uncomposed;
 - Quick / Balanced / Deep is now a per-room persisted routing preference, and production RoutingChatTransport resolves it on every turn.
 
+## Permanent Cross-System Regression Suite
+Added `remake/src/integration/system/integration-regression.test.ts` covering:
+- Scenario A normal multi-turn chat;
+- Scenario B/H partial and total research-network failure;
+- Scenario C room-isolated attachment ingestion;
+- Scenario E 100-revision RPG continuity;
+- Scenario G provider failure/fallback;
+- Scenario I IndexedDB restart restore;
+- Scenario J 2,000-message bounded context;
+- cross-owner cancellation isolation.
+
+Coding/Self-Development product E2E is intentionally not mocked as "complete": the current Remake Coding orchestrator gap remains an acceptance blocker, while the Self-Dev mutation boundary is fail-closed behind Coding verification.
+
 ## Evidence
 Remake CI run **37238353163**: SUCCESS on commit `18598d63814990300a65206d47253c92e5d26dbd`.
 - dependency audit: 0 vulnerabilities;
