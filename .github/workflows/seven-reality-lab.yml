@@ -86,7 +86,7 @@ jobs:
           profile: pixel_6
           disable-animations: true
           script: |
-            set -euo pipefail
+            set -eu
             apk="reality-evidence/candidate.apk"
             adb install -r "$apk"
             pkg="$(aapt dump badging "$apk" | sed -n "s/package: name='\([^']*\)'.*/\1/p" | head -1)"
