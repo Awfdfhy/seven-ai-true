@@ -267,6 +267,14 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   const r=await page.evaluate(()=>SevenModelIntelligenceV3.analyze('Analyze this problem carefully',{purpose:'deepThink',deepThinkRequested:true,latencyPriority:true}));
   assert.equal(r.preferSpeed,true);assert.equal(r.preferPrecision,true);assert.ok(r.evidence.includes('latency-priority'));
  });
+ await test('fallback budget enforces one bounded wall-clock envelope',async()=>{
+  const r=await page.evaluate(()=>({
+    a:fallbackAttemptBudgetV2(60000,8,null),
+    b:fallbackAttemptBudgetV2(9000,3,45000),
+    c:normalizeRequestConfig({messages:[],requestDeadlineMs:12345}).requestDeadlineMs
+  }));
+  assert.ok(r.a<=7500&&r.a>=2000);assert.ok(r.b<=3000);assert.equal(r.c,12345);
+ });
  await test('request normalization preserves deep latency and timeout policy without changing final budgets',async()=>{
   const r=await page.evaluate(()=>{
     const deep=normalizeRequestConfig({messages:[{role:'user',content:'x'}],maxTokens:2048,purpose:'deepThink',model:currentModel,latencyPriority:true,timeoutMs:25000});

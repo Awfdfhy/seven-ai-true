@@ -193,12 +193,14 @@ public class SevenPlatformPlugin extends Plugin {
     long refreshExpires=json.optLong("refresh_token_expires_in",0);if(refreshExpires>0)secure.put(GH_REFRESH_EXPIRES,String.valueOf(now+refreshExpires*1000L));
   }
   private String ensureGithubToken(String clientId)throws Exception{
-    String access=secure.get(GH_ACCESS);String expRaw=secure.get(GH_EXPIRES);long exp=0;try{if(expRaw!=null)exp=Long.parseLong(expRaw);}catch(Exception ignored){}
-    if(access!=null&&!access.isEmpty()&&(exp==0||System.currentTimeMillis()<exp-300000L))return access;
-    String refresh=secure.get(GH_REFRESH);if(refresh==null||refresh.isEmpty()){if(access!=null&&!access.isEmpty())return access;throw new IllegalStateException("GitHub is not connected");}
+    long now=System.currentTimeMillis();String access=secure.get(GH_ACCESS),expRaw=secure.get(GH_EXPIRES),refresh=secure.get(GH_REFRESH),refreshExpRaw=secure.get(GH_REFRESH_EXPIRES);long exp=0,refreshExp=0;
+    try{if(expRaw!=null)exp=Long.parseLong(expRaw);}catch(Exception ignored){}try{if(refreshExpRaw!=null)refreshExp=Long.parseLong(refreshExpRaw);}catch(Exception ignored){}
+    if(access!=null&&!access.isEmpty()&&(exp==0||now<exp-300000L))return access;
+    if(refreshExp>0&&now>=refreshExp-60000L){secure.remove(GH_REFRESH);secure.remove(GH_REFRESH_EXPIRES);refresh=null;}
+    if(refresh==null||refresh.isEmpty()){secure.remove(GH_ACCESS);secure.remove(GH_EXPIRES);throw new IllegalStateException("GitHub authorization expired; reconnect");}
     Map<String,String> p=new LinkedHashMap<>();p.put("client_id",clientId);p.put("grant_type","refresh_token");p.put("refresh_token",refresh);
-    JSONObject json=postGithubForm("https://github.com/login/oauth/access_token",p);if(json.has("error"))throw new IllegalStateException("GitHub token refresh failed: "+json.optString("error"));
-    storeGithubToken(json);return secure.get(GH_ACCESS);
+    JSONObject json=postGithubForm("https://github.com/login/oauth/access_token",p);if(json.has("error")){secure.remove(GH_ACCESS);secure.remove(GH_EXPIRES);throw new IllegalStateException("GitHub token refresh failed: "+json.optString("error"));}
+    storeGithubToken(json);String renewed=secure.get(GH_ACCESS);if(renewed==null||renewed.isEmpty())throw new IllegalStateException("GitHub token refresh returned no access token");return renewed;
   }
   private boolean allowedGithubPath(String path,String method){
     if(path==null||path.contains("://")||path.contains(".."))return false;
@@ -239,7 +241,7 @@ public class SevenPlatformPlugin extends Plugin {
     new Thread(()->{try{String token=ensureGithubToken(clientId),path=GITHUB_REPO+"/actions/jobs/"+jobId+"/logs";HttpURLConnection c=(HttpURLConnection)new URL(GITHUB_API+path).openConnection();c.setRequestMethod("GET");c.setConnectTimeout(15000);c.setReadTimeout(45000);c.setInstanceFollowRedirects(true);c.setRequestProperty("Authorization","Bearer "+token);c.setRequestProperty("Accept","application/vnd.github+json");c.setRequestProperty("X-GitHub-Api-Version","2026-03-10");c.setRequestProperty("User-Agent","seven.ai");int status=c.getResponseCode();if(status<200||status>=300)throw new IllegalStateException("job logs status "+status);ByteArrayOutputStream text=new ByteArrayOutputStream();try(ZipInputStream zin=new ZipInputStream(c.getInputStream())){ZipEntry entry;byte[] buf=new byte[8192];while((entry=zin.getNextEntry())!=null&&text.size()<MAX_GITHUB_RESPONSE){int n;while((n=zin.read(buf))>0&&text.size()<MAX_GITHUB_RESPONSE)text.write(buf,0,Math.min(n,MAX_GITHUB_RESPONSE-text.size()));text.write('\\n');zin.closeEntry();}}String out=text.toString(StandardCharsets.UTF_8.name());if(out.length()>180000)out=out.substring(out.length()-180000);JSObject ret=new JSObject();ret.put("status",status);ret.put("logs",out);call.resolve(ret);}catch(Exception e){call.reject("GitHub job logs could not be read","SEVEN_GITHUB_LOGS",e);}},"seven-github-logs").start();
   }
   @PluginMethod public void githubConnectionState(PluginCall call){
-    try{JSObject ret=new JSObject();ret.put("connected",secure.get(GH_ACCESS)!=null||secure.get(GH_REFRESH)!=null);String exp=secure.get(GH_EXPIRES);if(exp!=null)ret.put("expiresAt",exp);call.resolve(ret);}catch(Exception e){call.reject("GitHub connection state unavailable","SEVEN_GITHUB_STATE",e);}
+    try{long now=System.currentTimeMillis(),exp=0,rexp=0;String access=secure.get(GH_ACCESS),refresh=secure.get(GH_REFRESH),a=secure.get(GH_EXPIRES),r=secure.get(GH_REFRESH_EXPIRES);try{if(a!=null)exp=Long.parseLong(a);}catch(Exception ignored){}try{if(r!=null)rexp=Long.parseLong(r);}catch(Exception ignored){}boolean accessValid=access!=null&&!access.isEmpty()&&(exp==0||now<exp),refreshValid=refresh!=null&&!refresh.isEmpty()&&(rexp==0||now<rexp);JSObject ret=new JSObject();ret.put("connected",accessValid||refreshValid);ret.put("refreshAvailable",refreshValid);if(a!=null)ret.put("expiresAt",a);call.resolve(ret);}catch(Exception e){call.reject("GitHub connection state unavailable","SEVEN_GITHUB_STATE",e);}
   }
   @PluginMethod public void githubDisconnect(PluginCall call){
     try{secure.remove(GH_ACCESS);secure.remove(GH_REFRESH);secure.remove(GH_EXPIRES);secure.remove(GH_REFRESH_EXPIRES);call.resolve();}catch(Exception e){call.reject("GitHub disconnect failed","SEVEN_GITHUB_STATE",e);}

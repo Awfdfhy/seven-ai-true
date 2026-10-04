@@ -16,3 +16,9 @@ let s=engine.createSession();
 let out=engine.applySceneDelta(s,{canonDebtDelta:0.1},{forceBranch:'true'});
 assert.ok(out.session.branchId,'serialized forceBranch must create branch');
 console.log('resilience contracts: PASS');
+
+const html=fs.readFileSync(__dirname+'/../seven_ai-final.html','utf8');
+assert.match(html,/fetchProviderWithTimeout\(provider\.modelsUrl[\s\S]{0,160}8000\)/);
+assert.match(html,/fallbackAttemptBudgetV2/);
+assert.match(html,/requestDeadlineMs/);
+console.log('network resilience contracts: PASS');
