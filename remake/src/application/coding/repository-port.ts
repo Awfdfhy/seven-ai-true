@@ -7,6 +7,7 @@ import type {
 import { applyPatchPlan, DEFAULT_CODING_PATH_POLICY } from "./patch-transaction";
 import { sha256Text } from "./hash";
 import { canonicalRepositoryPath, createRepositorySnapshot } from "./workspace-truth";
+import { selectInspectionPaths } from "./discovery";
 
 export type RepositoryEntry = Readonly<{
   path: string;
@@ -97,6 +98,28 @@ function sortedUniquePaths(paths: readonly string[]): readonly string[] {
 export class CodingWorkspaceService {
   constructor(private readonly repository: CodingRepositoryPort) {
     if (!repository || typeof repository !== "object") throw new Error("CodingWorkspaceService requires a repository port.");
+  }
+
+  async discover(input: Readonly<{
+    repository: string;
+    branch: string;
+    query: string;
+    signal: AbortSignal;
+    maxFiles?: number;
+    maxBytes?: number;
+  }>): Promise<readonly string[]> {
+    ensureSignal(input.signal);
+    const headSha = (await this.repository.getHead(input)).toLowerCase();
+    if (!COMMIT_SHA.test(headSha)) throw new Error("Repository port returned an invalid head SHA.");
+    const entries = await this.repository.listFiles({
+      repository: input.repository,
+      commitSha: headSha,
+      signal: input.signal,
+    });
+    return selectInspectionPaths(entries, input.query, {
+      ...(input.maxFiles !== undefined ? { maxFiles: input.maxFiles } : {}),
+      ...(input.maxBytes !== undefined ? { maxBytes: input.maxBytes } : {}),
+    });
   }
 
   async inspect(input: Readonly<{
