@@ -19,7 +19,27 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          runs="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow seven-24h-superloop.yml --limit 30 --json status)"
+          runs="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow seven-24h-superloop.yml --limit 30 --json databaseId,status,createdAt)"
+          now="$(date -u +%s)"
+
+          stale_ids="$(jq -r --argjson now "$now" '
+            .[]
+            | select(.status=="in_progress")
+            | ((.createdAt | fromdateiso8601) // $now) as $started
+            | select(($now - $started) > 11400)
+            | .databaseId
+          ' <<<"$runs")"
+
+          if [[ -n "$stale_ids" ]]; then
+            while read -r stale_id; do
+              [[ -z "$stale_id" ]] && continue
+              echo "Cancelling stale Superloop run $stale_id (>190 minutes old)."
+              gh run cancel "$stale_id" --repo "$GITHUB_REPOSITORY" || true
+            done <<<"$stale_ids"
+            sleep 5
+            runs="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow seven-24h-superloop.yml --limit 30 --json databaseId,status,createdAt)"
+          fi
+
           running="$(jq '[.[] | select(.status=="in_progress")] | length' <<<"$runs")"
           queued="$(jq '[.[] | select(.status=="queued" or .status=="waiting" or .status=="requested" or .status=="pending")] | length' <<<"$runs")"
 
