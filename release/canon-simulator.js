@@ -165,13 +165,21 @@
     }
 
     function audit(session){
-      const knowledgeIssues=[];
+      const knowledgeIssues=[],chronologyIssues=[];
       for(const [characterId,known] of Object.entries(session.knowledge||{}))for(const factId of asArray(known)){
         const check=canCharacterKnow(session,characterId,factId,session.position);if(!check.allowed&&check.reason==='future-knowledge')knowledgeIssues.push({characterId,factId,reason:check.reason});
       }
+      let previous=null;
+      for(const record of asArray(session.ledger)){
+        const position=record&&record.position;
+        if(position==null||!Number.isFinite(Number(position)))continue;
+        const current=Number(position);
+        if(previous!=null&&current<previous)chronologyIssues.push({recordId:record.id||null,previous,current,reason:'position-regression'});
+        previous=current;
+      }
       const invariant=invariantIssues(session,session);
       return {
-        chronology:{status:'PASS'},
+        chronology:{status:chronologyIssues.length?'FAIL':'PASS',issues:chronologyIssues},
         characterKnowledge:{status:knowledgeIssues.length?'FAIL':'PASS',issues:knowledgeIssues},
         invariants:{status:invariant.length?'FAIL':'PASS',issues:invariant},
         futureAnchors:{status:session.canonDebt>=0.75?'AT_RISK':'PASS',canonDebt:session.canonDebt},
