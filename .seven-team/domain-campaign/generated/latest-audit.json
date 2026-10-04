@@ -81,23 +81,31 @@
     {
       "id": "D02_MEMORY_CONTEXT",
       "status": "INSUFFICIENT",
-      "urls": 14,
-      "primaryTagged": 14,
-      "target": 12,
+      "urls": 20,
+      "primaryTagged": 11,
+      "target": 20,
       "owners": [
         "A06",
-        "B08"
+        "B08",
+        "A04",
+        "A08",
+        "B09",
+        "B10"
       ]
     },
     {
       "id": "D03_TOOLS_CAPABILITY",
       "status": "INSUFFICIENT",
-      "urls": 14,
-      "primaryTagged": 14,
-      "target": 12,
+      "urls": 20,
+      "primaryTagged": 17,
+      "target": 20,
       "owners": [
         "A04",
-        "A07"
+        "A07",
+        "A08",
+        "B09",
+        "B10",
+        "B07"
       ]
     },
     {
