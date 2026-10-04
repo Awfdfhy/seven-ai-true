@@ -5,6 +5,7 @@ export interface MemoryFabricRepository {
   listForRoom(roomId: string, signal?: AbortSignal): Promise<readonly MemoryFact[]>;
   findActiveByCanonicalKey(scope: "global"|"room", roomId: string | null, canonicalKey: string, signal?: AbortSignal): Promise<readonly MemoryFact[]>;
   commit(facts: readonly MemoryFact[], events: readonly MemoryWriteEvent[], signal?: AbortSignal): Promise<void>;
+  deleteFact(memoryId: string, event: MemoryWriteEvent, signal?: AbortSignal): Promise<void>;
 }
 
 type StoredFact = MemoryFact & { scopeRoom: string };
@@ -33,6 +34,12 @@ export class InMemoryMemoryFabricRepository implements MemoryFabricRepository {
     for(const fact of facts){ if(!isMemoryFact(fact)) throw new SevenError({code:"VALIDATION",message:"Invalid memory fact."}); }
     for(const fact of facts)this.facts.set(fact.id,cloneMemoryFact(fact));
     this.events.push(...events.map(e=>Object.freeze({...e})));
+    throwIfAborted(signal);
+  }
+  async deleteFact(memoryId:string,event:MemoryWriteEvent,signal?:AbortSignal):Promise<void>{
+    throwIfAborted(signal); canonical(memoryId,"memoryId");
+    this.facts.delete(memoryId);
+    this.events.push(Object.freeze({...event}));
     throwIfAborted(signal);
   }
 }

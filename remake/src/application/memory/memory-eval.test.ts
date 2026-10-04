@@ -54,6 +54,14 @@ describe("Seven Memory Eval v2",()=>{
     expect(written[0]?.source).toEqual({roomId:"source-room",messageId:"source-message",observedAt:123});
   });
 
+  it("hard-forgets memory content from the active store",async()=>{
+    const repo=new InMemoryMemoryFabricRepository();
+    const memory=new MemoryFabricService(repo);
+    const written=await memory.observeUserMessage({roomId:"r1",messageId:"m1",content:"My name is Ali",createdAt:100});
+    expect(await memory.forget(written[0]!.id,"r2")).toBe(true);
+    expect((await memory.listActive("r2")).some(f=>f.id===written[0]!.id)).toBe(false);
+  });
+
   it("abstains on unrelated recall and rejects memory injection attempts",async()=>{
     const repo=new InMemoryMemoryFabricRepository();
     const memory=new MemoryFabricService(repo);

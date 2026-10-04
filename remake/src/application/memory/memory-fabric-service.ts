@@ -32,6 +32,19 @@ export class MemoryFabricService {
     return Object.freeze(written);
   }
 
+  async listActive(roomId:string,signal?:AbortSignal):Promise<readonly MemoryFact[]>{
+    const facts=await this.repository.listForRoom(roomId,signal);
+    return Object.freeze(facts.filter(f=>f.status==="active"));
+  }
+
+  async forget(memoryId:string,roomId:string,signal?:AbortSignal):Promise<boolean>{
+    const facts=await this.repository.listForRoom(roomId,signal);
+    const fact=facts.find(item=>item.id===memoryId && item.status==="active");
+    if(!fact)return false;
+    await this.repository.deleteFact(memoryId,createMemoryWriteEvent(fact,"forget",Date.now()),signal);
+    return true;
+  }
+
   async search(roomId:string,query:string,signal?:AbortSignal,excludeMessageId?:string):Promise<readonly MemoryHit[]>{
     const facts=await this.repository.listForRoom(roomId,signal);
     const filtered=excludeMessageId?facts.filter(f=>f.source.messageId!==excludeMessageId):facts;

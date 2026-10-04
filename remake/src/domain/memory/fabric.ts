@@ -36,7 +36,7 @@ export type MemoryWriteEvent = Readonly<{
   schemaVersion: 1;
   id: string;
   factId: string;
-  type: "add" | "supersede";
+  type: "add" | "supersede" | "forget";
   at: number;
   sourceRoomId: string;
   sourceMessageId: string;
@@ -180,7 +180,7 @@ export function cloneMemoryFact(fact: MemoryFact): MemoryFact {
   });
 }
 
-export function createMemoryWriteEvent(fact: MemoryFact, type: "add" | "supersede", at = fact.updatedAt): MemoryWriteEvent {
+export function createMemoryWriteEvent(fact: MemoryFact, type: "add" | "supersede" | "forget", at = fact.updatedAt): MemoryWriteEvent {
   return Object.freeze({
     schemaVersion: 1 as const,
     id: crypto.randomUUID(),
