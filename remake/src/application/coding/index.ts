@@ -8,3 +8,7 @@ export * from "./repository-port";
 export * from "./repo-intelligence";
 export * from "./verification-runner";
 export * from "./diff-review";
+export * from "./discovery";
+export * from "./provider-coding-agent";
+export * from "./coding-agent-service";
+export * from "./research-adapter";
