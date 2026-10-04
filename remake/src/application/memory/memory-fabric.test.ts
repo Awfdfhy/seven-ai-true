@@ -33,8 +33,8 @@ describe("Memory Fabric retrieval",()=>{
     expect(hits.some(h=>h.fact.id===noise.id)).toBe(false);
   });
   it("keeps the bounded memory payload valid JSON instead of truncating an item",()=>{
-    const one=fact({canonicalKey:"fact:one",content:"one ".repeat(120),tags:["one"]});
-    const two=fact({canonicalKey:"fact:two",content:"two ".repeat(120),tags:["two"]});
+    const one=fact({canonicalKey:"fact:one",content:"one ".repeat(120).trim(),tags:["one"]});
+    const two=fact({canonicalKey:"fact:two",content:"two ".repeat(120).trim(),tags:["two"]});
     const hits=new MemoryRetrievalEngine().search([one,two],"one two",{now:4000});
     const rendered=formatMemoryContext(hits,700);
     const json=rendered.slice(rendered.indexOf("\n")+1);
