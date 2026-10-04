@@ -2616,11 +2616,30 @@
             el.style.height = el.scrollHeight + "px";
         }
 
-        // ---------- Deep Think ----------
-        function toggleDeepThinkMode() {
-            deepThinkMode = !deepThinkMode;
-            document.getElementById("deepThinkToggle").classList.toggle("active", deepThinkMode);
+        // ---------- Response mode state ----------
+        function syncResponseModeControls() {
+            const deep=document.getElementById("deepThinkToggle"),search=document.getElementById("searchToggle"),research=document.getElementById("researchToggle");
+            if(deep)deep.classList.toggle("active",deepThinkMode);
+            if(search)search.classList.toggle("active",searchMode);
+            if(research)research.classList.toggle("active",researchMode);
         }
+        function currentResponseMode() {
+            if(researchMode)return "research";
+            if(deepThinkMode&&!searchMode)return "think";
+            if(searchMode&&!deepThinkMode)return "search";
+            if(deepThinkMode&&searchMode)return "research";
+            return "chat";
+        }
+        function setResponseMode(mode) {
+            mode=["chat","think","search","research"].includes(mode)?mode:"chat";
+            deepThinkMode=mode==="think";
+            searchMode=mode==="search";
+            researchMode=mode==="research";
+            syncResponseModeControls();
+            document.dispatchEvent(new CustomEvent("seven:response-mode",{detail:{mode}}));
+            return mode;
+        }
+        function toggleDeepThinkMode() { setResponseMode(deepThinkMode?"chat":"think"); }
 
         // Runs a hidden first pass where the model reasons extensively about
         // the problem (high token budget, low temperature for careful precise
@@ -4277,16 +4296,13 @@
         }
 
         // ---------- Web Search ----------
-        function toggleSearchMode() {
-            searchMode = !searchMode;
-            document.getElementById("searchToggle").classList.toggle("active", searchMode);
-        }
-
-        function toggleResearchMode() {
-            researchMode = !researchMode;
-            const button=document.getElementById("researchToggle");
-            if(button)button.classList.toggle("active",researchMode);
-        }
+        function toggleSearchMode() { setResponseMode(searchMode?"chat":"search"); }
+        function toggleResearchMode() { setResponseMode(researchMode?"chat":"research"); }
+        window.SevenModeState=Object.freeze({
+            set:setResponseMode,
+            current:currentResponseMode,
+            snapshot:()=>({mode:currentResponseMode(),deepThink:deepThinkMode,search:searchMode,research:researchMode})
+        });
 
         // Tries DuckDuckGo's Instant Answer API first (fast, keyless, but only
         // returns results for topics it has a summary/infobox for). If that

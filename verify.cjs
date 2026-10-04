@@ -1186,6 +1186,21 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   assert.ok(Array.isArray(r.snap.plannedCoverageKeys));assert.ok(Array.isArray(r.snap.coveredCoverageKeys));assert.equal(r.hasRaw,false);
  });
 
+ await test('mode state keeps picker and runtime semantics identical',async()=>{
+  const r=await page.evaluate(()=>{
+    const before=SevenModeState.snapshot();
+    SevenModeState.set('research');
+    const research={state:SevenModeState.snapshot(),plan:createCognitiveRequestPlan({text:'research fixture',roomId:currentRoom})};
+    SevenModeState.set('think');const think=SevenModeState.snapshot();
+    SevenModeState.set('search');const search=SevenModeState.snapshot();
+    SevenModeState.set(before.mode);
+    return {research,think,search};
+  });
+  assert.deepEqual(r.research.state,{mode:'research',deepThink:false,search:false,research:true});
+  assert.equal(r.research.plan.research.use,true);assert.equal(r.research.plan.web.use,true);assert.equal(r.research.plan.deepThink.use,true);
+  assert.deepEqual(r.think,{mode:'think',deepThink:true,search:false,research:false});
+  assert.deepEqual(r.search,{mode:'search',deepThink:false,search:true,research:false});
+ });
  await test('deep research toggle is independent while controller implies web and Deep Think',async()=>{
   const r=await page.evaluate(()=>{
     const old={researchMode,searchMode,deepThinkMode};
