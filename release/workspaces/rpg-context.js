@@ -52,24 +52,43 @@ function buildCharacterView(stateInput,stateApi,characterId,options){
   const scene=state.scene?clone(state.scene):null;
   const participants=scene?scene.participantIds:[];
   const location=c.locationId?clone(state.world.locations[c.locationId]||null):null;
+  const selectedCanon=knownCanon(state,stateApi,characterId,opts.canonLimit);
+  const selectedCanonIds=new Set(selectedCanon.map(e=>e.id));
   const view={
     schema:'seven-rpg-character-view',version:1,worldId:state.worldId,sessionId:state.sessionId,turn:state.turn,timeline:{tick:state.timeline.tick,dateLabel:state.timeline.dateLabel},
     character:{id:c.id,control:c.control,identity:clone(c.identity),age:c.age,appearance:clone(c.appearance),personality:clone(c.personality),motivations:clone(c.motivations),goals:clone(c.goals),fears:clone(c.fears),preferences:clone(c.preferences),locationId:c.locationId,emotions:clone(c.emotions),beliefs:clone(c.beliefs),injuries:clone(c.injuries),status:c.status,loyalties:clone(c.loyalties),opinions:clone(c.opinions),intent:c.intent,voice:clone(c.voice)},
-    scene,location,knownCanon:knownCanon(state,stateApi,characterId,opts.canonLimit),
+    scene,location,knownCanon:selectedCanon,
     relationships:relationshipSlice(state,characterId,participants),
     quests:questSlice(state,characterId),
     inventory:arr(c.inventory).map(id=>state.items[id]).filter(Boolean).map(clone),
     abilities:arr(c.abilities).map(id=>state.abilities[id]).filter(Boolean).map(clone),
-    knowledgeRefs:Object.fromEntries(Object.entries(obj(c.knowledge)).filter(([factId])=>{const k=stateApi.canCharacterKnow(state,characterId,factId);return k&&k.allowed;}).map(([id,k])=>[id,clone(k)])),
+    knowledgeRefs:Object.fromEntries(Object.entries(obj(c.knowledge)).filter(([factId])=>selectedCanonIds.has(factId)).map(([id,k])=>[id,clone(k)])),
     controlRule:c.control,
     hidden:{globalCanonOmitted:true,globalLedgerOmitted:true,otherCharacterPrivateStateOmitted:true}
   };
   let serialized=JSON.stringify(view);const maxChars=Math.max(1200,Number(opts.maxChars)||18000);
   if(serialized.length>maxChars){
     view.knownCanon=view.knownCanon.slice(0,12);
+    const keep=new Set(view.knownCanon.map(e=>e.id));
+    view.knowledgeRefs=Object.fromEntries(Object.entries(view.knowledgeRefs).filter(([id])=>keep.has(id)).slice(0,12));
     view.quests=Object.fromEntries(Object.entries(view.quests).slice(0,8));
-    view.relationships=Object.fromEntries(Object.entries(view.relationships).slice(0,12));
+    view.relationships=Object.fromEntries(Object.entries(view.relationships).slice(0,12).map(([k,v])=>[k,Object.assign({},v,{events:arr(v&&v.events).slice(-8)})]));
     view.inventory=view.inventory.slice(0,24);view.abilities=view.abilities.slice(0,24);
+    serialized=JSON.stringify(view);
+  }
+  if(serialized.length>maxChars){
+    view.knownCanon=view.knownCanon.slice(0,6);
+    const keep=new Set(view.knownCanon.map(e=>e.id));
+    view.knowledgeRefs=Object.fromEntries(Object.entries(view.knowledgeRefs).filter(([id])=>keep.has(id)).slice(0,6));
+    view.quests=Object.fromEntries(Object.entries(view.quests).slice(0,4));
+    view.relationships=Object.fromEntries(Object.entries(view.relationships).slice(0,6).map(([k,v])=>[k,Object.assign({},v,{events:arr(v&&v.events).slice(-4)})]));
+    view.inventory=view.inventory.slice(0,12);view.abilities=view.abilities.slice(0,12);
+    view.character.goals=arr(view.character.goals).slice(0,6);
+    view.character.motivations=arr(view.character.motivations).slice(0,8);
+    view.character.fears=arr(view.character.fears).slice(0,8);
+    view.character.beliefs=Object.fromEntries(Object.entries(obj(view.character.beliefs)).slice(0,12));
+    view.character.loyalties=Object.fromEntries(Object.entries(obj(view.character.loyalties)).slice(0,12));
+    view.character.opinions=Object.fromEntries(Object.entries(obj(view.character.opinions)).slice(0,12));
     serialized=JSON.stringify(view);
   }
   view._diagnostics={serializedChars:serialized.length,bounded:serialized.length<=maxChars,canonCount:view.knownCanon.length};
