@@ -92,4 +92,37 @@ describe("Memory Fabric scale and distractor resistance", () => {
     expect(() => JSON.parse(serialized)).not.toThrow();
     expect((JSON.parse(serialized) as unknown[]).length).toBeLessThanOrEqual(8);
   });
+  it("retrieves the correct fact among 10,000 memories within a broad CI latency budget", () => {
+    const facts = Array.from({ length: 10_000 }, (_, index) =>
+      recall(
+        index,
+        `Archive memory ${index} about lesson ${index % 97} section ${index % 31}`,
+        ["archive", `lesson-${index % 97}`, `section-${index % 31}`],
+      ),
+    );
+    const target = createMemoryFact({
+      id: "ten-k-target",
+      kind: "preference",
+      tier: "recall",
+      scope: "global",
+      canonicalKey: "preference:language",
+      content: "I prefer Arabic for explanations",
+      tags: ["preference", "language", "arabic", "explanations"],
+      importance: 0.95,
+      confidence: 0.99,
+      observedAt: 20_000,
+      sourceRoomId: "target-room",
+      sourceMessageId: "target-message",
+    });
+    facts.splice(7311, 0, target);
+    const started = performance.now();
+    const hits = new MemoryRetrievalEngine().search(
+      facts,
+      "Which language do I prefer for explanations?",
+      { now: 30_000, maxRecall: 8 },
+    );
+    const elapsed = performance.now() - started;
+    expect(hits.some(hit => hit.fact.id === target.id)).toBe(true);
+    expect(elapsed).toBeLessThan(8_000);
+  }, 15_000);
 });
