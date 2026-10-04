@@ -38,7 +38,7 @@ function unmount(){
 }
 async function processGeneratedTurn(input){
  const id=input&&input.roomId?String(input.roomId):roomId();if(!id)return{ok:false,status:'BLOCKED',reason:'no-active-room'};
- return ensureRuntime().processTurn(Object.assign({},input,{roomId:id,applyWorldTick:true}));
+ return ensureRuntime().processTurn(Object.assign({},input,{roomId:id,applyWorldTick:!(input&&input.applyWorldTick===false)}));
 }
 function snapshot(){const id=roomId();return id?ensureRuntime().snapshot(id):null}
 function plan(){const id=roomId();return id?ensureRuntime().plan(id,{limit:12}):null}
