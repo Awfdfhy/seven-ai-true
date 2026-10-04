@@ -3824,7 +3824,8 @@
             const remaining=Math.max(0,Number(remainingMs)||0),left=Math.max(1,Number(attemptsLeft)||1);
             const fair=Math.max(2000,Math.floor(remaining/left));
             const preferred=Number(preferredMs);
-            return Math.max(1000,Math.min(30000,remaining,Number.isFinite(preferred)&&preferred>0?preferred:fair));
+            const requested=Number.isFinite(preferred)&&preferred>0?preferred:fair;
+            return Math.max(1000,Math.min(30000,remaining,fair,requested));
         }
         async function callFreeModelFabric(config) {
             const route=buildFreeRouteCandidates(config);
