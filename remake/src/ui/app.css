@@ -187,3 +187,36 @@ button { min-width: 44px; min-height: 44px; touch-action: manipulation; }
 @media (max-width: 360px) {
   .seven-memory-tools { grid-template-columns: 1fr; }
 }
+
+.seven-memory-source {
+  margin: -.25rem 0 .55rem;
+  color: var(--seven-muted);
+  font-size: .65rem;
+}
+.seven-memory-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+}
+.seven-memory-item .seven-memory-actions button {
+  min-height: 36px;
+  border: 1px solid var(--seven-border);
+  border-radius: 10px;
+  padding: .35rem .65rem;
+  color: var(--seven-text);
+  background: transparent;
+  cursor: pointer;
+}
+.seven-memory-item .seven-memory-actions .seven-memory-danger { color: var(--seven-danger); }
+.seven-memory-editor textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 74px;
+  margin: .5rem 0;
+  border: 1px solid var(--seven-border);
+  border-radius: 10px;
+  padding: .6rem;
+  color: var(--seven-text);
+  background: var(--seven-bg);
+  line-height: 1.4;
+}

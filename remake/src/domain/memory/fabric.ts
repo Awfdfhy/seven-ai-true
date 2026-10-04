@@ -5,10 +5,13 @@ export type MemoryTier = "core" | "recall";
 export type MemoryScope = "global" | "room";
 export type MemoryStatus = "active" | "superseded";
 
+export type MemorySourceOrigin = "chat" | "memory-inspector" | "migration";
+
 export type MemorySourceRef = Readonly<{
   roomId: string;
   messageId: string;
   observedAt: number;
+  origin?: MemorySourceOrigin;
 }>;
 
 export type MemoryFact = Readonly<{
@@ -56,6 +59,7 @@ export type CreateMemoryFactInput = Readonly<{
   observedAt: number;
   sourceRoomId: string;
   sourceMessageId: string;
+  sourceOrigin?: MemorySourceOrigin;
   supersedes?: readonly string[];
 }>;
 
@@ -136,6 +140,7 @@ export function createMemoryFact(input: CreateMemoryFactInput): MemoryFact {
       roomId: sourceRoomId,
       messageId: canonical(input.sourceMessageId, "Memory source messageId"),
       observedAt,
+      ...(input.sourceOrigin ? { origin: input.sourceOrigin } : {}),
     }),
     supersedes,
   });
@@ -167,7 +172,9 @@ export function isMemoryFact(value: unknown): value is MemoryFact {
     (f.validUntil === null || (typeof f.validUntil === "number" && Number.isFinite(f.validUntil) && f.validUntil >= f.validFrom)) &&
     typeof f.createdAt === "number" && typeof f.updatedAt === "number" &&
     !!f.source && typeof f.source.roomId === "string" && typeof f.source.messageId === "string" &&
-    typeof f.source.observedAt === "number" && Array.isArray(f.supersedes);
+    typeof f.source.observedAt === "number" &&
+    (f.source.origin === undefined || ["chat","memory-inspector","migration"].includes(f.source.origin)) &&
+    Array.isArray(f.supersedes);
 }
 
 export function cloneMemoryFact(fact: MemoryFact): MemoryFact {
