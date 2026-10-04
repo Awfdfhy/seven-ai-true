@@ -1,0 +1,277 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Authoritative visual/product reference catalog. Use for principles and comparative judgment, never pixel copying.",
+  "refreshPolicy": "Review sources at least monthly or when a major benchmark app redesigns.",
+  "sources": [
+    {
+      "id": "chatgpt-release-notes",
+      "product": "ChatGPT",
+      "authority": "official",
+      "url": "https://help.openai.com/en/articles/6825453-chatgpt-release-notes",
+      "inspect": [
+        "Android conversation surface",
+        "sidebar/history",
+        "composer",
+        "attachments",
+        "generated media",
+        "connection states"
+      ],
+      "lessons": [
+        "conversation-first hierarchy",
+        "progressive disclosure",
+        "clear mobile states"
+      ]
+    },
+    {
+      "id": "chatgpt-great-apps",
+      "product": "ChatGPT ecosystem",
+      "authority": "official",
+      "url": "https://developers.openai.com/blog/what-makes-a-great-chatgpt-app",
+      "inspect": [
+        "chat-native interaction principles",
+        "small focused capability surfaces",
+        "screenshots/examples"
+      ],
+      "lessons": [
+        "conversation context first",
+        "avoid recreating app chrome inside chat"
+      ]
+    },
+    {
+      "id": "gemini-neural-expressive",
+      "product": "Gemini",
+      "authority": "official",
+      "url": "https://blog.google/innovation-and-ai/products/gemini-app/next-evolution-gemini-app/",
+      "inspect": [
+        "new design language",
+        "response composition",
+        "tool menu",
+        "motion",
+        "Live"
+      ],
+      "lessons": [
+        "fluid expressive UI",
+        "structured multimodal responses",
+        "unified tools"
+      ]
+    },
+    {
+      "id": "perplexity-ios-redesign",
+      "product": "Perplexity",
+      "authority": "official",
+      "url": "https://www.perplexity.ai/changelog/what-we-shipped-september-5th",
+      "inspect": [
+        "query input",
+        "gesture navigation",
+        "mode/model selection",
+        "voice visuals",
+        "transitions"
+      ],
+      "lessons": [
+        "fast query entry",
+        "seamless mode/model switching",
+        "mobile performance"
+      ]
+    },
+    {
+      "id": "perplexity-input",
+      "product": "Perplexity",
+      "authority": "official",
+      "url": "https://www.perplexity.ai/changelog/april-2025-product-update",
+      "inspect": [
+        "simplified input",
+        "single model dropdown",
+        "research/pro controls"
+      ],
+      "lessons": [
+        "reduce control clutter",
+        "keep advanced modes close but compact"
+      ]
+    },
+    {
+      "id": "copilot-2026-redesign",
+      "product": "Microsoft 365 Copilot",
+      "authority": "official",
+      "url": "https://www.microsoft.com/en-us/copilot/blog/2026/05/28/introducing-a-new-design-for-microsoft-365-copilot/",
+      "inspect": [
+        "task-aware prompt line",
+        "connected experience",
+        "structured outputs",
+        "speed/clarity"
+      ],
+      "lessons": [
+        "design around outcomes",
+        "output quality is UX",
+        "task-aware controls"
+      ]
+    },
+    {
+      "id": "poe-mobile",
+      "product": "Poe",
+      "authority": "official",
+      "url": "https://poe.com/download",
+      "inspect": [
+        "multi-model product positioning",
+        "mobile availability",
+        "model discovery"
+      ],
+      "lessons": [
+        "model abundance requires strong information architecture"
+      ]
+    }
+  ],
+  "visualCaptureMatrix": [
+    {
+      "id": "seven-chat-empty",
+      "surface": "Chat empty state",
+      "viewports": [
+        "360x800",
+        "412x915"
+      ],
+      "themes": [
+        "day",
+        "night"
+      ],
+      "directions": [
+        "ltr",
+        "rtl"
+      ]
+    },
+    {
+      "id": "seven-chat-stream",
+      "surface": "Streaming answer",
+      "viewports": [
+        "360x800"
+      ],
+      "themes": [
+        "night"
+      ],
+      "directions": [
+        "ltr",
+        "rtl"
+      ]
+    },
+    {
+      "id": "seven-chat-long",
+      "surface": "Long markdown/code/citations",
+      "viewports": [
+        "360x800"
+      ],
+      "themes": [
+        "day",
+        "night"
+      ],
+      "directions": [
+        "ltr",
+        "rtl"
+      ]
+    },
+    {
+      "id": "seven-composer-keyboard",
+      "surface": "Composer with Android keyboard",
+      "viewports": [
+        "360x800"
+      ],
+      "themes": [
+        "night"
+      ],
+      "directions": [
+        "ltr",
+        "rtl"
+      ]
+    },
+    {
+      "id": "seven-sidebar",
+      "surface": "History/sidebar",
+      "viewports": [
+        "360x800",
+        "412x915"
+      ],
+      "themes": [
+        "day",
+        "night"
+      ],
+      "directions": [
+        "ltr",
+        "rtl"
+      ]
+    },
+    {
+      "id": "seven-model-picker",
+      "surface": "Model/mode selection",
+      "viewports": [
+        "360x800"
+      ],
+      "themes": [
+        "night"
+      ],
+      "directions": [
+        "ltr",
+        "rtl"
+      ]
+    },
+    {
+      "id": "seven-search",
+      "surface": "Search/research evidence state",
+      "viewports": [
+        "360x800"
+      ],
+      "themes": [
+        "day",
+        "night"
+      ],
+      "directions": [
+        "ltr",
+        "rtl"
+      ]
+    },
+    {
+      "id": "seven-files",
+      "surface": "Attachment add/upload/error",
+      "viewports": [
+        "360x800"
+      ],
+      "themes": [
+        "night"
+      ],
+      "directions": [
+        "ltr",
+        "rtl"
+      ]
+    },
+    {
+      "id": "seven-settings",
+      "surface": "Settings",
+      "viewports": [
+        "360x800"
+      ],
+      "themes": [
+        "day",
+        "night"
+      ],
+      "directions": [
+        "ltr",
+        "rtl"
+      ]
+    },
+    {
+      "id": "seven-error",
+      "surface": "Offline/provider failure/retry",
+      "viewports": [
+        "360x800"
+      ],
+      "themes": [
+        "night"
+      ],
+      "directions": [
+        "ltr",
+        "rtl"
+      ]
+    }
+  ],
+  "rules": {
+    "copying": "Never reproduce competitor branding, proprietary assets, or pixel geometry. Extract interaction/design principles.",
+    "evidence": "Reference URLs are evidence sources; Seven screenshots from exact builds are the evaluation target.",
+    "comparison": "Judge hierarchy, density, flow, feedback, readability, discoverability, motion and cohesion rather than superficial visual similarity."
+  }
+}
