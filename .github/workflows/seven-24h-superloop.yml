@@ -64,6 +64,14 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Pre-queue successor cycle immediately
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh workflow run seven-24h-superloop.yml --repo "$GITHUB_REPOSITORY" --ref main
+          echo "Successor cycle pre-queued before runtime/model setup."
+
       - name: Setup Node 22
         uses: actions/setup-node@v4
         with:
@@ -97,14 +105,6 @@ jobs:
             sleep 1
           done
           test "$bridge_ready" -eq 1
-
-      - name: Pre-queue successor cycle
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          gh workflow run seven-24h-superloop.yml --repo "$GITHUB_REPOSITORY" --ref main
-          echo "Successor cycle pre-queued before active engineering begins."
 
       - name: Run Manager plus 20-agent full engineering cycle
         run: python .seven-team/superloop/controller.py
@@ -145,6 +145,20 @@ jobs:
             gh pr create               --repo "$GITHUB_REPOSITORY"               --base "$SEVEN_PRODUCT_BRANCH"               --head "$SEVEN_SUPERLOOP_BRANCH"               --title "Seven AI — continuous 20-agent Superloop"               --body "Continuous Manager + 20-agent engineering branch. Each cycle performs research → implementation → compatibility verification → bug hunt/fix → agent-driven exploratory QA → polish/APK. Changes are integrated only after deterministic gates. Raw cycle evidence is attached to Actions runs."
           else
             echo "Superloop PR #$number updated."
+          fi
+
+      - name: Ensure successor remains queued
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          queued="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow seven-24h-superloop.yml --limit 20 --json status --jq '[.[] | select(.status=="queued" or .status=="pending" or .status=="waiting" or .status=="requested")] | length')"
+          if [[ "$queued" == "0" ]]; then
+            gh workflow run seven-24h-superloop.yml --repo "$GITHUB_REPOSITORY" --ref main
+            echo "Safety successor dispatched."
+          else
+            echo "Successor already queued ($queued)."
           fi
 
       - name: Relay diagnostics on failure
