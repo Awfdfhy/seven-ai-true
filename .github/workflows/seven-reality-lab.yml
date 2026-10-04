@@ -18,6 +18,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   installed-android-evidence:
@@ -45,7 +46,57 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Prepare candidate APK
+      - name: Download exact Android Gate APK
+        if: ${{ env.SOURCE_RUN != '' && env.SOURCE_RUN != 'manual' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: Seven-Remake-V3.apk
+          path: reality-source-apk
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ env.SOURCE_RUN }}
+
+      - name: Download exact Android Gate identity
+        if: ${{ env.SOURCE_RUN != '' && env.SOURCE_RUN != 'manual' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: Seven-Remake-V3-Release-Identity.json
+          path: reality-source-identity
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ env.SOURCE_RUN }}
+
+      - name: Bind exact release artifact evidence
+        if: ${{ env.SOURCE_RUN != '' && env.SOURCE_RUN != 'manual' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p reality-evidence
+          apk="$(find reality-source-apk -type f -name '*.apk' -print -quit)"
+          identity="$(find reality-source-identity -type f -name '*.json' -print -quit)"
+          test -n "$apk"
+          test -n "$identity"
+          cp "$apk" reality-evidence/candidate.apk
+          cp "$identity" reality-evidence/release-identity.json
+          sha256sum reality-evidence/candidate.apk | tee reality-evidence/apk.sha256
+          git rev-parse HEAD | tee reality-evidence/source-sha.txt
+          printf '%s\n' "$SOURCE_RUN" > reality-evidence/source-run.txt
+          unzip -p reality-evidence/candidate.apk assets/public/seven-remake-release.json > reality-evidence/embedded-release-identity.json
+          cmp reality-evidence/release-identity.json reality-evidence/embedded-release-identity.json
+          node - <<'NODE'
+          const fs=require('fs');
+          const identity=JSON.parse(fs.readFileSync('reality-evidence/release-identity.json','utf8'));
+          const source=fs.readFileSync('reality-evidence/source-sha.txt','utf8').trim();
+          if(identity.sourceCommit && identity.sourceCommit!==source){
+            throw new Error(`release identity source mismatch: ${identity.sourceCommit} != ${source}`);
+          }
+          if(identity.artifactId!=='ai.seven.remake.v3')throw new Error('wrong artifact identity');
+          if(!/^[a-f0-9]{64}$/.test(identity.payloadSha256||''))throw new Error('invalid payload identity');
+          console.log('Exact Android Gate artifact identity: PASS', identity.payloadSha256);
+          NODE
+
+      - name: Build candidate APK for manual Reality Lab
+        if: ${{ env.SOURCE_RUN == '' || env.SOURCE_RUN == 'manual' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -64,16 +115,8 @@ jobs:
           script="$(cat /tmp/seven-build-command)"
           npm run "$script"
           cd ..
-          if ! find . -type f -name '*.apk' -print -quit | grep -q .; then
-            if [[ -d remake/android ]]; then
-              (cd remake/android && ./gradlew --no-daemon assembleDebug)
-            elif [[ -d android ]]; then
-              (cd android && ./gradlew --no-daemon assembleDebug)
-            fi
-          fi
-          apk="$(find . -type f -name '*.apk' | head -1)"
+          apk="$(find remake -type f -name '*.apk' -print -quit)"
           test -n "$apk"
-          mkdir -p reality-evidence
           cp "$apk" reality-evidence/candidate.apk
           sha256sum reality-evidence/candidate.apk | tee reality-evidence/apk.sha256
           git rev-parse HEAD | tee reality-evidence/source-sha.txt
