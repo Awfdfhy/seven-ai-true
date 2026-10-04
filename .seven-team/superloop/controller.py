@@ -835,7 +835,14 @@ def save_state(cycle: int, summary: dict[str, Any]) -> None:
 
 
 def commit_cycle_metadata(cycle: int) -> None:
-    git("add", ".seven-team/superloop-state.json", ".seven-team/superloop-history", ".seven-team/domain-campaign/generated")
+    paths = [
+        ".seven-team/superloop-state.json",
+        ".seven-team/superloop-history",
+    ]
+    campaign_generated = ROOT / ".seven-team" / "domain-campaign" / "generated"
+    if campaign_generated.exists():
+        paths.append(".seven-team/domain-campaign/generated")
+    git("add", *paths)
     if git("status", "--porcelain").stdout.strip():
         git("-c", "user.name=Seven Superloop Manager", "-c", "user.email=actions@users.noreply.github.com",
             "commit", "-m", f"Superloop cycle {cycle} manager record")
