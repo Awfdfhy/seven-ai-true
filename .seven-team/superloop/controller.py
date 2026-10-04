@@ -51,6 +51,7 @@ READ_TIMEOUT = int(os.environ.get("SEVEN_AGENT_READ_TIMEOUT", "360"))
 WRITE_TIMEOUT = int(os.environ.get("SEVEN_AGENT_WRITE_TIMEOUT", "600"))
 MANAGER_TIMEOUT = int(os.environ.get("SEVEN_MANAGER_TIMEOUT", "480"))
 AUTO_REPAIR_ATTEMPTS = max(1, min(3, int(os.environ.get("SEVEN_AUTO_REPAIR_ATTEMPTS", "2"))))
+RETRY_NO_DIFF = os.environ.get("SEVEN_AGENT_RETRY_ON_NO_DIFF", "1") == "1"
 MODEL = os.environ.get("SEVEN_SUPERLOOP_MODEL", "kilo-auto/free")
 RUN_ID = os.environ.get("GITHUB_RUN_ID", "local")
 RUN_NUMBER = os.environ.get("GITHUB_RUN_NUMBER", "0")
@@ -417,7 +418,7 @@ def run_write_phase(
         prompt = stage_prompt(cycle, stage, agent, manager_plan, evidence_by_agent.get(aid, ""))
         output = run_codex(wt, prompt, WRITE_TIMEOUT, f"c{cycle}-{stage}-{aid}-1")
         paths = changed_paths(wt)
-        if not paths:
+        if not paths and RETRY_NO_DIFF:
             output += "\n\n[controller] First attempt produced no candidate diff; retrying once with explicit implementation instruction."
             output += "\n" + run_codex(
                 wt,
