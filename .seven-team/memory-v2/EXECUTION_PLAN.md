@@ -73,3 +73,57 @@ Promotion gates:
 - unrelated recall abstains
 - no recalled content can override system instructions
 - exact-build Android evidence before "production-ready" claim
+
+
+## Completion gate
+
+The Manager must not report Memory as COMPLETE unless every item below is backed by current-build evidence.
+
+### Functional
+- [ ] durable global memory
+- [ ] room-scoped memory isolation
+- [ ] temporal supersession
+- [ ] historical recall
+- [ ] core + recall separation
+- [ ] live-chat injection
+- [ ] long-chat lazy summaries
+- [ ] hard forget
+- [ ] Memory Inspector
+- [ ] Arabic + English extraction/recall
+
+### Safety / privacy
+- [ ] credential/OTP/API-key exclusion
+- [ ] instruction-like memory rejection
+- [ ] recalled memory rendered as untrusted data
+- [ ] no room-scope leakage
+- [ ] delete removes fact content from active fact store
+- [ ] assistant output is not silently promoted to user truth
+
+### Retrieval quality
+- [ ] unrelated-query abstention
+- [ ] temporal update chooses current fact
+- [ ] explicit historical query can retrieve superseded fact
+- [ ] implicit preference query works
+- [ ] 2k distractor suite passes
+- [ ] 5k/10k scale measured before semantic layer promotion
+- [ ] bounded context never emits truncated/invalid JSON
+
+### Durability
+- [ ] IndexedDB restart persistence
+- [ ] schema migration behavior
+- [ ] blocked-upgrade behavior
+- [ ] corruption behavior
+- [ ] quota/capacity behavior
+- [ ] summary fingerprint invalidates stale summaries
+
+### Exact-build evidence
+- [ ] strict typecheck
+- [ ] full test suite
+- [ ] production build
+- [ ] Android lint/unit/assemble
+- [ ] APK payload identity
+- [ ] Android 14 installed smoke
+- [ ] Android 16 installed smoke
+- [ ] Reality Lab exact-build evidence
+
+If any item is missing, verdict is MEMORY_IN_PROGRESS or MEMORY_UNPROVEN, never COMPLETE.
