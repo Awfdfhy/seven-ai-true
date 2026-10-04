@@ -57,3 +57,27 @@ export class GitHubActionsVerificationPort implements VerificationExecutionPort{
   const body=await response.text();if(!response.ok)throw new SevenError({code:response.status===401||response.status===403?"PERMISSION":"PROVIDER",message:`GitHub Actions verification HTTP ${response.status}.`,retryable:response.status>=500||response.status===429});try{return body?JSON.parse(body):{}}catch(error){throw new SevenError({code:"PROVIDER",message:"GitHub Actions verification returned invalid JSON.",cause:error})}
  }
 }
+
+
+export class GitHubActionsVerificationFactory {
+  constructor(
+    private readonly auth: GitHubAuthService,
+    private readonly fetchImpl: FetchLike = fetch,
+    private readonly maxWaitMs = 12 * 60 * 1000,
+  ) {}
+
+  create(input: Readonly<{
+    repository: string;
+    branch: string;
+    baseSha: string;
+    commitSha: string;
+  }>): VerificationExecutionPort {
+    void input.branch;
+    return new GitHubActionsVerificationPort(
+      this.auth,
+      { repository: input.repository, baseSha: input.baseSha, commitSha: input.commitSha },
+      this.fetchImpl,
+      this.maxWaitMs,
+    );
+  }
+}
