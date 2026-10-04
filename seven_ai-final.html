@@ -834,7 +834,7 @@
         <!-- Input Area -->
         <div class="input-area">
             <div class="composer">
-                <textarea id="userInput" dir="auto" rows="1" placeholder="Message Seven AI..." onkeydown="if(event.key==='Enter' && !event.shiftKey && !event.isComposing){ event.preventDefault(); sendMessage(); }" oninput="autoGrowInput(this)"></textarea>
+                <textarea id="userInput" dir="auto" rows="1" placeholder="Message Seven AI..." oncompositionstart="composerCompositionActive=true" oncompositionend="composerCompositionActive=false" onkeydown="if(event.key==='Enter' && !event.shiftKey && !event.isComposing && event.keyCode!==229 && !composerCompositionActive){ event.preventDefault(); sendMessage(); }"></textarea>
                 <div class="composer-row">
                     <div class="composer-tools">
                         <button class="tool-btn" onclick="document.getElementById('fileInput').click()" title="Add a .txt or .pdf file to the AI's knowledge" aria-label="Attach a file">
@@ -2589,6 +2589,9 @@
             }
         }
 
+        // Explicit composition lifecycle supplements event.isComposing for Android IMEs.
+        window.composerCompositionActive = false;
+
         // Grows the composer textarea as the user types multi-line text,
         // capped by the CSS max-height (which then scrolls instead).
         function autoGrowInput(el) {
@@ -3305,8 +3308,8 @@
             const provider = FREE_PROVIDER_REGISTRY[providerId];
             if (!provider || !provider.modelsUrl) return [];
             if (provider.credentialOptional !== true && !getFreeProviderCredential(providerId)) return [];
-            const response = await fetch(provider.modelsUrl, { headers: providerAuthHeaders(providerId) });
-            if (!response.ok) { const e=new Error(providerDisplayName(providerId)+" model discovery failed: "+response.status); e.status=response.status; throw e; }
+            const response = await fetchProviderWithTimeout(provider.modelsUrl, { headers: providerAuthHeaders(providerId) }, 8000);
+            if (!response.ok) { const e=new Error(providerDisplayName(providerId)+" model discovery failed: "+response.status); e.status=response.status; const retry=response.headers&&response.headers.get?response.headers.get("Retry-After"):null; if(retry)e.retryAfterMs=/^\d+$/.test(retry)?Number(retry)*1000:null; throw e; }
             const json = await response.json();
             return Array.isArray(json?.data) ? json.data : (Array.isArray(json?.models) ? json.models : []);
         }
@@ -3800,8 +3803,16 @@
             if(model.provider==="groq") return callGroq(Object.assign({},config,{model:model.id,maxTokens:Math.min(config.maxTokens,model.maxTokens)}));
             return callOpenAICompatibleFreeProvider(model,config);
         }
+        function fallbackAttemptBudgetV2(remainingMs,attemptsLeft,preferredMs){
+            const remaining=Math.max(0,Number(remainingMs)||0),left=Math.max(1,Number(attemptsLeft)||1);
+            const fair=Math.max(2000,Math.floor(remaining/left));
+            const preferred=Number(preferredMs);
+            return Math.max(1000,Math.min(30000,remaining,Number.isFinite(preferred)&&preferred>0?preferred:fair));
+        }
         async function callFreeModelFabric(config) {
             const route=buildFreeRouteCandidates(config);
+            const requestDeadlineMs=Math.max(5000,Math.min(90000,Number(config.requestDeadlineMs)||(config.latencyPriority===true?45000:60000)));
+            const deadlineAt=Date.now()+requestDeadlineMs;
             if(!route.candidates.length){
                 const err=new Error("No automatic verified-free route can satisfy this request right now. Check your connection or try again shortly."); err.code="NO_FREE_ROUTE"; throw err;
             }
@@ -3811,9 +3822,12 @@
                 const started=Date.now();
                 const tier=["low","medium","high","veryHigh"].includes(config.latencyTier)?config.latencyTier:
                     (["low","medium","high"].includes(route.requirements.complexity)?route.requirements.complexity:"medium");
-                const attemptTimeout=config.latencyPriority===true
+                const remainingMs=deadlineAt-Date.now();
+                if(remainingMs<=1000)break;
+                const preferredTimeout=config.latencyPriority===true
                     ? learnedTimeoutV2(model.provider,model.id,config.purpose||"chat",tier,config.timeoutMs)
                     : config.timeoutMs;
+                const attemptTimeout=fallbackAttemptBudgetV2(remainingMs,route.candidates.length-i,preferredTimeout);
                 let firstTokenMs=null;
                 const originalOnToken=typeof config.onToken==="function"?config.onToken:null;
                 const attemptConfig=Object.assign({},config,{
@@ -3885,7 +3899,8 @@
                 onToken: typeof onToken === "function" ? onToken : null,
                 latencyPriority: latencyPriority === true,
                 latencyTier: ["low","medium","high","veryHigh"].includes(latencyTier) ? latencyTier : null,
-                timeoutMs: Number.isFinite(Number(timeoutMs)) ? Math.max(1000, Math.min(120000, Number(timeoutMs))) : null
+                timeoutMs: Number.isFinite(Number(timeoutMs)) ? Math.max(1000, Math.min(120000, Number(timeoutMs))) : null,
+                requestDeadlineMs: Number.isFinite(Number(arguments[0]?.requestDeadlineMs)) ? Math.max(5000, Math.min(90000, Number(arguments[0].requestDeadlineMs))) : null
             };
         }
 
@@ -4140,11 +4155,13 @@
             if(typeof reasoning!=="string") throw new Error("Deep Think reasoning pass returned an invalid response.");
 
             const finalMessages = messages.map(m => ({ ...m }));
-            finalMessages.push({
-                role: "system",
-                content: "Use this compact internal decision brief to improve the final answer. Do not quote it or expose private reasoning. " +
-                    "Apply its conclusions, constraints, edge cases, uncertainty notes, and checks:\n\n" + reasoning
-            });
+            const decisionBrief = "Use this compact internal decision brief to improve the final answer. Do not quote it or expose private reasoning. " +
+                "Apply its conclusions, constraints, edge cases, uncertainty notes, and checks:\n\n" + reasoning;
+            if (finalMessages[0] && finalMessages[0].role === "system") {
+                finalMessages[0] = { ...finalMessages[0], content: finalMessages[0].content + "\n\n" + decisionBrief };
+            } else {
+                finalMessages.unshift({ role: "system", content: decisionBrief });
+            }
             return finalMessages;
         }
 
@@ -4268,7 +4285,7 @@
             const activeSignal = options.signal || (activeAbortController && activeAbortController.signal);
             if (!controller) return Promise.race([
                 fetch(url, options),
-                new Promise((_, reject) => setTimeout(() => reject(new Error("Request timed out")), timeoutMs))
+                new Promise((_, reject) => setTimeout(() => { const e=new Error("Request timed out"); e.code="REQUEST_TIMEOUT"; reject(e); }, timeoutMs))
             ]);
             let timer = null; let detach = null;
             if (activeSignal) {
@@ -4312,7 +4329,7 @@
             const requestOptions = controller ? Object.assign({}, options, { signal: controller.signal }) : options;
             const request = controller
                 ? fetch(url, requestOptions)
-                : Promise.race([fetch(url, requestOptions), new Promise((_, reject) => setTimeout(() => reject(new Error("Request timed out")), Math.max(1000, timeoutMs)))]);
+                : Promise.race([fetch(url, requestOptions), new Promise((_, reject) => setTimeout(() => { const e=new Error("Provider request timed out"); e.code="PROVIDER_TIMEOUT"; reject(e); }, Math.max(1000, timeoutMs)))]);
             return Promise.resolve(request).catch(error => {
                 if (error && error.name === "AbortError" && !(activeAbortController && activeAbortController.signal && activeAbortController.signal.aborted)) {
                     const timeoutError = new Error("Provider request timed out");

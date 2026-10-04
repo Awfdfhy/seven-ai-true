@@ -6,14 +6,15 @@ let s=State.createState({
   characters:{
     a:{control:'ai',locationId:'hall',knowledge:{secret:{learnedAtTick:15,sourceEventId:'tell-a'}},beliefs:{rumor:{value:'maybe'}}},
     b:{control:'ai',locationId:'hall'},
-    player:{control:'player',locationId:'hall'}
+    player:{control:'player',locationId:'hall'},
+    aria:{control:'ai',locationId:'hall'}
   },
   canon:{entries:{
     public:{level:'HARD',value:'public truth',public:true,entityIds:['hall']},
     secret:{level:'HARD',value:'hidden truth',public:false,entityIds:['a']},
     unrelated:{level:'SOFT',value:'elsewhere',public:false,entityIds:['x']}
   }},
-  relationships:{'a::b':{trust:.4},'a::player':{respect:.8}},
+  relationships:{'a::b':{trust:.4},'a::player':{respect:.8},'aria::b':{fear:.9}},
   quests:{qa:{title:'A quest',status:'active',ownerIds:['a']},qb:{title:'B quest',status:'active',ownerIds:['b']}},
   scene:{id:'s',locationId:'hall',participantIds:['a','b','player'],purpose:'meeting',timeTick:20}
 });
@@ -26,6 +27,7 @@ assert.ok(b.view.knownCanon.some(x=>x.id==='public'));
 assert.equal(a.view.knowledgeRefs.secret.learnedAtTick,15);
 assert.equal(b.view.knowledgeRefs.secret,undefined);
 assert.equal(a.view.hidden.globalLedgerOmitted,true);
+assert.equal(a.view.relationships['aria::b'],undefined,'substring character IDs must not leak unrelated relationships');
 assert.equal(Ctx.validateNoKnowledgeLeak(a.view,s,State,'a').valid,true);
 assert.equal(Ctx.validateNoKnowledgeLeak(b.view,s,State,'b').valid,true);
 const narrator=Ctx.buildNarratorView(s,State,{maxChars:12000});assert.equal(narrator.view.access,'world-truth');assert.ok(narrator.view.canon.some(x=>x.id==='secret'));

@@ -2,11 +2,11 @@
 
 ## Lead Release Manager — 2026-10-05 verified snapshot
 
-This section supersedes older batch acceptance statements below. Audited upstream main through `8f9956858f61a82a4888e91cc3a2c4ce5fceadd7`; the commit containing this update identifies the integrated release repairs. Later commits require fresh evidence.
+This section supersedes older batch acceptance statements below. Audited upstream main through `9c51dc7ee7c467d02a7fee0714952370323ebca8`; the commit containing this update identifies the integrated release repairs. Later commits require fresh evidence.
 
 **Release decision: NOT ACCEPTED / no RC / no fresh APK produced locally.** Evidence score 43/100, with rubric and limitations in [PROJECT_TRUTH_REPORT.md](PROJECT_TRUTH_REPORT.md); machine-readable checks and benchmark results in [RELEASE_EVIDENCE.json](RELEASE_EVIDENCE.json).
 
-- 33 local component suites verified; 119 tracked JS syntax checks passed. New RPG context suite failed first, then passed after bounded knowledge-reference repair; long-story benchmark passes 1006 committed events.
+- 34 local component suites verified; 119 tracked JS syntax checks passed. New RPG context suite failed first, then passed after bounded knowledge-reference repair; long-story benchmark passes 1006 committed events.
 - Web build and Android native-project generation passed. Browser/full all.cjs verification was blocked by Chromium download; Gradle compilation blocked by network access. Neither is counted as PASS.
 - Repaired exact-SHA self-dev CI selection/dispatch, atomic multi-file commits, SHA-bound merges, protected acceptance gates and network-read error handling.
 - Added APK web-payload SHA/run provenance and hashes, unified the startup budget, repaired UI loader failure/retry and committed synchronized launcher source labels.
@@ -95,3 +95,33 @@ Not yet accepted:
 - directional relationships, production token-aware retrieval, semantic 100/500/1000-turn evaluation and Android restore UX remain open.
 
 Next RPG implementation target: wire the tested Session/Context modules into the actual per-room turn transaction and shared Memory, then verify Android restart and live generation.
+
+
+## RPG Specialist Batch 02 — Persistence, Context Isolation, Long-Story Harness
+
+Implemented:
+- release/workspaces/rpg-session.js — versioned per-room/per-world session manager with corruption detection/quarantine, optimistic revision checks and atomic batch commit/rollback.
+- release/rpg-session.test.cjs — roundtrip, stale-write, room isolation, corruption, identity and rollback tests.
+- release/workspaces/rpg-context.js — separate Narrator View and character-local Character View.
+- release/rpg-context.test.cjs — knowledge-boundary tests at the generation-context boundary, including exact character-ID relationship filtering.
+- release/rpg-longstory.test.cjs — 1006-event deterministic continuity benchmark with old consequence persistence, item ownership, quest/faction state, voice stability, knowledge propagation, restart checkpoints, HARD CANON rejection and player-agency rejection.
+- all three suites are registered in all.cjs; RPG lazy loader includes the new state/session/context runtimes.
+
+Evidence already established by focused module tests:
+- state kernel: PASS at 1010 events;
+- session manager: PASS for room isolation, stale writes, atomic rollback and corrupt-state quarantine.
+
+CI note:
+- an earlier main run at SHA 2b655b9 failed the static startup budget at 102,602 bytes, not an RPG logic assertion.
+- the project retained the 100,000-byte gate; a concurrent release optimization (a5dea37) adjusted the real startup layer rather than weakening the limit.
+- full CI for the latest RPG/context/long-story commits is still being revalidated, so this batch is not yet marked regression-safe.
+
+Still open:
+- live room/workspace binding and automatic hydrate/continue flow;
+- migration/unification with legacy World/Canon runtime state;
+- shared Context Builder + Model Routing token-accounted RPG projection;
+- public Memory Fabric writes for RPG adapter records;
+- model-output delta extraction and post-generation validator;
+- directional relationship model;
+- semantic character voice/emotion/narrative evaluation;
+- Android RPG restart/RTL/mobile acceptance.

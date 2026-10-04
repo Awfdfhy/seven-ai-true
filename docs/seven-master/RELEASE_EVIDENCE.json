@@ -1,148 +1,148 @@
 {
-  "scope": "main through 8f9956858f61a82a4888e91cc3a2c4ce5fceadd7 plus release repairs; synthetic/injected components; not live providers or device",
+  "scope": "main through 9c51dc7ee7c467d02a7fee0714952370323ebca8 plus release repairs; synthetic/injected components; not live providers or device",
   "componentSuites": [
     {
       "file": "evolution/advanced.test.cjs",
       "exit": 0,
-      "durationMs": 83,
+      "durationMs": 72,
       "error": null
     },
     {
       "file": "evolution/coding-candidate.test.cjs",
       "exit": 0,
-      "durationMs": 71,
+      "durationMs": 68,
       "error": null
     },
     {
       "file": "evolution/coding-evolution.test.cjs",
       "exit": 0,
-      "durationMs": 96,
+      "durationMs": 92,
       "error": null
     },
     {
       "file": "evolution/cognitive-boost.test.cjs",
       "exit": 0,
-      "durationMs": 78,
+      "durationMs": 70,
       "error": null
     },
     {
       "file": "evolution/cognitive-gate.test.cjs",
       "exit": 0,
-      "durationMs": 71,
+      "durationMs": 67,
       "error": null
     },
     {
       "file": "evolution/durable-engine.test.cjs",
       "exit": 0,
-      "durationMs": 87,
+      "durationMs": 95,
       "error": null
     },
     {
       "file": "evolution/engine.test.cjs",
       "exit": 0,
-      "durationMs": 82,
+      "durationMs": 83,
       "error": null
     },
     {
       "file": "evolution/evolution.test.cjs",
       "exit": 0,
-      "durationMs": 83,
+      "durationMs": 69,
       "error": null
     },
     {
       "file": "evolution/experiment-transaction.test.cjs",
       "exit": 0,
-      "durationMs": 74,
+      "durationMs": 87,
       "error": null
     },
     {
       "file": "evolution/model-promotion.test.cjs",
       "exit": 0,
-      "durationMs": 73,
+      "durationMs": 74,
       "error": null
     },
     {
       "file": "evolution/promotion-runner.test.cjs",
       "exit": 0,
-      "durationMs": 73,
+      "durationMs": 81,
       "error": null
     },
     {
       "file": "evolution/recovery.test.cjs",
       "exit": 0,
-      "durationMs": 76,
+      "durationMs": 71,
       "error": null
     },
     {
       "file": "evolution/registry.test.cjs",
       "exit": 0,
-      "durationMs": 69,
+      "durationMs": 78,
       "error": null
     },
     {
       "file": "eval/harness.cjs",
       "exit": 0,
-      "durationMs": 76,
+      "durationMs": 63,
       "error": null
     },
     {
       "file": "eval/search-v2-eval.cjs",
       "exit": 0,
-      "durationMs": 76,
+      "durationMs": 74,
       "error": null
     },
     {
       "file": "memory.cjs",
       "exit": 0,
-      "durationMs": 82,
+      "durationMs": 148,
       "error": null
     },
     {
       "file": "runtime-smoke.cjs",
       "exit": 0,
-      "durationMs": 81,
+      "durationMs": 82,
       "error": null
     },
     {
       "file": "cloudflare/search-gateway/search-gateway.test.mjs",
       "exit": 0,
-      "durationMs": 83,
+      "durationMs": 82,
       "error": null
     },
     {
       "file": "apk/build-provenance.test.cjs",
       "exit": 0,
-      "durationMs": 76,
+      "durationMs": 66,
       "error": null
     },
     {
       "file": "release/static-audit.cjs",
       "exit": 0,
-      "durationMs": 233,
+      "durationMs": 222,
       "error": null
     },
     {
       "file": "release/canon-simulator.test.cjs",
       "exit": 0,
-      "durationMs": 71,
+      "durationMs": 66,
       "error": null
     },
     {
       "file": "release/contrast.test.cjs",
       "exit": 0,
-      "durationMs": 73,
+      "durationMs": 68,
       "error": null
     },
     {
       "file": "release/control-bridge-retry.test.cjs",
       "exit": 0,
-      "durationMs": 189,
+      "durationMs": 190,
       "error": null
     },
     {
       "file": "release/embedded-credentials.test.cjs",
       "exit": 0,
-      "durationMs": 328,
+      "durationMs": 270,
       "error": null
     },
     {
@@ -154,52 +154,59 @@
     {
       "file": "release/integration-contracts.test.cjs",
       "exit": 0,
-      "durationMs": 85,
+      "durationMs": 88,
       "error": null
     },
     {
       "file": "release/research-runtime.test.cjs",
       "exit": 0,
-      "durationMs": 69,
+      "durationMs": 73,
+      "error": null
+    },
+    {
+      "file": "release/resilience-contracts.test.cjs",
+      "exit": 0,
+      "durationMs": 70,
+      "error": null
+    },
+    {
+      "file": "release/rpg-context.test.cjs",
+      "exit": 0,
+      "durationMs": 104,
+      "error": null
+    },
+    {
+      "file": "release/rpg-longstory.test.cjs",
+      "exit": 0,
+      "durationMs": 29736,
       "error": null
     },
     {
       "file": "release/rpg-session.test.cjs",
       "exit": 0,
-      "durationMs": 84,
+      "durationMs": 92,
       "error": null
     },
     {
       "file": "release/rpg-state.test.cjs",
       "exit": 0,
-      "durationMs": 5519,
+      "durationMs": 5540,
       "error": null
     },
     {
       "file": "release/ui-polish-loader.test.cjs",
       "exit": 0,
-      "durationMs": 73,
+      "durationMs": 74,
       "error": null
     },
     {
       "file": "release/world-runtime.test.cjs",
       "exit": 0,
-      "durationMs": 85,
+      "durationMs": 67,
       "error": null
     }
   ],
-  "additionalSuites": [
-    {
-      "file": "release/rpg-context.test.cjs",
-      "result": "PASS after bounded-reference repair",
-      "output": "aChars=5365, bChars=3324; 9k maximum; oversized biography blocked"
-    },
-    {
-      "file": "release/rpg-longstory.test.cjs",
-      "result": "PASS",
-      "output": "rpg long story benchmark: PASS {\"committedEvents\":1006,\"revision\":1006,\"tick\":82,\"bridgeDestroyed\":true,\"quest\":\"completed\",\"ariaContextChars\":7788,\"spyContextChars\":1593,\"invalidCanonBlocked\":true,\"playerAgencyBlocked\":true}"
-    }
-  ],
+  "additionalSuites": [],
   "syntax": {
     "checked": 119,
     "failed": []
@@ -245,5 +252,7 @@
     "android": "Gradle download network unreachable; no built APK/device result",
     "liveProviders": "UNMEASURED",
     "RC": "NOT_CREATED"
-  }
+  },
+  "preRepairFailure": "release/rpg-context.test.cjs:44 exceeded 9000-character bound; repaired and retested",
+  "memoryResultOutput": "dist/memory-results.json; rerun passed 11 and no longer rewrites tracked root file"
 }

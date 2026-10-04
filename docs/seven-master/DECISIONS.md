@@ -77,3 +77,5 @@ Decision: Character context knowledge references are projections restricted to s
 ## ADR-REL-005 — Regression discovery and startup budget share authoritative inputs
 Status: Accepted
 Decision: all.cjs discovers release/*.test.cjs automatically. Static and browser release audits consume build.startupBytes with the same strict <100000-byte gate; no budget increase was used. UI loader public API stays load/loadShell/loadFinal and supports failure recovery.
+
+Generated test reports belong under dist/, not tracked source. Memory output moved to dist/memory-results.json to keep acceptance/build source identity clean.

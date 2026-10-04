@@ -158,3 +158,5 @@ Seven is not considered integrated until:
 ### Test/startup ownership
 - `all.cjs` discovers every top-level `release/*.test.cjs` automatically, while retaining explicit browser/eval/gateway/evolution/packaging gates.
 - Actual compiled `build.startupBytes` is authoritative for both static/browser startup audits; strict budget remains below 100000 bytes. Byte count is not a startup-latency measurement.
+
+Memory VM test report output is dist/memory-results.json. Historical root memory-results.json is not a current acceptance result. Test runs must not mutate tracked source.

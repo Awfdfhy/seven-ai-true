@@ -6,7 +6,7 @@ Audit date: 2026-10-05 (Asia/Baghdad). Release decision: **NO RC / NOT RELEASE-A
 
 The inspected main application is the HTML/Capacitor product, not the separate React/TypeScript remake found on specialist branches. Root `package.json` builds `seven_ai-final.html` through `release/build-release.cjs`; it does not build `remake/`. A successful main APK therefore cannot be evidence that all recent Memory/Tools work is included.
 
-Initial inspected main: `ff9693077d5cedfaf4dd8213f9536c8f981f5f91`. Integrated upstream snapshot for this report: `8f9956858f61a82a4888e91cc3a2c4ce5fceadd7`, plus the release repairs described below. The enclosing Git commit identifies the final report/repair snapshot. Later specialist commits are outside this audit until retested.
+Initial inspected main: `ff9693077d5cedfaf4dd8213f9536c8f981f5f91`. Integrated upstream snapshot for this report: `9c51dc7ee7c467d02a7fee0714952370323ebca8`, plus the release repairs described below. The enclosing Git commit identifies the final report/repair snapshot. Later specialist commits are outside this audit until retested.
 
 Read the six master documents in full, inventoried the complete initial Git tree (452 entries, not truncated), inspected build/runtime/CI entrypoints and representative subsystem implementations, examined branches and open PRs, ran component suites and injected failures. This is a bounded engineering audit, not a claim that every line or every branch was reviewed.
 
@@ -28,7 +28,7 @@ Completeness below means verified capability scope, not an invented percentage. 
 | RPG | World/Canon compatibility runtimes; new state, session and character-context modules loaded by hub | Tested foundations; live structured turn transaction not wired into RPG UI/chat | State/session/context/long-story suites PASS after budget fix | Module loading exists; legacy RPG workspace still owns actual turns | Loaded code is not live usage; narrator/character prompt and shared memory seam incomplete; HIGH | Wire one validated atomic per-room turn and prove no secret/player-control leaks |
 | Integration | Control/Runtime/Execution contracts, checkpoint integrity, cancellation/agency/citation gates | Component seams verified; whole-product gate incomplete | `integration-contracts.test.cjs` PASS | Late Control boot fix incorporated from upstream | Error taxonomy/request identity coverage and concurrent operations incomplete; HIGH | Run the acceptance matrix on one fixed product snapshot |
 | Android / UI | Capacitor 8.5.2; generated native storage/SAF bridge; RTL/themes/reduced motion; API 34/36 instrumentation workflow | Native project generation verified | Web build and Android generation PASS; Gradle/browser/device checks BLOCKED locally | Root APK pipeline builds legacy product | Install/upgrade/signature continuity and current UI device evidence unverified; HIGH | Exact-SHA CI build + API 34/36 + installed upgrade test |
-| CI/CD / evals | Root tests/APK workflows, deterministic evolution suites, corpus audit, many historical agent workflows | Infrastructure exists; test discovery repaired | 33 component suites PASS; 119 tracked JS syntax checks PASS | Root release path exists; Reality Lab references missing remake product | Multiple release trains, missing root lockfile, stale workflow lineage; HIGH | Separate workflow ownership and enforce a single release evidence record |
+| CI/CD / evals | Root tests/APK workflows, deterministic evolution suites, corpus audit, many historical agent workflows | Infrastructure exists; test discovery repaired | 34 component suites PASS; 119 tracked JS syntax checks PASS | Root release path exists; Reality Lab references missing remake product | Multiple release trains, missing root lockfile, stale workflow lineage; HIGH | Separate workflow ownership and enforce a single release evidence record |
 | Documentation | Master contracts and specialist docs exist | Updated by this audit; earlier entries retained as history | Compared to real code, not accepted as evidence alone | Truth report and release addendum provided | Plan prose was previously presented beside unfinished wiring; MEDIUM | Keep snapshot/SHA and observed/not-tested labels in every update |
 
 ## Defects found and repairs
@@ -48,7 +48,9 @@ Completeness below means verified capability scope, not an invented percentage. 
 | REL-11 | MEDIUM | Build synchronizer rewrote four tracked launcher files, conflicting with clean source provenance | FIXED: synchronized current label committed in source; second synchronization changes 0/4 files |
 | REL-12 | HIGH | Explicit test lists could omit new specialist regression files | FIXED: root automatically discovers every `release/*.test.cjs`; newly landing RPG/context/boot suites included |
 
-Also incorporated upstream fixes for checkpoint integrity/retention, actual cancellation abort, Control late-boot recovery and IndexedDB recovery UI. Those are credited to the upstream integration work, not newly invented fixes from this audit.
+Also incorporated upstream fixes for checkpoint integrity/retention, actual cancellation abort, Control late-boot recovery, IndexedDB/memory recovery, exact RPG relationship identity, attachment lifecycle, IME safety, provider-safe Deep Think and discovery/token-expiry resilience. Those are credited to the upstream integration work, not newly invented fixes from this audit.
+
+REL-13 (MEDIUM): memory tests wrote generated results into a tracked source file. Results now go to `dist/memory-results.json`; no consumer references the old path, and a rerun leaves tracked source unchanged. This preserves the clean-source APK gate.
 
 No claim of zero bugs is made. The separate master bughunt backlog was not fully revalidated/closed by this pass.
 
@@ -65,11 +67,11 @@ No claim of zero bugs is made. The separate master bughunt backlog was not fully
 
 ## Test and failure-hunt evidence
 
-- 31 component suites passed on the merged main snapshot through Control boot/session work; two newly landing RPG context/long-story suites were then tested. Context failed before REL-10 and passed after repair. Total verified component suites: **33**. Their evidence is in `RELEASE_EVIDENCE.json`.
+- 31 component suites passed on the merged main snapshot through Control boot/session work; two newly landing RPG context/long-story suites were then tested. Context failed before REL-10 and passed after repair. Total verified component suites: **34**. Their evidence is in `RELEASE_EVIDENCE.json`.
 - `release/github-self-dev.test.cjs`: 11 failure-hunt cases, including stale CI, wrong branch, unfinished timeout, exact failure, partial/racing changes, protected gates, network read failure and merge SHA binding.
 - `apk/build-provenance.test.cjs`: 7 cases (current payload, stale bytes, wrong SHA, dirty source, old format, duplicate paths, traversal).
 - `release/ui-polish-loader.test.cjs`: network error, missing runtime registration, retry recovery and concurrent loading.
-- Gateway 15 tests, Memory 9 assertions, runtime 28 assertions, integration contracts, evolution unit/regression and RPG deterministic tests passed. These use synthetic/injected adapters where documented.
+- Gateway 15 tests, Memory 11 assertions, runtime 28 assertions, integration contracts, evolution unit/regression and RPG deterministic tests passed. These use synthetic/injected adapters where documented.
 - 119 tracked JS/CJS/MJS files passed `node --check`; this is syntax checking, not lint or type checking. Root declares neither lint nor TypeScript checking scripts.
 - `npm run build:web`: PASS. `npm run android:generate`: PASS, including native assets/bridge/SAF/reduced-motion/instrumentation materialization.
 - `node all.cjs`: **NOT A FULL PASS** locally. `verify.cjs` cannot launch Chromium; both supported browser download attempts returned unusable archives. No mock browser result substituted.
@@ -88,7 +90,7 @@ Node 24.19.0 Linux container, synthetic records, 20 warmed retrieval measurement
 | RPG event, first 100 of 1,000 | 0.50 ms | 0.99 ms | Small ledger |
 | RPG event, last 100 of 1,000 | 8.24 ms | 10.12 ms | Full state/ledger cloning and validation increase per-turn work |
 
-RPG state reached approximately 298 KB in the benchmark. These measurements diagnose growth; changing canonical state/ledger architecture requires a specialist contract review. Startup release layer is ~98.7 KB under the unchanged 100 KB gate. Total static package is ~4.16 MB under the 8 MiB budget; these bytes are not startup milliseconds.
+RPG state reached approximately 298 KB in the benchmark. These measurements diagnose growth; changing canonical state/ledger architecture requires a specialist contract review. Startup release layer is ~98.9 KB under the unchanged 100 KB gate. Total static package is ~4.17 MB under the 8 MiB budget; these bytes are not startup milliseconds.
 
 Startup time, TTFT, total response latency, live routing overhead, live tool/web latency, large-chat rendering, APK startup/battery/RAM/thermal remain UNMEASURED in this pass. Existing telemetry functions and catalog speed numbers are not substituted for measurements.
 
@@ -117,3 +119,5 @@ Signing identity continuity, package/data migration across older variants, actua
 3. Verify APK manifest/version/signature and hashed web payload; run API 34/36 smoke plus an actual install/upgrade/restart on the user's Android 14 device without deleting data.
 4. Wire one atomic RPG turn through Session/Context/Memory and stress cancellation/room isolation; reconcile the Coding/Self-Development specialist implementations with the chosen release path.
 5. Only then issue **Seven AI RC1**, with SHA/run/tests/known issues/blockers/artifact recorded in one acceptance record.
+
+Final recheck: all 34 available component suites passed on the merged upstream snapshot plus these repairs. Full browser/Android gates remain unverified.

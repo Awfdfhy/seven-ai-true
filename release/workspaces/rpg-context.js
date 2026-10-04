@@ -21,8 +21,8 @@ function scoreCanon(entry,character,scene){
 function relationshipSlice(state,characterId,participantIds){
   const out={};const participants=new Set(uniq(participantIds));
   for(const [key,value] of Object.entries(obj(state.relationships))){
-    if(!key.includes(characterId))continue;
     const pieces=key.includes('->')?key.split('->'):key.split('::');
+    if(!pieces.includes(characterId))continue;
     const other=pieces.find(x=>x!==characterId);
     if(participants.size&&other&&!participants.has(other))continue;
     out[key]=clone(value);
@@ -69,10 +69,21 @@ function buildCharacterView(stateInput,stateApi,characterId,options){
   boundKnowledgeRefs();serialized=JSON.stringify(view);
   if(serialized.length>maxChars){
     view.knownCanon=view.knownCanon.slice(0,12);
+    const visibleFacts=new Set(view.knownCanon.map(x=>x&&x.id).filter(Boolean));
+    view.knowledgeRefs=Object.fromEntries(Object.entries(view.knowledgeRefs).filter(([id])=>visibleFacts.has(id)));
     view.quests=Object.fromEntries(Object.entries(view.quests).slice(0,8));
     view.relationships=Object.fromEntries(Object.entries(view.relationships).slice(0,12));
     view.inventory=view.inventory.slice(0,24);view.abilities=view.abilities.slice(0,24);
     boundKnowledgeRefs();
+    serialized=JSON.stringify(view);
+  }
+  if(serialized.length>maxChars){
+    view.knownCanon=view.knownCanon.slice(0,6);
+    const visibleFacts=new Set(view.knownCanon.map(x=>x&&x.id).filter(Boolean));
+    view.knowledgeRefs=Object.fromEntries(Object.entries(view.knowledgeRefs).filter(([id])=>visibleFacts.has(id)));
+    view.quests=Object.fromEntries(Object.entries(view.quests).slice(0,4));
+    view.relationships=Object.fromEntries(Object.entries(view.relationships).slice(0,6));
+    view.inventory=view.inventory.slice(0,12);view.abilities=view.abilities.slice(0,12);
     serialized=JSON.stringify(view);
   }
   view._diagnostics={serializedChars:serialized.length,bounded:serialized.length<=maxChars,canonCount:view.knownCanon.length};
