@@ -43,3 +43,36 @@ Observed during this batch:
 NOT YET ACCEPTED AS FULLY INTEGRATED. No claim of zero bugs is made.
 
 See docs/seven-master/INTEGRATION_AUDIT.md for inventory, dependency map, contract status and scorecard.
+
+
+## RPG Specialist Batch 01 — Structured State Foundation
+
+Implemented:
+- docs/seven-master/RPG_RESEARCH_REPORT.md — external research synthesis + repo gap analysis.
+- docs/seven-master/RPG_ARCHITECTURE.md — structured RPG architecture and integration boundaries.
+- docs/seven-master/RPG_IMPLEMENTATION_PLAN.md — staged build/evaluation plan through long-story + Android + Integration verification.
+- release/workspaces/rpg-state.js — pure structured-state kernel.
+- release/rpg-state.test.cjs — deterministic state/continuity acceptance coverage.
+- all.cjs now registers the RPG state suite.
+- RPG workspace dependency loader now loads SevenRpgState with legacy World/Canon runtimes.
+- RPG State Contract v1 and ADR-010..014 ratified.
+
+Evidence from the kernel scenario:
+- PASS at 1010 committed events/turns.
+- Player-control mutation from runtime is blocked.
+- Invalid cross-location scene is blocked.
+- Future/local-secret knowledge is bounded by character.
+- Belief can disagree with truth without promoting to Canon.
+- Multi-dimensional relationship and emotion mutations persist.
+- Lower-priority Canon and conflicting HARD CANON mutations are blocked; explicit user override is accepted.
+- Inventory ownership and timeline rollback guards pass.
+- Test context projection remained bounded (~5.2k serialized chars for the long fixture).
+
+Not yet accepted:
+- live model generation does not yet consume the new Character/Narrator views;
+- per-room/per-world RPG persistence is not yet wired;
+- legacy World/Canon + new state commit is not yet one atomic turn transaction;
+- state-level knowledge tests do not yet prove generation-level no-leak behavior;
+- directional relationships, production token-aware retrieval, semantic 100/500/1000-turn evaluation and Android restore UX remain open.
+
+Next RPG implementation target: versioned per-room persistence + atomic session ownership and corruption/restart tests.
