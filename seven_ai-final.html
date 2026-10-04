@@ -834,7 +834,7 @@
         <!-- Input Area -->
         <div class="input-area">
             <div class="composer">
-                <textarea id="userInput" dir="auto" rows="1" placeholder="Message Seven AI..." oncompositionstart="composerCompositionActive=true" oncompositionend="composerCompositionActive=false" onkeydown="if(event.key==='Enter' && !event.shiftKey && !event.isComposing && event.keyCode!==229 && !composerCompositionActive){ event.preventDefault(); sendMessage(); }"></textarea>
+                <textarea id="userInput" dir="auto" rows="1" placeholder="Message Seven AI..."></textarea>
                 <div class="composer-row">
                     <div class="composer-tools">
                         <button class="tool-btn" onclick="document.getElementById('fileInput').click()" title="Add a .txt or .pdf file to the AI's knowledge" aria-label="Attach a file">
@@ -2591,6 +2591,20 @@
 
         // Explicit composition lifecycle supplements event.isComposing for Android IMEs.
         window.composerCompositionActive = false;
+        function bindComposerImeGuard() {
+            const input = document.getElementById("userInput");
+            if (!input || input.dataset.sevenImeGuard === "1") return;
+            input.dataset.sevenImeGuard = "1";
+            input.addEventListener("compositionstart", () => { window.composerCompositionActive = true; });
+            input.addEventListener("compositionend", () => { window.composerCompositionActive = false; });
+            input.addEventListener("keydown", event => {
+                if (event.key !== "Enter" || event.shiftKey) return;
+                if (event.isComposing || event.keyCode === 229 || window.composerCompositionActive) return;
+                event.preventDefault();
+                if (typeof window.sendMessage === "function") window.sendMessage();
+            });
+        }
+        bindComposerImeGuard();
 
         // Grows the composer textarea as the user types multi-line text,
         // capped by the CSS max-height (which then scrolls instead).
