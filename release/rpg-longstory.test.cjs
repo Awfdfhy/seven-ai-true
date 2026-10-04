@@ -40,7 +40,7 @@ commit({id:'e-aria-learns',type:'knowledge.learn',source:'runtime',payload:{char
 let spyView=Context.buildCharacterView(session.state,State,'spy',{maxChars:9000});assert.equal(spyView.ok,true);assert.ok(!spyView.view.knownCanon.some(x=>x.id==='pact'));
 const initialHeroVoice=JSON.stringify(session.state.characters.hero.voice);
 
-for(let i=0;i<994;i++){
+for(let i=0;i<1004;i++){
   const n=i+1;
   let ev;
   if(n===100)ev={id:'bench-'+n,type:'item.transfer',source:'user',payload:{itemId:'asterionKey',fromOwnerId:'hero',toOwnerId:'aria'},summary:'Hero entrusted the key to Aria.'};
@@ -61,7 +61,7 @@ for(let i=0;i<994;i++){
   }
 }
 
-assert.equal(eventCount,996);
+assert.equal(eventCount,1006);
 assert.equal(session.state.world.flags.bridgeDestroyed,true,'old consequence must persist');
 assert.equal(session.state.items.asterionKey.ownerId,'aria');
 assert.ok(session.state.characters.aria.inventory.includes('asterionKey'));
