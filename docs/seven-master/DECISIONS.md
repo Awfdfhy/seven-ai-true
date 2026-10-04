@@ -20,14 +20,50 @@ Decision: The Coding System must be robust and verified before autonomous/self-d
 Status: Accepted
 Decision: No subsystem is marked complete from implementation alone; tests and regression evidence are required.
 
-## ADR-006 — Coding Builds on the Modern Tool Product Branch
+## ADR-006 — Integration Acceptance Is Evidence-Gated
 Status: Accepted
-Decision: Coding System implementation targets `seven-remake-v3` because it contains the verified modern Tool Fabric and TaskManager. The specialist branch `coding-system-v1` is created from an exact `seven-remake-v3` commit. Coordination documents from `main` are carried into that branch so code and status evidence remain reviewable together.
+Decision: Unit success is insufficient for release readiness. Cross-system regression, release build, Android build/device evidence, state isolation, cancellation and recovery are explicit acceptance gates. Zero bugs may only mean zero known reproducible bugs in the tested scope.
 
-## ADR-007 — Coding Plans Are Bound to Exact Workspace Truth
+## ADR-007 — Execution Checkpoints Fail Closed
 Status: Accepted
-Decision: Every mutating Coding plan is bound to an exact Git head SHA, repository snapshot fingerprint, and per-file source fingerprint. Head, snapshot, or source-file drift fails closed; an old plan is never silently applied to a changed workspace.
+Decision: Execution checkpoints use a versioned envelope with task/run/state identity checks, deterministic corruption checksum and bounded retention. Invalid checkpoints are rejected. The checksum is not treated as a cryptographic trust boundary.
 
-## ADR-008 — Mandatory Verification Is Outside Model Authority
+## ADR-008 — Cancellation Is Request-Scoped
 Status: Accepted
-Decision: Deterministic policy selects mandatory verification commands from the changed paths. Models may request additional checks but cannot remove required typecheck/build/regression/security gates. PASS requires recorded execution evidence, not a model assertion.
+Decision: Cancellation belongs to the originating generation/tool request. Platform-specific code may choose the safe abort mechanism, but late results must be discarded and cancellation from another room/workspace must not bleed across scopes.
+
+## ADR-009 — Cross-System Errors Use a Common Taxonomy
+Status: Accepted
+Decision: Integration surfaces normalize failures into MODEL_ERROR, NETWORK_ERROR, TOOL_ERROR, MEMORY_ERROR, FILE_ERROR, AUTH_ERROR, RATE_LIMIT, VALIDATION_ERROR, CANCELLED, TIMEOUT or INTERNAL_ERROR, while preserving technical details in safe structured diagnostics.
+
+## ADR-010 — RPG Structured State Is Authoritative
+Status: Accepted
+Decision: RPG continuity-critical truth lives in validated structured state plus provenance ledger. Narrative prose, summaries and retrieved memories are projections/evidence, not authoritative state.
+
+## ADR-011 — RPG Separates Truth, Knowledge and Belief
+Status: Accepted
+Decision: Narrator/world truth, each character's knowledge, and each character's beliefs are separate state domains. A character may not use a fact without a valid knowledge path.
+
+## ADR-012 — RPG Uses Propose → Validate → Commit
+Status: Accepted
+Decision: Models and NPC planners may propose state changes, but deterministic Canon, player-control, knowledge, timeline, spatial, inventory/ability and provenance gates decide whether a change can commit.
+
+## ADR-013 — RPG Reuses Seven Memory Fabric
+Status: Accepted
+Decision: RPG-specific memory schemas/adapters layer on the shared Memory system using RPG scope and provenance; no independent hidden RPG memory database is introduced.
+
+## ADR-014 — Player Control Is a Hard Runtime Constraint
+Status: Accepted
+Decision: For player-controlled characters, Seven cannot invent irreversible actions, internal thoughts/emotions or decisions unless the user explicitly grants control.
+
+## ADR-015 — Coding Builds on the Modern Tool Product Branch
+Status: Accepted
+Decision: Coding System implementation targets `seven-remake-v3` because it contains the modern Tool Fabric and TaskManager. The specialist branch `coding-system-v1` begins from an exact product SHA and carries current coordination documentation for review.
+
+## ADR-016 — Coding Plans Are Bound to Exact Workspace Truth
+Status: Accepted
+Decision: Every mutating Coding plan is bound to an exact Git head SHA, repository snapshot fingerprint and per-file source fingerprint. Head, snapshot or source-file drift fails closed; an old plan is never silently applied to changed workspace state.
+
+## ADR-017 — Mandatory Coding Verification Is Outside Model Authority
+Status: Accepted
+Decision: Deterministic policy selects mandatory verification commands from changed paths. Models may request additional checks but cannot remove required verification gates. PASS requires recorded execution evidence, not a model assertion.
