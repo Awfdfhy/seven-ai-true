@@ -80,3 +80,11 @@ Memory is currently a P0 product campaign. Use .seven-team/memory-v2/RESEARCH_SY
 Assign A06/B08 as primary owners with A04 architecture review, A08 verification, B09 race/stress review and B10 product-cohesion review.
 Do not call Memory complete until live-chat wiring, temporal correction, provenance, abstention, restart persistence, Android evidence, Arabic parity and secret exclusion are proven.
 Prefer incremental migration beside legacy memory over destructive rewrites.
+
+
+## Memory Strike Team evidence discipline
+
+For any Memory/Context task, read .seven-team/memory-v2/STRIKE_TEAM.md and IMPLEMENTATION_EVIDENCE.md in addition to the research synthesis.
+Assign work by the ownership map instead of duplicating the same task across agents.
+Every new memory capability must add evidence to the ledger: implementation commit, tests, benchmark result, Android exact-build state, and known unproven items.
+Do not promote semantic/vector/graph complexity unless it wins a measured benchmark against the current local lexical/temporal baseline.
