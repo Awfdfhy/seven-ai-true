@@ -32,6 +32,12 @@ from autonomy_kernel import (
     record_arena_candidates,
     finalize_cycle,
 )
+from domain_campaign import (
+    load_domain_campaign,
+    domain_research_brief,
+    audit_domain_research,
+    campaign_prompt_summary,
+)
 
 ROOT = pathlib.Path.cwd()
 PRODUCT_BRANCH = os.environ.get("SEVEN_PRODUCT_BRANCH", "seven-remake-v3")
@@ -52,6 +58,7 @@ MANAGER_CONTRACT = (CONTROL_ROOT / "manager.md").read_text(encoding="utf-8")
 AGENT_CONTRACT = (CONTROL_ROOT / "agent.md").read_text(encoding="utf-8")
 AGENTS: list[dict[str, str]] = list(TEAM["agents"])
 AUTONOMY_CONTRACTS = load_autonomy_contracts(ROOT)
+DOMAIN_CAMPAIGN = load_domain_campaign(ROOT)
 
 ARTIFACT_ROOT = RUNNER_TEMP / "seven-superloop-artifacts"
 WORKTREE_ROOT = RUNNER_TEMP / "seven-superloop-worktrees"
@@ -268,6 +275,9 @@ Relevant prior evidence:
 
 Task:
 {stage_instruction}
+
+Domain campaign assignment:
+{domain_research_brief(DOMAIN_CAMPAIGN, agent["id"]) if stage == "research" else "Use relevant completed domain research and roadmap evidence; do not invent missing research."}
 
 Inspect the repository yourself. Give precise evidence and do not claim work you did not perform.
 """
@@ -825,7 +835,7 @@ def save_state(cycle: int, summary: dict[str, Any]) -> None:
 
 
 def commit_cycle_metadata(cycle: int) -> None:
-    git("add", ".seven-team/superloop-state.json", ".seven-team/superloop-history")
+    git("add", ".seven-team/superloop-state.json", ".seven-team/superloop-history", ".seven-team/domain-campaign/generated")
     if git("status", "--porcelain").stdout.strip():
         git("-c", "user.name=Seven Superloop Manager", "-c", "user.email=actions@users.noreply.github.com",
             "commit", "-m", f"Superloop cycle {cycle} manager record")
@@ -862,6 +872,25 @@ B10 must report NO_NEW_INTELLIGENCE rather than inventing one.""",
     research = run_readonly_phase(
         cycle, "research", base_sha, research_plan, None, shared_node_modules
     )
+    domain_audit = audit_domain_research(DOMAIN_CAMPAIGN, research)
+    write_artifact(cycle, "domain-research", "coverage", json.dumps(domain_audit, indent=2))
+    domain_roadmaps = manager_readonly(
+        cycle,
+        "manager-domain-roadmaps",
+        base_sha,
+        f"""Create an independent architecture/improvement roadmap for EVERY configured Seven domain.
+Research coverage audit:\n{json.dumps(domain_audit, indent=2)}\n\nConfigured domains:\n{campaign_prompt_summary(DOMAIN_CAMPAIGN)}\n\nResearch reports:\n{clip(summarize_reports(research, 3500), 100000)}\n\nFor insufficient domains, explicitly label RESEARCH_INSUFFICIENT and do not fabricate a plan from weak evidence.
+For ready domains, produce CURRENT -> TARGET -> NOW/NEXT/LATER -> TESTS -> RISKS -> FIRST SLICE.
+Prioritize core domains but preserve separate plans for all domains.""",
+    )
+    campaign_dir = ROOT / ".seven-team" / "domain-campaign" / "generated"
+    campaign_dir.mkdir(parents=True, exist_ok=True)
+    (campaign_dir / "latest.md").write_text(domain_roadmaps.rstrip() + "\n", encoding="utf-8")
+    hist_dir = campaign_dir / "history"
+    hist_dir.mkdir(parents=True, exist_ok=True)
+    (hist_dir / f"cycle-{cycle:04d}.md").write_text(domain_roadmaps.rstrip() + "\n", encoding="utf-8")
+    (campaign_dir / "latest-audit.json").write_text(json.dumps(domain_audit, indent=2) + "\n", encoding="utf-8")
+
     execution_plan = manager_readonly(
         cycle,
         "manager-execution-plan",
@@ -869,8 +898,16 @@ B10 must report NO_NEW_INTELLIGENCE rather than inventing one.""",
         f"""Synthesize these 20 research reports into a compatible execution plan.
 Assign every agent a concrete task or an explicit VERIFY-ONLY/no-op if coding would duplicate ownership.
 Do not chase quantity; prioritize release blockers and strongest product improvements.
+Use the separate domain roadmaps below. Only implement domains with adequate research evidence; if a domain is RESEARCH_INSUFFICIENT, assign more verification/research rather than speculative architecture.
 
-{clip(summarize_reports(research, 4200), 100000)}""",
+Domain research audit:
+{json.dumps(domain_audit, indent=2)}
+
+Domain roadmaps:
+{clip(domain_roadmaps, 42000)}
+
+Research reports:
+{clip(summarize_reports(research, 4200), 100000)}"""
     )
 
     feature_base = git_output("rev-parse", "HEAD")
@@ -1011,6 +1048,9 @@ research priorities. Do not call missing evidence PASS.""",
         "apkState": next((line.split("=", 1)[1] for line in apk_result.splitlines() if line.startswith("APK_STAGE=")), "UNKNOWN"),
         "productQualityVerdict": quality_verdict,
         "productQualityScore": quality_score,
+        "domainResearchReady": domain_audit.get("ready", 0),
+        "domainResearchTotal": domain_audit.get("domains", 0),
+        "domainResearchInsufficient": domain_audit.get("insufficient", []),
         "head": final_head,
     }
     autonomy_final = finalize_cycle(

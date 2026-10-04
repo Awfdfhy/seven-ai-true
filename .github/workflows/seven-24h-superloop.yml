@@ -10,6 +10,7 @@ on:
       - '.seven-team/superloop/**'
       - '.seven-team/autonomy/**'
       - '.seven-team/product-intelligence/**'
+      - '.seven-team/domain-campaign/**'
       - '.github/workflows/seven-reality-lab.yml'
   pull_request:
     paths:
@@ -30,7 +31,7 @@ env:
   SEVEN_SUPERLOOP_BRANCH: autoloop/seven-24h-work-v2
   SEVEN_SUPERLOOP_MAX_PARALLEL: '20'
   SEVEN_SUPERLOOP_MODEL: kilo-auto/free
-  SEVEN_AGENT_READ_TIMEOUT: '360'
+  SEVEN_AGENT_READ_TIMEOUT: '600'
   SEVEN_AGENT_WRITE_TIMEOUT: '600'
   SEVEN_MANAGER_TIMEOUT: '480'
 
@@ -43,8 +44,15 @@ jobs:
       - name: Validate controller and team manifest
         run: |
           set -euo pipefail
-          python -m py_compile .seven-team/superloop/controller.py .seven-team/superloop/autonomy_kernel.py
+          python -m py_compile .seven-team/superloop/controller.py .seven-team/superloop/autonomy_kernel.py .seven-team/superloop/domain_campaign.py
           python .seven-team/superloop/autonomy_kernel.py validate --root .
+          python - <<'PY'
+          import pathlib,sys
+          sys.path.insert(0,'.seven-team/superloop')
+          from domain_campaign import load_domain_campaign
+          c=load_domain_campaign(pathlib.Path('.').resolve())
+          print(f"Seven domain campaign validation: PASS ({len(c['domains'])} domains)")
+          PY
           python - <<'PY'
           import json
           d=json.load(open('.seven-team/superloop/team-v1.json'))

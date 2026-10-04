@@ -1,0 +1,497 @@
+{
+  "schemaVersion": 1,
+  "name": "Seven Domain-by-Domain Internet Research & Improvement Campaign",
+  "enabled": true,
+  "goal": "Every major Seven subsystem receives independent internet research, current-state audit, architecture plan, improvement implementation, verification and durable learning.",
+  "researchPolicy": {
+    "minPrimaryRatio": 0.5,
+    "requireUrls": true,
+    "requireCurrentStateAudit": true,
+    "requireBenchmarkOrEval": true,
+    "requireFailureModes": true,
+    "requireSecurityPrivacyImpact": true,
+    "requirePerformanceImpact": true,
+    "requireAndroidImpact": true,
+    "requireArabicRtlImpact": true,
+    "requireImplementationPhases": true,
+    "requireAcceptanceTests": true,
+    "requireKnownUnknowns": true,
+    "sourcePreference": [
+      "official specification",
+      "primary research paper",
+      "official framework/product docs",
+      "recognized benchmark",
+      "high-quality engineering write-up",
+      "community evidence only for pain points"
+    ],
+    "staleRule": "For rapidly changing software/agent systems, prefer sources from the last 24 months unless the older source is foundational.",
+    "noCopyRule": "External products are evidence and design/architecture references, never permission to copy proprietary UI/assets/code."
+  },
+  "domains": [
+    {
+      "id": "D01_CHAT_CORE",
+      "title": "Chat / Rooms / Composer / Streaming",
+      "owners": [
+        "B01",
+        "A04"
+      ],
+      "priority": "CORE",
+      "sourceTarget": 10,
+      "seeds": [
+        "https://help.openai.com/en/articles/6825453-chatgpt-release-notes",
+        "https://developer.mozilla.org/en-US/docs/Web/API/Streams_API",
+        "https://developer.mozilla.org/en-US/docs/Web/API/AbortController",
+        "https://react.dev/learn/preserving-and-resetting-state"
+      ]
+    },
+    {
+      "id": "D02_MEMORY_CONTEXT",
+      "title": "Long-Term Memory / Context Fabric",
+      "owners": [
+        "A06",
+        "B08"
+      ],
+      "priority": "CORE",
+      "sourceTarget": 12,
+      "seeds": [
+        "https://github.com/microsoft/multi-agent-reference-architecture/blob/main/docs/memory/Memory.md",
+        "https://github.com/microsoft/multi-agent-reference-architecture/blob/main/docs/memory/Long-Term-Memory.md",
+        "https://aclanthology.org/2026.findings-acl.1690/",
+        "https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API"
+      ]
+    },
+    {
+      "id": "D03_TOOLS_CAPABILITY",
+      "title": "Tool System / Capability Graph / Permissions",
+      "owners": [
+        "A04",
+        "A07"
+      ],
+      "priority": "CORE",
+      "sourceTarget": 12,
+      "seeds": [
+        "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+        "https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/docs/specification/2026-07-28/server/tools.mdx",
+        "https://gorilla.cs.berkeley.edu/leaderboard",
+        "https://mas.owasp.org/MASVS/"
+      ]
+    },
+    {
+      "id": "D04_CODING_SYSTEM",
+      "title": "Coding Agent / Repo Map / Edit-Test-Verify",
+      "owners": [
+        "B06",
+        "A08"
+      ],
+      "priority": "CORE",
+      "sourceTarget": 12,
+      "seeds": [
+        "https://www.swebench.com/",
+        "https://github.com/SWE-agent/SWE-agent",
+        "https://docs.github.com/en/copilot/concepts/agents/copilot-cli/about-custom-agents",
+        "https://www.swebench.com/SWE-bench/faq/"
+      ]
+    },
+    {
+      "id": "D05_SELF_DEVELOPMENT",
+      "title": "Self-Development / Autonomous Software Evolution",
+      "owners": [
+        "B06",
+        "A10"
+      ],
+      "priority": "CORE",
+      "sourceTarget": 12,
+      "seeds": [
+        "https://github.com/SWE-agent/SWE-agent",
+        "https://docs.github.com/en/copilot/concepts/agents/copilot-cli/about-custom-agents",
+        "https://mas.owasp.org/MASVS/",
+        "https://opentelemetry.io/docs/specs/semconv/"
+      ]
+    },
+    {
+      "id": "D06_RPG_WORLD",
+      "title": "RPG / World Runtime / Canon / Dialogue / Agency",
+      "owners": [
+        "B05",
+        "A06"
+      ],
+      "priority": "CORE",
+      "sourceTarget": 12,
+      "seeds": [
+        "https://www.yarnspinner.dev/docs/",
+        "https://docs.yarnspinner.dev/components/dialogue-runner",
+        "https://github.com/YarnSpinnerTool/YarnSpinner-Unity",
+        "https://docs.godotengine.org/en/stable/tutorials/io/saving_games.html"
+      ]
+    },
+    {
+      "id": "D07_RESEARCH_WEB",
+      "title": "Web Research / Retrieval / Citations / Evidence",
+      "owners": [
+        "B03",
+        "A08"
+      ],
+      "priority": "CORE",
+      "sourceTarget": 12,
+      "seeds": [
+        "https://openai.com/index/browsecomp/",
+        "https://cdn.openai.com/pdf/5e10f4ab-d6f7-442e-9508-59515c65e35d/browsecomp.pdf",
+        "https://link.springer.com/article/10.1007/s42979-026-05134-x"
+      ]
+    },
+    {
+      "id": "D08_MODEL_ROUTING",
+      "title": "Model Routing / Provider Health / Fallback",
+      "owners": [
+        "A05",
+        "A09"
+      ],
+      "priority": "CORE",
+      "sourceTarget": 10,
+      "seeds": [
+        "https://aclanthology.org/2026.findings-acl.1881/",
+        "https://github.com/ynulihao/LLMRouterBench",
+        "https://opentelemetry.io/docs/specs/semconv/registry/attributes/gen-ai/"
+      ]
+    },
+    {
+      "id": "D09_DEEP_THINK",
+      "title": "Deep Think / Planning / Verification / Progress",
+      "owners": [
+        "B04",
+        "A09"
+      ],
+      "priority": "CORE",
+      "sourceTarget": 10,
+      "seeds": [
+        "https://openai.com/index/browsecomp/",
+        "https://gorilla.cs.berkeley.edu/leaderboard",
+        "https://www.swebench.com/"
+      ]
+    },
+    {
+      "id": "D10_FILES_MULTIMODAL",
+      "title": "Files / Attachments / PDFs / Multimodal",
+      "owners": [
+        "B02",
+        "A07"
+      ],
+      "priority": "HIGH",
+      "sourceTarget": 8,
+      "seeds": [
+        "https://capacitorjs.com/docs/apis/filesystem",
+        "https://developer.android.com/training/data-storage/shared/documents-files",
+        "https://mas.owasp.org/MASVS/"
+      ]
+    },
+    {
+      "id": "D11_ANDROID_NATIVE",
+      "title": "Android / APK / Lifecycle / IME / Back / Insets",
+      "owners": [
+        "A02",
+        "A03"
+      ],
+      "priority": "CORE",
+      "sourceTarget": 10,
+      "seeds": [
+        "https://developer.android.com/docs/quality-guidelines/core-app-quality",
+        "https://developer.android.com/topic/architecture/recommendations",
+        "https://developer.android.com/design/ui/mobile/guides/layout-and-content/edge-to-edge",
+        "https://developer.android.com/design/ui/mobile/guides/patterns/predictive-back",
+        "https://capacitorjs.com/docs/apis/app",
+        "https://capacitorjs.com/docs/apis/keyboard"
+      ]
+    },
+    {
+      "id": "D12_UI_DESIGN_SYSTEM",
+      "title": "UI / Visual System / Motion / Responsive Design",
+      "owners": [
+        "A01",
+        "B10"
+      ],
+      "priority": "CORE",
+      "sourceTarget": 10,
+      "seeds": [
+        "https://developer.android.com/docs/quality-guidelines/core-app-quality",
+        "https://playwright.dev/docs/test-snapshots",
+        "https://www.w3.org/WAI/standards-guidelines/wcag/",
+        "https://help.openai.com/en/articles/6825453-chatgpt-release-notes"
+      ]
+    },
+    {
+      "id": "D13_ARABIC_RTL_A11Y",
+      "title": "Arabic / RTL / Bidi / Accessibility",
+      "owners": [
+        "A03",
+        "A01"
+      ],
+      "priority": "HIGH",
+      "sourceTarget": 8,
+      "seeds": [
+        "https://www.w3.org/WAI/standards-guidelines/wcag/",
+        "https://developer.android.com/guide/topics/resources/localization",
+        "https://developer.android.com/guide/topics/ui/accessibility"
+      ]
+    },
+    {
+      "id": "D14_SECURITY_PRIVACY",
+      "title": "Security / Credentials / Privacy / Agent Boundaries",
+      "owners": [
+        "A07",
+        "A10"
+      ],
+      "priority": "CORE",
+      "sourceTarget": 12,
+      "seeds": [
+        "https://mas.owasp.org/MASVS/",
+        "https://modelcontextprotocol.io/specification/2026-07-28",
+        "https://opentelemetry.io/docs/specs/semconv/registry/attributes/gen-ai/"
+      ]
+    },
+    {
+      "id": "D15_PERSISTENCE_RECOVERY",
+      "title": "Persistence / Migration / Corruption / Recovery",
+      "owners": [
+        "B08",
+        "B09"
+      ],
+      "priority": "CORE",
+      "sourceTarget": 10,
+      "seeds": [
+        "https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API",
+        "https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API",
+        "https://developer.android.com/topic/architecture/recommendations"
+      ]
+    },
+    {
+      "id": "D16_NETWORK_RESILIENCE",
+      "title": "Network / Retry / Offline / Streaming Resilience",
+      "owners": [
+        "B07",
+        "A05"
+      ],
+      "priority": "HIGH",
+      "sourceTarget": 8,
+      "seeds": [
+        "https://developer.mozilla.org/en-US/docs/Web/API/AbortController",
+        "https://developer.mozilla.org/en-US/docs/Web/API/Streams_API",
+        "https://opentelemetry.io/docs/specs/semconv/"
+      ]
+    },
+    {
+      "id": "D17_PERFORMANCE_CONCURRENCY",
+      "title": "Performance / Concurrency / Long Chat / Races",
+      "owners": [
+        "A09",
+        "B09"
+      ],
+      "priority": "CORE",
+      "sourceTarget": 10,
+      "seeds": [
+        "https://developer.android.com/docs/quality-guidelines/core-app-quality",
+        "https://web.dev/articles/long-tasks-devtools",
+        "https://developer.mozilla.org/en-US/docs/Web/API/Streams_API"
+      ]
+    },
+    {
+      "id": "D18_TESTING_EVALS",
+      "title": "Testing / Evals / Mutation / Visual / Release Evidence",
+      "owners": [
+        "A08",
+        "A10"
+      ],
+      "priority": "CORE",
+      "sourceTarget": 12,
+      "seeds": [
+        "https://www.swebench.com/",
+        "https://gorilla.cs.berkeley.edu/leaderboard",
+        "https://openai.com/index/browsecomp/",
+        "https://playwright.dev/docs/test-snapshots",
+        "https://playwright.dev/docs/emulation"
+      ]
+    },
+    {
+      "id": "D19_AGENT_ORCHESTRATION",
+      "title": "Multi-Agent Team / Manager / Strike Teams / Calibration",
+      "owners": [
+        "B10",
+        "A04"
+      ],
+      "priority": "HIGH",
+      "sourceTarget": 10,
+      "seeds": [
+        "https://docs.github.com/en/copilot/concepts/agents/copilot-cli/about-custom-agents",
+        "https://github.com/microsoft/multi-agent-reference-architecture",
+        "https://modelcontextprotocol.io/specification/2026-07-28"
+      ]
+    },
+    {
+      "id": "D20_PRODUCT_QUALITY",
+      "title": "Product Quality / Cohesion / Synthetic Users / UX Judges",
+      "owners": [
+        "B10",
+        "A01"
+      ],
+      "priority": "HIGH",
+      "sourceTarget": 8,
+      "seeds": [
+        "https://developer.android.com/docs/quality-guidelines/core-app-quality",
+        "https://www.w3.org/WAI/standards-guidelines/wcag/",
+        "https://playwright.dev/docs/test-snapshots"
+      ]
+    },
+    {
+      "id": "D21_OBSERVABILITY_WORLD_MODEL",
+      "title": "Observability / Engineering World Model / Blast Radius",
+      "owners": [
+        "A04",
+        "A09"
+      ],
+      "priority": "HIGH",
+      "sourceTarget": 8,
+      "seeds": [
+        "https://opentelemetry.io/docs/specs/semconv/",
+        "https://opentelemetry.io/docs/specs/semconv/registry/attributes/gen-ai/"
+      ]
+    },
+    {
+      "id": "D22_PROTOCOLS_INTEROP",
+      "title": "MCP / Agent Protocols / Tool Interoperability",
+      "owners": [
+        "A04",
+        "B06"
+      ],
+      "priority": "HIGH",
+      "sourceTarget": 10,
+      "seeds": [
+        "https://modelcontextprotocol.io/specification/2026-07-28",
+        "https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/blog/content/posts/2026-07-28-spec-ga/index.md"
+      ]
+    },
+    {
+      "id": "D23_IMPORT_EXPORT_BACKUP",
+      "title": "Import / Export / Backup / Data Portability",
+      "owners": [
+        "B02",
+        "B08"
+      ],
+      "priority": "MEDIUM",
+      "sourceTarget": 6,
+      "seeds": [
+        "https://developer.android.com/training/data-storage/shared/documents-files",
+        "https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API"
+      ]
+    },
+    {
+      "id": "D24_RELEASE_APK",
+      "title": "Release / APK Identity / Signing / Installed Evidence",
+      "owners": [
+        "A02",
+        "A08"
+      ],
+      "priority": "CORE",
+      "sourceTarget": 8,
+      "seeds": [
+        "https://developer.android.com/studio/publish/app-signing",
+        "https://developer.android.com/docs/quality-guidelines/core-app-quality"
+      ]
+    },
+    {
+      "id": "D25_HISTORY_ROOMS",
+      "title": "Conversation History / Room Lifecycle / Search / Archive",
+      "owners": [
+        "B01",
+        "B08"
+      ],
+      "priority": "HIGH",
+      "sourceTarget": 8,
+      "seeds": [
+        "https://react.dev/learn/preserving-and-resetting-state",
+        "https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API"
+      ]
+    },
+    {
+      "id": "D26_SETTINGS_CONTROLS",
+      "title": "Settings / Model Controls / Progressive Disclosure",
+      "owners": [
+        "A05",
+        "A01"
+      ],
+      "priority": "MEDIUM",
+      "sourceTarget": 6,
+      "seeds": [
+        "https://developer.android.com/docs/quality-guidelines/core-app-quality",
+        "https://help.openai.com/en/articles/6825453-chatgpt-release-notes"
+      ]
+    },
+    {
+      "id": "D27_ERROR_RECOVERY_UX",
+      "title": "Errors / Loading / Empty / Recovery UX",
+      "owners": [
+        "B07",
+        "B10"
+      ],
+      "priority": "HIGH",
+      "sourceTarget": 8,
+      "seeds": [
+        "https://developer.android.com/docs/quality-guidelines/core-app-quality",
+        "https://www.w3.org/WAI/standards-guidelines/wcag/"
+      ]
+    },
+    {
+      "id": "D28_LOCAL_INTELLIGENCE",
+      "title": "Local Intelligence / Embeddings / Reranking / Offline Fallback",
+      "owners": [
+        "A05",
+        "A09"
+      ],
+      "priority": "MEDIUM",
+      "sourceTarget": 8,
+      "seeds": [
+        "https://aclanthology.org/2026.findings-acl.1690/",
+        "https://aclanthology.org/2026.findings-acl.1881/"
+      ]
+    },
+    {
+      "id": "D29_REAL_WORKS_CANON",
+      "title": "Real Works / Source Fidelity / Canon Branching",
+      "owners": [
+        "B05",
+        "B03"
+      ],
+      "priority": "HIGH",
+      "sourceTarget": 8,
+      "seeds": [
+        "https://www.yarnspinner.dev/docs/",
+        "https://openai.com/index/browsecomp/"
+      ]
+    },
+    {
+      "id": "D30_AUTONOMOUS_QUALITY",
+      "title": "Reality Lab / Evolution Arena / Constitution / Proof / Meta-Team",
+      "owners": [
+        "A08",
+        "B10",
+        "A10"
+      ],
+      "priority": "CORE",
+      "sourceTarget": 12,
+      "seeds": [
+        "https://www.swebench.com/",
+        "https://playwright.dev/docs/test-snapshots",
+        "https://mas.owasp.org/MASVS/",
+        "https://opentelemetry.io/docs/specs/semconv/"
+      ]
+    }
+  ],
+  "globalSeeds": [
+    "https://modelcontextprotocol.io/specification/2026-07-28",
+    "https://www.swebench.com/",
+    "https://gorilla.cs.berkeley.edu/leaderboard",
+    "https://openai.com/index/browsecomp/",
+    "https://opentelemetry.io/docs/specs/semconv/",
+    "https://mas.owasp.org/MASVS/",
+    "https://developer.android.com/docs/quality-guidelines/core-app-quality",
+    "https://playwright.dev/docs/test-snapshots"
+  ]
+}

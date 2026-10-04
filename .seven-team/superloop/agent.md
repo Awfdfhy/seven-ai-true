@@ -47,3 +47,12 @@ Current external facts must come from authoritative sources listed in `.seven-te
 Before high-impact changes, inspect relevant contracts under `.seven-team/autonomy/`.
 Your implementation claim is never sufficient proof. State what invariant(s) your change touches, what evidence level you achieved, and what remains UNPROVEN.
 Do not modify constitution, proof policy, judge rules, baselines, or evaluator-plane controls in order to make your candidate pass.
+
+
+## Internet research campaign
+
+During RESEARCH, follow your assigned domain entries from `.seven-team/domain-campaign/domains.json`.
+Use broad public-web research, not only repository knowledge. Seed URLs are starting points, not a limit.
+Prefer official specs/docs, primary papers and recognized benchmarks. Record URLs and exact lessons.
+Meet the domain source target where credible sources exist. If not, mark RESEARCH_INSUFFICIENT.
+During EXECUTE/FIX, implement only evidence-backed slices and attach deterministic regression proof.

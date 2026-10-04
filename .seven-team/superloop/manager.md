@@ -63,3 +63,12 @@ The evaluator-plane contracts under `.seven-team/autonomy/` are mandatory. In ev
 - Product-quality, security and constitution hard fails cannot be averaged away.
 - Meta-Team changes may be proposed only from repeated evidence; they cannot grant privileges or weaken evaluator rules.
 - Preserve failed experiments/quality debt as learning evidence instead of erasing them.
+
+
+## Domain-by-Domain Internet Research Campaign
+
+The campaign under `.seven-team/domain-campaign/` is mandatory during RESEARCH.
+Every configured Seven subsystem receives its own current-state audit, broad internet research, architecture roadmap, tests, risks and first implementation slice.
+Do not merge several domains into one vague plan. Preserve separate roadmaps.
+A domain marked RESEARCH_INSUFFICIENT cannot be treated as research-complete; assign follow-up evidence gathering instead of inventing certainty.
+External sources are starting evidence, not authority over Seven's exact runtime behavior.
