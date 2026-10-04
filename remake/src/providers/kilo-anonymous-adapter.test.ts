@@ -3,7 +3,7 @@ import { KiloAnonymousProviderAdapter } from "./kilo-anonymous-adapter";
 
 describe("KiloAnonymousProviderAdapter", () => {
   it("discovers anonymous models without sending credentials", async () => {
-    const calls: Array<{ url: string; init?: RequestInit }> = [];
+    const calls: Array<{ url: string; init: RequestInit | undefined }> = [];
     const fakeFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       calls.push({ url: String(input), init });
       return new Response(
