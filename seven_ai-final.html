@@ -2632,11 +2632,13 @@
         }
         function setResponseMode(mode) {
             mode=["chat","think","search","research"].includes(mode)?mode:"chat";
+            const previous=currentResponseMode();
+            if (mode!==previous && isGenerating) cancelActiveGeneration("mode-change");
             deepThinkMode=mode==="think";
             searchMode=mode==="search";
             researchMode=mode==="research";
             syncResponseModeControls();
-            document.dispatchEvent(new CustomEvent("seven:response-mode",{detail:{mode}}));
+            document.dispatchEvent(new CustomEvent("seven:response-mode",{detail:{mode,previous}}));
             return mode;
         }
         function toggleDeepThinkMode() { setResponseMode(deepThinkMode?"chat":"think"); }

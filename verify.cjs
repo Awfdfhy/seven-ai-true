@@ -1186,6 +1186,19 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   assert.ok(Array.isArray(r.snap.plannedCoverageKeys));assert.ok(Array.isArray(r.snap.coveredCoverageKeys));assert.equal(r.hasRaw,false);
  });
 
+ await test('mode change cancels work started under the previous mode',async()=>{
+  const r=await page.evaluate(()=>{
+    const oldMode=SevenModeState.current(),oldRoom=currentRoom;
+    let aborts=0;activeAbortController={abort(){aborts++}};isGenerating=true;activeGenerationRoomId=oldRoom;stopRequested=false;
+    SevenModeState.set(oldMode==='search'?'think':'search');
+    const changed={stopped:stopRequested,aborts,mode:SevenModeState.current()};
+    stopRequested=false;aborts=0;SevenModeState.set(SevenModeState.current());
+    const same={stopped:stopRequested,aborts};
+    isGenerating=false;activeGenerationRoomId=null;activeAbortController=null;stopRequested=false;SevenModeState.set(oldMode);
+    return {changed,same};
+  });
+  assert.equal(r.changed.stopped,true);assert.equal(r.changed.aborts,1);assert.equal(r.same.stopped,false);assert.equal(r.same.aborts,0);
+ });
  await test('mode state keeps picker and runtime semantics identical',async()=>{
   const r=await page.evaluate(()=>{
     const before=SevenModeState.snapshot();
