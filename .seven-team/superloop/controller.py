@@ -711,7 +711,7 @@ Failure evidence:
     return False, "\n\n".join(attempts)
 
 
-def repair_apk(cycle: int, initial_result: str) -> str:
+def repair_apk(cycle: int, initial_result: str, product_base_sha: str) -> str:
     """Bounded self-healing loop for APK packaging failures after full gates pass."""
     evidence = initial_result
     for attempt in range(1, AUTO_REPAIR_ATTEMPTS + 1):
@@ -757,7 +757,7 @@ APK failure evidence:
             write_artifact(cycle, "self-heal-apk", f"attempt-{attempt}", evidence)
             continue
 
-        result = attempt_apk(cycle)
+        result = attempt_apk(cycle, product_base_sha)
         report = output + "\n\n[apk retry]\n" + result
         write_artifact(cycle, "self-heal-apk", f"attempt-{attempt}", report)
         if "APK_STAGE=PASS" in result:
@@ -771,8 +771,22 @@ APK failure evidence:
     return initial_result + "\nSELF_HEAL_APK=EXHAUSTED"
 
 
-def attempt_apk(cycle: int) -> str:
-    log("APK stage: checking for Remake Android packaging contract")
+def attempt_apk(cycle: int, product_base_sha: str) -> str:
+    log("APK stage: checking for real Remake product delta and Android packaging contract")
+    product_delta = run(
+        ["git", "diff", "--name-only", f"{product_base_sha}..HEAD", "--", "remake/src", "remake/index.html", "remake/public"],
+        check=False,
+    ).stdout.strip().splitlines()
+    product_delta = [path.strip() for path in product_delta if path.strip()]
+    if not product_delta:
+        result = (
+            "APK_STAGE=BLOCKED_NO_PRODUCT_DELTA\n"
+            "No user-facing/product-runtime delta exists under remake/src, remake/index.html or remake/public. "
+            "Refusing to publish another APK whose Seven payload is effectively unchanged."
+        )
+        write_artifact(cycle, "apk", "release", result)
+        return result
+
     pkg_path = ROOT / "remake" / "package.json"
     pkg = json.loads(pkg_path.read_text(encoding="utf-8"))
     scripts = pkg.get("scripts") or {}
@@ -981,10 +995,10 @@ BLOCKER/CRITICAL/HIGH regressions outrank new features.
     if not final_ok:
         raise RuntimeError("final cycle gates failed after bounded self-heal attempts")
 
-    apk_result = attempt_apk(cycle)
+    apk_result = attempt_apk(cycle, base_sha)
     if "APK_STAGE=PASS" not in apk_result:
         log("APK stage did not pass; entering bounded self-heal repair loop")
-        apk_result = repair_apk(cycle, apk_result)
+        apk_result = repair_apk(cycle, apk_result, base_sha)
 
     quality_head = git_output("rev-parse", "HEAD")
     product_quality = manager_readonly(
