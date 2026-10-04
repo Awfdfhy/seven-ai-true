@@ -144,3 +144,21 @@ button { min-width: 44px; min-height: 44px; touch-action: manipulation; }
   .seven-suggestions button { min-height: 54px; }
   .seven-thread { padding-inline: .75rem; }
 }
+
+.seven-sidebar-actions { display: flex; align-items: center; gap: .35rem; }
+.seven-memory-list { display: flex; flex-direction: column; gap: .55rem; margin-top: .75rem; }
+.seven-memory-note, .seven-memory-empty {
+  margin: .2rem .3rem .5rem; color: var(--seven-muted); font-size: .76rem; line-height: 1.45;
+}
+.seven-memory-item {
+  border: 1px solid var(--seven-border); border-radius: 14px; padding: .72rem;
+  background: color-mix(in srgb, var(--seven-panel-2) 70%, transparent);
+}
+.seven-memory-item p { margin: .45rem 0 .65rem; line-height: 1.45; overflow-wrap: anywhere; }
+.seven-memory-meta { display: flex; flex-wrap: wrap; gap: .3rem; color: var(--seven-muted); font-size: .65rem; text-transform: uppercase; }
+.seven-memory-meta span { padding: .15rem .35rem; border: 1px solid var(--seven-border); border-radius: 999px; }
+.seven-memory-item button {
+  min-height: 36px; border: 1px solid var(--seven-border); border-radius: 10px;
+  padding: .35rem .65rem; color: var(--seven-danger); background: transparent; cursor: pointer;
+}
+.seven-memory-item button:disabled { opacity: .45; cursor: default; }

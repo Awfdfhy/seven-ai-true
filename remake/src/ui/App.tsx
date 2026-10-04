@@ -3,6 +3,7 @@ import type { SevenRuntime } from "../kernel/seven-runtime";
 import { createRoom, type Room } from "../domain/chat";
 import type { ChatRun } from "../application/chat/chat-service";
 import { type ThemePreference } from "./shell/shell-store";
+import type { MemoryFact } from "../domain/memory/fabric";
 
 const THEMES: readonly ThemePreference[] = ["auto", "light", "dark"];
 
@@ -13,7 +14,7 @@ function shortTitle(room: Room): string {
 }
 
 export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
-  const { shell, theme, kernel, rooms, chat, chatTransport } = runtime;
+  const { shell, theme, kernel, rooms, chat, chatTransport, memory } = runtime;
   const snapshot = useSyncExternalStore(shell.subscribe, shell.getSnapshot, shell.getSnapshot);
   const [roomList, setRoomList] = useState<readonly Room[]>([]);
   const [currentRoom, setCurrentRoom] = useState<Room | null>(null);
@@ -24,6 +25,9 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [booting, setBooting] = useState(true);
+  const [showMemory, setShowMemory] = useState(false);
+  const [memoryFacts, setMemoryFacts] = useState<readonly MemoryFact[]>([]);
+  const [memoryBusy, setMemoryBusy] = useState(false);
   const isAr = snapshot.locale === "ar";
   const t = (en: string, ar: string) => isAr ? ar : en;
 
@@ -82,6 +86,31 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
     });
     return () => { alive = false; };
   }, [rooms]);
+
+  const refreshMemory = async () => {
+    if (!currentRoom) return;
+    setMemoryBusy(true);
+    try {
+      setMemoryFacts(await memory.listActive(currentRoom.id));
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setMemoryBusy(false);
+    }
+  };
+
+  const forgetMemory = async (memoryId: string) => {
+    if (!currentRoom || memoryBusy) return;
+    setMemoryBusy(true);
+    try {
+      await memory.forget(memoryId, currentRoom.id);
+      setMemoryFacts(await memory.listActive(currentRoom.id));
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setMemoryBusy(false);
+    }
+  };
 
   const cycleTheme = () => {
     const index = THEMES.indexOf(snapshot.themePreference);
@@ -168,25 +197,61 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
           <button className="seven-sidebar-backdrop" aria-label={t("Close chats", "إغلاق المحادثات")} onClick={() => shell.setSidebarOpen(false)} />
           <aside className="seven-sidebar">
             <div className="seven-sidebar-head">
-              <strong>{t("Chats", "المحادثات")}</strong>
-              <button type="button" onClick={() => void newChat()}>＋ {t("New", "جديدة")}</button>
+              <strong>{showMemory ? t("Memory", "الذاكرة") : t("Chats", "المحادثات")}</strong>
+              <div className="seven-sidebar-actions">
+                <button type="button" onClick={() => {
+                  const next = !showMemory;
+                  setShowMemory(next);
+                  if (next) void refreshMemory();
+                }}>{showMemory ? t("Chats", "المحادثات") : t("Memory", "الذاكرة")}</button>
+                {!showMemory && <button type="button" onClick={() => void newChat()}>＋ {t("New", "جديدة")}</button>}
+              </div>
             </div>
-            <div className="seven-room-list">
-              {roomList.map((room) => (
-                <button
-                  type="button"
-                  key={room.id}
-                  aria-current={currentRoom?.id === room.id ? "page" : undefined}
-                  onClick={() => {
-                    setCurrentRoom(room);
-                    shell.setSidebarOpen(false);
-                  }}
-                >
-                  <span>{shortTitle(room)}</span>
-                  <small>{room.messages.length} {t("messages", "رسالة")}</small>
-                </button>
-              ))}
-            </div>
+            {showMemory ? (
+              <div className="seven-memory-list">
+                <p className="seven-memory-note">{t(
+                  "Seven stores only selected durable facts locally. Core items stay available; recall items are retrieved only when relevant.",
+                  "يحفظ Seven حقائق دائمة مختارة محليًا فقط. تبقى عناصر Core متاحة، بينما تُسترجع عناصر Recall عند الحاجة."
+                )}</p>
+                {memoryBusy && memoryFacts.length === 0 ? (
+                  <p className="seven-memory-empty">{t("Loading memory…", "جارٍ تحميل الذاكرة…")}</p>
+                ) : memoryFacts.length === 0 ? (
+                  <p className="seven-memory-empty">{t("No saved memory yet.", "لا توجد ذاكرة محفوظة بعد.")}</p>
+                ) : memoryFacts.map((fact) => (
+                  <article className="seven-memory-item" key={fact.id}>
+                    <div className="seven-memory-meta">
+                      <span>{fact.kind}</span>
+                      <span>{fact.tier}</span>
+                      <span>{fact.scope}</span>
+                    </div>
+                    <p>{fact.content}</p>
+                    <button
+                      type="button"
+                      disabled={memoryBusy}
+                      onClick={() => void forgetMemory(fact.id)}
+                      aria-label={t("Forget this memory", "حذف هذه الذاكرة")}
+                    >{t("Forget", "حذف")}</button>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="seven-room-list">
+                {roomList.map((room) => (
+                  <button
+                    type="button"
+                    key={room.id}
+                    aria-current={currentRoom?.id === room.id ? "page" : undefined}
+                    onClick={() => {
+                      setCurrentRoom(room);
+                      shell.setSidebarOpen(false);
+                    }}
+                  >
+                    <span>{shortTitle(room)}</span>
+                    <small>{room.messages.length} {t("messages", "رسالة")}</small>
+                  </button>
+                ))}
+              </div>
+            )}
           </aside>
         </div>
       )}
