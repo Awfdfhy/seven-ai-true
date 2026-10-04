@@ -180,10 +180,43 @@ jobs:
           test -n "$pkg"
           printf '%s\n' "$pkg" > reality-evidence/package.txt
           adb shell monkey -p "$pkg" -c android.intent.category.LAUNCHER 1
-          sleep 5
+          # WebView apps may expose a null accessibility root for a few seconds
+          # after launch even though the activity is healthy. Bind the smoke
+          # journey to package/activity evidence and treat UI tree capture as
+          # retryable supplemental evidence, not a false app failure.
+          for _ in $(seq 1 20); do
+            focused="$(adb shell dumpsys window windows 2>/dev/null | grep -E 'mCurrentFocus|mFocusedApp' || true)"
+            if printf '%s' "$focused" | grep -q "$pkg"; then
+              break
+            fi
+            sleep 1
+          done
+          adb shell dumpsys activity activities > reality-evidence/cold-launch-activity.txt || true
+          adb shell dumpsys window windows > reality-evidence/cold-launch-window.txt || true
+          sleep 2
           adb exec-out screencap -p > reality-evidence/cold-launch.png
-          adb shell uiautomator dump /sdcard/seven-ui.xml >/dev/null
-          adb pull /sdcard/seven-ui.xml reality-evidence/cold-launch-ui.xml
+
+          ui_tree_ok=0
+          for attempt in $(seq 1 5); do
+            if adb shell uiautomator dump /sdcard/seven-ui.xml >"reality-evidence/uiautomator-$attempt.txt" 2>&1; then
+              if adb pull /sdcard/seven-ui.xml reality-evidence/cold-launch-ui.xml >/dev/null 2>&1; then
+                ui_tree_ok=1
+                break
+              fi
+            fi
+            sleep 2
+          done
+          if [ "$ui_tree_ok" -eq 1 ]; then
+            printf '%s\n' "UI_TREE_CAPTURED" > reality-evidence/ui-tree-status.txt
+          else
+            printf '%s\n' "UI_TREE_UNAVAILABLE_AFTER_RETRIES" > reality-evidence/ui-tree-status.txt
+          fi
+
+          if ! grep -q "$pkg" reality-evidence/cold-launch-window.txt && ! grep -q "$pkg" reality-evidence/cold-launch-activity.txt; then
+            echo "candidate package did not become foreground" >&2
+            exit 1
+          fi
+
           adb shell input keyevent KEYCODE_BACK || true
           sleep 1
           adb exec-out screencap -p > reality-evidence/after-back.png
@@ -205,6 +238,7 @@ jobs:
             schemaVersion:1,status:'INSTALLED_ARTIFACT_EVIDENCE_CAPTURED',
             evidenceTier:'ANDROID_EMULATOR',sourceSha:source,apkSha256:sha,
             journeysProven:['cold-launch','system-back-smoke','force-stop-relaunch','night-theme-launch-smoke'],
+            uiTreeStatus:fs.existsSync('reality-evidence/ui-tree-status.txt')?fs.readFileSync('reality-evidence/ui-tree-status.txt','utf8').trim():'UNKNOWN',
             journeysNotYetProven:['full-chat','stream-stop','room-race','arabic-rtl','ime','files','search','process-state-assertion'],
             files
           },null,2));
