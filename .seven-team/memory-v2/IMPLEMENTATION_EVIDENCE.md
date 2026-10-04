@@ -74,3 +74,46 @@ Still pending for this exact candidate:
 - Android 14 installed smoke
 - Android 16 installed smoke
 - exact-build Reality Lab
+
+
+# Memory v2 completion — 2026-10-04
+
+Status: **BASELINE_COMPLETE_V2**
+
+Product merge:
+- seven-remake-v3 merge commit: `92ea151a5bea38990194b376f9cd8a3b15cae9dc`
+- semantic promotion head: `d1462244476f5d0f9575f4e06c8c3fe47972537f`
+- both commits resolve to the identical Git tree: `cab6bbc42ba68e179c15d3d44af6c65ad3fe2bdc`
+
+Final semantic promotion evidence:
+- Seven AI tests #3046: PASS
+- Seven Remake V3 CI #296: PASS
+- Android Release Gate #62: PASS
+- Reality Lab #58 on exact candidate d146224: PASS
+- Exact Android artifact identity: PASS
+- Reality Lab installed-artifact journey: PASS
+
+Earlier merged-core exact-build evidence:
+- Android Release Gate #57: PASS
+- Reality Lab #57 on product commit 955110f: PASS
+
+Final baseline capabilities:
+- local-first temporal/provenance Memory Fabric
+- Core / Recall, Global / Room scopes
+- conservative bilingual extraction
+- secret / instruction-like memory exclusion
+- canonical supersession and out-of-order write correctness
+- Memory Intent Gate
+- lexical + temporal + importance/confidence retrieval
+- explainable association expansion for multi-hop recall
+- bounded semantic query-rewrite fallback only on local miss
+- multi-rewrite agreement guard against one-off hallucination
+- migration from v1
+- archive/export + atomic restore
+- delete all / hard forget
+- capacity limits and corruption quarantine
+- edit / pin / unpin inspector controls
+- 10k-memory scale gate
+- Android installed-artifact evidence
+
+D02 is closed as the current champion baseline. New Memory work must enter as an explicit challenger with comparative evidence; it must not silently rewrite this baseline.
