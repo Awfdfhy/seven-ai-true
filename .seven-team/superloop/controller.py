@@ -38,6 +38,8 @@ from domain_campaign import (
     audit_domain_research,
     campaign_prompt_summary,
 )
+from domain_research_harvester import harvest_campaign_sources
+
 
 ROOT = pathlib.Path.cwd()
 PRODUCT_BRANCH = os.environ.get("SEVEN_PRODUCT_BRANCH", "seven-remake-v3")
