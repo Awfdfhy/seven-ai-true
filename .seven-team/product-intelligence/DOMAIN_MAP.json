@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 2,
+  "agents": {
+    "A01": [
+      ".seven-team/product-intelligence/domains/A01_UI_VISUAL.md",
+      ".seven-team/product-intelligence/patterns/VISUAL_LANGUAGE.md",
+      ".seven-team/product-intelligence/patterns/NAVIGATION_SURFACES.md",
+      ".seven-team/product-intelligence/patterns/PRODUCT_BENCHMARKING.md"
+    ],
+    "A02": [
+      ".seven-team/product-intelligence/domains/A02_ANDROID_NATIVE.md",
+      ".seven-team/product-intelligence/patterns/ANDROID_MOBILE_QUALITY.md",
+      ".seven-team/product-intelligence/patterns/TEST_EVIDENCE.md"
+    ],
+    "A03": [
+      ".seven-team/product-intelligence/domains/A03_ARABIC_RTL_A11Y.md",
+      ".seven-team/product-intelligence/patterns/ARABIC_BIDI.md",
+      ".seven-team/product-intelligence/patterns/ACCESSIBILITY.md"
+    ],
+    "A04": [
+      ".seven-team/product-intelligence/domains/A04_ARCHITECTURE_RUNTIME.md",
+      ".seven-team/product-intelligence/patterns/PERFORMANCE_OBSERVABILITY.md"
+    ],
+    "A05": [
+      ".seven-team/product-intelligence/domains/A05_MODELS_ROUTING.md",
+      ".seven-team/product-intelligence/patterns/EMPTY_LOADING_ERROR_SUCCESS.md",
+      ".seven-team/product-intelligence/patterns/PERFORMANCE_OBSERVABILITY.md"
+    ],
+    "A06": [
+      ".seven-team/product-intelligence/domains/A06_MEMORY_CONTEXT.md",
+      ".seven-team/product-intelligence/patterns/SECURITY_PRIVACY.md"
+    ],
+    "A07": [
+      ".seven-team/product-intelligence/domains/A07_SECURITY_CREDENTIALS.md",
+      ".seven-team/product-intelligence/patterns/SECURITY_PRIVACY.md",
+      ".seven-team/product-intelligence/patterns/TEST_EVIDENCE.md"
+    ],
+    "A08": [
+      ".seven-team/product-intelligence/domains/A08_TEST_RELEASE.md",
+      ".seven-team/product-intelligence/patterns/TEST_EVIDENCE.md",
+      ".seven-team/product-intelligence/patterns/ANDROID_MOBILE_QUALITY.md"
+    ],
+    "A09": [
+      ".seven-team/product-intelligence/domains/A09_PERFORMANCE_CONCURRENCY.md",
+      ".seven-team/product-intelligence/patterns/PERFORMANCE_OBSERVABILITY.md"
+    ],
+    "A10": [
+      ".seven-team/product-intelligence/domains/A10_HOLISTIC_REDTEAM.md",
+      ".seven-team/product-intelligence/patterns/TEST_EVIDENCE.md"
+    ],
+    "B01": [
+      ".seven-team/product-intelligence/domains/B01_CHAT_COMPOSER.md",
+      ".seven-team/product-intelligence/patterns/CHAT_COMPOSER_RESPONSE.md",
+      ".seven-team/product-intelligence/patterns/NAVIGATION_SURFACES.md",
+      ".seven-team/product-intelligence/patterns/EMPTY_LOADING_ERROR_SUCCESS.md"
+    ],
+    "B02": [
+      ".seven-team/product-intelligence/domains/B02_FILES_SAF.md",
+      ".seven-team/product-intelligence/patterns/ANDROID_MOBILE_QUALITY.md",
+      ".seven-team/product-intelligence/patterns/SECURITY_PRIVACY.md"
+    ],
+    "B03": [
+      ".seven-team/product-intelligence/domains/B03_RESEARCH_CITATIONS.md",
+      ".seven-team/product-intelligence/patterns/EMPTY_LOADING_ERROR_SUCCESS.md",
+      ".seven-team/product-intelligence/patterns/PRODUCT_BENCHMARKING.md"
+    ],
+    "B04": [
+      ".seven-team/product-intelligence/domains/B04_DEEP_THINK.md",
+      ".seven-team/product-intelligence/patterns/CHAT_COMPOSER_RESPONSE.md",
+      ".seven-team/product-intelligence/patterns/PERFORMANCE_OBSERVABILITY.md"
+    ],
+    "B05": [
+      ".seven-team/product-intelligence/domains/B05_RPG_CANON.md",
+      ".seven-team/product-intelligence/patterns/NAVIGATION_SURFACES.md",
+      ".seven-team/product-intelligence/patterns/TEST_EVIDENCE.md"
+    ],
+    "B06": [
+      ".seven-team/product-intelligence/domains/B06_GITHUB_SELFDEV.md",
+      ".seven-team/product-intelligence/patterns/SECURITY_PRIVACY.md",
+      ".seven-team/product-intelligence/patterns/TEST_EVIDENCE.md"
+    ],
+    "B07": [
+      ".seven-team/product-intelligence/domains/B07_NETWORK_RESILIENCE.md",
+      ".seven-team/product-intelligence/patterns/EMPTY_LOADING_ERROR_SUCCESS.md",
+      ".seven-team/product-intelligence/patterns/PERFORMANCE_OBSERVABILITY.md"
+    ],
+    "B08": [
+      ".seven-team/product-intelligence/domains/B08_STORAGE_RECOVERY.md",
+      ".seven-team/product-intelligence/patterns/SECURITY_PRIVACY.md",
+      ".seven-team/product-intelligence/patterns/TEST_EVIDENCE.md"
+    ],
+    "B09": [
+      ".seven-team/product-intelligence/domains/B09_STRESS_RACES.md",
+      ".seven-team/product-intelligence/patterns/TEST_EVIDENCE.md",
+      ".seven-team/product-intelligence/patterns/PERFORMANCE_OBSERVABILITY.md"
+    ],
+    "B10": [
+      ".seven-team/product-intelligence/domains/B10_PRODUCT_COHESION.md",
+      ".seven-team/product-intelligence/patterns/PRODUCT_BENCHMARKING.md",
+      ".seven-team/product-intelligence/patterns/VISUAL_LANGUAGE.md",
+      ".seven-team/product-intelligence/patterns/CHAT_COMPOSER_RESPONSE.md"
+    ]
+  }
+}

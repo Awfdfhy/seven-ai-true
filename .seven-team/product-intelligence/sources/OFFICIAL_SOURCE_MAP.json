@@ -1,0 +1,264 @@
+{
+  "schemaVersion": 2,
+  "observed": "2026-10-04",
+  "policy": "Prefer first-party/platform/standards. Refresh unstable product/framework guidance.",
+  "sources": [
+    {
+      "id": "openai-chatgpt-release-notes",
+      "area": [
+        "chat",
+        "composer",
+        "mobile",
+        "files",
+        "history",
+        "tools"
+      ],
+      "title": "ChatGPT Release Notes",
+      "url": "https://help.openai.com/en/articles/6825453-chatgpt-release-notes",
+      "authority": "first-party",
+      "use": "Observe current conversation-first mobile patterns, progressive disclosure, files/search/tool access and history changes."
+    },
+    {
+      "id": "android-core-quality",
+      "area": [
+        "android",
+        "ux",
+        "visual",
+        "performance",
+        "accessibility",
+        "navigation"
+      ],
+      "title": "Android Core App Quality",
+      "url": "https://developer.android.com/docs/quality-guidelines/core-app-quality",
+      "authority": "platform",
+      "use": "Baseline app quality, startup, 60fps rendering guidance, back/state restoration, themes, readability and accessibility."
+    },
+    {
+      "id": "android-architecture",
+      "area": [
+        "architecture",
+        "state",
+        "testing"
+      ],
+      "title": "Android Architecture Recommendations",
+      "url": "https://developer.android.com/topic/architecture/recommendations",
+      "authority": "platform",
+      "use": "Separation of concerns, durable state ownership and testable architecture."
+    },
+    {
+      "id": "android-edge-to-edge",
+      "area": [
+        "android",
+        "layout",
+        "insets"
+      ],
+      "title": "Android Edge-to-edge Design",
+      "url": "https://developer.android.com/design/ui/mobile/guides/layout-and-content/edge-to-edge",
+      "authority": "platform",
+      "use": "Insets, cutouts, gesture regions, system bars and critical-control placement."
+    },
+    {
+      "id": "android-ime",
+      "area": [
+        "android",
+        "composer",
+        "keyboard"
+      ],
+      "title": "Android Software Keyboard",
+      "url": "https://developer.android.com/develop/ui/views/layout/sw-keyboard",
+      "authority": "platform",
+      "use": "IME/inset behavior and smooth keyboard transitions."
+    },
+    {
+      "id": "android-predictive-back",
+      "area": [
+        "android",
+        "navigation"
+      ],
+      "title": "Predictive Back Design",
+      "url": "https://developer.android.com/design/ui/mobile/guides/patterns/predictive-back",
+      "authority": "platform",
+      "use": "Back navigation, gesture zones, sheets and full-screen transitions."
+    },
+    {
+      "id": "wcag22",
+      "area": [
+        "accessibility",
+        "touch",
+        "focus",
+        "contrast"
+      ],
+      "title": "WCAG 2.2",
+      "url": "https://www.w3.org/WAI/standards-guidelines/wcag/",
+      "authority": "standard",
+      "use": "Accessibility requirements including focus, target size, contrast and operability."
+    },
+    {
+      "id": "mdn-web-storage",
+      "area": [
+        "storage",
+        "performance",
+        "recovery"
+      ],
+      "title": "MDN Web Storage API",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API",
+      "authority": "platform-reference",
+      "use": "Synchronous localStorage limitations and when asynchronous persistence is more appropriate."
+    },
+    {
+      "id": "mdn-indexeddb",
+      "area": [
+        "storage",
+        "memory",
+        "recovery"
+      ],
+      "title": "MDN IndexedDB",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API",
+      "authority": "platform-reference",
+      "use": "Structured asynchronous persistence and transaction semantics."
+    },
+    {
+      "id": "mdn-abortcontroller",
+      "area": [
+        "cancellation",
+        "network",
+        "streaming"
+      ],
+      "title": "MDN AbortController",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/API/AbortController",
+      "authority": "platform-reference",
+      "use": "Cancellation ownership and abortable async work."
+    },
+    {
+      "id": "mdn-streams",
+      "area": [
+        "streaming",
+        "network",
+        "chat"
+      ],
+      "title": "MDN Streams API",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/API/Streams_API",
+      "authority": "platform-reference",
+      "use": "Incremental response handling, backpressure and stream lifecycle."
+    },
+    {
+      "id": "capacitor-app",
+      "area": [
+        "android",
+        "lifecycle",
+        "deep-links"
+      ],
+      "title": "Capacitor App API",
+      "url": "https://capacitorjs.com/docs/apis/app",
+      "authority": "framework",
+      "use": "Lifecycle, app state, back button and deep-link integration."
+    },
+    {
+      "id": "capacitor-keyboard",
+      "area": [
+        "android",
+        "keyboard",
+        "composer"
+      ],
+      "title": "Capacitor Keyboard API",
+      "url": "https://capacitorjs.com/docs/apis/keyboard",
+      "authority": "framework",
+      "use": "Keyboard show/hide events and resize behavior."
+    },
+    {
+      "id": "capacitor-filesystem",
+      "area": [
+        "files",
+        "android",
+        "storage"
+      ],
+      "title": "Capacitor Filesystem API",
+      "url": "https://capacitorjs.com/docs/apis/filesystem",
+      "authority": "framework",
+      "use": "File lifecycle and platform storage boundaries."
+    },
+    {
+      "id": "react-state",
+      "area": [
+        "ui",
+        "state",
+        "architecture"
+      ],
+      "title": "React Managing State",
+      "url": "https://react.dev/learn/managing-state",
+      "authority": "framework",
+      "use": "State ownership, reducer/context boundaries and avoiding duplicated state."
+    },
+    {
+      "id": "react-preserve-reset",
+      "area": [
+        "ui",
+        "state",
+        "rooms"
+      ],
+      "title": "React Preserving and Resetting State",
+      "url": "https://react.dev/learn/preserving-and-resetting-state",
+      "authority": "framework",
+      "use": "Identity-sensitive UI state, room switching and deliberate reset semantics."
+    },
+    {
+      "id": "owasp-masvs",
+      "area": [
+        "security",
+        "privacy",
+        "android"
+      ],
+      "title": "OWASP MASVS",
+      "url": "https://mas.owasp.org/MASVS/",
+      "authority": "security-standard",
+      "use": "Mobile storage, crypto, auth, network, platform, code, resilience and privacy verification."
+    },
+    {
+      "id": "playwright-emulation",
+      "area": [
+        "testing",
+        "mobile",
+        "visual"
+      ],
+      "title": "Playwright Emulation",
+      "url": "https://playwright.dev/docs/emulation",
+      "authority": "tooling",
+      "use": "Viewport, touch, locale, color scheme and mobile browser emulation."
+    },
+    {
+      "id": "playwright-snapshots",
+      "area": [
+        "testing",
+        "visual"
+      ],
+      "title": "Playwright Visual Comparisons",
+      "url": "https://playwright.dev/docs/test-snapshots",
+      "authority": "tooling",
+      "use": "Golden screenshot comparison and intentional visual drift management."
+    },
+    {
+      "id": "otel-semconv",
+      "area": [
+        "observability",
+        "performance",
+        "genai"
+      ],
+      "title": "OpenTelemetry Semantic Conventions",
+      "url": "https://opentelemetry.io/docs/specs/semconv/",
+      "authority": "observability-standard",
+      "use": "Consistent trace/metric/event naming across the app."
+    },
+    {
+      "id": "otel-genai",
+      "area": [
+        "observability",
+        "models",
+        "privacy"
+      ],
+      "title": "OpenTelemetry GenAI Attributes",
+      "url": "https://opentelemetry.io/docs/specs/semconv/registry/attributes/gen-ai/",
+      "authority": "observability-standard",
+      "use": "GenAI telemetry concepts with careful opt-in handling of sensitive prompt/output content."
+    }
+  ]
+}

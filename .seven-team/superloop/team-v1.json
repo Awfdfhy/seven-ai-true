@@ -10,102 +10,201 @@
     {
       "id": "A01",
       "domain": "UI / visual system",
-      "focus": "React shell, themes, responsive layout, interaction polish, visual regressions; visual benchmark interpretation and Seven visual north-star stewardship"
+      "focus": "React shell, themes, responsive layout, interaction polish, visual regressions; visual benchmark interpretation and Seven visual north-star stewardship",
+      "knowledgePacks": [
+        ".seven-team/product-intelligence/domains/A01_UI_VISUAL.md",
+        ".seven-team/product-intelligence/patterns/VISUAL_LANGUAGE.md",
+        ".seven-team/product-intelligence/patterns/NAVIGATION_SURFACES.md",
+        ".seven-team/product-intelligence/patterns/PRODUCT_BENCHMARKING.md"
+      ]
     },
     {
       "id": "A02",
       "domain": "Android / native / APK",
-      "focus": "Capacitor, native bridge, APK packaging, installed identity, emulator/device evidence"
+      "focus": "Capacitor, native bridge, APK packaging, installed identity, emulator/device evidence",
+      "knowledgePacks": [
+        ".seven-team/product-intelligence/domains/A02_ANDROID_NATIVE.md",
+        ".seven-team/product-intelligence/patterns/ANDROID_MOBILE_QUALITY.md",
+        ".seven-team/product-intelligence/patterns/TEST_EVIDENCE.md"
+      ]
     },
     {
       "id": "A03",
       "domain": "Arabic / RTL / accessibility",
-      "focus": "Arabic copy, RTL/LTR, keyboard, focus, screen-reader semantics, reduced motion"
+      "focus": "Arabic copy, RTL/LTR, keyboard, focus, screen-reader semantics, reduced motion",
+      "knowledgePacks": [
+        ".seven-team/product-intelligence/domains/A03_ARABIC_RTL_A11Y.md",
+        ".seven-team/product-intelligence/patterns/ARABIC_BIDI.md",
+        ".seven-team/product-intelligence/patterns/ACCESSIBILITY.md"
+      ]
     },
     {
       "id": "A04",
       "domain": "Architecture / runtime",
-      "focus": "AppKernel, ownership, dependency direction, lifecycle, observability boundaries"
+      "focus": "AppKernel, ownership, dependency direction, lifecycle, observability boundaries",
+      "knowledgePacks": [
+        ".seven-team/product-intelligence/domains/A04_ARCHITECTURE_RUNTIME.md",
+        ".seven-team/product-intelligence/patterns/PERFORMANCE_OBSERVABILITY.md"
+      ]
     },
     {
       "id": "A05",
       "domain": "Models / routing / providers",
-      "focus": "model registry, Quick/Balanced/Deep routing, health, fallback, provider contracts"
+      "focus": "model registry, Quick/Balanced/Deep routing, health, fallback, provider contracts",
+      "knowledgePacks": [
+        ".seven-team/product-intelligence/domains/A05_MODELS_ROUTING.md",
+        ".seven-team/product-intelligence/patterns/EMPTY_LOADING_ERROR_SUCCESS.md",
+        ".seven-team/product-intelligence/patterns/PERFORMANCE_OBSERVABILITY.md"
+      ]
     },
     {
       "id": "A06",
       "domain": "Memory / context",
-      "focus": "memory relevance, summaries, context budgets, migrations, persistence correctness"
+      "focus": "memory relevance, summaries, context budgets, migrations, persistence correctness",
+      "knowledgePacks": [
+        ".seven-team/product-intelligence/domains/A06_MEMORY_CONTEXT.md",
+        ".seven-team/product-intelligence/patterns/SECURITY_PRIVACY.md"
+      ]
     },
     {
       "id": "A07",
       "domain": "Security / credentials",
-      "focus": "secret non-leakage, auth, GitHub self-dev safety, path policy, trust boundaries"
+      "focus": "secret non-leakage, auth, GitHub self-dev safety, path policy, trust boundaries",
+      "knowledgePacks": [
+        ".seven-team/product-intelligence/domains/A07_SECURITY_CREDENTIALS.md",
+        ".seven-team/product-intelligence/patterns/SECURITY_PRIVACY.md",
+        ".seven-team/product-intelligence/patterns/TEST_EVIDENCE.md"
+      ]
     },
     {
       "id": "A08",
       "domain": "Testing / release assurance",
-      "focus": "unit/contract/integration/E2E gates, release evidence, payload identity, regression proof; product-quality rubric evidence and release-quality scoring"
+      "focus": "unit/contract/integration/E2E gates, release evidence, payload identity, regression proof; product-quality rubric evidence and release-quality scoring",
+      "knowledgePacks": [
+        ".seven-team/product-intelligence/domains/A08_TEST_RELEASE.md",
+        ".seven-team/product-intelligence/patterns/TEST_EVIDENCE.md",
+        ".seven-team/product-intelligence/patterns/ANDROID_MOBILE_QUALITY.md"
+      ]
     },
     {
       "id": "A09",
       "domain": "Performance / concurrency",
-      "focus": "latency, cancellation, races, long chats, storage/network pressure, resource budgets"
+      "focus": "latency, cancellation, races, long chats, storage/network pressure, resource budgets",
+      "knowledgePacks": [
+        ".seven-team/product-intelligence/domains/A09_PERFORMANCE_CONCURRENCY.md",
+        ".seven-team/product-intelligence/patterns/PERFORMANCE_OBSERVABILITY.md"
+      ]
     },
     {
       "id": "A10",
       "domain": "Holistic red-team",
-      "focus": "cross-system contradictions, product-breaking edge cases, adversarial whole-app review"
+      "focus": "cross-system contradictions, product-breaking edge cases, adversarial whole-app review",
+      "knowledgePacks": [
+        ".seven-team/product-intelligence/domains/A10_HOLISTIC_REDTEAM.md",
+        ".seven-team/product-intelligence/patterns/TEST_EVIDENCE.md"
+      ]
     },
     {
       "id": "B01",
       "domain": "Chat / rooms / composer",
-      "focus": "send/stop/copy, streaming, drafts, room ownership, IME, retry and switching"
+      "focus": "send/stop/copy, streaming, drafts, room ownership, IME, retry and switching",
+      "knowledgePacks": [
+        ".seven-team/product-intelligence/domains/B01_CHAT_COMPOSER.md",
+        ".seven-team/product-intelligence/patterns/CHAT_COMPOSER_RESPONSE.md",
+        ".seven-team/product-intelligence/patterns/NAVIGATION_SURFACES.md",
+        ".seven-team/product-intelligence/patterns/EMPTY_LOADING_ERROR_SUCCESS.md"
+      ]
     },
     {
       "id": "B02",
       "domain": "Attachments / files / SAF",
-      "focus": "TXT/PDF ingestion, file limits, Android documents, grants, import/export"
+      "focus": "TXT/PDF ingestion, file limits, Android documents, grants, import/export",
+      "knowledgePacks": [
+        ".seven-team/product-intelligence/domains/B02_FILES_SAF.md",
+        ".seven-team/product-intelligence/patterns/ANDROID_MOBILE_QUALITY.md",
+        ".seven-team/product-intelligence/patterns/SECURITY_PRIVACY.md"
+      ]
     },
     {
       "id": "B03",
       "domain": "Research / citations",
-      "focus": "web/deep research, evidence, source failures, freshness, citations, cache"
+      "focus": "web/deep research, evidence, source failures, freshness, citations, cache",
+      "knowledgePacks": [
+        ".seven-team/product-intelligence/domains/B03_RESEARCH_CITATIONS.md",
+        ".seven-team/product-intelligence/patterns/EMPTY_LOADING_ERROR_SUCCESS.md",
+        ".seven-team/product-intelligence/patterns/PRODUCT_BENCHMARKING.md"
+      ]
     },
     {
       "id": "B04",
       "domain": "Deep Think / reasoning",
-      "focus": "two-pass orchestration, planner isolation, context reuse, speed and cancellation"
+      "focus": "two-pass orchestration, planner isolation, context reuse, speed and cancellation",
+      "knowledgePacks": [
+        ".seven-team/product-intelligence/domains/B04_DEEP_THINK.md",
+        ".seven-team/product-intelligence/patterns/CHAT_COMPOSER_RESPONSE.md",
+        ".seven-team/product-intelligence/patterns/PERFORMANCE_OBSERVABILITY.md"
+      ]
     },
     {
       "id": "B05",
       "domain": "RPG / canon",
-      "focus": "authoritative world/canon state, branches, checksums, persistence and UI projection"
+      "focus": "authoritative world/canon state, branches, checksums, persistence and UI projection",
+      "knowledgePacks": [
+        ".seven-team/product-intelligence/domains/B05_RPG_CANON.md",
+        ".seven-team/product-intelligence/patterns/NAVIGATION_SURFACES.md",
+        ".seven-team/product-intelligence/patterns/TEST_EVIDENCE.md"
+      ]
     },
     {
       "id": "B06",
       "domain": "GitHub self-development",
-      "focus": "repo mutation, exact SHA, PR workflow, recovery, coding workspace safety"
+      "focus": "repo mutation, exact SHA, PR workflow, recovery, coding workspace safety",
+      "knowledgePacks": [
+        ".seven-team/product-intelligence/domains/B06_GITHUB_SELFDEV.md",
+        ".seven-team/product-intelligence/patterns/SECURITY_PRIVACY.md",
+        ".seven-team/product-intelligence/patterns/TEST_EVIDENCE.md"
+      ]
     },
     {
       "id": "B07",
       "domain": "Network / resilience",
-      "focus": "offline, timeout, rate limit, fallback, partial failure, retry and error normalization"
+      "focus": "offline, timeout, rate limit, fallback, partial failure, retry and error normalization",
+      "knowledgePacks": [
+        ".seven-team/product-intelligence/domains/B07_NETWORK_RESILIENCE.md",
+        ".seven-team/product-intelligence/patterns/EMPTY_LOADING_ERROR_SUCCESS.md",
+        ".seven-team/product-intelligence/patterns/PERFORMANCE_OBSERVABILITY.md"
+      ]
     },
     {
       "id": "B08",
       "domain": "Storage / recovery",
-      "focus": "IndexedDB, migrations, corruption, backup/restore, restart and destructive edge cases"
+      "focus": "IndexedDB, migrations, corruption, backup/restore, restart and destructive edge cases",
+      "knowledgePacks": [
+        ".seven-team/product-intelligence/domains/B08_STORAGE_RECOVERY.md",
+        ".seven-team/product-intelligence/patterns/SECURITY_PRIVACY.md",
+        ".seven-team/product-intelligence/patterns/TEST_EVIDENCE.md"
+      ]
     },
     {
       "id": "B09",
       "domain": "Stress / races",
-      "focus": "TaskManager, duplicate actions, cancellation races, stale writes, multi-owner conflicts"
+      "focus": "TaskManager, duplicate actions, cancellation races, stale writes, multi-owner conflicts",
+      "knowledgePacks": [
+        ".seven-team/product-intelligence/domains/B09_STRESS_RACES.md",
+        ".seven-team/product-intelligence/patterns/TEST_EVIDENCE.md",
+        ".seven-team/product-intelligence/patterns/PERFORMANCE_OBSERVABILITY.md"
+      ]
     },
     {
       "id": "B10",
       "domain": "Product cohesion / exploratory QA",
-      "focus": "real user journeys, feature discoverability, integration seams, install/use polish; product-intelligence curation, benchmark synthesis and premium-cohesion judging"
+      "focus": "real user journeys, feature discoverability, integration seams, install/use polish; product-intelligence curation, benchmark synthesis and premium-cohesion judging",
+      "knowledgePacks": [
+        ".seven-team/product-intelligence/domains/B10_PRODUCT_COHESION.md",
+        ".seven-team/product-intelligence/patterns/PRODUCT_BENCHMARKING.md",
+        ".seven-team/product-intelligence/patterns/VISUAL_LANGUAGE.md",
+        ".seven-team/product-intelligence/patterns/CHAT_COMPOSER_RESPONSE.md"
+      ]
     }
   ]
 }

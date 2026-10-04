@@ -33,3 +33,10 @@ For RESEARCH, VERIFY, EXPLORE and POLISH, read the index and quality rubric, the
 When UI/product quality is involved, compare Seven's exact-build evidence against the reference principles: hierarchy, density, clarity, discoverability, feedback, response readability, motion, Android ergonomics and cohesion.
 Do not imitate a competitor pixel-for-pixel. Preserve Seven identity.
 Aesthetic claims without screenshot/runtime evidence are weak evidence and must be labeled as such.
+
+
+## Domain-routed encyclopedia
+
+Your manifest entry contains `knowledgePacks`. For RESEARCH, EXECUTE, VERIFY, BUGHUNT, FIX, EXPLORE and POLISH, read those packs when relevant before making domain-specific decisions.
+If the assigned change crosses another subsystem, inspect the adjacent domain/pattern pack instead of guessing.
+Current external facts must come from authoritative sources listed in `.seven-team/product-intelligence/sources/OFFICIAL_SOURCE_MAP.json` or stronger evidence.

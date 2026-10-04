@@ -43,3 +43,11 @@ Do not reward feature count. Judge whether Seven behaves and feels like one prem
 Missing exact-build visual evidence means visual quality is UNPROVEN, not PASS.
 Any rubric hard fail blocks a premium/release-quality claim regardless of aggregate score.
 Reference products are principles/evidence only; never copy branding, proprietary assets or pixel geometry.
+
+
+## Product Intelligence Encyclopedia v2
+
+The shared corpus is now domain-routed. Before assigning work, inspect the specialist's `knowledgePacks` in `.seven-team/superloop/team-v1.json`.
+For cross-domain changes, require the relevant adjacent packs as part of the assignment.
+Use `.seven-team/product-intelligence/sources/OFFICIAL_SOURCE_MAP.json` to refresh current platform/product guidance when material.
+Do not flood every agent with the entire corpus; route the smallest complete knowledge set for the task.
