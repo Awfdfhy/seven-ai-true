@@ -73,6 +73,7 @@ function cleanId(value, name, { required = false, max = 160 } = {}) {
   }
   const text = String(value).trim();
   if (!text || text.length > max || /[\u0000-\u001f]/.test(text)) throw new Error(`invalid ${name}`);
+  if (FORBIDDEN_VALUE.test(text)) throw new Error(`secret-like identifier rejected: ${name}`);
   return text;
 }
 
