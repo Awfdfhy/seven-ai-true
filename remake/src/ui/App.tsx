@@ -38,6 +38,7 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
   const [toolActionNotice, setToolActionNotice] = useState<string | null>(null);
   const isAr = snapshot.locale === "ar";
   const t = (en: string, ar: string) => isAr ? ar : en;
+  const workspaceIntegrated = snapshot.activeWorkspace === "core";
 
   useEffect(() => {
     const onResize = () => {
@@ -287,6 +288,13 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
     const content = input.trim();
     if (!currentRoom || !content || activeRun || pendingToolAction) return;
     setError(null);
+    if (!workspaceIntegrated) {
+      setError(t(
+        "This workspace is isolated until its production integration adapter is verified. The request was not sent to normal Chat.",
+        "مساحة العمل هذه معزولة حتى يتم التحقق من محول التكامل الإنتاجي الخاص بها. لم يتم إرسال الطلب إلى الدردشة العادية.",
+      ));
+      return;
+    }
     setToolActionNotice(null);
 
     try {
@@ -499,6 +507,15 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
           <button type="button" aria-pressed={snapshot.activeWorkspace === "world"} onClick={() => shell.setWorkspace("world")}>{t("RPG", "RPG")}</button>
         </div>
 
+        {!workspaceIntegrated && (
+          <div className="seven-tool-notice" role="status">
+            {t(
+              "Integration safety gate: this workspace cannot silently fall back to normal Chat.",
+              "بوابة أمان التكامل: لا يمكن لمساحة العمل هذه الرجوع بصمت إلى الدردشة العادية.",
+            )}
+          </div>
+        )}
+
         <div className="seven-thread" aria-live="polite">
           {booting ? (
             <div className="seven-empty"><h1>Seven</h1><p>{t("Restoring your chats…", "جارٍ استعادة محادثاتك…")}</p></div>
@@ -574,7 +591,7 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
             <textarea
               value={input}
               rows={1}
-              disabled={toolActionBusy || !!pendingToolAction}
+              disabled={toolActionBusy || !!pendingToolAction || !workspaceIntegrated}
               maxLength={32_000}
               placeholder={t("Message Seven", "اكتب إلى Seven")}
               aria-label={t("Message Seven", "اكتب إلى Seven")}
@@ -589,7 +606,7 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
             {activeRun ? (
               <button className="seven-send seven-stop" type="button" onClick={() => activeRun.cancel("user-stop")} aria-label={t("Stop", "إيقاف")}>■</button>
             ) : (
-              <button className="seven-send" type="button" disabled={!input.trim() || !currentRoom || toolActionBusy || !!pendingToolAction} onClick={() => void submit()} aria-label={t("Send", "إرسال")}>↑</button>
+              <button className="seven-send" type="button" disabled={!input.trim() || !currentRoom || toolActionBusy || !!pendingToolAction || !workspaceIntegrated} onClick={() => void submit()} aria-label={t("Send", "إرسال")}>↑</button>
             )}
           </div>
           <div className="seven-composer-meta">
