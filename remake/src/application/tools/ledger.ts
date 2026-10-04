@@ -44,6 +44,12 @@ export interface ToolExecutionLedger {
     at:number,
     signal?:AbortSignal,
   ):Promise<void>;
+  releasePrepared(
+    idempotencyKey:string,
+    invocationFingerprint:string,
+    ownerCallId:string,
+    signal?:AbortSignal,
+  ):Promise<boolean>;
   completeReplay(
     idempotencyKey:string,
     invocationFingerprint:string,
@@ -152,6 +158,21 @@ export class InMemoryToolExecutionLedger implements ToolExecutionLedger {
     if(current.state==="completed")return;
     if(current.state==="effect_started")return;
     this.replay.set(id,Object.freeze({...current,state:"effect_started" as const,effectStartedAt:time}));
+  }
+
+  async releasePrepared(
+    key:string,fingerprint:string,ownerCallId:string,signal?:AbortSignal,
+  ):Promise<boolean>{
+    throwIfAborted(signal);
+    const id=canonical(key,"idempotencyKey");
+    const fp=canonical(fingerprint,"invocationFingerprint");
+    const owner=canonical(ownerCallId,"ownerCallId");
+    const current=this.replay.get(id);
+    if(!current||current.invocationFingerprint!==fp||current.ownerCallId!==owner||current.state!=="prepared"){
+      return false;
+    }
+    this.replay.delete(id);
+    return true;
   }
 
   async completeReplay(

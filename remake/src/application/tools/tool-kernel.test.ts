@@ -76,7 +76,7 @@ describe("Tool capability kernel",()=>{
 
   it("binds approval to exact tool arguments and scope",async()=>{
     let calls=0;
-    const def=definition(async(_ctx,input)=>{calls++;return {ok:true,value:input.value};},{
+    const def=definition(async(ctx,input)=>{await ctx.markEffectStarted();calls++;return {ok:true,value:input.value};},{
       annotations:{risk:"write",idempotency:"replay-guarded",approval:"always",sensitivity:"user-data",reversibility:"reversible"},
       requiredCapabilities:["test.write"],
     });

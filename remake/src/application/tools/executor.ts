@@ -193,6 +193,15 @@ export class ToolExecutor {
   ):Promise<ToolResult>{
     const promise=this.runHandler(definition,invocation,parsedInput,fingerprint);
     this.replay.set(invocation.idempotencyKey,Object.freeze({fingerprint,result:promise}));
+    void promise.then((result)=>{
+      if(
+        !result.effectStarted &&
+        (result.status==="failed"||result.status==="cancelled")
+      ){
+        const current=this.replay.get(invocation.idempotencyKey);
+        if(current?.result===promise)this.replay.delete(invocation.idempotencyKey);
+      }
+    });
     while(this.replay.size>this.maxReplayEntries){
       const oldest=this.replay.keys().next().value as string|undefined;
       if(oldest)this.replay.delete(oldest);else break;
@@ -210,10 +219,14 @@ export class ToolExecutor {
     let effectStarted=false;
     const group=definition.concurrencyGroup;
     if(group&&this.activeGroups.has(group)){
-      return this.finishedResult({
+      const result=await this.finishedResult({
         invocation,fingerprint,status:"failed",retryable:true,effectStarted:false,
         startedAt,errorCode:"CONCURRENCY_GROUP_BUSY",
       });
+      await this.ledger.releasePrepared(
+        invocation.idempotencyKey,fingerprint,invocation.callId,
+      );
+      return result;
     }
     if(group)this.activeGroups.add(group);
     try{
@@ -241,9 +254,18 @@ export class ToolExecutor {
       let result:ToolResult;
       try{
         const output=await run.result;
-        result=await this.finishedResult({
-          invocation,fingerprint,status:"succeeded",retryable:false,effectStarted,startedAt,output,
-        });
+        const effectful=
+          definition.annotations.risk==="write" ||
+          definition.annotations.risk==="destructive" ||
+          definition.annotations.risk==="external";
+        result=effectful&&!effectStarted
+          ? await this.finishedResult({
+              invocation,fingerprint,status:"effect_unknown",retryable:false,effectStarted:true,
+              startedAt,errorCode:"EFFECT_MARKER_REQUIRED",
+            })
+          : await this.finishedResult({
+              invocation,fingerprint,status:"succeeded",retryable:false,effectStarted,startedAt,output,
+            });
       }catch(error){
         const normalized=toSevenError(error);
         const cancelled=normalized.code==="CANCELLED"||normalized.code==="DEADLINE_EXCEEDED";
@@ -272,6 +294,14 @@ export class ToolExecutor {
               startedAt,errorCode:"RESULT_PERSISTENCE_UNCERTAIN",
             });
           }
+        }
+      }else if(!result.effectStarted){
+        try{
+          await this.ledger.releasePrepared(
+            invocation.idempotencyKey,fingerprint,invocation.callId,
+          );
+        }catch{
+          // A stale pre-effect reservation is safe to leave for lease recovery.
         }
       }
       return result;
