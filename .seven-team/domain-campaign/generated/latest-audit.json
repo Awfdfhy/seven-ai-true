@@ -3,15 +3,36 @@
   "domains": 30,
   "ready": 0,
   "missing": [
+    "D01_CHAT_CORE",
+    "D02_MEMORY_CONTEXT",
+    "D03_TOOLS_CAPABILITY",
+    "D04_CODING_SYSTEM",
+    "D05_SELF_DEVELOPMENT",
+    "D06_RPG_WORLD",
+    "D07_RESEARCH_WEB",
     "D08_MODEL_ROUTING",
+    "D09_DEEP_THINK",
+    "D10_FILES_MULTIMODAL",
+    "D11_ANDROID_NATIVE",
     "D12_UI_DESIGN_SYSTEM",
+    "D13_ARABIC_RTL_A11Y",
+    "D14_SECURITY_PRIVACY",
     "D15_PERSISTENCE_RECOVERY",
+    "D16_NETWORK_RESILIENCE",
     "D17_PERFORMANCE_CONCURRENCY",
+    "D18_TESTING_EVALS",
+    "D19_AGENT_ORCHESTRATION",
     "D20_PRODUCT_QUALITY",
+    "D21_OBSERVABILITY_WORLD_MODEL",
+    "D22_PROTOCOLS_INTEROP",
     "D23_IMPORT_EXPORT_BACKUP",
+    "D24_RELEASE_APK",
     "D25_HISTORY_ROOMS",
     "D26_SETTINGS_CONTROLS",
-    "D28_LOCAL_INTELLIGENCE"
+    "D27_ERROR_RECOVERY_UX",
+    "D28_LOCAL_INTELLIGENCE",
+    "D29_REAL_WORKS_CANON",
+    "D30_AUTONOMOUS_QUALITY"
   ],
   "insufficient": [
     "D01_CHAT_CORE",
@@ -49,8 +70,8 @@
     {
       "id": "D01_CHAT_CORE",
       "status": "INSUFFICIENT",
-      "urls": 40,
-      "primaryTagged": 50,
+      "urls": 11,
+      "primaryTagged": 11,
       "target": 10,
       "owners": [
         "B01",
@@ -60,8 +81,8 @@
     {
       "id": "D02_MEMORY_CONTEXT",
       "status": "INSUFFICIENT",
-      "urls": 29,
-      "primaryTagged": 29,
+      "urls": 14,
+      "primaryTagged": 14,
       "target": 12,
       "owners": [
         "A06",
@@ -71,8 +92,8 @@
     {
       "id": "D03_TOOLS_CAPABILITY",
       "status": "INSUFFICIENT",
-      "urls": 56,
-      "primaryTagged": 88,
+      "urls": 14,
+      "primaryTagged": 14,
       "target": 12,
       "owners": [
         "A04",
@@ -82,8 +103,8 @@
     {
       "id": "D04_CODING_SYSTEM",
       "status": "INSUFFICIENT",
-      "urls": 111,
-      "primaryTagged": 88,
+      "urls": 14,
+      "primaryTagged": 14,
       "target": 12,
       "owners": [
         "B06",
@@ -93,8 +114,8 @@
     {
       "id": "D05_SELF_DEVELOPMENT",
       "status": "INSUFFICIENT",
-      "urls": 96,
-      "primaryTagged": 90,
+      "urls": 14,
+      "primaryTagged": 14,
       "target": 12,
       "owners": [
         "B06",
@@ -104,8 +125,8 @@
     {
       "id": "D06_RPG_WORLD",
       "status": "INSUFFICIENT",
-      "urls": 31,
-      "primaryTagged": 45,
+      "urls": 14,
+      "primaryTagged": 14,
       "target": 12,
       "owners": [
         "B05",
@@ -115,8 +136,8 @@
     {
       "id": "D07_RESEARCH_WEB",
       "status": "INSUFFICIENT",
-      "urls": 81,
-      "primaryTagged": 52,
+      "urls": 4,
+      "primaryTagged": 1,
       "target": 12,
       "owners": [
         "B03",
@@ -137,8 +158,8 @@
     {
       "id": "D09_DEEP_THINK",
       "status": "INSUFFICIENT",
-      "urls": 13,
-      "primaryTagged": 11,
+      "urls": 10,
+      "primaryTagged": 10,
       "target": 10,
       "owners": [
         "B04",
@@ -148,8 +169,8 @@
     {
       "id": "D10_FILES_MULTIMODAL",
       "status": "INSUFFICIENT",
-      "urls": 36,
-      "primaryTagged": 38,
+      "urls": 10,
+      "primaryTagged": 10,
       "target": 8,
       "owners": [
         "B02",
@@ -159,8 +180,8 @@
     {
       "id": "D11_ANDROID_NATIVE",
       "status": "INSUFFICIENT",
-      "urls": 38,
-      "primaryTagged": 46,
+      "urls": 12,
+      "primaryTagged": 12,
       "target": 10,
       "owners": [
         "A02",
@@ -181,8 +202,8 @@
     {
       "id": "D13_ARABIC_RTL_A11Y",
       "status": "INSUFFICIENT",
-      "urls": 28,
-      "primaryTagged": 23,
+      "urls": 10,
+      "primaryTagged": 10,
       "target": 8,
       "owners": [
         "A03",
@@ -192,8 +213,8 @@
     {
       "id": "D14_SECURITY_PRIVACY",
       "status": "INSUFFICIENT",
-      "urls": 55,
-      "primaryTagged": 89,
+      "urls": 13,
+      "primaryTagged": 13,
       "target": 12,
       "owners": [
         "A07",
@@ -214,8 +235,8 @@
     {
       "id": "D16_NETWORK_RESILIENCE",
       "status": "INSUFFICIENT",
-      "urls": 45,
-      "primaryTagged": 18,
+      "urls": 7,
+      "primaryTagged": 7,
       "target": 8,
       "owners": [
         "B07",
@@ -236,8 +257,8 @@
     {
       "id": "D18_TESTING_EVALS",
       "status": "INSUFFICIENT",
-      "urls": 60,
-      "primaryTagged": 100,
+      "urls": 12,
+      "primaryTagged": 10,
       "target": 12,
       "owners": [
         "A08",
@@ -247,8 +268,8 @@
     {
       "id": "D19_AGENT_ORCHESTRATION",
       "status": "INSUFFICIENT",
-      "urls": 40,
-      "primaryTagged": 50,
+      "urls": 12,
+      "primaryTagged": 12,
       "target": 10,
       "owners": [
         "B10",
@@ -269,8 +290,8 @@
     {
       "id": "D21_OBSERVABILITY_WORLD_MODEL",
       "status": "INSUFFICIENT",
-      "urls": 40,
-      "primaryTagged": 50,
+      "urls": 2,
+      "primaryTagged": 2,
       "target": 8,
       "owners": [
         "A04",
@@ -280,8 +301,8 @@
     {
       "id": "D22_PROTOCOLS_INTEROP",
       "status": "INSUFFICIENT",
-      "urls": 100,
-      "primaryTagged": 89,
+      "urls": 10,
+      "primaryTagged": 10,
       "target": 10,
       "owners": [
         "A04",
@@ -302,8 +323,8 @@
     {
       "id": "D24_RELEASE_APK",
       "status": "INSUFFICIENT",
-      "urls": 68,
-      "primaryTagged": 72,
+      "urls": 10,
+      "primaryTagged": 10,
       "target": 8,
       "owners": [
         "A02",
@@ -335,8 +356,8 @@
     {
       "id": "D27_ERROR_RECOVERY_UX",
       "status": "INSUFFICIENT",
-      "urls": 45,
-      "primaryTagged": 18,
+      "urls": 10,
+      "primaryTagged": 10,
       "target": 8,
       "owners": [
         "B07",
@@ -357,8 +378,8 @@
     {
       "id": "D29_REAL_WORKS_CANON",
       "status": "INSUFFICIENT",
-      "urls": 53,
-      "primaryTagged": 19,
+      "urls": 1,
+      "primaryTagged": 1,
       "target": 8,
       "owners": [
         "B05",
@@ -368,8 +389,8 @@
     {
       "id": "D30_AUTONOMOUS_QUALITY",
       "status": "INSUFFICIENT",
-      "urls": 60,
-      "primaryTagged": 100,
+      "urls": 14,
+      "primaryTagged": 13,
       "target": 12,
       "owners": [
         "A08",
