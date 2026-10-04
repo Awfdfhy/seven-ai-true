@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createRoom, isRoom, withRoomMode } from "./index";
+import { createRoom, isRoom, withRoomDeepThink, withRoomMode } from "./index";
 
 describe("room routing mode", () => {
   it("persists a validated per-room mode while accepting legacy rooms without it", () => {
@@ -11,5 +11,9 @@ describe("room routing mode", () => {
     const { mode: _ignored, ...legacy } = deep;
     expect(isRoom(legacy)).toBe(true);
     expect(isRoom({ ...deep, mode: "invalid" })).toBe(false);
+    const thinking = withRoomDeepThink(deep, true, 3);
+    expect(thinking.deepThink).toBe(true);
+    expect(isRoom(thinking)).toBe(true);
+    expect(isRoom({ ...thinking, deepThink: "yes" })).toBe(false);
   });
 });

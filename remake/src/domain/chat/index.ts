@@ -16,6 +16,7 @@ export type Room = Readonly<{
   title: string;
   modelId: string | null;
   mode?: ChatMode;
+  deepThink?: boolean;
   messages: readonly ChatMessage[];
   createdAt: number;
   updatedAt: number;
@@ -26,6 +27,7 @@ export type CreateRoomOptions = Readonly<{
   title?: string;
   modelId?: string | null;
   mode?: ChatMode;
+  deepThink?: boolean;
   now?: number;
 }>;
 
@@ -123,6 +125,7 @@ export function createRoom(options: CreateRoomOptions = {}): Room {
     title,
     modelId,
     mode,
+    deepThink: options.deepThink ?? false,
     messages: Object.freeze([]),
     createdAt: now,
     updatedAt: now,
@@ -194,6 +197,31 @@ export function commitMessage(
     ...room,
     messages: Object.freeze([...existingMessages, message]),
     updatedAt: Math.max(room.updatedAt, now),
+  });
+}
+
+export function withRoomDeepThink(
+  room: Room,
+  enabled: boolean,
+  now = Date.now(),
+): Room {
+  if (!isRoom(room)) {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Room failed schema validation before Deep Think update.",
+    });
+  }
+  if (typeof enabled !== "boolean") {
+    throw new SevenError({
+      code: "VALIDATION",
+      message: "Deep Think preference must be boolean.",
+    });
+  }
+  const timestamp = requireFiniteTime(now, "room timestamp");
+  return Object.freeze({
+    ...cloneRoom(room),
+    deepThink: enabled,
+    updatedAt: Math.max(room.updatedAt, timestamp),
   });
 }
 
@@ -282,6 +310,12 @@ export function isRoom(value: unknown): value is Room {
     candidate.mode !== "quick" &&
     candidate.mode !== "balanced" &&
     candidate.mode !== "deep"
+  ) {
+    return false;
+  }
+  if (
+    candidate.deepThink !== undefined &&
+    typeof candidate.deepThink !== "boolean"
   ) {
     return false;
   }

@@ -1,6 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { SevenRuntime } from "../kernel/seven-runtime";
-import { commitMessage, createRoom, withRoomMode, type ChatMode, type Room } from "../domain/chat";
+import { commitMessage, createRoom, withRoomDeepThink, withRoomMode, type ChatMode, type Room } from "../domain/chat";
 import type { ChatRun } from "../application/chat/chat-service";
 import { type ThemePreference } from "./shell/shell-store";
 import type { MemoryFact } from "../domain/memory/fabric";
@@ -215,6 +215,20 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
       setError(reason instanceof Error ? reason.message : String(reason));
     } finally {
       setMemoryBusy(false);
+    }
+  };
+
+  const setDeepThink = async (enabled: boolean) => {
+    if (!currentRoom || activeRun) return;
+    try {
+      const updated = withRoomDeepThink(currentRoom, enabled);
+      await rooms.put(updated);
+      setCurrentRoom(updated);
+      setRoomList((existing) =>
+        existing.map((room) => room.id === updated.id ? updated : room),
+      );
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : String(reason));
     }
   };
 
@@ -537,6 +551,14 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
                     : t("Deep", "عميق")}
               </button>
             ))}
+            <button
+              type="button"
+              disabled={!!activeRun}
+              aria-pressed={currentRoom.deepThink === true}
+              onClick={() => void setDeepThink(currentRoom.deepThink !== true)}
+            >
+              {t("Deep Think", "تفكير عميق")}
+            </button>
           </div>
         )}
 

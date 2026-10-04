@@ -62,7 +62,7 @@ Implemented but not currently composed into normal product dispatch:
 | Chat + Tools | PASS read/memory-mutation scope | untrusted evidence + explicit mutation approval |
 | Files | PARTIAL | service/repository exist; normal runtime/UI composition missing |
 | Research/Web | PARTIAL | orchestration/cache/failure model exist; concrete production Web source missing |
-| Deep Think | PARTIAL | two-pass implementation tested; not selected by production runtime |
+| Deep Think | PASS core path / further routing open | independent room flag selects two-pass planner→final transport with shared Memory/Tools context |
 | Coding | MISSING/PARTIAL | no first-class Remake Coding orchestrator in current product composition |
 | Self-Development | PARTIAL / SAFE | mutation path now requires Coding verification; no product-level Coding provider |
 | RPG | PARTIAL | checksum/CAS/persistence strong; Memory/chat orchestration absent |
@@ -110,7 +110,7 @@ Scores are evidence-weighted, not completion percentages.
 | Memory | 92 | 88 | 92 | 88 | 78 | STRONG CORE |
 | Files | 82 | 35 | 78 | 72 | 70 | PARTIAL |
 | Web Research | 84 | 30 | 82 | 75 | 68 | PARTIAL |
-| Deep Think | 86 | 35 | 84 | 78 | 60 | PARTIAL |
+| Deep Think | 90 | 82 | 88 | 84 | 60 | INTEGRATED CORE |
 | Tools | 92 | 88 | 92 | 88 | 80 | STRONG CORE |
 | Coding | 65 | 25 | 55 | 55 | 60 | GAP IN REMAKE |
 | Self-Development | 72 | 35 | 78 | 76 | 65 | SAFE FOUNDATION |
@@ -127,7 +127,8 @@ Scores are evidence-weighted, not completion percentages.
 - [x] Unwired workspace requests fail closed rather than contaminate Core Chat.
 - [ ] Attachments/Files product composition verified.
 - [ ] Research Web source + synthesis product composition verified.
-- [ ] Deep Think production dispatch verified.
+- [x] Deep Think production dispatch wired with a separate per-room flag.
+- [ ] Deep Think multi-provider planner/final routing and latency benchmarks verified.
 - [ ] Coding orchestrator product path verified.
 - [ ] RPG + Memory + Chat transactional orchestration verified.
 - [ ] latest Android build + API34/API36 device gates PASS on final SHA.

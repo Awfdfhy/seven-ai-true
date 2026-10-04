@@ -10,6 +10,8 @@ import { AndroidPlatformService } from "../application/android/android-platform-
 import { IndexedDbRoomRepository } from "../storage/room-repository";
 import { ChatService } from "../application/chat/chat-service";
 import { RoutingChatTransport } from "../application/chat/routed-chat-transport";
+import { ModeAwareChatTransport } from "../application/chat/mode-aware-chat-transport";
+import { DeepThinkTransport } from "../application/deep-think/deep-think-transport";
 import { KiloAnonymousProviderAdapter } from "../providers/kilo-anonymous-adapter";
 import { ModelRegistry, ModelRouter, ProviderHealthTracker } from "../routing/model-router";
 import { IntegratedChatContextSource } from "../application/context/integrated-chat-context-source";
@@ -45,7 +47,9 @@ export type SevenRuntime = Readonly<{
   android: AndroidPlatformService | null;
   rooms: IndexedDbRoomRepository;
   chat: ChatService;
-  chatTransport: RoutingChatTransport;
+  chatTransport: ModeAwareChatTransport;
+  routedChatTransport: RoutingChatTransport;
+  deepThinkTransport: DeepThinkTransport;
   modelRegistry: ModelRegistry;
   modelRouter: ModelRouter;
   providerHealth: ProviderHealthTracker;
@@ -211,7 +215,7 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
     memory,
     toolContextSource,
   );
-  const chatTransport = new RoutingChatTransport(
+  const routedChatTransport = new RoutingChatTransport(
     modelRegistry,
     modelRouter,
     providerHealth,
@@ -316,6 +320,8 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
     rooms,
     chat,
     chatTransport,
+    routedChatTransport,
+    deepThinkTransport,
     modelRegistry,
     modelRouter,
     providerHealth,

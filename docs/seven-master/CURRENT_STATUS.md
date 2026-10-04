@@ -19,7 +19,8 @@ Implemented:
 - public error-category mapping added in `core/error-taxonomy.ts`;
 - Self-Development now fails closed unless Coding verification evidence is present and valid **before** credential acquisition/GitHub mutation;
 - Research/Build/RPG UI submissions no longer silently fall back to normal Chat while those workspace adapters are uncomposed;
-- Quick / Balanced / Deep is now a per-room persisted routing preference, and production RoutingChatTransport resolves it on every turn.
+- Quick / Balanced / Deep is now a per-room persisted routing preference, and production RoutingChatTransport resolves it on every turn;
+- Deep Think is a separate persisted per-room flag and now dispatches through the real two-pass DeepThinkTransport (planner → final) while reusing the integrated Memory/Tools context source.
 
 ## Permanent Cross-System Regression Suite
 Added `remake/src/integration/system/integration-regression.test.ts` covering:
@@ -47,7 +48,7 @@ Android Release Gate for the same integration line is still pending/running at t
 ## Known High-Priority Gaps
 1. Attachments/Files implementation exists but is not composed into SevenRuntime/App UI.
 2. ResearchService has no concrete production Web source/synthesizer in SevenRuntime.
-3. DeepThinkTransport exists but production Chat does not select it.
+3. Deep Think is now production-dispatched, but it currently uses the same bootstrapped Kilo endpoint for planner/final; multi-provider Deep Think routing is still open.
 4. A first-class Remake Coding orchestrator is absent; Self-Development therefore remains safely blocked unless an external verified Coding port is supplied.
 5. RPG canonical persistence exists but RPG conversational orchestration is not joined to shared Memory/context/Chat.
 6. Error taxonomy mapping exists, but every subsystem has not yet tagged storage/auth/rate-limit errors with enough domain metadata for perfect classification.
