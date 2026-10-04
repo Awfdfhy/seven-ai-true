@@ -15,9 +15,9 @@ export class ResearchServiceCodingAdapter implements CodingResearchPort {
       return Object.freeze({
         text: [
           result.answer,
-          ...result.citations.map((citation) => `[${citation.id}] ${citation.title} — ${citation.canonicalUrl}`),
+          ...result.citations.map((citation) => `[${citation.providerId}:${citation.contentHash.slice(0, 12)}] ${citation.title} — ${citation.canonicalUrl}`),
         ].join("\n"),
-        sourceIds: Object.freeze(result.citations.map((citation) => citation.id)),
+        sourceIds: Object.freeze(result.citations.map((citation) => citation.canonicalUrl)),
       });
     } finally {
       signal.removeEventListener("abort", abort);
