@@ -49,9 +49,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p reality-evidence
           test -f remake/package.json
           cd remake
-          if [[ -f package-lock.json ]]; then npm ci; else npm install; fi
+          npm install --no-audit --no-fund
           node - <<'NODE' > /tmp/seven-build-command
           const p=require('./package.json');
           const s=p.scripts||{};
