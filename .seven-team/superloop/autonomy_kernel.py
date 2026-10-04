@@ -51,7 +51,6 @@ def _sha256(path:pathlib.Path)->str:
 def _resolve_relative(src:pathlib.Path,spec:str,root:pathlib.Path)->str|None:
     if not spec.startswith("."): return None
     base=(src.parent/spec).resolve()
-    candidates=[base, pathlib.Path(str(base)+ext) for ext in []]
     checks=[base]
     for ext in (".ts",".tsx",".js",".jsx",".mjs",".cjs",".json"): checks.append(pathlib.Path(str(base)+ext))
     for ext in (".ts",".tsx",".js",".jsx",".mjs",".cjs"): checks.append(base/("index"+ext))
