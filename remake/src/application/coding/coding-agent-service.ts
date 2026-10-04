@@ -27,9 +27,12 @@ function unique(paths:readonly string[]):readonly string[]{return Object.freeze(
 
 export class CodingAgentService{
  constructor(private readonly workspace:CodingWorkspaceService,private readonly model:CodingAgentModel,private readonly verificationFactory:VerificationExecutorFactory,private readonly research?:CodingResearchPort){}
- async run(input:Readonly<{taskId:string;runId:string;task:string;repository:string;branch:string;inspectionPaths:readonly string[];acceptanceCriteria:readonly string[];signal:AbortSignal;maxRepairAttempts?:number}>):Promise<CodingAgentResult>{
+ async run(input:Readonly<{taskId:string;runId:string;task:string;repository:string;branch:string;inspectionPaths?:readonly string[];acceptanceCriteria:readonly string[];signal:AbortSignal;maxRepairAttempts?:number}>):Promise<CodingAgentResult>{
   let run=createCodingRun({runId:input.runId,taskId:input.taskId,acceptanceCriteria:input.acceptanceCriteria});
-  let inspectionPaths=unique(input.inspectionPaths),repairInstruction: string|undefined;
+  let inspectionPaths=input.inspectionPaths?.length
+   ? unique(input.inspectionPaths)
+   : await this.workspace.discover({repository:input.repository,branch:input.branch,query:input.task,signal:input.signal,maxFiles:64,maxBytes:4_000_000});
+  let repairInstruction: string|undefined;
   let understanding: CodingUnderstanding|undefined;
   let researchEvidence:readonly string[]=[];
   let lastVerification:VerificationEvidence|undefined,lastReview:Readonly<{verdict:string;summary:string;findings:readonly string[]}>|undefined,lastCommit:string|undefined;
