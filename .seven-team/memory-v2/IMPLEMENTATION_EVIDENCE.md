@@ -43,3 +43,13 @@ Updated: 2026-10-04
 - semantic embedding quality delta
 - physical-device user validation
 - backup/import/export
+
+
+## New product-branch evidence
+
+- 6901770 — local Memory Intent Gate: NONE / CORE / RECALL / HISTORY routing with English/Arabic tests.
+- 2e1bd69 / 1c74bff — explainable profile-association expansion for multi-hop recall; generic category tags barred from acting as bridges.
+- 2af0c18 — per-canonical-key write serialization and out-of-order temporal preservation.
+- 9aba69b — bilingual extraction precision corpus and 10,000-memory scale gate.
+
+These additions remain subject to the latest CI/Android exact-build gates. Do not mark them proven until the matching SHA is green.

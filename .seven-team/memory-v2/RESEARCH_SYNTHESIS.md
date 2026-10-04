@@ -168,3 +168,26 @@ Weaknesses:
 - the new live Chat transport was not using MemoryRecord/ContextBuilder at all
 
 Memory Fabric v2 is being introduced alongside v1 first so migration can be tested rather than risking destructive replacement.
+
+
+## 2026 research update — selective + associative memory
+
+New evidence reviewed during implementation:
+
+- Agent Zero Memory: https://arxiv.org/abs/2608.29606
+  - supports a provenance-first multi-system approach: episodic timeline + associative graph + curated durable facts.
+  - especially relevant: intent gating, source routing, citation-locked reading and abstention.
+- Profile-Graph Memory / MemHop: https://arxiv.org/abs/2607.19359
+  - reports strong multi-hop gains from profile expansion and exact residual facts without requiring a full explicit graph for every memory.
+- SYNAPSE episodic-semantic memory: https://arxiv.org/abs/2601.02744
+  - supports associative graph expansion plus multiple retrieval signals rather than vector similarity alone.
+- LongMemEval-V2: https://arxiv.org/abs/2605.12493
+  - expands the benchmark target from user-fact recall to static state, dynamic state, workflow knowledge, environment gotchas and premise awareness.
+
+### Seven decisions from the update
+
+1. Add a local Memory Intent Gate. Self-contained turns should not pay memory latency or receive irrelevant personal context.
+2. Keep core/recall facts as the authoritative derived-memory baseline.
+3. Add lightweight explainable profile/entity association expansion before considering an external graph database.
+4. Keep every derived fact source-bound. Multi-hop expansion is retrieval, not a license to create new truth.
+5. Future tool/coding memory should use LME-V2-style workflow/gotcha evaluation, distinct from personal-profile memory.

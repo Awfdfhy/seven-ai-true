@@ -127,3 +127,18 @@ The Manager must not report Memory as COMPLETE unless every item below is backed
 - [ ] Reality Lab exact-build evidence
 
 If any item is missing, verdict is MEMORY_IN_PROGRESS or MEMORY_UNPROVEN, never COMPLETE.
+
+
+## Phase 2.5 — Selective and associative recall
+Status: IMPLEMENTING
+
+- Intent-gated retrieval: NONE / CORE / RECALL / HISTORY
+- no memory injection for self-contained factual turns
+- explainable rare-bridge association expansion for multi-hop questions
+- generic memory category tags cannot become graph bridges
+- canonical-key write serialization
+- out-of-order observation preservation
+- bilingual extraction precision corpus
+- 10k-memory correctness/latency gate
+
+Promotion requirement: association expansion must improve multi-hop recall without regressing unrelated-query abstention.
