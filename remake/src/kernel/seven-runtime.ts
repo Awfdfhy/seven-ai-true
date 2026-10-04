@@ -37,6 +37,9 @@ import { OrchestratedReadToolContextSource } from "../application/tools/chat-too
 import { registerBuiltinMemoryMutationTools } from "../application/tools/mutation-builtins";
 import { LocalMemoryMutationProposer } from "../application/tools/memory-mutation-proposer";
 import { ToolApprovalCoordinator } from "../application/tools/approval-coordinator";
+import { AttachmentService, SingleFlightPdfParserLoader } from "../application/attachments/attachment-service";
+import { StoredAttachmentContextSource } from "../application/attachments/attachment-context-source";
+import { IndexedDbAttachmentRepository } from "../storage/attachment-repository";
 
 export type SevenRuntime = Readonly<{
   taskManager: TaskManager;
@@ -54,6 +57,7 @@ export type SevenRuntime = Readonly<{
   modelRouter: ModelRouter;
   providerHealth: ProviderHealthTracker;
   memory: MemoryFabricService;
+  attachments: AttachmentService;
   toolRegistry: ToolRegistry;
   toolOrchestrator: ToolOrchestrator;
   toolApprovalCoordinator: ToolApprovalCoordinator;
@@ -121,6 +125,19 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
   })]);
   const modelRouter = new ModelRouter();
   const providerHealth = new ProviderHealthTracker();
+  const attachmentRepository = new IndexedDbAttachmentRepository();
+  const attachments = new AttachmentService(
+    taskManager,
+    attachmentRepository,
+    new SingleFlightPdfParserLoader(async () => {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "PDF extraction is not enabled in this build. Use a UTF-8 text file.",
+        details: { domain: "file", reason: "PDF_PARSER_UNAVAILABLE" },
+      });
+    }),
+  );
+  const attachmentContextSource = new StoredAttachmentContextSource(attachmentRepository);
   const memoryRepository = new IndexedDbMemoryFabricRepository();
   const queryRewriter = new ProviderMemoryQueryRewriter(kilo, "kilo-auto/free");
   const memory = new MemoryFabricService(memoryRepository, new MemoryRetrievalEngine(), queryRewriter);
@@ -214,6 +231,7 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
     contextSource,
     memory,
     toolContextSource,
+    attachmentContextSource,
   );
   const routedChatTransport = new RoutingChatTransport(
     modelRegistry,
@@ -294,6 +312,7 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
     async stop() {
       await Promise.allSettled([
         rooms.close(),
+        attachmentRepository.close(),
         memoryRepository.close(),
         summaryRepository.close(),
       ]);
@@ -326,6 +345,7 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
     modelRouter,
     providerHealth,
     memory,
+    attachments,
     toolRegistry,
     toolOrchestrator,
     toolApprovalCoordinator,

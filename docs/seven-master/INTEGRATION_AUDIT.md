@@ -60,7 +60,7 @@ Implemented but not currently composed into normal product dispatch:
 | Model routing | PASS core path | production runtime now uses registry/router/health/fallback |
 | Chat + Memory | PASS core path | memory retrieval/context assembly + write observer are wired |
 | Chat + Tools | PASS read/memory-mutation scope | untrusted evidence + explicit mutation approval |
-| Files | PARTIAL | service/repository exist; normal runtime/UI composition missing |
+| Files | PASS for UTF-8 text / PDF PARTIAL | AttachmentService + IndexedDB + UI + room-scoped bounded context are wired; PDF parser adapter intentionally absent |
 | Research/Web | PARTIAL | orchestration/cache/failure model exist; concrete production Web source missing |
 | Deep Think | PASS core path / further routing open | independent room flag selects two-pass planner→final transport with shared Memory/Tools context |
 | Coding | MISSING/PARTIAL | no first-class Remake Coding orchestrator in current product composition |
@@ -108,7 +108,7 @@ Scores are evidence-weighted, not completion percentages.
 | Chat Core | 92 | 90 | 94 | 92 | 82 | STRONG |
 | Model Routing | 92 | 90 | 92 | 90 | 84 | STRONG CORE |
 | Memory | 92 | 88 | 92 | 88 | 78 | STRONG CORE |
-| Files | 82 | 35 | 78 | 72 | 70 | PARTIAL |
+| Files | 88 | 82 | 86 | 82 | 78 | INTEGRATED TXT / PDF PARTIAL |
 | Web Research | 84 | 30 | 82 | 75 | 68 | PARTIAL |
 | Deep Think | 90 | 82 | 88 | 84 | 60 | INTEGRATED CORE |
 | Tools | 92 | 88 | 92 | 88 | 80 | STRONG CORE |
@@ -125,7 +125,8 @@ Scores are evidence-weighted, not completion percentages.
 - [x] Production web build passes.
 - [x] Self-Development cannot bypass Coding verification.
 - [x] Unwired workspace requests fail closed rather than contaminate Core Chat.
-- [ ] Attachments/Files product composition verified.
+- [x] UTF-8 text attachment product composition verified.
+- [ ] PDF parser production adapter + PDF end-to-end verified.
 - [ ] Research Web source + synthesis product composition verified.
 - [x] Deep Think production dispatch wired with a separate per-room flag.
 - [ ] Deep Think multi-provider planner/final routing and latency benchmarks verified.

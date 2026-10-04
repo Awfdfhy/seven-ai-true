@@ -20,7 +20,9 @@ Implemented:
 - Self-Development now fails closed unless Coding verification evidence is present and valid **before** credential acquisition/GitHub mutation;
 - Research/Build/RPG UI submissions no longer silently fall back to normal Chat while those workspace adapters are uncomposed;
 - Quick / Balanced / Deep is now a per-room persisted routing preference, and production RoutingChatTransport resolves it on every turn;
-- Deep Think is a separate persisted per-room flag and now dispatches through the real two-pass DeepThinkTransport (planner → final) while reusing the integrated Memory/Tools context source.
+- Deep Think is a separate persisted per-room flag and now dispatches through the real two-pass DeepThinkTransport (planner → final) while reusing the integrated Memory/Tools/File context source;
+- UTF-8 text attachments now ingest through AttachmentService, persist per room, and are relevance-ranked/bounded before untrusted context injection;
+- Memory, read-only Tool evidence and Attachment evidence are retrieved concurrently before context assembly.
 
 ## Permanent Cross-System Regression Suite
 Added `remake/src/integration/system/integration-regression.test.ts` covering:
@@ -46,7 +48,7 @@ Remake CI run **37238353163**: SUCCESS on commit `18598d63814990300a65206d47253c
 Android Release Gate for the same integration line is still pending/running at this document checkpoint and is not counted as PASS until GitHub reports completion.
 
 ## Known High-Priority Gaps
-1. Attachments/Files implementation exists but is not composed into SevenRuntime/App UI.
+1. Files/TXT attachments are now composed into SevenRuntime + UI + bounded room-scoped Chat context. PDF extraction remains deliberately disabled until a production parser adapter is available.
 2. ResearchService has no concrete production Web source/synthesizer in SevenRuntime.
 3. Deep Think is now production-dispatched, but it currently uses the same bootstrapped Kilo endpoint for planner/final; multi-provider Deep Think routing is still open.
 4. A first-class Remake Coding orchestrator is absent; Self-Development therefore remains safely blocked unless an external verified Coding port is supplied.

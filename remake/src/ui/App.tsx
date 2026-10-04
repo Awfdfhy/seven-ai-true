@@ -15,7 +15,7 @@ function shortTitle(room: Room): string {
 }
 
 export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
-  const { shell, theme, kernel, rooms, chat, chatTransport, memory, toolApprovalCoordinator } = runtime;
+  const { shell, theme, kernel, rooms, chat, chatTransport, memory, attachments, toolApprovalCoordinator } = runtime;
   const snapshot = useSyncExternalStore(shell.subscribe, shell.getSnapshot, shell.getSnapshot);
   const [roomList, setRoomList] = useState<readonly Room[]>([]);
   const [currentRoom, setCurrentRoom] = useState<Room | null>(null);
@@ -36,6 +36,8 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
   const [pendingToolQuery, setPendingToolQuery] = useState<string | null>(null);
   const [toolActionBusy, setToolActionBusy] = useState(false);
   const [toolActionNotice, setToolActionNotice] = useState<string | null>(null);
+  const [attachmentBusy, setAttachmentBusy] = useState(false);
+  const [attachmentNotice, setAttachmentNotice] = useState<string | null>(null);
   const isAr = snapshot.locale === "ar";
   const t = (en: string, ar: string) => isAr ? ar : en;
   const workspaceIntegrated = snapshot.activeWorkspace === "core";
@@ -215,6 +217,30 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
       setError(reason instanceof Error ? reason.message : String(reason));
     } finally {
       setMemoryBusy(false);
+    }
+  };
+
+  const ingestTextAttachment = async (file: File | null) => {
+    if (!file || !currentRoom || attachmentBusy || !workspaceIntegrated) return;
+    setAttachmentBusy(true);
+    setAttachmentNotice(null);
+    setError(null);
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const record = await attachments.ingest({
+        roomId: currentRoom.id,
+        name: file.name,
+        declaredMimeType: "text/plain",
+        bytes,
+      }).result;
+      setAttachmentNotice(t(
+        `${record.name} attached to this chat and available as context.`,
+        `تم إرفاق ${record.name} بهذه المحادثة وأصبح متاحًا ضمن السياق.`,
+      ));
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setAttachmentBusy(false);
     }
   };
 
@@ -639,10 +665,26 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
         {toolActionNotice && !pendingToolAction && (
           <div className="seven-tool-notice" role="status">{toolActionNotice}</div>
         )}
+        {attachmentNotice && (
+          <div className="seven-tool-notice" role="status">{attachmentNotice}</div>
+        )}
 
         <div className="seven-composer-wrap">
           <div className="seven-composer">
-            <button className="seven-attach" type="button" aria-label={t("Attachments coming next", "المرفقات في الخطوة التالية")} title={t("Attachments coming next", "المرفقات في الخطوة التالية")}>＋</button>
+            <label className="seven-attach" aria-label={t("Attach text file", "إرفاق ملف نصي")} title={t("Attach UTF-8 text file", "إرفاق ملف نصي UTF-8")}>
+              ＋
+              <input
+                type="file"
+                accept="text/plain,.txt,.md,.csv,.json,.log"
+                disabled={attachmentBusy || !currentRoom || !workspaceIntegrated}
+                style={{ display: "none" }}
+                onChange={(event) => {
+                  const file = event.currentTarget.files?.[0] ?? null;
+                  void ingestTextAttachment(file);
+                  event.currentTarget.value = "";
+                }}
+              />
+            </label>
             <textarea
               value={input}
               rows={1}
