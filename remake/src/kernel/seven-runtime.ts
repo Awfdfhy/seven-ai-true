@@ -17,6 +17,8 @@ import { IndexedDbMemoryRepository } from "../storage/memory-repository";
 import { MemoryContextService } from "../application/context/memory-context-service";
 import { ProviderContextSummarizer } from "../context/provider-context-summarizer";
 import { MemoryLegacyMigrationService } from "../application/memory/memory-legacy-migration-service";
+import { ProviderMemoryQueryRewriter } from "../application/memory/memory-query-rewriter";
+import { MemoryRetrievalEngine } from "../application/memory/memory-retrieval";
 
 export type SevenRuntime = Readonly<{
   taskManager: TaskManager;
@@ -65,8 +67,10 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
     : null;
 
   const rooms = new IndexedDbRoomRepository();
+  const kilo = new KiloAnonymousProviderAdapter();
   const memoryRepository = new IndexedDbMemoryFabricRepository();
-  const memory = new MemoryFabricService(memoryRepository);
+  const queryRewriter = new ProviderMemoryQueryRewriter(kilo, "kilo-auto/free");
+  const memory = new MemoryFabricService(memoryRepository, new MemoryRetrievalEngine(), queryRewriter);
   const legacyMemoryRepository = new IndexedDbMemoryRepository({
     databaseName: "seven-remake-memory",
     maxRecords: 10_000,
@@ -77,7 +81,6 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
     memoryRepository,
   );
   const chat = new ChatService(taskManager, rooms, memory);
-  const kilo = new KiloAnonymousProviderAdapter();
   const summaryRepository = new IndexedDbMemoryRepository({
     databaseName: "seven-remake-context-summary-v2",
     maxRecords: 1,
