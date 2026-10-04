@@ -35,7 +35,7 @@ if(remoteRuntimeUrls.length)apkBlocker('remote-pdf-runtime-assets',remoteRuntime
 if(remoteStyles.length)warn('remote-style-dependency',remoteStyles);
 const intervalCount=(sourceHtml.match(/\bsetInterval\s*\(/g)||[]).length;if(intervalCount)warn('intervals-present',intervalCount);
 const transitionAll=(sourceHtml.match(/transition\s*:\s*all\b/gi)||[]).length;if(transitionAll)warn('transition-all-present',transitionAll);
-const layerBytes=assets.reduce((s,x)=>s+x.bytes,0)+built.themeBootBytes;if(layerBytes>100000)issue('release-layer-too-heavy',layerBytes);
+const rawLayerBytes=assets.reduce((s,x)=>s+x.bytes,0)+built.themeBootBytes,layerBytes=built.startupBytes,startupHeadroomBytes=100000-layerBytes;if(layerBytes>=100000)issue('release-layer-too-heavy',layerBytes);else if(startupHeadroomBytes<1024)warn('release-layer-low-headroom',startupHeadroomBytes);
 for(const a of assets)if(a.bytes>50000)issue('oversized-release-asset',a);
 const lazyWorkspaceBudgetBytes=320000;if(built.workspaceBytes>lazyWorkspaceBudgetBytes)issue('lazy-workspaces-too-heavy',{bytes:built.workspaceBytes,budget:lazyWorkspaceBudgetBytes});
 const staticPackageBytes=built.bytes+built.pdf.bytes+built.workspaceBytes+built.attachmentRuntimeBytes;
@@ -45,7 +45,7 @@ if(fs.statSync(path.join(ROOT,'seven_ai-final.html')).size>900000)warn('monolith
 if(built.pdfLoadMode!=='lazy-local')issue('pdf-load-mode-not-lazy-local',built.pdfLoadMode);
 if(built.attachmentLoadMode!=='lazy-local')issue('attachment-load-mode-not-lazy-local',built.attachmentLoadMode);
 if(built.workspaceLoadMode!=='lazy-local')issue('workspace-load-mode-not-lazy-local',built.workspaceLoadMode);
-const report={format:'seven-static-audit',version:15,sourceBytes:Buffer.byteLength(sourceHtml),builtHtmlBytes:built.bytes,releaseLayerBytes:layerBytes,themeBootBytes:built.themeBootBytes,pdfVendorBytes:built.pdf.bytes,pdfLoadMode:built.pdfLoadMode,attachmentRuntimeBytes:built.attachmentRuntimeBytes,attachmentLoadMode:built.attachmentLoadMode,lazyWorkspaceBytes:built.workspaceBytes,lazyWorkspaceBudgetBytes,workspaceLoadMode:built.workspaceLoadMode,workspaceFiles:workspaceAssets.map(({text,...x})=>x),staticPackageBytes,apkStaticBudgetBytes,assets,issues,warnings,apkReadiness:{ready:apkBlockers.length===0,blockers:apkBlockers}};
+const report={format:'seven-static-audit',version:15,sourceBytes:Buffer.byteLength(sourceHtml),builtHtmlBytes:built.bytes,releaseLayerBytes:layerBytes,rawReleaseLayerBytes:rawLayerBytes,startupHeadroomBytes,themeBootBytes:built.themeBootBytes,pdfVendorBytes:built.pdf.bytes,pdfLoadMode:built.pdfLoadMode,attachmentRuntimeBytes:built.attachmentRuntimeBytes,attachmentLoadMode:built.attachmentLoadMode,lazyWorkspaceBytes:built.workspaceBytes,lazyWorkspaceBudgetBytes,workspaceLoadMode:built.workspaceLoadMode,workspaceFiles:workspaceAssets.map(({text,...x})=>x),staticPackageBytes,apkStaticBudgetBytes,assets,issues,warnings,apkReadiness:{ready:apkBlockers.length===0,blockers:apkBlockers}};
 fs.mkdirSync(path.join(ROOT,'dist'),{recursive:true});
 fs.writeFileSync(path.join(ROOT,'dist','static-audit.json'),JSON.stringify(report,null,2));
 if(warnings.length)for(const w of warnings)console.log('AUDIT WARN',w.code,JSON.stringify(w.detail));
