@@ -2,18 +2,21 @@
 
 | System | Owner Chat | Status | Depends On | Primary Validation |
 |---|---:|---|---|---|
-| Chat Core | Master | Existing | Models | conversation regression |
-| Model Routing | Master | Existing | Providers | routing/eval matrix |
-| Memory | 1 | Active/Iterative | Chat Core, Storage | retrieval/retention tests |
-| Files | Master | Existing/Iterative | Tools | parse/read/write tests |
-| Web Research | 2 | Active/Iterative | Tools, Models | source quality + synthesis |
-| Deep Think | Master | Existing/Iterative | Models, Routing | reasoning quality + latency |
-| Tools | 3 | Current focus completed/iterative | Routing, Safety | tool-selection + execution tests |
-| Coding System | 4 | NEXT | Tools, Files, Git | patch/build/test benchmark |
-| Self-Development | 5 | Planned | Coding, Tools, Git, Verification | sandboxed improvement loop |
-| RPG System | 6 | Planned | Memory, Tools, Models | continuity/state simulations |
-| Integration | 7 | Continuous | All systems | end-to-end/regression |
-| Android/APK/UI | 8 | Continuous | Integrated app | build/install/device tests |
+| Chat Core | Master | Existing / hardening | Models, Storage | conversation + state regression |
+| Model Routing | Master | Existing / hardening | Providers, Runtime health | routing/eval matrix |
+| Memory | 1 | Active / iterative | Chat Core, Storage | retrieval, isolation, retention |
+| Files | Master | Existing / iterative | Tools, Storage | parse/read/write + size/type gates |
+| Web Research | 2 | Active / iterative | Tools, Models, Network | evidence/citation/freshness tests |
+| Deep Think | Master | Existing / iterative | Models, Routing, Context | quality + latency + cancellation |
+| Tools | 3 | Existing / hardening | Runtime, Permissions | schema + authorization + execution |
+| Coding System | 4 | Existing / verification | Tools, Files, Git | inspect/patch/test/build/Git E2E |
+| Self-Development | 5 | Existing / verification | Coding, Tools, Git, Verification | bounded improve/test/accept loop |
+| RPG System | 6 | Active implementation / verification | Memory, Models, World/Canon state | continuity + isolation + persistence |
+| Integration | 7 | ACTIVE | All systems | contract/E2E/failure/regression |
+| Android/APK/UI | 8 | Continuous | Integrated app, Capacitor/WebView | build/install/device tests |
 
 ## Ownership Rule
 Ownership means primary responsibility, not exclusive access. Cross-system changes require contract review.
+
+## Verification Rule
+Existing means code exists. It does not mean acceptance-ready. Completion is gated by evidence in CI/device runs and the Integration Acceptance Gate.

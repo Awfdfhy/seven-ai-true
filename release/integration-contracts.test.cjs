@@ -18,11 +18,13 @@ const Execution=require('./execution-bridge.js');
 const Research=require('./research-runtime.js');
 const World=require('./world-runtime.js');
 const Canon=require('./canon-simulator.js');
+const betaUiSource=fs.readFileSync(__dirname+'/beta-ui-runtime.js','utf8');
 
 let count=0;
 function check(name,fn){assert.ok(fn(),name);count++;console.log('PASS',name);}
 
 check('control/runtime/execution boot contract',()=>Control.state.ready&&runtime.version===4&&Execution.state.ready);
+check('release stop shim aborts instead of Android controller nulling',()=>/activeAbortController\\.abort\\(\\)/.test(betaUiSource)&&!/activeAbortController\\s*=\\s*null/.test(betaUiSource));
 
 const task={goal:'integration write',allowedCapabilities:['fs.write'],scope:{files:['src']},verification:{required:true}};
 const subject=runtime.createMemory('integration authorization','fact',{id:'integration-auth',scope:'user'});

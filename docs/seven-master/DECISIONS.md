@@ -19,3 +19,19 @@ Decision: The Coding System must be robust and verified before autonomous/self-d
 ## ADR-005 — Verification Is Mandatory
 Status: Accepted
 Decision: No subsystem is marked complete from implementation alone; tests and regression evidence are required.
+
+## ADR-006 — Integration Acceptance Is Evidence-Gated
+Status: Accepted
+Decision: Unit success is insufficient for release readiness. Cross-system regression, release build, Android build/device evidence, state isolation, cancellation and recovery are explicit acceptance gates. Zero bugs may only mean zero known reproducible bugs in the tested scope.
+
+## ADR-007 — Execution Checkpoints Fail Closed
+Status: Accepted
+Decision: Execution checkpoints use a versioned envelope with task/run/state identity checks, deterministic corruption checksum and bounded retention. Invalid checkpoints are rejected. The checksum is not treated as a cryptographic trust boundary.
+
+## ADR-008 — Cancellation Is Request-Scoped
+Status: Accepted
+Decision: Cancellation belongs to the originating generation/tool request. Platform-specific code may choose the safe abort mechanism, but late results must be discarded and cancellation from another room/workspace must not bleed across scopes.
+
+## ADR-009 — Cross-System Errors Use a Common Taxonomy
+Status: Accepted
+Decision: Integration surfaces normalize failures into MODEL_ERROR, NETWORK_ERROR, TOOL_ERROR, MEMORY_ERROR, FILE_ERROR, AUTH_ERROR, RATE_LIMIT, VALIDATION_ERROR, CANCELLED, TIMEOUT or INTERNAL_ERROR, while preserving technical details in safe structured diagnostics.
