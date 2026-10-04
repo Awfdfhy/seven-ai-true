@@ -220,3 +220,71 @@ button { min-width: 44px; min-height: 44px; touch-action: manipulation; }
   background: var(--seven-bg);
   line-height: 1.4;
 }
+
+.seven-tool-approval {
+  margin: .55rem .75rem .25rem;
+  padding: .8rem;
+  border: 1px solid var(--seven-border);
+  border-radius: 14px;
+  background: var(--seven-panel);
+  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+}
+.seven-tool-approval-head {
+  display: flex;
+  justify-content: space-between;
+  gap: .75rem;
+  align-items: center;
+  font-size: .78rem;
+}
+.seven-tool-approval-head span {
+  color: var(--seven-muted);
+  font-size: .66rem;
+  overflow-wrap: anywhere;
+}
+.seven-tool-approval-title {
+  margin: .55rem 0 .4rem;
+  font-weight: 700;
+}
+.seven-tool-preview {
+  border: 1px solid var(--seven-border);
+  border-radius: 10px;
+  padding: .55rem .65rem;
+  background: var(--seven-bg);
+}
+.seven-tool-preview small,
+.seven-tool-approval-note {
+  color: var(--seven-muted);
+  font-size: .7rem;
+}
+.seven-tool-preview p {
+  margin: .3rem 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.seven-tool-approval-note {
+  margin: .55rem 0;
+  line-height: 1.45;
+}
+.seven-tool-approval-actions {
+  display: flex;
+  gap: .45rem;
+}
+.seven-tool-approval-actions button {
+  min-height: 40px;
+  flex: 1;
+  border: 1px solid var(--seven-border);
+  border-radius: 10px;
+  background: var(--seven-panel-2);
+  color: var(--seven-text);
+}
+.seven-tool-approval-actions button:first-child {
+  font-weight: 700;
+}
+.seven-tool-notice {
+  margin: .4rem .75rem 0;
+  padding: .55rem .7rem;
+  border-radius: 10px;
+  background: var(--seven-panel);
+  color: var(--seven-muted);
+  font-size: .75rem;
+}

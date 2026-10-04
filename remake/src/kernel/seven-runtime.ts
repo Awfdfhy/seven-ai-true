@@ -29,6 +29,9 @@ import { ProviderToolPlanner } from "../application/tools/planner";
 import { DefaultReadToolCapabilityPolicy } from "../application/tools/read-capability-policy";
 import { ToolOrchestrator } from "../application/tools/orchestrator";
 import { OrchestratedReadToolContextSource } from "../application/tools/chat-tool-context";
+import { registerBuiltinMemoryMutationTools } from "../application/tools/mutation-builtins";
+import { LocalMemoryMutationProposer } from "../application/tools/memory-mutation-proposer";
+import { ToolApprovalCoordinator } from "../application/tools/approval-coordinator";
 
 export type SevenRuntime = Readonly<{
   taskManager: TaskManager;
@@ -43,6 +46,7 @@ export type SevenRuntime = Readonly<{
   memory: MemoryFabricService;
   toolRegistry: ToolRegistry;
   toolOrchestrator: ToolOrchestrator;
+  toolApprovalCoordinator: ToolApprovalCoordinator;
 }>;
 
 export type SevenRuntimeOptions = Readonly<{
@@ -96,10 +100,20 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
 
   const toolRegistry = new ToolRegistry();
   registerBuiltinReadTools(toolRegistry, { memory, rooms });
+  registerBuiltinMemoryMutationTools(toolRegistry, memory);
   const toolAuthority = new InMemoryToolAuthoritySource();
   toolAuthority.setGrant({
     grantId: "seven-local-read-tools",
     capabilities: Object.freeze(["memory.read", "rooms.read"]),
+    scope: Object.freeze({}),
+    issuedAt: 0,
+    expiresAt: Number.MAX_SAFE_INTEGER,
+    source: "system",
+  });
+  toolAuthority.setGrant({
+    grantId: "seven-local-memory-mutations",
+    capabilities: Object.freeze(["memory.write", "memory.delete"]),
+    toolIds: Object.freeze(["memory.set_tier", "memory.forget"]),
     scope: Object.freeze({}),
     issuedAt: 0,
     expiresAt: Number.MAX_SAFE_INTEGER,
@@ -139,6 +153,12 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
   const toolContextSource = new OrchestratedReadToolContextSource(
     toolOrchestrator,
     toolRegistry,
+  );
+  const toolApprovalCoordinator = new ToolApprovalCoordinator(
+    new LocalMemoryMutationProposer(memory, toolRegistry),
+    toolRegistry,
+    toolExecutor,
+    toolAuthority,
   );
 
   const summaryRepository = new IndexedDbMemoryRepository({
@@ -229,5 +249,6 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
     memory,
     toolRegistry,
     toolOrchestrator,
+    toolApprovalCoordinator,
   });
 }
