@@ -85,7 +85,7 @@ def git(*args: str, cwd: pathlib.Path = ROOT, check: bool = True) -> subprocess.
 
 
 def clip(text: str, limit: int = 7000) -> str:
-    text = text or ""
+    text = (text or "").replace("\x00", "")
     if len(text) <= limit:
         return text
     half = max(1000, (limit - 120) // 2)
@@ -169,6 +169,7 @@ def codex_command(prompt: str) -> list[str]:
 
 
 def run_codex(workdir: pathlib.Path, prompt: str, timeout: int, label: str) -> str:
+    prompt = (prompt or "").replace("\x00", "")
     home = RUNNER_TEMP / "seven-superloop-codex" / safe_label(label)
     home.mkdir(parents=True, exist_ok=True)
     env = os.environ.copy()
@@ -519,6 +520,11 @@ Candidate evidence:
 Inspect the now-integrated repository. Reconcile only real incompatibilities, duplicated ownership,
 missing glue, and deterministic test gaps. You MAY edit production code/tests in the allowed Remake
 surfaces, but do not commit or push. Keep the integrated set coherent and minimal.
+
+TypeScript safety rule: never access ad-hoc properties through bare globalThis.property or
+globalThis["property"] unless the property is declared. Prefer a typed intersection such as
+(globalThis as typeof globalThis & { SomeProbe?: ProbeType }).SomeProbe, or keep the probe local.
+Do not create throwaway probe tests that fail strict typecheck.
 """
     manager_output = run_codex(ROOT, reconcile_prompt, MANAGER_TIMEOUT, f"c{cycle}-{stage}-reconcile")
     if git_output("rev-parse", "HEAD") != before_manager:
