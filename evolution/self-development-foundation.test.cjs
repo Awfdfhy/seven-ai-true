@@ -74,6 +74,25 @@ pass("observation buffer is bounded and returns detached snapshots", () => {
   assert.equal(buffer.snapshot()[0].metrics.toolSuccess, 0);
 });
 
+pass("buffer revalidates caller-supplied records instead of trusting forged normalization flags", () => {
+  const buffer = new ObservationBuffer({ maxEntries: 10 });
+  assert.throws(() => buffer.append({
+    schemaVersion: 1,
+    fingerprint: "forged",
+    id: "forged-record",
+    timestamp: "2026-10-05T00:00:00Z",
+    source: "seven-runtime",
+    subsystem: "tools",
+    kind: "tool_call",
+    outcome: "ERROR",
+    severity: "MEDIUM",
+    metrics: { toolSuccess: 0 },
+    metadata: { prompt: "this must never enter telemetry" },
+    evidenceRefs: []
+  }), /forbidden telemetry metadata key/);
+  assert.equal(buffer.size(), 0);
+});
+
 pass("successful observations do not become weakness clusters", () => {
   const rows = [
     createObservation({
