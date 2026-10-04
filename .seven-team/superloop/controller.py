@@ -331,6 +331,7 @@ def allowed_candidate_path(path: str) -> bool:
     return (
         path.startswith("remake/")
         or path.startswith("apk/remake-")
+        or path.startswith(".seven-team/product-intelligence/learned/")
         or path == ".github/workflows/seven-remake-android.yml"
     )
 
