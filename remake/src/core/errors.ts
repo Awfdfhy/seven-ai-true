@@ -5,6 +5,8 @@ export type SevenErrorCode =
   | "PROVIDER"
   | "STORAGE"
   | "BRIDGE"
+  | "PERMISSION"
+  | "TOOL"
   | "VALIDATION"
   | "UNKNOWN";
 
