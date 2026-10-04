@@ -1,0 +1,105 @@
+(function(root,factory){
+  const api=factory();
+  if(typeof module==='object'&&module.exports)module.exports=api;
+  else root.SevenRpgContext=api;
+})(typeof globalThis!=='undefined'?globalThis:this,function(){
+'use strict';
+
+function clone(v){return v==null?v:JSON.parse(JSON.stringify(v));}
+function obj(v){return v&&typeof v==='object'&&!Array.isArray(v)?v:{};}
+function arr(v){return Array.isArray(v)?v:[];}
+function text(v){return typeof v==='string'?v.trim():'';}
+function uniq(xs){return Array.from(new Set(arr(xs).filter(x=>typeof x==='string'&&x.trim()).map(x=>x.trim())));}
+function canonRank(level){return ({RUMOR:0,SOFT:1,ACTIVE:2,HARD:3})[String(level||'').toUpperCase()]??-1;}
+function scoreCanon(entry,character,scene){
+  let score=canonRank(entry.level)*20+(entry.public?4:0);
+  const ids=new Set([character.id,character.locationId,...arr(scene&&scene.participantIds),scene&&scene.locationId].filter(Boolean));
+  for(const id of arr(entry.entityIds))if(ids.has(id))score+=12;
+  if(character.goals&&character.goals.some(g=>JSON.stringify(g).includes(entry.id)))score+=4;
+  return score;
+}
+function relationshipSlice(state,characterId,participantIds){
+  const out={};const participants=new Set(uniq(participantIds));
+  for(const [key,value] of Object.entries(obj(state.relationships))){
+    if(!key.includes(characterId))continue;
+    const pieces=key.includes('->')?key.split('->'):key.split('::');
+    const other=pieces.find(x=>x!==characterId);
+    if(participants.size&&other&&!participants.has(other))continue;
+    out[key]=clone(value);
+  }
+  return out;
+}
+function questSlice(state,characterId){
+  const out={};for(const [id,q] of Object.entries(obj(state.quests))){
+    const owners=arr(q&&q.ownerIds);if(owners.length===0||owners.includes(characterId))out[id]=clone(q);
+  }return out;
+}
+function knownCanon(state,stateApi,characterId,limit){
+  const c=state.characters[characterId];if(!c)return[];
+  const scene=state.scene||null;
+  return Object.values(obj(state.canon&&state.canon.entries))
+    .filter(e=>e&&e.status==='active')
+    .filter(e=>{const k=stateApi.canCharacterKnow(state,characterId,e.id);return k&&k.allowed===true;})
+    .map(e=>({entry:e,score:scoreCanon(e,c,scene)}))
+    .sort((a,b)=>b.score-a.score||String(a.entry.id).localeCompare(String(b.entry.id)))
+    .slice(0,Math.max(1,Number(limit)||32))
+    .map(x=>clone(x.entry));
+}
+function buildCharacterView(stateInput,stateApi,characterId,options){
+  if(!stateApi||typeof stateApi.createState!=='function'||typeof stateApi.canCharacterKnow!=='function')throw Error('SevenRpgState-compatible stateApi required');
+  const state=stateApi.createState(stateInput),c=state.characters[characterId],opts=obj(options);
+  if(!c)return {ok:false,status:'BLOCKED',reason:'unknown-character'};
+  const scene=state.scene?clone(state.scene):null;
+  const participants=scene?scene.participantIds:[];
+  const location=c.locationId?clone(state.world.locations[c.locationId]||null):null;
+  const view={
+    schema:'seven-rpg-character-view',version:1,worldId:state.worldId,sessionId:state.sessionId,turn:state.turn,timeline:{tick:state.timeline.tick,dateLabel:state.timeline.dateLabel},
+    character:{id:c.id,control:c.control,identity:clone(c.identity),age:c.age,appearance:clone(c.appearance),personality:clone(c.personality),motivations:clone(c.motivations),goals:clone(c.goals),fears:clone(c.fears),preferences:clone(c.preferences),locationId:c.locationId,emotions:clone(c.emotions),beliefs:clone(c.beliefs),injuries:clone(c.injuries),status:c.status,loyalties:clone(c.loyalties),opinions:clone(c.opinions),intent:c.intent,voice:clone(c.voice)},
+    scene,location,knownCanon:knownCanon(state,stateApi,characterId,opts.canonLimit),
+    relationships:relationshipSlice(state,characterId,participants),
+    quests:questSlice(state,characterId),
+    inventory:arr(c.inventory).map(id=>state.items[id]).filter(Boolean).map(clone),
+    abilities:arr(c.abilities).map(id=>state.abilities[id]).filter(Boolean).map(clone),
+    knowledgeRefs:Object.fromEntries(Object.entries(obj(c.knowledge)).filter(([factId])=>{const k=stateApi.canCharacterKnow(state,characterId,factId);return k&&k.allowed;}).map(([id,k])=>[id,clone(k)])),
+    controlRule:c.control,
+    hidden:{globalCanonOmitted:true,globalLedgerOmitted:true,otherCharacterPrivateStateOmitted:true}
+  };
+  let serialized=JSON.stringify(view);const maxChars=Math.max(1200,Number(opts.maxChars)||18000);
+  if(serialized.length>maxChars){
+    view.knownCanon=view.knownCanon.slice(0,12);
+    view.quests=Object.fromEntries(Object.entries(view.quests).slice(0,8));
+    view.relationships=Object.fromEntries(Object.entries(view.relationships).slice(0,12));
+    view.inventory=view.inventory.slice(0,24);view.abilities=view.abilities.slice(0,24);
+    serialized=JSON.stringify(view);
+  }
+  view._diagnostics={serializedChars:serialized.length,bounded:serialized.length<=maxChars,canonCount:view.knownCanon.length};
+  return {ok:true,status:'READY',view};
+}
+function buildNarratorView(stateInput,stateApi,options){
+  if(!stateApi||typeof stateApi.buildContextPacket!=='function')throw Error('SevenRpgState-compatible stateApi required');
+  const packet=stateApi.buildContextPacket(stateInput,options||{});
+  return {ok:true,status:'READY',view:Object.assign({schema:'seven-rpg-narrator-view',access:'world-truth'},packet)};
+}
+function memoryVisibleToCharacter(record,characterId){
+  if(!record||typeof record!=='object')return false;
+  const m=obj(record.metadata),visibility=text(m.visibility||record.visibility);
+  if(visibility==='public')return true;
+  const allow=uniq(m.allowedCharacterIds||record.allowedCharacterIds);
+  return allow.includes(characterId);
+}
+function filterMemoryRecords(records,characterId){
+  return arr(records).filter(r=>memoryVisibleToCharacter(r,characterId)).map(clone);
+}
+function validateNoKnowledgeLeak(view,state,stateApi,characterId){
+  const issues=[];
+  for(const e of arr(view&&view.knownCanon)){
+    const k=stateApi.canCharacterKnow(state,characterId,e.id);
+    if(!k||!k.allowed)issues.push({code:'forbidden-canon',factId:e.id,reason:k&&k.reason||'unknown'});
+  }
+  const refs=obj(view&&view.knowledgeRefs);
+  for(const factId of Object.keys(refs)){const k=stateApi.canCharacterKnow(state,characterId,factId);if(!k||!k.allowed)issues.push({code:'forbidden-knowledge-ref',factId,reason:k&&k.reason||'unknown'});}
+  return {valid:issues.length===0,issues};
+}
+
+return {buildCharacterView,buildNarratorView,filterMemoryRecords,memoryVisibleToCharacter,validateNoKnowledgeLeak};
+});
