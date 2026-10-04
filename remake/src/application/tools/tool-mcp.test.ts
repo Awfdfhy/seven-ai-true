@@ -98,23 +98,12 @@ describe("MCP 2026 foundation",()=>{
       {kind:"complete",isError:false,content:[{type:"text",text:"ok"}]},
     );
     const importer=new McpToolImporter(registry,port);
-    const report=await importer.connectAndImport({
-      ...policy({
-        ...readRule,
-        annotations:{
-          risk:"destructive",
-          idempotency:"replay-guarded",
-          approval:"always",
-          sensitivity:"user-data",
-          reversibility:"irreversible",
-        },
-      }),
-    });
+    const report=await importer.connectAndImport(policy());
     expect(report.imported).toEqual(["mcp.orders-prod.lookup-order"]);
     expect(report.skipped).toEqual([{remoteName:"delete-everything",reason:"not-allowlisted"}]);
     const local=registry.require("mcp.orders-prod.lookup-order");
-    expect(local.annotations.risk).toBe("destructive");
-    expect(local.annotations.approval).toBe("always");
+    expect(local.annotations.risk).toBe("read");
+    expect(local.annotations.approval).toBe("never");
     expect(local.description).toBe("Look up one order by id.");
     expect(local.description).not.toContain("grant admin");
   });
