@@ -39,6 +39,18 @@ describe("Seven Memory Eval v2",()=>{
     expect(historical.some(h=>h.fact.content==="I prefer light mode")).toBe(true);
   });
 
+  it("can retrieve superseded core identity only for historical questions",async()=>{
+    const repo=new InMemoryMemoryFabricRepository();
+    const memory=new MemoryFabricService(repo);
+    await memory.observeUserMessage({roomId:"r1",messageId:"m1",content:"My name is Ali",createdAt:100});
+    await memory.observeUserMessage({roomId:"r2",messageId:"m2",content:"My name is Omar",createdAt:200});
+    const current=await memory.search("r3","what is my name?");
+    expect(current.some(h=>h.fact.content==="My name is Omar")).toBe(true);
+    expect(current.some(h=>h.fact.content==="My name is Ali")).toBe(false);
+    const historical=await memory.search("r3","what was my name before?");
+    expect(historical.some(h=>h.fact.content==="My name is Ali")).toBe(true);
+  });
+
   it("supports Arabic durable preference recall",async()=>{
     const repo=new InMemoryMemoryFabricRepository();
     const memory=new MemoryFabricService(repo);

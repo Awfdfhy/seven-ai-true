@@ -99,7 +99,10 @@ export class MemoryRetrievalEngine {
       .map(f=>Object.freeze({fact:f,score:1,lexical:lex.get(f.id)??0,reason:"core" as const}));
 
     const coreIds=new Set(core.map(h=>h.fact.id));
-    const recall = active.filter(f=>f.tier==="recall" && !coreIds.has(f.id)).map(f=>{
+    const recall = active.filter(f=>
+      !coreIds.has(f.id) &&
+      (f.tier==="recall" || (historical && f.tier==="core" && f.status==="superseded"))
+    ).map(f=>{
       const lexical=lex.get(f.id)??0;
       const lr=lexRank.get(f.id)??9999, rr=recRank.get(f.id)??9999, ir=impRank.get(f.id)??9999;
       const rrf=(1/(60+lr)) + 0.28/(60+rr) + 0.22/(60+ir);
