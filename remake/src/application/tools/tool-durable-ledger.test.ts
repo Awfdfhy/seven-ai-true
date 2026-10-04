@@ -4,7 +4,7 @@ import { z } from "zod";
 import { TaskManager } from "../../core/task-manager";
 import { InMemoryToolAuthoritySource } from "./authority";
 import { ToolExecutor } from "./executor";
-import { IndexedDbToolExecutionLedger } from "./ledger";
+import { IndexedDbToolExecutionLedger } from "../../storage/tool-execution-ledger";
 import { ToolRegistry } from "./registry";
 import type { ToolGrant, ToolInvocation } from "./contracts";
 
