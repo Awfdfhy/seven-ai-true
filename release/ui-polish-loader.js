@@ -1,1 +1,24 @@
-(function(r){'use strict';if(!r||!r.document)return;var d=r.document,loading=null,shellLoading=null,finalLoading=null;function load(){if(r.SevenUiPolish)return Promise.resolve(r.SevenUiPolish);if(loading)return loading;loading=new Promise(function(resolve,reject){if(!d.getElementById('seven-ui-polish-style')){var l=d.createElement('link');l.id='seven-ui-polish-style';l.rel='stylesheet';l.href='./workspaces/ui-polish-fixes.css';d.head.appendChild(l)}var s=d.getElementById('seven-ui-polish-runtime');if(s){s.addEventListener('load',done,{once:true});return}s=d.createElement('script');s.id='seven-ui-polish-runtime';s.src='./workspaces/ui-polish-fixes.js';s.onload=done;s.onerror=function(){loading=null;reject(Error('UI polish runtime failed to load'))};d.head.appendChild(s);function done(){r.SevenUiPolish&&r.SevenUiPolish.sync();resolve(r.SevenUiPolish)}});return loading}function loadShell(){if(r.SevenShell)return Promise.resolve(r.SevenShell);if(shellLoading)return shellLoading;shellLoading=new Promise(function(resolve,reject){if(!d.getElementById('seven-shell-style')){var l=d.createElement('link');l.id='seven-shell-style';l.rel='stylesheet';l.href='./workspaces/seven-shell.css';d.head.appendChild(l)}var s=d.getElementById('seven-shell-runtime');if(s){s.addEventListener('load',done,{once:true});return}s=d.createElement('script');s.id='seven-shell-runtime';s.src='./workspaces/seven-shell.js';s.onload=done;s.onerror=function(){shellLoading=null;reject(Error('Seven shell runtime failed to load'))};d.head.appendChild(s);function done(){r.SevenShell&&r.SevenShell.boot();resolve(r.SevenShell)}});return shellLoading}function loadFinal(){if(r.SevenShellFinal)return Promise.resolve(r.SevenShellFinal);if(finalLoading)return finalLoading;finalLoading=new Promise(function(resolve,reject){if(!d.getElementById('seven-shell-final-style')){var l=d.createElement('link');l.id='seven-shell-final-style';l.rel='stylesheet';l.href='./workspaces/seven-shell-final.css';d.head.appendChild(l)}var s=d.getElementById('seven-shell-final-runtime');if(s){s.addEventListener('load',done,{once:true});return}s=d.createElement('script');s.id='seven-shell-final-runtime';s.src='./workspaces/seven-shell-final.js';s.onload=done;s.onerror=function(){finalLoading=null;reject(Error('Seven shell final runtime failed to load'))};d.head.appendChild(s);function done(){r.SevenShellFinal&&r.SevenShellFinal.boot();resolve(r.SevenShellFinal)}});return finalLoading}function warm(){loadShell().then(loadFinal).catch(function(){});load().catch(function(){})}d.addEventListener('click',function(e){var t=e.target&&e.target.closest&&e.target.closest('.menu-toggle,.topbar .icon-btn,[onclick*="openSettings"],[data-seven-beta-tool="settings"]');if(t){loadShell().then(loadFinal).catch(function(){});load().catch(function(){})}},true);d.addEventListener('seven:workspacechange',function(){loadShell().then(loadFinal).catch(function(){});load().catch(function(){})});if(d.readyState==='loading')d.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(warm)},{once:true});else requestAnimationFrame(warm);r.SevenUiPolishLoader={load:load,loadShell:loadShell,loadFinal:loadFinal};})(typeof globalThis!='undefined'?globalThis:this);
+(function(r){'use strict';if(!r||!r.document)return;
+const d=r.document,pending=new Map();
+function asset(global,id,file,method){
+  if(r[global])return Promise.resolve(r[global]);
+  if(pending.has(global))return pending.get(global);
+  if(!d.getElementById(id+'-style')){const l=d.createElement('link');l.id=id+'-style';l.rel='stylesheet';l.href='./workspaces/'+file+'.css';d.head.appendChild(l)}
+  const promise=new Promise((resolve,reject)=>{
+    const old=d.getElementById(id+'-runtime');if(old)old.remove();
+    const s=d.createElement('script');s.id=id+'-runtime';s.src='./workspaces/'+file+'.js';
+    function fail(error){s.remove();pending.delete(global);reject(error)}
+    s.onload=()=>{try{const api=r[global];if(!api)throw Error(global+' runtime did not register');if(typeof api[method]==='function')api[method]();resolve(api)}catch(e){fail(e)}};
+    s.onerror=()=>fail(Error(global+' runtime failed to load'));d.head.appendChild(s);
+  });
+  pending.set(global,promise);return promise;
+}
+const load=()=>asset('SevenUiPolish','seven-ui-polish','ui-polish-fixes','sync');
+const loadShell=()=>asset('SevenShell','seven-shell','seven-shell','boot');
+const loadFinal=()=>asset('SevenShellFinal','seven-shell-final','seven-shell-final','boot');
+function warm(){loadShell().then(loadFinal).catch(()=>{});load().catch(()=>{})}
+ d.addEventListener('click',e=>{if(e.target?.closest?.('.menu-toggle,.topbar .icon-btn,[onclick*="openSettings"],[data-seven-beta-tool="settings"]'))warm()},true);
+ d.addEventListener('seven:workspacechange',warm);
+if(d.readyState==='loading')d.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(warm),{once:true});else requestAnimationFrame(warm);
+r.SevenUiPolishLoader={load,loadShell,loadFinal};
+})(typeof globalThis!='undefined'?globalThis:this);

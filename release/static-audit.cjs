@@ -35,7 +35,7 @@ if(remoteRuntimeUrls.length)apkBlocker('remote-pdf-runtime-assets',remoteRuntime
 if(remoteStyles.length)warn('remote-style-dependency',remoteStyles);
 const intervalCount=(sourceHtml.match(/\bsetInterval\s*\(/g)||[]).length;if(intervalCount)warn('intervals-present',intervalCount);
 const transitionAll=(sourceHtml.match(/transition\s*:\s*all\b/gi)||[]).length;if(transitionAll)warn('transition-all-present',transitionAll);
-const layerBytes=assets.reduce((s,x)=>s+x.bytes,0)+built.themeBootBytes;if(layerBytes>100000)issue('release-layer-too-heavy',layerBytes);
+const layerBytes=built.startupBytes;if(layerBytes>=100000)issue('release-layer-too-heavy',layerBytes);
 for(const a of assets)if(a.bytes>50000)issue('oversized-release-asset',a);
 const lazyWorkspaceBudgetBytes=320000;if(built.workspaceBytes>lazyWorkspaceBudgetBytes)issue('lazy-workspaces-too-heavy',{bytes:built.workspaceBytes,budget:lazyWorkspaceBudgetBytes});
 const staticPackageBytes=built.bytes+built.pdf.bytes+built.workspaceBytes+built.attachmentRuntimeBytes;

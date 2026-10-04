@@ -1,0 +1,12 @@
+const assert=require('assert/strict');
+const {sha256,verifyPayload}=require('./build-provenance.cjs');
+const content=Buffer.from('current html'),commit='a'.repeat(40);
+const manifest={format:'seven-android-web-payload',version:5,sourceCommit:commit,sourceDirty:false,files:[{path:'index.html',bytes:content.length,sha256:sha256(content)}]};
+assert.equal(verifyPayload(manifest,()=>content,{sourceCommit:commit}),true);
+assert.throws(()=>verifyPayload(manifest,()=>Buffer.from('old apk html'),{sourceCommit:commit}),/payload mismatch/);
+assert.throws(()=>verifyPayload(manifest,()=>content,{sourceCommit:'b'.repeat(40)}),/commit mismatch/);
+assert.throws(()=>verifyPayload({...manifest,sourceDirty:true},()=>content),/dirty/);
+assert.throws(()=>verifyPayload({...manifest,version:4},()=>content),/provenance/);
+assert.throws(()=>verifyPayload({...manifest,files:[...manifest.files,...manifest.files]},()=>content),/Invalid payload path/);
+assert.throws(()=>verifyPayload({...manifest,files:[...manifest.files,{path:'../secret'}]},()=>content),/Invalid payload path/);
+console.log('APK build provenance: PASS (7 cases: current payload, stale bytes, wrong SHA, dirty source, old format, duplicate, traversal)');
