@@ -7,25 +7,105 @@
     "mission": "Own priorities, de-duplicate research, assign compatible implementation work, arbitrate conflicts, enforce evidence, and decide what is safe to integrate."
   },
   "agents": [
-    {"id":"A01","domain":"UI / visual system","focus":"React shell, themes, responsive layout, interaction polish, visual regressions"},
-    {"id":"A02","domain":"Android / native / APK","focus":"Capacitor, native bridge, APK packaging, installed identity, emulator/device evidence"},
-    {"id":"A03","domain":"Arabic / RTL / accessibility","focus":"Arabic copy, RTL/LTR, keyboard, focus, screen-reader semantics, reduced motion"},
-    {"id":"A04","domain":"Architecture / runtime","focus":"AppKernel, ownership, dependency direction, lifecycle, observability boundaries"},
-    {"id":"A05","domain":"Models / routing / providers","focus":"model registry, Quick/Balanced/Deep routing, health, fallback, provider contracts"},
-    {"id":"A06","domain":"Memory / context","focus":"memory relevance, summaries, context budgets, migrations, persistence correctness"},
-    {"id":"A07","domain":"Security / credentials","focus":"secret non-leakage, auth, GitHub self-dev safety, path policy, trust boundaries"},
-    {"id":"A08","domain":"Testing / release assurance","focus":"unit/contract/integration/E2E gates, release evidence, payload identity, regression proof"},
-    {"id":"A09","domain":"Performance / concurrency","focus":"latency, cancellation, races, long chats, storage/network pressure, resource budgets"},
-    {"id":"A10","domain":"Holistic red-team","focus":"cross-system contradictions, product-breaking edge cases, adversarial whole-app review"},
-    {"id":"B01","domain":"Chat / rooms / composer","focus":"send/stop/copy, streaming, drafts, room ownership, IME, retry and switching"},
-    {"id":"B02","domain":"Attachments / files / SAF","focus":"TXT/PDF ingestion, file limits, Android documents, grants, import/export"},
-    {"id":"B03","domain":"Research / citations","focus":"web/deep research, evidence, source failures, freshness, citations, cache"},
-    {"id":"B04","domain":"Deep Think / reasoning","focus":"two-pass orchestration, planner isolation, context reuse, speed and cancellation"},
-    {"id":"B05","domain":"RPG / canon","focus":"authoritative world/canon state, branches, checksums, persistence and UI projection"},
-    {"id":"B06","domain":"GitHub self-development","focus":"repo mutation, exact SHA, PR workflow, recovery, coding workspace safety"},
-    {"id":"B07","domain":"Network / resilience","focus":"offline, timeout, rate limit, fallback, partial failure, retry and error normalization"},
-    {"id":"B08","domain":"Storage / recovery","focus":"IndexedDB, migrations, corruption, backup/restore, restart and destructive edge cases"},
-    {"id":"B09","domain":"Stress / races","focus":"TaskManager, duplicate actions, cancellation races, stale writes, multi-owner conflicts"},
-    {"id":"B10","domain":"Product cohesion / exploratory QA","focus":"real user journeys, feature discoverability, integration seams, install/use polish"}
+    {
+      "id": "A01",
+      "domain": "UI / visual system",
+      "focus": "React shell, themes, responsive layout, interaction polish, visual regressions; visual benchmark interpretation and Seven visual north-star stewardship"
+    },
+    {
+      "id": "A02",
+      "domain": "Android / native / APK",
+      "focus": "Capacitor, native bridge, APK packaging, installed identity, emulator/device evidence"
+    },
+    {
+      "id": "A03",
+      "domain": "Arabic / RTL / accessibility",
+      "focus": "Arabic copy, RTL/LTR, keyboard, focus, screen-reader semantics, reduced motion"
+    },
+    {
+      "id": "A04",
+      "domain": "Architecture / runtime",
+      "focus": "AppKernel, ownership, dependency direction, lifecycle, observability boundaries"
+    },
+    {
+      "id": "A05",
+      "domain": "Models / routing / providers",
+      "focus": "model registry, Quick/Balanced/Deep routing, health, fallback, provider contracts"
+    },
+    {
+      "id": "A06",
+      "domain": "Memory / context",
+      "focus": "memory relevance, summaries, context budgets, migrations, persistence correctness"
+    },
+    {
+      "id": "A07",
+      "domain": "Security / credentials",
+      "focus": "secret non-leakage, auth, GitHub self-dev safety, path policy, trust boundaries"
+    },
+    {
+      "id": "A08",
+      "domain": "Testing / release assurance",
+      "focus": "unit/contract/integration/E2E gates, release evidence, payload identity, regression proof; product-quality rubric evidence and release-quality scoring"
+    },
+    {
+      "id": "A09",
+      "domain": "Performance / concurrency",
+      "focus": "latency, cancellation, races, long chats, storage/network pressure, resource budgets"
+    },
+    {
+      "id": "A10",
+      "domain": "Holistic red-team",
+      "focus": "cross-system contradictions, product-breaking edge cases, adversarial whole-app review"
+    },
+    {
+      "id": "B01",
+      "domain": "Chat / rooms / composer",
+      "focus": "send/stop/copy, streaming, drafts, room ownership, IME, retry and switching"
+    },
+    {
+      "id": "B02",
+      "domain": "Attachments / files / SAF",
+      "focus": "TXT/PDF ingestion, file limits, Android documents, grants, import/export"
+    },
+    {
+      "id": "B03",
+      "domain": "Research / citations",
+      "focus": "web/deep research, evidence, source failures, freshness, citations, cache"
+    },
+    {
+      "id": "B04",
+      "domain": "Deep Think / reasoning",
+      "focus": "two-pass orchestration, planner isolation, context reuse, speed and cancellation"
+    },
+    {
+      "id": "B05",
+      "domain": "RPG / canon",
+      "focus": "authoritative world/canon state, branches, checksums, persistence and UI projection"
+    },
+    {
+      "id": "B06",
+      "domain": "GitHub self-development",
+      "focus": "repo mutation, exact SHA, PR workflow, recovery, coding workspace safety"
+    },
+    {
+      "id": "B07",
+      "domain": "Network / resilience",
+      "focus": "offline, timeout, rate limit, fallback, partial failure, retry and error normalization"
+    },
+    {
+      "id": "B08",
+      "domain": "Storage / recovery",
+      "focus": "IndexedDB, migrations, corruption, backup/restore, restart and destructive edge cases"
+    },
+    {
+      "id": "B09",
+      "domain": "Stress / races",
+      "focus": "TaskManager, duplicate actions, cancellation races, stale writes, multi-owner conflicts"
+    },
+    {
+      "id": "B10",
+      "domain": "Product cohesion / exploratory QA",
+      "focus": "real user journeys, feature discoverability, integration seams, install/use polish; product-intelligence curation, benchmark synthesis and premium-cohesion judging"
+    }
   ]
 }
