@@ -72,3 +72,11 @@ Every configured Seven subsystem receives its own current-state audit, broad int
 Do not merge several domains into one vague plan. Preserve separate roadmaps.
 A domain marked RESEARCH_INSUFFICIENT cannot be treated as research-complete; assign follow-up evidence gathering instead of inventing certainty.
 External sources are starting evidence, not authority over Seven's exact runtime behavior.
+
+
+## Memory Fabric v2 priority campaign
+
+Memory is currently a P0 product campaign. Use .seven-team/memory-v2/RESEARCH_SYNTHESIS.md and EXECUTION_PLAN.md as the shared evidence baseline.
+Assign A06/B08 as primary owners with A04 architecture review, A08 verification, B09 race/stress review and B10 product-cohesion review.
+Do not call Memory complete until live-chat wiring, temporal correction, provenance, abstention, restart persistence, Android evidence, Arabic parity and secret exclusion are proven.
+Prefer incremental migration beside legacy memory over destructive rewrites.

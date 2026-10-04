@@ -49,15 +49,33 @@
       "title": "Long-Term Memory / Context Fabric",
       "owners": [
         "A06",
-        "B08"
+        "B08",
+        "A04",
+        "A08",
+        "B09",
+        "B10"
       ],
-      "priority": "CORE",
-      "sourceTarget": 12,
+      "priority": "P0",
+      "sourceTarget": 20,
       "seeds": [
-        "https://github.com/microsoft/multi-agent-reference-architecture/blob/main/docs/memory/Memory.md",
-        "https://github.com/microsoft/multi-agent-reference-architecture/blob/main/docs/memory/Long-Term-Memory.md",
-        "https://aclanthology.org/2026.findings-acl.1690/",
-        "https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API"
+        "https://arxiv.org/abs/2504.19413",
+        "https://arxiv.org/abs/2501.13956",
+        "https://arxiv.org/abs/2410.10813",
+        "https://arxiv.org/abs/2603.16171",
+        "https://arxiv.org/abs/2512.12686",
+        "https://arxiv.org/abs/2601.06037",
+        "https://arxiv.org/abs/2609.03467",
+        "https://arxiv.org/abs/2608.30508",
+        "https://docs.letta.com/configuration/memory",
+        "https://docs.letta.com/v1-sdk/memory/memory-blocks",
+        "https://help.getzep.com/graphiti/getting-started/overview",
+        "https://help.getzep.com/v2/graphiti/core-concepts/adding-episodes",
+        "https://help.getzep.com/facts",
+        "https://help.getzep.com/context-types",
+        "https://mem0.ai/research",
+        "https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API",
+        "https://docs.langchain.com/oss/javascript/deepagents/overview",
+        "https://docs.langchain.com/oss/javascript/langgraph/thinking-in-langgraph"
       ]
     },
     {

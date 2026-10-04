@@ -44,7 +44,9 @@
       "focus": "AppKernel, ownership, dependency direction, lifecycle, observability boundaries",
       "knowledgePacks": [
         ".seven-team/product-intelligence/domains/A04_ARCHITECTURE_RUNTIME.md",
-        ".seven-team/product-intelligence/patterns/PERFORMANCE_OBSERVABILITY.md"
+        ".seven-team/product-intelligence/patterns/PERFORMANCE_OBSERVABILITY.md",
+        ".seven-team/memory-v2/RESEARCH_SYNTHESIS.md",
+        ".seven-team/memory-v2/EXECUTION_PLAN.md"
       ]
     },
     {
@@ -63,7 +65,9 @@
       "focus": "memory relevance, summaries, context budgets, migrations, persistence correctness",
       "knowledgePacks": [
         ".seven-team/product-intelligence/domains/A06_MEMORY_CONTEXT.md",
-        ".seven-team/product-intelligence/patterns/SECURITY_PRIVACY.md"
+        ".seven-team/product-intelligence/patterns/SECURITY_PRIVACY.md",
+        ".seven-team/memory-v2/RESEARCH_SYNTHESIS.md",
+        ".seven-team/memory-v2/EXECUTION_PLAN.md"
       ]
     },
     {
@@ -83,7 +87,9 @@
       "knowledgePacks": [
         ".seven-team/product-intelligence/domains/A08_TEST_RELEASE.md",
         ".seven-team/product-intelligence/patterns/TEST_EVIDENCE.md",
-        ".seven-team/product-intelligence/patterns/ANDROID_MOBILE_QUALITY.md"
+        ".seven-team/product-intelligence/patterns/ANDROID_MOBILE_QUALITY.md",
+        ".seven-team/memory-v2/RESEARCH_SYNTHESIS.md",
+        ".seven-team/memory-v2/EXECUTION_PLAN.md"
       ]
     },
     {
@@ -182,7 +188,9 @@
       "knowledgePacks": [
         ".seven-team/product-intelligence/domains/B08_STORAGE_RECOVERY.md",
         ".seven-team/product-intelligence/patterns/SECURITY_PRIVACY.md",
-        ".seven-team/product-intelligence/patterns/TEST_EVIDENCE.md"
+        ".seven-team/product-intelligence/patterns/TEST_EVIDENCE.md",
+        ".seven-team/memory-v2/RESEARCH_SYNTHESIS.md",
+        ".seven-team/memory-v2/EXECUTION_PLAN.md"
       ]
     },
     {
@@ -192,7 +200,9 @@
       "knowledgePacks": [
         ".seven-team/product-intelligence/domains/B09_STRESS_RACES.md",
         ".seven-team/product-intelligence/patterns/TEST_EVIDENCE.md",
-        ".seven-team/product-intelligence/patterns/PERFORMANCE_OBSERVABILITY.md"
+        ".seven-team/product-intelligence/patterns/PERFORMANCE_OBSERVABILITY.md",
+        ".seven-team/memory-v2/RESEARCH_SYNTHESIS.md",
+        ".seven-team/memory-v2/EXECUTION_PLAN.md"
       ]
     },
     {
@@ -203,7 +213,9 @@
         ".seven-team/product-intelligence/domains/B10_PRODUCT_COHESION.md",
         ".seven-team/product-intelligence/patterns/PRODUCT_BENCHMARKING.md",
         ".seven-team/product-intelligence/patterns/VISUAL_LANGUAGE.md",
-        ".seven-team/product-intelligence/patterns/CHAT_COMPOSER_RESPONSE.md"
+        ".seven-team/product-intelligence/patterns/CHAT_COMPOSER_RESPONSE.md",
+        ".seven-team/memory-v2/RESEARCH_SYNTHESIS.md",
+        ".seven-team/memory-v2/EXECUTION_PLAN.md"
       ]
     }
   ]
