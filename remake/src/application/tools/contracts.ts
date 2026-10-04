@@ -126,7 +126,7 @@ export interface ToolAuthoritySource {
 }
 
 const TOOL_ID_RE = /^[a-z0-9][a-z0-9._-]{2,127}$/;
-const VERSION_RE = /^[0-9]+.[0-9]+.[0-9]+(?:-[a-z0-9.-]+)?$/i;
+const VERSION_RE = /^[0-9]+\.[0-9]+\.[0-9]+(?:-[a-z0-9.-]+)?$/i;
 
 export function canonicalToolId(value: unknown, field = "tool id"): string {
   if (typeof value !== "string" || value !== value.trim() || !TOOL_ID_RE.test(value)) {

@@ -10,6 +10,7 @@ import {
   type ToolResult,
 } from "./contracts";
 import { ToolReferenceMonitor } from "./policy";
+import { InMemoryToolExecutionLedger, type ToolExecutionLedger } from "./ledger";
 import { ToolRegistry } from "./registry";
 
 type ReplayEntry = Readonly<{
@@ -26,8 +27,6 @@ function resultBytes(value:unknown):number{
 export class ToolExecutor {
   private readonly replay=new Map<string,ReplayEntry>();
   private readonly activeGroups=new Set<string>();
-  private readonly usedApprovals=new Set<string>();
-
   constructor(
     private readonly registry:ToolRegistry,
     private readonly tasks:TaskManager,
@@ -35,6 +34,7 @@ export class ToolExecutor {
     private readonly monitor=new ToolReferenceMonitor(),
     private readonly audit?:ToolAuditSink,
     private readonly maxReplayEntries=256,
+    private readonly ledger:ToolExecutionLedger=new InMemoryToolExecutionLedger(),
   ){
     if(!Number.isSafeInteger(maxReplayEntries)||maxReplayEntries<1||maxReplayEntries>4096){
       throw new SevenError({code:"VALIDATION",message:"Tool replay capacity is invalid."});
@@ -81,6 +81,14 @@ export class ToolExecutor {
       });
     }
 
+    const durablePrior=await this.ledger.getReplay(replayKey);
+    if(durablePrior&&durablePrior.invocationFingerprint!==fingerprint){
+      return this.finishedResult({
+        invocation,fingerprint,status:"invalid",retryable:false,effectStarted:false,
+        startedAt:nowMs(),errorCode:"IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_INVOCATION",
+      });
+    }
+
     let authoritySnapshot;
     try{
       authoritySnapshot=await this.authority.resolve(invocation,fingerprint);
@@ -89,12 +97,25 @@ export class ToolExecutor {
       }
       const authorizationNow=nowMs();
       if(prior){
-        // A replay still needs current capability authorization, but it does not
-        // consume a second user approval or execute a side effect again.
         this.monitor.authorizeCapabilities({
           definition,invocation,grants:authoritySnapshot.grants,now:authorizationNow,
         });
         return prior.result;
+      }
+      if(durablePrior?.state==="completed"&&durablePrior.result){
+        this.monitor.authorizeCapabilities({
+          definition,invocation,grants:authoritySnapshot.grants,now:authorizationNow,
+        });
+        return durablePrior.result;
+      }
+      if(durablePrior?.state==="reserved"){
+        this.monitor.authorizeCapabilities({
+          definition,invocation,grants:authoritySnapshot.grants,now:authorizationNow,
+        });
+        return this.finishedResult({
+          invocation,fingerprint,status:"effect_unknown",retryable:false,effectStarted:true,
+          startedAt:durablePrior.reservedAt,errorCode:"PRIOR_INVOCATION_INCOMPLETE",
+        });
       }
       const approval=authoritySnapshot.approval;
       this.monitor.authorize({
@@ -106,10 +127,14 @@ export class ToolExecutor {
         ...(approval!==undefined?{approval}:{}),
       });
       if(approval?.oneShot){
-        if(this.usedApprovals.has(approval.approvalId)){
+        const consumed=await this.ledger.consumeApproval(
+          approval.approvalId,
+          fingerprint,
+          authorizationNow,
+        );
+        if(!consumed){
           throw new SevenError({code:"PERMISSION",message:"One-shot tool approval was already used."});
         }
-        this.usedApprovals.add(approval.approvalId);
       }
     }catch(error){
       const normalized=toSevenError(error);
@@ -119,7 +144,39 @@ export class ToolExecutor {
       });
     }
 
-    const promise=this.runHandler(definition,invocation,parsed.data,fingerprint);
+    const reservation=await this.ledger.reserveReplay(replayKey,fingerprint,nowMs());
+    if(!reservation.claimed){
+      if(reservation.record.invocationFingerprint!==fingerprint){
+        return this.finishedResult({
+          invocation,fingerprint,status:"invalid",retryable:false,effectStarted:false,
+          startedAt:nowMs(),errorCode:"IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_INVOCATION",
+        });
+      }
+      if(reservation.record.state==="completed"&&reservation.record.result){
+        return reservation.record.result;
+      }
+      return this.finishedResult({
+        invocation,fingerprint,status:"effect_unknown",retryable:false,effectStarted:true,
+        startedAt:reservation.record.reservedAt,errorCode:"PRIOR_INVOCATION_INCOMPLETE",
+      });
+    }
+
+    const promise=this.runHandler(definition,invocation,parsed.data,fingerprint)
+      .then(async(result)=>{
+        try{
+          await this.ledger.completeReplay(
+            replayKey,
+            fingerprint,
+            result,
+            definition.annotations.sensitivity!=="secret-adjacent",
+          );
+        }catch{
+          // Failure to persist the final replay result must not cause the
+          // side effect to execute again. The durable reservation remains and
+          // future calls resolve to EFFECT_UNKNOWN.
+        }
+        return result;
+      });
     this.replay.set(replayKey,Object.freeze({fingerprint,result:promise}));
     while(this.replay.size>this.maxReplayEntries){
       const oldest=this.replay.keys().next().value as string|undefined;
