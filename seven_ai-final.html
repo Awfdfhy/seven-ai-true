@@ -2590,7 +2590,7 @@
         }
 
         // Explicit composition lifecycle supplements event.isComposing for Android IMEs.
-        let composerCompositionActive = false;
+        window.composerCompositionActive = false;
 
         // Grows the composer textarea as the user types multi-line text,
         // capped by the CSS max-height (which then scrolls instead).
