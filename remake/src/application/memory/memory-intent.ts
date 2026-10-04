@@ -13,6 +13,11 @@ function normalize(value: string): string {
     .replace(/ة/g, "ه");
 }
 
+function hasToken(value:string, terms:readonly string[]):boolean {
+  const set=new Set(value.match(/[\p{L}\p{N}_-]+/gu)??[]);
+  return terms.some(term=>set.has(term));
+}
+
 export function classifyMemoryIntent(query: string): MemoryIntent {
   const q = normalize(query.trim());
   if (!q) return Object.freeze({ mode: "none", reasons: Object.freeze(["empty"]) });
@@ -39,7 +44,8 @@ export function classifyMemoryIntent(query: string): MemoryIntent {
     /\b(my|mine|me|for me|i prefer|i like|i love|i hate|my goal|my project|my device|my phone|my name)\b/.test(q) ||
     /\bwhat do i\b/.test(q) ||
     personalStateQuestion ||
-    /لي|خاصتي|اسمي|هدفي|مشروعي|هاتفي|جهازي|افضل|أفضّل|احب|أحب|اكره|أكره|ماذا تعرف عني|ما الذي تعرفه عني/.test(q);
+    hasToken(q,["لي","خاصتي","اسمي","هدفي","مشروعي","هاتفي","جهازي","افضل","احب","اكره"]) ||
+    /ماذا تعرف عني|ما الذي تعرفه عني/.test(q);
   if (personal) reasons.push("personal-reference");
 
   const preference =
