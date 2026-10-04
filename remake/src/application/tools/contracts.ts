@@ -20,7 +20,7 @@ export type ToolExecutionContext = Readonly<{
   roomId: string;
   taskId: string;
   signal: AbortSignal;
-  markEffectStarted: () => void;
+  markEffectStarted: () => Promise<void>;
 }>;
 
 export type ToolHandler<TInput, TOutput> = (

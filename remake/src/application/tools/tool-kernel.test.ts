@@ -127,7 +127,7 @@ describe("Tool capability kernel",()=>{
   it("classifies timeout after effect start as effect_unknown",async()=>{
     const registry=new ToolRegistry();
     registry.register(definition(async(ctx)=>{
-      ctx.markEffectStarted();
+      await ctx.markEffectStarted();
       await new Promise<void>((resolve,reject)=>{
         const timer=setTimeout(resolve,500);
         ctx.signal.addEventListener("abort",()=>{clearTimeout(timer);reject(new DOMException("Aborted","AbortError"));},{once:true});

@@ -10,6 +10,7 @@ import {
   type ToolResult,
 } from "./contracts";
 import { ToolReferenceMonitor } from "./policy";
+import { InMemoryToolEffectLedger, type ToolEffectLedger } from "./effect-ledger";
 import { ToolRegistry } from "./registry";
 
 type ReplayEntry = Readonly<{
@@ -35,6 +36,7 @@ export class ToolExecutor {
     private readonly monitor=new ToolReferenceMonitor(),
     private readonly audit?:ToolAuditSink,
     private readonly maxReplayEntries=256,
+    private readonly ledger:ToolEffectLedger=new InMemoryToolEffectLedger(),
   ){
     if(!Number.isSafeInteger(maxReplayEntries)||maxReplayEntries<1||maxReplayEntries>4096){
       throw new SevenError({code:"VALIDATION",message:"Tool replay capacity is invalid."});
@@ -74,7 +76,11 @@ export class ToolExecutor {
 
     const replayKey=invocation.idempotencyKey;
     const prior=this.replay.get(replayKey);
-    if(prior&&prior.fingerprint!==fingerprint){
+    const persisted=await this.ledger.get(replayKey);
+    if(
+      (prior&&prior.fingerprint!==fingerprint) ||
+      (persisted&&persisted.fingerprint!==fingerprint)
+    ){
       return this.finishedResult({
         invocation,fingerprint,status:"invalid",retryable:false,effectStarted:false,
         startedAt:nowMs(),errorCode:"IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_INVOCATION",
@@ -89,13 +95,29 @@ export class ToolExecutor {
       }
       const authorizationNow=nowMs();
       if(prior){
-        // A replay still needs current capability authorization, but it does not
-        // consume a second user approval or execute a side effect again.
         this.monitor.authorizeCapabilities({
           definition,invocation,grants:authoritySnapshot.grants,now:authorizationNow,
         });
         return prior.result;
       }
+      if(persisted?.state==="finished"&&persisted.result){
+        this.monitor.authorizeCapabilities({
+          definition,invocation,grants:authoritySnapshot.grants,now:authorizationNow,
+        });
+        return persisted.result;
+      }
+      if(persisted?.state==="effect_started"){
+        this.monitor.authorizeCapabilities({
+          definition,invocation,grants:authoritySnapshot.grants,now:authorizationNow,
+        });
+        const recovered=await this.finishedResult({
+          invocation,fingerprint,status:"effect_unknown",retryable:false,effectStarted:true,
+          startedAt:persisted.preparedAt,errorCode:"RECOVERED_UNCERTAIN_EXTERNAL_EFFECT",
+        });
+        await this.ledger.complete(replayKey,fingerprint,recovered);
+        return recovered;
+      }
+
       const approval=authoritySnapshot.approval;
       this.monitor.authorize({
         definition,
@@ -105,6 +127,20 @@ export class ToolExecutor {
         now:authorizationNow,
         ...(approval!==undefined?{approval}:{}),
       });
+
+      if(!persisted){
+        await this.ledger.prepare(Object.freeze({
+          idempotencyKey:replayKey,
+          fingerprint,
+          callId:invocation.callId,
+          toolId:invocation.toolId,
+          roomId:invocation.roomId,
+          taskId:invocation.taskId,
+          state:"prepared" as const,
+          preparedAt:authorizationNow,
+        }));
+      }
+
       if(approval?.oneShot){
         if(this.usedApprovals.has(approval.approvalId)){
           throw new SevenError({code:"PERMISSION",message:"One-shot tool approval was already used."});
@@ -114,7 +150,8 @@ export class ToolExecutor {
     }catch(error){
       const normalized=toSevenError(error);
       return this.finishedResult({
-        invocation,fingerprint,status:"denied",retryable:false,effectStarted:false,
+        invocation,fingerprint,status:normalized.code==="PERMISSION"?"denied":"failed",
+        retryable:normalized.retryable,effectStarted:false,
         startedAt:nowMs(),errorCode:normalized.code,
       });
     }
@@ -155,7 +192,15 @@ export class ToolExecutor {
           roomId:invocation.roomId,
           taskId:invocation.taskId,
           signal,
-          markEffectStarted:()=>{effectStarted=true;},
+          markEffectStarted:async()=>{
+            if(effectStarted)return;
+            await this.ledger.markEffectStarted(
+              invocation.idempotencyKey,
+              fingerprint,
+              nowMs(),
+            );
+            effectStarted=true;
+          },
         },parsedInput);
         const validated=definition.outputSchema.safeParse(output);
         if(!validated.success){
@@ -169,19 +214,25 @@ export class ToolExecutor {
 
       try{
         const output=await run.result;
-        return this.finishedResult({
+        const result=await this.finishedResult({
           invocation,fingerprint,status:"succeeded",retryable:false,effectStarted,
           startedAt,output,
         });
+        await this.ledger.complete(invocation.idempotencyKey,fingerprint,result);
+        return result;
       }catch(error){
         const normalized=toSevenError(error);
         const cancelled=normalized.code==="CANCELLED"||normalized.code==="DEADLINE_EXCEEDED";
-        return this.finishedResult({
+        const result=await this.finishedResult({
           invocation,fingerprint,
           status:cancelled?(effectStarted?"effect_unknown":"cancelled"):(effectStarted?"effect_unknown":"failed"),
           retryable:!effectStarted&&normalized.retryable,
           effectStarted,startedAt,errorCode:normalized.code,
         });
+        if(result.status==="effect_unknown" || (result.status==="failed"&&!result.retryable)){
+          await this.ledger.complete(invocation.idempotencyKey,fingerprint,result);
+        }
+        return result;
       }
     }finally{
       if(group)this.activeGroups.delete(group);
