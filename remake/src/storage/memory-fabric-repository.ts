@@ -81,6 +81,22 @@ export class IndexedDbMemoryFabricRepository implements MemoryFabricRepository {
     });
   }
 
+  async deleteFact(memoryId:string,event:MemoryWriteEvent,signal?:AbortSignal):Promise<void>{
+    throwIfAborted(signal); canonical(memoryId,"memoryId");
+    const db=await this.open();
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction(["facts","events"],"readwrite");
+      const onAbort=()=>{try{tx.abort();}catch{}};
+      signal?.addEventListener("abort",onAbort,{once:true});
+      tx.objectStore("facts").delete(memoryId);
+      tx.objectStore("events").put(event);
+      tx.oncomplete=()=>{signal?.removeEventListener("abort",onAbort);resolve();};
+      tx.onerror=()=>{signal?.removeEventListener("abort",onAbort);reject(new SevenError({code:"STORAGE",message:"Memory delete transaction failed.",cause:tx.error}));};
+      tx.onabort=()=>{signal?.removeEventListener("abort",onAbort);reject(signal?.aborted?abortError():new SevenError({code:"STORAGE",message:"Memory delete transaction aborted.",cause:tx.error}));};
+      if(signal?.aborted)onAbort();
+    });
+  }
+
   private decodeFact=(raw:unknown):MemoryFact=>{
     if(!raw || typeof raw!=="object") throw new SevenError({code:"STORAGE",message:"Stored memory fact is malformed."});
     const {scopeRoom:_scopeRoom,...candidate}=raw as StoredFact;
