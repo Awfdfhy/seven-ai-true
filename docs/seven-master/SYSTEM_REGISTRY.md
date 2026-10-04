@@ -10,7 +10,7 @@
 | Deep Think | Master | Existing/Iterative | Models, Routing | reasoning quality + latency |
 | Tools | 3 | Current focus completed/iterative | Routing, Safety | tool-selection + execution tests |
 | Coding System | 4 | NEXT | Tools, Files, Git | patch/build/test benchmark |
-| Self-Development | 5 | Planned | Coding, Tools, Git, Verification | sandboxed improvement loop |
+| Self-Development | 5 | Active — Phase 1 foundation (non-mutating) | Coding, Tools, Git, Verification | observation/diagnosis + sandboxed improvement loop |
 | RPG System | 6 | Planned | Memory, Tools, Models | continuity/state simulations |
 | Integration | 7 | Continuous | All systems | end-to-end/regression |
 | Android/APK/UI | 8 | Continuous | Integrated app | build/install/device tests |
