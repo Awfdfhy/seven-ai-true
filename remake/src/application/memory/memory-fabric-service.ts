@@ -182,6 +182,22 @@ export class MemoryFabricService {
     return classifyMemoryIntent(query);
   }
 
+  async searchLocal(
+    roomId:string,
+    query:string,
+    signal?:AbortSignal,
+    options:Readonly<{maxCore?:number;maxRecall?:number;historical?:boolean}>={},
+  ):Promise<readonly MemoryHit[]>{
+    const facts=await this.repository.listForRoom(roomId,signal);
+    return this.retrieval.search(facts,query,{
+      includeCore:true,
+      includeRecall:true,
+      historical:options.historical??false,
+      maxCore:options.maxCore??4,
+      maxRecall:options.maxRecall??8,
+    });
+  }
+
   async search(roomId:string,query:string,signal?:AbortSignal,excludeMessageId?:string):Promise<readonly MemoryHit[]>{
     const intent=classifyMemoryIntent(query);
     if(intent.mode==="none") return Object.freeze([]);
