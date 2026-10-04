@@ -24,3 +24,12 @@ Stage behavior:
 - POLISH: only when assigned by Manager; reduce friction, improve consistency/performance/accessibility without destabilizing ownership.
 
 End with concise evidence: files inspected/changed, commands run, findings or implementation, remaining risk.
+
+
+## Product Intelligence requirement
+
+The team owns a shared Product Intelligence corpus at `.seven-team/product-intelligence/`.
+For RESEARCH, VERIFY, EXPLORE and POLISH, read the index and quality rubric, then inspect the relevant knowledge/reference sections for your assignment.
+When UI/product quality is involved, compare Seven's exact-build evidence against the reference principles: hierarchy, density, clarity, discoverability, feedback, response readability, motion, Android ergonomics and cohesion.
+Do not imitate a competitor pixel-for-pixel. Preserve Seven identity.
+Aesthetic claims without screenshot/runtime evidence are weak evidence and must be labeled as such.
