@@ -10,7 +10,7 @@ import type { CodingAgentModel, CodingDiagnosis, CodingUnderstanding, ModelPatch
 
 export interface CodingResearchPort{research(query:string,signal:AbortSignal):Promise<Readonly<{text:string;sourceIds:readonly string[]}>>}
 export interface VerificationExecutorFactory{create(input:Readonly<{repository:string;branch:string;baseSha:string;commitSha:string}>):VerificationExecutionPort}
-export type CodingAgentResult=Readonly<{status:"PASS"|"FAIL"|"BLOCKED";run:CodingRun;commitSha?:string;verification?:VerificationEvidence;review?:Readonly<{verdict:string;sumary:string;findings:readonly string[]}>;attempts:number;message:string}>;
+export type CodingAgentResult=Readonly<{status:"PASS"|"FAIL"|"BLOCKED";run:CodingRun;commitSha?:string;verification?:VerificationEvidence;review?:Readonly<{verdict:string;summary:string;findings:readonly string[]}>;attempts:number;message:string}>;
 
 function bindProposal(snapshot:RepositorySnapshot,proposal:ModelPatchProposal,taskId:string):PatchPlan{
  const byPath=new Map(snapshot.files.map(f=>[f.path,f]));
@@ -84,7 +84,7 @@ export class CodingAgentService{
   run=transitionCodingRun(run,"REVIEW",{kind:"independent-review",summary:review.summary});
   if(review.verdict==="PASS"){
    run=transitionCodingRun(run,"DOCUMENT",{kind:"evidence-documented",summary:`Verified commit ${applied.commitSha} with ${lastVerification.results.length} command results.`});
-   run=transitionCodingRun(run,"COMPLETE","kind:"coding-complete","summary:"Coding task completed with verification and independent review."});
+   run=transitionCodingRun(run,"COMPLETE",{kind:"coding-complete",summary:"Coding task completed with verification and independent review."});
    return{status:"PASS",run,commitSha:lastCommit,verification:lastVerification,review:lastReview,attempts:attempt,message:"Verified coding task completed."};
   }
   if(review.verdict==="BLOCKED"){
