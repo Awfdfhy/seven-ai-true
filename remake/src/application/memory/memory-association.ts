@@ -5,6 +5,11 @@ const EN_STOP = new Set([
   "my","your","our","their","his","her","its","use","uses","using","used","project","memory","remember",
   "prefer","preferred","like","love","want","need","main","current","work","working","goal"
 ]);
+const GENERIC_MEMORY_TOKENS = new Set([
+  "preference","profile","fact","event","decision","procedure","goal","memory",
+  "core","recall","global","room","explicit","arabic","work","project"
+]);
+
 const AR_STOP = new Set([
   "هذا","هذه","ذلك","التي","الذي","على","الى","إلى","عن","من","في","مع","ما","ماذا","كيف","متى","اين","أين",
   "انا","أنا","لي","لدي","عندي","مشروع","مشروعي","هدفي","احب","أحب","افضل","أفضل","تذكر","ذاكره","ذاكرة"
@@ -18,7 +23,12 @@ function normalize(value:string):string{
 
 export function associationTokens(value:string):readonly string[]{
   const raw=normalize(value).match(/[\p{L}\p{N}_-]{3,}/gu)??[];
-  return Object.freeze([...new Set(raw.filter(t=>!EN_STOP.has(t)&&!AR_STOP.has(t)&&!/^\d+$/.test(t)))].slice(0,32));
+  return Object.freeze([...new Set(raw.filter(t=>
+    !EN_STOP.has(t) &&
+    !AR_STOP.has(t) &&
+    !GENERIC_MEMORY_TOKENS.has(t) &&
+    !/^\d+$/.test(t)
+  ))].slice(0,32));
 }
 
 function documentFrequency(facts:readonly MemoryFact[]):Map<string,number>{
@@ -54,7 +64,7 @@ export function expandAssociatedMemories(
     for(const token of new Set(tokens)){
       if(queryTokens.has(token))continue;
       const frequency=df.get(token)??0;
-      if(frequency<1 || frequency>Math.max(6,Math.ceil(facts.length*.08)))continue;
+      if(frequency<2 || frequency>Math.max(6,Math.ceil(facts.length*.08)))continue;
       // Rare bridge tokens are more discriminative.
       bridgeWeights.set(token,Math.max(bridgeWeights.get(token)??0,1/Math.log2(2+frequency)));
     }
