@@ -1660,8 +1660,14 @@
         // room snapshot + revision + structural audit event. Legacy keys are
         // retained untouched as migration recovery input, never dual-written.
         const roomPersistence = (() => {
-            let db = null, revision = 0, ready = false, failed = false, pending = 0;
+            const ROOM_WAL_KEY='seven_ai_room_wal_v1';
+            const walSessionId='wal-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10);
+            let db = null, revision = 0, ready = false, failed = false, pending = 0, persistedWalSeq = 0, walCounter = 0;
             let queue = Promise.resolve(true);
+            function readWal(){try{const raw=localStorage.getItem(ROOM_WAL_KEY);if(!raw)return null;const w=JSON.parse(raw);if(!w||w.schemaVersion!==1||!Number.isSafeInteger(w.seq)||w.seq<1||!Number.isSafeInteger(w.baseRevision)||w.baseRevision<0||typeof w.sessionId!=='string'||!w.sessionId||!w.value)return null;validate(w.value);return w}catch(_){return null}}
+            function stageWal(value){const seq=Math.min(Number.MAX_SAFE_INTEGER,Date.now()*1000+(++walCounter%1000)),w={schemaVersion:1,seq,sessionId:walSessionId,baseRevision:revision,value:JSON.parse(JSON.stringify(value))};localStorage.setItem(ROOM_WAL_KEY,JSON.stringify(w));return w}
+            function clearWalThrough(seq){try{const w=readWal();if(!w||w.seq<=seq)localStorage.removeItem(ROOM_WAL_KEY)}catch(_){}}
+            function recoverableWal(record){const w=readWal();if(!w)return null;const storedSeq=Number.isSafeInteger(record&&record.walSeq)?record.walSeq:0,storedSession=String(record&&record.walSession||'');if(w.seq<=storedSeq)return null;if(w.baseRevision===Number(record&&record.revision))return w;if(storedSession&&storedSession===w.sessionId&&storedSeq>0)return w;return null}
             const status = document.createElement('div');
             status.id = 'persistenceStatus';
             status.setAttribute('role', 'status');
@@ -1685,7 +1691,7 @@
                 rooms = normalized.rooms; roomTitles = normalized.roomTitles; currentRoom = value.currentRoom;
                 updateRoomTitle(); renderChatHistory(); updateRoomListUI();
             }
-            function transact(value, initial) {
+            function transact(value, initial, walMeta) {
                 return new Promise((resolve, reject) => {
                     const tx = db.transaction(['state','audit'], 'readwrite');
                     const state = tx.objectStore('state');
@@ -1697,9 +1703,10 @@
                         if (!initial && (!previous || previous.revision !== revision)) {
                             error = new Error('ROOM_REVISION_CONFLICT'); tx.abort(); return;
                         }
-                        next = {id:'rooms', schemaVersion:1, revision: initial ? 1 : revision + 1, value};
+                        const priorWalSeq=Number.isSafeInteger(previous&&previous.walSeq)?previous.walSeq:0;
+                        next = {id:'rooms', schemaVersion:1, revision: initial ? 1 : revision + 1, walSeq:walMeta&&Number.isSafeInteger(walMeta.seq)?walMeta.seq:priorWalSeq, walSession:walMeta&&walMeta.sessionId?String(walMeta.sessionId):String(previous&&previous.walSession||''), value};
                         state.put(next);
-                        tx.objectStore('audit').add({revision:next.revision, operation:initial?'migrate':'save', timestamp:Date.now()});
+                        tx.objectStore('audit').add({revision:next.revision, operation:initial?'migrate':'save', walSeq:next.walSeq, timestamp:Date.now()});
                     };
                     tx.oncomplete = () => resolve(next);
                     tx.onabort = () => reject(error || tx.error || new Error('ROOM_TRANSACTION_ABORTED'));
@@ -1736,8 +1743,17 @@
                         record = await transact(snapshot(), true);
                     }
                     if (record.schemaVersion !== 1 || !Number.isSafeInteger(record.revision) || record.revision < 1) throw new Error('UNKNOWN_ROOM_SCHEMA');
-                    apply(record.value); revision=record.revision; ready=true;
-                    show('Saved · IndexedDB'); document.body.inert=false;
+                    apply(record.value); revision=record.revision; persistedWalSeq=Number.isSafeInteger(record.walSeq)?record.walSeq:0;
+                    const wal=recoverableWal(record);
+                    if(wal){
+                        record=await transact(wal.value,false,wal);
+                        apply(record.value);revision=record.revision;persistedWalSeq=Number(record.walSeq)||persistedWalSeq;clearWalThrough(wal.seq);
+                        show('Recovered unsaved conversation · IndexedDB');
+                    }else{
+                        try{const stale=readWal();if(stale&&stale.seq<=persistedWalSeq)localStorage.removeItem(ROOM_WAL_KEY)}catch(_){}
+                        show('Saved · IndexedDB');
+                    }
+                    ready=true; document.body.inert=false;
                 } catch (_) {
                     failed=true;
                     document.body.inert=false;
@@ -1749,16 +1765,17 @@
                 if (!ready || failed) return Promise.resolve(false);
                 let value;
                 try { value=snapshot(); } catch (_) { failed=true; show('Cannot save invalid conversation state. Export and reload.'); return Promise.resolve(false); }
+                let wal=null;try{wal=stageWal(value)}catch(_){}
                 pending++; show('Saving…');
                 queue=queue.then(async () => {
                     if (failed) return false;
-                    try { const record=await transact(value,false); revision=record.revision; return true; }
+                    try { const record=await transact(value,false,wal); revision=record.revision; persistedWalSeq=Number(record.walSeq)||persistedWalSeq;if(wal)clearWalThrough(wal.seq);return true; }
                     catch (_) { failed=true; show('Not saved — storage failure or another tab changed chats. Export before reloading.'); return false; }
                 }).finally(() => { pending--; if (!failed && pending===0) show('Saved · IndexedDB'); });
                 return queue;
             }
             window.addEventListener('beforeunload', e => { if(pending || (ready && failed)) { e.preventDefault(); e.returnValue=''; } });
-            return Object.freeze({init,save,flush:()=>queue,status:()=>({ready,failed,pending,revision})});
+            return Object.freeze({init,save,flush:()=>queue,status:()=>({ready,failed,pending,revision,persistedWalSeq,walStaged:!!readWal()})});
         })();
 
         function saveRooms() { return roomPersistence.save(); }

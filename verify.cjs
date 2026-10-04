@@ -60,6 +60,16 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   });
   assert.equal(r.first.stopped,true);assert.equal(r.first.aborts,1);assert.equal(r.first.origin,'default');assert.equal(r.second.wrongRoomStop,false);assert.equal(r.second.stopped,false);assert.equal(r.second.aborts,0);
  });
+ await test('room persistence stages WAL before async commit and clears it after commit',async()=>{
+  const r=await page.evaluate(async()=>{roomTitles.default='wal-stage-'+Date.now();const p=saveRooms(),staged=localStorage.getItem('seven_ai_room_wal_v1')!==null,ok=await p,cleared=localStorage.getItem('seven_ai_room_wal_v1')===null;return{staged,ok,cleared}});
+  assert.deepEqual(r,{staged:true,ok:true,cleared:true});
+ });
+ await test('room persistence replays a newer crash WAL exactly once',async()=>{
+  await page.evaluate(async()=>{await roomPersistence.flush();const base=roomPersistence.status().revision,value=JSON.parse(JSON.stringify({version:1,rooms,roomTitles,currentRoom}));value.roomTitles[value.currentRoom]='Recovered after process death';localStorage.setItem('seven_ai_room_wal_v1',JSON.stringify({schemaVersion:1,seq:Date.now()*1000+777,sessionId:'dead-process-fixture',baseRevision:base,value}))});
+  await page.reload();await page.waitForFunction(()=>roomPersistence.status().ready);
+  const r=await page.evaluate(()=>({title:roomTitles[currentRoom],wal:localStorage.getItem('seven_ai_room_wal_v1'),revision:roomPersistence.status().revision}));
+  assert.equal(r.title,'Recovered after process death');assert.equal(r.wal,null);assert.ok(r.revision>=2);
+ });
  await test('queued snapshots maintain order',async()=>{
   const r=await page.evaluate(async()=>{roomTitles.default='one';const a=saveRooms();roomTitles.default='two';const b=saveRooms();return [await a,await b]});assert.deepEqual(r,[true,true]);
   await page.reload();await page.waitForFunction(()=>roomPersistence.status().ready);assert.equal(await page.evaluate(()=>roomTitles.default),'two');
@@ -276,7 +286,7 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  });
  await test('performance polish visual viewport and diagnostics initialize safely',async()=>{
   const r=await page.evaluate(()=>{const vv=updateVisualViewportV1(),snap=SevenAppReliability.snapshot(),raw=JSON.stringify(SevenAppReliability.snapshot());return {width:vv.width,height:vv.height,version:snap.version,visibility:snap.visibility,network:snap.network,hasRender:!!snap.renderWindow,secret:/gsk_|sk-or-|nvapi-|AIza|Authorization|Bearer/i.test(raw),content:/message-499|chunk-49|Relevant memories/.test(raw)}});
-  assert.ok(r.width>0&&r.height>0);assert.equal(r.version,1);assert.ok(['foreground','background'].includes(r.visibility));assert.ok(['link-online','offline','unknown'].includes(r.network));assert.equal(r.hasRender,true);assert.equal(r.secret,false);assert.equal(r.content,false);
+  assert.ok(r.width>0&&r.height>0);assert.equal(r.version,2);assert.ok(['foreground','background'].includes(r.visibility));assert.ok(['link-online','offline','unknown'].includes(r.network));assert.equal(r.hasRender,true);assert.equal(r.secret,false);assert.equal(r.content,false);
  });
  await test('performance polish 320px chat and settings avoid horizontal overflow',async()=>{
   await page.setViewportSize({width:320,height:800});
