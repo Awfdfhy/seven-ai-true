@@ -61,6 +61,10 @@ const context=Control.compileContext({maxTokens:500,reserveTokens:50,principal:'
   {id:'wrong-mode',category:'world',content:'rpg state',principal:'user-a',namespace:'chat-a',scope:'rpg',relevance:1}
 ]});
 check('context compiler isolates chat and mode state',()=>context.selected.some(x=>x.id==='ok')&&!context.selected.some(x=>x.id==='wrong-chat'||x.id==='wrong-mode'));
+const arabic='مرحبا'.repeat(120);
+check('context token estimator is conservative for Arabic',()=>Control.tokensOf({content:arabic})>=arabic.length);
+const arabicBudget=Control.compileContext({maxTokens:400,items:[{id:'ar-required',required:true,content:arabic}]});
+check('Arabic mandatory context overflow fails closed',()=>arabicBudget.status==='BLOCKED'&&arabicBudget.selected.length===0);
 
 const research=Research.verify(
   [{id:'c1',text:'current claim',timeSensitive:true,freshnessDays:7}],
