@@ -1,6 +1,7 @@
-import { createMemoryFact, createMemoryWriteEvent, supersedeMemoryFact, type MemoryFact } from "../../domain/memory/fabric";
+import { SevenError } from "../../core/errors";
+import { createMemoryFact, createMemoryWriteEvent, supersedeMemoryFact, type MemoryFact, type MemoryTier } from "../../domain/memory/fabric";
 import type { MemoryFabricRepository } from "../../storage/memory-fabric-repository";
-import { extractMemoryCandidates } from "./memory-extractor";
+import { extractMemoryCandidates, isSafeMemoryContent } from "./memory-extractor";
 import { formatMemoryContext, MemoryRetrievalEngine, type MemoryHit } from "./memory-retrieval";
 import { classifyMemoryIntent, type MemoryIntent } from "./memory-intent";
 import { exportMemoryArchive, importMemoryArchive, type MemoryArchiveV1 } from "./memory-archive";
@@ -86,6 +87,63 @@ export class MemoryFabricService {
   async listActive(roomId:string,signal?:AbortSignal):Promise<readonly MemoryFact[]>{
     const facts=await this.repository.listForRoom(roomId,signal);
     return Object.freeze(facts.filter(f=>f.status==="active"));
+  }
+
+  async updateMemory(
+    memoryId:string,
+    roomId:string,
+    patch:Readonly<{content?:string;tier?:MemoryTier}>,
+    signal?:AbortSignal,
+    now=Date.now(),
+  ):Promise<MemoryFact>{
+    const facts=await this.repository.listForRoom(roomId,signal);
+    const fact=facts.find(item=>item.id===memoryId && item.status==="active");
+    if(!fact)throw new SevenError({code:"VALIDATION",message:"Memory is missing or no longer active."});
+    const content=patch.content===undefined?fact.content:patch.content.trim();
+    const tier=patch.tier??fact.tier;
+    if(!isSafeMemoryContent(content)){
+      throw new SevenError({code:"VALIDATION",message:"Edited memory is empty, sensitive, or instruction-like."});
+    }
+    if(tier!=="core"&&tier!=="recall"){
+      throw new SevenError({code:"VALIDATION",message:"Edited memory tier is invalid."});
+    }
+    if(this.sameContent(content,fact.content)&&tier===fact.tier)return fact;
+
+    const lockKey=`${fact.scope}:${fact.roomId??"*"}:${fact.canonicalKey}`;
+    return this.withCanonicalLock(lockKey,async()=>{
+      const latest=(await this.repository.findActiveByCanonicalKey(fact.scope,fact.roomId,fact.canonicalKey,signal))
+        .sort((a,b)=>b.validFrom-a.validFrom || b.updatedAt-a.updatedAt)[0];
+      if(!latest || latest.id!==fact.id){
+        throw new SevenError({code:"VALIDATION",message:"Memory changed before this edit could be saved.",retryable:true});
+      }
+      const timestamp=Math.max(now,fact.validFrom);
+      const ended=supersedeMemoryFact(fact,timestamp);
+      const replacement=createMemoryFact({
+        kind:fact.kind,
+        tier,
+        scope:fact.scope,
+        roomId:fact.roomId,
+        canonicalKey:fact.canonicalKey,
+        content,
+        tags:fact.tags,
+        importance:Math.max(fact.importance,.95),
+        confidence:1,
+        observedAt:timestamp,
+        sourceRoomId:roomId,
+        sourceMessageId:`memory-inspector:${crypto.randomUUID()}`,
+        sourceOrigin:"memory-inspector",
+        supersedes:[fact.id],
+      });
+      await this.repository.commit(
+        [ended,replacement],
+        [
+          createMemoryWriteEvent(ended,"supersede",timestamp),
+          createMemoryWriteEvent(replacement,"add",timestamp),
+        ],
+        signal,
+      );
+      return replacement;
+    });
   }
 
   async forget(memoryId:string,roomId:string,signal?:AbortSignal):Promise<boolean>{

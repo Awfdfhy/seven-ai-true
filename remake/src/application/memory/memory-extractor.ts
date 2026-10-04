@@ -69,6 +69,11 @@ function preferenceKey(subject: string): { key: string; tags: readonly string[] 
   return { key: `preference:${stableKey(n)}`, tags: ["preference"] };
 }
 
+export function isSafeMemoryContent(input:string):boolean{
+  const text=clean(input);
+  return !!text && text.length<=1200 && !secretLike(text) && !instructionLike(text);
+}
+
 function candidate(
   kind: MemoryKind,
   tier: MemoryTier,
@@ -80,7 +85,7 @@ function candidate(
   confidence: number,
 ): MemoryCandidate | null {
   const cleaned = clean(content);
-  if (!cleaned || cleaned.length > 1200 || secretLike(cleaned) || instructionLike(cleaned)) return null;
+  if (!isSafeMemoryContent(cleaned)) return null;
   return Object.freeze({ kind, tier, scope, canonicalKey, content: cleaned, tags: memoryTags(cleaned,tags), importance, confidence });
 }
 

@@ -29,6 +29,8 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
   const [memoryFacts, setMemoryFacts] = useState<readonly MemoryFact[]>([]);
   const [memoryBusy, setMemoryBusy] = useState(false);
   const [memoryNotice, setMemoryNotice] = useState<string | null>(null);
+  const [editingMemoryId, setEditingMemoryId] = useState<string | null>(null);
+  const [editingMemoryText, setEditingMemoryText] = useState("");
   const isAr = snapshot.locale === "ar";
   const t = (en: string, ar: string) => isAr ? ar : en;
 
@@ -105,6 +107,43 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
     setMemoryBusy(true);
     try {
       await memory.forget(memoryId, currentRoom.id);
+      setMemoryFacts(await memory.listActive(currentRoom.id));
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setMemoryBusy(false);
+    }
+  };
+
+  const saveMemoryEdit = async (fact: MemoryFact) => {
+    if (!currentRoom || memoryBusy) return;
+    const next = editingMemoryText.trim();
+    if (!next) return;
+    setMemoryBusy(true);
+    setMemoryNotice(null);
+    try {
+      await memory.updateMemory(fact.id, currentRoom.id, { content: next });
+      setMemoryFacts(await memory.listActive(currentRoom.id));
+      setEditingMemoryId(null);
+      setEditingMemoryText("");
+      setMemoryNotice(t("Memory corrected.", "تم تصحيح الذاكرة."));
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setMemoryBusy(false);
+    }
+  };
+
+  const toggleMemoryTier = async (fact: MemoryFact) => {
+    if (!currentRoom || memoryBusy) return;
+    setMemoryBusy(true);
+    setMemoryNotice(null);
+    try {
+      await memory.updateMemory(
+        fact.id,
+        currentRoom.id,
+        { tier: fact.tier === "core" ? "recall" : "core" },
+      );
       setMemoryFacts(await memory.listActive(currentRoom.id));
     } catch (reason: unknown) {
       setError(reason instanceof Error ? reason.message : String(reason));
@@ -306,14 +345,52 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
                       <span>{fact.kind}</span>
                       <span>{fact.tier}</span>
                       <span>{fact.scope}</span>
+                      <span>{fact.source.origin ?? "chat"}</span>
                     </div>
-                    <p>{fact.content}</p>
-                    <button
-                      type="button"
-                      disabled={memoryBusy}
-                      onClick={() => void forgetMemory(fact.id)}
-                      aria-label={t("Forget this memory", "حذف هذه الذاكرة")}
-                    >{t("Forget", "حذف")}</button>
+                    {editingMemoryId === fact.id ? (
+                      <div className="seven-memory-editor">
+                        <textarea
+                          value={editingMemoryText}
+                          maxLength={1200}
+                          rows={3}
+                          disabled={memoryBusy}
+                          aria-label={t("Edit memory", "تعديل الذاكرة")}
+                          onChange={(event) => setEditingMemoryText(event.target.value)}
+                        />
+                        <div className="seven-memory-actions">
+                          <button type="button" disabled={memoryBusy || !editingMemoryText.trim()} onClick={() => void saveMemoryEdit(fact)}>
+                            {t("Save", "حفظ")}
+                          </button>
+                          <button type="button" disabled={memoryBusy} onClick={() => {
+                            setEditingMemoryId(null);
+                            setEditingMemoryText("");
+                          }}>{t("Cancel", "إلغاء")}</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p>{fact.content}</p>
+                    )}
+                    <div className="seven-memory-source">
+                      {t("Updated", "آخر تحديث")}: {new Date(fact.updatedAt).toLocaleDateString(isAr ? "ar-IQ" : "en-US")}
+                    </div>
+                    {editingMemoryId !== fact.id && (
+                      <div className="seven-memory-actions">
+                        <button type="button" disabled={memoryBusy} onClick={() => {
+                          setEditingMemoryId(fact.id);
+                          setEditingMemoryText(fact.content);
+                        }}>{t("Edit", "تعديل")}</button>
+                        <button type="button" disabled={memoryBusy} onClick={() => void toggleMemoryTier(fact)}>
+                          {fact.tier === "core" ? t("Unpin", "إلغاء التثبيت") : t("Pin", "تثبيت")}
+                        </button>
+                        <button
+                          className="seven-memory-danger"
+                          type="button"
+                          disabled={memoryBusy}
+                          onClick={() => void forgetMemory(fact.id)}
+                          aria-label={t("Forget this memory", "حذف هذه الذاكرة")}
+                        >{t("Forget", "حذف")}</button>
+                      </div>
+                    )}
                   </article>
                 ))}
               </div>
