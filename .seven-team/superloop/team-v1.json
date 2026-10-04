@@ -46,7 +46,9 @@
         ".seven-team/product-intelligence/domains/A04_ARCHITECTURE_RUNTIME.md",
         ".seven-team/product-intelligence/patterns/PERFORMANCE_OBSERVABILITY.md",
         ".seven-team/memory-v2/RESEARCH_SYNTHESIS.md",
-        ".seven-team/memory-v2/EXECUTION_PLAN.md"
+        ".seven-team/memory-v2/EXECUTION_PLAN.md",
+        ".seven-team/memory-v2/STRIKE_TEAM.md",
+        ".seven-team/memory-v2/IMPLEMENTATION_EVIDENCE.md"
       ]
     },
     {
@@ -67,7 +69,9 @@
         ".seven-team/product-intelligence/domains/A06_MEMORY_CONTEXT.md",
         ".seven-team/product-intelligence/patterns/SECURITY_PRIVACY.md",
         ".seven-team/memory-v2/RESEARCH_SYNTHESIS.md",
-        ".seven-team/memory-v2/EXECUTION_PLAN.md"
+        ".seven-team/memory-v2/EXECUTION_PLAN.md",
+        ".seven-team/memory-v2/STRIKE_TEAM.md",
+        ".seven-team/memory-v2/IMPLEMENTATION_EVIDENCE.md"
       ]
     },
     {
@@ -89,7 +93,9 @@
         ".seven-team/product-intelligence/patterns/TEST_EVIDENCE.md",
         ".seven-team/product-intelligence/patterns/ANDROID_MOBILE_QUALITY.md",
         ".seven-team/memory-v2/RESEARCH_SYNTHESIS.md",
-        ".seven-team/memory-v2/EXECUTION_PLAN.md"
+        ".seven-team/memory-v2/EXECUTION_PLAN.md",
+        ".seven-team/memory-v2/STRIKE_TEAM.md",
+        ".seven-team/memory-v2/IMPLEMENTATION_EVIDENCE.md"
       ]
     },
     {
@@ -190,7 +196,9 @@
         ".seven-team/product-intelligence/patterns/SECURITY_PRIVACY.md",
         ".seven-team/product-intelligence/patterns/TEST_EVIDENCE.md",
         ".seven-team/memory-v2/RESEARCH_SYNTHESIS.md",
-        ".seven-team/memory-v2/EXECUTION_PLAN.md"
+        ".seven-team/memory-v2/EXECUTION_PLAN.md",
+        ".seven-team/memory-v2/STRIKE_TEAM.md",
+        ".seven-team/memory-v2/IMPLEMENTATION_EVIDENCE.md"
       ]
     },
     {
@@ -202,7 +210,9 @@
         ".seven-team/product-intelligence/patterns/TEST_EVIDENCE.md",
         ".seven-team/product-intelligence/patterns/PERFORMANCE_OBSERVABILITY.md",
         ".seven-team/memory-v2/RESEARCH_SYNTHESIS.md",
-        ".seven-team/memory-v2/EXECUTION_PLAN.md"
+        ".seven-team/memory-v2/EXECUTION_PLAN.md",
+        ".seven-team/memory-v2/STRIKE_TEAM.md",
+        ".seven-team/memory-v2/IMPLEMENTATION_EVIDENCE.md"
       ]
     },
     {
@@ -215,7 +225,9 @@
         ".seven-team/product-intelligence/patterns/VISUAL_LANGUAGE.md",
         ".seven-team/product-intelligence/patterns/CHAT_COMPOSER_RESPONSE.md",
         ".seven-team/memory-v2/RESEARCH_SYNTHESIS.md",
-        ".seven-team/memory-v2/EXECUTION_PLAN.md"
+        ".seven-team/memory-v2/EXECUTION_PLAN.md",
+        ".seven-team/memory-v2/STRIKE_TEAM.md",
+        ".seven-team/memory-v2/IMPLEMENTATION_EVIDENCE.md"
       ]
     }
   ]
