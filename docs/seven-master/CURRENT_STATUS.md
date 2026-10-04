@@ -1,5 +1,18 @@
 # Seven AI — Current Status
 
+## Lead Release Manager audit — 2026-10-05
+
+**NOT RELEASE-ACCEPTED.** Verified repair candidate: `a4059ffc5059b86e1915df0bccab76a8fb64dadd`, [PR #105](https://github.com/Awfdfhy/seven-ai-true/pull/105). [Project Truth Report](https://github.com/Awfdfhy/seven-ai-true/blob/a4059ffc5059b86e1915df0bccab76a8fb64dadd/docs/seven-master/PROJECT_TRUTH_REPORT.md) and machine-readable RELEASE_EVIDENCE.json live with that candidate.
+
+- 34 component suites passed; 119 tracked JS syntax checks plus changed-file checks passed. Web build and clean Android project generation passed; generated provenance covered 200 assets with sourceDirty=false.
+- Full browser gate remains locally blocked by Chromium download; APK compilation blocked by Gradle network access. No fresh APK/RC produced; no zero-bugs claim.
+- Candidate repairs cover exact-SHA self-development CI/dispatch, atomic commits, tested-head merge binding, protected acceptance gates, network-read error handling, APK source/hash provenance, startup budget, lazy loader recovery and bounded RPG knowledge context.
+- Root main builds HTML/Capacitor; newer typed remake Memory/Tools work is a separate application/branch train, not automatically included in the root APK.
+- RPG kernels/tests exist, but live atomic turn/session/memory/model wiring and Android restart/upgrade remain open. Evidence readiness score: 43/100, not a feature-completion percentage.
+- Integration candidate incorporated main through 9c51dc7; concurrent writers moved main again. Non-fast-forward update was rejected; no force overwrite occurred. Candidate fixes must not be credited to main until PR integration is verified.
+
+Next action: integrate PR #105 against a fixed shared HEAD, run full root tests + Android/API34/API36 on the resulting SHA, then verify APK provenance/package/signature/install/upgrade and remaining live-system gates before RC1.
+
 Last integration update: 2026-10-05
 
 ## Current Position
