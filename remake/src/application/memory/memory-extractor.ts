@@ -33,6 +33,14 @@ function stableKey(value: string): string {
   return (h >>> 0).toString(36);
 }
 
+function instructionLike(text: string): boolean {
+  const n = normalizeArabic(text.toLocaleLowerCase("en-US"));
+  return /\b(ignore|override|disregard|reveal|bypass)\b.{0,40}\b(system|instruction|prompt|policy|safety)\b/.test(n) ||
+    /\b(act as|pretend to be)\b/.test(n) ||
+    /تجاهل.{0,40}(تعليمات|نظام|سياس|امان|سلام)/u.test(n) ||
+    /(اكشف|اظهر).{0,30}(برومبت|تعليمات النظام)/u.test(n);
+}
+
 function secretLike(text: string): boolean {
   const lower = text.toLocaleLowerCase("en-US");
   return /\b(password|passcode|otp|one[- ]?time code|api[_ -]?key|access[_ -]?token|bearer|secret)\b/.test(lower) ||
@@ -65,13 +73,13 @@ function candidate(
   confidence: number,
 ): MemoryCandidate | null {
   const cleaned = clean(content);
-  if (!cleaned || cleaned.length > 1200 || secretLike(cleaned)) return null;
+  if (!cleaned || cleaned.length > 1200 || secretLike(cleaned) || instructionLike(cleaned)) return null;
   return Object.freeze({ kind, tier, scope, canonicalKey, content: cleaned, tags: Object.freeze([...tags]), importance, confidence });
 }
 
 export function extractMemoryCandidates(input: string): readonly MemoryCandidate[] {
   const text = clean(input);
-  if (!text || secretLike(text)) return Object.freeze([]);
+  if (!text || secretLike(text) || instructionLike(text)) return Object.freeze([]);
   const out: MemoryCandidate[] = [];
   const push = (value: MemoryCandidate | null) => { if (value && !out.some(x => x.canonicalKey === value.canonicalKey && x.content === value.content)) out.push(value); };
 
