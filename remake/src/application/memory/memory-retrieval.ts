@@ -28,12 +28,12 @@ function queryConceptTokens(query: string): string[] {
   const n = normalize(query);
   const out = new Set<string>(tokens(query));
   const add = (...values: string[]) => values.forEach(value => out.add(value));
-  if (/\b(theme|appearance|look|mode|dark|light)\b/.test(n) || /مظهر|ثيم|داكن|فاتح|الوضع/.test(n)) add("theme","preference");
-  if (/\b(answer|response|reply|concise|verbose|brief|detailed)\b/.test(n) || /رد|اجابه|مختصر|مفصل|قصير|طويل/.test(n)) add("response-style","preference");
-  if (/\b(language|arabic|english)\b/.test(n) || /لغه|عربي|انجليزي/.test(n)) add("language","preference");
-  if (/\b(name|call me|called)\b/.test(n) || /اسمي|نادني|اسم/.test(n)) add("name","profile");
+  if (/\b(theme|appearance|look|mode|dark|light)\b/.test(n) || /مظهر|ثيم|داكن|فاتح|الوضع/.test(n)) add("theme");
+  if (/\b(answer|response|reply|concise|verbose|brief|detailed)\b/.test(n) || /رد|اجابه|مختصر|مفصل|قصير|طويل/.test(n)) add("response-style");
+  if (/\b(language|arabic|english)\b/.test(n) || /لغه|عربي|انجليزي/.test(n)) add("language");
+  if (/\b(name|call me|called)\b/.test(n) || /اسمي|نادني|اسم/.test(n)) add("name");
   if (/\b(goal|aim|objective)\b/.test(n) || /هدف/.test(n)) add("goal");
-  if (/\b(study|studying|learn|learning|work|working|project)\b/.test(n) || /ادرس|تعلم|اعمل|مشروع/.test(n)) add("work","profile");
+  if (/\b(study|studying|learn|learning|work|working|project)\b/.test(n) || /ادرس|تعلم|اعمل|مشروع/.test(n)) add("work");
   return [...out];
 }
 
