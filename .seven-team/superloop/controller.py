@@ -524,7 +524,7 @@ surfaces, but do not commit or push. Keep the integrated set coherent and minima
 
 TypeScript safety rule: never access ad-hoc properties through bare globalThis.property or
 globalThis["property"] unless the property is declared. Prefer a typed intersection such as
-(globalThis as typeof globalThis & { SomeProbe?: ProbeType }).SomeProbe, or keep the probe local.
+(globalThis as typeof globalThis & {{ SomeProbe?: ProbeType }}).SomeProbe, or keep the probe local.
 Do not create throwaway probe tests that fail strict typecheck.
 """
     manager_output = run_codex(ROOT, reconcile_prompt, MANAGER_TIMEOUT, f"c{cycle}-{stage}-reconcile")
