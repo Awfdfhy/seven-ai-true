@@ -109,7 +109,7 @@ export function extractMemoryCandidates(input: string): readonly MemoryCandidate
     push(candidate("preference","recall","global",meta.key,text,meta.tags,0.88,0.96));
   }
 
-  m = text.match(/^(?:انا\s+)?(افضل|أفضل|احب|أحب|اكره|أكره)\s+(.+)$/u);
+  m = text.match(/^(?:[اأإآ]نا\s+)?(افضل|أفضل|احب|أحب|اكره|أكره)\s+(.+)$/u);
   if (m?.[2]) {
     const meta = preferenceKey(m[2]);
     push(candidate("preference","recall","global",meta.key,text,[...meta.tags,"arabic"],0.88,0.96));
@@ -124,7 +124,7 @@ export function extractMemoryCandidates(input: string): readonly MemoryCandidate
   m = text.match(/^i(?:'m| am)\s+(studying|learning|working on)\s+(.+)$/iu);
   if (m?.[2]) push(candidate("profile","recall","global","profile:current-work",text,["profile","work"],0.82,0.92));
 
-  m = text.match(/^(?:انا\s+)?(ادرس|أدرس|اتعلم|أتعلم|اعمل على|أعمل على)\s+(.+)$/u);
+  m = text.match(/^(?:[اأإآ]نا\s+)?(ادرس|أدرس|اتعلم|أتعلم|اعمل على|أعمل على)\s+(.+)$/u);
   if (m?.[2]) push(candidate("profile","recall","global","profile:current-work",text,["profile","work","arabic"],0.82,0.92));
 
   return Object.freeze(out);
