@@ -51,6 +51,11 @@ pass("prompt, response and credential-shaped metadata are structurally rejected"
   assert.throws(() => normalizeMetadata({ apiKey: "anything" }), /forbidden telemetry metadata key/);
 });
 
+pass("secret-like run identifiers and evidence references fail closed", () => {
+  assert.throws(() => observation({ runId: "ghp_abcdefghijklmnopqrstuvwxyz123456" }), /secret-like identifier rejected/);
+  assert.throws(() => observation({ evidenceRefs: ["sk-abcdefghijklmnopqrstuv"] }), /secret-like identifier rejected/);
+});
+
 pass("unknown, non-finite and out-of-range metrics fail closed", () => {
   assert.throws(() => normalizeMetrics({ mysteryMetric: 1 }), /unknown observation metric/);
   assert.throws(() => normalizeMetrics({ latencyMs: Infinity }), /non-finite observation metric/);
