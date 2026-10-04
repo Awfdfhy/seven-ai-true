@@ -6,7 +6,7 @@ import {
   type MemoryFact,
   type MemoryWriteEvent,
 } from "../../domain/memory/fabric";
-import type { MemoryFabricRepository } from "../../storage/memory-fabric-repository";
+import { MEMORY_FABRIC_LIMITS, type MemoryFabricRepository } from "../../storage/memory-fabric-repository";
 
 export type MemoryArchiveV1 = Readonly<{
   schemaVersion: 1;
@@ -15,8 +15,8 @@ export type MemoryArchiveV1 = Readonly<{
   events: readonly MemoryWriteEvent[];
 }>;
 
-const MAX_ARCHIVE_FACTS = 50_000;
-const MAX_ARCHIVE_EVENTS = 200_000;
+const MAX_ARCHIVE_FACTS = MEMORY_FABRIC_LIMITS.facts;
+const MAX_ARCHIVE_EVENTS = MEMORY_FABRIC_LIMITS.events;
 
 export async function exportMemoryArchive(
   repository: MemoryFabricRepository,
@@ -81,8 +81,8 @@ export async function importMemoryArchive(
   signal?: AbortSignal,
 ): Promise<Readonly<{ facts: number; events: number }>> {
   const archive=parseMemoryArchive(value);
-  // Merge by immutable IDs. Repository transactions make the fact/event bundle
-  // durable together; a malformed archive is rejected before any write begins.
-  await repository.commit(archive.facts,archive.events,signal);
+  // Restore is intentionally replacement, not merge. Merge can create two active
+  // facts for the same canonical key and silently corrupt temporal truth.
+  await repository.replaceAll(archive.facts,archive.events,signal);
   return Object.freeze({facts:archive.facts.length,events:archive.events.length});
 }

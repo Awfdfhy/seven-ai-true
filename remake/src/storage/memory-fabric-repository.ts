@@ -31,6 +31,8 @@ export interface MemoryFabricRepository {
   listEvents(signal?: AbortSignal): Promise<readonly MemoryWriteEvent[]>;
   findActiveByCanonicalKey(scope: "global"|"room", roomId: string | null, canonicalKey: string, signal?: AbortSignal): Promise<readonly MemoryFact[]>;
   commit(facts: readonly MemoryFact[], events: readonly MemoryWriteEvent[], signal?: AbortSignal): Promise<void>;
+  replaceAll(facts: readonly MemoryFact[], events: readonly MemoryWriteEvent[], signal?: AbortSignal): Promise<void>;
+  clearAll(signal?: AbortSignal): Promise<void>;
   deleteFact(memoryId: string, event: MemoryWriteEvent, signal?: AbortSignal): Promise<void>;
 }
 
@@ -77,6 +79,30 @@ export class InMemoryMemoryFabricRepository implements MemoryFabricRepository {
     const knownEvents=new Set(this.events.map(event=>event.id));
     for(const event of events){if(!knownEvents.has(event.id)){this.events.push(Object.freeze({...event}));knownEvents.add(event.id);}}
     throwIfAborted(signal);
+  }
+  async replaceAll(facts:readonly MemoryFact[],events:readonly MemoryWriteEvent[],signal?:AbortSignal):Promise<void>{
+    throwIfAborted(signal);
+    for(const fact of facts)if(!isMemoryFact(fact))throw new SevenError({code:"VALIDATION",message:"Invalid memory fact."});
+    for(const event of events)if(!isMemoryWriteEvent(event))throw new SevenError({code:"VALIDATION",message:"Invalid memory event."});
+    if(facts.length>this.limits.facts)throw capacityError("facts");
+    if(events.length>this.limits.events)throw capacityError("events");
+    const nextFacts=new Map<string,MemoryFact>();
+    for(const fact of facts){
+      if(nextFacts.has(fact.id))throw new SevenError({code:"VALIDATION",message:"Duplicate memory fact id in replacement."});
+      nextFacts.set(fact.id,cloneMemoryFact(fact));
+    }
+    const nextEvents:MemoryWriteEvent[]=[];
+    const eventIds=new Set<string>();
+    for(const event of events){
+      if(eventIds.has(event.id))throw new SevenError({code:"VALIDATION",message:"Duplicate memory event id in replacement."});
+      eventIds.add(event.id);nextEvents.push(Object.freeze({...event}));
+    }
+    this.facts.clear();for(const [id,fact] of nextFacts)this.facts.set(id,fact);
+    this.events.length=0;this.events.push(...nextEvents);
+    throwIfAborted(signal);
+  }
+  async clearAll(signal?:AbortSignal):Promise<void>{
+    throwIfAborted(signal);this.facts.clear();this.events.length=0;throwIfAborted(signal);
   }
   async deleteFact(memoryId:string,event:MemoryWriteEvent,signal?:AbortSignal):Promise<void>{
     throwIfAborted(signal); canonical(memoryId,"memoryId");
@@ -185,6 +211,47 @@ export class IndexedDbMemoryFabricRepository implements MemoryFabricRepository {
       eventCount.onsuccess=()=>{eventsReady=true;maybeWrite();};
       eventCount.onerror=()=>fail(new SevenError({code:"STORAGE",message:"Memory event count failed.",cause:eventCount.error}));
       if(signal?.aborted) onAbort();
+    });
+  }
+
+  async replaceAll(facts:readonly MemoryFact[],events:readonly MemoryWriteEvent[],signal?:AbortSignal):Promise<void>{
+    throwIfAborted(signal);
+    for(const fact of facts)if(!isMemoryFact(fact))throw new SevenError({code:"VALIDATION",message:"Invalid memory fact."});
+    for(const event of events)if(!isMemoryWriteEvent(event))throw new SevenError({code:"VALIDATION",message:"Invalid memory event."});
+    if(facts.length>this.limits.facts)throw capacityError("facts");
+    if(events.length>this.limits.events)throw capacityError("events");
+    if(new Set(facts.map(f=>f.id)).size!==facts.length)throw new SevenError({code:"VALIDATION",message:"Duplicate memory fact id in replacement."});
+    if(new Set(events.map(e=>e.id)).size!==events.length)throw new SevenError({code:"VALIDATION",message:"Duplicate memory event id in replacement."});
+    const db=await this.open();
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction(["facts","events","quarantine"],"readwrite");
+      const onAbort=()=>{try{tx.abort();}catch{}};
+      signal?.addEventListener("abort",onAbort,{once:true});
+      const fs=tx.objectStore("facts"), es=tx.objectStore("events"), qs=tx.objectStore("quarantine");
+      fs.clear();es.clear();qs.clear();
+      for(const fact of facts)fs.put({...fact,scopeRoom:scopeRoom(fact)} satisfies StoredFact);
+      for(const event of events)es.put(event);
+      tx.oncomplete=()=>{signal?.removeEventListener("abort",onAbort);resolve();};
+      tx.onerror=()=>{signal?.removeEventListener("abort",onAbort);reject(new SevenError({code:"STORAGE",message:"Memory replacement transaction failed.",cause:tx.error}));};
+      tx.onabort=()=>{signal?.removeEventListener("abort",onAbort);reject(signal?.aborted?abortError():new SevenError({code:"STORAGE",message:"Memory replacement transaction aborted.",cause:tx.error}));};
+      if(signal?.aborted)onAbort();
+    });
+  }
+
+  async clearAll(signal?:AbortSignal):Promise<void>{
+    throwIfAborted(signal);
+    const db=await this.open();
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction(["facts","events","quarantine"],"readwrite");
+      const onAbort=()=>{try{tx.abort();}catch{}};
+      signal?.addEventListener("abort",onAbort,{once:true});
+      tx.objectStore("facts").clear();
+      tx.objectStore("events").clear();
+      tx.objectStore("quarantine").clear();
+      tx.oncomplete=()=>{signal?.removeEventListener("abort",onAbort);resolve();};
+      tx.onerror=()=>{signal?.removeEventListener("abort",onAbort);reject(new SevenError({code:"STORAGE",message:"Memory clear transaction failed.",cause:tx.error}));};
+      tx.onabort=()=>{signal?.removeEventListener("abort",onAbort);reject(signal?.aborted?abortError():new SevenError({code:"STORAGE",message:"Memory clear transaction aborted.",cause:tx.error}));};
+      if(signal?.aborted)onAbort();
     });
   }
 
