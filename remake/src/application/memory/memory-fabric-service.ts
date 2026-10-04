@@ -5,13 +5,17 @@ import { extractMemoryCandidates, isSafeMemoryContent } from "./memory-extractor
 import { formatMemoryContext, MemoryRetrievalEngine, type MemoryHit } from "./memory-retrieval";
 import { classifyMemoryIntent, type MemoryIntent } from "./memory-intent";
 import { exportMemoryArchive, importMemoryArchive, type MemoryArchiveV1 } from "./memory-archive";
+import type { MemoryQueryRewriter } from "./memory-query-rewriter";
 
 export class MemoryFabricService {
   private readonly canonicalLocks = new Map<string, Promise<void>>();
 
+  private readonly rewriteCache = new Map<string, readonly string[]>();
+
   constructor(
     private readonly repository: MemoryFabricRepository,
     private readonly retrieval = new MemoryRetrievalEngine(),
+    private readonly queryRewriter?: MemoryQueryRewriter,
   ) {}
 
   async observeUserMessage(input: Readonly<{roomId:string;messageId:string;content:string;createdAt:number}>, signal?:AbortSignal):Promise<readonly MemoryFact[]> {
@@ -183,11 +187,80 @@ export class MemoryFabricService {
     if(intent.mode==="none") return Object.freeze([]);
     const facts=await this.repository.listForRoom(roomId,signal);
     const filtered=excludeMessageId?facts.filter(f=>f.source.messageId!==excludeMessageId):facts;
-    return this.retrieval.search(filtered,query,{
+    const options={
       includeCore:intent.mode==="core" || intent.mode==="recall" || intent.mode==="history",
       includeRecall:intent.mode==="recall" || intent.mode==="history" || intent.mode==="core",
       historical:intent.mode==="history",
-    });
+    };
+    const direct=this.retrieval.search(filtered,query,options);
+    const hasRelevantLocal=direct.some(hit=>hit.reason==="retrieved" || hit.reason==="associated");
+    if(hasRelevantLocal || !this.queryRewriter || filtered.length===0){
+      return direct;
+    }
+
+    const rewrites=await this.rewriteQuery(query,signal);
+    if(rewrites.length<2)return direct;
+
+    const support=new Map<string,{fact:MemoryFact;count:number;score:number;lexical:number}>();
+    for(const rewrite of rewrites){
+      const hits=this.retrieval.search(filtered,rewrite,{
+        ...options,
+        includeCore:false,
+        maxRecall:8,
+      }).filter(hit=>hit.reason!=="core");
+      const seen=new Set<string>();
+      hits.forEach((hit,index)=>{
+        if(seen.has(hit.fact.id))return;
+        seen.add(hit.fact.id);
+        const current=support.get(hit.fact.id)??{fact:hit.fact,count:0,score:0,lexical:0};
+        current.count+=1;
+        current.score+=1/(60+index+1);
+        current.lexical=Math.max(current.lexical,hit.lexical);
+        support.set(hit.fact.id,current);
+      });
+    }
+
+    const directIds=new Set(direct.map(hit=>hit.fact.id));
+    const rewritten=[...support.values()]
+      .filter(item=>item.count>=2 && !directIds.has(item.fact.id))
+      .sort((a,b)=>b.count-a.count || b.score-a.score || b.fact.updatedAt-a.fact.updatedAt)
+      .slice(0,6)
+      .map(item=>Object.freeze({
+        fact:item.fact,
+        score:item.score,
+        lexical:item.lexical,
+        reason:"rewritten" as const,
+      }));
+
+    return Object.freeze([...direct,...rewritten].slice(0,12));
+  }
+
+  private async rewriteQuery(query:string,signal?:AbortSignal):Promise<readonly string[]>{
+    const key=query.normalize("NFKC").toLocaleLowerCase("en-US").trim();
+    const cached=this.rewriteCache.get(key);
+    if(cached)return cached;
+    if(!this.queryRewriter)return Object.freeze([]);
+
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),2_500);
+    const onAbort=()=>controller.abort();
+    signal?.addEventListener("abort",onAbort,{once:true});
+    try{
+      const rewrites=await this.queryRewriter.rewrite(query,controller.signal);
+      const safe=Object.freeze(rewrites.filter(item=>typeof item==="string"&&item.trim()).slice(0,4));
+      this.rewriteCache.set(key,safe);
+      if(this.rewriteCache.size>32){
+        const oldest=this.rewriteCache.keys().next().value as string|undefined;
+        if(oldest)this.rewriteCache.delete(oldest);
+      }
+      return safe;
+    }catch(error){
+      if(signal?.aborted)throw error;
+      return Object.freeze([]);
+    }finally{
+      clearTimeout(timeout);
+      signal?.removeEventListener("abort",onAbort);
+    }
   }
 
   async contextForRoom(roomId:string,query:string,signal?:AbortSignal,excludeMessageId?:string):Promise<string>{
