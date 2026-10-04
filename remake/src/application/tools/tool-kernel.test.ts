@@ -33,14 +33,15 @@ function definition(
 function invocation(args:unknown={value:"hello"},key="idem-1"):ToolInvocation{
   return {
     callId:crypto.randomUUID(),taskId:"task-1",roomId:"room-1",
-    toolId:"test.echo",args,idempotencyKey:key,requestedAt:100,
+    toolId:"test.echo",args,idempotencyKey:key,requestedAt:Date.now(),
   };
 }
 
 function grant(overrides:Partial<ToolGrant>={}):ToolGrant{
+  const now=Date.now();
   return {
     grantId:"grant-1",capabilities:["test.read"],scope:{roomId:"room-1"},
-    issuedAt:1,expiresAt:1000,source:"user",...overrides,
+    issuedAt:now-60_000,expiresAt:now+60_000,source:"user",...overrides,
   };
 }
 
@@ -84,9 +85,10 @@ describe("Tool capability kernel",()=>{
     const fingerprint=await invocationFingerprint({
       toolId:def.id,version:def.version,roomId:inv.roomId,taskId:inv.taskId,args:{value:"approved"},
     });
+    const now=Date.now();
     const approval:ToolApproval={
       approvalId:"approval-1",invocationFingerprint:fingerprint,
-      issuedAt:50,expiresAt:500,oneShot:true,
+      issuedAt:now-1_000,expiresAt:now+60_000,oneShot:true,
     };
     const writeGrant=grant({capabilities:["test.write"]});
     authority=new InMemoryToolAuthoritySource();
