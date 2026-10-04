@@ -2,8 +2,9 @@ import type { MemoryFact } from "../../domain/memory/fabric";
 
 const EN_STOP = new Set([
   "the","and","for","with","that","this","from","into","about","what","which","who","where","when","how",
-  "my","your","our","their","his","her","its","use","uses","using","used","project","memory","remember",
-  "prefer","preferred","like","love","want","need","main","current","work","working","goal"
+  "my","your","our","their","his","her","its","use","uses","using","used","does","do","did","is","are","was","were",
+  "project","memory","remember","prefer","preferred","like","love","want","need","main","current","work","working","goal",
+  "profile","preference","fact","event","decision","procedure","core","recall","global","room"
 ]);
 const GENERIC_MEMORY_TOKENS = new Set([
   "preference","profile","fact","event","decision","procedure","goal","memory",

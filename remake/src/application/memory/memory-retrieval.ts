@@ -28,9 +28,16 @@ function tokens(value: string): string[] {
   return normalize(value).match(/[\p{L}\p{N}_-]{2,}/gu) ?? [];
 }
 
+const LEXICAL_STOP = new Set([
+  "the","and","for","with","that","this","from","into","about","what","which","who","where","when","how",
+  "my","mine","me","i","you","your","our","their","his","her","its","a","an","is","are","was","were","do","does","did",
+  "use","uses","using","used","please","tell","show","give",
+  "انا","هذا","هذه","ذلك","التي","الذي","على","الى","عن","من","في","مع","ما","ماذا","كيف","متى","اين","لي","لدي","عندي"
+]);
+
 function queryConceptTokens(query: string): string[] {
   const n = normalize(query);
-  const out = new Set<string>(tokens(query));
+  const out = new Set<string>(tokens(query).filter(token => !LEXICAL_STOP.has(token)));
   const add = (...values: string[]) => values.forEach(value => out.add(value));
   if (/\b(theme|appearance|look|mode|dark|light)\b/.test(n) || /مظهر|ثيم|داكن|فاتح|الوضع/.test(n)) add("theme");
   if (/\b(answer|response|reply|concise|verbose|brief|detailed)\b/.test(n) || /رد|اجابه|مختصر|مفصل|قصير|طويل/.test(n)) add("response-style");
