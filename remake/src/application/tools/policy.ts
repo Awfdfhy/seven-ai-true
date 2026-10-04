@@ -68,7 +68,7 @@ export class ToolReferenceMonitor {
         details:{missingCapabilities:Object.freeze([...missing])},
       });
     }
-    return capabilityAuth;
+    return Object.freeze({allowed:true as const,grantIds:Object.freeze(matching.map(grant=>grant.grantId))});
   }
 
   authorize(input:Readonly<{
@@ -95,6 +95,6 @@ export class ToolReferenceMonitor {
         throw new SevenError({code:"PERMISSION",message:"Tool approval is invalid or expired."});
       }
     }
-    return Object.freeze({allowed:true as const,grantIds:Object.freeze(matching.map(g=>g.grantId))});
+    return capabilityAuth;
   }
 }
