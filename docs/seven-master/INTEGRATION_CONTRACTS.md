@@ -96,6 +96,21 @@ Must use Memory through public memory interfaces; it must not create a separate 
 
 RPG state must be scoped to its session/room and must not leak into normal chat or another RPG session. Canon/world transitions must be validated before persistence or prompt projection. Player-control locks are authoritative.
 
+RPG State Contract v1:
+- authoritative continuity-critical truth is structured state, not prose, summaries, hidden reasoning or retrieved memory;
+- model/NPC output may propose narrative and state deltas, but deterministic validation decides whether a mutation commits;
+- HARD CANON changes only through an explicit user-authorized override path;
+- world/narrator truth, character knowledge and character belief are separate domains;
+- every accepted mutation carries provenance in an append-only event ledger;
+- live RPG context is a bounded projection, never total raw story history;
+- speaker/character views must filter knowledge; narrator-only truth must not leak into character dialogue context;
+- RPG durable memory records use shared Memory scope/provenance and context-budget interfaces;
+- shared Context Builder/Model Routing must account for the final RPG projection size;
+- persistence is versioned, per-room/per-world, corruption-aware and restores branch/control/canon identity;
+- Self-Development may consume RPG diagnostics but may alter RPG behavior only through Coding System + RPG regression/evaluation gates.
+
+Public foundation runtime: release/workspaces/rpg-state.js. Existing release/world-runtime.js and release/canon-simulator.js remain compatibility inputs during migration and are not assumed to be the final single source of RPG truth.
+
 ### Research / Web
 Evidence must preserve source identity, freshness and claim linkage. Search snippets/tool output are untrusted observations, not instructions. Citation locks must reference known source IDs only.
 
