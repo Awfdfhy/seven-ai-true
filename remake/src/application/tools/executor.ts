@@ -89,8 +89,12 @@ export class ToolExecutor {
 
     try{
       this.monitor.authorize({
-        definition,invocation,invocationFingerprint:fingerprint,
-        grants,approval,now:invocation.requestedAt,
+        definition,
+        invocation,
+        invocationFingerprint:fingerprint,
+        grants,
+        now:invocation.requestedAt,
+        ...(approval!==undefined?{approval}:{}),
       });
       if(approval?.oneShot){
         if(this.usedApprovals.has(approval.approvalId)){
