@@ -20,21 +20,57 @@ Decision: The Coding System must be robust and verified before autonomous/self-d
 Status: Accepted
 Decision: No subsystem is marked complete from implementation alone; tests and regression evidence are required.
 
-## ADR-006 — Self-Development Is an Evidence-Gated Experiment Controller
+## ADR-006 — Integration Acceptance Is Evidence-Gated
+Status: Accepted
+Decision: Unit success is insufficient for release readiness. Cross-system regression, release build, Android build/device evidence, state isolation, cancellation and recovery are explicit acceptance gates. Zero bugs may only mean zero known reproducible bugs in the tested scope.
+
+## ADR-007 — Execution Checkpoints Fail Closed
+Status: Accepted
+Decision: Execution checkpoints use a versioned envelope with task/run/state identity checks, deterministic corruption checksum and bounded retention. Invalid checkpoints are rejected. The checksum is not treated as a cryptographic trust boundary.
+
+## ADR-008 — Cancellation Is Request-Scoped
+Status: Accepted
+Decision: Cancellation belongs to the originating generation/tool request. Platform-specific code may choose the safe abort mechanism, but late results must be discarded and cancellation from another room/workspace must not bleed across scopes.
+
+## ADR-009 — Cross-System Errors Use a Common Taxonomy
+Status: Accepted
+Decision: Integration surfaces normalize failures into MODEL_ERROR, NETWORK_ERROR, TOOL_ERROR, MEMORY_ERROR, FILE_ERROR, AUTH_ERROR, RATE_LIMIT, VALIDATION_ERROR, CANCELLED, TIMEOUT or INTERNAL_ERROR, while preserving technical details in safe structured diagnostics.
+
+
+## ADR-010 — RPG Structured State Is Authoritative
+Status: Accepted
+Decision: RPG continuity-critical truth lives in validated structured state plus provenance ledger. Narrative prose, summaries and retrieved memories are projections/evidence, not authoritative state.
+
+## ADR-011 — RPG Separates Truth, Knowledge and Belief
+Status: Accepted
+Decision: Narrator/world truth, each character's knowledge, and each character's beliefs are separate state domains. A character may not use a fact without a valid knowledge path.
+
+## ADR-012 — RPG Uses Propose → Validate → Commit
+Status: Accepted
+Decision: Models and NPC planners may propose state changes, but deterministic Canon, player-control, knowledge, timeline, spatial, inventory/ability and provenance gates decide whether a change can commit.
+
+## ADR-013 — RPG Reuses Seven Memory Fabric
+Status: Accepted
+Decision: RPG-specific memory schemas/adapters layer on the shared Memory system using RPG scope and provenance; no independent hidden RPG memory database is introduced.
+
+## ADR-014 — Player Control Is a Hard Runtime Constraint
+Status: Accepted
+Decision: For player-controlled characters, Seven cannot invent irreversible actions, internal thoughts/emotions or decisions unless the user explicitly grants control.
+
+## ADR-015 — Self-Development Is an Evidence-Gated Experiment Controller
 Status: Accepted
 Date: 2026-10-05
-Decision: Seven Self-Development may observe, diagnose, research, hypothesize, prioritize and request candidate work, but production mutations must go through the authoritative Coding System. A self-development model or critic cannot certify its own improvement. Promotion requires baseline/candidate identity, locked evaluation, comparable evidence, hard regression gates and rollback readiness.
+Decision: Seven Self-Development may observe, diagnose, research, hypothesize, prioritize and request candidate work, but production mutations must go through the authoritative Coding System. A builder model or critic cannot certify its own improvement. Promotion requires exact identities, locked evaluation, comparable evidence, hard regression gates and rollback readiness.
 Affected systems: Coding System, Tools, Memory, Model Routing, Web Research, Eval/Verification, GitHub integration, Self-Development.
 
-## ADR-007 — Evaluator Plane Is Immutable During Candidate Evaluation
+## ADR-016 — Evaluator Plane Is Immutable During Candidate Evaluation
 Status: Accepted
 Date: 2026-10-05
-Decision: Evaluators, benchmark manifests, baselines, constitution, judge rules, acceptance policy and protected-path policy cannot be changed by the candidate they judge. Changes to the evaluator/Self-Development plane are CRITICAL governance changes and require separate review and adversarial verification.
+Decision: Evaluators, benchmark manifests, baselines, constitution, judge rules, acceptance policy and protected-path policy cannot be changed by the candidate they judge. Evaluator/Self-Development plane changes are CRITICAL governance changes and require separate review plus adversarial verification.
 Reason: Prevent reward hacking, test weakening, silent success-criteria drift and recursive self-certification.
-Affected systems: Evolution Core, Eval harness, Coding System, CI, Self-Development.
 
-## ADR-008 — Self-Development Telemetry Is Content-Minimized by Default
+## ADR-017 — Self-Development Telemetry Is Content-Minimized by Default
 Status: Accepted
 Date: 2026-10-05
-Decision: Observation records store structured metrics, categorical failure classes, IDs and evidence references. Prompt/response content and secrets/credentials are forbidden by default. Raw diagnostic material, when explicitly required, must remain separately redacted and permission-scoped.
-Affected systems: Observability, Model Routing, Memory, Tools, Search, Coding, Android diagnostics.
+Decision: Observation records store structured metrics, categorical failure classes, IDs and evidence references. Prompt/response content and secrets/credentials are forbidden by default. Raw diagnostic material, when explicitly required, remains separately redacted and permission-scoped.
+
