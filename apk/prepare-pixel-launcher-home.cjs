@@ -71,7 +71,7 @@ function screenSize() {
   return { width: +m[1], height: +m[2] };
 }
 function sevenNode(xml) {
-  return nodes(xml).find(n => /(^|\s)Seven(\s|$)/i.test(text(n)) && bounds(n.bounds)) || null;
+  return nodes(xml).find(n => /(^|\s)Seven 2\.4\.3(\s|$)/i.test(text(n)) && bounds(n.bounds)) || null;
 }
 function home() {
   run(["wait-for-device"], { allow: false, timeout: 12000 });

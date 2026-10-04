@@ -134,3 +134,27 @@ Seven is not considered integrated until:
 4. Update this file.
 5. Run integration tests.
 6. Update CURRENT_STATUS.md.
+
+
+## Release Manager Addendum — 2026-10-05
+
+### GitHub Self-Development verification/publication
+- `atomicCommit(branch, files, message)` keeps its public signature and `{sha,files}` result. All paths validate before writes. Publish one commit containing the whole set via a non-forced ref update; duplicate/protected paths, unsupported modes and truncated tree snapshots fail closed.
+- Exact workflow: `seven-tests.yml`; exact `head_sha` and `head_branch` required. Explicitly dispatch after each candidate/repair commit. An older successful run or unfinished timeout is never verification evidence.
+- `mergePullRequest(number, expectedSha)` adds an optional expected SHA; autonomous verified merges must supply it.
+- `repositoryTree` adds `truncated` metadata; callers must not treat truncated inventories as complete.
+- Eval corpus, memory/runtime regression entrypoints, static/browser/APK/provenance gates remain outside autonomous edit authority. HTTP 503/auth/network failures propagate; only 404 permits file creation.
+
+### APK web payload identity
+- `www/seven-packaging.json`: format `seven-android-web-payload`, version 5, `sourceCommit`, `sourceDirty`, optional `workflowRunId`, `files[{path,bytes,sha256}]` plus existing lazy asset metadata.
+- `sourceCommit` must match checkout/workflow identity. APK verification requires committed source and checks packaged bytes against the recorded inventory. Identity checks supplement, not replace, manifest/version/signature/install/upgrade checks.
+- Build generators must not leave tracked changes at verification; synchronize label source before committing changed app names.
+
+### Bounded RPG character projection
+- `SevenRpgContext.buildCharacterView`: `knowledgeRefs` represents the selected known Canon subset, not all historical canonical knowledge.
+- Complete serialized context including diagnostics must fit the budget. Unavoidable oversize returns `{ok:false,status:'BLOCKED',reason:'context-budget-exceeded'}` without a prompt-ready view; callers must not continue generation using oversized state.
+- Shared Memory and canonical RPG state are unchanged by this projection. Live turn/persistence/generation wiring still needs acceptance tests.
+
+### Test/startup ownership
+- `all.cjs` discovers every top-level `release/*.test.cjs` automatically, while retaining explicit browser/eval/gateway/evolution/packaging gates.
+- Actual compiled `build.startupBytes` is authoritative for both static/browser startup audits; strict budget remains below 100000 bytes. Byte count is not a startup-latency measurement.

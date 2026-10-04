@@ -30,6 +30,14 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   assert.equal(await other.evaluate(async()=>{roomTitles.default='stale';return await saveRooms()}),false);
   assert.equal(await other.evaluate(()=>roomPersistence.status().failed),true);await other.close();
  });
+ const failedStorage=await browser.newContext();await failedStorage.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
+ await failedStorage.addInitScript(()=>{Object.defineProperty(window,'indexedDB',{configurable:true,value:{open(){const q={result:null,error:null};setTimeout(()=>{q.error=new DOMException('blocked','InvalidStateError');q.onerror&&q.onerror()},0);return q}}})});
+ const failedPage=await failedStorage.newPage();await failedPage.goto(origin);await failedPage.waitForFunction(()=>typeof roomPersistence!=='undefined'&&roomPersistence.status().failed);
+ await test('storage startup failure restores interactive recovery UI',async()=>{
+  const r=await failedPage.evaluate(()=>({inert:document.body.inert,ready:roomPersistence.status().ready,failed:roomPersistence.status().failed,status:document.getElementById('persistenceStatus')?.textContent||'',focusable:(()=>{const e=document.getElementById('userInput');e?.focus();return document.activeElement===e})()}));
+  assert.equal(r.inert,false);assert.equal(r.ready,false);assert.equal(r.failed,true);assert.match(r.status,/Storage unavailable or invalid/);assert.equal(r.focusable,true);
+ });
+ await failedPage.close();await failedStorage.close();
  await test('atomic memory create update delete and history',async()=>{
   const r=await page.evaluate(()=>{const m=addMemory('I prefer Arabic explanations.');if(!m)return null;const before=getMemoryHistory(m.id).length;const u=updateMemory(m.id,'I prefer Arabic and English explanations.');const valid=verifyMemoryLedgerConsistency(m.id).consistent;const d=deleteMemory(m.id);return {before,u:!!u,valid,d,history:getMemoryHistory(m.id).length,legacy:localStorage.getItem(MEMORY_STORAGE_KEY)}});
   assert.deepEqual(r,{before:1,u:true,valid:true,d:true,history:3,legacy:null});

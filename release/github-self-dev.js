@@ -12,9 +12,14 @@ const PROTECTED_PATHS=[
   /^hardening\//,
   /^all\.cjs$/,
   /^verify\.cjs$/,
+  /^memory\.cjs$/,
+  /^runtime-smoke\.cjs$/,
+  /^eval\//,
   /^PROJECT_MANIFEST\.json$/,
   /^release\/github-self-dev\.js$/,
   /^apk\/materialize-native-platform\.cjs$/,
+  /^apk\/(?:verify-apk|build-provenance(?:\.test)?)\.cjs$/,
+  /^release\/(?:static-audit|release-verify)\.cjs$/,
   /^release\/.*\.test\.cjs$/,
   /^release\/(?:exact-rc|final-seven-closure|full-seven-red-team|source-integrity|production-release-contract|visual-red-team|material-design-quality).*\.cjs$/
 ];
@@ -257,7 +262,7 @@ async function materializeChanges(branch,changes){
   const out=[];let total=0;
   for(const [path,rows] of grouped){
     let content="",exists=true;
-    try{content=(await readFile(path,branch)).content}catch(e){exists=false}
+    try{content=(await readFile(path,branch)).content}catch(e){if(Number(e&&e.status)!==404)throw e;exists=false}
     for(const ch of rows){
       if(ch.type==="create"){
         if(exists||content)throw new Error("Create target already exists: "+path);

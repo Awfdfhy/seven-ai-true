@@ -127,7 +127,7 @@ function wm() {
   return { widthPx, heightPx };
 }
 function sevenNode(xml) {
-  return parseNodes(xml).find(n => /(^|\s)Seven(\s|$)/i.test(nodeText(n)) && parseBounds(n.bounds)) || null;
+  return parseNodes(xml).find(n => /(^|\s)Seven 2\.4\.3(\s|$)/i.test(nodeText(n)) && parseBounds(n.bounds)) || null;
 }
 function appsNode(xml) {
   return parseNodes(xml).find(n => /^(apps|all apps)$/i.test(nodeText(n)) && parseBounds(n.bounds)) || null;

@@ -56,3 +56,24 @@ Decision: RPG-specific memory schemas/adapters layer on the shared Memory system
 ## ADR-014 — Player Control Is a Hard Runtime Constraint
 Status: Accepted
 Decision: For player-controlled characters, Seven cannot invent irreversible actions, internal thoughts/emotions or decisions unless the user explicitly grants control.
+
+
+## ADR-REL-001 — Release scope is identified by product and commit
+Status: Accepted
+Decision: Root main currently builds the HTML/Capacitor product. Typed remake branches are separate candidates; their tests/features are not credited to a root APK. Do not silently merge the divergent architectures or delete historical branches. Acceptance is bound to one product entrypoint and SHA.
+
+## ADR-REL-002 — Self-development accepts exact required CI only
+Status: Accepted
+Decision: Explicitly dispatch the required test workflow for isolated work branches, require matching branch/SHA, reject unfinished timeouts and bind merge to that verified SHA. Publication uses one tree/commit and a non-forced ref update. Autonomous patches cannot edit measured acceptance gates; only 404 means a file is absent.
+
+## ADR-REL-003 — APK provenance and source cleanliness are release gates
+Status: Accepted
+Decision: Packaging v5 records source commit, source dirty status, workflow run and SHA-256 asset inventory. APK verification rejects different SHA, dirty source or mismatched packaged bytes. Build generators must be idempotent with committed sources; label synchronizer output was committed for the current label. Actual binary/version/signature/install remains an additional acceptance gate.
+
+## ADR-REL-004 — RPG context budgets include knowledge references and diagnostics
+Status: Accepted
+Decision: Character context knowledge references are projections restricted to selected known Canon. Serialized size includes diagnostics. An unavoidable oversized projection returns BLOCKED/context-budget-exceeded rather than READY. Canonical knowledge is not deleted or changed. Narrative/character generation callers must honor this blocked result.
+
+## ADR-REL-005 — Regression discovery and startup budget share authoritative inputs
+Status: Accepted
+Decision: all.cjs discovers release/*.test.cjs automatically. Static and browser release audits consume build.startupBytes with the same strict <100000-byte gate; no budget increase was used. UI loader public API stays load/loadShell/loadFinal and supports failure recovery.

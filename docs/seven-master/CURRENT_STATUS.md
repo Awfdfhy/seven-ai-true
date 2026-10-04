@@ -1,5 +1,24 @@
 # Seven AI — Current Status
 
+## Lead Release Manager — 2026-10-05 verified snapshot
+
+This section supersedes older batch acceptance statements below. Audited upstream main through `8f9956858f61a82a4888e91cc3a2c4ce5fceadd7`; the commit containing this update identifies the integrated release repairs. Later commits require fresh evidence.
+
+**Release decision: NOT ACCEPTED / no RC / no fresh APK produced locally.** Evidence score 43/100, with rubric and limitations in [PROJECT_TRUTH_REPORT.md](PROJECT_TRUTH_REPORT.md); machine-readable checks and benchmark results in [RELEASE_EVIDENCE.json](RELEASE_EVIDENCE.json).
+
+- 33 local component suites verified; 119 tracked JS syntax checks passed. New RPG context suite failed first, then passed after bounded knowledge-reference repair; long-story benchmark passes 1006 committed events.
+- Web build and Android native-project generation passed. Browser/full all.cjs verification was blocked by Chromium download; Gradle compilation blocked by network access. Neither is counted as PASS.
+- Repaired exact-SHA self-dev CI selection/dispatch, atomic multi-file commits, SHA-bound merges, protected acceptance gates and network-read error handling.
+- Added APK web-payload SHA/run provenance and hashes, unified the startup budget, repaired UI loader failure/retry and committed synchronized launcher source labels.
+- Incorporated upstream checkpoint/cancellation/Control boot/storage recovery work with explicit provenance.
+- Root main builds HTML/Capacitor. The typed remake Memory/Tools branches are a different application and remain unmerged/unaccepted as root APK capabilities.
+- RPG State/Session/Context kernels now exist and have component tests; importing them from hub is not live atomic RPG turn integration. Persisted-kernel tests do not establish actual app restart/upgrade behavior.
+- Live provider quality/TTFT, device lifecycle/UI/RTL/dark mode, install/upgrade/signature continuity, complete cancellation isolation and error taxonomy remain gates.
+
+Next exact action: pin an integrated candidate SHA, run root full tests + Android/API34/API36 CI on that SHA, verify embedded source/hash/package/signature and install/upgrade persistence; reconcile the product split and live RPG/Coding/Self-Development wiring before RC1.
+
+## Earlier specialist batch history
+
 Last integration update: 2026-10-05
 
 ## Current Position
@@ -70,9 +89,9 @@ Evidence from the kernel scenario:
 
 Not yet accepted:
 - live model generation does not yet consume the new Character/Narrator views;
-- per-room/per-world RPG persistence is not yet wired;
+- per-room/per-world RPG persistence kernel now exists and is tested; live RPG workspace use is not yet wired;
 - legacy World/Canon + new state commit is not yet one atomic turn transaction;
-- state-level knowledge tests do not yet prove generation-level no-leak behavior;
+- character-context boundary fixtures now pass; live model dialogue no-leak behavior is still unverified;
 - directional relationships, production token-aware retrieval, semantic 100/500/1000-turn evaluation and Android restore UX remain open.
 
-Next RPG implementation target: versioned per-room persistence + atomic session ownership and corruption/restart tests.
+Next RPG implementation target: wire the tested Session/Context modules into the actual per-room turn transaction and shared Memory, then verify Android restart and live generation.

@@ -1,0 +1,249 @@
+{
+  "scope": "main through 8f9956858f61a82a4888e91cc3a2c4ce5fceadd7 plus release repairs; synthetic/injected components; not live providers or device",
+  "componentSuites": [
+    {
+      "file": "evolution/advanced.test.cjs",
+      "exit": 0,
+      "durationMs": 83,
+      "error": null
+    },
+    {
+      "file": "evolution/coding-candidate.test.cjs",
+      "exit": 0,
+      "durationMs": 71,
+      "error": null
+    },
+    {
+      "file": "evolution/coding-evolution.test.cjs",
+      "exit": 0,
+      "durationMs": 96,
+      "error": null
+    },
+    {
+      "file": "evolution/cognitive-boost.test.cjs",
+      "exit": 0,
+      "durationMs": 78,
+      "error": null
+    },
+    {
+      "file": "evolution/cognitive-gate.test.cjs",
+      "exit": 0,
+      "durationMs": 71,
+      "error": null
+    },
+    {
+      "file": "evolution/durable-engine.test.cjs",
+      "exit": 0,
+      "durationMs": 87,
+      "error": null
+    },
+    {
+      "file": "evolution/engine.test.cjs",
+      "exit": 0,
+      "durationMs": 82,
+      "error": null
+    },
+    {
+      "file": "evolution/evolution.test.cjs",
+      "exit": 0,
+      "durationMs": 83,
+      "error": null
+    },
+    {
+      "file": "evolution/experiment-transaction.test.cjs",
+      "exit": 0,
+      "durationMs": 74,
+      "error": null
+    },
+    {
+      "file": "evolution/model-promotion.test.cjs",
+      "exit": 0,
+      "durationMs": 73,
+      "error": null
+    },
+    {
+      "file": "evolution/promotion-runner.test.cjs",
+      "exit": 0,
+      "durationMs": 73,
+      "error": null
+    },
+    {
+      "file": "evolution/recovery.test.cjs",
+      "exit": 0,
+      "durationMs": 76,
+      "error": null
+    },
+    {
+      "file": "evolution/registry.test.cjs",
+      "exit": 0,
+      "durationMs": 69,
+      "error": null
+    },
+    {
+      "file": "eval/harness.cjs",
+      "exit": 0,
+      "durationMs": 76,
+      "error": null
+    },
+    {
+      "file": "eval/search-v2-eval.cjs",
+      "exit": 0,
+      "durationMs": 76,
+      "error": null
+    },
+    {
+      "file": "memory.cjs",
+      "exit": 0,
+      "durationMs": 82,
+      "error": null
+    },
+    {
+      "file": "runtime-smoke.cjs",
+      "exit": 0,
+      "durationMs": 81,
+      "error": null
+    },
+    {
+      "file": "cloudflare/search-gateway/search-gateway.test.mjs",
+      "exit": 0,
+      "durationMs": 83,
+      "error": null
+    },
+    {
+      "file": "apk/build-provenance.test.cjs",
+      "exit": 0,
+      "durationMs": 76,
+      "error": null
+    },
+    {
+      "file": "release/static-audit.cjs",
+      "exit": 0,
+      "durationMs": 233,
+      "error": null
+    },
+    {
+      "file": "release/canon-simulator.test.cjs",
+      "exit": 0,
+      "durationMs": 71,
+      "error": null
+    },
+    {
+      "file": "release/contrast.test.cjs",
+      "exit": 0,
+      "durationMs": 73,
+      "error": null
+    },
+    {
+      "file": "release/control-bridge-retry.test.cjs",
+      "exit": 0,
+      "durationMs": 189,
+      "error": null
+    },
+    {
+      "file": "release/embedded-credentials.test.cjs",
+      "exit": 0,
+      "durationMs": 328,
+      "error": null
+    },
+    {
+      "file": "release/github-self-dev.test.cjs",
+      "exit": 0,
+      "durationMs": 82,
+      "error": null
+    },
+    {
+      "file": "release/integration-contracts.test.cjs",
+      "exit": 0,
+      "durationMs": 85,
+      "error": null
+    },
+    {
+      "file": "release/research-runtime.test.cjs",
+      "exit": 0,
+      "durationMs": 69,
+      "error": null
+    },
+    {
+      "file": "release/rpg-session.test.cjs",
+      "exit": 0,
+      "durationMs": 84,
+      "error": null
+    },
+    {
+      "file": "release/rpg-state.test.cjs",
+      "exit": 0,
+      "durationMs": 5519,
+      "error": null
+    },
+    {
+      "file": "release/ui-polish-loader.test.cjs",
+      "exit": 0,
+      "durationMs": 73,
+      "error": null
+    },
+    {
+      "file": "release/world-runtime.test.cjs",
+      "exit": 0,
+      "durationMs": 85,
+      "error": null
+    }
+  ],
+  "additionalSuites": [
+    {
+      "file": "release/rpg-context.test.cjs",
+      "result": "PASS after bounded-reference repair",
+      "output": "aChars=5365, bChars=3324; 9k maximum; oversized biography blocked"
+    },
+    {
+      "file": "release/rpg-longstory.test.cjs",
+      "result": "PASS",
+      "output": "rpg long story benchmark: PASS {\"committedEvents\":1006,\"revision\":1006,\"tick\":82,\"bridgeDestroyed\":true,\"quest\":\"completed\",\"ariaContextChars\":7788,\"spyContextChars\":1593,\"invalidCanonBlocked\":true,\"playerAgencyBlocked\":true}"
+    }
+  ],
+  "syntax": {
+    "checked": 119,
+    "failed": []
+  },
+  "benchmark": {
+    "environment": "Node 24.19.0 Linux container; synthetic fixtures, no provider/network/phone measurements",
+    "results": [
+      {
+        "kind": "memory-ranking",
+        "records": 100,
+        "p50Ms": 1.1430469999999957,
+        "p95Ms": 1.7800639999999959
+      },
+      {
+        "kind": "memory-ranking",
+        "records": 1000,
+        "p50Ms": 8.038751999999988,
+        "p95Ms": 13.017674999999997
+      },
+      {
+        "kind": "memory-ranking",
+        "records": 10000,
+        "p50Ms": 118.63668099999995,
+        "p95Ms": 164.86659500000007
+      },
+      {
+        "kind": "rpg-world-event",
+        "events": 1000,
+        "first100": {
+          "p50Ms": 0.49689400000033856,
+          "p95Ms": 0.9856780000000072
+        },
+        "last100": {
+          "p50Ms": 8.243763999999828,
+          "p95Ms": 10.12148199999956
+        },
+        "stateBytes": 298219
+      }
+    ]
+  },
+  "limitations": {
+    "browser": "Chromium archive download failed; all.cjs not fully passed",
+    "android": "Gradle download network unreachable; no built APK/device result",
+    "liveProviders": "UNMEASURED",
+    "RC": "NOT_CREATED"
+  }
+}
