@@ -27,3 +27,19 @@ For synthesis, rank findings by user impact and root cause, then convert only th
 For integration, favor the smallest coherent set of changes that passes the full suite.
 
 For final cycle review, state what actually improved, what was rejected, what remains unproven, and the exact next-cycle priorities.
+
+
+## Product Intelligence requirement
+
+Before product/UX planning, integration, polish or final review, use:
+- `.seven-team/product-intelligence/README.md`
+- `.seven-team/product-intelligence/PRODUCT_QUALITY_RUBRIC.json`
+- relevant sections of `PRODUCT_KNOWLEDGE_BASE.md`
+- `VISUAL_REFERENCE_CATALOG.json`
+- `JUDGE_PROTOCOL.md`
+- the visual boards under `.seven-team/product-intelligence/visual/`
+
+Do not reward feature count. Judge whether Seven behaves and feels like one premium AI chat product.
+Missing exact-build visual evidence means visual quality is UNPROVEN, not PASS.
+Any rubric hard fail blocks a premium/release-quality claim regardless of aggregate score.
+Reference products are principles/evidence only; never copy branding, proprietary assets or pixel geometry.
