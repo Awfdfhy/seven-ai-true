@@ -36,10 +36,13 @@ describe("Memory Fabric retrieval",()=>{
     const one=fact({canonicalKey:"fact:one",content:"one ".repeat(120).trim(),tags:["one"]});
     const two=fact({canonicalKey:"fact:two",content:"two ".repeat(120).trim(),tags:["two"]});
     const hits=new MemoryRetrievalEngine().search([one,two],"one two",{now:4000});
-    const rendered=formatMemoryContext(hits,700);
+    const rendered=formatMemoryContext(hits,1200);
     const json=rendered.slice(rendered.indexOf("\n")+1);
     expect(()=>JSON.parse(json)).not.toThrow();
-    expect(rendered.length).toBeLessThanOrEqual(700);
+    expect(rendered.length).toBeGreaterThan(0);
+    expect(rendered.length).toBeLessThanOrEqual(1200);
+    const tooSmall=formatMemoryContext(hits,256);
+    expect(tooSmall).toBe("");
   });
 
   it("abstains from unrelated recall instead of forcing a memory",()=>{
