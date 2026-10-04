@@ -618,8 +618,8 @@ export class RoutingChatTransport implements ChatTransport {
   private readonly mode: RoutingModeSource;
   private readonly maxAttempts: number;
   private readonly now: () => number;
-  private readonly contextSource?: ProviderContextSource;
-  private readonly observer?: RoutingTraceObserver;
+  private readonly contextSource: ProviderContextSource | undefined;
+  private readonly observer: RoutingTraceObserver | undefined;
 
   constructor(
     private readonly registry: import("../../routing/model-router").ModelRegistry,
