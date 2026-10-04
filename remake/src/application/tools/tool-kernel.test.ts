@@ -1,9 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { TaskManager } from "../../core/task-manager";
 import { invocationFingerprint } from "./canonical";
 import { ToolExecutor } from "./executor";
 import { ToolRegistry } from "./registry";
+import { InMemoryToolAuthoritySource } from "./authority";
 import type { ToolApproval, ToolAuditEvent, ToolDefinition, ToolGrant, ToolInvocation } from "./contracts";
 
 function definition(
@@ -44,13 +45,19 @@ function grant(overrides:Partial<ToolGrant>={}):ToolGrant{
 }
 
 describe("Tool capability kernel",()=>{
+  let authority:InMemoryToolAuthoritySource;
+
+  beforeEach(()=>{
+    authority=new InMemoryToolAuthoritySource();
+    authority.setGrant(grant());
+  });
   it("rejects invalid arguments before handler execution",async()=>{
     let calls=0;
     const registry=new ToolRegistry();
     registry.register(definition(async(_ctx,input)=>{calls++;return {ok:true,value:input.value};}));
-    const result=await new ToolExecutor(registry,new TaskManager()).execute({
-      invocation:invocation({value:"",extra:true}),grants:[grant()],
-    });
+    const result=await new ToolExecutor(registry,new TaskManager(),authority).execute(
+      invocation({value:"",extra:true}),
+    );
     expect(result.status).toBe("invalid");
     expect(calls).toBe(0);
   });
@@ -59,9 +66,9 @@ describe("Tool capability kernel",()=>{
     let calls=0;
     const registry=new ToolRegistry();
     registry.register(definition(async(_ctx,input)=>{calls++;return {ok:true,value:input.value};}));
-    const result=await new ToolExecutor(registry,new TaskManager()).execute({
-      invocation:invocation(),grants:[grant({capabilities:["other.read"]})],
-    });
+    authority=new InMemoryToolAuthoritySource();
+    authority.setGrant(grant({capabilities:["other.read"]}));
+    const result=await new ToolExecutor(registry,new TaskManager(),authority).execute(invocation());
     expect(result.status).toBe("denied");
     expect(calls).toBe(0);
   });
@@ -82,11 +89,14 @@ describe("Tool capability kernel",()=>{
       issuedAt:50,expiresAt:500,oneShot:true,
     };
     const writeGrant=grant({capabilities:["test.write"]});
-    const executor=new ToolExecutor(registry,new TaskManager());
-    expect((await executor.execute({invocation:inv,grants:[writeGrant],approval})).status).toBe("succeeded");
+    authority=new InMemoryToolAuthoritySource();
+    authority.setGrant(writeGrant);
+    authority.setApproval(approval);
+    const executor=new ToolExecutor(registry,new TaskManager(),authority);
+    expect((await executor.execute(inv)).status).toBe("succeeded");
     expect(calls).toBe(1);
     const mutated={...inv,callId:crypto.randomUUID(),idempotencyKey:"mutated",args:{value:"changed"}} as ToolInvocation;
-    expect((await executor.execute({invocation:mutated,grants:[writeGrant],approval})).status).toBe("denied");
+    expect((await executor.execute(mutated)).status).toBe("denied");
     expect(calls).toBe(1);
   });
 
@@ -96,18 +106,17 @@ describe("Tool capability kernel",()=>{
     registry.register(definition(async(_ctx,input)=>{
       calls++;await new Promise(resolve=>setTimeout(resolve,10));return {ok:true,value:input.value};
     }));
-    const executor=new ToolExecutor(registry,new TaskManager());
+    const executor=new ToolExecutor(registry,new TaskManager(),authority);
     const inv=invocation({value:"once"},"same");
     const [a,b]=await Promise.all([
-      executor.execute({invocation:inv,grants:[grant()]}),
-      executor.execute({invocation:{...inv,callId:inv.callId},grants:[grant()]}),
+      executor.execute(inv),
+      executor.execute({...inv,callId:inv.callId}),
     ]);
     expect(a.status).toBe("succeeded");
     expect(b.status).toBe("succeeded");
     expect(calls).toBe(1);
     const changed=await executor.execute({
-      invocation:{...inv,callId:crypto.randomUUID(),args:{value:"twice"}},
-      grants:[grant()],
+      ...inv,callId:crypto.randomUUID(),args:{value:"twice"},
     });
     expect(changed.status).toBe("invalid");
     expect(calls).toBe(1);
@@ -123,9 +132,7 @@ describe("Tool capability kernel",()=>{
       });
       return {ok:true,value:"late"};
     },{timeoutMs:60,annotations:{risk:"write",idempotency:"non-idempotent",approval:"never",sensitivity:"public",reversibility:"irreversible"}}));
-    const result=await new ToolExecutor(registry,new TaskManager()).execute({
-      invocation:invocation(),grants:[grant()],
-    });
+    const result=await new ToolExecutor(registry,new TaskManager(),authority).execute(invocation());
     expect(result.status).toBe("effect_unknown");
     expect(result.effectStarted).toBe(true);
   });
@@ -134,12 +141,24 @@ describe("Tool capability kernel",()=>{
     const events:ToolAuditEvent[]=[];
     const registry=new ToolRegistry();
     registry.register(definition(async(_ctx,input)=>({ok:true,value:input.value})));
-    const executor=new ToolExecutor(registry,new TaskManager(),undefined,{record(event){events.push(event);}});
+    const executor=new ToolExecutor(registry,new TaskManager(),authority,undefined,{record(event){events.push(event);}});
     const secretText="do-not-log-this-value";
-    await executor.execute({invocation:invocation({value:secretText}),grants:[grant()]});
+    await executor.execute(invocation({value:secretText}));
     expect(events).toHaveLength(1);
     expect(JSON.stringify(events)).not.toContain(secretText);
     expect(events[0]?.invocationFingerprint).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it("uses runtime time rather than caller-controlled requestedAt for grant expiry",async()=>{
+    const registry=new ToolRegistry();
+    let calls=0;
+    registry.register(definition(async(_ctx,input)=>{calls++;return {ok:true,value:input.value};}));
+    authority=new InMemoryToolAuthoritySource();
+    authority.setGrant(grant({issuedAt:1,expiresAt:2}));
+    const forged={...invocation(),requestedAt:1};
+    const result=await new ToolExecutor(registry,new TaskManager(),authority).execute(forged);
+    expect(result.status).toBe("denied");
+    expect(calls).toBe(0);
   });
 
   it("rejects duplicate registry identities",()=>{

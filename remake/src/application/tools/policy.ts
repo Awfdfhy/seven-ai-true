@@ -50,15 +50,13 @@ function approvalRequired(definition:ToolDefinition):boolean{
 }
 
 export class ToolReferenceMonitor {
-  authorize(input:Readonly<{
+  authorizeCapabilities(input:Readonly<{
     definition:ToolDefinition;
     invocation:ToolInvocation;
-    invocationFingerprint:string;
     grants:readonly ToolGrant[];
-    approval?:ToolApproval;
     now:number;
   }>):ToolAuthorization{
-    const {definition,invocation,invocationFingerprint,grants,approval,now}=input;
+    const {definition,invocation,grants,now}=input;
     if(!validTime(now))throw new SevenError({code:"VALIDATION",message:"Authorization time is invalid."});
     const matching=grants.filter(grant=>grantMatches(grant,definition,invocation,now));
     const grantedCapabilities=new Set(matching.flatMap(grant=>grant.capabilities));
@@ -70,6 +68,19 @@ export class ToolReferenceMonitor {
         details:{missingCapabilities:Object.freeze([...missing])},
       });
     }
+    return capabilityAuth;
+  }
+
+  authorize(input:Readonly<{
+    definition:ToolDefinition;
+    invocation:ToolInvocation;
+    invocationFingerprint:string;
+    grants:readonly ToolGrant[];
+    approval?:ToolApproval;
+    now:number;
+  }>):ToolAuthorization{
+    const {definition,invocation,invocationFingerprint,grants,approval,now}=input;
+    const capabilityAuth=this.authorizeCapabilities({definition,invocation,grants,now});
     if(approvalRequired(definition)){
       if(!approval){
         throw new SevenError({code:"PERMISSION",message:"Tool execution requires approval."});

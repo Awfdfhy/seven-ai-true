@@ -113,11 +113,17 @@ export interface ToolAuditSink {
   record(event: ToolAuditEvent): void | Promise<void>;
 }
 
-export type ToolExecutionRequest = Readonly<{
-  invocation: ToolInvocation;
+export type ToolAuthoritySnapshot = Readonly<{
   grants: readonly ToolGrant[];
   approval?: ToolApproval;
 }>;
+
+export interface ToolAuthoritySource {
+  resolve(
+    invocation: ToolInvocation,
+    invocationFingerprint: string,
+  ): ToolAuthoritySnapshot | Promise<ToolAuthoritySnapshot>;
+}
 
 const TOOL_ID_RE = /^[a-z0-9][a-z0-9._-]{2,127}$/;
 const VERSION_RE = /^[0-9]+.[0-9]+.[0-9]+(?:-[a-z0-9.-]+)?$/i;

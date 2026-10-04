@@ -5,8 +5,7 @@ import {
   type ToolApproval,
   type ToolAuditEvent,
   type ToolAuditSink,
-  type ToolExecutionRequest,
-  type ToolGrant,
+  type ToolAuthoritySource,
   type ToolInvocation,
   type ToolResult,
 } from "./contracts";
@@ -32,6 +31,7 @@ export class ToolExecutor {
   constructor(
     private readonly registry:ToolRegistry,
     private readonly tasks:TaskManager,
+    private readonly authority:ToolAuthoritySource,
     private readonly monitor=new ToolReferenceMonitor(),
     private readonly audit?:ToolAuditSink,
     private readonly maxReplayEntries=256,
@@ -41,18 +41,15 @@ export class ToolExecutor {
     }
   }
 
-  execute(request:ToolExecutionRequest):Promise<ToolResult>{
-    const invocation=this.validateInvocation(request.invocation);
+  execute(rawInvocation:ToolInvocation):Promise<ToolResult>{
+    const invocation=this.validateInvocation(rawInvocation);
     const definition=this.registry.require(invocation.toolId);
-
-    return this.prepareAndRun(definition,invocation,request.grants,request.approval);
+    return this.prepareAndRun(definition,invocation);
   }
 
   private async prepareAndRun(
     definition:ReturnType<ToolRegistry["require"]>,
     invocation:ToolInvocation,
-    grants:readonly ToolGrant[],
-    approval:ToolApproval|undefined,
   ):Promise<ToolResult>{
     const parsed=definition.inputSchema.safeParse(invocation.args);
     if(!parsed.success){
@@ -77,23 +74,35 @@ export class ToolExecutor {
 
     const replayKey=invocation.idempotencyKey;
     const prior=this.replay.get(replayKey);
-    if(prior){
-      if(prior.fingerprint!==fingerprint){
-        return this.finishedResult({
-          invocation,fingerprint,status:"invalid",retryable:false,effectStarted:false,
-          startedAt:nowMs(),errorCode:"IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_INVOCATION",
-        });
-      }
-      return prior.result;
+    if(prior&&prior.fingerprint!==fingerprint){
+      return this.finishedResult({
+        invocation,fingerprint,status:"invalid",retryable:false,effectStarted:false,
+        startedAt:nowMs(),errorCode:"IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_INVOCATION",
+      });
     }
 
+    let authoritySnapshot;
     try{
+      authoritySnapshot=await this.authority.resolve(invocation,fingerprint);
+      if(!authoritySnapshot||!Array.isArray(authoritySnapshot.grants)){
+        throw new SevenError({code:"PERMISSION",message:"Tool authority source returned an invalid snapshot."});
+      }
+      const authorizationNow=nowMs();
+      if(prior){
+        // A replay still needs current capability authorization, but it does not
+        // consume a second user approval or execute a side effect again.
+        this.monitor.authorizeCapabilities({
+          definition,invocation,grants:authoritySnapshot.grants,now:authorizationNow,
+        });
+        return prior.result;
+      }
+      const approval=authoritySnapshot.approval;
       this.monitor.authorize({
         definition,
         invocation,
         invocationFingerprint:fingerprint,
-        grants,
-        now:invocation.requestedAt,
+        grants:authoritySnapshot.grants,
+        now:authorizationNow,
         ...(approval!==undefined?{approval}:{}),
       });
       if(approval?.oneShot){
