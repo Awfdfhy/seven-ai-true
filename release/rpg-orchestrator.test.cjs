@@ -17,7 +17,7 @@ let p=O.plan('room1');assert.equal(p.ok,true);assert.ok(p.plan.npcProposals.some
  ]})});
  assert.equal(out.ok,true);let s=O.snapshot('room1').state;assert.equal(s.characters.hero.locationId,'road');assert.equal(State.relationshipFor(s,'npc','hero').trust,.2);assert.equal(s.turn,1);assert.ok(mem.length>=2);
  const rev=s.revision;
- out=await O.processTurn({roomId:'room1',userText:'Nothing about moving.',reply:'The hero appears at home.',extractor:async()=>({events:[{type:'character.move',actorId:'hero',payload:{characterId:'hero',toLocationId:'home'},evidence:{source:'user',quote:'I move home.'}}]})});
+ out=await O.processTurn({roomId:'room1',userText:'Nothing about moving.',reply:'The hero appears at home.',extractor:async()=>({events:[{type:'character.move',actorId:'hero',payload:{characterId:'hero',toLocationId:'home'},evidence:{source:'assistant',quote:'The hero appears at home.'}}]})});
  assert.equal(out.ok,false);assert.equal(out.eventReason,'player-control');assert.equal(O.snapshot('room1').state.revision,rev);
  out=await O.processTurn({roomId:'room1',userText:'Continue.',reply:'Quiet moment.',extractor:async()=>'{bad json'});
  assert.equal(out.ok,true);s=O.snapshot('room1').state;assert.equal(s.turn,2);assert.equal(out.extractionStatus,'invalid-json');
