@@ -33,7 +33,7 @@ env:
   SEVEN_SUPERLOOP_MODEL: kilo-auto/free
   SEVEN_AGENT_READ_TIMEOUT: '600'
   SEVEN_AGENT_WRITE_TIMEOUT: '600'
-  SEVEN_MANAGER_TIMEOUT: '480'
+  SEVEN_MANAGER_TIMEOUT: '480'\n  PYTHONDONTWRITEBYTECODE: '1'
 
 jobs:
   validate-control:
@@ -44,7 +44,7 @@ jobs:
       - name: Validate controller and team manifest
         run: |
           set -euo pipefail
-          python -m py_compile .seven-team/superloop/controller.py .seven-team/superloop/autonomy_kernel.py .seven-team/superloop/domain_campaign.py
+          python -m py_compile .seven-team/superloop/controller.py .seven-team/superloop/autonomy_kernel.py .seven-team/superloop/domain_campaign.py .seven-team/superloop/domain_research_harvester.py .seven-team/superloop/domain_campaign.py
           python .seven-team/superloop/autonomy_kernel.py validate --root .
           python - <<'PY'
           import pathlib,sys

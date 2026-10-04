@@ -277,7 +277,7 @@ Task:
 {stage_instruction}
 
 Domain campaign assignment:
-{domain_research_brief(DOMAIN_CAMPAIGN, agent["id"]) if stage == "research" else "Use relevant completed domain research and roadmap evidence; do not invent missing research."}
+{domain_research_brief(DOMAIN_CAMPAIGN, agent["id"], source_packs) if stage == "research" else "Use relevant completed domain research and roadmap evidence; do not invent missing research."}
 
 Inspect the repository yourself. Give precise evidence and do not claim work you did not perform.
 """
@@ -876,27 +876,18 @@ product-intelligence lesson when a genuinely useful new reference or product les
 B10 must report NO_NEW_INTELLIGENCE rather than inventing one.""",
     )
 
+    log("domain research: pre-harvesting public web evidence")
+    domain_source_packs = harvest_campaign_sources(DOMAIN_CAMPAIGN)
+    write_artifact(cycle, "domain-research", "source-packs", json.dumps(domain_source_packs, indent=2, ensure_ascii=False))
+
     research = run_readonly_phase(
-        cycle, "research", base_sha, research_plan, None, shared_node_modules
+        cycle, "research", base_sha, research_plan, None, shared_node_modules, domain_source_packs
     )
-    domain_audit = audit_domain_research(DOMAIN_CAMPAIGN, research)
+    domain_audit = audit_domain_research(DOMAIN_CAMPAIGN, research, domain_source_packs)
     write_artifact(cycle, "domain-research", "coverage", json.dumps(domain_audit, indent=2))
-    domain_roadmaps = manager_readonly(
-        cycle,
-        "manager-domain-roadmaps",
-        base_sha,
-        f"""Create an independent architecture/improvement roadmap for EVERY configured Seven domain.
-Research coverage audit:\n{json.dumps(domain_audit, indent=2)}\n\nConfigured domains:\n{campaign_prompt_summary(DOMAIN_CAMPAIGN)}\n\nResearch reports:\n{clip(summarize_reports(research, 3500), 100000)}\n\nFor insufficient domains, explicitly label RESEARCH_INSUFFICIENT and do not fabricate a plan from weak evidence.
-For ready domains, produce CURRENT -> TARGET -> NOW/NEXT/LATER -> TESTS -> RISKS -> FIRST SLICE.
-Prioritize core domains but preserve separate plans for all domains.""",
-    )
-    campaign_dir = ROOT / ".seven-team" / "domain-campaign" / "generated"
-    campaign_dir.mkdir(parents=True, exist_ok=True)
-    (campaign_dir / "latest.md").write_text(domain_roadmaps.rstrip() + "\n", encoding="utf-8")
-    hist_dir = campaign_dir / "history"
-    hist_dir.mkdir(parents=True, exist_ok=True)
-    (hist_dir / f"cycle-{cycle:04d}.md").write_text(domain_roadmaps.rstrip() + "\n", encoding="utf-8")
-    (campaign_dir / "latest-audit.json").write_text(json.dumps(domain_audit, indent=2) + "\n", encoding="utf-8")
+    domain_plans = extract_domain_plans(DOMAIN_CAMPAIGN, research, domain_audit)
+    domain_roadmaps = render_domain_roadmaps(DOMAIN_CAMPAIGN, domain_plans, domain_audit)
+    write_artifact(cycle, "domain-plans", "all-domains", domain_roadmaps)
 
     execution_plan = manager_readonly(
         cycle,
@@ -1064,6 +1055,18 @@ research priorities. Do not call missing evidence PASS.""",
         ROOT, ARTIFACT_ROOT, cycle, summary, product_quality, apk_result, AUTONOMY_CONTRACTS
     )
     summary["autonomy"] = autonomy_final
+
+    campaign_dir = ROOT / ".seven-team" / "domain-campaign" / "generated"
+    campaign_dir.mkdir(parents=True, exist_ok=True)
+    (campaign_dir / "latest.md").write_text(domain_roadmaps.rstrip() + "\n", encoding="utf-8")
+    (campaign_dir / "latest-audit.json").write_text(json.dumps(domain_audit, indent=2) + "\n", encoding="utf-8")
+    domain_dir = campaign_dir / "domains"
+    domain_dir.mkdir(parents=True, exist_ok=True)
+    for domain_id, plan_text in domain_plans.items():
+        (domain_dir / f"{domain_id}.md").write_text(plan_text.rstrip() + "\n", encoding="utf-8")
+    hist_dir = campaign_dir / "history"
+    hist_dir.mkdir(parents=True, exist_ok=True)
+    (hist_dir / f"cycle-{cycle:04d}.md").write_text(domain_roadmaps.rstrip() + "\n", encoding="utf-8")
 
     tracked_history(
         cycle,
