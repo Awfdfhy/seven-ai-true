@@ -11,7 +11,7 @@ export function canonicalRepositoryPath(raw: string): string {
   const path = raw.replace(/\\/g, "/");
   if (
     path.startsWith("/") ||
-    /^[A-Za-z]:\\//.test(path) ||
+    (path.length >= 3 && /^[A-Za-z]$/.test(path[0]!) && path[1] === ":" && path[2] === "/") ||
     path.endsWith("/") ||
     path.includes("\u0000") ||
     path.split("/").some((segment) => !segment || segment === "." || segment === "..")
