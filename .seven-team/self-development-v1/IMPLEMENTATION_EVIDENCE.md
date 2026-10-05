@@ -117,3 +117,78 @@ Production mutation authority added: **NO**
 Independent review: **PENDING**
 
 Decision: **READY_FOR_INDEPENDENT_REVIEW**, not autonomously accepted.
+
+---
+
+# Phase 2 — Metric Registry + Locked Paired Evaluator
+
+Status: IMPLEMENTED + CI VERIFIED; STACKED ON PHASE 1
+Date: 2026-10-05
+Pull request: #108
+
+## Verified candidate identity
+
+- Candidate head: `d6028b1cbaba530596b54ba2462536c517f8ec59`
+- Phase 1 base: `78d0b9ad35d4d03d264d33a88e33d747a11aef76`
+- Workflow run: `37263361857`
+- Seven AI tests run: `#3318`
+- Result: **SUCCESS**
+- `node all.cjs`: **all test suites: PASS (39 suites)**
+- `self-development paired evaluator test suite: PASS`
+- release artifact upload: SUCCESS
+
+## Implemented
+
+- `evolution/self-development-metrics.cjs`
+- `evolution/self-development-paired-eval.cjs`
+- `evolution/self-development-paired-eval.test.cjs`
+
+## Evidence properties proven
+
+### Locked criteria
+- unknown/invented metrics are rejected;
+- target metrics must be declared before evaluation;
+- manifest digest binds evaluator identity, identities, environment, metrics, targets and hard gates;
+- manifest tampering is BLOCKED;
+- evaluator lock drift is BLOCKED.
+
+### Exact identity
+- baseline and candidate require exact 40-char SHAs;
+- symbolic refs such as `main` are rejected;
+- candidate identity must differ from baseline;
+- optional artifact digest must be a full SHA-256 digest.
+
+### Comparable runs
+- every run is bound to the exact `manifestDigest`;
+- every run is bound to the exact `environmentDigest`;
+- unknown environment fields fail closed;
+- secret-like environment values are rejected;
+- partial metric evidence is INCONCLUSIVE;
+- invalid metric values are BLOCKED;
+- unequal baseline/candidate run counts are INCONCLUSIVE to prevent cherry-picking.
+
+### Statistical / metric discipline
+- metrics have explicit HIGHER_IS_BETTER / LOWER_IS_BETTER direction;
+- minimum sample count is enforced;
+- excessive variance becomes INCONCLUSIVE;
+- minimum improvement and regression tolerance are metric-specific;
+- hard constraints such as crash/test regressions override quality gains.
+
+### Acceptance behavior
+- missing hard-gate evidence => INCONCLUSIVE;
+- failed hard gate => FAIL;
+- target metric not improved => FAIL;
+- non-hard regression beyond tolerance => FAIL;
+- hard metric violation => FAIL even when target quality improves;
+- valid paired improvement with all hard gates passing => PASS.
+
+## Phase 2 verdict
+
+Implementation evidence: **PASS**
+Whole-repository regression: **PASS**
+Paired evaluator suite: **PASS**
+Production mutation authority added: **NO**
+Independent authority-plane review: **PENDING**
+
+Decision: **READY_FOR_STACKED_REVIEW**, not autonomously promoted.
+
