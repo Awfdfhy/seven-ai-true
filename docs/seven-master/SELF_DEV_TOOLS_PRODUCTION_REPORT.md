@@ -89,3 +89,11 @@ PARTIAL. Not READY FOR INTEGRATION until exact-SHA CI is green and one existing 
 - The archive is intentionally not yet auto-wired to production promotion. Wiring must be atomic with durable evolution state or explicitly recoverable; otherwise an archive write failure could create false history.
 
 Latest implementation SHA before this report update: `12c393bdf3f736bc15b4418f9fced87908729612`.
+
+
+## Batch 3 — Verification-infrastructure isolation
+
+- Evolution protected paths now cover all of `.github/`, not only `.github/workflows/`.
+- Regression proves an experiment cannot request `.github/CODEOWNERS` or workflow paths.
+- This strengthens MBR-043 but does not close it: behavioral candidate-worktree evidence is still required.
+- Exact-SHA CI requested for implementation SHA `6ea22050938719233234991392e7eebdbda2fc99`; run 37304286099 was pending when recorded.
