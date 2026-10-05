@@ -2,138 +2,127 @@
 
 Date: 2026-10-05
 Product base: `seven-remake-v3`
-Working evidence branch: `integration/verification-v1` / PR #103
+Working branch: `integration/verification-v1` / PR #103
 
-## 1. Executable Dependency Map
+## 1. Executable dependency map
 
 ```
 App.tsx
  ├─ ShellStore / ThemeService
  ├─ ChatService
  │   ├─ TaskManager
- │   ├─ RoomRepository (IndexedDB)
+ │   ├─ RoomRepository
  │   └─ MemoryFabricService.observeUserMessage
- ├─ RoutingChatTransport
- │   ├─ ModelRegistry
- │   ├─ ModelRouter
- │   ├─ ProviderHealthTracker
- │   └─ RoutedChatTransport
- │       ├─ IntegratedChatContextSource
- │       │   ├─ MemoryFabricService retrieval
- │       │   ├─ MemoryContextService / ContextBuilder / Summarizer
- │       │   └─ ToolOrchestrator read evidence
- │       └─ ProviderAdapter (Kilo in current runtime)
- └─ ToolApprovalCoordinator
-     ├─ ToolRegistry / ToolExecutor / Authority
-     └─ memory mutation tools
+ ├─ ModeAwareChatTransport
+ │   ├─ RoutingChatTransport
+ │   │   ├─ ModelRegistry / ModelRouter / ProviderHealthTracker
+ │   │   └─ RoutedChatTransport
+ │   │       ├─ IntegratedChatContextSource
+ │   │       │   ├─ Memory context/retrieval
+ │   │       │   ├─ ToolOrchestrator read evidence
+ │   │       │   └─ Attachment context
+ │   │       └─ ProviderAdapter
+ │   └─ DeepThinkTransport (planner → final)
+ └─ ToolApprovalCoordinator → ToolExecutor / Authority / mutation tools
 
-AppKernel
- ├─ memory legacy migration
- ├─ tool ledger lifecycle
- ├─ runtime storage lifecycle
- └─ theme lifecycle
+Coding V1 shared infrastructure
+ ├─ CodingAgentService / routed coding agent
+ ├─ exact-SHA WorkspaceTruth + repository intelligence
+ ├─ transactional patch/review/verification
+ ├─ Tool-backed repository port
+ ├─ GitHub coding repository adapter
+ └─ GitHub Actions verification port
 
-Implemented but not currently composed into normal product dispatch:
- AttachmentService → AttachmentRepository
- ResearchService → ResearchSource[] + ResearchSynthesizer + ResearchRepository
- DeepThinkTransport → planner/final ProviderAdapter + context source
- GitHubSelfDevService → CodingVerificationPort → GitHubAuth → GitHubMutationPort
- RpgCanonService → RpgRepository(CAS/checksum)
+Implemented but still not fully product-dispatched:
+ ResearchService → concrete production Web source/synthesizer missing
+ Coding Build workspace / Self-Development → verified Coding runtime adoption still requires product composition
+ RpgCanonService → shared Memory/Chat turn transaction incomplete
+ PDF Attachment parser → disabled
 ```
 
-## 2. Shared State / Ownership
-| State | Owner | Scope | Risk |
-|---|---|---|---|
-| active tasks | TaskManager | owner/task | low-moderate; stress coverage exists |
-| rooms/messages | RoomRepository | room | guarded by room IDs and immutable commits |
-| durable memory | MemoryFabricRepository | global/room scopes | cross-room tests required continuously |
-| context summaries | MemoryRepository | room summary | separate IndexedDB; now lifecycle-owned |
-| provider health | ProviderHealthTracker | provider | recalculated into every route |
-| tool ledger | IndexedDbToolExecutionLedger | execution | lifecycle-owned |
-| RPG canon | RpgRepository | RPG snapshot ID | not yet joined to chat/memory turn |
-| shell workspace | ShellStore | UI process | now prevented from silent Core dispatch |
+## 2. Contract audit
 
-## 3. Contract Audit
-| Contract | Status | Evidence / Gap |
+| Contract | Status | Evidence / gap |
 |---|---|---|
-| Model abstraction | PASS core | ProviderAdapter contract independent of Kilo payload |
-| Model routing | PASS core path | production runtime now uses registry/router/health/fallback |
-| Chat + Memory | PASS core path | memory retrieval/context assembly + write observer are wired |
-| Chat + Tools | PASS read/memory-mutation scope | untrusted evidence + explicit mutation approval |
-| Files | PASS for UTF-8 text / PDF PARTIAL | AttachmentService + IndexedDB + UI + room-scoped bounded context are wired; PDF parser adapter intentionally absent |
-| Research/Web | PARTIAL | orchestration/cache/failure model exist; concrete production Web source missing |
-| Deep Think | PASS core path / further routing open | independent room flag selects two-pass planner→final transport with shared Memory/Tools context |
-| Coding | MISSING/PARTIAL | no first-class Remake Coding orchestrator in current product composition |
-| Self-Development | PARTIAL / SAFE | mutation path now requires Coding verification; no product-level Coding provider |
-| RPG | PARTIAL | checksum/CAS/persistence strong; Memory/chat orchestration absent |
-| Cancellation | PASS for core tested paths | Chat/Task/Android historical tests; more workspace E2E still needed |
-| Error taxonomy | PARTIAL | common mapper exists; domain tagging coverage incomplete |
-| Observability | PARTIAL+ | bounded redacted diagnostics + task/model traces now wired |
-| Storage lifecycle | PASS for composed core | room/memory/context/tool storage shutdown owned by AppKernel |
-| Android | PENDING | workflow started; final same-line result required |
+| Model abstraction | PASS core | provider-independent ProviderAdapter |
+| Model routing | PASS core | production registry/router/health/fallback; route recalculated per turn |
+| Chat + Memory | PASS core | write observer + bounded retrieval/context |
+| Chat + Tools | PASS core scope | read evidence + explicit mutation approval |
+| Files | PASS TXT / PARTIAL PDF | text ingest/restart/concurrent room isolation wired; PDF parser absent |
+| Research/Web | PARTIAL | orchestration/cache/failure semantics exist; production Web source missing |
+| Deep Think | PASS core / PARTIAL provider diversity | real two-pass per-room dispatch; same bootstrap provider currently |
+| Coding | PASS specialist / PARTIAL product composition | V1 exact-SHA/patch/test/review/Git/Tools implementation is upstream-verified; Build UI/runtime adoption open |
+| Self-Development | SAFE PARTIAL | cannot mutate before valid Coding evidence; product verifier adoption open |
+| RPG | PARTIAL | checksum/CAS/continuity strong; shared Memory/Chat transaction open |
+| Cancellation | PASS tested core | per-room/request cancellation + late-result rejection + cross-owner isolation |
+| Error taxonomy | PASS core / broader tagging open | requested public taxonomy present; Kilo rate/network/malformed semantics covered |
+| Observability | PASS core / broader subsystem timings open | bounded redacted task/model/tool traces; model TTFT and durations |
+| State isolation | PASS tested Chat UI/core scope | per-room run/draft/error/composer/approval state; active restart + independent tasks |
+| Storage lifecycle | PASS composed core | AppKernel owns composed repositories |
+| Android | PASS baseline / FINAL SHA OPEN | c66 exact-SHA Android 14/16 gate passed; reconciliation merge must rerun |
 
-## 4. Reproducible Bug Ledger
-| Severity | Reproduction | Root cause | Fix | Verification |
-|---|---|---|---|---|
-| HIGH | production Chat ignored ModelRouter | routed transport lived only in integration code | promoted canonical transport + Runtime routing composition | CI 420/420 |
-| HIGH | Self-Dev could call mutation without Coding verification | GitHubSelfDevService depended directly on auth+mutation | mandatory fail-closed Coding evidence gate | Phase8/manager tests + CI |
-| HIGH | selecting Research/Build/RPG then sending used normal Chat | App changed workspace styling only | workspace dispatch now fails closed until adapter exists | source/runtime guard; next UI E2E pass |
-| MEDIUM | room/memory/context DB handles not Kernel-owned on shutdown | incomplete composition lifecycle | runtime-storage Kernel service closes them | typecheck/tests; restart/device still tracked |
-| MEDIUM | public error categories not represented in Remake core | internal codes only | `classifySevenError` public taxonomy mapper | unit tests |
-| MEDIUM | routed fallback implementation duplicated under Phase12 | integration helper became parallel implementation | Phase12 now re-exports production transport | architecture + full regression |
+## 3. Closed reproducible defects in this Integration line
 
-At this checkpoint: **0 known reproducible BLOCKER bugs in the tested core scope**. This is not a claim of zero bugs overall. HIGH gaps remain and prevent acceptance.
+| Severity | Defect | Repair |
+|---|---|---|
+| HIGH | production Chat bypassed ModelRouter | canonical routed transport promoted and composed |
+| HIGH | Self-Dev could mutate without Coding verification | fail-closed verification before credentials/mutation |
+| HIGH | Research/Build/RPG workspace selection silently used normal Chat | uncomposed workspaces fail closed |
+| HIGH | background completion could force-select its old room | completion now updates only origin room data |
+| HIGH | global UI generation state blocked/contaminated independent rooms | run/draft/error/composer state keyed by room |
+| MEDIUM | Tool approval result could be projected into current non-origin room | PendingToolAction carries origin room and UI/result are room-scoped |
+| MEDIUM | Kilo 429/network/malformed stream semantics were incomplete | structured RATE_LIMIT/NETWORK metadata; malformed JSON fails explicitly |
+| MEDIUM | provider error body could reach user-facing error text | raw upstream body removed; public taxonomy presentation used |
+| MEDIUM | invalid reduced-motion CSS selector emitted build warning | selector/media rule split into valid CSS |
+| MEDIUM | routing metrics consulted timing clock when metrics/health were absent | timing is side-effect free unless observer/health requires it |
 
-## 5. Failure / Concurrency Evidence Already Present
-- fallback before first meaningful token;
-- failure after meaningful output cannot splice providers;
-- provider cooldown exclusion;
-- cancellation during context preparation;
-- cancellation after partial assistant draft leaves no completed assistant message;
-- hundreds of TaskManager tasks/cancellations and concurrent rooms in stress tests;
-- IndexedDB blocked/version-change/corruption tests across domain repositories;
-- GitHub credential secrecy and shared refresh isolation;
-- RPG CAS/revision/checksum/restart behavior;
-- Android request ID + cancellation bridge historical release gate.
+No zero-bugs claim is made.
 
-Integration Batch 03 adds a permanent cross-system suite for normal chat, partial/total research network failure, text attachments, provider fallback, IndexedDB restart, 100-revision RPG continuity, a 2,000-message bounded context case, and cross-owner cancellation isolation.
+## 4. Failure / concurrency evidence
 
-Still required: app restart **during** an active operation, malformed live provider framing at the concrete network adapter boundary, simultaneous file operations, full latency/TTFT benchmarks, and workspace-specific E2E once the missing product adapters are composed.
+Permanent regression evidence covers:
+- normal multi-turn Chat;
+- provider fallback only before meaningful output;
+- network loss and partial Research-source failure;
+- rate limit and malformed provider JSON/SSE;
+- cancellation during/after work and independent-owner isolation;
+- active restart preserving committed user turn without partial assistant commit;
+- IndexedDB restart recovery;
+- simultaneous attachment writes across rooms;
+- 100-revision RPG continuity;
+- 2,000-message bounded context;
+- per-room generation/composer/tool-approval UI ownership.
 
-## 6. Integration Scorecard
-Scores are evidence-weighted, not completion percentages.
+## 5. Performance and observability
 
-| System | Functional | Integrated | Tested | Regression Safe | Performance | Status |
-|---|---:|---:|---:|---:|---:|---|
-| Chat Core | 92 | 90 | 94 | 92 | 82 | STRONG |
-| Model Routing | 92 | 90 | 92 | 90 | 84 | STRONG CORE |
-| Memory | 92 | 88 | 92 | 88 | 78 | STRONG CORE |
-| Files | 88 | 82 | 86 | 82 | 78 | INTEGRATED TXT / PDF PARTIAL |
-| Web Research | 84 | 30 | 82 | 75 | 68 | PARTIAL |
-| Deep Think | 90 | 82 | 88 | 84 | 60 | INTEGRATED CORE |
-| Tools | 92 | 88 | 92 | 88 | 80 | STRONG CORE |
-| Coding | 65 | 25 | 55 | 55 | 60 | GAP IN REMAKE |
-| Self-Development | 72 | 35 | 78 | 76 | 65 | SAFE FOUNDATION |
-| RPG | 82 | 35 | 84 | 80 | 70 | PARTIAL |
-| Android/APK | 90 | 85 | 88 | 85 | 75 | GATE RUNNING |
-| Observability | 78 | 72 | 70 | 75 | 85 | IMPROVED / PARTIAL |
+Runtime diagnostics expose:
+- total TaskManager task duration;
+- model attempt duration and TTFT;
+- tool execution duration;
+- route/provider/model identifiers and normalized failure categories without prompt/output bodies.
 
-## 7. Final Acceptance Gate
-- [x] Core route/memory/tool contracts use production code paths.
-- [x] Remake strict typecheck passes.
-- [x] Remake full tests pass (420/420 at Batch 02 checkpoint).
-- [x] Production web build passes.
-- [x] Self-Development cannot bypass Coding verification.
-- [x] Unwired workspace requests fail closed rather than contaminate Core Chat.
-- [x] UTF-8 text attachment product composition verified.
-- [ ] PDF parser production adapter + PDF end-to-end verified.
-- [ ] Research Web source + synthesis product composition verified.
-- [x] Deep Think production dispatch wired with a separate per-room flag.
-- [ ] Deep Think multi-provider planner/final routing and latency benchmarks verified.
-- [ ] Coding orchestrator product path verified.
-- [ ] RPG + Memory + Chat transactional orchestration verified.
-- [ ] latest Android build + API34/API36 device gates PASS on final SHA.
-- [ ] performance benchmark suite completed.
-- [ ] no known CRITICAL bugs in the full tested scope.
+CI performance budgets cover:
+- 2,000 routing decisions over a 256-model catalog;
+- repeated 2,000-message context assembly;
+- 1,000 independent TaskManager operations.
+
+These are regression budgets, not live provider/network SLA measurements. Live provider quality/TTFT and broader memory/web/storage/startup latency measurements remain separate acceptance evidence.
+
+## 6. Final acceptance gate
+
+- [x] Core routing/memory/tool contracts share production code paths.
+- [x] Cross-system regression suite exists.
+- [x] Failure injection includes network/rate-limit/malformed provider data/restart/concurrency.
+- [x] Chat request state isolation and cancellation are verified in tested scope.
+- [x] Production web build has passed on Integration staging.
+- [x] Baseline Android 14/16 gate passed on `c66d979`.
+- [x] Coding V1 specialist implementation has exact-SHA post-merge CI/Android evidence upstream.
+- [ ] Coding V1 reconciled into Integration lineage and final same-SHA gates PASS.
+- [ ] Build workspace + Self-Development use the verified Coding runtime end-to-end.
+- [ ] Production Research Web source/synthesis composition verified.
+- [ ] PDF parser production adapter verified.
+- [ ] RPG + shared Memory + Chat transactional orchestration verified.
+- [ ] Final reconciliation SHA Remake CI + Seven AI + Android 14/16 PASS.
+- [ ] Live-provider quality/TTFT and remaining subsystem performance evidence accepted.
 
 Verdict: **NOT YET FULLY INTEGRATED**.
