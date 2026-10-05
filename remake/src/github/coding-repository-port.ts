@@ -428,6 +428,10 @@ export class GitHubCodingRepositoryPort implements CodingRepositoryPort {
               : "PROVIDER",
         message: `GitHub Coding request failed with HTTP ${response.status}.`,
         retryable: response.status >= 500 || response.status === 429,
+        details: {
+          httpStatus: response.status,
+          rateLimited: response.status === 429,
+        },
       });
     }
     try {
