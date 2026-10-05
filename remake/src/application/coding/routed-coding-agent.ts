@@ -71,7 +71,7 @@ export class RoutedCodingAgent implements CodingAgentModel {
       now: now(),
       maxAttempts: Math.min(models.length, maxAttempts + offset),
     });
-    let candidates = plan.candidates.slice(offset);
+    let candidates: readonly (typeof plan.candidates[number])[] = plan.candidates.slice(offset);
     if (candidates.length === 0) candidates = plan.candidates;
     let lastError: unknown = null;
     for (const candidate of candidates.slice(0, maxAttempts)) {
