@@ -51,11 +51,26 @@ export class ToolBackedCodingRepositoryPort implements CodingRepositoryPort{
   private async call<T>(toolId:string,args:unknown,signal:AbortSignal,idempotencyKey?:string):Promise<T>{
     if(signal.aborted)throw new DOMException("Aborted","AbortError");
     const callId=crypto.randomUUID();
-    const result=await this.executor.execute({
-      callId,taskId:this.scope.taskId,roomId:this.scope.roomId,toolId,args,
-      idempotencyKey:idempotencyKey??`coding-read:${callId}`,
-      requestedAt:Date.now(),
-    },signal);
+    let result: ToolResult;
+    try {
+      result=await this.executor.execute({
+        callId,taskId:this.scope.taskId,roomId:this.scope.roomId,toolId,args,
+        idempotencyKey:idempotencyKey??`coding-read:${callId}`,
+        requestedAt:Date.now(),
+      },signal);
+    } catch (error) {
+      if (
+        signal.aborted ||
+        (error instanceof DOMException && error.name==="AbortError")
+      ) {
+        throw new SevenError({
+          code:"CANCELLED",
+          message:"Coding repository operation was cancelled.",
+          cause:error,
+        });
+      }
+      throw error;
+    }
     if(result.status!=="succeeded")toolFailure(result);
     return result.output as T;
   }
