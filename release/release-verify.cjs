@@ -625,10 +625,20 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       const page=await browser.newPage({viewport:{width:360,height:800}});
       await page.addInitScript(()=>{localStorage.setItem('seven_ui_language','ar');localStorage.setItem('user_name_asked','1');});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenRemake&&!!document.querySelector('.seven-shell-jump'));
-      await page.evaluate(()=>{
+      await page.waitForFunction(()=>window.SevenRemake&&!!document.querySelector('.seven-shell-jump')&&typeof roomPersistence!=='undefined'&&roomPersistence.status().ready);
+      await page.evaluate(async()=>{
+        if(await roomPersistence.flush()!==true)throw Error('jump fixture persistence unavailable');
+        const id='rc-jump-long-chat';
+        rooms[id]=createEmptyRoom();roomTitles[id]='RC long chat';currentRoom=id;
+        rooms[id].history=Array.from({length:32},(_,i)=>({role:'assistant',content:'رسالة طويلة '+i+'\n\n'+('نص '.repeat(40))}));
+        updateRoomTitle();updateRoomListUI();renderChatHistory();
+      });
+      await page.waitForFunction(()=>document.querySelectorAll('#chat .message').length===32);
+      await page.evaluate(async()=>{
+        // Let the renderer and shell layout finish before testing a real upward scroll.
+        await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
         const chat=document.getElementById('chat');
-        chat.innerHTML=Array.from({length:32},(_,i)=>'<div class="message assistant"><div class="bubble"><p>رسالة طويلة '+i+' '.repeat(12)+'</p><p>'+('نص '.repeat(40))+'</p></div></div>').join('');
+        if(chat.scrollHeight-chat.clientHeight<=260)throw Error('long-chat fixture did not overflow');
         chat.scrollTop=0;
         chat.dispatchEvent(new Event('scroll'));
       });

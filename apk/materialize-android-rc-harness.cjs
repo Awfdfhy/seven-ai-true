@@ -115,13 +115,14 @@ public class SevenRcHarnessTest {
     assertEquals("seven-rc-saf-document",readAll(target,uri));
   }
   private void signal(String phase)throws Exception{
-    ParcelFileDescriptor p=InstrumentationRegistry.getInstrumentation().getUiAutomation()
-      .executeShellCommand("sh -c 'printf %s "+phase+" > /data/local/tmp/seven-rc-process-ready; cat /data/local/tmp/seven-rc-process-ready'");
-    assertNotNull("host marker command pipe missing",p);
-    try(InputStream in=new ParcelFileDescriptor.AutoCloseInputStream(p);ByteArrayOutputStream out=new ByteArrayOutputStream()){
-      byte[] buf=new byte[128];for(int n;(n=in.read(buf))>=0;){if(n>0)out.write(buf,0,n);}
-      assertEquals("host marker was not written",phase,out.toString(StandardCharsets.UTF_8.name()));
+    Context target=InstrumentationRegistry.getInstrumentation().getTargetContext();
+    java.io.File marker=new java.io.File(target.getFilesDir(),"seven-rc-process-ready");
+    try(java.io.FileOutputStream out=new java.io.FileOutputStream(marker,false)){
+      out.write(phase.getBytes(StandardCharsets.UTF_8));
+      out.flush();out.getFD().sync();
     }
+    assertEquals("host marker was not written",phase,
+      new String(java.nio.file.Files.readAllBytes(marker.toPath()),StandardCharsets.UTF_8));
   }
   private void stage(String phase,String script)throws Exception{
     try(ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)){
