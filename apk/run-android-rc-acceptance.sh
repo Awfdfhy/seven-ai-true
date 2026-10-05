@@ -131,8 +131,8 @@ APKSIGNER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -type f -name
 [[ -x "$APKSIGNER" ]]
 "$APKSIGNER" verify --print-certs "$TMP/build-a.apk" | tee "$OUT/build-a-signer.txt"
 "$APKSIGNER" verify --print-certs "$TMP/build-b.apk" | tee "$OUT/build-b-signer.txt"
-A_SIGNER="$(grep -m1 'Signer #1 certificate SHA-256 digest:' "$OUT/build-a-signer.txt" | sed 's/.*: //')"
-B_SIGNER="$(grep -m1 'Signer #1 certificate SHA-256 digest:' "$OUT/build-b-signer.txt" | sed 's/.*: //')"
+A_SIGNER="$(grep -Em1 '(Signer #1|V[0-9]+ Signer): certificate SHA-256 digest:' "$OUT/build-a-signer.txt" | sed 's/.*: //')"
+B_SIGNER="$(grep -Em1 '(Signer #1|V[0-9]+ Signer): certificate SHA-256 digest:' "$OUT/build-b-signer.txt" | sed 's/.*: //')"
 [[ -n "$A_SIGNER" && "$A_SIGNER" == "$B_SIGNER" ]] || { echo "A/B signer mismatch" >&2; exit 1; }
 printf 'package=%s\nbuildA_versionCode=%s\nbuildB_versionCode=%s\nsigner_sha256=%s\n' "$APP_ID" "$BASE_CODE" "$((BASE_CODE+1))" "$A_SIGNER" > "$OUT/upgrade-identity.txt"
 
