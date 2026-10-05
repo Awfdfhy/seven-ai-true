@@ -6,6 +6,7 @@ const r=normalizeRecord(base);assert.equal(verifyRecord(r),true);
 const bad={...r,reason:"changed"};assert.equal(verifyRecord(bad),false);
 const a=createArchive([r]);assert.equal(a.failedBefore(base),true);
 assert.equal(a.failedBefore({...base,hypothesis:"different"}),false);
+assert.equal(a.failedBefore({...base,subsystem:" TOOLS ",hypothesis:"  ADAPTER   improves reliability  ",baselineSha:"AAAAAAA"}),true);
 a.append({...base,experimentId:"e2",candidateSha:"ccccccc",outcome:"COMMITTED",reason:"better"});
 assert.deepEqual(a.verify(),{valid:true,count:2});
 assert.throws(()=>createArchive([bad]),/invalid learning archive seed/);
