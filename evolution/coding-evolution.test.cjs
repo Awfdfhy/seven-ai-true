@@ -26,19 +26,19 @@ function storeAdapter() {
 }
 
 function codingAgent(options = {}) {
-  let stable = "aaaaaaa";
+  let stable = "a".repeat(40);
   const calls = [];
   return {
     calls,
     setStable(value) { stable = value; },
     async getStableHeadSha() { calls.push(["getStableHeadSha", stable]); return stable; },
-    async prepareCandidate() { calls.push(["prepareCandidate"]); return { isolated: true, baselineSha: "aaaaaaa", workspaceId: "ws-auto" }; },
+    async prepareCandidate() { calls.push(["prepareCandidate"]); return { isolated: true, baselineSha: "a".repeat(40), workspaceId: "ws-auto" }; },
     async reproduce() { calls.push(["reproduce"]); return { reproduced: true }; },
     async repair() { calls.push(["repair"]); return { changed: true }; },
     async review() { calls.push(["review"]); return { approved: true }; },
     async regression() { calls.push(["regression"]); return { passed: true }; },
     async getChangedPaths() { calls.push(["getChangedPaths"]); return options.changedPaths || ["seven_ai-final.html"]; },
-    async getCandidateSha() { calls.push(["getCandidateSha"]); return "bbbbbbb"; },
+    async getCandidateSha() { calls.push(["getCandidateSha"]); return "b".repeat(40); },
     async discardCandidate({ reason }) { calls.push(["discardCandidate", reason]); },
     async restoreStable({ baselineSha }) { calls.push(["restoreStable", baselineSha]); stable = baselineSha; }
   };
@@ -49,8 +49,8 @@ function evalBundle(overrides = {}) {
     source: "seven-evals",
     verified: true,
     evidenceId: "eval-evidence-1",
-    baselineSha: "aaaaaaa",
-    candidateSha: "bbbbbbb",
+    baselineSha: "a".repeat(40),
+    candidateSha: "b".repeat(40),
     baselineMetrics: { tests: 1, quality: 0.8, reliability: 0.8, performance: 0.7, efficiency: 0.7 },
     candidateMetrics: { tests: 1, quality: 0.9, reliability: 0.9, performance: 0.8, efficiency: 0.8 },
     regressionFree: true,
@@ -72,7 +72,7 @@ function evalsAdapter(bundle = evalBundle(), hook = null) {
 }
 
 function promotionAdapter(verification = { ciPassed: true, regressionFree: true }) {
-  let head = "aaaaaaa";
+  let head = "a".repeat(40);
   const calls = [];
   return {
     calls,
@@ -93,7 +93,7 @@ function experimentConfig() {
     id: "auto-coding-evolution",
     subsystem: "coding-agent",
     hypothesis: "repair improves coding reliability",
-    baselineRef: "aaaaaaa",
+    baselineRef: "a".repeat(40),
     candidateRef: "isolated-workspace",
     allowedPaths: ["seven_ai-final.html"]
   };
@@ -102,7 +102,7 @@ function experimentConfig() {
 function baseInput({ agent = codingAgent(), evals = evalsAdapter(), promotion = promotionAdapter(), store = storeAdapter(), approvalPolicy } = {}) {
   return {
     experimentConfig: experimentConfig(),
-    baselineSha: "aaaaaaa",
+    baselineSha: "a".repeat(40),
     codingAgent: agent,
     evalsAdapter: evals,
     promotionAdapter: promotion,
@@ -144,7 +144,7 @@ function baseInput({ agent = codingAgent(), evals = evalsAdapter(), promotion = 
     const promotion = promotionAdapter();
     const result = await runCodingEvolution(baseInput({
       promotion,
-      evals: evalsAdapter(evalBundle({ candidateSha: "ccccccc" }))
+      evals: evalsAdapter(evalBundle({ candidateSha: "c".repeat(40) }))
     }));
     assert.equal(result.outcome, "REJECTED_EVALS");
     assert.ok(result.validation.reasons.includes("candidate_binding_mismatch"));
@@ -154,7 +154,7 @@ function baseInput({ agent = codingAgent(), evals = evalsAdapter(), promotion = 
   await pass("evals touching stable branch is restored and rejected", async () => {
     const agent = codingAgent();
     const promotion = promotionAdapter();
-    const evals = evalsAdapter(evalBundle(), async () => { agent.setStable("ccccccc"); });
+    const evals = evalsAdapter(evalBundle(), async () => { agent.setStable("c".repeat(40)); });
     const result = await runCodingEvolution(baseInput({ agent, promotion, evals }));
     assert.equal(result.outcome, "REJECTED_STABLE_MUTATION");
     assert.ok(agent.calls.some((call) => call[0] === "restoreStable"));
