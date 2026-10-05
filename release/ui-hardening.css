@@ -89,3 +89,18 @@ html[data-seven-theme="night"] #seven-app textarea{background:#111815!important;
  #settingsModal .modal-content{max-height:calc(var(--seven-visual-height,100dvh) - 8px)}
  #settingsModal{padding:4px}
 }
+
+/* Android RC hardening: persistence feedback belongs to the topbar, never the bottom/nav overlay layer. */
+#seven-app .topbar #persistenceStatus{
+ position:static!important;inset:auto!important;z-index:auto!important;flex:0 1 auto!important;min-width:0!important;
+ max-width:min(34vw,190px)!important;margin-inline-start:auto!important;margin-inline-end:4px!important;
+ font-size:11px!important;line-height:1.25!important;padding:4px 8px!important;border:1px solid var(--border,var(--sb-b,rgba(127,127,127,.32)))!important;
+ border-radius:999px!important;background:var(--surface,var(--sb-s2,var(--bg,#222)))!important;color:var(--text,var(--sb-t,#fff))!important;
+ white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;pointer-events:none!important;
+}
+@media(max-width:420px){
+ #seven-app .topbar #persistenceStatus{max-width:96px!important;padding-inline:6px!important;font-size:10px!important;margin-inline-end:2px!important}
+}
+@media(max-height:560px){
+ #seven-app .topbar #persistenceStatus{max-width:88px!important;padding-block:3px!important}
+}
