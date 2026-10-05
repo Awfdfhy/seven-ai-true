@@ -82,3 +82,52 @@ They produce observations, diagnoses and bounded improvement proposals only.
 **Phase 1 implementation evidence is ACCEPTABLE FOR REVIEW, not yet ACCEPTED FOR MERGE.**
 
 No completion claim is made for the full Self-Development System.
+
+## Phase 2 — Metric Registry + Paired Evaluator
+
+Status: **CI_PROVEN / STACKED_REVIEW_PENDING**
+
+### Exact tested identity
+
+- stacked PR: #108
+- tested Phase 2 head: `357525adcc5f2864c5cca34a88cc1bd293fc3de3`
+- base branch at test: `self-development-v1-phase1`
+- GitHub Actions workflow: **Seven AI tests #3254**
+- workflow run id: `37260411667`
+- conclusion: **SUCCESS**
+- `all test suites: PASS (39 suites)`
+- release artifact upload: **PASS**
+- `self-development paired evaluator test suite: PASS`
+
+### Proven controls
+
+- static metric definitions; callers cannot invent a success metric;
+- exact 40-char baseline/candidate SHA identity;
+- evaluator lock verified when manifest is created and again when evaluation runs;
+- environment identity is bound to the manifest;
+- secret-like environment identity is rejected;
+- unequal paired run counts become INCONCLUSIVE;
+- insufficient samples become INCONCLUSIVE;
+- excessive variance becomes INCONCLUSIVE;
+- environment mismatch becomes BLOCKED;
+- metric not present in locked manifest becomes BLOCKED;
+- missing mandatory hard-gate evidence becomes INCONCLUSIVE;
+- failed hard gate overrides metric gains;
+- hard metric regression overrides quality gains;
+- regression beyond tolerance rejects candidate;
+- declared target must actually improve;
+- manifest tampering becomes BLOCKED;
+- deterministic evidence digest is produced for the comparison.
+
+### Authority state
+
+Phase 2 still has no patch, shell, GitHub mutation, merge or promotion authority.
+It measures and compares evidence only.
+
+### Open obligations
+
+- stacked PR #108 must not merge before Phase 1 review/merge;
+- independent review remains required for authority-plane changes;
+- Phase 3 research/hypothesis generation and Phase 4 planning remain separate work;
+- production Coding integration remains blocked on the authoritative Coding contract.
+
