@@ -11,7 +11,7 @@ function h(v){return crypto.createHash("sha256").update(JSON.stringify(v)).diges
   runTests:async({changed})=>{testRuns++;const selected=selectTests(changed);const ok=repo["fixture/math.js"].includes("a+b")&&!repo["fixture/math.js"].includes("a+b+1");return{ok,tests:["fixture/math.test.js",...selected.mandatory],failures:ok?[]:["add(1,1) expected 2 got 3"]}},
   diagnose:async({testResult})=>({root:testResult.failures[0],fix:"remove +1"}),
   repair:async()=>({changes:[{path:"fixture/math.js",content:"exports.add=(a,b)=>a+b"}]}),
-  diff:async()=>({text:repo["fixture/math.js"]}),verify:async({candidateSha})=>({ok:candidateSha===sha}),
+  diff:async()=>({text:repo["fixture/math.js"],files:["fixture/math.js"]}),verify:async({candidateSha})=>({ok:candidateSha===sha}),
   propose:async({candidateSha})=>({kind:"verified-patch",sha:candidateSha})
  };
  const out=await runCodingTransaction(a,{task:"Fix add in fixture repository",maxRepairs:2});
