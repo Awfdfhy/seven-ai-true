@@ -41,3 +41,5 @@ assert.match(materializer,/SEVEN_RC_PERFORMANCE/);
 assert.match(materializer,/backgroundForegroundPreservesDurableState/);
 
 console.log('android RC acceptance harness contracts: PASS');
+
+// RC1 device-gate dispatch marker: no runtime behavior change.
