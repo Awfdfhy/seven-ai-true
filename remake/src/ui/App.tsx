@@ -41,7 +41,7 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
   const snapshot = useSyncExternalStore(shell.subscribe, shell.getSnapshot, shell.getSnapshot);
   const [roomList, setRoomList] = useState<readonly Room[]>([]);
   const [currentRoom, setCurrentRoom] = useState<Room | null>(null);
-  const [input, setInput] = useState("");
+  const [roomInputs, setRoomInputs] = useState<Readonly<Record<string, string>>>({});
   const [roomRuns, setRoomRuns] = useState<Readonly<Record<string, RoomRunState>>>({});
   const [chatErrors, setChatErrors] = useState<Readonly<Record<string, string>>>({});
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +63,7 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
   const isAr = snapshot.locale === "ar";
   const t = (en: string, ar: string) => isAr ? ar : en;
   const workspaceIntegrated = snapshot.activeWorkspace === "core";
+  const input = currentRoom ? roomInputs[currentRoom.id] ?? "" : "";
   const activeRoomState = currentRoom ? roomRuns[currentRoom.id] : undefined;
   const activeRun = activeRoomState?.run ?? null;
   const pendingUser = activeRoomState?.pendingUser ?? null;
@@ -314,7 +315,6 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
     await rooms.put(room);
     setCurrentRoom(room);
     setRoomList((existing) => [room, ...existing]);
-    setInput("");
     setError(null);
     shell.setSidebarOpen(false);
   };
@@ -405,7 +405,7 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
           ));
           return;
         }
-        setInput("");
+        setRoomInputs((existing) => withoutKey(existing, roomId));
         setPendingToolAction(action);
         setPendingToolQuery(content);
         return;
@@ -415,7 +415,7 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
       return;
     }
 
-    setInput("");
+    setRoomInputs((existing) => withoutKey(existing, roomId));
     setRoomRuns((existing) => ({
       ...existing,
       [roomId]: Object.freeze({
@@ -673,7 +673,17 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
               <p>{t("Chat is now the center of Seven. Your rooms are stored locally on this device.", "أصبحت الدردشة الآن مركز Seven. تُحفظ محادثاتك محليًا على هذا الجهاز.")}</p>
               <div className="seven-suggestions">
                 {[t("Explain a difficult topic simply", "اشرح موضوعًا صعبًا ببساطة"), t("Help me study today", "ساعدني في دراسة اليوم"), t("Plan a coding project", "خطط لمشروع برمجي")].map((suggestion) => (
-                  <button key={suggestion} type="button" onClick={() => setInput(suggestion)}>{suggestion}</button>
+                  <button
+                    key={suggestion}
+                    type="button"
+                    onClick={() => {
+                      if (!currentRoom) return;
+                      setRoomInputs((existing) => ({
+                        ...existing,
+                        [currentRoom.id]: suggestion,
+                      }));
+                    }}
+                  >{suggestion}</button>
                 ))}
               </div>
             </div>
@@ -758,7 +768,15 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
               maxLength={32_000}
               placeholder={t("Message Seven", "اكتب إلى Seven")}
               aria-label={t("Message Seven", "اكتب إلى Seven")}
-              onChange={(event) => setInput(event.target.value)}
+              onChange={(event) => {
+                if (!currentRoom) return;
+                const value = event.target.value;
+                setRoomInputs((existing) =>
+                  value
+                    ? { ...existing, [currentRoom.id]: value }
+                    : withoutKey(existing, currentRoom.id),
+                );
+              }}
               onKeyDown={(event) => {
                 if (event.key === "Enter" && !event.shiftKey) {
                   event.preventDefault();
