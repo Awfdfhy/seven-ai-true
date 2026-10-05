@@ -5,6 +5,7 @@ const { createHypothesis } = require("./self-development-hypotheses.cjs");
 const { createResearchEvidence } = require("./self-development-research.cjs");
 const {
   derivePlanningCandidate,
+  authorizePlanningCandidate,
   prioritizeCandidates,
   dominates
 } = require("./self-development-planner.cjs");
@@ -198,6 +199,38 @@ pass("failed Phase 3 validation blocks planning with no chosen candidate", () =>
   assert.equal(result.chosen, null);
   assert.equal(result.candidates.length, 0);
   assert.ok(/^[0-9a-f]{64}$/.test(result.validation.digest));
+});
+
+pass("single-candidate authorization re-runs Phase 3 and rejects fake or absent hypotheses", () => {
+  const accepted = hypothesis("handoff");
+  const ok = authorizePlanningCandidate({
+    hypothesisValidation: validationInput([accepted]),
+    hypothesisId: "handoff",
+    assessment: assessment()
+  });
+  assert.equal(ok.decision, "AUTHORIZED");
+  assert.equal(ok.candidate.id, "handoff");
+  assert.equal(ok.candidate.orchestrationAuthorized, true);
+  assert.equal(ok.candidate.validationDigest, ok.validation.digest);
+
+  const absent = authorizePlanningCandidate({
+    hypothesisValidation: validationInput([accepted]),
+    hypothesisId: "not-present",
+    assessment: assessment()
+  });
+  assert.equal(absent.decision, "BLOCKED_HYPOTHESIS_NOT_ACCEPTED");
+  assert.equal(absent.candidate, null);
+
+  const unproven = authorizePlanningCandidate({
+    hypothesisValidation: validationInput(
+      [hypothesis("needs-research")],
+      { diagnosis: { confidence: 0.3 } }
+    ),
+    hypothesisId: "needs-research",
+    assessment: assessment()
+  });
+  assert.equal(unproven.decision, "BLOCKED_HYPOTHESIS_VALIDATION");
+  assert.equal(unproven.candidate, null);
 });
 
 pass("successful planning carries the Phase 3 validation digest into every candidate", () => {
