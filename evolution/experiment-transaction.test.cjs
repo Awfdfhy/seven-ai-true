@@ -118,36 +118,36 @@ pass("in-scope stronger candidate can reach shadow eligibility", () => {
 });
 
 pass("update validation rejects base drift and missing exact rollback checkpoint", () => {
-  const tx = createUpdateTransaction({ id: "tx-drift", experimentId: "exp", baselineSha: "aaaaaaa", candidateSha: "bbbbbbb" });
-  assert.throws(() => validateUpdate(tx, { observedBaseSha: "ccccccc", experimentPass: true, rollbackCheckpointSha: "aaaaaaa" }), /base drift/);
+  const tx = createUpdateTransaction({ id: "tx-drift", experimentId: "exp", baselineSha: "a".repeat(40), candidateSha: "b".repeat(40) });
+  assert.throws(() => validateUpdate(tx, { observedBaseSha: "c".repeat(40), experimentPass: true, rollbackCheckpointSha: "a".repeat(40) }), /base drift/);
 
-  const tx2 = createUpdateTransaction({ id: "tx-checkpoint", experimentId: "exp", baselineSha: "aaaaaaa", candidateSha: "bbbbbbb" });
-  assert.throws(() => validateUpdate(tx2, { observedBaseSha: "aaaaaaa", experimentPass: true, rollbackCheckpointSha: "ccccccc" }), /rollback checkpoint/);
+  const tx2 = createUpdateTransaction({ id: "tx-checkpoint", experimentId: "exp", baselineSha: "a".repeat(40), candidateSha: "b".repeat(40) });
+  assert.throws(() => validateUpdate(tx2, { observedBaseSha: "a".repeat(40), experimentPass: true, rollbackCheckpointSha: "c".repeat(40) }), /rollback checkpoint/);
 });
 
 pass("transaction cannot apply a different candidate SHA", () => {
-  const tx = createUpdateTransaction({ id: "tx-wrong-apply", experimentId: "exp", baselineSha: "aaaaaaa", candidateSha: "bbbbbbb" });
-  validateUpdate(tx, { observedBaseSha: "aaaaaaa", experimentPass: true, rollbackCheckpointSha: "aaaaaaa" });
-  assert.throws(() => markApplied(tx, { appliedSha: "ccccccc" }), /does not match candidate/);
+  const tx = createUpdateTransaction({ id: "tx-wrong-apply", experimentId: "exp", baselineSha: "a".repeat(40), candidateSha: "b".repeat(40) });
+  validateUpdate(tx, { observedBaseSha: "a".repeat(40), experimentPass: true, rollbackCheckpointSha: "a".repeat(40) });
+  assert.throws(() => markApplied(tx, { appliedSha: "c".repeat(40) }), /does not match candidate/);
 });
 
 pass("failed post-apply verification forces rollback to exact baseline", () => {
-  const tx = createUpdateTransaction({ id: "tx-rollback", experimentId: "exp", baselineSha: "aaaaaaa", candidateSha: "bbbbbbb" });
-  validateUpdate(tx, { observedBaseSha: "aaaaaaa", experimentPass: true, rollbackCheckpointSha: "aaaaaaa" });
-  markApplied(tx, { appliedSha: "bbbbbbb" });
-  verifyApplied(tx, { observedSha: "bbbbbbb", ciPassed: false, regressionFree: true });
+  const tx = createUpdateTransaction({ id: "tx-rollback", experimentId: "exp", baselineSha: "a".repeat(40), candidateSha: "b".repeat(40) });
+  validateUpdate(tx, { observedBaseSha: "a".repeat(40), experimentPass: true, rollbackCheckpointSha: "a".repeat(40) });
+  markApplied(tx, { appliedSha: "b".repeat(40) });
+  verifyApplied(tx, { observedSha: "b".repeat(40), ciPassed: false, regressionFree: true });
   assert.equal(tx.state, "ROLLBACK_REQUIRED");
-  assert.throws(() => confirmRollback(tx, { observedSha: "ddddddd" }), /not restored/);
-  confirmRollback(tx, { observedSha: "aaaaaaa" });
+  assert.throws(() => confirmRollback(tx, { observedSha: "d".repeat(40) }), /not restored/);
+  confirmRollback(tx, { observedSha: "a".repeat(40) });
   assert.equal(tx.state, "ROLLED_BACK");
   assert.equal(inspectTransaction(tx).terminal, true);
 });
 
 pass("verified update commits only after exact SHA and regression gates", () => {
-  const tx = createUpdateTransaction({ id: "tx-good", experimentId: "exp", baselineSha: "aaaaaaa", candidateSha: "bbbbbbb" });
-  validateUpdate(tx, { observedBaseSha: "aaaaaaa", experimentPass: true, rollbackCheckpointSha: "aaaaaaa" });
-  markApplied(tx, { appliedSha: "bbbbbbb" });
-  verifyApplied(tx, { observedSha: "bbbbbbb", ciPassed: true, regressionFree: true });
+  const tx = createUpdateTransaction({ id: "tx-good", experimentId: "exp", baselineSha: "a".repeat(40), candidateSha: "b".repeat(40) });
+  validateUpdate(tx, { observedBaseSha: "a".repeat(40), experimentPass: true, rollbackCheckpointSha: "a".repeat(40) });
+  markApplied(tx, { appliedSha: "b".repeat(40) });
+  verifyApplied(tx, { observedSha: "b".repeat(40), ciPassed: true, regressionFree: true });
   assert.equal(tx.state, "VERIFIED");
   commitUpdate(tx);
   assert.equal(tx.state, "COMMITTED");
@@ -155,21 +155,21 @@ pass("verified update commits only after exact SHA and regression gates", () => 
 });
 
 pass("ledger tampering blocks commit", () => {
-  const tx = createUpdateTransaction({ id: "tx-tamper", experimentId: "exp", baselineSha: "aaaaaaa", candidateSha: "bbbbbbb" });
-  validateUpdate(tx, { observedBaseSha: "aaaaaaa", experimentPass: true, rollbackCheckpointSha: "aaaaaaa" });
-  markApplied(tx, { appliedSha: "bbbbbbb" });
-  verifyApplied(tx, { observedSha: "bbbbbbb", ciPassed: true, regressionFree: true });
+  const tx = createUpdateTransaction({ id: "tx-tamper", experimentId: "exp", baselineSha: "a".repeat(40), candidateSha: "b".repeat(40) });
+  validateUpdate(tx, { observedBaseSha: "a".repeat(40), experimentPass: true, rollbackCheckpointSha: "a".repeat(40) });
+  markApplied(tx, { appliedSha: "b".repeat(40) });
+  verifyApplied(tx, { observedSha: "b".repeat(40), ciPassed: true, regressionFree: true });
   tx.ledger = tx.ledger.map((entry, index) => index === 0 ? { ...entry, payload: { altered: true } } : entry);
   assert.throws(() => commitUpdate(tx), /ledger integrity failed/);
 });
 
 pass("verified candidate may still be rolled back before commit", () => {
-  const tx = createUpdateTransaction({ id: "tx-late-rollback", experimentId: "exp", baselineSha: "aaaaaaa", candidateSha: "bbbbbbb" });
-  validateUpdate(tx, { observedBaseSha: "aaaaaaa", experimentPass: true, rollbackCheckpointSha: "aaaaaaa" });
-  markApplied(tx, { appliedSha: "bbbbbbb" });
-  verifyApplied(tx, { observedSha: "bbbbbbb", ciPassed: true, regressionFree: true });
+  const tx = createUpdateTransaction({ id: "tx-late-rollback", experimentId: "exp", baselineSha: "a".repeat(40), candidateSha: "b".repeat(40) });
+  validateUpdate(tx, { observedBaseSha: "a".repeat(40), experimentPass: true, rollbackCheckpointSha: "a".repeat(40) });
+  markApplied(tx, { appliedSha: "b".repeat(40) });
+  verifyApplied(tx, { observedSha: "b".repeat(40), ciPassed: true, regressionFree: true });
   requireRollback(tx, "late health signal");
-  confirmRollback(tx, { observedSha: "aaaaaaa" });
+  confirmRollback(tx, { observedSha: "a".repeat(40) });
   assert.equal(tx.state, "ROLLED_BACK");
 });
 
