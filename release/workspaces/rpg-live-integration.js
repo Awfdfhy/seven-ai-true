@@ -16,8 +16,24 @@ function createBridge(options){
   function indexKey(roomId){return INDEX_PREFIX+encodeURIComponent(roomId)}
   function pendingKey(roomId){return INDEX_PREFIX.replace(':active:',':pending:')+encodeURIComponent(roomId)}
   function pending(roomId){try{return storage.getItem(pendingKey(roomId))!==null}catch(_){return true}}
-  function blocked(){return{ok:false,status:'BLOCKED',reason:'recovery-required'}}
+  function blocked(extra){return Object.assign({ok:false,status:'BLOCKED',reason:'recovery-required'},extra||{})}
   function readIndex(roomId){try{return text(storage.getItem(indexKey(roomId)))}catch(_){return''}}
+  function readJournal(roomId){
+    let raw;try{raw=storage.getItem(pendingKey(roomId))}catch(_){return{ok:false,status:'BLOCKED',reason:'journal-read-failed'}}
+    if(raw==null)return{ok:true,status:'CLEAN',journal:null};
+    try{
+      const journal=JSON.parse(raw);
+      if(!journal||journal.version!==1||text(journal.roomId)!==text(roomId)||!text(journal.worldId))return{ok:false,status:'BLOCKED',reason:'journal-corrupt',journalStatus:'corrupt'};
+      const status=text(journal.status)||'pending';
+      if(!['pending','committed','rolled_back','corrupt','abandoned'].includes(status))return{ok:false,status:'BLOCKED',reason:'journal-corrupt',journalStatus:'corrupt'};
+      journal.status=status;return{ok:true,status:'FOUND',journal};
+    }catch(_){return{ok:false,status:'BLOCKED',reason:'journal-corrupt',journalStatus:'corrupt'}}
+  }
+  function sameSnapshot(a,b){return JSON.stringify(a&&a.state||null)===JSON.stringify(b&&b.state||null)&&JSON.stringify(a&&a.legacy||null)===JSON.stringify(b&&b.legacy||null)}
+  function markJournal(roomId,journal,status,reason){
+    const next=Object.assign({},journal,{status,reason:text(reason)||null});
+    try{storage.setItem(pendingKey(roomId),JSON.stringify(next));return true}catch(_){return false}
+  }
   function writeIndex(roomId,worldId){try{storage.setItem(indexKey(roomId),worldId);return true}catch(_){return false}}
   function restoreIndex(roomId,worldId){try{worldId?storage.setItem(indexKey(roomId),worldId):storage.removeItem(indexKey(roomId));return true}catch(_){return false}}
   function getSession(roomId,worldId){
@@ -50,7 +66,7 @@ function createBridge(options){
     let id;try{id=ids(input)}catch(e){return{ok:false,status:'BLOCKED',reason:'invalid-identity',error:String(e&&e.message||e)}}
     if(pending(id.roomId))return blocked();
     const legacy=clone(input&&input.legacy||{}),previous=manager.load(id.roomId,id.worldId),previousIndex=readIndex(id.roomId);
-    try{storage.setItem(pendingKey(id.roomId),JSON.stringify({version:1,...id,previous:previous.ok?previous.session:null,previousIndex}))}catch(_){return{ok:false,status:'BLOCKED',reason:'journal-write-failed'}}
+    try{storage.setItem(pendingKey(id.roomId),JSON.stringify({version:1,status:'pending',...id,previous:previous.ok?previous.session:null,previousIndex,baseRevision:previous.ok?Number(previous.session.state.revision):null,candidateRevision:previous.ok?Number(previous.session.state.revision)+1:1}))}catch(_){return{ok:false,status:'BLOCKED',reason:'journal-write-failed'}}
     function abort(reason){const r=rollback(id.roomId,id.worldId,previous);if(r.ok&&(readIndex(id.roomId)===previousIndex||restoreIndex(id.roomId,previousIndex)))try{storage.removeItem(pendingKey(id.roomId))}catch(_){}return pending(id.roomId)?blocked():{ok:false,status:'BLOCKED',reason}}
     const base=getSession(id.roomId,id.worldId);
     if(!base.ok)return abort(base.reason);
@@ -65,11 +81,39 @@ function createBridge(options){
     try{storage.removeItem(pendingKey(id.roomId))}catch(_){return blocked()}
     return{ok:true,status:'SYNCED',session:saved.session,record:applied.record,memoryId:'rpg-'+runtime.hash(id.roomId+'\n'+id.worldId)};
   }
+  function recover(roomIdInput){
+    const roomId=text(roomIdInput);if(!roomId)return{ok:false,status:'BLOCKED',reason:'invalid-identity'};
+    const jr=readJournal(roomId);if(!jr.ok)return jr;if(!jr.journal)return{ok:true,status:'CLEAN',journalStatus:null};
+    const j=jr.journal,worldId=text(j.worldId);
+    if(j.status==='committed'||j.status==='rolled_back'){try{storage.removeItem(pendingKey(roomId));return{ok:true,status:'RECOVERED',journalStatus:j.status,action:'finalized-journal-cleared'}}catch(_){return blocked({journalStatus:j.status})}}
+    if(j.status==='corrupt'||j.status==='abandoned')return blocked({journalStatus:j.status});
+    const current=manager.load(roomId,worldId),previous=j.previous||null,previousRevision=previous&&previous.state?Number(previous.state.revision):null;
+    if(!current.ok&&current.status!=='MISSING')return blocked({journalStatus:'pending',recoveryDetail:current.reason||current.status});
+    if(previous){
+      if(current.ok){
+        const currentRevision=Number(current.session.state.revision);
+        if(currentRevision>previousRevision+1){markJournal(roomId,j,'abandoned','newer-valid-state');return blocked({journalStatus:'abandoned',recoveryDetail:'newer-valid-state'})}
+        if(currentRevision<previousRevision){markJournal(roomId,j,'abandoned','revision-regressed');return blocked({journalStatus:'abandoned',recoveryDetail:'revision-regressed'})}
+        if(currentRevision===previousRevision&&!sameSnapshot(current.session,previous)){markJournal(roomId,j,'abandoned','same-revision-diverged');return blocked({journalStatus:'abandoned',recoveryDetail:'same-revision-diverged'})}
+      }
+      const restored=manager.persist(previous,{force:true});if(!restored.ok)return blocked({journalStatus:'pending',recoveryDetail:restored.reason||restored.status});
+    }else if(current.ok){
+      const rev=Number(current.session.state.revision),ledger=Array.isArray(current.session.state.ledger)?current.session.state.ledger:[];
+      const onlyCandidate=rev===1&&ledger.length===1&&text(ledger[0].type)==='world.set'&&current.session.state.integration&&current.session.state.integration.legacySnapshot!==undefined;
+      if(!onlyCandidate){markJournal(roomId,j,'abandoned','newer-valid-state');return blocked({journalStatus:'abandoned',recoveryDetail:'newer-valid-state'})}
+      const removed=manager.remove(roomId,worldId);if(!removed.ok)return blocked({journalStatus:'pending',recoveryDetail:removed.reason||removed.status});
+    }
+    if(!restoreIndex(roomId,text(j.previousIndex)))return blocked({journalStatus:'pending',recoveryDetail:'index-restore-failed'});
+    if(!markJournal(roomId,j,'rolled_back','automatic-recovery'))return blocked({journalStatus:'pending',recoveryDetail:'journal-finalize-failed'});
+    try{storage.removeItem(pendingKey(roomId))}catch(_){return blocked({journalStatus:'rolled_back'})}
+    return{ok:true,status:'RECOVERED',journalStatus:'rolled_back',action:'rollback',roomId,worldId};
+  }
   function load(roomId,worldId){return pending(text(roomId))?blocked():manager.load(text(roomId),text(worldId))}
   function loadLatest(roomIdInput){const roomId=text(roomIdInput);if(pending(roomId))return blocked();const worldId=readIndex(roomId);if(!roomId||!worldId)return{ok:false,status:'MISSING',reason:'no-active-world'};return manager.load(roomId,worldId)}
   function context(roomIdInput,worldIdInput,options){const out=load(roomIdInput,worldIdInput);return out.ok?stateApi.buildContextPacket(out.session.state,options||{}):null}
   function inspect(roomId,worldId){return manager.inspect(text(roomId),text(worldId))}
-  return{version:1,sync,load,loadLatest,context,inspect,manager};
+  function inspectRecovery(roomIdInput){const roomId=text(roomIdInput),jr=readJournal(roomId);if(!jr.ok)return jr;return jr.journal?{ok:true,status:'FOUND',journalStatus:jr.journal.status,roomId,worldId:jr.journal.worldId,baseRevision:jr.journal.baseRevision??null,candidateRevision:jr.journal.candidateRevision??null}:{ok:true,status:'CLEAN',journalStatus:null}}
+  return{version:1,sync,recover,load,loadLatest,context,inspect,inspectRecovery,manager};
 }
 return{createBridge};
 });
