@@ -13,3 +13,5 @@ export * from "./provider-coding-agent";
 export * from "./coding-agent-service";
 export * from "./research-adapter";
 export * from "./routed-coding-agent";
+export * from "./repository-tools";
+export * from "./tool-backed-repository-port";
