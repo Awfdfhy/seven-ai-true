@@ -134,3 +134,5 @@ See:
 
 - Latest upstream canonical shell/remake night palette and removal of redundant auto-theme clock scheduler are incorporated. Current rooted theme bridge/static audit: 99176 startup bytes, 312627 workspaces, 4183832 total static bytes.
 - REL-21: reopening RPG in an empty room after leaving a populated room previously retained prior in-memory workspace state when hydrate found no saved session. Mount now clears room-owned state before hydration; actual packaged browser regression checks empty work/canon/context and then original room restart restore. Browser result is pending, so no acceptance claim is made yet.
+
+- Run 37261947268 passed actual night core surfaces, responsive/RTL matrix and live RPG Memory/context/restart/empty-room isolation; failed modern dialog canvas color. REL-22 adds a targeted canonical night dialog rule. This is not yet a full browser PASS.
