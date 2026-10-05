@@ -1,6 +1,6 @@
 # Coding Production Report
 
-Status: PARTIAL — production-hardening branch, not approved for integration yet.
+Status: READY FOR MASTER REVIEW — production-hardening branch is exact-SHA CI green; product write integration is intentionally not claimed.
 
 ## Reality audit
 - Root `release/workspaces/coding.js` is deliberately read-only for project import/map/preview/context plus chat execution. It does not expose authoritative repository writes or shell execution.
@@ -71,23 +71,23 @@ All files match `release/*.test.cjs`, so root `all.cjs` discovers them automatic
 | Exact candidate verification | fragmented | required by kernel |
 | Undeclared diff rejection | not Coding-owned | implemented |
 | Live Coding UI write action | absent | intentionally not claimed |
-| Exact CI run on this branch | no evidence yet | BLOCKER |
+| Exact CI run on this branch | n/a | #3436 SUCCESS on `35d45e7d7909f90ce5f0411d04ad0f42ca25c1ae` |
 | APK exposure | not established | not claimed |
 
 ## CI evidence boundary
-- Run #3390 / id 37304278803 executed the branch and failed in `node all.cjs`.
-- The logs proved `coding-fixture-e2e.test.cjs` PASS and `coding-github-adapter.test.cjs` PASS before the failure.
-- Root cause was a literal escaped `\\n` accidentally written into `coding-production-runtime.test.cjs`, producing a JavaScript SyntaxError. The test was repaired in commit `7d802ae46226d9248a741e5e7b2a19e6bbd29e84`; no test was weakened or removed.
-- After additional authoritative-diff/live-SHA hardening, run #3399 / id 37304526837 was created for `8655dd4bd306485a1e3a41da8d581f5999cbf0e6` but was cancelled before jobs because a newer PR head superseded it. Run #3400 / id 37304564057 then started for `6636ac0aae57129d1444fd11c8d882948d940428`; subsequent proposal-policy commits superseded that head as development continued.
-Therefore CI green is still **not** claimed until #3399 completes successfully.
+- Proven current checkpoint: `35d45e7d7909f90ce5f0411d04ad0f42ca25c1ae`.
+- Seven AI tests run #3436 / id `37305575484` completed with **SUCCESS** on that exact SHA.
+- Job `111748397648`: `node all.cjs` SUCCESS; browser evidence gate SUCCESS; verified release artifact upload SUCCESS.
+- Artifact `seven-ai-release` id `11343526406` is bound to the same head SHA with digest `sha256:fe49878aeb9ba80aade323ba2f39630d4eb12bb3561e5230227ce5ece9f57f78`.
+- Earlier #3390 failure and #3424 authoritative-diff fixture regression were diagnosed and repaired without weakening the gates. Superseded runs were not counted as green evidence.
 
 ## Security/cross-system finding
 `release/github-self-dev.js` exports low-level GitHub mutation primitives to the WebView. Chat 3 does not change that cross-system contract. Tools/Self-Development owner and Master should decide whether those primitives require a narrower capability token/native enforcement. Coding integration must use the verified transaction path and must not call merge directly.
 
 ## Remaining risks / next exact actions
-1. Obtain exact-SHA CI execution for this branch; repair every failure without weakening tests.
+1. Preserve exact-SHA checkpoint `35d45e7...` as the reviewed Coding hardening baseline; do not inherit its green status across later commits.
 2. Authoritative proposal policy is now implemented and adapter-bound; integration still needs the concrete product GitHub API ports to supply exact CI/diff evidence.
-3. Add a real isolated GitHub fixture/worktree benchmark (not production main) and retain its SHA/run evidence.
+3. Integration follow-up: add explicit RESEARCH state/port, deletion semantics, and a real isolated GitHub fixture/worktree benchmark; each requires a fresh exact-SHA CI cycle.
 4. Expose a product-facing Coding action only after 1–3 are green; keep current read-only UI truth boundary until then.
 5. Run root full suite plus release/browser gates; then assess Android packaging exposure.
 6. Send branch/SHA/tests/CI/risks/dependencies to Master and request integration review.
