@@ -97,3 +97,16 @@ html[data-seven-theme="night"] #seven-app textarea{background:#111815!important;
 @media(max-height:560px){
  #seven-app .topbar #persistenceStatus{max-width:88px!important;padding-block:3px!important}
 }
+
+/* RC1 blocker repair: compact mobile topbar and force model popover visibly on-screen. */
+@media(max-width:620px){
+ #seven-app .topbar{display:flex!important;align-items:center!important;gap:5px!important;padding-inline:7px!important;overflow:visible!important}
+ #seven-app .topbar #roomTitle,#seven-app .topbar .title{flex:1 1 0!important;max-width:none!important;min-width:36px!important}
+ #seven-app .topbar .seven-shell-model-chip{flex:0 1 92px!important;max-width:92px!important;min-width:58px!important;padding-inline:6px!important}
+ #seven-app .topbar .menu-toggle,#seven-app .topbar>.icon-btn{flex:0 0 38px!important;width:38px!important;min-width:38px!important;padding-inline:0!important}
+ #seven-app .seven-shell-model-menu:not([hidden]){display:block!important;position:fixed!important;inset-inline:8px!important;left:auto!important;right:auto!important;width:auto!important;max-width:none!important;z-index:10060!important}
+}
+@media(max-width:420px){
+ #seven-app .topbar #persistenceStatus{display:none!important}
+ #seven-app .topbar .seven-shell-model-chip{max-width:82px!important}
+}
