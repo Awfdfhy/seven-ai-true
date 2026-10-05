@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# RC gate rerun marker: durable WAL verification
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -93,6 +94,17 @@ adb shell dumpsys meminfo "$APP_ID" > "$OUT/meminfo-before-performance.txt"
 run_one measureRuntimePerformance "$OUT/performance-500.log"
 adb shell dumpsys meminfo "$APP_ID" > "$OUT/meminfo-after-performance.txt"
 run_one backgroundForegroundPreservesDurableState "$OUT/background-foreground.log"
+# Instrumentation may leave the target process dead after the background/foreground test.
+# Re-launch Seven and require a live PID before exercising the Android low-memory callback.
+adb shell am start -W -n "$APP_ID/.MainActivity" | tee "$OUT/low-memory-relaunch.txt"
+LOW_PID=""
+for _ in $(seq 1 40); do
+  LOW_PID="$(adb shell pidof "$APP_ID" | tr -d '\r' || true)"
+  [[ -n "$LOW_PID" ]] && break
+  sleep 0.25
+done
+[[ -n "$LOW_PID" ]] || { echo "target process missing before low-memory callback" >&2; exit 1; }
+printf 'pid_before_trim=%s\n' "$LOW_PID" > "$OUT/low-memory-process.txt"
 adb shell am send-trim-memory "$APP_ID" RUNNING_LOW | tee "$OUT/low-memory.log"
 run_one verifyProcessCleanCommit "$OUT/low-memory-verify.log"
 adb shell am start -W -n "$APP_ID/.MainActivity" > "$OUT/back-before.txt"
@@ -119,8 +131,8 @@ APKSIGNER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -type f -name
 [[ -x "$APKSIGNER" ]]
 "$APKSIGNER" verify --print-certs "$TMP/build-a.apk" | tee "$OUT/build-a-signer.txt"
 "$APKSIGNER" verify --print-certs "$TMP/build-b.apk" | tee "$OUT/build-b-signer.txt"
-A_SIGNER="$(grep -m1 'Signer #1 certificate SHA-256 digest:' "$OUT/build-a-signer.txt" | sed 's/.*: //')"
-B_SIGNER="$(grep -m1 'Signer #1 certificate SHA-256 digest:' "$OUT/build-b-signer.txt" | sed 's/.*: //')"
+A_SIGNER="$(grep -Em1 '(Signer #1|V[0-9]+ Signer): certificate SHA-256 digest:' "$OUT/build-a-signer.txt" | sed 's/.*: //')"
+B_SIGNER="$(grep -Em1 '(Signer #1|V[0-9]+ Signer): certificate SHA-256 digest:' "$OUT/build-b-signer.txt" | sed 's/.*: //')"
 [[ -n "$A_SIGNER" && "$A_SIGNER" == "$B_SIGNER" ]] || { echo "A/B signer mismatch" >&2; exit 1; }
 printf 'package=%s\nbuildA_versionCode=%s\nbuildB_versionCode=%s\nsigner_sha256=%s\n' "$APP_ID" "$BASE_CODE" "$((BASE_CODE+1))" "$A_SIGNER" > "$OUT/upgrade-identity.txt"
 
