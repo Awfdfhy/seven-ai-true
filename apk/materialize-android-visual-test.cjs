@@ -169,6 +169,21 @@ public class SevenVisualEvidenceTest {
       restoreScale("animator_duration_scale",oldAnimator);
     }
   }
+
+  @Test
+  public void recoverRoomWalAfterActivityRecreation() throws Exception {
+    final String marker="Android WAL recovery";
+    try(ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)){
+      WebView webView=webView(scenario);
+      waitFor(webView,"Boolean(window.roomPersistence&&roomPersistence.status().ready&&window.rooms&&window.roomTitles)");
+      assertEquals("true",js(webView,"(()=>{const base=roomPersistence.status().revision,value=JSON.parse(JSON.stringify({version:1,rooms,roomTitles,currentRoom}));value.roomTitles[value.currentRoom]='Android WAL recovery';localStorage.setItem('seven_ai_room_wal_v1',JSON.stringify({schemaVersion:1,seq:Date.now()*1000+4242,sessionId:'android-activity-recreate-fixture',baseRevision:base,value}));return localStorage.getItem('seven_ai_room_wal_v1')!==null})()"));
+    }
+    try(ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)){
+      WebView webView=webView(scenario);
+      waitFor(webView,"Boolean(window.roomPersistence&&roomPersistence.status().ready)");
+      assertEquals("true",js(webView,"(()=>roomTitles[currentRoom]==='Android WAL recovery'&&localStorage.getItem('seven_ai_room_wal_v1')===null)()"));
+    }
+  }
 }
 `;
 fs.writeFileSync(path.join(testDir,"SevenVisualEvidenceTest.java"),source);
