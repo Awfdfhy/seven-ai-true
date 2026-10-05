@@ -3,8 +3,8 @@ const State=require('./workspaces/rpg-state.js');
 const Session=require('./workspaces/rpg-session.js');
 const Live=require('./workspaces/rpg-live-integration.js');
 const backingStorage=Session.memoryStorage(),mem={objects:[]};
-let seq=0,failMemory=false,failIndex=false,failAll=false,quotaAfterIndex=false;
-const storage={getItem:k=>backingStorage.getItem(k),setItem:(k,v)=>{if(failAll)throw Error('fixture quota');if(failIndex&&String(k).includes(':active:')){if(quotaAfterIndex)failAll=true;throw Error('fixture index write failure')}return backingStorage.setItem(k,v)},removeItem:k=>{if(failAll)throw Error('fixture quota');return backingStorage.removeItem(k)}};
+let seq=0,failMemory=false,failIndex=false,failAll=false,quotaAfterIndex=false,failJournalRemove=false;
+const storage={getItem:k=>backingStorage.getItem(k),setItem:(k,v)=>{if(failAll)throw Error('fixture quota');if(failIndex&&String(k).includes(':active:')){if(quotaAfterIndex)failAll=true;throw Error('fixture index write failure')}return backingStorage.setItem(k,v)},removeItem:k=>{if(failAll)throw Error('fixture quota');if(failJournalRemove&&String(k).includes(':pending:'))throw Error('fixture journal remove failure');return backingStorage.removeItem(k)}};
 const runtime={
   hash:s=>{let h=2166136261;for(const c of String(s)){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return(h>>>0).toString(16)},
   lineage:(source,transformation,parentRefs=[])=>({source,transformation,parentRefs}),
@@ -49,6 +49,17 @@ assert.equal(restarted.loadLatest('room-a').session.legacy.worldSession.position
 assert.equal(restarted.inspectRecovery('room-a').status,'CLEAN');
 out=restarted.sync({roomId:'room-a',worldId:'valen',legacy:four,reason:'post-recovery'});
 assert.equal(out.ok,true);assert.equal(restarted.loadLatest('room-a').session.legacy.worldSession.position,4);
+
+// If durable session/index/memory commit succeeds but journal cleanup fails, restart must finalize commit, not roll it back.
+const five=JSON.parse(JSON.stringify(four));five.worldSession.position=5;
+failJournalRemove=true;
+out=restarted.sync({roomId:'room-a',worldId:'valen',legacy:five,reason:'cleanup-failure'});
+assert.equal(out.ok,false);assert.equal(out.reason,'recovery-required');assert.equal(out.journalStatus,'committed');
+failJournalRemove=false;
+const afterCommitRestart=Live.createBridge({stateApi:State,sessionApi:Session,runtime,storage});
+const committedRecovery=afterCommitRestart.recover('room-a');
+assert.equal(committedRecovery.ok,true);assert.equal(committedRecovery.journalStatus,'committed');assert.equal(committedRecovery.action,'finalized-journal-cleared');
+assert.equal(afterCommitRestart.loadLatest('room-a').session.legacy.worldSession.position,5);
 
 // A recovery journal must never overwrite a newer valid revision.
 const latest=restarted.loadLatest('room-a').session;
