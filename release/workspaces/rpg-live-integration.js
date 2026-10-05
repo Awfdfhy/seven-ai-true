@@ -16,6 +16,7 @@ function createBridge(options){
   function indexKey(roomId){return INDEX_PREFIX+encodeURIComponent(roomId)}
   function readIndex(roomId){try{return text(storage.getItem(indexKey(roomId)))}catch(_){return''}}
   function writeIndex(roomId,worldId){try{storage.setItem(indexKey(roomId),worldId);return true}catch(_){return false}}
+  function restoreIndex(roomId,worldId){try{worldId?storage.setItem(indexKey(roomId),worldId):storage.removeItem(indexKey(roomId));return true}catch(_){return false}}
   function getSession(roomId,worldId){
     const loaded=manager.load(roomId,worldId);if(loaded.ok)return loaded;
     if(loaded.status!=='MISSING')return loaded;
@@ -44,16 +45,16 @@ function createBridge(options){
   }
   function sync(input){
     let id;try{id=ids(input)}catch(e){return{ok:false,status:'BLOCKED',reason:'invalid-identity',error:String(e&&e.message||e)}}
-    const legacy=clone(input&&input.legacy||{}),previous=manager.load(id.roomId,id.worldId),base=getSession(id.roomId,id.worldId);
+    const legacy=clone(input&&input.legacy||{}),previous=manager.load(id.roomId,id.worldId),previousIndex=readIndex(id.roomId),base=getSession(id.roomId,id.worldId);
     if(!base.ok)return base;
     const event={id:'legacy-sync-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),type:'world.set',source:'runtime',authority:'runtime',countsAsTurn:false,summary:text(input&&input.reason)||'live-rpg-sync',payload:{path:['integration','legacySnapshot'],value:legacy}};
     const applied=stateApi.applyEvent(base.session.state,event);
     if(!applied||applied.ok!==true)return{ok:false,status:'BLOCKED',reason:'state-rejected',details:applied};
     const saved=manager.persist({roomId:id.roomId,worldId:id.worldId,state:applied.state,legacy,persistedRevision:base.session.persistedRevision});
     if(!saved.ok)return saved;
+    if(!writeIndex(id.roomId,id.worldId)){rollback(id.roomId,id.worldId,previous);return{ok:false,status:'BLOCKED',reason:'active-index-write-failed'}}
     let memoryOk=false;try{memoryOk=publish(saved.session,legacy,input&&input.reason)}catch(_){memoryOk=false}
-    if(!memoryOk){rollback(id.roomId,id.worldId,previous);return{ok:false,status:'BLOCKED',reason:'memory-projection-failed'}}
-    writeIndex(id.roomId,id.worldId);
+    if(!memoryOk){rollback(id.roomId,id.worldId,previous);restoreIndex(id.roomId,previousIndex);return{ok:false,status:'BLOCKED',reason:'memory-projection-failed'}}
     return{ok:true,status:'SYNCED',session:saved.session,record:applied.record,memoryId:'rpg-'+runtime.hash(id.roomId+'\n'+id.worldId)};
   }
   function load(roomId,worldId){return manager.load(text(roomId),text(worldId))}
