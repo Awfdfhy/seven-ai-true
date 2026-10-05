@@ -93,3 +93,14 @@ Evidence:
 
 Research requirement is derived internally from diagnosis + actual candidate risk + raw evidence context. A caller cannot simply mark research optional. Failed hypotheses are not repeated without new evidence.
 
+### Self-Development Phase 4 / Phase 5 state
+
+Phase 4 PR #111 is CI-proven:
+- tested head `784fccb99b81411c8f9ec9f29c0f92f30ccfccfa`;
+- Seven AI tests #3294: SUCCESS;
+- planner suite PASS;
+- 41/41 suites PASS;
+- artifact upload PASS.
+
+Phase 5 production Coding integration remains BLOCKED because the dedicated Coding v1 implementation evidence/runtime contract is not proven on main. Self-Development will not substitute the legacy direct GitHub self-dev mutation path.
+
