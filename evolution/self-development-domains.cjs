@@ -3,6 +3,7 @@
 const crypto = require("crypto");
 const { createHypothesis } = require("./self-development-hypotheses.cjs");
 const { getMetricDefinition } = require("./self-development-metrics.cjs");
+const { createEvaluationManifest } = require("./self-development-paired-eval.cjs");
 
 const RISK_RANK = Object.freeze({ LOW: 1, MEDIUM: 2, HIGH: 3, CRITICAL: 4 });
 
@@ -221,8 +222,43 @@ function validateDomainHypothesis({ domain, hypothesis } = {}) {
   });
 }
 
+function createDomainEvaluationManifest({
+  domain,
+  hypothesis,
+  experimentId,
+  evalLock,
+  baselineIdentity,
+  candidateIdentity,
+  environment,
+  additionalHardGates = []
+} = {}) {
+  if (!Array.isArray(additionalHardGates)) throw new Error("additionalHardGates must be an array");
+  const contract = validateDomainHypothesis({ domain, hypothesis });
+  const hardGates = [...new Set([
+    ...contract.requiredHardGates,
+    ...additionalHardGates.map((gate) => String(gate))
+  ])].sort();
+
+  const manifest = createEvaluationManifest({
+    experimentId,
+    evalLock,
+    baselineIdentity,
+    candidateIdentity,
+    environment,
+    metrics: contract.validationMetrics,
+    targetMetrics: contract.targetMetrics,
+    requiredHardGates: hardGates
+  });
+
+  return Object.freeze({
+    contract,
+    manifest
+  });
+}
+
 module.exports = {
   getDomainPolicy,
   listDomainPolicies,
-  validateDomainHypothesis
+  validateDomainHypothesis,
+  createDomainEvaluationManifest
 };
