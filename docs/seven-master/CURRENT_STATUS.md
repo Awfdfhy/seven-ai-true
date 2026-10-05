@@ -4,9 +4,9 @@ Last integration update: 2026-10-05
 Working branch: `integration/verification-v1`
 Pull request: #103 → `seven-remake-v3`
 
-## Integration Reconciliation — ACTIVE
+## Integration Reconciliation — MERGED / PRODUCT GAPS OPEN
 
-Integration is reconciling the verified typed Remake line with concurrent specialist work. Seven is **not yet fully accepted**.
+Integration has reconciled the verified typed Remake line with Coding V1 and concurrent specialist work. PR #103 is no longer behind `seven-remake-v3`. Seven is **not yet fully accepted** because product-composition gaps remain.
 
 Current integrated repairs/evidence include:
 - production ModelRouter/ProviderHealth routed Chat path and canonical fallback implementation;
@@ -18,7 +18,7 @@ Current integrated repairs/evidence include:
 - room-scoped generation/draft/error/composer state, room-scoped Tool approvals/notices and no completion-driven room hijack;
 - Self-Development fail-closed Coding verification before credential acquisition/mutation, including malformed-evidence hardening;
 - permanent cross-system regression scenarios and broad CI performance budgets;
-- Coding V1 from PR #104 is being reconciled into this Integration lineage with its Tool Fabric, exact-SHA workspace truth, verification runner, shared routing/research adapters and GitHub Actions verification ports.
+- Coding V1 from PR #104 is reconciled into this Integration lineage with its Tool Fabric, exact-SHA workspace truth, verification runner, shared routing/research adapters and GitHub Actions verification ports.
 
 ## Exact evidence already established
 
@@ -30,7 +30,14 @@ Typed Integration baseline `c66d979de0244edf359720151405c5d1e994f690`:
 State-isolation staging `78241fd8b29864c7d0063828823954a4c175fe6d`:
 - Seven Remake V3 CI run **37263909624** — SUCCESS, **75/75 files and 441/441 tests**, production build PASS.
 - Seven AI tests run **37263909635** — SUCCESS.
-- A final Android result for the reconciled Coding + Integration merge is still required; staging or older Android runs are not substituted for the final SHA.
+
+Coding + Integration reconciliation candidate `add0a47484a5d9e0adb17ea35b10b0bc533b75c4`:
+- Seven Remake V3 CI run **37264493292** — SUCCESS, **81/81 files and 469/469 tests**, production build PASS.
+- Seven AI tests run **37264493278** — SUCCESS.
+- Seven Remake Android Release Gate run **37264493272** — SUCCESS, including APK build/identity, Android 14 installed smoke and Android 16 installed smoke.
+- CI performance sample: routing 2,000×256 ≈ **473.85 ms**; 40 repeated 2,000-message context builds ≈ **99.16 ms**; 1,000 TaskManager operations ≈ **10.49 ms**. These are runner observations, not live-provider/device SLAs.
+
+Reconciliation was merged into `integration/verification-v1` as `8bf9147aa59d9331a0451ec126fec0f4cb07e6de`. PR #103 then reported `mergeable: true` and `behind_by=0` against `seven-remake-v3`.
 
 Coding V1 upstream:
 - merged through PR #104 on `seven-remake-v3`;
@@ -39,17 +46,16 @@ Coding V1 upstream:
 - post-merge Android Release Gate run **37263362532** — SUCCESS.
 
 ## Remaining acceptance gaps
-1. Reconcile Coding V1 with the Integration branch and rerun all final gates on the resulting exact SHA.
-2. Wire/verify the Build workspace and Self-Development product path through the verified Coding runtime; specialist existence alone is insufficient.
-3. ResearchService still lacks a concrete production Web source/synthesizer in SevenRuntime.
-4. PDF parsing remains disabled in the typed product; UTF-8 text attachments are integrated.
-5. RPG typed canonical persistence is strong but is not yet one atomic Chat + shared Memory + RPG turn orchestration.
-6. Deep Think uses the current bootstrapped provider for planner/final; multi-provider planner/final routing and live-provider latency/quality evaluation remain open.
-7. Live model catalog refresh remains outside lifecycle-managed runtime composition.
-8. Final reconciliation SHA still requires same-line Remake CI + Seven AI regression + Android 14/16 evidence.
+1. Wire/verify the Build workspace and Self-Development product path through the verified Coding runtime under real GitHub authorization; specialist existence alone is insufficient.
+2. ResearchService still lacks a concrete production Web source/synthesizer in SevenRuntime.
+3. PDF parsing remains disabled in the typed product; UTF-8 text attachments are integrated.
+4. RPG typed canonical persistence is strong but is not yet one atomic Chat + shared Memory + RPG turn orchestration.
+5. Deep Think uses the current bootstrapped provider for planner/final; multi-provider planner/final routing and live-provider latency/quality evaluation remain open.
+6. Live model catalog refresh remains outside lifecycle-managed runtime composition.
+7. The current PR head after documentation reconciliation must retain green Remake CI + Seven AI + Android 14/16 checks before PR #103 itself is merged.
 
 ## Acceptance statement
-**NOT ACCEPTED YET.** Current green evidence means zero known reproducible BLOCKER/CRITICAL defects in the specific tested paths, not zero bugs overall.
+**NOT FULLY INTEGRATED YET.** The reconciled typed line has no known reproducible BLOCKER/CRITICAL defect in the tested paths, but the product-composition gaps above remain. This is not a zero-bugs claim.
 
 ---
 
