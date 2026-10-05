@@ -4,6 +4,7 @@ const assert = require("assert/strict");
 const { createStateEnvelope } = require("./state-store.cjs");
 const { loadDurableEvolutionState } = require("./durable-engine.cjs");
 const { runCodingEvolution } = require("./coding-evolution.cjs");
+const { loadLearningArchive } = require("./learning-store.cjs");
 
 async function pass(name, fn) {
   await fn();
@@ -124,6 +125,12 @@ function baseInput({ agent = codingAgent(), evals = evalsAdapter(), promotion = 
     assert.equal(state.candidate.metadata.evalEvidenceId, "eval-evidence-1");
     assert.ok(promotion.calls.some((call) => call[0] === "applyCandidate"));
     assert.ok(agent.calls.some((call) => call[0] === "discardCandidate"));
+    const archive = await loadLearningArchive({ storeAdapter: store });
+    assert.equal(archive.verify().valid, true);
+    assert.equal(archive.list().length, 1);
+    assert.equal(archive.list()[0].outcome, "COMMITTED");
+    assert.equal(archive.list()[0].baselineSha, "aaaaaaa");
+    assert.equal(archive.list()[0].candidateSha, "bbbbbbb");
   });
 
   await pass("untrusted eval bundle is rejected before stable promotion", async () => {
