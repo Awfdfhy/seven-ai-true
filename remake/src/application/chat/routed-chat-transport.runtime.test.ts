@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createRoom } from "../../domain/chat";
 import type { ModelDescriptor, ProviderAdapter } from "../../providers/contracts";
 import { ModelRegistry, ModelRouter, ProviderHealthTracker } from "../../routing/model-router";
-import { RoutingChatTransport } from "./routed-chat-transport";
+import { RoutingChatTransport, type RoutingTraceEvent } from "./routed-chat-transport";
 
 function model(providerId: string, id: string, quality: number, speed: number): ModelDescriptor {
   return Object.freeze({
@@ -85,4 +85,38 @@ describe("production routing chat transport", () => {
     );
     await expect(collect(transport)).resolves.toBe("healthy");
   });
+
+  it("records deterministic provider TTFT and total attempt duration", async () => {
+    const descriptor = model("timed", "timed-model", 90, 90);
+    const registry = new ModelRegistry();
+    registry.replaceProviderModels("timed", [descriptor]);
+    const events: RoutingTraceEvent[] = [];
+    let now = 100;
+
+    const transport = new RoutingChatTransport(
+      registry,
+      new ModelRouter(),
+      new ProviderHealthTracker(),
+      new Map([["timed", provider("timed", [descriptor], "answer")]]),
+      {
+        mode: "balanced",
+        maxAttempts: 1,
+        now: () => {
+          now += 10;
+          return now;
+        },
+        observer: { record(event) { events.push(event); } },
+      },
+    );
+
+    await expect(collect(transport)).resolves.toBe("answer");
+    const success = events.find((event) => event.type === "attempt_success");
+    expect(success).toMatchObject({
+      providerId: "timed",
+      modelId: "timed-model",
+      ttftMs: 10,
+      durationMs: 20,
+    });
+  });
+
 });
