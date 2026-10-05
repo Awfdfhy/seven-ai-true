@@ -192,6 +192,7 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
             toolId: event.toolId,
             status: event.status,
             effectStarted: event.effectStarted,
+            durationMs: Math.max(0, event.completedAt - event.startedAt),
           },
         });
       },
