@@ -9,7 +9,7 @@
 | Web Research | 2 | Active / iterative | Tools, Models, Network | evidence/citation/freshness tests |
 | Deep Think | Master | Existing / iterative | Models, Routing, Context | quality + latency + cancellation |
 | Tools | 3 | Existing / hardening | Runtime, Permissions | schema + authorization + execution |
-| Coding System | 4 | Acceptance-ready on `coding-system-v1` / PR #104 | Tools, Files, Git, Model Routing, Research | exact-SHA inspect/patch/CI/Android/Git E2E |
+| Coding System | 4 | Merged + post-merge verified on `seven-remake-v3` / PR #104 | Tools, Files, Git, Model Routing, Research | exact-SHA inspect/patch/CI/Android/Git E2E |
 | Self-Development | 5 | Existing / verification | Coding, Tools, Git, Verification | bounded improve/test/accept loop |
 | RPG System | 6 | Active implementation / verification | Memory, Models, World/Canon state | continuity + knowledge-boundary + isolation + persistence |
 | Integration | 7 | ACTIVE | All systems | contract/E2E/failure/regression |
