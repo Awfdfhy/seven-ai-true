@@ -62,7 +62,8 @@ Authority state:
 - production mutation remains blocked on proving the authoritative Coding System contract. The dedicated `.seven-team/coding-v1/IMPLEMENTATION_EVIDENCE.md` is not present at this captured baseline.
 
 Verification state:
-- PR must be merge-capable against current main and pass the full Seven AI regression suite;
+- Phase 1 implementation candidate `7a5ec226f954e915188174111d46e21740e327c0` passed Seven AI tests #3221 (34/34 suites + artifact upload);
+- exact evidence is recorded in `.seven-team/self-development-v1/IMPLEMENTATION_EVIDENCE.md`;
 - because this is Evolution/Self-Development authority-plane code, independent review remains required before merge;
-- no Phase 1 completion claim until exact candidate CI evidence is recorded.
+- full Self-Development is not complete; Phase 2+ and end-to-end accept/reject/rollback proof remain open.
 
