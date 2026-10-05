@@ -929,5 +929,109 @@
       "failureReportArchival": "added; retest pending"
     },
     "RC": "NOT_CREATED"
+  },
+  "acceptedDebugSnapshot": {
+    "sourceCommit": "f5f6a51fbc6d14cff303399a1033ce04f2120f45",
+    "mainWeb": {
+      "run": 37264279009,
+      "job": 111617734706,
+      "conclusion": "success"
+    },
+    "isolatedWeb": {
+      "run": 37264279653,
+      "job": 111617684053,
+      "conclusion": "success",
+      "suites": 46,
+      "componentSuites": 44,
+      "browserCases": 152,
+      "packagedChecks": 24,
+      "liveProviderCalls": false,
+      "artifact": 11325632253,
+      "archiveHashCRCResults": "PASS",
+      "archiveSha256": "57508ee5ffc72e57c7c6107da3a08c643dd05f5c2a4b420ddcb2ba004f2fa3f7"
+    },
+    "mainAndroid": {
+      "run": 37264279050,
+      "job": 111617739514,
+      "conclusion": "success",
+      "lintUnitBuild": "PASS",
+      "binaryPayloadVerificationBeforeAndAfterDeviceTests": "PASS",
+      "api36": {
+        "tests": 5,
+        "failures": 0,
+        "evidence": "CI logs"
+      },
+      "api34": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "evidence": "downloaded XML and CI logs"
+      },
+      "apkArtifact": 11325603502,
+      "verificationArtifact": 11326261848,
+      "diagnosticsArtifact": 11325937392,
+      "visualArtifact": 11325578514,
+      "screenshots": {
+        "api34": 20,
+        "api36": 20,
+        "representativeInspection": "night and Arabic RTL"
+      }
+    },
+    "apkReceipt": {
+      "format": "seven-apk-verification",
+      "version": 1,
+      "sourceCommit": "f5f6a51fbc6d14cff303399a1033ce04f2120f45",
+      "workflowRunId": "37264279050",
+      "apkSha256": "e79bcfe4839e4b1f622d17d7f4b9ec46882dcefaf05ae9d67f8f1fe52bfd6a82",
+      "bytes": 6270954,
+      "webAssetCount": 201,
+      "packageName": "ai.seven.v243",
+      "versionCode": 243,
+      "versionName": "2.4.3",
+      "signatureVerified": true,
+      "signerCertificateSha256": [
+        "93ee644b0d14a46c8f654b334b1b1fda15f52d4e815b634402836a6e8b42d7e0"
+      ],
+      "upgradeContinuity": "UNVERIFIED"
+    },
+    "offlineVerification": {
+      "hashAndGitHubDigest": "PASS",
+      "zipCRC": "PASS",
+      "dexAndManifestPresent": "PASS",
+      "cleanSourceRunBinding": "PASS",
+      "all201AssetHashes": "PASS",
+      "localSDKSignatureRecheck": "NOT_AVAILABLE; actual SDK verification observed in CI"
+    },
+    "staticAudit": {
+      "startupBytes": 99176,
+      "workspaceBytes": 312806,
+      "staticBytes": 4184011,
+      "budgetsUnchanged": true
+    },
+    "readiness": {
+      "score": 67,
+      "components": 18,
+      "integration": 12,
+      "liveE2E": 7,
+      "android": 15,
+      "provenance": 10,
+      "upgrade": 0,
+      "docs": 5
+    },
+    "knownOpenVisualIssue": {
+      "id": "REL-28",
+      "severity": "MEDIUM",
+      "description": "Saved/IndexedDB badge overlaps bottom navigation in API14/API16 screenshots"
+    },
+    "RC": "NOT_CREATED",
+    "remainingAcceptance": [
+      "stable signing/package and installed upgrade persistence",
+      "real process kill during pending persistence",
+      "live provider/search quality and TTFT",
+      "verified RPG journal recovery",
+      "typed/root product reconciliation",
+      "required GitHub status enforcement",
+      "status badge placement"
+    ]
   }
 }
