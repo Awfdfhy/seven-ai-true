@@ -6,6 +6,7 @@ on:
     branches:
       - apk-finalization
       - main
+      - 'release/rc-*'
     paths:
       - 'seven_ai-final.html'
       - 'release/**'

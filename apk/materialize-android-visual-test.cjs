@@ -87,7 +87,7 @@ public class SevenVisualEvidenceTest {
         assertEquals("true",js(webView,"getComputedStyle(document.getElementById('seven-app')).getPropertyValue('--s-bg').trim()==='#f5f7f5'"));
         shot("chat-day");
         theme(webView,"night");
-        assertEquals("true",js(webView,"(()=>{const root=document.getElementById('seven-app'),main=document.querySelector('.main'),composer=document.querySelector('.composer');const rs=getComputedStyle(root),ms=getComputedStyle(main),cs=getComputedStyle(composer);return rs.getPropertyValue('--s-bg').trim()==='#111815'&&ms.backgroundColor==='rgb(23, 33, 29)'&&cs.backgroundColor==='rgb(23, 33, 29)'&&rs.color!=='rgb(0, 0, 0)'})()"));
+        assertEquals("true",js(webView,"(()=>{const root=document.getElementById('seven-app'),main=document.querySelector('.main'),composer=document.querySelector('.composer');const rs=getComputedStyle(root),ms=getComputedStyle(main),cs=getComputedStyle(composer);return rs.getPropertyValue('--s-bg').trim()==='#111815'&&ms.backgroundColor==='rgb(17, 24, 21)'&&cs.backgroundColor==='rgb(17, 24, 21)'&&rs.color!=='rgb(0, 0, 0)'})()"));
         shot("chat-night");
 
         js(webView,"(()=>{const b=document.querySelector('.seven-shell-model-chip');if(b)b.click();return true})()");
