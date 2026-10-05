@@ -11,7 +11,8 @@ Status: READY FOR MASTER REVIEW — production-hardening branch is exact-SHA CI 
 ## Implemented on chat3-coding-production
 ### Transaction kernel
 `release/coding-production-runtime.cjs`
-- Understand → Inspect → Plan → Edit → Test → Diagnose → Repair → Retest → Review → Verify → Commit/Propose.
+- Understand → Inspect → Research → Plan → Edit → Test → Diagnose → Repair → Retest → Review → Verify → Commit/Propose.
+- Research is bounded evidence (max 20 notes × 1000 chars) and remains optional/fail-safe when no research port exists.
 - exact base SHA before edit;
 - stale-plan and concurrent-repair rejection;
 - changed candidate SHA required (no no-op candidate evidence);
@@ -34,7 +35,9 @@ Status: READY FOR MASTER REVIEW — production-hardening branch is exact-SHA CI 
 - bounded file reads;
 - exact base-SHA check immediately before atomic write;
 - dispatches CI and requires an exact-SHA waiter;
-- fails closed if exact CI evidence, diff, verification or proposal ports are unavailable.
+- fails closed if exact CI evidence, diff, verification or proposal ports are unavailable;
+- advertises explicit capabilities: create/update/atomic/exact-SHA supported, delete unsupported;
+- rejects delete-shaped changes before they can be mis-materialized by the current Self-Development atomicCommit contract.
 
 ### Verified proposal policy
 `release/coding-proposal-policy.cjs`
@@ -75,19 +78,19 @@ All files match `release/*.test.cjs`, so root `all.cjs` discovers them automatic
 | APK exposure | not established | not claimed |
 
 ## CI evidence boundary
-- Proven current checkpoint: `35d45e7d7909f90ce5f0411d04ad0f42ca25c1ae`.
-- Seven AI tests run #3436 / id `37305575484` completed with **SUCCESS** on that exact SHA.
-- Job `111748397648`: `node all.cjs` SUCCESS; browser evidence gate SUCCESS; verified release artifact upload SUCCESS.
-- Artifact `seven-ai-release` id `11343526406` is bound to the same head SHA with digest `sha256:fe49878aeb9ba80aade323ba2f39630d4eb12bb3561e5230227ce5ece9f57f78`.
+- Proven Research checkpoint: `b32c881b1f06ff70455dd7f001d9ac688a441d6b`.
+- Seven AI tests run #3462 / id `37306285147` completed with **SUCCESS** on that exact SHA.
+- Job `111750776189`: `node all.cjs` SUCCESS; browser evidence gate SUCCESS; verified release artifact upload SUCCESS.
+- Artifact `seven-ai-release` id `11344325151` is bound to the same head SHA with digest `sha256:5cb595953d9edaa1e0336466a235b772e18280b3b66d7055a27a9480dfe38218`.
 - Earlier #3390 failure and #3424 authoritative-diff fixture regression were diagnosed and repaired without weakening the gates. Superseded runs were not counted as green evidence.
 
 ## Security/cross-system finding
 `release/github-self-dev.js` exports low-level GitHub mutation primitives to the WebView. Chat 3 does not change that cross-system contract. Tools/Self-Development owner and Master should decide whether those primitives require a narrower capability token/native enforcement. Coding integration must use the verified transaction path and must not call merge directly.
 
 ## Remaining risks / next exact actions
-1. Preserve exact-SHA checkpoint `35d45e7...` as the reviewed Coding hardening baseline; do not inherit its green status across later commits.
+1. Preserve exact-SHA checkpoint `b32c881...` as the proven Research-enabled baseline; do not inherit its green status across later commits.
 2. Authoritative proposal policy is now implemented and adapter-bound; integration still needs the concrete product GitHub API ports to supply exact CI/diff evidence.
-3. Integration follow-up: add explicit RESEARCH state/port, deletion semantics, and a real isolated GitHub fixture/worktree benchmark; each requires a fresh exact-SHA CI cycle.
+3. RESEARCH is implemented and green. Deletion remains an explicit cross-system dependency: current Self-Development `atomicCommit` cannot encode Git tree deletion; Coding now rejects it fail-closed. Add real isolated GitHub fixture/worktree benchmark once an authoritative isolated repository/worktree port is available.
 4. Expose a product-facing Coding action only after 1–3 are green; keep current read-only UI truth boundary until then.
 5. Run root full suite plus release/browser gates; then assess Android packaging exposure.
 6. Send branch/SHA/tests/CI/risks/dependencies to Master and request integration review.
