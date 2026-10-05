@@ -96,6 +96,9 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
         status: task.status,
         errorCategory: disposition?.category ?? null,
         retryable: disposition?.retryable ?? false,
+        durationMs: task.finishedAt === undefined
+          ? null
+          : Math.max(0, task.finishedAt - task.startedAt),
       },
     });
   });
@@ -256,6 +259,8 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
               modelId: event.modelId ?? null,
               reason: event.reason ?? null,
               candidateCount: event.candidateCount ?? null,
+              durationMs: event.durationMs ?? null,
+              ttftMs: event.ttftMs ?? null,
             },
           });
         },
