@@ -1,3 +1,4 @@
+// Production packaging gate: parser-minified lazy workspace scripts must preserve public APIs.
 const fs=require('fs'),path=require('path'),vm=require('vm'),{createRequire}=require('module'),assert=require('assert/strict');
 const {files,minifyRpg}=require('./rpg-minifier.cjs');
 const context=vm.createContext({console,Buffer,setTimeout,clearTimeout}),cache=new Map();
