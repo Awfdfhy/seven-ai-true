@@ -1,4 +1,4 @@
-# Pinned main validation is also run on an isolated release/rc-* branch.
+# RC integration validation: application sources are pinned; Android runs on isolated release/rc-* refs.
 name: Seven Android APK
 
 on:
