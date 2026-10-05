@@ -10,5 +10,6 @@ assert.match(patch,/roomWalAndMotionRecoverAcrossActivityRecreation/);
 assert.match(patch,/scenario\.recreate\(\)/);
 assert.match(patch,/seven_ai_room_wal_v1/);
 assert.match(motion,/SEVEN_MOTION_SYNC_MAX_ATTEMPTS/);
-assert.match(motion,/SevenPerformance\.state\.ready/);
+assert.match(motion,/const p=window\.SevenPerformance/);
+assert.match(motion,/p\.state\.ready!==true/);
 console.log('android lifecycle contracts: PASS');
