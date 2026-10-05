@@ -380,7 +380,8 @@ function assertExperimentStartAllowed({
   experimentId,
   activeExperimentId = null
 } = {}) {
-  verifyLearningArchive(ledger);
+  const verification = verifyLearningArchive(ledger);
+  if (!verification.valid) throw new Error(`invalid learning archive: ${verification.reason}`);
   const next = safeText(experimentId, "experimentId", 160);
   if (activeExperimentId != null && activeExperimentId !== "") {
     const active = safeText(activeExperimentId, "activeExperimentId", 160);
