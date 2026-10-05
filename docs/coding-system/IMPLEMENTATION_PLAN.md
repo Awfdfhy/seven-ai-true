@@ -21,7 +21,7 @@ Rule: code presence is not completion; phase status below is evidence-based.
 | 9 — Git Completion + Documentation | COMPLETE | Atomic exact-base Git commits, freshness/post-content checks, evidence lifecycle and current documentation. |
 | 10 — Product Runtime Integration | BACKEND COMPLETE / UI HANDOFF | GitHub runtime factory, ModelRouter, ResearchService and Tool Fabric integration are complete. Final user-facing Coding workspace/progress UI belongs to Android/APK/UI. |
 | 11 — Evaluation Campaign | V1 GATES COMPLETE / BROADER BENCHMARKS ITERATIVE | Adversarial stale-state, mutation authority, repair, routing, replay and Android release tests pass. SWE-style larger benchmark corpus remains iterative quality work, not a runtime blocker. |
-| 12 — Self-Development handoff | READY AFTER MERGE | Self-Development may consume Coding only after Integration accepts PR #104; no bypass is permitted. |
+| 12 — Self-Development handoff | MERGED / INTEGRATION HANDOFF READY | PR #104 is merged into `seven-remake-v3`; Self-Development may consume this path only after Integration accepts the product-level reconciliation. |
 
 ## V1 safety invariants
 
@@ -61,10 +61,22 @@ All three top-level gates succeeded on the same code-bearing SHA:
 
 ## Non-blocking follow-up owned outside Coding V1
 
-- Merge/reconcile PR #104 into the chosen product branch.
+- Reconcile the merged typed Remake Coding runtime with the currently released root/main product under Integration / Release Manager ownership.
 - Final user-facing Coding UI/evidence viewer/approval UX.
 - Live provider + connected GitHub canary when production credentials and explicit mutation approval are available.
 - Larger benchmark corpora and parser-depth improvements.
 - Self-Development adoption only after Integration accepts the merged Coding runtime.
 
 No zero-bugs claim is made. V1 status means no known reproducible blocker remains in the specialist verification scope above.
+
+
+## Post-merge branch verification
+
+PR #104 was squash-merged into `seven-remake-v3` as:
+`42ff64c01074cff0d9358ba58ec6a0a316b83316`
+
+Verification on that exact merge SHA:
+- Seven Remake V3 CI #428 / run 37263362539 — **SUCCESS**.
+- Seven Remake Android Release Gate #194 / run 37263362532 — **SUCCESS**, including APK build/identity, Android 14 installed smoke and Android 16 installed smoke.
+
+The earlier code-bearing specialist SHA `371db3e45aea21fd1f0d191ff88542d64c914490` also passed Seven AI tests #3239 / run 37260125250. No runtime code changed between that verified candidate and the documentation closeout that was merged.
