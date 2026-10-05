@@ -34,7 +34,7 @@ function memoryStore(initialState = null) {
   };
 }
 
-function promotionAdapter(initial = "aaaaaaa", verification = { ciPassed: true, regressionFree: true }) {
+function promotionAdapter(initial = "a".repeat(40), verification = { ciPassed: true, regressionFree: true }) {
   let head = initial;
   const calls = [];
   return {
@@ -77,8 +77,8 @@ function input(adapter) {
     canaryPassed: true,
     riskAssessment: { verified: true, source: "trusted-policy", level: "LOW" },
     approvalPolicy: { autoPromotionEnabled: true, maxAutoRisk: "LOW" },
-    baselineSha: "aaaaaaa",
-    candidateSha: "bbbbbbb",
+    baselineSha: "a".repeat(40),
+    candidateSha: "b".repeat(40),
     adapter
   };
 }
@@ -102,9 +102,9 @@ function input(adapter) {
   });
 
   await pass("persisted interrupted APPLIED transaction recovers by restoring baseline", async () => {
-    const tx = createUpdateTransaction({ id: "tx-recover", experimentId: "exp", baselineSha: "aaaaaaa", candidateSha: "bbbbbbb" });
-    validateUpdate(tx, { observedBaseSha: "aaaaaaa", experimentPass: true, rollbackCheckpointSha: "aaaaaaa" });
-    markApplied(tx, { appliedSha: "bbbbbbb" });
+    const tx = createUpdateTransaction({ id: "tx-recover", experimentId: "exp", baselineSha: "a".repeat(40), candidateSha: "b".repeat(40) });
+    validateUpdate(tx, { observedBaseSha: "a".repeat(40), experimentPass: true, rollbackCheckpointSha: "a".repeat(40) });
+    markApplied(tx, { appliedSha: "b".repeat(40) });
     const candidate = {
       id: "system:exp",
       kind: "system",
@@ -114,7 +114,7 @@ function input(adapter) {
       ]
     };
     const store = memoryStore({ phase: "TRANSACTION_APPLIED", transaction: tx, candidate: null });
-    const adapter = promotionAdapter("bbbbbbb");
+    const adapter = promotionAdapter("b".repeat(40));
     const result = await recoverDurableEvolution({ storeAdapter: store, promotionAdapter: adapter });
     assert.equal(result.outcome, "ROLLED_BACK");
     const restored = await loadDurableEvolutionState({ storeAdapter: store });
