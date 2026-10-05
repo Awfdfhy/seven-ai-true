@@ -2,7 +2,7 @@
 
 ## Lead Release Manager — continuation integration snapshot
 
-Release remains **NOT ACCEPTED / no RC**. PR #105 reconciles upstream `8f235363fc3eceb61b7eef87515594adb6e37715` with the release repairs, preserving both ADR-REL-001..005 and ADR-015..019 and specialist history. The enclosing commit identifies this candidate; later commits require separate evidence.
+Release remains **NOT ACCEPTED / no RC**. PR #105 reconciles upstream `e5d9c70798d7edd4f2368ca6a5547570d5931ad9` with the release repairs, preserving both ADR-REL-001..005 and ADR-015..019 and specialist history. The enclosing commit identifies this candidate; later commits require separate evidence.
 
 - All 34 local component suites reran on the merged source and passed; exact durations are in RELEASE_EVIDENCE.json. Full local browser gate remains unavailable because the Chromium archive download fails.
 - Verified upstream-only CI: Seven AI tests run 37241282527 and Seven Android APK run 37241282530 passed on `b3e3ffa4fe676a838ed658e22fad1576cfe11237`. Android job 111550342818 passed lint/unit/build, packaged-content checks, and connected API34/API36 WebView tests. These results do not certify the PR candidate.
@@ -126,3 +126,6 @@ See:
 - Android activity recreation/WAL/motion/SAF regressions and workflow isolation tests were incorporated, but latest-SHA Android execution remains pending.
 
 - REL-18: fixed stale zero-room build transform after room-change ownership updates. Executable deletion/event/generation-guard regressions pass; frontend build passes. There are now 41 component suites available plus two browser suites. Full final CI and Android run remain pending.
+
+- REL-19: latest upstream night/system-auto-theme fixes caused a reproducible startup gate failure (100085 bytes). Parser-based beta startup packaging now gives 99397 bytes without changing the limit; 14 preference/system/legacy cases match source behavior. Source and packaged API names remain available. Latest contrast, zero-room, static and native generation checks pass; full final code CI is pending.
+- Isolated release-branch Web/Android validation added upstream is preserved; main artifact acceptance still requires the exact main SHA/run. There are 42 component suites plus two browser suites.

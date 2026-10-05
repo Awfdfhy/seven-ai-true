@@ -144,7 +144,7 @@ function build(){
   const ui=compactJs(read('ui-runtime.js')).replace(/<\/script/gi,'<\\/script');
   const attachments=compactJs(read('attachment-runtime.js')).replace(/<\/script/gi,'<\\/script');
   const attachmentLoader=compactJs(read('attachment-loader.js')).replace(/<\/script/gi,'<\\/script');
-  const betaUi=compactJs(read('beta-ui-runtime.js')).replace(/<\/script/gi,'<\\/script');
+  const betaUi=require('./rpg-minifier.cjs').minifyStartup(read('beta-ui-runtime.js')).replace(/<\/script/gi,'<\\/script');
   const uiPolishLoader=compactJs(read('ui-polish-loader.js')).replace(/<\/script/gi,'<\\/script');
   const githubSelfDev=compactJs(read('github-self-dev.js')).replace(/<\/script/gi,'<\\/script');
   const workspaceSource=fs.existsSync(WORKSPACE_DIR)?fs.readdirSync(WORKSPACE_DIR).sort().map(name=>fs.readFileSync(path.join(WORKSPACE_DIR,name))).join(''):'';

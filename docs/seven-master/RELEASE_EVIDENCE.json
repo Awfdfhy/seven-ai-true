@@ -507,7 +507,7 @@
     "candidateFullBrowser": "PENDING_REMOTE_CI",
     "candidateAndroid": "PENDING_MERGE_CI",
     "RC": "NOT_CREATED",
-    "latestUpstreamSha": "8f235363fc3eceb61b7eef87515594adb6e37715",
+    "latestUpstreamSha": "e5d9c70798d7edd4f2368ca6a5547570d5931ad9",
     "intermediateWebCI": {
       "sha": "ad00c123daedebf4193b8b158a725c2353fc455f",
       "run": 37259977856,
@@ -555,9 +555,9 @@
       "p95Ms": 54.920800000000014
     },
     "latestStaticAudit": {
-      "startupBytes": 99668,
+      "startupBytes": 99397,
       "workspaceBytes": 312627,
-      "staticBytes": 4184266
+      "staticBytes": 4184053
     },
     "latestFocusedChecks": [
       "agent-workflow-isolation",
@@ -571,6 +571,14 @@
     "zeroRoomRegression": {
       "preRepair": "npm run android:generate -> zero-room transform missing delete final room",
       "postRepair": "executable final-room/event/active-generation/idempotence/anchor tests PASS; build:web PASS"
+    },
+    "startupFailure": {
+      "beforeBytes": 100085,
+      "afterBytes": 99397,
+      "budget": 100000,
+      "repair": "pinned parser beta runtime packaging",
+      "preferenceCases": 14,
+      "sourcePackagedComparison": "PASS"
     }
   }
 }

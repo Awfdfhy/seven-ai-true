@@ -112,3 +112,5 @@ Decision: The live RPG bridge stages a durable per-room pending journal before m
 Status: Accepted
 Decision: Pin Terser 5.51.2 as a build dependency and minify only four whitelisted RPG kernel/bridge files. Compression is disabled; local identifier mangling is allowed while function names and property/API names are retained. Other assets retain their existing packaging. Execute the existing state/session/context/live failure/restart suites against the packaged modules in one isolated VM. Preserve all startup/workspace size gates; source stays readable. This repairs the 320506-byte CI workspace failure without raising the 320000-byte budget.
 Reference: https://terser.org/docs/api-reference/
+
+ADR-REL-008 addendum: upstream theme fixes pushed startup bytes to 100085. The same parser packaging now covers beta-ui-runtime.js with local mangling, compression disabled and function/property names retained. Fourteen source-vs-packaged preference/system/legacy cases and public API checks pass. Other startup scripts keep their existing transform.

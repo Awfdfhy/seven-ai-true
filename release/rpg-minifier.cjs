@@ -5,4 +5,7 @@ function minifyRpg(source){
   if(typeof result.code!=='string'||!result.code.trim())throw new Error('RPG packaging emitted no code');
   return result.code;
 }
-module.exports={files,minifyRpg};
+function minifyStartup(source){
+  return minify_sync(source,{compress:false,mangle:true,keep_fnames:true,format:{comments:false},ecma:2020}).code;
+}
+module.exports={files,minifyRpg,minifyStartup};
