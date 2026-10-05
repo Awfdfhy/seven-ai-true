@@ -151,16 +151,24 @@ function summarizeResearch({
   const coveredClaimKeys = required.filter((key) => byClaim.has(key));
   const gaps = required.filter((key) => !byClaim.has(key));
   const independentHosts = [...new Set(rows.map((row) => row.sourceHost))].sort();
+  const evidenceRefs = [...new Set(rows.flatMap((row) => [row.id, row.evidenceRef]))].sort();
+  const sourceTypes = [...new Set(rows.map((row) => row.sourceType))].sort();
+  const staleSet = new Set(staleEvidenceIds);
+  const freshEvidenceIds = rows.filter((row) => !staleSet.has(row.id)).map((row) => row.id);
 
   return Object.freeze({
     schemaVersion: 1,
     evidenceCount: rows.length,
+    freshEvidenceCount: freshEvidenceIds.length,
     requiredClaimKeys: Object.freeze(required),
     coveredClaimKeys: Object.freeze(coveredClaimKeys),
     gaps: Object.freeze(gaps),
     contradictions: Object.freeze(contradictions.sort()),
     staleEvidenceIds: Object.freeze([...new Set(staleEvidenceIds)].sort()),
+    freshEvidenceIds: Object.freeze([...new Set(freshEvidenceIds)].sort()),
+    evidenceRefs: Object.freeze(evidenceRefs),
     independentHosts: Object.freeze(independentHosts),
+    sourceTypes: Object.freeze(sourceTypes),
     coverage: required.length ? Number((coveredClaimKeys.length / required.length).toFixed(6)) : 1,
     complete: gaps.length === 0,
     hasContradictions: contradictions.length > 0
