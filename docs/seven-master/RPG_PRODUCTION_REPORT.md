@@ -57,12 +57,12 @@ Existing `load`, `loadLatest`, `context`, and `sync` continue to fail closed whi
 
 ### Known limits / remaining risks
 
-- Later Batch 02 commits require their own exact-SHA CI; the Batch 01 pass is not reused as evidence for them.
-- Recovery is explicit, not yet invoked automatically by product lifecycle/UI.
-- Public Memory projection rollback is not a general multi-store transaction; recovery currently relies on revision evidence and avoids destructive action when ambiguous.
-- Multi-tab/process concurrent writers are not yet arbitrated.
-- Live model generation still does not prove Character View/Narrator View selection at the model-call boundary.
-- Semantic model delta extraction and live player-agency rejection remain unverified.
+- Batch 01 evidence remains historical; later claims use the final exact application/source SHA below.
+- Safe pending journals are now recovered automatically during RPG workspace hydrate; ambiguous/corrupt/abandoned journals remain fail-closed.
+- Public Memory projection is not a general cross-store ACID transaction; recovery uses durable revision/projection evidence and refuses destructive action when ambiguous.
+- Multi-tab/process concurrent writers still lack dedicated arbitration evidence.
+- Character/Narrator projections now reach the real model-context collection seam, but automatic per-speaker Character View selection and semantic generated-dialogue no-leak evaluation remain unverified.
+- Semantic model-output -> proposed RPG event extraction is not wired into the shared generation controller.
 - Android process-death and app-upgrade RPG continuity remain cross-chat dependencies.
 
 ## Batch 02 — Live Turn + Model Context Hardening
@@ -80,15 +80,55 @@ Implemented:
 - browser recovery regression simulates interrupted durable state, closes/reopens the workspace, and verifies deterministic rollback plus journal cleanup;
 - long-story benchmark now records state size, bounded context size, load latency and context construction latency at 100/500/1000 episode-equivalent checkpoints, with unchanged 9000-char context gate and a 2 MiB structured-state ceiling.
 
-Current Batch 02 exact-SHA CI is pending and must pass before integration readiness is claimed.
+Batch 02/03 are included in the final verified application/source SHA and evidence below.
 
-## Next exact action
+## Final deterministic/browser evidence
 
-1. Hold the branch SHA stable and obtain full exact-SHA CI evidence for Batch 02.
-2. If green, inspect CI long-story measurements and record them here.
-3. Add semantic model-output delta extraction only if it can preserve the current propose -> validate -> commit boundary.
-4. Coordinate Android process-death/app-upgrade RPG persistence with CHAT 1.
-5. Run limited live-provider dialogue/no-leak/voice-continuity evaluation when provider access is available.
+Verified application/source SHA: `d68f725dd6fa0a15566b230d711719b0713a4d94`.
+
+Exact-SHA workflow:
+- workflow: `Seven AI tests`;
+- run: `37306326714`;
+- conclusion: **SUCCESS**;
+- `node all.cjs`: SUCCESS;
+- browser evidence gate: SUCCESS;
+- verified release artifact upload: SUCCESS.
+
+Release artifact:
+- name: `seven-ai-release`;
+- artifact id: `11344161308`;
+- size: `1,753,494` bytes;
+- digest: `sha256:08b09b213e70d7ae3e0afe149addab68c219d9f1a5402b8978e06f2b0d7b41c9`;
+- artifact head SHA: `d68f725dd6fa0a15566b230d711719b0713a4d94`.
+
+RPG evidence from that exact run:
+- `rpg live integration: PASS`;
+- `Packaged RPG kernels: PASS (state, session, context, live failure/restart gates)`;
+- `rpg session manager: PASS` with atomic rollback, stale-write blocking and corruption quarantine;
+- `rpg context views: PASS`, including explicit character-local boundary;
+- `rpg state kernel: PASS`;
+- browser release verifier reaches the real RPG workspace/context/persistence path;
+- workspace product-boundary player-agency rejection is covered;
+- automatic safe journal recovery during workspace reopen is covered.
+
+Long-story measured checkpoints from the same run:
+
+| Episode-equivalent checkpoint | Committed events | State bytes | Context chars | Load ms | Context-build ms |
+|---:|---:|---:|---:|---:|---:|
+| 100 | 102 | 37,376 | 2,030 | 2.947 | 1.029 |
+| 500 | 502 | 167,522 | 2,111 | 11.872 | 1.840 |
+| 1000 | 1002 | 330,110 | 2,103 | 24.731 | 3.529 |
+
+Final long-story result: 1006 committed events, revision 1006, old consequence retained, quest completion retained, HARD CANON invalid mutation blocked, player-agency violation blocked, Character/Narrator contexts remained within the unchanged 9000-character gate.
+
+Static budget from the same run:
+- hot release-layer bytes: `99,176`;
+- lazy attachment bytes: `16,795`;
+- lazy workspace bytes: `319,517 / 320,000` — PASS;
+- total static APK bytes: `4,190,722 / 8,388,608`;
+- warnings: 0.
+
+No budget or acceptance threshold was increased.
 
 
 ## Batch 03 — Size Gate + Transaction Deduplication
@@ -106,8 +146,32 @@ Added evidence:
 - failure injection proves a virgin structured transaction with a journal-write failure leaves session inspection at `MISSING`;
 - browser product-boundary regression calls `SevenRpgWorkspace.commitStateEvents()` and proves a runtime-originated move of a player-controlled character is rejected with `player-control` and the persisted location is unchanged.
 
-The first compaction retest, run `37305266877`, still failed only the unchanged static budget at 321824/320000. The subsequent shared-pipeline refactor removes substantially more production logic; latest exact-SHA CI is required before claiming the size gate green.
+The first compaction retest, run `37305266877`, still failed only the unchanged static budget at 321824/320000. The shared-pipeline refactor then brought the exact final application/source build to 319517/320000 and the full run `37306326714` passed.
+
+## Remaining production risks / dependencies
+
+1. **Shared generation hook:** automatic semantic extraction of model output into proposed RPG events is not implemented. The current safe product boundary is `SevenRpgWorkspace.commitStateEvents()`; any future model extraction must remain proposal-only and pass deterministic validation before commit.
+2. **Character dialogue semantics:** Character View is wired and deterministic no-leak projection tests pass, but the shared generation controller does not automatically select a Character View per speaking character. Real-model dialogue can therefore not yet be certified free of narrator-only knowledge leakage.
+3. **Live model quality:** character voice, continuity and semantic no-leak need a bounded live-provider evaluation plus independent review; no provider credentials or quality result were invented.
+4. **Android continuity:** real process-kill and Build A -> Build B upgrade retention for RPG state are owned jointly with CHAT 1 and remain unverified here.
+5. **Concurrent writers:** revision conflict handling exists, but dedicated multi-tab/process writer arbitration is not yet acceptance-tested.
+6. **Relationship directionality:** current v1 relationship key remains symmetric; changing this is feature/schema work and is intentionally deferred during RC hardening.
+7. **Size headroom:** lazy workspace budget has only 483 bytes of measured headroom. Further runtime additions should first remove duplication or relocate capability rather than raise the gate.
+
+## Cross-system dependencies
+
+- CHAT 1 — include RPG session/journal/Memory projection in real Android process-kill and upgrade/data-continuity acceptance.
+- Master / Integration — approve any shared `seven_ai-final.html` generation-controller hook required for model-output delta extraction or automatic speaker-specific Character View selection.
+- Evaluation / provider runtime — execute limited live semantic dialogue tests when real providers are available, with independent verdict rather than self-approval.
+
+## Exact next action
+
+1. Hand this branch and exact-SHA evidence to Master for review.
+2. Keep PR #120 draft; do not merge directly.
+3. Coordinate CHAT 1 Android process-death/upgrade evidence using RPG state.
+4. If Master grants the shared-core seam, implement a minimal proposal parser/hook that cannot mutate state except through `commitStateEvents()`, then rerun all exact-SHA gates.
+5. Run live semantic dialogue/no-leak/voice evaluation when a real provider path is available.
 
 ## Integration status
 
-PARTIAL — not ready for merge or RC acceptance yet.
+**PARTIAL** — deterministic/browser RPG hardening is exact-SHA green, but live semantic generation and Android process-death/upgrade acceptance remain open.
