@@ -65,6 +65,6 @@ html[data-seven-shell="2"] .settings-modal,html[data-seven-shell="2"] .modal{bor
 @media(prefers-reduced-motion:reduce){html[data-seven-shell="2"] *,html[data-seven-shell="2"] *:before,html[data-seven-shell="2"] *:after{scroll-behavior:auto!important;transition-duration:.001ms!important;animation-duration:.001ms!important;animation-iteration-count:1!important}}
 /* Seven night-theme shell authority: keep late-loaded shell surfaces aligned with SevenTheme. */
 html[data-seven-theme="night"][data-seven-shell="2"] body{background:#111815!important;color:#edf5f0!important}
-html[data-seven-theme="night"][data-seven-shell="2"] .main{background:#17211d!important;color:#edf5f0!important}
-html[data-seven-theme="night"][data-seven-shell="2"] .composer{background:#17211d!important;color:#edf5f0!important;border-color:#33443b!important}
+html[data-seven-theme="night"][data-seven-shell="2"] .main{background:#111815!important;color:#edf5f0!important}
+html[data-seven-theme="night"][data-seven-shell="2"] .composer{background:#111815!important;color:#edf5f0!important;border-color:#33443b!important}
 
