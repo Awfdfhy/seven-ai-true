@@ -123,8 +123,9 @@ function inspectCodingAdapter({ adapter, attestation, attestationVerifier } = {}
   });
 }
 
-function normalizeAllowedPaths(paths) {
-  if (!Array.isArray(paths) || !paths.length) throw new Error("Coding handoff allowedPaths required");
+function normalizeAllowedPaths(paths, { required = true } = {}) {
+  if (!Array.isArray(paths)) throw new Error("Coding paths must be an array");
+  if (required && !paths.length) throw new Error("Coding handoff allowedPaths required");
   const out = [...new Set(paths.map((path) => {
     const normalized = String(path || "").replace(/\\/g, "/").replace(/^\.\//, "").trim();
     if (!normalized || normalized.startsWith("/") || normalized.includes("../") || normalized === "..") {
@@ -265,7 +266,7 @@ function validateCodingResult({ handoff, result, resultVerifier } = {}) {
 
   let changedPaths = [];
   try {
-    changedPaths = [...normalizeAllowedPaths(result.changedPaths || [])];
+    changedPaths = [...normalizeAllowedPaths(result.changedPaths || [], { required: false })];
   } catch {
     reasons.push("coding_result_changed_paths_invalid");
   }
