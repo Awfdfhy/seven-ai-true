@@ -89,3 +89,11 @@ html[data-seven-theme="night"] #seven-app textarea{background:#111815!important;
  #settingsModal .modal-content{max-height:calc(var(--seven-visual-height,100dvh) - 8px)}
  #settingsModal{padding:4px}
 }
+
+/* Android RC hardening: persistence feedback belongs to the topbar, never the bottom/nav overlay layer. */
+@media(max-width:420px){
+ #seven-app .topbar #persistenceStatus{max-width:96px!important;padding-inline:6px!important;font-size:10px!important;margin-inline-end:2px!important}
+}
+@media(max-height:560px){
+ #seven-app .topbar #persistenceStatus{max-width:88px!important;padding-block:3px!important}
+}

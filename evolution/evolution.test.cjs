@@ -42,6 +42,13 @@ pass("core rejects failed tests even with strong metrics", () => {
   assert.equal(result.decision, "REJECT");
 });
 
+pass("equal candidate is rejected because improvement must beat baseline", () => {
+  const result = evaluate({ baseline, candidate: { ...baseline }, required: Object.keys(baseline) });
+  assert.equal(result.pass, false);
+  assert.equal(result.delta, 0);
+  assert.equal(result.decision, "REJECT");
+});
+
 pass("candidate requires every hard safety gate", () => {
   const result = evaluateCandidate({ baseline, candidate: stronger, gates: { ...safeGates, rollbackReady: false } });
   assert.equal(result.pass, false);
