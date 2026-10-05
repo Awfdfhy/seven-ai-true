@@ -87,4 +87,11 @@ cs=canon.applySceneDelta(cs,{position:10},{id:'e1'}).session;
 cs=canon.applySceneDelta(cs,{position:5},{id:'e2'}).session;
 check('canon audit detects chronology regression',()=>canon.audit(cs).chronology.status==='FAIL'&&canon.audit(cs).chronology.issues[0].reason==='position-regression');
 
+
+const UnifiedTools=require('./tool-contract.cjs');
+const normalizedLegacy=UnifiedTools.normalizeTool({id:'legacy-write',name:'legacy write',schema:tool.schema,risk:'side_effect',requiredPermissions:['fs.write']});
+check('unified tool contract adapts legacy schema/risk without granting execution',()=>normalizedLegacy.inputSchema===tool.schema&&normalizedLegacy.risk==='WRITE'&&normalizedLegacy.executor===null);
+const normalizedTyped=UnifiedTools.normalizeTool({id:'typed-read',inputSchema:{type:'object'},riskLevel:'read',permissions:['artifact.read']});
+check('unified tool contract adapts typed inputSchema/risk vocabulary',()=>normalizedTyped.inputSchema.type==='object'&&normalizedTyped.risk==='READ'&&normalizedTyped.permissions[0]==='artifact.read');
+
 console.log('integration contracts: PASS ('+count+' assertions)');
