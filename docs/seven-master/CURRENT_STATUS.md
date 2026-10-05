@@ -2,15 +2,15 @@
 
 ## Lead Release Manager — continuation integration snapshot
 
-Release remains **NOT ACCEPTED / no RC**. PR #105 reconciles upstream `e40a655c0a71a24290a9515f3f72e7ffeb919329` with the release repairs, preserving both ADR-REL-001..005 and ADR-015..019 and specialist history. The enclosing commit identifies this candidate; later commits require separate evidence.
+Release remains **NOT ACCEPTED / no RC**. PR #105 reconciles upstream `f90fabb1910f013d3badf9c868174d48a4bd1726` with the release repairs, preserving both ADR-REL-001..005 and ADR-015..019 and specialist history. The enclosing commit identifies this candidate; later commits require separate evidence.
 
 - All 34 local component suites reran on the merged source and passed; exact durations are in RELEASE_EVIDENCE.json. Full local browser gate remains unavailable because the Chromium archive download fails.
 - Verified upstream-only CI: Seven AI tests run 37241282527 and Seven Android APK run 37241282530 passed on `b3e3ffa4fe676a838ed658e22fad1576cfe11237`. Android job 111550342818 passed lint/unit/build, packaged-content checks, and connected API34/API36 WebView tests. These results do not certify the PR candidate.
 - Upstream added room write-ahead recovery, canonical response modes, originating-room cancellation, controller context budgets, fallback deadlines, temporal citations and native GitHub boundary/log fixes. Browser regressions exist for WAL staging/replay; actual Android process-kill/upgrade durability remains unproven.
-- Intermediate PR SHA ad00c123daedebf4193b8b158a725c2353fc455f passed full Seven AI tests run 37259977856. New binary/signature gate changes need their own CI. The added shell ownership and APK binary suites pass locally (36 component suites now available).
+- Intermediate PR SHA ad00c123daedebf4193b8b158a725c2353fc455f passed full Seven AI tests run 37259977856. New binary/signature gate changes need their own CI. 39 component suites passed after incorporating upstream live RPG/lifecycle/workflow isolation. The RPG failure-path repair subsequently passed focused integration/static checks.
 - Added actual APK binary package/version/signature verification and a published JSON evidence artifact. Existing root debug build does not establish stable signing identity across runs; data-preserving upgrade remains unaccepted.
 - Pending: final PR full browser CI, merge to main, fresh Android workflow for the exact merged SHA, embedded version-5 provenance/package/signature verification and install/upgrade persistence.
-- Root HTML/Capacitor and typed remake remain different product trains. Live RPG atomic turn integration and Coding/Evolution wiring remain architectural blockers. Evidence score stays 43/100 until final-SHA gates are verified.
+- Root HTML/Capacitor and typed remake remain different product trains. Live RPG session/public-memory bridge now exists and passes ordinary rollback tests. Injected index-plus-rollback storage failure reproduced divergent disk/session memory; a durable uncertainty journal now blocks hydrate/context/sync across restart and preserves the previous session. Automatic verified recovery, complete character generation binding and Coding/Evolution wiring remain blockers. Evidence score stays 43/100 until final-SHA gates are verified.
 
 See PROJECT_TRUTH_REPORT.md and RELEASE_EVIDENCE.json. No fresh candidate APK or RC is claimed here.
 
@@ -117,3 +117,9 @@ See:
 - docs/seven-master/INTEGRATION_AUDIT.md
 - docs/seven-master/BUG_STATUS.md
 - docs/seven-master/INTEGRATION_CONTRACTS.md
+
+## Continuation failure hunt additions
+- REL-15: lifecycle regression expected a literal SevenPerformance.state.ready but implementation uses p.state.ready; assertion now checks both alias and readiness guard, passing.
+- REL-16: RPG index-write plus rollback-write failure returned a normal rejection while advanced state remained loadable. Durable pending journal now quarantines the room and preserves prior session; focused tests prove no hydrate/context/resync, including a fresh bridge after restart. Verified recovery UX and truly atomic cross-store commit remain OPEN.
+- Static budget: 99,668 startup bytes; 319,738 lazy workspace bytes, 262 bytes below 320,000. No limits increased.
+- Android activity recreation/WAL/motion/SAF regressions and workflow isolation tests were incorporated, but latest-SHA Android execution remains pending.

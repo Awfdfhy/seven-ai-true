@@ -103,3 +103,7 @@ Decision: navigator.onLine is represented as link-online/offline only. End-to-en
 Status: Accepted
 Decision: APK acceptance reads package/version from aapt dump badging and verifies the actual APK with apksigner verify --verbose --print-certs. Missing SDK tools, wrong binary identity or invalid signatures fail the gate. Record APK SHA-256, certificate SHA-256, source SHA/run and web inventory count in dist/apk-verification.json and publish it beside the APK. A valid signature is not evidence of cross-build signing continuity or data-preserving upgrades; those remain explicit gates. Root debug workflow currently does not pass the optional persistent CI keystore properties.
 Reference: https://developer.android.com/tools/apksigner
+
+## ADR-REL-007 — Uncertain RPG persistence must quarantine before hydrate
+Status: Accepted
+Decision: The live RPG bridge stages a durable per-room pending journal before mutation, containing previous session/index for recovery. Ordinary rollback removes the journal only when session/index restoration succeeds. Uncertain rollback, interruption or failed finalization leaves the journal and load/loadLatest/context/sync fail closed with recovery-required, including after restart. Journal write failure prevents all mutation. This is a safety quarantine, not a cross-store atomic transaction or automatic recovery claim; unresolved journal repair and user-visible recovery remain release gates.

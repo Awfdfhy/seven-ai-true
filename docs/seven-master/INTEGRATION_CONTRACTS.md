@@ -173,3 +173,9 @@ Memory VM test report output is dist/memory-results.json. Historical root memory
 - verify-apk.cjs now requires Android SDK aapt/apksigner (resolved from ANDROID_SDK_ROOT/ANDROID_HOME build-tools or PATH) and fails closed if unavailable.
 - Binary package/version must equal capacitor.config.json appId and package.json version/sevenAndroidVersionCode. The actual signature must verify successfully; signer certificate digests are evidence, not proof of upgrade continuity.
 - dist/apk-verification.json format seven-apk-verification v1 contains sourceCommit, workflowRunId, apkSha256, bytes, webAssetCount, packageName, versionCode, versionName, signatureVerified, signerCertificateSha256[], upgradeContinuity: UNVERIFIED. Existing installed-app migration/signing continuity needs a separate acceptance result.
+
+### Live RPG bridge uncertainty boundary (ADR-REL-007)
+- Upstream live bridge syncs legacy snapshots to structured sessions and public derived RpgStateSnapshot memory; this does not prove character-local model prompting or semantic delta extraction.
+- New pending journal key is <session prefix>:pending:<encoded roomId>, version 1 with roomId/worldId/previous session/previousIndex. It contains recovery data and must not be deleted blindly.
+- sync/load/loadLatest fail with {ok:false,status:BLOCKED,reason:recovery-required}; context returns null while a journal exists. journal-write-failed performs no mutation. Existing ordinary failure reason strings remain when compensation succeeds.
+- No schema migration or automatic destructive repair is performed. Process interruption, rollback storage failure and finalization uncertainty require verified recovery before resuming. Low-level manager access is diagnostic, not a bypass for live hydrate.

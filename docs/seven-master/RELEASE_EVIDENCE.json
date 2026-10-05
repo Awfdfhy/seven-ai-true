@@ -262,139 +262,169 @@
       {
         "file": "eval/harness.cjs",
         "exit": 0,
-        "durationMs": 58,
+        "durationMs": 48,
         "error": null
       },
       {
         "file": "eval/search-v2-eval.cjs",
         "exit": 0,
-        "durationMs": 54,
+        "durationMs": 50,
         "error": null
       },
       {
         "file": "memory.cjs",
         "exit": 0,
-        "durationMs": 68,
+        "durationMs": 58,
         "error": null
       },
       {
         "file": "runtime-smoke.cjs",
         "exit": 0,
-        "durationMs": 61,
+        "durationMs": 58,
         "error": null
       },
       {
         "file": "cloudflare/search-gateway/search-gateway.test.mjs",
         "exit": 0,
-        "durationMs": 59,
-        "error": null
-      },
-      {
-        "file": "apk/build-provenance.test.cjs",
-        "exit": 0,
-        "durationMs": 54,
+        "durationMs": 56,
         "error": null
       },
       {
         "file": "release/static-audit.cjs",
         "exit": 0,
-        "durationMs": 147,
+        "durationMs": 148,
         "error": null
       },
       {
-        "file": "release/canon-simulator.test.cjs",
+        "file": "apk/binary-verification.test.cjs",
         "exit": 0,
-        "durationMs": 52,
+        "durationMs": 47,
         "error": null
       },
       {
-        "file": "release/contrast.test.cjs",
+        "file": "apk/build-provenance.test.cjs",
         "exit": 0,
-        "durationMs": 49,
+        "durationMs": 46,
         "error": null
       },
       {
-        "file": "release/control-bridge-retry.test.cjs",
-        "exit": 0,
-        "durationMs": 166,
-        "error": null
-      },
-      {
-        "file": "release/embedded-credentials.test.cjs",
-        "exit": 0,
-        "durationMs": 202,
-        "error": null
-      },
-      {
-        "file": "release/github-self-dev.test.cjs",
-        "exit": 0,
-        "durationMs": 64,
-        "error": null
-      },
-      {
-        "file": "release/integration-contracts.test.cjs",
-        "exit": 0,
-        "durationMs": 70,
-        "error": null
-      },
-      {
-        "file": "release/research-runtime.test.cjs",
-        "exit": 0,
-        "durationMs": 54,
-        "error": null
-      },
-      {
-        "file": "release/resilience-contracts.test.cjs",
-        "exit": 0,
-        "durationMs": 55,
-        "error": null
-      },
-      {
-        "file": "release/rpg-context.test.cjs",
-        "exit": 0,
-        "durationMs": 79,
-        "error": null
-      },
-      {
-        "file": "release/rpg-longstory.test.cjs",
-        "exit": 0,
-        "durationMs": 25192,
-        "error": null
-      },
-      {
-        "file": "release/rpg-session.test.cjs",
-        "exit": 0,
-        "durationMs": 62,
-        "error": null
-      },
-      {
-        "file": "release/rpg-state.test.cjs",
-        "exit": 0,
-        "durationMs": 4907,
-        "error": null
-      },
-      {
-        "file": "release/ui-polish-loader.test.cjs",
+        "file": "release/agent-workflow-isolation.test.cjs",
         "exit": 0,
         "durationMs": 48,
         "error": null
       },
       {
+        "file": "release/android-lifecycle-contracts.test.cjs",
+        "exit": 0,
+        "durationMs": 47,
+        "error": null
+      },
+      {
+        "file": "release/canon-simulator.test.cjs",
+        "exit": 0,
+        "durationMs": 55,
+        "error": null
+      },
+      {
+        "file": "release/contrast.test.cjs",
+        "exit": 0,
+        "durationMs": 48,
+        "error": null
+      },
+      {
+        "file": "release/control-bridge-retry.test.cjs",
+        "exit": 0,
+        "durationMs": 172,
+        "error": null
+      },
+      {
+        "file": "release/embedded-credentials.test.cjs",
+        "exit": 0,
+        "durationMs": 197,
+        "error": null
+      },
+      {
+        "file": "release/github-self-dev.test.cjs",
+        "exit": 0,
+        "durationMs": 53,
+        "error": null
+      },
+      {
+        "file": "release/integration-contracts.test.cjs",
+        "exit": 0,
+        "durationMs": 60,
+        "error": null
+      },
+      {
+        "file": "release/research-runtime.test.cjs",
+        "exit": 0,
+        "durationMs": 47,
+        "error": null
+      },
+      {
+        "file": "release/resilience-contracts.test.cjs",
+        "exit": 0,
+        "durationMs": 53,
+        "error": null
+      },
+      {
+        "file": "release/rpg-context.test.cjs",
+        "exit": 0,
+        "durationMs": 68,
+        "error": null
+      },
+      {
+        "file": "release/rpg-live-integration.test.cjs",
+        "exit": 0,
+        "durationMs": 72,
+        "error": null
+      },
+      {
+        "file": "release/rpg-longstory.test.cjs",
+        "exit": 0,
+        "durationMs": 24750,
+        "error": null
+      },
+      {
+        "file": "release/rpg-session.test.cjs",
+        "exit": 0,
+        "durationMs": 64,
+        "error": null
+      },
+      {
+        "file": "release/rpg-state.test.cjs",
+        "exit": 0,
+        "durationMs": 4751,
+        "error": null
+      },
+      {
+        "file": "release/shell-ownership.test.cjs",
+        "exit": 0,
+        "durationMs": 50,
+        "error": null
+      },
+      {
+        "file": "release/ui-polish-loader.test.cjs",
+        "exit": 0,
+        "durationMs": 45,
+        "error": null
+      },
+      {
         "file": "release/world-runtime.test.cjs",
         "exit": 0,
-        "durationMs": 54,
+        "durationMs": 55,
         "error": null
       },
       {
         "file": "evolution/advanced.test.cjs",
         "exit": 0,
-        "durationMs": 51,
+        "durationMs": 60,
         "error": null
       },
       {
         "file": "evolution/coding-candidate.test.cjs",
         "exit": 0,
-        "durationMs": 55,
+        "durationMs": 50,
         "error": null
       },
       {
@@ -406,61 +436,61 @@
       {
         "file": "evolution/cognitive-boost.test.cjs",
         "exit": 0,
-        "durationMs": 55,
+        "durationMs": 51,
         "error": null
       },
       {
         "file": "evolution/cognitive-gate.test.cjs",
         "exit": 0,
-        "durationMs": 60,
+        "durationMs": 57,
         "error": null
       },
       {
         "file": "evolution/durable-engine.test.cjs",
         "exit": 0,
-        "durationMs": 65,
+        "durationMs": 68,
         "error": null
       },
       {
         "file": "evolution/engine.test.cjs",
         "exit": 0,
-        "durationMs": 65,
+        "durationMs": 55,
         "error": null
       },
       {
         "file": "evolution/evolution.test.cjs",
         "exit": 0,
-        "durationMs": 55,
+        "durationMs": 57,
         "error": null
       },
       {
         "file": "evolution/experiment-transaction.test.cjs",
         "exit": 0,
-        "durationMs": 55,
+        "durationMs": 51,
         "error": null
       },
       {
         "file": "evolution/model-promotion.test.cjs",
         "exit": 0,
-        "durationMs": 62,
+        "durationMs": 52,
         "error": null
       },
       {
         "file": "evolution/promotion-runner.test.cjs",
         "exit": 0,
-        "durationMs": 70,
+        "durationMs": 56,
         "error": null
       },
       {
         "file": "evolution/recovery.test.cjs",
         "exit": 0,
-        "durationMs": 59,
+        "durationMs": 52,
         "error": null
       },
       {
         "file": "evolution/registry.test.cjs",
         "exit": 0,
-        "durationMs": 57,
+        "durationMs": 50,
         "error": null
       }
     ],
@@ -477,7 +507,7 @@
     "candidateFullBrowser": "PENDING_REMOTE_CI",
     "candidateAndroid": "PENDING_MERGE_CI",
     "RC": "NOT_CREATED",
-    "latestUpstreamSha": "e40a655c0a71a24290a9515f3f72e7ffeb919329",
+    "latestUpstreamSha": "f90fabb1910f013d3badf9c868174d48a4bd1726",
     "intermediateWebCI": {
       "sha": "ad00c123daedebf4193b8b158a725c2353fc455f",
       "run": 37259977856,
@@ -492,6 +522,21 @@
       "staticAudit": "PASS",
       "startupBytes": 99668
     },
-    "signingUpgrade": "UNVERIFIED; root debug workflow does not set persistent CI keystore properties"
+    "signingUpgrade": "UNVERIFIED; root debug workflow does not set persistent CI keystore properties",
+    "rpgPreRepairFailure": {
+      "first": true,
+      "rejected": "active-index-write-failed",
+      "persistedPosition": 2,
+      "memoryUnchanged": true
+    },
+    "postRepair": {
+      "rpgLiveIntegration": "PASS including compound rollback failure/restart quarantine/journal-write failure",
+      "androidLifecycleContracts": "PASS after alias correction",
+      "staticAudit": "PASS",
+      "startupBytes": 99668,
+      "workspaceBytes": 319738,
+      "staticBytes": 4188140,
+      "automaticJournalRecovery": "NOT_IMPLEMENTED"
+    }
   }
 }
