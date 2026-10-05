@@ -1,0 +1,5 @@
+{
+  "schema": "seven-integration-rc-trigger-v1",
+  "productBaseSha": "e5d9c70798d7edd4f2368ca6a5547570d5931ad9",
+  "purpose": "Trigger isolated release/rc-* Web + Android verification. This file is not packaged into the app runtime."
+}
