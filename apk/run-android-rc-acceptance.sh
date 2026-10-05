@@ -94,6 +94,17 @@ adb shell dumpsys meminfo "$APP_ID" > "$OUT/meminfo-before-performance.txt"
 run_one measureRuntimePerformance "$OUT/performance-500.log"
 adb shell dumpsys meminfo "$APP_ID" > "$OUT/meminfo-after-performance.txt"
 run_one backgroundForegroundPreservesDurableState "$OUT/background-foreground.log"
+# Instrumentation may leave the target process dead after the background/foreground test.
+# Re-launch Seven and require a live PID before exercising the Android low-memory callback.
+adb shell am start -W -n "$APP_ID/.MainActivity" | tee "$OUT/low-memory-relaunch.txt"
+LOW_PID=""
+for _ in $(seq 1 40); do
+  LOW_PID="$(adb shell pidof "$APP_ID" | tr -d '\r' || true)"
+  [[ -n "$LOW_PID" ]] && break
+  sleep 0.25
+done
+[[ -n "$LOW_PID" ]] || { echo "target process missing before low-memory callback" >&2; exit 1; }
+printf 'pid_before_trim=%s\n' "$LOW_PID" > "$OUT/low-memory-process.txt"
 adb shell am send-trim-memory "$APP_ID" RUNNING_LOW | tee "$OUT/low-memory.log"
 run_one verifyProcessCleanCommit "$OUT/low-memory-verify.log"
 adb shell am start -W -n "$APP_ID/.MainActivity" > "$OUT/back-before.txt"
