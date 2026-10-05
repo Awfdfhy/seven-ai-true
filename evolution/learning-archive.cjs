@@ -13,7 +13,7 @@ function createArchive(seed=[]){
  const rows=[];for(const r of seed){if(!verifyRecord(r))throw new Error("invalid learning archive seed");rows.push(Object.freeze({...r}))}
  function append(input){const record=normalizeRecord(input);rows.push(record);return record}
  function failedBefore(input){const fp=experimentFingerprint(input);return rows.some(r=>verifyRecord(r)&&experimentFingerprint(r)===fp&&["REJECTED","FAILED","ROLLED_BACK","DEPLOYMENT_ABORTED"].includes(r.outcome))}
- function list(){return rows.map(r=>({...r}))}
+ function list(){return rows.map(r=>JSON.parse(JSON.stringify(r)))}
  function verify(){return {valid:rows.every(verifyRecord),count:rows.length}}
  return Object.freeze({append,failedBefore,list,verify});
 }
