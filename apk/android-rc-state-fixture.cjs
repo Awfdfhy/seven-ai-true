@@ -118,10 +118,17 @@ function stageProcessScript(phase){
     return `(()=>{window.__sevenRcProcess={status:'pending',phase:'postcommit'};(async()=>{
       if(await roomPersistence.flush()!==true)throw Error('postcommit base flush failed');const before=roomPersistence.status();
       ${mutate}
-      const nativeRemove=Storage.prototype.removeItem;Storage.prototype.removeItem=function(key){if(key==='seven_ai_room_wal_v1')return;return nativeRemove.call(this,key)};
-      let saved;try{saved=await roomPersistence.save();await roomPersistence.flush()}finally{Storage.prototype.removeItem=nativeRemove}
-      const ps=roomPersistence.status();if(saved!==true||ps.failed||ps.pending||!ps.walStaged||ps.revision<=before.revision)throw Error('postcommit window invalid '+JSON.stringify(ps));
-      window.__sevenRcProcess={status:'ready',phase:'postcommit',revision:ps.revision};
+      const saved=await roomPersistence.save();await roomPersistence.flush();
+      const ps=roomPersistence.status();if(saved!==true||ps.failed||ps.pending||ps.walStaged||ps.revision<=before.revision||!Number.isSafeInteger(ps.persistedWalSeq)||ps.persistedWalSeq<1)throw Error('postcommit commit invalid '+JSON.stringify(ps));
+      const value=JSON.parse(JSON.stringify({version:1,rooms,roomTitles,currentRoom}));
+      const stale={schemaVersion:1,seq:ps.persistedWalSeq,sessionId:'android-postcommit-fixture',baseRevision:before.revision,value};
+      localStorage.setItem('seven_ai_room_wal_v1',JSON.stringify(stale));
+      const walDb=await new Promise((resolve,reject)=>{const q=indexedDB.open('seven_ai_room_wal_durable_v1',1);q.onupgradeneeded=()=>{if(!q.result.objectStoreNames.contains('wal'))q.result.createObjectStore('wal',{keyPath:'id'})};q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error)});
+      await new Promise((resolve,reject)=>{const tx=walDb.transaction('wal','readwrite');tx.objectStore('wal').put({id:'active',value:stale});tx.oncomplete=resolve;tx.onabort=()=>reject(tx.error||Error('postcommit WAL fixture abort'));tx.onerror=()=>{}});
+      walDb.close();
+      const durable=await new Promise((resolve,reject)=>{const q=indexedDB.open('seven_ai_room_wal_durable_v1',1);q.onsuccess=()=>{const db=q.result,tx=db.transaction('wal','readonly'),g=tx.objectStore('wal').get('active');g.onsuccess=()=>{const ok=!!(g.result&&g.result.value&&g.result.value.seq===ps.persistedWalSeq);db.close();resolve(ok)};g.onerror=()=>reject(g.error)};q.onerror=()=>reject(q.error)});
+      if(!durable)throw Error('postcommit durable WAL fixture missing');
+      window.__sevenRcProcess={status:'ready',phase:'postcommit',revision:ps.revision,walSeq:ps.persistedWalSeq};
     })().catch(e=>window.__sevenRcProcess={status:'error',phase:'postcommit',error:String(e&&e.message||e)});return true})()`;
   }
   return `(()=>{window.__sevenRcProcess={status:'pending',phase:'cleancommit'};(async()=>{
