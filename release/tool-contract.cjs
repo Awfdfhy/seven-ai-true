@@ -1,51 +1,111 @@
 "use strict";
 
-const ERROR_CODES=Object.freeze(new Set(["TIMEOUT","NETWORK_ERROR","AUTH_ERROR","VALIDATION_ERROR","PERMISSION_ERROR","UNAVAILABLE","RATE_LIMIT","TOOL_ERROR","MALFORMED_OUTPUT","CANCELLED","INTERNAL_ERROR"]));
+const ERROR_CODES=Object.freeze(["TIMEOUT","NETWORK_ERROR","AUTH_ERROR","VALIDATION_ERROR","PERMISSION_ERROR","UNAVAILABLE","RATE_LIMIT","TOOL_ERROR","MALFORMED_OUTPUT","CANCELLED","INTERNAL_ERROR"]);
+const ERROR_CODE_SET=new Set(ERROR_CODES);
 const RISK=Object.freeze({none:"NONE",read:"READ",low:"READ",write:"WRITE",side_effect:"WRITE",sideeffect:"WRITE",high:"HIGH",critical:"CRITICAL"});
+const SCHEMA_KEYS=new Set(["type","properties","required","additionalProperties","items","enum","description","title","default","minLength","maxLength","minimum","maximum","minItems","maxItems"]);
 function text(v){return String(v==null?"":v).trim()}
 function normalizeRisk(v){const k=text(v).toLowerCase().replace(/[ -]/g,"_");return RISK[k]||"HIGH"}
-function list(v){if(v==null)return[];return(Array.isArray(v)?v:[v]).map(text).filter(Boolean)}
+function cloneValue(v){
+ if(Array.isArray(v))return v.map(cloneValue);
+ if(v&&typeof v==="object"){const out={};for(const [k,x] of Object.entries(v))out[k]=cloneValue(x);return out}
+ return v;
+}
+function deepFreeze(v){
+ if(!v||typeof v!=="object"||Object.isFrozen(v))return v;
+ for(const x of Object.values(v))deepFreeze(x);
+ return Object.freeze(v);
+}
+function validateSchema(schema,value,path="$"){
+ const issues=[];
+ if(!schema||typeof schema!=="object"||Array.isArray(schema))return [{path,reason:"invalid-schema"}];
+ for(const key of Object.keys(schema))if(!SCHEMA_KEYS.has(key))issues.push({path,reason:"unsupported-schema-key:"+key});
+ if(Array.isArray(schema.enum)&&!schema.enum.some(x=>JSON.stringify(x)===JSON.stringify(value)))issues.push({path,reason:"enum"});
+ const type=schema.type;
+ if(type){
+  const ok=type==="object"?!!value&&typeof value==="object"&&!Array.isArray(value):
+    type==="array"?Array.isArray(value):
+    type==="string"?typeof value==="string":
+    type==="number"?typeof value==="number"&&Number.isFinite(value):
+    type==="integer"?Number.isInteger(value):
+    type==="boolean"?typeof value==="boolean":
+    type==="null"?value===null:false;
+  if(!ok){issues.push({path,reason:"type:"+type});return issues}
+ }
+ if(type==="object"&&value&&typeof value==="object"&&!Array.isArray(value)){
+  const props=schema.properties&&typeof schema.properties==="object"&&!Array.isArray(schema.properties)?schema.properties:{};
+  for(const key of Array.isArray(schema.required)?schema.required:[])if(!Object.prototype.hasOwnProperty.call(value,key))issues.push({path:path+"."+key,reason:"required"});
+  if(schema.additionalProperties===false)for(const key of Object.keys(value))if(!Object.prototype.hasOwnProperty.call(props,key))issues.push({path:path+"."+key,reason:"additional-property"});
+  for(const [key,child] of Object.entries(props))if(Object.prototype.hasOwnProperty.call(value,key))issues.push(...validateSchema(child,value[key],path+"."+key));
+ }
+ if(type==="array"&&Array.isArray(value)){
+  if(Number.isFinite(schema.minItems)&&value.length<schema.minItems)issues.push({path,reason:"minItems"});
+  if(Number.isFinite(schema.maxItems)&&value.length>schema.maxItems)issues.push({path,reason:"maxItems"});
+  if(schema.items)for(let i=0;i<value.length;i++)issues.push(...validateSchema(schema.items,value[i],path+"["+i+"]"));
+ }
+ if(type==="string"&&typeof value==="string"){
+  if(Number.isFinite(schema.minLength)&&value.length<schema.minLength)issues.push({path,reason:"minLength"});
+  if(Number.isFinite(schema.maxLength)&&value.length>schema.maxLength)issues.push({path,reason:"maxLength"});
+ }
+ if((type==="number"||type==="integer")&&typeof value==="number"){
+  if(Number.isFinite(schema.minimum)&&value<schema.minimum)issues.push({path,reason:"minimum"});
+  if(Number.isFinite(schema.maximum)&&value>schema.maximum)issues.push({path,reason:"maximum"});
+ }
+ return issues;
+}
 function normalizeTool(raw={}){
- const id=text(raw.id||raw.name); if(!id)throw new Error("tool id required");
- const schema=raw.inputSchema||raw.schema||{type:"object",properties:{},additionalProperties:false};
+ const id=text(raw.id||raw.name);if(!id)throw new Error("tool id required");
+ const schema=cloneValue(raw.inputSchema||raw.schema||{type:"object",properties:{},additionalProperties:false});
  if(!schema||typeof schema!=="object"||Array.isArray(schema))throw new Error("invalid tool input schema");
+ const outputSchema=raw.outputSchema&&typeof raw.outputSchema==="object"&&!Array.isArray(raw.outputSchema)?cloneValue(raw.outputSchema):null;
  const timeoutMs=Math.max(100,Math.min(120000,Number(raw.timeoutMs||raw.timeout||15000)||15000));
  const retries=Math.max(0,Math.min(3,Number((raw.retryPolicy&&raw.retryPolicy.maxRetries)??raw.maxRetries??0)||0));
+ const risk=normalizeRisk(raw.risk||raw.riskLevel);
  return Object.freeze({
-  id,name:text(raw.name||id),inputSchema:schema,outputSchema:raw.outputSchema&&typeof raw.outputSchema==="object"?raw.outputSchema:null,
-  risk:normalizeRisk(raw.risk||raw.riskLevel),permissions:Object.freeze(list(raw.permissions||raw.requiredPermissions)),
-  resources:Object.freeze(list(raw.resources||raw.allowedResources)),
-  sideEffect:raw.sideEffect===true||["WRITE","HIGH","CRITICAL"].includes(normalizeRisk(raw.risk||raw.riskLevel)),
-  confirmationRequired:raw.confirmationRequired===true||normalizeRisk(raw.risk||raw.riskLevel)==="CRITICAL",
+  id,name:text(raw.name||id),inputSchema:deepFreeze(schema),outputSchema:outputSchema?deepFreeze(outputSchema):null,
+  risk,permissions:Object.freeze([...(raw.permissions||raw.requiredPermissions||[])].map(text).filter(Boolean)),
+  resources:Object.freeze([...(raw.resources||raw.allowedResources||[])].map(text).filter(Boolean)),
+  sideEffect:raw.sideEffect===true||["WRITE","HIGH","CRITICAL"].includes(risk),
+  confirmationRequired:raw.confirmationRequired===true||risk==="CRITICAL",
   timeoutMs,retryPolicy:Object.freeze({maxRetries:retries}),cancelable:raw.cancelable!==false,
-  executor:typeof raw.executor==="function"?raw.executor:null,metadata:Object.freeze({...raw.metadata})
+  executor:typeof raw.executor==="function"?raw.executor:null,metadata:deepFreeze(cloneValue(raw.metadata||{}))
  });
 }
 function errorEnvelope(error,meta={}){
  let code=text(error&&error.code).toUpperCase();
- if(!ERROR_CODES.has(code)){const m=text(error&&error.message).toLowerCase();code=m.includes("timeout")?"TIMEOUT":m.includes("cancel")?"CANCELLED":m.includes("auth")?"AUTH_ERROR":m.includes("permission")?"PERMISSION_ERROR":"TOOL_ERROR"}
- return Object.freeze({ok:false,error:Object.freeze({code,message:text(error&&error.message||code),retryable:code==="NETWORK_ERROR"||code==="RATE_LIMIT"||code==="TIMEOUT"}),audit:Object.freeze({...meta})});
+ if(!ERROR_CODE_SET.has(code)){const m=text(error&&error.message).toLowerCase();code=m.includes("timeout")?"TIMEOUT":m.includes("cancel")?"CANCELLED":m.includes("auth")?"AUTH_ERROR":m.includes("permission")?"PERMISSION_ERROR":"TOOL_ERROR"}
+ return Object.freeze({ok:false,error:Object.freeze({code,message:text(error&&error.message||code),retryable:code==="NETWORK_ERROR"||code==="RATE_LIMIT"||code==="TIMEOUT"}),audit:deepFreeze(cloneValue(meta))});
 }
-function successEnvelope(output,meta={}){return Object.freeze({ok:true,output,audit:Object.freeze({...meta})})}
+function successEnvelope(output,meta={}){return Object.freeze({ok:true,output,audit:deepFreeze(cloneValue(meta))})}
 function createRegistry(rawTools=[]){
  const map=new Map();
  for(const raw of rawTools){const t=normalizeTool(raw);if(map.has(t.id))throw new Error("duplicate tool id: "+t.id);map.set(t.id,t)}
  return Object.freeze({list:()=>[...map.values()],get:id=>map.get(String(id))||null});
 }
 async function execute({tool,input,authorize,signal,traceId,now=()=>Date.now()}={}){
- const t=normalizeTool(tool);const started=now();const audit={toolId:t.id,traceId:text(traceId)||null,startedAt:started,risk:t.risk};
+ const t=normalizeTool(tool),started=now(),audit={toolId:t.id,traceId:text(traceId)||null,startedAt:started,risk:t.risk,lateResultQuarantine:true};
  if(!t.executor)return errorEnvelope(Object.assign(new Error("tool unavailable"),{code:"UNAVAILABLE"}),audit);
+ const inputIssues=validateSchema(t.inputSchema,input);
+ if(inputIssues.length)return errorEnvelope(Object.assign(new Error("tool input validation failed: "+inputIssues[0].reason),{code:"VALIDATION_ERROR"}),{...audit,validationIssues:inputIssues.slice(0,8)});
  if(signal&&signal.aborted)return errorEnvelope(Object.assign(new Error("cancelled"),{code:"CANCELLED"}),audit);
+ if(t.sideEffect&&t.cancelable===false)return errorEnvelope(Object.assign(new Error("non-abortable side-effect tool blocked"),{code:"UNAVAILABLE"}),audit);
  if(typeof authorize!=="function")return errorEnvelope(Object.assign(new Error("permission gate unavailable"),{code:"PERMISSION_ERROR"}),audit);
  let auth;try{auth=await authorize(t,input)}catch(e){return errorEnvelope(Object.assign(e,{code:e.code||"PERMISSION_ERROR"}),audit)}
  if(!auth||auth.allowed!==true)return errorEnvelope(Object.assign(new Error(auth&&auth.reason||"permission denied"),{code:"PERMISSION_ERROR"}),audit);
- let timer,abortListener;
+ const controller=new AbortController();
+ let timer,abortListener,timedOut=false;
  try{
-  const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>reject(Object.assign(new Error("tool timeout"),{code:"TIMEOUT"})),t.timeoutMs)});
-  const cancelled=new Promise((_,reject)=>{if(signal){abortListener=()=>reject(Object.assign(new Error("cancelled"),{code:"CANCELLED"}));signal.addEventListener("abort",abortListener,{once:true})}});
-  const output=await Promise.race([Promise.resolve().then(()=>t.executor(input,{signal,traceId})),timeout,cancelled]);
+  const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{timedOut=true;try{controller.abort("timeout")}catch(_){}reject(Object.assign(new Error("tool timeout"),{code:"TIMEOUT"}))},t.timeoutMs)});
+  const cancelled=new Promise((_,reject)=>{if(signal){abortListener=()=>{try{controller.abort("cancelled")}catch(_){}reject(Object.assign(new Error("cancelled"),{code:"CANCELLED"}))};signal.addEventListener("abort",abortListener,{once:true})}});
+  const task=Promise.resolve().then(()=>t.executor(input,{signal:controller.signal,traceId}));
+  const output=await Promise.race([task,timeout,cancelled]);
+  if(timedOut||controller.signal.aborted)return errorEnvelope(Object.assign(new Error(timedOut?"tool timeout":"cancelled"),{code:timedOut?"TIMEOUT":"CANCELLED"}),audit);
+  if(t.outputSchema){
+   const outputIssues=validateSchema(t.outputSchema,output);
+   if(outputIssues.length)return errorEnvelope(Object.assign(new Error("tool output validation failed: "+outputIssues[0].reason),{code:"MALFORMED_OUTPUT"}),{...audit,validationIssues:outputIssues.slice(0,8)});
+  }
   return successEnvelope(output,{...audit,finishedAt:now(),durationMs:Math.max(0,now()-started)});
  }catch(e){return errorEnvelope(e,{...audit,finishedAt:now(),durationMs:Math.max(0,now()-started)})}
- finally{if(timer)clearTimeout(timer);if(signal&&abortListener)signal.removeEventListener("abort",abortListener)}
+ finally{if(timer)clearTimeout(timer);if(signal&&abortListener)signal.removeEventListener("abort",abortListener);if(!controller.signal.aborted)try{controller.abort("completed")}catch(_){}}
 }
-module.exports={ERROR_CODES,normalizeRisk,normalizeTool,errorEnvelope,successEnvelope,createRegistry,execute};
+module.exports={ERROR_CODES,normalizeRisk,normalizeTool,validateSchema,errorEnvelope,successEnvelope,createRegistry,execute};
