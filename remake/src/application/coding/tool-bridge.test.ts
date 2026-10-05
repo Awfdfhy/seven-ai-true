@@ -118,4 +118,78 @@ describe("coding repository Tool Fabric bridge",()=>{
     })).rejects.toMatchObject({code:"PERMISSION"});
     expect(backend.commitCount).toBe(0);
   });
+
+  it("propagates external cancellation before the repository effect boundary", async () => {
+    let commitCalls = 0;
+    const backend: CodingRepositoryPort = {
+      async getHead(input) {
+        await new Promise<void>((_resolve, reject) => {
+          if (input.signal.aborted) {
+            reject(new DOMException("Aborted", "AbortError"));
+            return;
+          }
+          input.signal.addEventListener(
+            "abort",
+            () => reject(new DOMException("Aborted", "AbortError")),
+            { once: true },
+          );
+        });
+        return "a".repeat(40);
+      },
+      async listFiles() { return []; },
+      async readFiles() { return []; },
+      async commit() {
+        commitCalls += 1;
+        return { commitSha: "b".repeat(40), changedPaths: ["src/a.ts"] };
+      },
+    };
+    const registry = new ToolRegistry();
+    registerCodingRepositoryTools(registry, backend);
+    const now = Date.now();
+    const executor = new ToolExecutor(
+      registry,
+      new TaskManager(),
+      {
+        resolve(invocation, fingerprint) {
+          return {
+            grants: [{
+              grantId: "coding-cancel",
+              capabilities: ["coding.repo.read", "coding.repo.write"],
+              toolIds: ["coding.repo.commit"],
+              scope: { roomId: "room-cancel", taskId: "task-cancel" },
+              issuedAt: now - 1000,
+              expiresAt: now + 60_000,
+              source: "user",
+            }],
+            approval: {
+              approvalId: "approve-cancel",
+              invocationFingerprint: fingerprint,
+              issuedAt: now - 1000,
+              expiresAt: now + 60_000,
+              oneShot: false,
+            },
+          };
+        },
+      },
+    );
+    const port = new ToolBackedCodingRepositoryPort(executor, {
+      roomId: "room-cancel",
+      taskId: "task-cancel",
+    });
+    const controller = new AbortController();
+    const pending = port.commit({
+      repository: "owner/repo",
+      branch: "main",
+      baseSha: "a".repeat(40),
+      message: "cancel me",
+      changes: [{ kind: "upsert", path: "src/a.ts", content: "x" }],
+      signal: controller.signal,
+    });
+    await Promise.resolve();
+    controller.abort("user-cancel");
+
+    await expect(pending).rejects.toMatchObject({ code: "CANCELLED" });
+    expect(commitCalls).toBe(0);
+  });
+
 });
