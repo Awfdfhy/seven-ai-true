@@ -18,5 +18,20 @@ const livePacked=minifyRpg(fs.readFileSync(path.join(__dirname,'workspaces','rpg
 const workspacePacked=minifyRpg(fs.readFileSync(path.join(__dirname,'workspaces','rpg.js'),'utf8'));
 assert.ok(livePacked.includes('SevenRpgLive'));
 assert.ok(workspacePacked.includes('SevenRpgWorkspace'));
+const publicWorkspaceMarkers={
+  'hub.js':'SevenWorkspaces',
+  'coding.js':'SevenCodingWorkspace',
+  'research.js':'SevenResearchWorkspace',
+  'generated-ui.js':'SevenGeneratedUI',
+  'seven-shell.js':'SevenShell',
+  'seven-shell-final.js':'SevenShell'
+};
+for(const [name,marker] of Object.entries(publicWorkspaceMarkers)){
+  const source=fs.readFileSync(path.join(__dirname,'workspaces',name),'utf8');
+  const packed=minifyRpg(source);
+  assert.ok(packed.length<source.length,name+' should shrink under parser minification');
+  assert.ok(packed.includes(marker),name+' lost public marker '+marker);
+}
+
 assert.throws(()=>minifyRpg('function {'),/Unexpected|Name|token/i);
 console.log('Packaged RPG runtime: PASS (state/session/context/recovery/rules/planner/orchestrator/live/workspace)');
