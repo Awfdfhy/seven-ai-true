@@ -36,6 +36,15 @@ Status: PARTIAL — production-hardening branch, not approved for integration ye
 - dispatches CI and requires an exact-SHA waiter;
 - fails closed if exact CI evidence, diff, verification or proposal ports are unavailable.
 
+### Verified proposal policy
+`release/coding-proposal-policy.cjs`
+- refuses proposal without test evidence and a 64-character diff digest;
+- rechecks live branch head equals candidate SHA;
+- requires exact candidate CI to be completed/success;
+- forbids proposing from the base branch itself;
+- emits proposal evidence bound to candidate SHA and CI run id;
+- is wired as the default GitHub Coding proposal path when the required authoritative ports exist.
+
 ### Deterministic E2E fixture
 `release/coding-fixture-e2e.test.cjs`
 Exercises a known bug:
@@ -47,6 +56,7 @@ This proves orchestration semantics in a deterministic fixture; it is not a clai
 - `release/coding-test-selector.test.cjs`: domain escalation, traversal rejection, mandatory gates.
 - `release/coding-github-adapter.test.cjs`: snapshot/read/atomic write/exact-CI binding/stale-write/fail-closed waiter.
 - `release/coding-fixture-e2e.test.cjs`: first-failure → repair → retest → verify E2E fixture.
+- `release/coding-proposal-policy.test.cjs`: stale candidate, red CI, missing evidence and same-base rejection.
 
 All files match `release/*.test.cjs`, so root `all.cjs` discovers them automatically.
 
@@ -68,7 +78,7 @@ All files match `release/*.test.cjs`, so root `all.cjs` discovers them automatic
 - Run #3390 / id 37304278803 executed the branch and failed in `node all.cjs`.
 - The logs proved `coding-fixture-e2e.test.cjs` PASS and `coding-github-adapter.test.cjs` PASS before the failure.
 - Root cause was a literal escaped `\\n` accidentally written into `coding-production-runtime.test.cjs`, producing a JavaScript SyntaxError. The test was repaired in commit `7d802ae46226d9248a741e5e7b2a19e6bbd29e84`; no test was weakened or removed.
-- After additional authoritative-diff/live-SHA hardening, exact-head run #3399 / id 37304526837 was created for `8655dd4bd306485a1e3a41da8d581f5999cbf0e6` and is pending at the time of this report.
+- After additional authoritative-diff/live-SHA hardening, run #3399 / id 37304526837 was created for `8655dd4bd306485a1e3a41da8d581f5999cbf0e6` but was cancelled before jobs because a newer PR head superseded it. Run #3400 / id 37304564057 then started for `6636ac0aae57129d1444fd11c8d882948d940428`; subsequent proposal-policy commits superseded that head as development continued.
 Therefore CI green is still **not** claimed until #3399 completes successfully.
 
 ## Security/cross-system finding
@@ -76,7 +86,7 @@ Therefore CI green is still **not** claimed until #3399 completes successfully.
 
 ## Remaining risks / next exact actions
 1. Obtain exact-SHA CI execution for this branch; repair every failure without weakening tests.
-2. Bind the remaining authoritative proposal implementation; authoritative diff shape and live-SHA verification are now enforced by the adapter.
+2. Authoritative proposal policy is now implemented and adapter-bound; integration still needs the concrete product GitHub API ports to supply exact CI/diff evidence.
 3. Add a real isolated GitHub fixture/worktree benchmark (not production main) and retain its SHA/run evidence.
 4. Expose a product-facing Coding action only after 1–3 are green; keep current read-only UI truth boundary until then.
 5. Run root full suite plus release/browser gates; then assess Android packaging exposure.
