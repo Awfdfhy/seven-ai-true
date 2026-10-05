@@ -36,8 +36,9 @@ assert.equal(txOut.ok,false);assert.equal(txOut.reason,'journal-write-failed');a
 failJournalWrite=false;
 
 const one={work:{id:'valen',title:'Valen'},worldSession:{position:1,titles:[]},canonPack:{id:'canon'},canonSession:{position:1,ledger:[]}};
+const memoryBeforeLegacy=mem.objects.length;
 let out=a.sync({roomId:'room-a',worldId:'valen',legacy:one,reason:'load'});
-assert.equal(out.ok,true);assert.equal(mem.objects.length,1);assert.equal(a.loadLatest('room-a').session.legacy.worldSession.position,1);
+assert.equal(out.ok,true);assert.equal(mem.objects.length,memoryBeforeLegacy+1);assert.equal(a.loadLatest('room-a').session.legacy.worldSession.position,1);
 const two=JSON.parse(JSON.stringify(one));two.worldSession.position=2;two.canonSession.ledger=[{id:'e1'}];
 out=a.sync({roomId:'room-a',worldId:'valen',legacy:two,reason:'turn'});
 assert.equal(out.ok,true);assert.equal(mem.objects.length,1);assert.equal(a.load('room-a','valen').session.legacy.worldSession.position,2);
