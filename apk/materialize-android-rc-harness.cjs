@@ -116,13 +116,18 @@ public class SevenRcHarnessTest {
   }
   private void signal(String phase)throws Exception{
     ParcelFileDescriptor p=InstrumentationRegistry.getInstrumentation().getUiAutomation()
-      .executeShellCommand("sh -c 'printf %s "+phase+" > /data/local/tmp/seven-rc-process-ready'");
-    if(p!=null)p.close();Thread.sleep(300);
+      .executeShellCommand("sh -c 'printf %s "+phase+" > /data/local/tmp/seven-rc-process-ready; cat /data/local/tmp/seven-rc-process-ready'");
+    assertNotNull("host marker command pipe missing",p);
+    try(InputStream in=new ParcelFileDescriptor.AutoCloseInputStream(p);ByteArrayOutputStream out=new ByteArrayOutputStream()){
+      byte[] buf=new byte[128];for(int n;(n=in.read(buf))>=0;){if(n>0)out.write(buf,0,n);}
+      assertEquals("host marker was not written",phase,out.toString(StandardCharsets.UTF_8.name()));
+    }
   }
   private void stage(String phase,String script)throws Exception{
     try(ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)){
-      WebView w=web(scenario);assertEquals("true",js(w,script));
+      WebView w=web(scenario);System.out.println("SEVEN_RC_STAGE_WEB_READY="+phase);assertEquals("true",js(w,script));
       waitFor(w,"window.__sevenRcProcess&&window.__sevenRcProcess.status!=='pending'");
+      System.out.println("SEVEN_RC_STAGE_STATE="+js(w,"JSON.stringify(window.__sevenRcProcess)"));
       assertEquals("true",js(w,"window.__sevenRcProcess.status==='ready'"));
       signal(phase);
       Thread.sleep(60000);
