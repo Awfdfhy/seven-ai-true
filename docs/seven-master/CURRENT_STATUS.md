@@ -2,117 +2,67 @@
 
 Last integration update: 2026-10-05
 
-## Current Position
-Cross-system Integration / Verification is active. Specialist chats may continue subsystem work, but main is judged by shared contracts and regression/build evidence.
+## Integration position
+**Release candidate validation in progress. Seven is not yet final-accepted.**
 
-### Implemented / under active hardening
-- Chat Core
-- Model Routing
-- Memory
-- Files
-- Web Research
-- Deep Think
-- Tools
-- Coding System / GitHub Self-Dev execution surfaces
-- Self-Development foundations
-- RPG world/canon/state foundations
-- Android/Capacitor release pipeline
+The Integration track has now repaired and regression-locked the highest-confidence cross-system failures found in the master bughunt: execution checkpoint integrity/retention, Canon chronology/branch boundaries, IndexedDB recovery, Arabic IME send safety, response-mode truth, room/mode cancellation, Deep Think role ordering and telemetry ownership, multilingual/context-window budgeting, fallback deadlines, provider discovery timeouts/health, GitHub credential expiry/path/log handling, attachment retry/size/type gates, research temporal citation locks, and multiple RPG projection/pack/snapshot defects.
 
-## Integration Batch 01
-Implemented:
-- Added release/integration-contracts.test.cjs and registered it in all.cjs.
-- Hardened execution checkpoint restore with schema v2 identity + checksum validation and bounded retention.
-- Replaced hard-coded Canon chronology PASS with ledger position-regression detection.
-- Unified the release stop shim so Android and web attempt actual controller abort instead of Android nulling the controller.
-- Added contract/state isolation coverage across Control → Runtime → Execution, Research citation locks, World player-agency, Canon chronology and context scope isolation.
+## Evidence already green
+- Seven AI tests: SUCCESS on main SHA 6f5063d61526880542107c825d2f48c64715e46f.
+- Seven AI tests: SUCCESS on main SHA 7e320564c9c519283a5e93fb6c0b9a0343a16bcd.
+- Seven Reality Lab: SUCCESS on SHA 428f5fd027c2203aa03808e782a1a0367d58a583.
+- Recent static audit: PASS at 98,775 hot release-layer bytes, under the 100,000-byte gate.
+- RPG focused evidence: 1010 state events, versioned session rollback/isolation/quarantine tests, bounded character context, and 1006-event long-story restart harness.
 
-Observed during this batch:
-- Multi-chat writes moved main while integration work was in progress; integration must always re-read current HEAD before shared edits.
-- A CI failure was caused by exceeding the 100,000-byte hot release-layer budget after checkpoint hardening. The implementation was compacted rather than weakening the budget.
-- RPG state kernel work is landing concurrently and remains integration/acceptance work, not automatically complete.
+## Current RC batch
+The next code SHA after this document update must pass:
+1. all.cjs / Seven AI tests;
+2. production release verifier/static audit;
+3. Android lint + unit tests + APK build;
+4. APK content verification;
+5. Android 16 connected WebView tests;
+6. Android 14 connected WebView/UI tests.
 
-## Known Open Integration Risks
-- Legacy generation/cancellation state still has broader global/per-room scoping debt; the immediate Android/web abort bug is fixed, but full cross-room cancellation isolation is not yet proven.
-- RPG persistence, prompt projection and public-memory seam require end-to-end verification against the newly landing state kernel.
-- Unified error taxonomy is now a contract; implementation coverage across all legacy surfaces remains to be audited.
-- Trace/observability coverage is incomplete and requires a request lifecycle audit.
-- Android acceptance must come from the latest Seven Android APK run, not from web tests alone.
-- The existing master bughunt remains the defect backlog; repaired items require regression evidence before closure.
+No later code push should be credited without rerunning those gates.
 
-## Acceptance State
-NOT YET ACCEPTED AS FULLY INTEGRATED. No claim of zero bugs is made.
+## Known acceptance blockers / external dependencies
+- Live legacy RPG workspace is not yet atomically unified with the new structured RPG session manager/public Memory projection.
+- Android background/process-death during queued room persistence is not fully proven.
+- Repository required-status enforcement cannot be verified or configured through the current GitHub App. Repository rulesets currently return an empty list; branch-protection read requires unavailable administration permission.
+- Agent workflow isolation is not fully proven.
+- Several PARTIAL UI/lifecycle ownership items remain; see BUG_STATUS.md.
 
-See docs/seven-master/INTEGRATION_AUDIT.md for inventory, dependency map, contract status and scorecard.
+## Acceptance statement
+**No zero-bugs claim.** Current meaning of green is only: zero known reproducible blockers in the specific suites that passed. Full Integration Acceptance requires the latest release-code SHA to complete Web + Android gates and resolution/explicit acceptance of the blockers above.
 
+See:
+- docs/seven-master/INTEGRATION_AUDIT.md
+- docs/seven-master/BUG_STATUS.md
+- docs/seven-master/INTEGRATION_CONTRACTS.md
 
-## RPG Specialist Batch 01 — Structured State Foundation
-
-Implemented:
-- docs/seven-master/RPG_RESEARCH_REPORT.md — external research synthesis + repo gap analysis.
-- docs/seven-master/RPG_ARCHITECTURE.md — structured RPG architecture and integration boundaries.
-- docs/seven-master/RPG_IMPLEMENTATION_PLAN.md — staged build/evaluation plan through long-story + Android + Integration verification.
-- release/workspaces/rpg-state.js — pure structured-state kernel.
-- release/rpg-state.test.cjs — deterministic state/continuity acceptance coverage.
-- all.cjs now registers the RPG state suite.
-- RPG workspace dependency loader now loads SevenRpgState with legacy World/Canon runtimes.
-- RPG State Contract v1 and ADR-010..014 ratified.
-
-Evidence from the kernel scenario:
-- PASS at 1010 committed events/turns.
-- Player-control mutation from runtime is blocked.
-- Invalid cross-location scene is blocked.
-- Future/local-secret knowledge is bounded by character.
-- Belief can disagree with truth without promoting to Canon.
-- Multi-dimensional relationship and emotion mutations persist.
-- Lower-priority Canon and conflicting HARD CANON mutations are blocked; explicit user override is accepted.
-- Inventory ownership and timeline rollback guards pass.
-- Test context projection remained bounded (~5.2k serialized chars for the long fixture).
-
-Not yet accepted:
-- live model generation does not yet consume the new Character/Narrator views;
-- per-room/per-world RPG persistence is not yet wired;
-- legacy World/Canon + new state commit is not yet one atomic turn transaction;
-- state-level knowledge tests do not yet prove generation-level no-leak behavior;
-- directional relationships, production token-aware retrieval, semantic 100/500/1000-turn evaluation and Android restore UX remain open.
-
-Next RPG implementation target: versioned per-room persistence + atomic session ownership and corruption/restart tests.
-
-## Self-Development Specialist Batch 01 — Observation & Diagnosis Foundation
+## Self-Development specialist status — Phase 1 candidate
 
 Tracking:
 - roadmap issue #100
-- candidate PR #102
-- stale candidate PR #101 was intentionally closed without merge after base drift
+- PR #102
+- earlier stale candidate PR #101 was closed without merge after base drift
 
-Implemented in the current candidate:
-- .seven-team/self-development-v1/RESEARCH_SYNTHESIS.md
-- .seven-team/self-development-v1/ARCHITECTURE.md
-- .seven-team/self-development-v1/EXECUTION_PLAN.md
-- evolution/self-development-observer.cjs
-- evolution/self-development-diagnosis.cjs
-- evolution/self-development-foundation.test.cjs
-- ADR-015..017 and expanded Self-Development integration contract
+Implemented on the isolated candidate:
+- research synthesis + target architecture + 10-phase execution plan;
+- content-minimized Observation Engine;
+- deterministic weakness aggregation;
+- evidence-bounded Diagnosis Engine;
+- LOW/MEDIUM/HIGH/CRITICAL change-risk classification;
+- tests for content/secret rejection, bounded buffering, forged-normalization bypass, critical escalation and protected-plane governance.
 
-Phase 1 behavior:
-- privacy/content-minimized structured observations
-- allowlisted metrics/metadata and secret-like telemetry rejection
-- bounded observation buffer
-- deterministic weakness aggregation
-- diagnosis remains HYPOTHESIS until controlled evidence exists
-- critical-signal escalation
-- conservative LOW/MEDIUM/HIGH/CRITICAL change risk
-- evaluator/Self-Development protected paths route to GOVERNANCE_REQUIRED
-- no production file-write, shell, GitHub mutation, merge or promotion authority
-
-Current dependency truth:
-- existing Coding/GitHub execution surfaces are present and under verification;
-- the dedicated Coding v1 IMPLEMENTATION_EVIDENCE.md is not present at this captured baseline;
-- governed production Self-Development mutation remains blocked until the Coding contract is proven.
+Authority state:
+- Phase 1 exports no file-write, shell, GitHub mutation, merge or promotion capability;
+- telemetry policy tables are module-private;
+- evaluator/Self-Development paths route to governance rather than ordinary Coding execution;
+- production mutation remains blocked on proving the authoritative Coding System contract. The dedicated `.seven-team/coding-v1/IMPLEMENTATION_EVIDENCE.md` is not present at this captured baseline.
 
 Verification state:
-- Phase 1 is a protected Evolution/Self-Development-plane candidate;
-- full Seven CI/regression must pass on a merge-capable exact candidate;
-- independent review remains required before merge.
-
-Next Self-Development target after Phase 1 evidence: Phase 2 Metric Registry + paired baseline/candidate evaluator.
+- PR must be merge-capable against current main and pass the full Seven AI regression suite;
+- because this is Evolution/Self-Development authority-plane code, independent review remains required before merge;
+- no Phase 1 completion claim until exact candidate CI evidence is recorded.
 
