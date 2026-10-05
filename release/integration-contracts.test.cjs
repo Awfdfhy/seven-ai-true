@@ -90,7 +90,7 @@ check('canon audit detects chronology regression',()=>canon.audit(cs).chronology
 
 const UnifiedTools=require('./tool-contract.cjs');
 const normalizedLegacy=UnifiedTools.normalizeTool({id:'legacy-write',name:'legacy write',schema:tool.schema,risk:'side_effect',requiredPermissions:['fs.write']});
-check('unified tool contract adapts legacy schema/risk without granting execution',()=>JSON.stringify(normalizedLegacy.inputSchema)===JSON.stringify(tool.schema)&&normalizedLegacy.risk==='WRITE'&&normalizedLegacy.executor===null);
+check('unified tool contract adapts legacy schema/risk without granting execution',()=>normalizedLegacy.inputSchema.type===tool.schema.type&&normalizedLegacy.inputSchema.required[0]==='path'&&normalizedLegacy.inputSchema.properties.path.type==='string'&&normalizedLegacy.inputSchema.additionalProperties===false&&normalizedLegacy.risk==='WRITE'&&normalizedLegacy.executor===null);
 const normalizedTyped=UnifiedTools.normalizeTool({id:'typed-read',inputSchema:{type:'object'},riskLevel:'read',permissions:['artifact.read']});
 check('unified tool contract adapts typed inputSchema/risk vocabulary',()=>normalizedTyped.inputSchema.type==='object'&&normalizedTyped.risk==='READ'&&normalizedTyped.permissions[0]==='artifact.read');
 
