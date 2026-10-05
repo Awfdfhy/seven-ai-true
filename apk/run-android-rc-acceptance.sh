@@ -79,6 +79,23 @@ kill_window precommit stageProcessPreCommit verifyProcessPreCommit
 kill_window postcommit stageProcessPostCommit verifyProcessPostCommit
 kill_window cleancommit stageProcessCleanCommit verifyProcessCleanCommit
 
+# Measured device evidence on Build A: cold/warm launch, background/foreground,
+# low-memory callback, back/reopen, 500-message render/composer latency and PSS trend.
+adb shell am force-stop "$APP_ID"
+adb shell am start -W -n "$APP_ID/.MainActivity" | tee "$OUT/cold-start.txt"
+adb shell input keyevent KEYCODE_HOME
+adb shell am start -W -n "$APP_ID/.MainActivity" | tee "$OUT/warm-start.txt"
+adb shell dumpsys meminfo "$APP_ID" > "$OUT/meminfo-before-performance.txt"
+run_one measureRuntimePerformance "$OUT/performance-500.log"
+adb shell dumpsys meminfo "$APP_ID" > "$OUT/meminfo-after-performance.txt"
+run_one backgroundForegroundPreservesDurableState "$OUT/background-foreground.log"
+adb shell am send-trim-memory "$APP_ID" RUNNING_LOW | tee "$OUT/low-memory.log"
+run_one verifyProcessCleanCommit "$OUT/low-memory-verify.log"
+adb shell am start -W -n "$APP_ID/.MainActivity" > "$OUT/back-before.txt"
+adb shell input keyevent KEYCODE_BACK
+sleep 0.3
+run_one verifyProcessCleanCommit "$OUT/back-reopen-verify.log"
+
 # Build B is deliberately test-only: same package/signer, strictly higher versionCode.
 BASE_CODE="$BASE_CODE" BASE_NAME="$BASE_NAME" node <<'NODE'
 const fs=require('fs');
