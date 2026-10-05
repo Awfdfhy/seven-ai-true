@@ -27,8 +27,9 @@ function unique(paths:readonly string[]):readonly string[]{return Object.freeze(
 
 export class CodingAgentService{
  private readonly reviewer:CodingAgentModel;
- constructor(private readonly workspace:CodingWorkspaceService,private readonly model:CodingAgentModel,private readonly verificationFactory:VerificationExecutorFactory,private readonly research?:CodingResearchPort,reviewer?:CodingAgentModel){this.reviewer=reviewer??model}
+ constructor(private readonly workspace:CodingWorkspaceService,private readonly model:CodingAgentModel,private readonly verificationFactory:VerificationExecutorFactory,private readonly research?:CodingResearchPort,reviewer?:CodingAgentModel,private readonly boundTaskId?:string){this.reviewer=reviewer??model}
  async run(input:Readonly<{taskId:string;runId:string;task:string;repository:string;branch:string;inspectionPaths?:readonly string[];acceptanceCriteria:readonly string[];signal:AbortSignal;maxRepairAttempts?:number}>):Promise<CodingAgentResult>{
+  if(this.boundTaskId!==undefined&&input.taskId!==this.boundTaskId)throw new Error("Coding runtime task scope mismatch.");
   let run=createCodingRun({runId:input.runId,taskId:input.taskId,acceptanceCriteria:input.acceptanceCriteria});
   let inspectionPaths=input.inspectionPaths?.length
    ? unique(input.inspectionPaths)
