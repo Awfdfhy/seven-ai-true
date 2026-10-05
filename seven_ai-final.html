@@ -6624,7 +6624,7 @@
                 if (!window.SevenWorkspaces || typeof window.SevenWorkspaces.active !== "function" || window.SevenWorkspaces.active() !== "rpg") return null;
                 const api = window.SevenRpgWorkspace;
                 if (!api || typeof api.contextProjection !== "function") return null;
-                const projection = api.contextProjection({ roomId: String(roomId || currentRoom || ""), maxChars: 9000, recentEventLimit: 8, canonLimit: 16, threadLimit: 8 });
+                const projection = api.contextProjection({ roomId: String(roomId || currentRoom || ""), maxChars: 9000, recentEventLimit: 8, canonLimit: 16, threadLimit: 8, createIfMissing: true });
                 if (!projection || typeof projection !== "object") return null;
                 const serialized = JSON.stringify(projection);
                 if (!serialized || serialized.length > 10000) return null;
