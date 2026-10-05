@@ -134,6 +134,7 @@ function baseInput({ agent = codingAgent(), evals = evalsAdapter(), promotion = 
     assert.equal(archive.list()[0].outcome, "COMMITTED");
     assert.equal(archive.list()[0].baselineSha, "aaaaaaa");
     assert.equal(archive.list()[0].candidateSha, "bbbbbbb");
+    assert.equal(result.learningRecorded, true);
   });
 
   await pass("previously failed identical baseline hypothesis is blocked before Coding", async () => {
@@ -221,6 +222,7 @@ function baseInput({ agent = codingAgent(), evals = evalsAdapter(), promotion = 
     assert.ok(promotion.calls.some((call) => call[0] === "rollbackTo"));
     assert.ok(agent.calls.some((call) => call[0] === "discardCandidate"));
     assert.equal(result.learningError, null);
+    assert.equal(result.learningRecorded, true);
     const archive = await loadLearningArchive({ storeAdapter: store });
     const record = archive.list()[0];
     assert.equal(record.outcome, "ROLLED_BACK");
