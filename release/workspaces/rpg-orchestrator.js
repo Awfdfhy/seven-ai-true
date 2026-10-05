@@ -52,7 +52,17 @@ function createRuntime(options){
  function rememberWorld(roomId,worldId){try{storage.setItem(pointerKey(roomId),worldId);}catch(_){}}
  function ensure(roomIdInput,worldIdInput,seed){
    const roomId=text(roomIdInput);if(!roomId)return {ok:false,status:'BLOCKED',reason:'invalid-room'};
-   const worldId=worldFor(roomId,worldIdInput),key=roomId+'::'+worldId;if(sessions.has(key))return {ok:true,status:'READY',session:sessions.get(key)};
+   const worldId=worldFor(roomId,worldIdInput),key=roomId+'::'+worldId;
+   if(sessions.has(key)){
+     const cached=sessions.get(key),inspected=manager.inspect(roomId,worldId);
+     if(inspected.status==='CORRUPT'||inspected.status==='STORAGE_ERROR')return {ok:false,status:inspected.status,reason:'session-storage-invalid'};
+     if(inspected.status==='VALID'&&Number(inspected.revision)!==Number(cached.persistedRevision)){
+       const refreshed=manager.load(roomId,worldId);
+       if(!refreshed.ok)return refreshed;
+       sessions.set(key,refreshed.session);return {ok:true,status:'READY',session:refreshed.session};
+     }
+     return {ok:true,status:'READY',session:cached};
+   }
    let loaded=manager.load(roomId,worldId);
    if(!loaded.ok&&loaded.status==='MISSING')loaded=manager.start({roomId,worldId,state:Object.assign({sessionId:'rpg:'+roomId+':'+worldId,worldId},clone(seed||{}))});
    if(!loaded.ok)return loaded;sessions.set(key,loaded.session);rememberWorld(roomId,worldId);return {ok:true,status:'READY',session:loaded.session};
