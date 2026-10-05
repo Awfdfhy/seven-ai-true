@@ -131,3 +131,39 @@ It measures and compares evidence only.
 - Phase 3 research/hypothesis generation and Phase 4 planning remain separate work;
 - production Coding integration remains blocked on the authoritative Coding contract.
 
+## Phase 3 — Selective Research + Hypothesis Engine
+
+Status: **CI_PROVEN / STACKED_REVIEW_PENDING**
+
+### Exact tested identity
+
+- stacked PR: #110
+- tested Phase 3 head: `54ab1f8b70c1546c1a12ebd74bfa87a6b1f4c99a`
+- base branch: `self-development-v1-phase2`
+- GitHub Actions: **Seven AI tests #3281**
+- workflow run id: `37260946250`
+- conclusion: **SUCCESS**
+- `all test suites: PASS (40 suites)`
+- `self-development research and hypothesis test suite: PASS`
+- release artifact upload: **PASS**
+
+### Proven controls
+
+- high-confidence low-risk internal diagnoses may skip unnecessary web research;
+- uncertain, ambiguous, prior-failed, external or HIGH/CRITICAL work triggers research;
+- research source identity is HTTPS-only, credential-free and query/hash stripped;
+- research summary exposes coverage, gaps, independent hosts, contradictions and staleness;
+- hypotheses require known measurable effects and validation metrics;
+- CRITICAL protected-plane hypotheses are governance-only;
+- caller cannot bypass required research by supplying a fake precomputed decision;
+- uncertainty/solution ambiguity/evidence contradiction requires multiple distinct hypotheses;
+- duplicate candidates do not count twice;
+- previously rejected/rolled-back identical hypotheses are blocked without new evidence;
+- new evidence can permit a controlled retest;
+- all-required-research-stale blocks planning.
+
+### Authority state
+
+Phase 3 does not perform web requests itself and does not mutate code.
+It defines when research is required, validates structured evidence, and constrains hypotheses.
+
