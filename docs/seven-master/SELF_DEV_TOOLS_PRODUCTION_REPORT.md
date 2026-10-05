@@ -192,3 +192,14 @@ Fix:
 
 Latest implementation SHA before this report update: `0a456a38b4058bb569fed38aabf57bc825a9a1f6`.
 Exact-SHA run 37306572590 was pending when recorded.
+
+
+## Batch 9 — Shipped Self-Dev policy alignment and learning evidence
+
+- `runCodingEvolution` now exposes `learningRecorded` explicitly: true after durable archive verification, false on archive failure, null while pending approval. A Git promotion is not falsely relabeled as rolled back merely because post-promotion learning persistence failed.
+- The shipped `release/github-self-dev.js` protected-path policy now blocks the entire `.github/` namespace, aligning it with the isolated evolution candidate policy.
+- Regression explicitly covers `.github/CODEOWNERS` and `.github/dependabot.yml` in the shipped Self-Dev path.
+- This closes a policy mismatch where workflows were protected but other repository verification/governance metadata remained autonomously editable.
+
+Latest implementation SHA before this report update: `c340f2412cb2be009c539bcd2d34990c97d465ab`.
+Exact-SHA run 37307076968 was pending when recorded.
