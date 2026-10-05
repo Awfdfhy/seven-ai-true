@@ -1,5 +1,9 @@
 "use strict";
 
+const crypto = require("crypto");
+const { createPlanningCandidate } = require("./self-development-planner.cjs");
+const { createReview } = require("./self-development-review.cjs");
+
 const PROOF_LEVELS = Object.freeze({
   L0: 0,
   L1: 1,
@@ -13,6 +17,21 @@ const PROOF_LEVELS = Object.freeze({
 });
 
 const SECRET_LIKE = /(?:bearer\s+[a-z0-9._~-]+|gh[pousr]_[a-z0-9_]+|sk-[a-z0-9_-]{12,})/i;
+
+function stableObject(value) {
+  if (Array.isArray(value)) return value.map(stableObject);
+  if (value && typeof value === "object") {
+    return Object.keys(value).sort().reduce((out, key) => {
+      out[key] = stableObject(value[key]);
+      return out;
+    }, {});
+  }
+  return value;
+}
+
+function hashObject(value) {
+  return crypto.createHash("sha256").update(JSON.stringify(stableObject(value))).digest("hex");
+}
 
 function safeText(value, name, max = 200) {
   const text = String(value == null ? "" : value).trim().replace(/\s+/g, " ");
@@ -31,6 +50,39 @@ function digest64(value, name) {
   const digest = String(value || "").trim().toLowerCase();
   if (!/^[0-9a-f]{64}$/.test(digest)) throw new Error(`${name} requires sha256 digest`);
   return digest;
+}
+
+function normalizePlanningCandidate(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("planningCandidate required");
+  return createPlanningCandidate({
+    hypothesis: value.hypothesis,
+    assessment: value.assessment
+  });
+}
+
+function verifyEvaluationResult(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value) || value.schemaVersion !== 1) {
+    return { valid: false, reason: "evaluation_result_invalid" };
+  }
+
+  const resultCore = {
+    schemaVersion: value.schemaVersion,
+    experimentId: value.experimentId,
+    manifestDigest: value.manifestDigest,
+    baselineIdentity: value.baselineIdentity,
+    candidateIdentity: value.candidateIdentity,
+    environmentDigest: value.environmentDigest,
+    decision: value.decision,
+    reasons: value.reasons,
+    hardGates: value.hardGates,
+    comparisons: value.comparisons
+  };
+  const expected = hashObject(resultCore);
+  return {
+    valid: typeof value.evidenceDigest === "string" && value.evidenceDigest === expected,
+    reason: value.evidenceDigest === expected ? null : "evaluation_evidence_digest_invalid",
+    expected
+  };
 }
 
 function normalizeProofBundle({
@@ -69,6 +121,31 @@ function normalizeManualApproval(value, candidateSha, evidenceDigest, builderId)
   });
 }
 
+function normalizeReviews(reviews = []) {
+  const normalized = [];
+  const errors = [];
+  for (const raw of reviews) {
+    try {
+      normalized.push(createReview({
+        reviewId: raw && raw.reviewId,
+        reviewerId: raw && raw.reviewerId,
+        builderId: raw && raw.builderId,
+        candidateSha: raw && raw.candidateSha,
+        evidenceDigest: raw && raw.evidenceDigest,
+        verdict: raw && raw.verdict,
+        scope: raw && raw.scope,
+        findings: raw && raw.findings,
+        architectureChecked: raw && raw.architectureChecked,
+        testsChecked: raw && raw.testsChecked,
+        resultsChecked: raw && raw.resultsChecked
+      }));
+    } catch (error) {
+      errors.push(String(error && error.message || error));
+    }
+  }
+  return { normalized, errors };
+}
+
 function reviewMatches(review, candidateSha, evidenceDigest, builderId) {
   return Boolean(
     review &&
@@ -97,19 +174,30 @@ function decideAcceptance({
   reviews = [],
   manualApproval = null
 } = {}) {
-  if (!planningCandidate || planningCandidate.schemaVersion !== 1) throw new Error("planningCandidate required");
-  if (!evaluationResult || evaluationResult.schemaVersion !== 1) throw new Error("evaluationResult required");
   if (!Array.isArray(reviews)) throw new Error("reviews must be an array");
+
+  const derivedPlan = normalizePlanningCandidate(planningCandidate);
+  const evaluationVerification = verifyEvaluationResult(evaluationResult);
+  if (!evaluationVerification.valid) {
+    return Object.freeze({
+      decision: "BLOCKED",
+      reasons: Object.freeze([evaluationVerification.reason]),
+      candidateSha: null,
+      evidenceDigest: null
+    });
+  }
 
   const builder = safeText(builderId, "builderId", 160);
   const candidateSha = exactSha(evaluationResult.candidateIdentity && evaluationResult.candidateIdentity.sha, "evaluation candidateSha");
   const evidenceDigest = digest64(evaluationResult.evidenceDigest, "evaluation evidenceDigest");
   const proof = normalizeProofBundle(proofBundle);
+  const reviewNormalization = normalizeReviews(reviews);
 
   const reasons = [];
+  if (reviewNormalization.errors.length) reasons.push("invalid_review_record");
   const evaluationDecision = mapEvaluationDecision(evaluationResult.decision);
 
-  if (planningCandidate.disposition === "GOVERNANCE_REQUIRED" || planningCandidate.riskLevel === "CRITICAL") {
+  if (derivedPlan.disposition === "GOVERNANCE_REQUIRED" || derivedPlan.riskLevel === "CRITICAL") {
     return Object.freeze({
       decision: "BLOCKED_GOVERNANCE",
       reasons: Object.freeze(["critical_change_requires_separate_governance"]),
@@ -129,13 +217,13 @@ function decideAcceptance({
 
   if (proof.sourceSha !== candidateSha) reasons.push("proof_source_sha_mismatch");
   if (proof.evidenceDigest !== evidenceDigest) reasons.push("proof_evidence_digest_mismatch");
-  if (planningCandidate.proofPlan.shadowRequired && proof.rollbackReady !== true) reasons.push("rollback_not_ready");
+  if (derivedPlan.proofPlan.shadowRequired && proof.rollbackReady !== true) reasons.push("rollback_not_ready");
 
-  const requiredLevel = String(planningCandidate.proofPlan.requiredProofLevel || "").toUpperCase();
+  const requiredLevel = String(derivedPlan.proofPlan.requiredProofLevel || "").toUpperCase();
   if (!Object.prototype.hasOwnProperty.call(PROOF_LEVELS, requiredLevel)) reasons.push("planning_proof_level_invalid");
   else if (PROOF_LEVELS[proof.level] < PROOF_LEVELS[requiredLevel]) reasons.push(`proof_level_below_required:${requiredLevel}`);
 
-  for (const gate of planningCandidate.proofPlan.requiredHardGates || []) {
+  for (const gate of derivedPlan.proofPlan.requiredHardGates || []) {
     if (evaluationResult.hardGates && Object.prototype.hasOwnProperty.call(evaluationResult.hardGates, gate)) {
       if (evaluationResult.hardGates[gate] !== true) reasons.push(`required_gate_failed:${gate}`);
     } else if (!["critic", "manual-approval"].includes(gate)) {
@@ -143,7 +231,9 @@ function decideAcceptance({
     }
   }
 
-  const matchingReviews = reviews.filter((review) => reviewMatches(review, candidateSha, evidenceDigest, builder));
+  const matchingReviews = reviewNormalization.normalized.filter((review) =>
+    reviewMatches(review, candidateSha, evidenceDigest, builder)
+  );
   const negativeReviews = matchingReviews.filter((review) =>
     review.verdict === "REJECT" ||
     review.verdict === "CHANGES_REQUIRED" ||
@@ -156,9 +246,10 @@ function decideAcceptance({
 
   if (negativeReviews.length) reasons.push("review_requires_changes");
 
-  if (planningCandidate.proofPlan.independentReview === true) {
+  if (derivedPlan.proofPlan.independentReview === true) {
     const independentApproval = matchingReviews.some((review) =>
       review.independent === true &&
+      review.reviewerId !== builder &&
       review.verdict === "APPROVE" &&
       review.hasCriticalFinding !== true &&
       review.hasHighFinding !== true &&
@@ -170,7 +261,7 @@ function decideAcceptance({
   }
 
   let approval = null;
-  if (planningCandidate.proofPlan.manualApproval === true) {
+  if (derivedPlan.proofPlan.manualApproval === true) {
     approval = normalizeManualApproval(manualApproval, candidateSha, evidenceDigest, builder);
     if (!approval) reasons.push("manual_approval_missing_or_invalid");
   }
@@ -190,7 +281,7 @@ function decideAcceptance({
   }
 
   return Object.freeze({
-    decision: planningCandidate.proofPlan.shadowRequired ? "ELIGIBLE_FOR_SHADOW" : "ELIGIBLE_FOR_CANARY",
+    decision: derivedPlan.proofPlan.shadowRequired ? "ELIGIBLE_FOR_SHADOW" : "ELIGIBLE_FOR_CANARY",
     reasons: Object.freeze([]),
     candidateSha,
     evidenceDigest,
