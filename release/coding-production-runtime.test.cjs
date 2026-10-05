@@ -23,7 +23,7 @@ function adapter(opts={}){
  const noInventory=adapter();noInventory.diff=async()=>({text:"diff"});await assert.rejects(()=>runCodingTransaction(noInventory,{task:"missing authoritative diff"}),/authoritative-diff-required/);
  const missing=adapter();missing.diff=async()=>({text:'diff',files:[]});await assert.rejects(()=>runCodingTransaction(missing,{task:'empty authoritative diff'}),/incomplete-authoritative-diff/);
  const duplicate=adapter();duplicate.diff=async()=>({text:'diff',files:['src/a.js','src/a.js']});await assert.rejects(()=>runCodingTransaction(duplicate,{task:'duplicate authoritative diff'}),/incomplete-authoritative-diff/);
- for(const p of [".github/CODEOWNERS","evolution/engine.test.cjs","apk/binary-verification.test.cjs","cloudflare/search-gateway/search-gateway.test.mjs","release/release-verify.cjs"]){
+ for(const p of [".github/CODEOWNERS","evolution/engine.test.cjs","evolution/experiment-lab.cjs","evolution/eval-lock.cjs","evolution/gates.cjs","apk/verify-apk.cjs","apk/android-rc-harness.test.cjs","apk/run-android-rc-acceptance.sh","release/coding-integration-contract.cjs","apk/binary-verification.test.cjs","cloudflare/search-gateway/search-gateway.test.mjs","release/release-verify.cjs"]){
    const guarded=adapter();guarded.plan=async()=>({changes:[{path:p,content:"tamper"}]});
    await assert.rejects(()=>runCodingTransaction(guarded,{task:"tamper acceptance infra"}),/protected-path/);
  }

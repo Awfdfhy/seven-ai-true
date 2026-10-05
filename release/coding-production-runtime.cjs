@@ -5,6 +5,7 @@ const STATES=Object.freeze(["UNDERSTAND","INSPECT","RESEARCH","PLAN","EDIT","TES
 const PROTECTED=[
   /(^|\/)\.github\//,
   /(^|\/)eval\//,
+  /(^|\/)evolution\//,
   /(^|\/)all\.cjs$/,
   /(^|\/)verify\.cjs$/,
   /(^|\/)runtime-smoke\.cjs$/,
@@ -12,6 +13,7 @@ const PROTECTED=[
   /(^|\/)release\/static-audit\.cjs$/,
   /(^|\/)release\/coding-(?:integration-contract|production-runtime|github-adapter|proposal-policy|test-selector|browser-bundle)\.cjs$/,
   /(^|\/)apk\/(?:binary-verification|build-provenance)(?:\.test)?\.cjs$/,
+  /(^|\/)apk\/(?:verify-apk\.cjs|android-rc-[^/]*\.cjs|materialize-android-rc-harness\.cjs|run-android-rc-acceptance\.sh)$/,
   /(^|\/)evolution\/.*\.test\.cjs$/,
   /(^|\/)cloudflare\/.*\.test\.mjs$/,
   /(^|\/)release\/.*\.test\.cjs$/

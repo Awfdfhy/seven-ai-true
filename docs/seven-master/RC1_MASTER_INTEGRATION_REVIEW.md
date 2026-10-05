@@ -30,6 +30,7 @@ The SAF repair's rerun `37311725580` passed `seedUpgradeState`, then FAILED befo
 - `runCodingEvolution` now uses `runVerifiedCodingRequest` and Chat 3's public `executeCodingRequest`. The lifecycle adapter manages candidate isolation, stable-head checks and cleanup only. It does not supply a separate production edit/test/repair loop.
 - Validate candidate plan scope before applying it; require the receipt's baseline/candidate SHA and final candidate head to agree before Trusted Eval. Reject missing authoritative diff inventories, extra/missing/duplicate paths, protected acceptance infrastructure and mutable/unbounded receipts.
 - Keep all legacy candidate regression tests. Existing Evolution acceptance/rejection/rollback/learning tests now exercise the public Coding engine. Added public-seam negative regressions.
+- Final review found that standalone Coding still allowed edits to Evolution gate/eval-lock sources and the APK verifier. Those acceptance paths now fail the same protected-path guard before any write; regression cases prove the protection. This is a release blocker repair, not an expanded candidate scope.
 - The shipped Self-Dev entry point delegates to a public Coding/Evolution production bridge. If that bridge is absent, it fails before any repository mutation. It no longer runs its own edit/repair/merge loop.
 
 ## Remaining release blocker
