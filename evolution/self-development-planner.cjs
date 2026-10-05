@@ -241,6 +241,47 @@ function validationSummary(set) {
   return Object.freeze({ ...core, digest: digest(core) });
 }
 
+function authorizePlanningCandidate({ hypothesisValidation, hypothesisId, assessment } = {}) {
+  if (!hypothesisValidation || typeof hypothesisValidation !== "object" || Array.isArray(hypothesisValidation)) {
+    throw new Error("hypothesisValidation input required");
+  }
+  const id = String(hypothesisId || "").trim();
+  if (!id) throw new Error("hypothesisId required");
+
+  const set = validateHypothesisSet(hypothesisValidation);
+  const validation = validationSummary(set);
+  if (set.readyForPlanning !== true || set.decision !== "READY_FOR_PLANNING") {
+    return Object.freeze({
+      schemaVersion: 2,
+      decision: "BLOCKED_HYPOTHESIS_VALIDATION",
+      validation,
+      candidate: null
+    });
+  }
+
+  const matches = set.accepted.filter((item) => item.id === id);
+  if (matches.length !== 1) {
+    return Object.freeze({
+      schemaVersion: 2,
+      decision: matches.length > 1 ? "BLOCKED_DUPLICATE_HYPOTHESIS_ID" : "BLOCKED_HYPOTHESIS_NOT_ACCEPTED",
+      validation,
+      candidate: null
+    });
+  }
+
+  return Object.freeze({
+    schemaVersion: 2,
+    decision: "AUTHORIZED",
+    validation,
+    candidate: buildPlanningCandidate({
+      hypothesis: matches[0],
+      assessment,
+      orchestrationAuthorized: true,
+      validationDigest: validation.digest
+    })
+  });
+}
+
 function prioritizeCandidates({ hypothesisValidation, assessments = {} } = {}) {
   if (!hypothesisValidation || typeof hypothesisValidation !== "object" || Array.isArray(hypothesisValidation)) {
     throw new Error("hypothesisValidation input required");
@@ -310,6 +351,7 @@ function prioritizeCandidates({ hypothesisValidation, assessments = {} } = {}) {
 
 module.exports = {
   derivePlanningCandidate,
+  authorizePlanningCandidate,
   prioritizeCandidates,
   dominates
 };
