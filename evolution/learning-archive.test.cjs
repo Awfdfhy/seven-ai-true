@@ -9,5 +9,6 @@ assert.equal(a.failedBefore({...base,hypothesis:"different"}),false);
 assert.equal(a.failedBefore({...base,subsystem:" TOOLS ",hypothesis:"  ADAPTER   improves reliability  ",baselineSha:"AAAAAAA"}),true);
 a.append({...base,experimentId:"e2",candidateSha:"ccccccc",outcome:"COMMITTED",reason:"better"});
 assert.deepEqual(a.verify(),{valid:true,count:2});
+const snapshot=a.list();snapshot[0].metrics.baseline=999;assert.equal(a.list()[0].metrics.baseline,.8);assert.deepEqual(a.verify(),{valid:true,count:2});
 assert.throws(()=>createArchive([bad]),/invalid learning archive seed/);
 console.log("learning archive: PASS (integrity/history/repeat-failure guard)");
