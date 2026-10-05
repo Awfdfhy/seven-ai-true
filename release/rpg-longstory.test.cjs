@@ -29,7 +29,7 @@ seed.characters.hero.inventory=['asterionKey'];
 
 let started=M.start({roomId:'bench-room',worldId:'valen-long',state:seed});assert.equal(started.ok,true);
 let session=started.session;
-let eventCount=0;
+let eventCount=0;const growthCheckpoints=[];
 function commit(event){
   const out=M.commitEvents(session,[event]);assert.equal(out.ok,true,event.id+': '+(out.reason||out.eventReason||''));session=out.session;eventCount++;return out;
 }
@@ -58,6 +58,15 @@ for(let i=0;i<1004;i++){
     const restored=M.load('bench-room','valen-long');assert.equal(restored.ok,true);session=restored.session;
     assert.equal(session.state.world.flags.bridgeDestroyed,true);
     assert.equal(JSON.stringify(session.state.characters.hero.voice),initialHeroVoice);
+  }
+  if([100,500,1000].includes(n)){
+    const loadStart=process.hrtime.bigint(),roundtrip=M.load('bench-room','valen-long'),loadMs=Number(process.hrtime.bigint()-loadStart)/1e6;
+    assert.equal(roundtrip.ok,true);
+    const contextStart=process.hrtime.bigint(),view=Context.buildNarratorView(roundtrip.session.state,State,{maxChars:9000,canonLimit:24,recentEventLimit:8,threadLimit:8}),contextMs=Number(process.hrtime.bigint()-contextStart)/1e6;
+    assert.equal(view.ok,true);assert.equal(view.view._diagnostics.bounded,true);assert.ok(JSON.stringify(view.view).length<=9000);
+    const stateBytes=Buffer.byteLength(JSON.stringify(roundtrip.session.state));
+    assert.ok(stateBytes<2*1024*1024,'RPG state exceeded 2 MiB long-story gate');
+    growthCheckpoints.push({equivalentEpisodes:n,committedEvents:eventCount,stateBytes,contextChars:view.view._diagnostics.serializedChars,loadMs:Number(loadMs.toFixed(3)),contextMs:Number(contextMs.toFixed(3))});
   }
 }
 
@@ -96,6 +105,7 @@ console.log('rpg long story benchmark: PASS',JSON.stringify({
   quest:session.state.quests.summit.status,
   ariaContextChars:ariaView.view._diagnostics.serializedChars,
   spyContextChars:spyView.view._diagnostics.serializedChars,
+  growthCheckpoints,
   invalidCanonBlocked:true,
   playerAgencyBlocked:true
 }));

@@ -342,13 +342,38 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       await page.waitForFunction(()=>window.SevenRpgWorkspace&&window.SevenRpgLiveIntegration&&document.documentElement.dataset.sevenWorkspace==='rpg',null,{timeout:10000});
       let state=await page.evaluate(rid=>{
         SevenRpgWorkspace.loadWork({id:'rpg-live-world',title:'RPG Live World',continuity:'test',sources:[{id:'src',authority:'A0'}],beats:[{id:'b1',sourceRefs:['src']}]});
+        const bridge=SevenRpgWorkspace.state.live,loaded=bridge.loadLatest(rid);
+        const seeded=SevenRpgState.createState({
+          sessionId:loaded.session.state.sessionId,worldId:'rpg-live-world',revision:loaded.session.state.revision,
+          timeline:{tick:10},world:{locations:{hall:{name:'Hall'},road:{name:'Road'}}},
+          characters:{hero:{control:'player',locationId:'hall'},aria:{control:'ai',locationId:'hall',knowledge:{secret:{learnedAtTick:5,sourceEventId:'tell-aria'}}},ren:{control:'ai',locationId:'hall'}},
+          canon:{entries:{public:{level:'HARD',value:'public fact',public:true,entityIds:['hall']},secret:{level:'HARD',value:'hidden fact',public:false,entityIds:['aria']}}},
+          scene:{id:'scene-1',locationId:'hall',participantIds:['aria','ren'],timeTick:10}
+        });
+        bridge.manager.persist({roomId:rid,worldId:'rpg-live-world',state:seeded,legacy:loaded.session.legacy,persistedRevision:loaded.session.persistedRevision},{force:true});
         const projection=SevenRpgWorkspace.contextProjection({roomId:rid,maxChars:8000});
+        SevenRpgWorkspace.setContextView('character','ren');
+        const renProjection=SevenRpgWorkspace.contextProjection({roomId:rid,maxChars:8000});
         const source=collectContextSources(rooms[rid],'continue',null,{roomId:rid}).find(x=>x.kind==='rpg');
+        SevenRpgWorkspace.setContextView('narrator');
+        const denied=SevenRpgWorkspace.commitStateEvents([{id:'browser-bad-player',type:'character.move',source:'runtime',actorId:'hero',payload:{characterId:'hero',toLocationId:'road'}}],{reason:'browser-player-agency'});
+        const afterDenied=bridge.loadLatest(rid);
         const memory=SevenRuntime.readMemory().objects.find(x=>x.type==='RpgStateSnapshot'&&x.scope==='rpg'&&x.content.includes(rid)&&x.content.includes('rpg-live-world'));
-        return{schema:projection?.schema,worldId:projection?.worldId,revision:projection?.revision,source:!!source&&source.content.includes('rpg-live-world'),memory:!!memory,title:document.querySelector('[data-rpg-world-name]')?.textContent.trim()};
+        return{schema:projection?.schema,access:projection?.access,worldId:projection?.worldId,revision:afterDenied.session.state.revision,source:!!source&&source.content.includes('"access":"character-local"'),renSecret:!!renProjection?.knownCanon?.some(x=>x.id==='secret'),renPublic:!!renProjection?.knownCanon?.some(x=>x.id==='public'),agencyBlocked:denied.ok===false&&denied.eventReason==='player-control'&&afterDenied.session.state.characters.hero.locationId==='hall',memory:!!memory,title:document.querySelector('[data-rpg-world-name]')?.textContent.trim()};
       },roomId);
-      assert.equal(state.schema,'seven-rpg-context');assert.equal(state.worldId,'rpg-live-world');assert.equal(state.source,true);assert.equal(state.memory,true);assert.equal(state.title,'RPG Live World');
+      assert.equal(state.schema,'seven-rpg-context');assert.equal(state.access,'world-truth');assert.equal(state.worldId,'rpg-live-world');assert.equal(state.source,true);assert.equal(state.renSecret,false);assert.equal(state.renPublic,true);assert.equal(state.agencyBlocked,true);assert.equal(state.memory,true);assert.equal(state.title,'RPG Live World');
       const before={worldId:state.worldId,revision:state.revision};
+      const autoRecovery=await page.evaluate(async rid=>{
+        const b=SevenRpgWorkspace.state.live,prev=b.loadLatest(rid),worldId=prev.session.worldId;
+        const candidate=b.manager.commitEvents(prev.session,[{id:'browser-interrupted',type:'world.set',source:'runtime',payload:{path:['flags','interrupted'],value:true}}]);
+        if(!candidate.ok)throw Error('fixture candidate failed');
+        const key='seven_rpg_session_v3:pending:'+encodeURIComponent(rid);
+        localStorage.setItem(key,JSON.stringify({version:1,status:'pending',roomId:rid,worldId,previous:prev.session,previousIndex:worldId,baseRevision:prev.session.state.revision,candidateRevision:candidate.session.state.revision}));
+        SevenWorkspaces.close();await SevenRemake.openWorkspace('rpg');
+        const restored=SevenRpgWorkspace.state.live.loadLatest(rid);
+        return{ok:restored.ok,revision:restored.session?.state?.revision,interrupted:restored.session?.state?.world?.flags?.interrupted,journal:localStorage.getItem(key)};
+      },roomId);
+      assert.equal(autoRecovery.ok,true);assert.equal(autoRecovery.revision,before.revision);assert.equal(autoRecovery.interrupted,undefined);assert.equal(autoRecovery.journal,null);
       await page.evaluate(async rid=>{
         SevenWorkspaces.close();const other=rid+'-empty';rooms[other]=createEmptyRoom();roomTitles[other]='Empty RPG';currentRoom=other;await saveRooms();
         updateRoomTitle();renderChatHistory();updateRoomListUI();await SevenRemake.openWorkspace('rpg');
@@ -364,7 +389,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       await page.waitForFunction(()=>window.SevenRemake&&typeof roomPersistence!=='undefined'&&roomPersistence.status().ready);
       await page.evaluate(async rid=>{currentRoom=rid;updateRoomTitle();renderChatHistory();updateRoomListUI();await SevenRemake.openWorkspace('rpg')},roomId);
       await page.waitForFunction(()=>window.SevenRpgWorkspace&&document.documentElement.dataset.sevenWorkspace==='rpg'&&document.querySelector('[data-rpg-world-name]')?.textContent.trim()==='RPG Live World',null,{timeout:10000});
-      state=await page.evaluate(rid=>{const p=SevenRpgWorkspace.contextProjection({roomId:rid,maxChars:8000}),src=collectContextSources(rooms[rid],'continue',null,{roomId:rid}).find(x=>x.kind==='rpg');return{worldId:p?.worldId,revision:p?.revision,source:!!src&&src.content.includes('rpg-live-world'),title:document.querySelector('[data-rpg-world-name]')?.textContent.trim()}},roomId);
+      state=await page.evaluate(rid=>{const p=SevenRpgWorkspace.contextProjection({roomId:rid,maxChars:8000}),live=SevenRpgWorkspace.state.live.loadLatest(rid),src=collectContextSources(rooms[rid],'continue',null,{roomId:rid}).find(x=>x.kind==='rpg');return{worldId:p?.worldId,revision:live.session?.state?.revision,source:!!src&&src.content.includes('rpg-live-world'),title:document.querySelector('[data-rpg-world-name]')?.textContent.trim()}},roomId);
       assert.equal(state.worldId,before.worldId);assert.equal(state.revision,before.revision);assert.equal(state.source,true);assert.equal(state.title,'RPG Live World');
       await page.evaluate(async rid=>{
         const bundle=SevenRuntime.readMemory();
