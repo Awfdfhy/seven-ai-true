@@ -176,6 +176,23 @@ pass("insufficient samples stay INCONCLUSIVE instead of being promoted", () => {
   assert.ok(result.reasons.some((reason) => reason.includes("metric_inconclusive:qualityScore")));
 });
 
+pass("unequal paired run counts are INCONCLUSIVE to prevent cherry-picking", () => {
+  const value = manifest();
+  const result = evaluatePaired({
+    manifest: value,
+    baselineRuns: threeRuns(value, "base", 0.70, 120),
+    candidateRuns: [
+      run(value, "c-1", { qualityScore: 0.90, testsPass: 1, crashRate: 0, p90LatencyMs: 100 }),
+      run(value, "c-2", { qualityScore: 0.90, testsPass: 1, crashRate: 0, p90LatencyMs: 100 }),
+      run(value, "c-3", { qualityScore: 0.90, testsPass: 1, crashRate: 0, p90LatencyMs: 100 }),
+      run(value, "c-4", { qualityScore: 0.90, testsPass: 1, crashRate: 0, p90LatencyMs: 100 })
+    ],
+    hardGateResults: { contracts: true, regression: true }
+  });
+  assert.equal(result.decision, "INCONCLUSIVE");
+  assert.ok(result.reasons.includes("run_count_mismatch"));
+});
+
 pass("environment mismatch is BLOCKED before metric comparison", () => {
   const value = manifest();
   const result = evaluatePaired({
