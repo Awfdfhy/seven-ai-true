@@ -310,6 +310,10 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   const r=await page.evaluate(()=>SevenModelIntelligenceV3.analyze('Analyze this problem carefully',{purpose:'deepThink',deepThinkRequested:true,latencyPriority:true}));
   assert.equal(r.preferSpeed,true);assert.equal(r.preferPrecision,true);assert.ok(r.evidence.includes('latency-priority'));
  });
+ await test('main token estimator is conservative for Arabic and compatible with ASCII estimate',async()=>{
+  const r=await page.evaluate(()=>({ar:estimateTokens('مرحبا'.repeat(100)),arChars:'مرحبا'.repeat(100).length,en:estimateTokens('abcd'.repeat(100))}));
+  assert.ok(r.ar>=r.arChars);assert.ok(r.en>=90&&r.en<=110);
+ });
  await test('fallback budget enforces one bounded wall-clock envelope',async()=>{
   const r=await page.evaluate(()=>({
     a:fallbackAttemptBudgetV2(60000,8,null),

@@ -28,3 +28,10 @@ assert.match(native,/path\.equals\(GITHUB_REPO\)\|\|path\.startsWith\(GITHUB_REP
 assert.doesNotMatch(native,/out\.length\(\)>180000/,'job logs must not be silently cut to 180KB');
 assert.match(native,/ret\.put\("truncated",text\.size\(\)>=MAX_GITHUB_RESPONSE\)/);
 console.log('GitHub native path/log contracts: PASS');
+
+const attachmentRuntime=fs.readFileSync(__dirname+'/attachment-runtime.js','utf8');
+assert.doesNotMatch(attachmentRuntime,/finally\{clearSelection\(\)\}/,'failed sends retain attachment selection');
+assert.match(attachmentRuntime,/await original\.apply\(this,arguments\);clearSelection\(\);return out/);
+const appHtml=fs.readFileSync(__dirname+'/../seven_ai-final.html','utf8');
+assert.match(appHtml,/ch\.charCodeAt\(0\) < 128 \? 0\.25 : 1/,'main estimator must be multilingual-conservative');
+console.log('attachment and token convergence contracts: PASS');
