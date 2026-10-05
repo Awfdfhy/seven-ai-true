@@ -15,6 +15,7 @@
   function authority(v){return AUTHORITY[String(v||'A5').toUpperCase()]||AUTHORITY.A5;}
   function validUrl(v){try{const u=new URL(v);return u.protocol==='https:'||u.protocol==='http:';}catch{return false;}}
   function toMs(v){const n=Date.parse(v||'');return Number.isFinite(n)?n:null;}
+  function contentHash(v){const t=String(v||'');let h=0x811c9dc5;for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0;}return 'fnv1a32:'+h.toString(16).padStart(8,'0');}
 
   function normalizeClaims(raw){
     const ids=new Set();
@@ -44,6 +45,7 @@
         locator:str(e&&e.locator),
         transformation:str(e&&e.transformation)||'extract'
       }));
+      s.contentHash=str(s.contentHash)||contentHash([s.url,s.title,...s.evidence.map(e=>e.excerpt+'|'+e.locator)].join('\n'));
       return s;
     });
   }
@@ -65,7 +67,7 @@
     const rows=claims.map(claim=>{
       const evidence=[];
       for(const source of sources)for(const e of source.evidence)if(e.claimId===claim.id){
-        evidence.push({sourceId:source.id,title:source.title,url:source.url,authority:source.authority,authorityWeight:authority(source.authority),stance:e.stance,excerpt:e.excerpt,locator:e.locator,transformation:e.transformation,freshness:sourceFreshness(source,claim,nowMs,defaultDays)});
+        evidence.push({sourceId:source.id,title:source.title,url:source.url,authority:source.authority,authorityWeight:authority(source.authority),stance:e.stance,excerpt:e.excerpt,locator:e.locator,transformation:e.transformation,publishedAt:source.publishedAt?new Date(source.publishedAt).toISOString():null,retrievedAt:new Date(source.retrievedAt).toISOString(),contentHash:source.contentHash,freshness:sourceFreshness(source,claim,nowMs,defaultDays)});
       }
       const support=evidence.filter(e=>e.stance===STANCE.SUPPORT);
       const contradict=evidence.filter(e=>e.stance===STANCE.CONTRADICT);
@@ -96,7 +98,7 @@
     const claims={};
     for(const row of matrix.rows){
       if(row.status!=='SUPPORTED'&&row.status!=='CONFLICT')continue;
-      const refs=row.evidence.filter(e=>e.stance===STANCE.SUPPORT&&e.freshness.status!=='STALE'&&validUrl(e.url)).map(e=>({sourceId:e.sourceId,url:e.url,title:e.title,locator:e.locator,authority:e.authority}));
+      const refs=row.evidence.filter(e=>e.stance===STANCE.SUPPORT&&e.freshness.status!=='STALE'&&validUrl(e.url)).map(e=>({sourceId:e.sourceId,url:e.url,title:e.title,locator:e.locator,authority:e.authority,publishedAt:e.publishedAt,retrievedAt:e.retrievedAt,contentHash:e.contentHash}));
       if(refs.length)claims[row.claim.id]=refs;
     }
     return {version:1,status:analysis.status,claims,lockedAt:new Date().toISOString()};
@@ -117,5 +119,5 @@
     return {matrix,analysis:analyze(matrix),citationLock:lockCitations(matrix),nextActions:nextActions(matrix)};
   }
 
-  return {STATUS,STANCE,AUTHORITY,normalizeClaims,normalizeSources,createClaimEvidenceMatrix,analyze,lockCitations,nextActions,verify};
+  return {STATUS,STANCE,AUTHORITY,contentHash,normalizeClaims,normalizeSources,createClaimEvidenceMatrix,analyze,lockCitations,nextActions,verify};
 });

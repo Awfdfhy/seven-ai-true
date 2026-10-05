@@ -72,14 +72,21 @@ Gate:
 ## Phase 3 — Persistence + session ownership
 Status: NEXT
 
-Build:
-- per-room/per-world sessions;
+Implemented foundation:
+- per-room/per-world session keys;
 - versioned seven-rpg-session envelope;
-- save after accepted atomic commit;
-- hydrate on RPG open;
+- deterministic corruption checksum;
+- stale-write protection by persisted revision;
 - corrupt-state quarantine;
+- batch transaction rollback when any event is rejected;
+- load/persist/remove/inspect APIs;
+- Room A / Room B isolation tests.
+
+Still required:
+- bind the manager to the live RPG workspace/active chat-room identity;
+- hydrate automatically on RPG open;
 - legacy World/Canon migration;
-- checkpoint/recovery.
+- branch/checkpoint recovery integrated into the UI lifecycle.
 
 Tests:
 - exit/re-enter;
@@ -206,14 +213,16 @@ No completion claim before this gate.
 
 ## Current risks
 
-1. Kernel context packet can include selected narrator-level canon; speaker-specific filtering is not live yet.
-2. Relationship v1 is symmetric although some dimensions should be directional.
+1. Character/Narrator views exist, but the shared live model-generation path does not consume them yet.
+2. Relationship v1 remains symmetric although some dimensions should be directional.
 3. Bounding v1 is record/character/char-budget based; production must use shared token budgeting.
-4. Persistence is not wired.
-5. New kernel and legacy World/Canon runtimes coexist.
-6. Live semantic quality is unbenchmarked.
-7. Android RPG start/restore is not proven.
+4. Session persistence exists as a pure manager, but live RPG workspace room identity/hydration is not wired.
+5. New kernel and legacy World/Canon runtimes coexist and do not yet share one final transaction owner.
+6. Memory adapter records are not yet committed through the public Memory Fabric writer.
+7. Live semantic quality is unbenchmarked.
+8. Android RPG start/restore is not proven.
+9. Full main CI must be green after the latest concurrent release-layer changes before this batch is considered regression-safe.
 
 ## Next exact action
 
-Phase 3: build versioned per-room RPG persistence and atomic session ownership, with corruption/restart tests before live model generation.
+Bind the versioned RPG session manager to the live room/workspace lifecycle, then connect Character/Narrator views to the shared Context Builder through a budget-counted RPG source. Do not wire model-authored state mutation until those two seams are tested.

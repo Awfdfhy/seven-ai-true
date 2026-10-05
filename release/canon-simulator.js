@@ -148,7 +148,8 @@
       const debtAdd=threatened.reduce((sum,a)=>sum+a.weight*0.25,0)+invariants.length*0.2;
       next.canonDebt=Number((next.canonDebt+debtAdd).toFixed(3));
       const rigid=threatened.some(a=>a.weight>=ANCHOR_WEIGHT.rigid);
-      const mustBranch=rigid||next.canonDebt>=1||meta.forceBranch===true;
+      const forceBranch=meta.forceBranch===true||String(meta.forceBranch||'').toLowerCase()==='true';
+      const mustBranch=rigid||next.canonDebt>=1-1e-9||forceBranch;
       if(mustBranch&&!next.branchId){
         next.branchId=meta.branchId||('branch-'+Date.now().toString(36));
         next.branchOrigin={position:session.position,reason:rigid?'rigid-anchor-invalidated':next.canonDebt>=1?'canon-debt-threshold':'forced'};

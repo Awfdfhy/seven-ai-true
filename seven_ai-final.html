@@ -834,7 +834,7 @@
         <!-- Input Area -->
         <div class="input-area">
             <div class="composer">
-                <textarea id="userInput" dir="auto" rows="1" placeholder="Message Seven AI..." onkeydown="if(event.key==='Enter' && !event.shiftKey && !event.isComposing){ event.preventDefault(); sendMessage(); }" oninput="autoGrowInput(this)"></textarea>
+                <textarea id="userInput" dir="auto" rows="1" placeholder="Message Seven AI..."></textarea>
                 <div class="composer-row">
                     <div class="composer-tools">
                         <button class="tool-btn" onclick="document.getElementById('fileInput').click()" title="Add a .txt or .pdf file to the AI's knowledge" aria-label="Attach a file">
@@ -1660,8 +1660,14 @@
         // room snapshot + revision + structural audit event. Legacy keys are
         // retained untouched as migration recovery input, never dual-written.
         const roomPersistence = (() => {
-            let db = null, revision = 0, ready = false, failed = false, pending = 0;
+            const ROOM_WAL_KEY='seven_ai_room_wal_v1';
+            const walSessionId='wal-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10);
+            let db = null, revision = 0, ready = false, failed = false, pending = 0, persistedWalSeq = 0, walCounter = 0;
             let queue = Promise.resolve(true);
+            function readWal(){try{const raw=localStorage.getItem(ROOM_WAL_KEY);if(!raw)return null;const w=JSON.parse(raw);if(!w||w.schemaVersion!==1||!Number.isSafeInteger(w.seq)||w.seq<1||!Number.isSafeInteger(w.baseRevision)||w.baseRevision<0||typeof w.sessionId!=='string'||!w.sessionId||!w.value)return null;validate(w.value);return w}catch(_){return null}}
+            function stageWal(value){const seq=Math.min(Number.MAX_SAFE_INTEGER,Date.now()*1000+(++walCounter%1000)),w={schemaVersion:1,seq,sessionId:walSessionId,baseRevision:revision,value:JSON.parse(JSON.stringify(value))};localStorage.setItem(ROOM_WAL_KEY,JSON.stringify(w));return w}
+            function clearWalThrough(seq){try{const w=readWal();if(!w||w.seq<=seq)localStorage.removeItem(ROOM_WAL_KEY)}catch(_){}}
+            function recoverableWal(record){const w=readWal();if(!w)return null;const storedSeq=Number.isSafeInteger(record&&record.walSeq)?record.walSeq:0,storedSession=String(record&&record.walSession||'');if(w.seq<=storedSeq)return null;if(w.baseRevision===Number(record&&record.revision))return w;if(storedSession&&storedSession===w.sessionId&&storedSeq>0)return w;return null}
             const status = document.createElement('div');
             status.id = 'persistenceStatus';
             status.setAttribute('role', 'status');
@@ -1685,7 +1691,7 @@
                 rooms = normalized.rooms; roomTitles = normalized.roomTitles; currentRoom = value.currentRoom;
                 updateRoomTitle(); renderChatHistory(); updateRoomListUI();
             }
-            function transact(value, initial) {
+            function transact(value, initial, walMeta) {
                 return new Promise((resolve, reject) => {
                     const tx = db.transaction(['state','audit'], 'readwrite');
                     const state = tx.objectStore('state');
@@ -1697,9 +1703,10 @@
                         if (!initial && (!previous || previous.revision !== revision)) {
                             error = new Error('ROOM_REVISION_CONFLICT'); tx.abort(); return;
                         }
-                        next = {id:'rooms', schemaVersion:1, revision: initial ? 1 : revision + 1, value};
+                        const priorWalSeq=Number.isSafeInteger(previous&&previous.walSeq)?previous.walSeq:0;
+                        next = {id:'rooms', schemaVersion:1, revision: initial ? 1 : revision + 1, walSeq:walMeta&&Number.isSafeInteger(walMeta.seq)?walMeta.seq:priorWalSeq, walSession:walMeta&&walMeta.sessionId?String(walMeta.sessionId):String(previous&&previous.walSession||''), value};
                         state.put(next);
-                        tx.objectStore('audit').add({revision:next.revision, operation:initial?'migrate':'save', timestamp:Date.now()});
+                        tx.objectStore('audit').add({revision:next.revision, operation:initial?'migrate':'save', walSeq:next.walSeq, timestamp:Date.now()});
                     };
                     tx.oncomplete = () => resolve(next);
                     tx.onabort = () => reject(error || tx.error || new Error('ROOM_TRANSACTION_ABORTED'));
@@ -1736,28 +1743,39 @@
                         record = await transact(snapshot(), true);
                     }
                     if (record.schemaVersion !== 1 || !Number.isSafeInteger(record.revision) || record.revision < 1) throw new Error('UNKNOWN_ROOM_SCHEMA');
-                    apply(record.value); revision=record.revision; ready=true;
-                    show('Saved · IndexedDB'); document.body.inert=false;
+                    apply(record.value); revision=record.revision; persistedWalSeq=Number.isSafeInteger(record.walSeq)?record.walSeq:0;
+                    const wal=recoverableWal(record);
+                    if(wal){
+                        record=await transact(wal.value,false,wal);
+                        apply(record.value);revision=record.revision;persistedWalSeq=Number(record.walSeq)||persistedWalSeq;clearWalThrough(wal.seq);
+                        show('Recovered unsaved conversation · IndexedDB');
+                    }else{
+                        try{const stale=readWal();if(stale&&stale.seq<=persistedWalSeq)localStorage.removeItem(ROOM_WAL_KEY)}catch(_){}
+                        show('Saved · IndexedDB');
+                    }
+                    ready=true; document.body.inert=false;
                 } catch (_) {
                     failed=true;
-                    show('Storage unavailable or invalid. Original data preserved. Reload after resolving storage access.');
-                    // Keep editing blocked: never fall back to stale legacy data after IDB activation.
+                    document.body.inert=false;
+                    show('Storage unavailable or invalid. Original data preserved. Export if needed, then reload after resolving storage access.');
+                    // Persistence stays fail-closed via status().failed; the recovery UI must remain interactive.
                 }
             }
             function save() {
                 if (!ready || failed) return Promise.resolve(false);
                 let value;
                 try { value=snapshot(); } catch (_) { failed=true; show('Cannot save invalid conversation state. Export and reload.'); return Promise.resolve(false); }
+                let wal=null;try{wal=stageWal(value)}catch(_){}
                 pending++; show('Saving…');
                 queue=queue.then(async () => {
                     if (failed) return false;
-                    try { const record=await transact(value,false); revision=record.revision; return true; }
+                    try { const record=await transact(value,false,wal); revision=record.revision; persistedWalSeq=Number(record.walSeq)||persistedWalSeq;if(wal)clearWalThrough(wal.seq);return true; }
                     catch (_) { failed=true; show('Not saved — storage failure or another tab changed chats. Export before reloading.'); return false; }
                 }).finally(() => { pending--; if (!failed && pending===0) show('Saved · IndexedDB'); });
                 return queue;
             }
             window.addEventListener('beforeunload', e => { if(pending || (ready && failed)) { e.preventDefault(); e.returnValue=''; } });
-            return Object.freeze({init,save,flush:()=>queue,status:()=>({ready,failed,pending,revision})});
+            return Object.freeze({init,save,flush:()=>queue,status:()=>({ready,failed,pending,revision,persistedWalSeq,walStaged:!!readWal()})});
         })();
 
         function saveRooms() { return roomPersistence.save(); }
@@ -1790,6 +1808,9 @@
 
         function switchRoom(id) {
             if (!own(rooms, id)) return;
+            if (isGenerating && activeGenerationRoomId && activeGenerationRoomId !== id) {
+                cancelActiveGeneration("room-switch");
+            }
             currentRoom = id;
             saveRooms();
             updateRoomTitle();
@@ -2089,9 +2110,10 @@
         }
 
         const appReliabilityState={
-            version:1,
+            version:2,
             visibility:(typeof document!=="undefined"&&document.hidden)?"background":"foreground",
-            network:(typeof navigator!=="undefined"&&typeof navigator.onLine==="boolean")?(navigator.onLine?"online":"offline"):"unknown",
+            network:(typeof navigator!=="undefined"&&typeof navigator.onLine==="boolean")?(navigator.onLine?"link-online":"offline"):"unknown",
+            reachability:"unknown",lastReachabilityAt:0,
             visualViewport:{width:0,height:0,offsetTop:0,scale:1},
             lastResumeAt:0,
             lifecycleEvents:0
@@ -2112,7 +2134,8 @@
         function updateNetworkUiStateV1(onlineOverride) {
             const online=typeof onlineOverride==="boolean"?onlineOverride:
                 (typeof navigator.onLine==="boolean"?navigator.onLine:null);
-            appReliabilityState.network=online===null?"unknown":(online?"online":"offline");
+            appReliabilityState.network=online===null?"unknown":(online?"link-online":"offline");
+            if(online===false){appReliabilityState.reachability="unreachable";appReliabilityState.lastReachabilityAt=Date.now()}
             document.documentElement.dataset.network=appReliabilityState.network;
             try{
                 if(document.getElementById("settingsModal")?.style.display==="flex"&&typeof renderFreeModelFabricStatus==="function"){
@@ -2162,11 +2185,13 @@
         }
 
         window.SevenAppReliability=Object.freeze({
-            version:1,
+            version:2,
             snapshot:()=>({
-                version:1,
+                version:2,
                 visibility:appReliabilityState.visibility,
                 network:appReliabilityState.network,
+                reachability:appReliabilityState.reachability,
+                lastReachabilityAt:appReliabilityState.lastReachabilityAt,
                 visualViewport:Object.assign({},appReliabilityState.visualViewport),
                 lastResumeAt:appReliabilityState.lastResumeAt,
                 lifecycleEvents:appReliabilityState.lifecycleEvents,
@@ -2588,6 +2613,23 @@
             }
         }
 
+        // Explicit composition lifecycle supplements event.isComposing for Android IMEs.
+        window.composerCompositionActive = false;
+        function bindComposerImeGuard() {
+            const input = document.getElementById("userInput");
+            if (!input || input.dataset.sevenImeGuard === "1") return;
+            input.dataset.sevenImeGuard = "1";
+            input.addEventListener("compositionstart", () => { window.composerCompositionActive = true; });
+            input.addEventListener("compositionend", () => { window.composerCompositionActive = false; });
+            input.addEventListener("keydown", event => {
+                if (event.key !== "Enter" || event.shiftKey) return;
+                if (event.isComposing || event.keyCode === 229 || window.composerCompositionActive) return;
+                event.preventDefault();
+                if (typeof window.sendMessage === "function") window.sendMessage();
+            });
+        }
+        bindComposerImeGuard();
+
         // Grows the composer textarea as the user types multi-line text,
         // capped by the CSS max-height (which then scrolls instead).
         function autoGrowInput(el) {
@@ -2595,11 +2637,32 @@
             el.style.height = el.scrollHeight + "px";
         }
 
-        // ---------- Deep Think ----------
-        function toggleDeepThinkMode() {
-            deepThinkMode = !deepThinkMode;
-            document.getElementById("deepThinkToggle").classList.toggle("active", deepThinkMode);
+        // ---------- Response mode state ----------
+        function syncResponseModeControls() {
+            const deep=document.getElementById("deepThinkToggle"),search=document.getElementById("searchToggle"),research=document.getElementById("researchToggle");
+            if(deep)deep.classList.toggle("active",deepThinkMode);
+            if(search)search.classList.toggle("active",searchMode);
+            if(research)research.classList.toggle("active",researchMode);
         }
+        function currentResponseMode() {
+            if(researchMode)return "research";
+            if(deepThinkMode&&!searchMode)return "think";
+            if(searchMode&&!deepThinkMode)return "search";
+            if(deepThinkMode&&searchMode)return "research";
+            return "chat";
+        }
+        function setResponseMode(mode) {
+            mode=["chat","think","search","research"].includes(mode)?mode:"chat";
+            const previous=currentResponseMode();
+            if (mode!==previous && isGenerating) cancelActiveGeneration("mode-change");
+            deepThinkMode=mode==="think";
+            searchMode=mode==="search";
+            researchMode=mode==="research";
+            syncResponseModeControls();
+            document.dispatchEvent(new CustomEvent("seven:response-mode",{detail:{mode,previous}}));
+            return mode;
+        }
+        function toggleDeepThinkMode() { setResponseMode(deepThinkMode?"chat":"think"); }
 
         // Runs a hidden first pass where the model reasons extensively about
         // the problem (high token budget, low temperature for careful precise
@@ -2777,6 +2840,21 @@
             } catch (e) {}
         }
 
+        const SEVEN_ERROR_CODES=Object.freeze(["MODEL_ERROR","NETWORK_ERROR","TOOL_ERROR","MEMORY_ERROR","FILE_ERROR","AUTH_ERROR","RATE_LIMIT","VALIDATION_ERROR","CANCELLED","TIMEOUT","INTERNAL_ERROR"]);
+        const sevenTraceStore=[];let sevenTraceSequence=0;
+        function normalizeSevenError(error,domain="internal"){
+            const status=Math.max(0,Number(error&&error.status)||0),kind=classifyProviderFailureV2(error);let code;
+            if(kind==="cancelled")code="CANCELLED";else if(kind==="timeout")code="TIMEOUT";else if(kind==="rate_limit")code="RATE_LIMIT";else if(kind==="auth")code="AUTH_ERROR";else if(kind==="network")code="NETWORK_ERROR";
+            else if(domain==="tool")code="TOOL_ERROR";else if(domain==="memory")code="MEMORY_ERROR";else if(domain==="file")code="FILE_ERROR";else if(domain==="model"||["server","client","not_found"].includes(kind))code="MODEL_ERROR";else if(error&&error.name==="TypeError")code="VALIDATION_ERROR";else code="INTERNAL_ERROR";
+            return Object.freeze({code,status,domain:String(domain||"internal"),retryable:["NETWORK_ERROR","RATE_LIMIT","TIMEOUT","MODEL_ERROR"].includes(code)&&status!==401&&status!==403,name:String(error&&error.name||"Error").slice(0,80),technicalCode:String(error&&error.code||"").slice(0,80)});
+        }
+        function safeTraceData(data){const out={};for(const [k,v] of Object.entries(data&&typeof data==="object"?data:{})){if(!/^(code|retryable|status|steps|messageCount|web|provider|model|attempts|durationMs)$/.test(k))continue;if(typeof v==="string")out[k]=v.slice(0,160);else if(typeof v==="number"||typeof v==="boolean"||v===null)out[k]=v}return out}
+        function beginSevenTrace(kind,meta){const m=meta&&typeof meta==="object"?meta:{},t={id:"trace-"+Date.now().toString(36)+"-"+(++sevenTraceSequence).toString(36),kind:String(kind||"request").slice(0,40),roomId:String(m.roomId||"").slice(0,120),executionRunId:String(m.executionRunId||"").slice(0,160),mode:String(m.mode||"").slice(0,30),startedAt:Date.now(),endedAt:null,status:"running",events:[]};sevenTraceStore.push(t);if(sevenTraceStore.length>100)sevenTraceStore.splice(0,sevenTraceStore.length-100);return t}
+        function traceSeven(t,phase,data){if(!t)return null;const e={phase:String(phase||"event").slice(0,60),at:Date.now(),data:safeTraceData(data)};t.events.push(e);if(t.events.length>50)t.events.splice(0,t.events.length-50);return e}
+        function finishSevenTrace(t,status,data){if(!t)return null;traceSeven(t,status,data);t.status=String(status||"completed").slice(0,40);t.endedAt=Date.now();return t}
+        function safeTraceSnapshot(){return sevenTraceStore.map(t=>({id:t.id,kind:t.kind,roomId:t.roomId,executionRunId:t.executionRunId,mode:t.mode,startedAt:t.startedAt,endedAt:t.endedAt,status:t.status,events:t.events.map(e=>({phase:e.phase,at:e.at,data:Object.assign({},e.data)}))}))}
+        window.SevenDiagnostics=Object.freeze({version:1,error:normalizeSevenError,begin:beginSevenTrace,event:traceSeven,finish:finishSevenTrace,snapshot:safeTraceSnapshot,errorCodes:SEVEN_ERROR_CODES.slice()});
+
         function classifyProviderFailureV2(error) {
             if (stopRequested === true || (error && error.name === "AbortError" && !error.code)) return "cancelled";
             const code = String(error && error.code || "");
@@ -2897,6 +2975,7 @@
         function recordFreeRouteSuccess(model, latencyMs) {
             if (!model) return;
             const now = Date.now();
+            if(typeof appReliabilityState!=="undefined"){appReliabilityState.reachability="reachable";appReliabilityState.lastReachabilityAt=now}
             recordHealthSuccessV2(model.provider, model.id, latencyMs, now);
             // Any real success demonstrates that the provider is reachable and
             // heals provider-wide degradation/circuit state.
@@ -2909,6 +2988,7 @@
             const errorClass = classifyProviderFailureV2(error);
             if (errorClass === "cancelled") return;
             const now = Date.now();
+            if(typeof appReliabilityState!=="undefined"&&["network","timeout"].includes(errorClass)){appReliabilityState.reachability="degraded";appReliabilityState.lastReachabilityAt=now}
             recordHealthFailureV2(model.provider, model.id, error, now);
 
             const providerOld = getFreeModelHealth(model.provider,"*");
@@ -3304,10 +3384,16 @@
             const provider = FREE_PROVIDER_REGISTRY[providerId];
             if (!provider || !provider.modelsUrl) return [];
             if (provider.credentialOptional !== true && !getFreeProviderCredential(providerId)) return [];
-            const response = await fetch(provider.modelsUrl, { headers: providerAuthHeaders(providerId) });
-            if (!response.ok) { const e=new Error(providerDisplayName(providerId)+" model discovery failed: "+response.status); e.status=response.status; throw e; }
-            const json = await response.json();
-            return Array.isArray(json?.data) ? json.data : (Array.isArray(json?.models) ? json.models : []);
+            const started=Date.now();
+            try {
+                const response = await fetchProviderWithTimeout(provider.modelsUrl, { headers: providerAuthHeaders(providerId) }, 8000);
+                if (!response.ok) { const e=new Error(providerDisplayName(providerId)+" model discovery failed: "+response.status); e.status=response.status; const retry=response.headers&&response.headers.get?response.headers.get("Retry-After"):null; if(retry)e.retryAfterMs=/^\d+$/.test(retry)?Number(retry)*1000:null; throw e; }
+                const json = await response.json();
+                recordHealthSuccessV2(providerId,"*",Math.max(0,Date.now()-started));saveFreeModelHealth();
+                return Array.isArray(json?.data) ? json.data : (Array.isArray(json?.models) ? json.models : []);
+            } catch (error) {
+                recordHealthFailureV2(providerId,"*",error);saveFreeModelHealth();throw error;
+            }
         }
 
         async function discoverOpenRouterFreeModels() {
@@ -3799,8 +3885,17 @@
             if(model.provider==="groq") return callGroq(Object.assign({},config,{model:model.id,maxTokens:Math.min(config.maxTokens,model.maxTokens)}));
             return callOpenAICompatibleFreeProvider(model,config);
         }
+        function fallbackAttemptBudgetV2(remainingMs,attemptsLeft,preferredMs){
+            const remaining=Math.max(0,Number(remainingMs)||0),left=Math.max(1,Number(attemptsLeft)||1);
+            const fair=Math.max(2000,Math.floor(remaining/left));
+            const preferred=Number(preferredMs);
+            const requested=Number.isFinite(preferred)&&preferred>0?preferred:fair;
+            return Math.max(1000,Math.min(30000,remaining,fair,requested));
+        }
         async function callFreeModelFabric(config) {
             const route=buildFreeRouteCandidates(config);
+            const requestDeadlineMs=Math.max(5000,Math.min(90000,Number(config.requestDeadlineMs)||(config.latencyPriority===true?45000:60000)));
+            const deadlineAt=Date.now()+requestDeadlineMs;
             if(!route.candidates.length){
                 const err=new Error("No automatic verified-free route can satisfy this request right now. Check your connection or try again shortly."); err.code="NO_FREE_ROUTE"; throw err;
             }
@@ -3810,9 +3905,12 @@
                 const started=Date.now();
                 const tier=["low","medium","high","veryHigh"].includes(config.latencyTier)?config.latencyTier:
                     (["low","medium","high"].includes(route.requirements.complexity)?route.requirements.complexity:"medium");
-                const attemptTimeout=config.latencyPriority===true
+                const remainingMs=deadlineAt-Date.now();
+                if(remainingMs<=1000)break;
+                const preferredTimeout=config.latencyPriority===true
                     ? learnedTimeoutV2(model.provider,model.id,config.purpose||"chat",tier,config.timeoutMs)
                     : config.timeoutMs;
+                const attemptTimeout=fallbackAttemptBudgetV2(remainingMs,route.candidates.length-i,preferredTimeout);
                 let firstTokenMs=null;
                 const originalOnToken=typeof config.onToken==="function"?config.onToken:null;
                 const attemptConfig=Object.assign({},config,{
@@ -3843,13 +3941,14 @@
                     recordFreeRouteFailure(model,error);
                     recordLatencySampleV2(model,attemptConfig,{success:false,totalMs,firstTokenMs});
                     recordFreeProviderUsage(model.provider,"failure");
-                    attempts.push({provider:model.provider,model:model.id,status:Number(error?.status)||0,error:sanitizeProviderError(error,model.provider)});
+                    attempts.push({provider:model.provider,model:model.id,status:Number(error?.status)||0,error:sanitizeProviderError(error,model.provider),retryAfterMs:Math.max(0,Number(error?.retryAfterMs)||0)});
                     if(error?.partialOutput===true)throw error;
                     if(!freeFallbackEnabled||stopRequested)throw error;
                 }
             }
             const err=new Error("All verified-free routes failed: "+attempts.map(a=>a.error).join(" • "));
-            err.code="FREE_ROUTES_EXHAUSTED"; err.attempts=attempts; throw err;
+            const retryDelays=attempts.map(a=>Math.max(0,Number(a.retryAfterMs)||0)).filter(Boolean);
+            err.code="FREE_ROUTES_EXHAUSTED";err.attempts=attempts;err.retryAfterMs=retryDelays.length?Math.min(...retryDelays):0;throw err;
         }
 
         // ---------- Model / Provider Fabric boundary (Tasks 4 + 146-150) ----------
@@ -3865,7 +3964,7 @@
         // Normalizes caller input into one consistent shape/defaults before
         // it reaches any provider function. Pure normalization only — no
         // behavior change (same defaults every call site already relied on).
-        function normalizeRequestConfig({ messages, temperature, maxTokens, purpose, model, stream, onToken, latencyPriority, latencyTier, timeoutMs } = {}) {
+        function normalizeRequestConfig({ messages, temperature, maxTokens, purpose, model, stream, onToken, latencyPriority, latencyTier, timeoutMs, requestDeadlineMs } = {}) {
             const targetModel = isValidFreeModelSelection(model) ? model : currentModel;
             const limits = modelLimits(targetModel);
             let safeTemperature = Number(temperature);
@@ -3884,7 +3983,8 @@
                 onToken: typeof onToken === "function" ? onToken : null,
                 latencyPriority: latencyPriority === true,
                 latencyTier: ["low","medium","high","veryHigh"].includes(latencyTier) ? latencyTier : null,
-                timeoutMs: Number.isFinite(Number(timeoutMs)) ? Math.max(1000, Math.min(120000, Number(timeoutMs))) : null
+                timeoutMs: Number.isFinite(Number(timeoutMs)) ? Math.max(1000, Math.min(120000, Number(timeoutMs))) : null,
+                requestDeadlineMs: Number.isFinite(Number(requestDeadlineMs)) ? Math.max(5000, Math.min(90000, Number(requestDeadlineMs))) : null
             };
         }
 
@@ -4058,12 +4158,12 @@
             return activeDeepThinkPerformance;
         }
 
-        function finishDeepThinkPerformanceV1(status) {
-            if (!activeDeepThinkPerformance) return null;
-            activeDeepThinkPerformance.status=status||"completed";
-            activeDeepThinkPerformance.totalMs=Math.max(0,Math.round(nowPerformanceMsV1()-activeDeepThinkPerformance.startedAt));
-            lastDeepThinkPerformance=Object.assign({},activeDeepThinkPerformance);
-            activeDeepThinkPerformance=null;
+        function finishDeepThinkPerformanceV1(status,target=activeDeepThinkPerformance) {
+            if (!target) return null;
+            target.status=status||"completed";
+            target.totalMs=Math.max(0,Math.round(nowPerformanceMsV1()-target.startedAt));
+            lastDeepThinkPerformance=Object.assign({},target);
+            if (activeDeepThinkPerformance===target) activeDeepThinkPerformance=null;
             return lastDeepThinkPerformance;
         }
 
@@ -4072,6 +4172,7 @@
             if(!src)return null;
             return {
                 version:src.version,
+                roomId:src.roomId,
                 status:src.status,
                 contextMs:src.contextMs,
                 deepThinkMs:src.deepThinkMs,
@@ -4094,12 +4195,12 @@
             snapshot:safeDeepThinkPerformanceSnapshotV1
         });
 
-        async function runDeepThink(messages, model = currentModel) {
+        async function runDeepThink(messages, model = currentModel, perf=activeDeepThinkPerformance) {
             const policy=deepThinkPolicyForRequest(messages,model);
-            if(activeDeepThinkPerformance){
-                activeDeepThinkPerformance.hiddenBudget=policy.hiddenMaxTokens;
-                activeDeepThinkPerformance.timeoutMs=policy.timeoutMs;
-                activeDeepThinkPerformance.complexity=policy.tier;
+            if(perf){
+                perf.hiddenBudget=policy.hiddenMaxTokens;
+                perf.timeoutMs=policy.timeoutMs;
+                perf.complexity=policy.tier;
             }
 
             const reasoningMessages = [
@@ -4126,12 +4227,12 @@
                 timeoutMs: policy.timeoutMs
             });
             if (stopRequested) throw new DOMException("Stopped", "AbortError");
-            if(activeDeepThinkPerformance){
-                activeDeepThinkPerformance.deepThinkMs=Math.max(0,Math.round(nowPerformanceMsV1()-started));
+            if(perf){
+                perf.deepThinkMs=Math.max(0,Math.round(nowPerformanceMsV1()-started));
                 const route=reasoningData&&reasoningData._sevenRoute;
                 if(route){
-                    activeDeepThinkPerformance.deepRoute={provider:route.provider,model:route.model};
-                    activeDeepThinkPerformance.deepAttempts=route.attempts||1;
+                    perf.deepRoute={provider:route.provider,model:route.model};
+                    perf.deepAttempts=route.attempts||1;
                 }
             }
 
@@ -4139,11 +4240,13 @@
             if(typeof reasoning!=="string") throw new Error("Deep Think reasoning pass returned an invalid response.");
 
             const finalMessages = messages.map(m => ({ ...m }));
-            finalMessages.push({
-                role: "system",
-                content: "Use this compact internal decision brief to improve the final answer. Do not quote it or expose private reasoning. " +
-                    "Apply its conclusions, constraints, edge cases, uncertainty notes, and checks:\n\n" + reasoning
-            });
+            const decisionBrief = "Use this compact internal decision brief to improve the final answer. Do not quote it or expose private reasoning. " +
+                "Apply its conclusions, constraints, edge cases, uncertainty notes, and checks:\n\n" + reasoning;
+            if (finalMessages[0] && finalMessages[0].role === "system") {
+                finalMessages[0] = { ...finalMessages[0], content: finalMessages[0].content + "\n\n" + decisionBrief };
+            } else {
+                finalMessages.unshift({ role: "system", content: decisionBrief });
+            }
             return finalMessages;
         }
 
@@ -4240,16 +4343,13 @@
         }
 
         // ---------- Web Search ----------
-        function toggleSearchMode() {
-            searchMode = !searchMode;
-            document.getElementById("searchToggle").classList.toggle("active", searchMode);
-        }
-
-        function toggleResearchMode() {
-            researchMode = !researchMode;
-            const button=document.getElementById("researchToggle");
-            if(button)button.classList.toggle("active",researchMode);
-        }
+        function toggleSearchMode() { setResponseMode(searchMode?"chat":"search"); }
+        function toggleResearchMode() { setResponseMode(researchMode?"chat":"research"); }
+        window.SevenModeState=Object.freeze({
+            set:setResponseMode,
+            current:currentResponseMode,
+            snapshot:()=>({mode:currentResponseMode(),deepThink:deepThinkMode,search:searchMode,research:researchMode})
+        });
 
         // Tries DuckDuckGo's Instant Answer API first (fast, keyless, but only
         // returns results for topics it has a summary/infobox for). If that
@@ -4267,7 +4367,7 @@
             const activeSignal = options.signal || (activeAbortController && activeAbortController.signal);
             if (!controller) return Promise.race([
                 fetch(url, options),
-                new Promise((_, reject) => setTimeout(() => reject(new Error("Request timed out")), timeoutMs))
+                new Promise((_, reject) => setTimeout(() => { const e=new Error("Request timed out"); e.code="REQUEST_TIMEOUT"; reject(e); }, timeoutMs))
             ]);
             let timer = null; let detach = null;
             if (activeSignal) {
@@ -4311,7 +4411,7 @@
             const requestOptions = controller ? Object.assign({}, options, { signal: controller.signal }) : options;
             const request = controller
                 ? fetch(url, requestOptions)
-                : Promise.race([fetch(url, requestOptions), new Promise((_, reject) => setTimeout(() => reject(new Error("Request timed out")), Math.max(1000, timeoutMs)))]);
+                : Promise.race([fetch(url, requestOptions), new Promise((_, reject) => setTimeout(() => { const e=new Error("Provider request timed out"); e.code="PROVIDER_TIMEOUT"; reject(e); }, Math.max(1000, timeoutMs)))]);
             return Promise.resolve(request).catch(error => {
                 if (error && error.name === "AbortError" && !(activeAbortController && activeAbortController.signal && activeAbortController.signal.aborted)) {
                     const timeoutError = new Error("Provider request timed out");
@@ -6551,11 +6651,7 @@
                 ? Math.floor(outputTokens)
                 : modelLimits(model).maxTokens;
             const safety = 2048;
-            let contextWindow = modelLimits(model).contextWindow || CONTEXT_WINDOW_TOKENS;
-            if (currentRoutingMode === "auto") {
-                const configured = getFreeModelCatalog().filter(m => m.free === true && isFreePriceProofFresh(m) && isFreeProviderConfigured(m.provider) && (!m.requiresExplicitEnable || isFreeProviderEnabled(m.provider)));
-                if (configured.length) contextWindow = Math.max(...configured.map(m => m.contextWindow));
-            }
+            const contextWindow = modelLimits(model).contextWindow || CONTEXT_WINDOW_TOKENS;
             return Math.max(2048, contextWindow - Math.min(contextWindow - 2048, output) - safety);
         }
 
@@ -7908,6 +8004,7 @@
             }
             const executionRun = addExecutionRun(taskPlan);
             const executionRunId = executionRun ? executionRun.id : null;
+            const requestTrace=beginSevenTrace("chat",{roomId,executionRunId,mode:currentResponseMode()});traceSeven(requestTrace,"planned",{steps:taskPlan.steps.length});
             const hasPlanStep = stepId => taskPlan.steps.some(step => step.id === stepId);
             if (!executionRun && typeof console !== "undefined" && console.warn) {
                 console.warn("Execution Fabric persistence unavailable; continuing this request without durable checkpoints.");
@@ -7948,6 +8045,7 @@
                 }
                 const contextStarted = deepPerf ? nowPerformanceMsV1() : 0;
                 const { messages, searchResult } = await buildContext(room, text, roomId, controllerPlan);
+                traceSeven(requestTrace,"context",{messageCount:Array.isArray(messages)?messages.length:0,web:!!searchResult});
                 if (deepPerf) deepPerf.contextMs = Math.max(0, Math.round(nowPerformanceMsV1() - contextStarted));
                 if (executionRunId && hasPlanStep("memory")) checkpointLiveExecution(executionRunId, "memory", "passed", { resultRef: "memory:context" });
                 if (executionRunId && hasPlanStep("web")) checkpointLiveExecution(executionRunId, "web", "passed", { resultRef: searchResult ? "web:results" : "web:none" });
@@ -7968,7 +8066,7 @@
                     if (bubble && bubble.isConnected) {
                         bubble.innerHTML = '<span class="typing-dots" aria-label="Reasoning"><span></span><span></span><span></span></span> <span>Reasoning…</span>';
                     }
-                    finalMessages = await runDeepThink(messages, controllerPlan.model.id);
+                    finalMessages = await runDeepThink(messages, controllerPlan.model.id, deepPerf);
                     if (executionRunId) checkpointLiveExecution(executionRunId, "deepThink", "passed", { resultRef: "reasoning:completed" });
                     if (stopRequested) throw new DOMException("Stopped", "AbortError");
                 }
@@ -8075,7 +8173,8 @@
                     checkpointLiveExecution(executionRunId, "result", "passed", { resultRef: "conversation:" + roomId + ":final" });
                     activeExecutionStep = null;
                 }
-                if (deepPerf && activeDeepThinkPerformance) finishDeepThinkPerformanceV1("completed");
+                if (deepPerf) finishDeepThinkPerformanceV1("completed",deepPerf);
+                finishSevenTrace(requestTrace,"completed",{durationMs:Date.now()-requestTrace.startedAt});
 
                 await autoSummarizeIfNeeded(roomId);
                 if (wasFirstExchange) {
@@ -8083,8 +8182,10 @@
                 }
             } catch (error) {
                 cancelStreamingBubbleUpdate(false);
-                if (deepPerf && activeDeepThinkPerformance) {
-                    finishDeepThinkPerformanceV1((error?.name === "AbortError" || stopRequested) ? "cancelled" : "failed");
+                const normalizedError=normalizeSevenError(error,"model");
+                finishSevenTrace(requestTrace,normalizedError.code==="CANCELLED"?"cancelled":"failed",{code:normalizedError.code,status:normalizedError.status,retryable:normalizedError.retryable,durationMs:Date.now()-requestTrace.startedAt});
+                if (deepPerf) {
+                    finishDeepThinkPerformanceV1((error?.name === "AbortError" || stopRequested) ? "cancelled" : "failed",deepPerf);
                 }
                 if (executionRunId) {
                     const aborted = error?.name === "AbortError" || stopRequested;
@@ -8096,7 +8197,7 @@
                         const targetStatus = aborted ? "cancelled" : "failed";
                         for (const step of runNow.steps) {
                             if (step.status === "running") {
-                                checkpointLiveExecution(executionRunId, step.id, targetStatus, { errorCode: aborted ? "stopped" : "execution_error" });
+                                checkpointLiveExecution(executionRunId, step.id, targetStatus, { errorCode: normalizedError.code });
                             }
                         }
                     }
@@ -8131,6 +8232,7 @@
         // are already turned into readable Error objects before this point,
         // so this only fires for that raw network failure.
         function describeNetworkError(error) {
+            if(error&&Number(error.retryAfterMs)>0){const seconds=Math.max(1,Math.ceil(Number(error.retryAfterMs)/1000));return "All automatic free routes are temporarily unavailable. Retry in about "+seconds+" seconds."}
             if (error instanceof TypeError) {
                 let msg = "Couldn't reach the selected free model provider. Check your internet connection";
                 if (location.protocol === "file:") {
@@ -8157,14 +8259,17 @@
             wrapper.appendChild(btn);
         }
 
-        function stopGeneration() {
-            // Sets a flag instead of calling AbortController.abort() — some
-            // mobile WebViews throw "AbortSignal object could not be cloned"
-            // when a fetch's signal gets relayed internally via postMessage.
-            // The in-flight request still completes, but its result is
-            // discarded once this flag is checked.
+        function cancelActiveGeneration(reason = "user-stop") {
+            if (!isGenerating || !activeGenerationRoomId) return false;
             stopRequested = true;
-            if (activeAbortController) { try { activeAbortController.abort(); } catch (_) {} }
+            const controller = activeAbortController;
+            if (controller) { try { controller.abort(reason); } catch (_) { try { controller.abort(); } catch (_) {} } }
+            document.dispatchEvent(new CustomEvent("seven:generation-cancelled", { detail: { roomId: activeGenerationRoomId, reason } }));
+            return true;
+        }
+        function stopGeneration() {
+            if (currentRoom !== activeGenerationRoomId) return false;
+            return cancelActiveGeneration("user-stop");
         }
 
         // ---------- Canonical Backup / Import v2 ----------

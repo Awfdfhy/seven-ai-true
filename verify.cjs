@@ -14,11 +14,61 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  await page.goto(origin);
  await page.waitForFunction(()=>roomPersistence.status().ready);
  await test('initial IDB migration and UI boot',async()=>{assert.equal(await page.evaluate(()=>roomPersistence.status().revision),1);assert.deepEqual(errors,[])});
+ await test('auto context budget is bounded by the controller model window',async()=>{
+  const r=await page.evaluate(()=>{
+    const oldMode=currentRoutingMode;currentRoutingMode='auto';
+    try{const limits=modelLimits(currentModel),output=Math.min(currentMaxTokens,limits.maxTokens),budget=getContextInputTokenBudget(currentModel,output);return {budget,window:limits.contextWindow,output}}
+    finally{currentRoutingMode=oldMode}
+  });
+  assert.ok(r.budget+r.output+2048<=r.window);
+ });
+ await test('composer IME composition blocks Enter send until composition ends',async()=>{
+  const r=await page.evaluate(()=>{
+    const input=document.getElementById('userInput'),old=sendMessage;let calls=0;
+    sendMessage=()=>{calls++};
+    try{
+      input.dispatchEvent(new CompositionEvent('compositionstart',{bubbles:true,data:'م'}));
+      input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+      const during=calls;
+      input.dispatchEvent(new CompositionEvent('compositionend',{bubbles:true,data:'مرحبا'}));
+      input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+      return {during,after:calls,composition:composerCompositionActive,inlineGrow:input.hasAttribute('oninput')};
+    }finally{sendMessage=old;composerCompositionActive=false}
+  });
+  assert.deepEqual(r,{during:0,after:1,composition:false,inlineGrow:false});
+ });
  await test('room commit/reload and untouched legacy keys',async()=>{
   await page.evaluate(async()=>{rooms.default.history.push({role:'user',content:'مرحبا Seven 123 /src/A.js'});await saveRooms()});
   assert.equal(await page.evaluate(()=>localStorage.getItem('chat_rooms_v6')),null);
   await page.reload();await page.waitForFunction(()=>roomPersistence.status().ready);
   assert.equal(await page.evaluate(()=>rooms.default.history[0].content),'مرحبا Seven 123 /src/A.js');
+ });
+ await test('room switch cancels only the originating active generation',async()=>{
+  const r=await page.evaluate(()=>{
+    const originalRoom=currentRoom,other='room-switch-fixture';
+    rooms[other]=createEmptyRoom();roomTitles[other]='Other';
+    let aborts=0;activeAbortController={abort(){aborts++}};
+    isGenerating=true;activeGenerationRoomId=originalRoom;stopRequested=false;
+    switchRoom(other);
+    const first={room:currentRoom,stopped:stopRequested,aborts,origin:activeGenerationRoomId};
+    stopRequested=false;aborts=0;
+    const wrongRoomStop=stopGeneration();
+    const second={wrongRoomStop,stopped:stopRequested,aborts};
+    isGenerating=false;activeGenerationRoomId=null;activeAbortController=null;stopRequested=false;
+    delete rooms[other];delete roomTitles[other];currentRoom=originalRoom;updateRoomTitle();renderChatHistory();updateRoomListUI();
+    return {first,second};
+  });
+  assert.equal(r.first.stopped,true);assert.equal(r.first.aborts,1);assert.equal(r.first.origin,'default');assert.equal(r.second.wrongRoomStop,false);assert.equal(r.second.stopped,false);assert.equal(r.second.aborts,0);
+ });
+ await test('room persistence stages WAL before async commit and clears it after commit',async()=>{
+  const r=await page.evaluate(async()=>{roomTitles.default='wal-stage-'+Date.now();const p=saveRooms(),staged=localStorage.getItem('seven_ai_room_wal_v1')!==null,ok=await p,cleared=localStorage.getItem('seven_ai_room_wal_v1')===null;return{staged,ok,cleared}});
+  assert.deepEqual(r,{staged:true,ok:true,cleared:true});
+ });
+ await test('room persistence replays a newer crash WAL exactly once',async()=>{
+  await page.evaluate(async()=>{await roomPersistence.flush();const base=roomPersistence.status().revision,value=JSON.parse(JSON.stringify({version:1,rooms,roomTitles,currentRoom}));value.roomTitles[value.currentRoom]='Recovered after process death';localStorage.setItem('seven_ai_room_wal_v1',JSON.stringify({schemaVersion:1,seq:Date.now()*1000+777,sessionId:'dead-process-fixture',baseRevision:base,value}))});
+  await page.reload();await page.waitForFunction(()=>roomPersistence.status().ready);
+  const r=await page.evaluate(()=>({title:roomTitles[currentRoom],wal:localStorage.getItem('seven_ai_room_wal_v1'),revision:roomPersistence.status().revision}));
+  assert.equal(r.title,'Recovered after process death');assert.equal(r.wal,null);assert.ok(r.revision>=2);
  });
  await test('queued snapshots maintain order',async()=>{
   const r=await page.evaluate(async()=>{roomTitles.default='one';const a=saveRooms();roomTitles.default='two';const b=saveRooms();return [await a,await b]});assert.deepEqual(r,[true,true]);
@@ -30,6 +80,14 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   assert.equal(await other.evaluate(async()=>{roomTitles.default='stale';return await saveRooms()}),false);
   assert.equal(await other.evaluate(()=>roomPersistence.status().failed),true);await other.close();
  });
+ const failedStorage=await browser.newContext();await failedStorage.route('**/*',route=>route.request().url().startsWith(origin)?route.continue():route.abort());
+ await failedStorage.addInitScript(()=>{Object.defineProperty(window,'indexedDB',{configurable:true,value:{open(){const q={result:null,error:null};setTimeout(()=>{q.error=new DOMException('blocked','InvalidStateError');q.onerror&&q.onerror()},0);return q}}})});
+ const failedPage=await failedStorage.newPage();await failedPage.goto(origin);await failedPage.waitForFunction(()=>typeof roomPersistence!=='undefined'&&roomPersistence.status().failed);
+ await test('storage startup failure restores interactive recovery UI',async()=>{
+  const r=await failedPage.evaluate(()=>({inert:document.body.inert,ready:roomPersistence.status().ready,failed:roomPersistence.status().failed,status:document.getElementById('persistenceStatus')?.textContent||'',focusable:(()=>{const e=document.getElementById('userInput');e?.focus();return document.activeElement===e})()}));
+  assert.equal(r.inert,false);assert.equal(r.ready,false);assert.equal(r.failed,true);assert.match(r.status,/Storage unavailable or invalid/);assert.equal(r.focusable,true);
+ });
+ await failedPage.close();await failedStorage.close();
  await test('atomic memory create update delete and history',async()=>{
   const r=await page.evaluate(()=>{const m=addMemory('I prefer Arabic explanations.');if(!m)return null;const before=getMemoryHistory(m.id).length;const u=updateMemory(m.id,'I prefer Arabic and English explanations.');const valid=verifyMemoryLedgerConsistency(m.id).consistent;const d=deleteMemory(m.id);return {before,u:!!u,valid,d,history:getMemoryHistory(m.id).length,legacy:localStorage.getItem(MEMORY_STORAGE_KEY)}});
   assert.deepEqual(r,{before:1,u:true,valid:true,d:true,history:3,legacy:null});
@@ -216,11 +274,19 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
  });
  await test('performance polish network projection is advisory and deterministic',async()=>{
   const r=await page.evaluate(()=>{const a=updateNetworkUiStateV1(false),da=document.documentElement.dataset.network,b=updateNetworkUiStateV1(true),db=document.documentElement.dataset.network;updateNetworkUiStateV1();return {a,da,b,db}});
-  assert.deepEqual(r,{a:'offline',da:'offline',b:'online',db:'online'});
+  assert.deepEqual(r,{a:'offline',da:'offline',b:'link-online',db:'link-online'});
+ });
+ await test('integration diagnostics normalize errors and bound trace data',async()=>{
+  const r=await page.evaluate(()=>{const timeout=Object.assign(new Error('hidden detail'),{code:'PROVIDER_TIMEOUT'}),rate=Object.assign(new Error('rate'),{status:429}),net=new TypeError('Failed to fetch'),t=SevenDiagnostics.begin('chat',{roomId:'diag-room',mode:'search'});SevenDiagnostics.event(t,'provider',{provider:'fixture',messageCount:3,secret:'must-not-appear'});SevenDiagnostics.finish(t,'failed',{code:'TIMEOUT',retryable:true});const snap=SevenDiagnostics.snapshot().at(-1),raw=JSON.stringify(snap);return{timeout:SevenDiagnostics.error(timeout,'model'),rate:SevenDiagnostics.error(rate,'model'),net:SevenDiagnostics.error(net,'model'),snap,leak:raw.includes('must-not-appear')}});
+  assert.equal(r.timeout.code,'TIMEOUT');assert.equal(r.rate.code,'RATE_LIMIT');assert.equal(r.net.code,'NETWORK_ERROR');assert.equal(r.snap.status,'failed');assert.equal(r.snap.roomId,'diag-room');assert.equal(r.leak,false);
+ });
+ await test('provider discovery failure enters health and success heals it',async()=>{
+  const r=await page.evaluate(async()=>{const oldFetch=fetchProviderWithTimeout,oldRaw=localStorage.getItem(FREE_MODEL_HEALTH_KEY),oldHealth=JSON.parse(JSON.stringify(freeModelHealth));try{fetchProviderWithTimeout=async()=>({ok:false,status:429,headers:{get:n=>String(n).toLowerCase()==='retry-after'?'1':null}});try{await fetchProviderModelList('kilo')}catch(_){}const failed=SevenProviderHealthV2.provider('kilo');fetchProviderWithTimeout=async()=>({ok:true,status:200,headers:{get:()=>null},json:async()=>({data:[]})});await fetchProviderModelList('kilo');const healed=SevenProviderHealthV2.provider('kilo');return{failed:failed.state,healed:healed.state}}finally{fetchProviderWithTimeout=oldFetch;freeModelHealth=oldHealth;if(oldRaw===null)localStorage.removeItem(FREE_MODEL_HEALTH_KEY);else localStorage.setItem(FREE_MODEL_HEALTH_KEY,oldRaw)}});
+  assert.equal(r.failed,'cooldown');assert.notEqual(r.healed,'cooldown');
  });
  await test('performance polish visual viewport and diagnostics initialize safely',async()=>{
   const r=await page.evaluate(()=>{const vv=updateVisualViewportV1(),snap=SevenAppReliability.snapshot(),raw=JSON.stringify(SevenAppReliability.snapshot());return {width:vv.width,height:vv.height,version:snap.version,visibility:snap.visibility,network:snap.network,hasRender:!!snap.renderWindow,secret:/gsk_|sk-or-|nvapi-|AIza|Authorization|Bearer/i.test(raw),content:/message-499|chunk-49|Relevant memories/.test(raw)}});
-  assert.ok(r.width>0&&r.height>0);assert.equal(r.version,1);assert.ok(['foreground','background'].includes(r.visibility));assert.ok(['online','offline','unknown'].includes(r.network));assert.equal(r.hasRender,true);assert.equal(r.secret,false);assert.equal(r.content,false);
+  assert.ok(r.width>0&&r.height>0);assert.equal(r.version,2);assert.ok(['foreground','background'].includes(r.visibility));assert.ok(['link-online','offline','unknown'].includes(r.network));assert.equal(r.hasRender,true);assert.equal(r.secret,false);assert.equal(r.content,false);
  });
  await test('performance polish 320px chat and settings avoid horizontal overflow',async()=>{
   await page.setViewportSize({width:320,height:800});
@@ -244,6 +310,14 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   const r=await page.evaluate(()=>SevenModelIntelligenceV3.analyze('Analyze this problem carefully',{purpose:'deepThink',deepThinkRequested:true,latencyPriority:true}));
   assert.equal(r.preferSpeed,true);assert.equal(r.preferPrecision,true);assert.ok(r.evidence.includes('latency-priority'));
  });
+ await test('fallback budget enforces one bounded wall-clock envelope',async()=>{
+  const r=await page.evaluate(()=>({
+    a:fallbackAttemptBudgetV2(60000,8,null),
+    b:fallbackAttemptBudgetV2(9000,3,45000),
+    c:normalizeRequestConfig({messages:[],requestDeadlineMs:12345}).requestDeadlineMs
+  }));
+  assert.ok(r.a<=7500&&r.a>=2000);assert.ok(r.b<=3000);assert.equal(r.c,12345);
+ });
  await test('request normalization preserves deep latency and timeout policy without changing final budgets',async()=>{
   const r=await page.evaluate(()=>{
     const deep=normalizeRequestConfig({messages:[{role:'user',content:'x'}],maxTokens:2048,purpose:'deepThink',model:currentModel,latencyPriority:true,timeoutMs:25000});
@@ -262,10 +336,22 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
       const out=await runDeepThink([{role:'user',content:'Analyze this carefully'}],currentModel);
       const snap=SevenDeepThinkPerformance.snapshot();
       finishDeepThinkPerformanceV1('completed');
-      return {calls,captured,outLen:out.length,last:out[out.length-1].content,snap};
+      return {calls,captured,outLen:out.length,roles:out.map(x=>x.role),first:out[0]?.content||'',last:out[out.length-1]?.content||'',snap};
     }finally{requestAI=old;if(activeDeepThinkPerformance)finishDeepThinkPerformanceV1('cancelled');}
   });
-  assert.equal(r.calls,1);assert.equal(r.captured.purpose,'deepThink');assert.equal(r.captured.latencyPriority,true);assert.ok(r.captured.timeoutMs>=25000);assert.ok(r.captured.maxTokens>=512);assert.ok(r.captured.system.includes('compact decision brief'));assert.ok(!r.captured.system.toLowerCase().includes('step by step'));assert.ok(r.last.includes('compact synthetic brief'));assert.ok(r.snap.deepRoute.provider==='fixture');
+  assert.equal(r.calls,1);assert.equal(r.captured.purpose,'deepThink');assert.equal(r.captured.latencyPriority,true);assert.ok(r.captured.timeoutMs>=25000);assert.ok(r.captured.maxTokens>=512);assert.ok(r.captured.system.includes('compact decision brief'));assert.ok(!r.captured.system.toLowerCase().includes('step by step'));assert.equal(r.roles[0],'system');assert.ok(r.first.includes('compact synthetic brief'));assert.notEqual(r.roles[r.roles.length-1],'system');assert.ok(r.snap.deepRoute.provider==='fixture');
+ });
+ await test('deep think performance ownership is request scoped',async()=>{
+  const r=await page.evaluate(()=>{
+    const a=beginDeepThinkPerformanceV1('room-a');
+    const b=beginDeepThinkPerformanceV1('room-b');
+    a.contextMs=11;b.contextMs=22;
+    const finishedA=finishDeepThinkPerformanceV1('completed',a);
+    const activeAfterA=SevenDeepThinkPerformance.snapshot();
+    const finishedB=finishDeepThinkPerformanceV1('completed',b);
+    return {finishedA,activeAfterA,finishedB,activeCleared:activeDeepThinkPerformance===null};
+  });
+  assert.equal(r.finishedA.roomId,'room-a');assert.equal(r.activeAfterA.roomId,'room-b');assert.equal(r.activeAfterA.contextMs,22);assert.equal(r.finishedB.roomId,'room-b');assert.equal(r.activeCleared,true);
  });
  await test('deep think diagnostics expose timings and routes but no content or secrets',async()=>{
   const r=await page.evaluate(()=>{
@@ -1118,6 +1204,34 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   assert.ok(Array.isArray(r.snap.plannedCoverageKeys));assert.ok(Array.isArray(r.snap.coveredCoverageKeys));assert.equal(r.hasRaw,false);
  });
 
+ await test('mode change cancels work started under the previous mode',async()=>{
+  const r=await page.evaluate(()=>{
+    const oldMode=SevenModeState.current(),oldRoom=currentRoom;
+    let aborts=0;activeAbortController={abort(){aborts++}};isGenerating=true;activeGenerationRoomId=oldRoom;stopRequested=false;
+    SevenModeState.set(oldMode==='search'?'think':'search');
+    const changed={stopped:stopRequested,aborts,mode:SevenModeState.current()};
+    stopRequested=false;aborts=0;SevenModeState.set(SevenModeState.current());
+    const same={stopped:stopRequested,aborts};
+    isGenerating=false;activeGenerationRoomId=null;activeAbortController=null;stopRequested=false;SevenModeState.set(oldMode);
+    return {changed,same};
+  });
+  assert.equal(r.changed.stopped,true);assert.equal(r.changed.aborts,1);assert.equal(r.same.stopped,false);assert.equal(r.same.aborts,0);
+ });
+ await test('mode state keeps picker and runtime semantics identical',async()=>{
+  const r=await page.evaluate(()=>{
+    const before=SevenModeState.snapshot();
+    SevenModeState.set('research');
+    const research={state:SevenModeState.snapshot(),plan:createCognitiveRequestPlan({text:'research fixture',roomId:currentRoom})};
+    SevenModeState.set('think');const think=SevenModeState.snapshot();
+    SevenModeState.set('search');const search=SevenModeState.snapshot();
+    SevenModeState.set(before.mode);
+    return {research,think,search};
+  });
+  assert.deepEqual(r.research.state,{mode:'research',deepThink:false,search:false,research:true});
+  assert.equal(r.research.plan.research.use,true);assert.equal(r.research.plan.web.use,true);assert.equal(r.research.plan.deepThink.use,true);
+  assert.deepEqual(r.think,{mode:'think',deepThink:true,search:false,research:false});
+  assert.deepEqual(r.search,{mode:'search',deepThink:false,search:true,research:false});
+ });
  await test('deep research toggle is independent while controller implies web and Deep Think',async()=>{
   const r=await page.evaluate(()=>{
     const old={researchMode,searchMode,deepThinkMode};
