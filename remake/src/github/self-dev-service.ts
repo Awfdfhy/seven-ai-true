@@ -142,6 +142,17 @@ function validateCodingEvidence(
       details: { stage: "coding_verification" },
     });
   }
+  if (
+    typeof evidence.repository !== "string" ||
+    typeof evidence.baseSha !== "string" ||
+    !/^[a-f0-9]{40}$/i.test(evidence.baseSha)
+  ) {
+    throw new SevenError({
+      code: "TOOL",
+      message: "Coding verification identity evidence is malformed.",
+      details: { stage: "coding_verification", reason: "MALFORMED_IDENTITY" },
+    });
+  }
   if (evidence.repository !== expected.repository || evidence.baseSha.toLowerCase() !== expected.baseSha) {
     throw new SevenError({ code: "TOOL", message: "Coding verification evidence does not match the requested repository/base." });
   }
