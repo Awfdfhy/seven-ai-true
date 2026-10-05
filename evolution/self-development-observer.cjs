@@ -198,10 +198,6 @@ class ObservationBuffer {
 }
 
 module.exports = {
-  OUTCOMES,
-  SEVERITIES,
-  METRIC_RULES,
-  METADATA_KEYS,
   createObservation,
   normalizeMetrics,
   normalizeMetadata,
