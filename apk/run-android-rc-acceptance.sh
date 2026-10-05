@@ -72,8 +72,8 @@ kill_window(){
 adb install -r -t "$APP_APK" | tee "$OUT/build-a-install.log"
 adb install -r -t "$TEST_APK" | tee "$OUT/harness-install.log"
 adb shell pm clear "$APP_ID" | tee "$OUT/build-a-clear-before-seed.log"
-adb shell am broadcast --include-stopped-packages -n "${APP_ID}.test/${APP_ID}.SevenTestGrantReceiver" | tee "$OUT/saf-temporary-grant.log"
-grep -q 'Broadcast completed: result=1' "$OUT/saf-temporary-grant.log"
+adb shell am start -W -n "${APP_ID}.test/${APP_ID}.SevenTestGrantActivity" | tee "$OUT/saf-temporary-grant.log"
+grep -q 'Status: ok' "$OUT/saf-temporary-grant.log"
 run_one seedUpgradeState "$OUT/build-a-seed.log"
 
 # Real target-process kill at three persistence boundaries.
