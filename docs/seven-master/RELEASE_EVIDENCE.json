@@ -507,7 +507,7 @@
     "candidateFullBrowser": "PENDING_REMOTE_CI",
     "candidateAndroid": "PENDING_MERGE_CI",
     "RC": "NOT_CREATED",
-    "latestUpstreamSha": "f90fabb1910f013d3badf9c868174d48a4bd1726",
+    "latestUpstreamSha": "8f235363fc3eceb61b7eef87515594adb6e37715",
     "intermediateWebCI": {
       "sha": "ad00c123daedebf4193b8b158a725c2353fc455f",
       "run": 37259977856,
@@ -537,6 +537,40 @@
       "workspaceBytes": 319738,
       "staticBytes": 4188140,
       "automaticJournalRecovery": "NOT_IMPLEMENTED"
+    },
+    "failedMergeCI": {
+      "run": 37260608130,
+      "head": "8521fc02e919b26ba3c26cbf8ca77d290dcbcb55",
+      "checkout": "c82f71a0e352a3bdc5878707b070a6eafd377c1a",
+      "base": "ca51645aeab3bf08e2ca6d520bd0d33f9538ed8c",
+      "failure": "lazy-workspaces-too-heavy",
+      "workspaceBytes": 320506
+    },
+    "packagedRpgSuites": "PASS: existing state/session/context/live tests against transformed artifacts",
+    "packagingBenchmark": {
+      "environment": "Node 24.19.0 Linux; packaging transform only",
+      "originalBytes": 51154,
+      "packagedBytes": 42114,
+      "p50Ms": 42.59837399999998,
+      "p95Ms": 54.920800000000014
+    },
+    "latestStaticAudit": {
+      "startupBytes": 99668,
+      "workspaceBytes": 312627,
+      "staticBytes": 4184266
+    },
+    "latestFocusedChecks": [
+      "agent-workflow-isolation",
+      "resilience-contracts",
+      "android-lifecycle-contracts",
+      "integration-contracts",
+      "rpg-packaging",
+      "static-audit",
+      "syntax: build/release verifier/verify"
+    ],
+    "zeroRoomRegression": {
+      "preRepair": "npm run android:generate -> zero-room transform missing delete final room",
+      "postRepair": "executable final-room/event/active-generation/idempotence/anchor tests PASS; build:web PASS"
     }
   }
 }

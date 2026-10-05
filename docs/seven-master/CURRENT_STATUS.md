@@ -2,7 +2,7 @@
 
 ## Lead Release Manager — continuation integration snapshot
 
-Release remains **NOT ACCEPTED / no RC**. PR #105 reconciles upstream `f90fabb1910f013d3badf9c868174d48a4bd1726` with the release repairs, preserving both ADR-REL-001..005 and ADR-015..019 and specialist history. The enclosing commit identifies this candidate; later commits require separate evidence.
+Release remains **NOT ACCEPTED / no RC**. PR #105 reconciles upstream `8f235363fc3eceb61b7eef87515594adb6e37715` with the release repairs, preserving both ADR-REL-001..005 and ADR-015..019 and specialist history. The enclosing commit identifies this candidate; later commits require separate evidence.
 
 - All 34 local component suites reran on the merged source and passed; exact durations are in RELEASE_EVIDENCE.json. Full local browser gate remains unavailable because the Chromium archive download fails.
 - Verified upstream-only CI: Seven AI tests run 37241282527 and Seven Android APK run 37241282530 passed on `b3e3ffa4fe676a838ed658e22fad1576cfe11237`. Android job 111550342818 passed lint/unit/build, packaged-content checks, and connected API34/API36 WebView tests. These results do not certify the PR candidate.
@@ -121,5 +121,8 @@ See:
 ## Continuation failure hunt additions
 - REL-15: lifecycle regression expected a literal SevenPerformance.state.ready but implementation uses p.state.ready; assertion now checks both alias and readiness guard, passing.
 - REL-16: RPG index-write plus rollback-write failure returned a normal rejection while advanced state remained loadable. Durable pending journal now quarantines the room and preserves prior session; focused tests prove no hydrate/context/resync, including a fresh bridge after restart. Verified recovery UX and truly atomic cross-store commit remain OPEN.
-- Static budget: 99,668 startup bytes; 319,738 lazy workspace bytes, 262 bytes below 320,000. No limits increased.
+- REL-17: CI run 37260608130 failed at 320,506 workspace bytes after automatic PR/base integration. Pinned RPG minification and packaged-kernel regression checks now pass; workspace payload is 312,627 bytes (7,373-byte margin). Startup stays 99,668 bytes; no limits increased.
+- Latest upstream includes real RPG chat context projection, attachment retention, token convergence, SAF hardening idempotence and improved workflow isolation. Focused affected checks passed; packaged RPG adds a 40th component suite. Final full CI remains required.
 - Android activity recreation/WAL/motion/SAF regressions and workflow isolation tests were incorporated, but latest-SHA Android execution remains pending.
+
+- REL-18: fixed stale zero-room build transform after room-change ownership updates. Executable deletion/event/generation-guard regressions pass; frontend build passes. There are now 41 component suites available plus two browser suites. Full final CI and Android run remain pending.

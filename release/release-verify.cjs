@@ -321,6 +321,41 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       await page.evaluate(()=>window.SevenWorkspaces?.close());
       await page.close();
     });
+    await test('live RPG workspace persists Memory and restores structured Context after reload',async()=>{
+      const page=await browser.newPage({viewport:{width:390,height:844}});
+      await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');});
+      await page.goto(origin,{waitUntil:'domcontentloaded'});
+      await page.waitForFunction(()=>window.SevenRemake&&typeof roomPersistence!=='undefined'&&roomPersistence.status().ready);
+      const roomId='rpg-live-release-e2e';
+      await page.evaluate(async rid=>{
+        if(!rooms[rid]){rooms[rid]=createEmptyRoom();roomTitles[rid]='RPG Live Release E2E';}
+        currentRoom=rid;await saveRooms();updateRoomTitle();renderChatHistory();updateRoomListUI();
+        await SevenRemake.openWorkspace('rpg');
+      },roomId);
+      await page.waitForFunction(()=>window.SevenRpgWorkspace&&window.SevenRpgLiveIntegration&&document.documentElement.dataset.sevenWorkspace==='rpg',null,{timeout:10000});
+      let state=await page.evaluate(rid=>{
+        SevenRpgWorkspace.loadWork({id:'rpg-live-world',title:'RPG Live World',continuity:'test',sources:[{id:'src',authority:'A0'}],beats:[{id:'b1',sourceRefs:['src']}]});
+        const projection=SevenRpgWorkspace.contextProjection({roomId:rid,maxChars:8000});
+        const source=collectContextSources(rooms[rid],'continue',null,{roomId:rid}).find(x=>x.kind==='rpg');
+        const memory=SevenRuntime.readMemory().objects.find(x=>x.type==='RpgStateSnapshot'&&x.scope==='rpg'&&x.content.includes(rid)&&x.content.includes('rpg-live-world'));
+        return{schema:projection?.schema,worldId:projection?.worldId,revision:projection?.revision,source:!!source&&source.content.includes('rpg-live-world'),memory:!!memory,title:document.querySelector('[data-rpg-world-name]')?.textContent.trim()};
+      },roomId);
+      assert.equal(state.schema,'seven-rpg-context');assert.equal(state.worldId,'rpg-live-world');assert.equal(state.source,true);assert.equal(state.memory,true);assert.equal(state.title,'RPG Live World');
+      const before={worldId:state.worldId,revision:state.revision};
+      await page.reload({waitUntil:'domcontentloaded'});
+      await page.waitForFunction(()=>window.SevenRemake&&typeof roomPersistence!=='undefined'&&roomPersistence.status().ready);
+      await page.evaluate(async rid=>{currentRoom=rid;updateRoomTitle();renderChatHistory();updateRoomListUI();await SevenRemake.openWorkspace('rpg')},roomId);
+      await page.waitForFunction(()=>window.SevenRpgWorkspace&&document.documentElement.dataset.sevenWorkspace==='rpg'&&document.querySelector('[data-rpg-world-name]')?.textContent.trim()==='RPG Live World',null,{timeout:10000});
+      state=await page.evaluate(rid=>{const p=SevenRpgWorkspace.contextProjection({roomId:rid,maxChars:8000}),src=collectContextSources(rooms[rid],'continue',null,{roomId:rid}).find(x=>x.kind==='rpg');return{worldId:p?.worldId,revision:p?.revision,source:!!src&&src.content.includes('rpg-live-world'),title:document.querySelector('[data-rpg-world-name]')?.textContent.trim()}},roomId);
+      assert.equal(state.worldId,before.worldId);assert.equal(state.revision,before.revision);assert.equal(state.source,true);assert.equal(state.title,'RPG Live World');
+      await page.evaluate(async rid=>{
+        const bundle=SevenRuntime.readMemory();
+        for(const x of bundle.objects.filter(x=>x.type==='RpgStateSnapshot'&&x.scope==='rpg'&&x.content.includes(rid)))SevenRuntime.commitMemory(x,'DELETE');
+        for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k&&k.startsWith('seven_rpg_session_v3')&&k.includes(encodeURIComponent(rid)))localStorage.removeItem(k);}
+        SevenWorkspaces.close();delete rooms[rid];delete roomTitles[rid];currentRoom=Object.keys(rooms)[0]||'';await saveRooms();renderChatHistory();updateRoomListUI();
+      },roomId);
+      await page.close();
+    });
     await test('Arabic workspace picker and specialist surfaces are fully localized',async()=>{
       const page=await browser.newPage({viewport:{width:360,height:800}});
       await page.addInitScript(()=>{localStorage.setItem('seven_ui_language','ar');localStorage.setItem('user_name_asked','1');});

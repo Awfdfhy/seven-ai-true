@@ -179,3 +179,6 @@ Memory VM test report output is dist/memory-results.json. Historical root memory
 - New pending journal key is <session prefix>:pending:<encoded roomId>, version 1 with roomId/worldId/previous session/previousIndex. It contains recovery data and must not be deleted blindly.
 - sync/load/loadLatest fail with {ok:false,status:BLOCKED,reason:recovery-required}; context returns null while a journal exists. journal-write-failed performs no mutation. Existing ordinary failure reason strings remain when compensation succeeds.
 - No schema migration or automatic destructive repair is performed. Process interruption, rollback storage failure and finalization uncertainty require verified recovery before resuming. Low-level manager access is diagnostic, not a bypass for live hydrate.
+
+### RPG production packaging (ADR-REL-008)
+Four RPG kernel/bridge files are transformed by pinned parser-based minification. Public module exports, property names and function names remain available; generated local variable names are not an integration contract. The same deterministic suites exercise source and packaged implementations. Package consumers must install project devDependencies for build/test. Shared persistence/context schemas and byte limits are unchanged.

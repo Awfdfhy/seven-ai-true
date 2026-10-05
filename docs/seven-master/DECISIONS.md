@@ -107,3 +107,8 @@ Reference: https://developer.android.com/tools/apksigner
 ## ADR-REL-007 — Uncertain RPG persistence must quarantine before hydrate
 Status: Accepted
 Decision: The live RPG bridge stages a durable per-room pending journal before mutation, containing previous session/index for recovery. Ordinary rollback removes the journal only when session/index restoration succeeds. Uncertain rollback, interruption or failed finalization leaves the journal and load/loadLatest/context/sync fail closed with recovery-required, including after restart. Journal write failure prevents all mutation. This is a safety quarantine, not a cross-store atomic transaction or automatic recovery claim; unresolved journal repair and user-visible recovery remain release gates.
+
+## ADR-REL-008 — Reduce RPG payload through parser-based packaging
+Status: Accepted
+Decision: Pin Terser 5.51.2 as a build dependency and minify only four whitelisted RPG kernel/bridge files. Compression is disabled; local identifier mangling is allowed while function names and property/API names are retained. Other assets retain their existing packaging. Execute the existing state/session/context/live failure/restart suites against the packaged modules in one isolated VM. Preserve all startup/workspace size gates; source stays readable. This repairs the 320506-byte CI workspace failure without raising the 320000-byte budget.
+Reference: https://terser.org/docs/api-reference/
