@@ -1,3 +1,4 @@
+import { toSevenError } from "../../core/errors";
 import type { CodingRun, PatchPlan, RepositorySnapshot } from "./contracts";
 import { createCodingRun, transitionCodingRun } from "./run-controller";
 import { buildRepositoryMap } from "./repo-intelligence";
@@ -40,12 +41,16 @@ export class CodingAgentService{
   let lastVerification:VerificationEvidence|undefined,lastReview:Readonly<{verdict:string;summary:string;findings:readonly string[]}>|undefined,lastCommit:string|undefined;
   const maxAttempts=Math.max(1,Math.min(5,input.maxRepairAttempts??3));
   for(let attempt=1;attempt<=maxAttempts;attempt+=1){
-   const snapshot=await this.workspace.inspect({repository:input.repository,branch:input.branch,paths:inspectionPaths,signal:input.signal});
+   let snapshot=await this.workspace.inspect({repository:input.repository,branch:input.branch,paths:inspectionPaths,signal:input.signal});
    if(attempt===1){
     run=transitionCodingRun(run,"INSPECT",{kind:"workspace-inspected",summary:`Inspected ${snapshot.files.length} files at ${snapshot.headSha}.`});
     const repoMap=buildRepositoryMap(snapshot,input.task,{maxEntries:24,charBudget:12000});
     understanding=await this.model.understand({task:input.task,repoMap,snapshot,signal:input.signal});
-    inspectionPaths=unique([...inspectionPaths,...understanding.inspectHints.filter(p=>snapshot.files.some(f=>f.path===p))]);
+    const expandedPaths=unique([...inspectionPaths,...understanding.inspectHints]);
+    if(expandedPaths.length!==inspectionPaths.length){
+      inspectionPaths=expandedPaths;
+      snapshot=await this.workspace.inspect({repository:input.repository,branch:input.branch,paths:inspectionPaths,signal:input.signal});
+    }
     const researchRows:string[]=[];
    if(understanding.researchQueries.length){
      if(!this.research){run=transitionCodingRun(run,"BLOCKED",{kind:"research-unavailable",summary:"Model requested external research but no research adapter is available."});return{status:"BLOCKED",run,attempts:attempt,message:"Required research is unavailable."};}
@@ -65,7 +70,23 @@ export class CodingAgentService{
    if(diffReview.status==="REJECT"){run=transitionCodingRun(run,"FAILED",{kind:"diff-policy-rejected",summary:"Deterministic diff review rejected the proposed patch."});return{status:"FAIL",run,attempts:attempt,message:"Diff policy rejected the proposed patch."};}
   if(attempt===1)run=transitionCodingRun(run,"EDIT",{kind:"edit-authorized",summary:`Applying ${plan.operations.length} validated operations.`});
    else run=transitionCodingRun(run,"EDIT",{kind:"repair-authorized",summary:`Applying bounded repair attempt ${attempt}.`});
-  const applied=await this.workspace.apply({snapshot,plan,message:`Seven Coding: ${proposal.summary}`.slice(0,512),signal:input.signal});
+  let applied;
+  try{
+    applied=await this.workspace.apply({snapshot,plan,message:`Seven Coding: ${proposal.summary}`.slice(0,512),signal:input.signal});
+  }catch(error){
+    const normalized=toSevenError(error);
+    if(normalized.code==="CANCELLED"||normalized.code==="DEADLINE_EXCEEDED")throw error;
+    const uncertain=normalized.details?.status==="effect_unknown";
+    if(normalized.code==="PERMISSION"||uncertain){
+      const message=uncertain
+        ?"Repository mutation effect is uncertain; reconciliation is required before retry."
+        :"Repository mutation requires authorization.";
+      run=transitionCodingRun(run,"BLOCKED",{kind:uncertain?"mutation-effect-unknown":"mutation-not-authorized",summary:message});
+      return{status:"BLOCKED",run,attempts:attempt,message};
+    }
+    run=transitionCodingRun(run,"FAILED",{kind:"mutation-failed",summary:"Repository mutation failed before verification."});
+    return{status:"FAIL",run,attempts:attempt,message:"Repository mutation failed."};
+  }
   if(applied.status!=="COMMITTED"){run=transitionCodingRun(run,"FAILED",{kind:"rejected",summary:applied.message});return{status:"FAIL",run,attempts:attempt,message:applied.message};}
   lastCommit=applied.commitSha;
   run=transitionCodingRun(run,"TEST",{kind:"commit-created",summary:`Candidate committed as ${applied.commitSha}.`});
