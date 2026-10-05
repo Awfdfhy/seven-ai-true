@@ -1,8 +1,9 @@
 "use strict";
 
 const crypto = require("crypto");
-const { createPlanningCandidate } = require("./self-development-planner.cjs");
+const { authorizePlanningCandidate } = require("./self-development-planner.cjs");
 const { createReview } = require("./self-development-review.cjs");
+const { createEvaluationManifest } = require("./self-development-paired-eval.cjs");
 
 const PROOF_LEVELS = Object.freeze({
   L0: 0,
@@ -17,6 +18,7 @@ const PROOF_LEVELS = Object.freeze({
 });
 
 const SECRET_LIKE = /(?:bearer\s+[a-z0-9._~-]+|gh[pousr]_[a-z0-9_]+|sk-[a-z0-9_-]{12,})/i;
+const POST_EVAL_GATES = Object.freeze(new Set(["critic", "manual-approval"]));
 
 function stableObject(value) {
   if (Array.isArray(value)) return value.map(stableObject);
@@ -52,15 +54,83 @@ function digest64(value, name) {
   return digest;
 }
 
-function normalizePlanningCandidate(value) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("planningCandidate required");
-  return createPlanningCandidate({
-    hypothesis: value.hypothesis,
-    assessment: value.assessment
-  });
+function sameStable(a, b) {
+  return hashObject(a) === hashObject(b);
 }
 
-function verifyEvaluationResult(value) {
+function normalizePlanningCandidate(value, hypothesisValidation) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("planningCandidate required");
+  if (value.orchestrationAuthorized !== true) {
+    return { valid: false, reason: "planning_not_orchestration_authorized", candidate: null, validation: null };
+  }
+  const authorization = authorizePlanningCandidate({
+    hypothesisValidation,
+    hypothesisId: value.hypothesis && value.hypothesis.id,
+    assessment: value.assessment
+  });
+  if (!authorization || authorization.decision !== "AUTHORIZED" || !authorization.candidate) {
+    return {
+      valid: false,
+      reason: "planning_hypothesis_revalidation_failed",
+      candidate: null,
+      validation: authorization && authorization.validation || null
+    };
+  }
+  if (String(value.validationDigest || "") !== authorization.validation.digest) {
+    return {
+      valid: false,
+      reason: "planning_validation_digest_mismatch",
+      candidate: authorization.candidate,
+      validation: authorization.validation
+    };
+  }
+  if (value.scopeManifest && value.scopeManifest.scopeDigest !== authorization.candidate.scopeManifest.scopeDigest) {
+    return {
+      valid: false,
+      reason: "planning_scope_digest_mismatch",
+      candidate: authorization.candidate,
+      validation: authorization.validation
+    };
+  }
+  return {
+    valid: true,
+    reason: null,
+    candidate: authorization.candidate,
+    validation: authorization.validation
+  };
+}
+
+function verifyEvaluationManifest(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value) || value.schemaVersion !== 1) {
+    return { valid: false, reason: "evaluation_manifest_invalid", manifest: null };
+  }
+  try {
+    const rebuilt = createEvaluationManifest({
+      experimentId: value.experimentId,
+      evalLock: value.evaluatorIdentity,
+      baselineIdentity: value.baselineIdentity,
+      candidateIdentity: value.candidateIdentity,
+      environment: value.environment,
+      metrics: value.metrics,
+      targetMetrics: value.targetMetrics,
+      requiredHardGates: value.requiredHardGates
+    });
+    if (rebuilt.manifestDigest !== value.manifestDigest) {
+      return { valid: false, reason: "evaluation_manifest_digest_invalid", manifest: rebuilt };
+    }
+    return { valid: true, reason: null, manifest: rebuilt };
+  } catch (error) {
+    return {
+      valid: false,
+      reason: error && error.code === "EVAL_LOCK_INVALID"
+        ? "evaluator_identity_drift"
+        : "evaluation_manifest_invalid",
+      manifest: null
+    };
+  }
+}
+
+function verifyEvaluationResult(value, manifest) {
   if (!value || typeof value !== "object" || Array.isArray(value) || value.schemaVersion !== 1) {
     return { valid: false, reason: "evaluation_result_invalid" };
   }
@@ -78,11 +148,25 @@ function verifyEvaluationResult(value) {
     comparisons: value.comparisons
   };
   const expected = hashObject(resultCore);
-  return {
-    valid: typeof value.evidenceDigest === "string" && value.evidenceDigest === expected,
-    reason: value.evidenceDigest === expected ? null : "evaluation_evidence_digest_invalid",
-    expected
-  };
+  if (typeof value.evidenceDigest !== "string" || value.evidenceDigest !== expected) {
+    return { valid: false, reason: "evaluation_evidence_digest_invalid", expected };
+  }
+  if (!manifest) return { valid: false, reason: "evaluation_manifest_missing" };
+  if (value.manifestDigest !== manifest.manifestDigest) return { valid: false, reason: "evaluation_manifest_binding_mismatch" };
+  if (value.experimentId !== manifest.experimentId) return { valid: false, reason: "evaluation_experiment_mismatch" };
+  if (!sameStable(value.baselineIdentity, manifest.baselineIdentity)) return { valid: false, reason: "evaluation_baseline_identity_mismatch" };
+  if (!sameStable(value.candidateIdentity, manifest.candidateIdentity)) return { valid: false, reason: "evaluation_candidate_identity_mismatch" };
+  if (value.environmentDigest !== manifest.environmentDigest) return { valid: false, reason: "evaluation_environment_mismatch" };
+
+  const comparisonIds = Array.isArray(value.comparisons)
+    ? value.comparisons.map((item) => String(item && item.metricId || "")).sort()
+    : [];
+  const expectedMetricIds = [...manifest.metrics].sort();
+  if (comparisonIds.length !== expectedMetricIds.length || comparisonIds.some((id, index) => id !== expectedMetricIds[index])) {
+    return { valid: false, reason: "evaluation_metric_set_mismatch" };
+  }
+
+  return { valid: true, reason: null, expected };
 }
 
 function normalizeProofBundle({
@@ -166,18 +250,53 @@ function mapEvaluationDecision(decision) {
   }
 }
 
+function trustedVerifierResult(verifier, payload, context) {
+  if (typeof verifier !== "function") return { available: false, trusted: false };
+  try {
+    return { available: true, trusted: verifier(payload, context) === true };
+  } catch {
+    return { available: true, trusted: false };
+  }
+}
+
 function decideAcceptance({
   planningCandidate,
+  hypothesisValidation,
+  evaluationManifest,
   evaluationResult,
   proofBundle,
   builderId,
   reviews = [],
-  manualApproval = null
+  manualApproval = null,
+  proofVerifier,
+  reviewVerifier,
+  manualApprovalVerifier
 } = {}) {
   if (!Array.isArray(reviews)) throw new Error("reviews must be an array");
 
-  const derivedPlan = normalizePlanningCandidate(planningCandidate);
-  const evaluationVerification = verifyEvaluationResult(evaluationResult);
+  const planning = normalizePlanningCandidate(planningCandidate, hypothesisValidation);
+  if (!planning.valid) {
+    return Object.freeze({
+      decision: "BLOCKED",
+      reasons: Object.freeze([planning.reason]),
+      candidateSha: null,
+      evidenceDigest: null
+    });
+  }
+  const derivedPlan = planning.candidate;
+
+  const manifestVerification = verifyEvaluationManifest(evaluationManifest);
+  if (!manifestVerification.valid) {
+    return Object.freeze({
+      decision: "BLOCKED",
+      reasons: Object.freeze([manifestVerification.reason]),
+      candidateSha: null,
+      evidenceDigest: null
+    });
+  }
+  const manifest = manifestVerification.manifest;
+
+  const evaluationVerification = verifyEvaluationResult(evaluationResult, manifest);
   if (!evaluationVerification.valid) {
     return Object.freeze({
       decision: "BLOCKED",
@@ -190,11 +309,31 @@ function decideAcceptance({
   const builder = safeText(builderId, "builderId", 160);
   const candidateSha = exactSha(evaluationResult.candidateIdentity && evaluationResult.candidateIdentity.sha, "evaluation candidateSha");
   const evidenceDigest = digest64(evaluationResult.evidenceDigest, "evaluation evidenceDigest");
-  const proof = normalizeProofBundle(proofBundle);
-  const reviewNormalization = normalizeReviews(reviews);
 
+  if (manifest.candidateIdentity.sha !== candidateSha) {
+    return Object.freeze({
+      decision: "BLOCKED",
+      reasons: Object.freeze(["manifest_candidate_sha_mismatch"]),
+      candidateSha,
+      evidenceDigest
+    });
+  }
+
+  const proof = normalizeProofBundle(proofBundle);
+  const proofAuthority = trustedVerifierResult(proofVerifier, proof, {
+    candidateSha,
+    evidenceDigest,
+    requiredProofLevel: derivedPlan.proofPlan.requiredProofLevel,
+    riskLevel: derivedPlan.riskLevel
+  });
+
+  const reviewNormalization = normalizeReviews(reviews);
   const reasons = [];
   if (reviewNormalization.errors.length) reasons.push("invalid_review_record");
+
+  if (!proofAuthority.available) reasons.push("proof_verifier_missing");
+  else if (!proofAuthority.trusted) reasons.push("proof_authority_verification_failed");
+
   const evaluationDecision = mapEvaluationDecision(evaluationResult.decision);
 
   if (derivedPlan.disposition === "GOVERNANCE_REQUIRED" || derivedPlan.riskLevel === "CRITICAL") {
@@ -223,10 +362,15 @@ function decideAcceptance({
   if (!Object.prototype.hasOwnProperty.call(PROOF_LEVELS, requiredLevel)) reasons.push("planning_proof_level_invalid");
   else if (PROOF_LEVELS[proof.level] < PROOF_LEVELS[requiredLevel]) reasons.push(`proof_level_below_required:${requiredLevel}`);
 
-  for (const gate of derivedPlan.proofPlan.requiredHardGates || []) {
+  const evaluatorGates = (derivedPlan.proofPlan.requiredHardGates || []).filter((gate) => !POST_EVAL_GATES.has(gate));
+  for (const gate of evaluatorGates) {
+    if (!manifest.requiredHardGates.includes(gate)) {
+      reasons.push(`manifest_gate_missing:${gate}`);
+      continue;
+    }
     if (evaluationResult.hardGates && Object.prototype.hasOwnProperty.call(evaluationResult.hardGates, gate)) {
       if (evaluationResult.hardGates[gate] !== true) reasons.push(`required_gate_failed:${gate}`);
-    } else if (!["critic", "manual-approval"].includes(gate)) {
+    } else {
       reasons.push(`required_gate_missing:${gate}`);
     }
   }
@@ -234,7 +378,25 @@ function decideAcceptance({
   const matchingReviews = reviewNormalization.normalized.filter((review) =>
     reviewMatches(review, candidateSha, evidenceDigest, builder)
   );
-  const negativeReviews = matchingReviews.filter((review) =>
+  const trustedReviews = [];
+  if (matchingReviews.length) {
+    if (typeof reviewVerifier !== "function") {
+      reasons.push("review_verifier_missing");
+    } else {
+      for (const review of matchingReviews) {
+        const authority = trustedVerifierResult(reviewVerifier, review, {
+          candidateSha,
+          evidenceDigest,
+          builderId: builder,
+          riskLevel: derivedPlan.riskLevel
+        });
+        if (authority.trusted) trustedReviews.push(review);
+        else reasons.push("review_authority_verification_failed");
+      }
+    }
+  }
+
+  const negativeReviews = trustedReviews.filter((review) =>
     review.verdict === "REJECT" ||
     review.verdict === "CHANGES_REQUIRED" ||
     review.hasCriticalFinding === true ||
@@ -243,11 +405,11 @@ function decideAcceptance({
     review.testsChecked !== true ||
     review.resultsChecked !== true
   );
-
   if (negativeReviews.length) reasons.push("review_requires_changes");
 
   if (derivedPlan.proofPlan.independentReview === true) {
-    const independentApproval = matchingReviews.some((review) =>
+    if (typeof reviewVerifier !== "function") reasons.push("review_verifier_missing");
+    const independentApproval = trustedReviews.some((review) =>
       review.independent === true &&
       review.reviewerId !== builder &&
       review.verdict === "APPROVE" &&
@@ -263,19 +425,32 @@ function decideAcceptance({
   let approval = null;
   if (derivedPlan.proofPlan.manualApproval === true) {
     approval = normalizeManualApproval(manualApproval, candidateSha, evidenceDigest, builder);
-    if (!approval) reasons.push("manual_approval_missing_or_invalid");
+    if (!approval) {
+      reasons.push("manual_approval_missing_or_invalid");
+    } else {
+      const approvalAuthority = trustedVerifierResult(manualApprovalVerifier, approval, {
+        candidateSha,
+        evidenceDigest,
+        builderId: builder,
+        riskLevel: derivedPlan.riskLevel
+      });
+      if (!approvalAuthority.available) reasons.push("manual_approval_verifier_missing");
+      else if (!approvalAuthority.trusted) reasons.push("manual_approval_authority_verification_failed");
+    }
   }
 
   if (reasons.length) {
-    const hardReject = reasons.includes("review_requires_changes") ||
-      reasons.some((reason) => reason.startsWith("required_gate_failed:"));
+    const uniqueReasons = [...new Set(reasons)];
+    const hardReject = uniqueReasons.includes("review_requires_changes") ||
+      uniqueReasons.some((reason) => reason.startsWith("required_gate_failed:"));
     return Object.freeze({
       decision: hardReject ? "REJECT" : "BLOCKED",
-      reasons: Object.freeze([...new Set(reasons)]),
+      reasons: Object.freeze(uniqueReasons),
       candidateSha,
       evidenceDigest,
       proof,
       matchingReviewCount: matchingReviews.length,
+      trustedReviewCount: trustedReviews.length,
       manualApproval: approval
     });
   }
@@ -287,7 +462,10 @@ function decideAcceptance({
     evidenceDigest,
     proof,
     matchingReviewCount: matchingReviews.length,
-    manualApproval: approval
+    trustedReviewCount: trustedReviews.length,
+    manualApproval: approval,
+    planningValidationDigest: planning.validation.digest,
+    manifestDigest: manifest.manifestDigest
   });
 }
 
