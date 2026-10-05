@@ -24,11 +24,7 @@ function warm(ev){
 function click(ev){
   if(ready()||S.replaying)return;
   var btn=triggerFrom(ev.target);if(!btn)return;
-  /* A cold paperclip tap only opens Seven's attachment menu. It must not
-     attempt to open the native file picker after an async boundary. Consume
-     this cold click, finish the lazy boot, then replay only the menu trigger.
-     The subsequent Photos/Files tap remains a fresh trusted user gesture and
-     opens #fileInput synchronously inside attachment-runtime.js. */
+  
   ev.preventDefault();ev.stopPropagation();
   load().then(function(){
     var live=d.querySelector('[data-seven-attach-trigger]')||btn;
