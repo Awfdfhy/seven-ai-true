@@ -2,6 +2,7 @@ const fs=require('fs'),assert=require('assert/strict');
 const native=fs.readFileSync(__dirname+'/../apk/materialize-native-platform.cjs','utf8');
 const patch=fs.readFileSync(__dirname+'/../apk/patch-android.cjs','utf8');
 const motion=fs.readFileSync(__dirname+'/../apk/materialize-android-motion-bridge.cjs','utf8');
+const visual=fs.readFileSync(__dirname+'/../apk/materialize-android-visual-test.cjs','utf8');
 assert.match(native,/getPersistedUriPermissions\(\)/,'SAF release must inspect actual persisted grants');
 assert.match(native,/permission\.isReadPermission\(\)/);
 assert.match(native,/permission\.isWritePermission\(\)/);
@@ -12,4 +13,19 @@ assert.match(patch,/seven_ai_room_wal_v1/);
 assert.match(motion,/SEVEN_MOTION_SYNC_MAX_ATTEMPTS/);
 assert.match(motion,/const p=window\.SevenPerformance/);
 assert.match(motion,/p\.state\.ready!==true/);
+assert.match(visual,/persistenceStatus/,'Android visual gate must assert persistence status ownership');
+assert.match(visual,/parentElement\?\.classList\.contains\('topbar'\)/);
+assert.match(visual,/getComputedStyle\(s\)\.position!==['"]fixed['"]/);
+
+const rcFixture=fs.readFileSync(__dirname+'/../apk/android-rc-state-fixture.cjs','utf8');
+const rcHarness=fs.readFileSync(__dirname+'/../apk/materialize-android-rc-harness.cjs','utf8');
+const rcRunner=fs.readFileSync(__dirname+'/../apk/run-android-rc-acceptance.sh','utf8');
+assert.match(rcFixture,/indexedDB\.open\('seven_ai_canonical_v1'\)/,'real process-death fixture must target canonical room IndexedDB');
+assert.match(rcFixture,/roomPersistence\.save\(\)/,'real process-death fixture must invoke production save path');
+assert.match(rcHarness,/takePersistableUriPermission/,'upgrade harness must persist a target-app SAF grant');
+assert.match(rcHarness,/getPersistedUriPermissions/,'upgrade harness must verify persisted SAF grants');
+assert.match(rcRunner,/am force-stop "\$APP_ID"/,'host must kill the real target process');
+assert.match(rcRunner,/adb install -r -t "\$TMP\/build-b\.apk"/,'upgrade gate must install Build B over Build A without clearing');
+assert.match(rcRunner,/A_SIGNER.*B_SIGNER/s,'upgrade gate must bind A and B signer identity');
+
 console.log('android lifecycle contracts: PASS');

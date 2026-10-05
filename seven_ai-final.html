@@ -1669,10 +1669,14 @@
             function recoverableWal(record){const w=readWal();if(!w)return null;const storedSeq=Number.isSafeInteger(record&&record.walSeq)?record.walSeq:0,storedSession=String(record&&record.walSession||'');if(w.seq<=storedSeq)return null;if(w.baseRevision===Number(record&&record.revision))return w;if(storedSession&&storedSession===w.sessionId&&storedSeq>0)return w;return null}
             const status = document.createElement('div');
             status.id = 'persistenceStatus';
+            status.className = 'seven-persistence-status';
             status.setAttribute('role', 'status');
-            status.style.cssText = 'position:fixed;bottom:4px;right:8px;z-index:9999;font-size:12px;background:var(--bg,#222);color:var(--text,#fff);padding:4px 8px;border-radius:6px;max-width:90vw';
-            document.body.appendChild(status);
-            function show(text) { status.textContent = text; }
+            status.setAttribute('aria-live', 'polite');
+            status.style.cssText = 'position:static;flex:0 1 auto;min-width:0;max-width:min(34vw,190px);font-size:11px;line-height:1.25;background:var(--surface,var(--bg,#222));color:var(--text,#fff);padding:4px 8px;border:1px solid var(--border,rgba(127,127,127,.32));border-radius:999px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none';
+            const statusHost = document.querySelector('.topbar');
+            if (statusHost) statusHost.insertBefore(status, statusHost.lastElementChild || null);
+            else document.body.appendChild(status);
+            function show(text) { status.textContent = text; status.title = text; status.setAttribute('aria-label', text); }
             function validate(value) {
                 if (!value || value.version !== 1 || !value.rooms || typeof value.rooms !== 'object' || Array.isArray(value.rooms) ||
                     !value.roomTitles || typeof value.roomTitles !== 'object' || Array.isArray(value.roomTitles) ||
@@ -1764,7 +1768,9 @@
                 if (!ready || failed) return Promise.resolve(false);
                 let value;
                 try { value=snapshot(); } catch (_) { failed=true; show('Cannot save invalid conversation state. Export and reload.'); return Promise.resolve(false); }
-                let wal=null;try{wal=stageWal(value)}catch(_){}
+                let wal;
+                try { wal=stageWal(value); }
+                catch (_) { failed=true; show('Not saved — recovery journal unavailable. Export before reloading.'); return Promise.resolve(false); }
                 pending++; show('Saving…');
                 queue=queue.then(async () => {
                     if (failed) return false;
