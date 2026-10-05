@@ -34,6 +34,15 @@ function createBridge(options){
     const next=Object.assign({},journal,{status,reason:text(reason)||null});
     try{storage.setItem(pendingKey(roomId),JSON.stringify(next));return true}catch(_){return false}
   }
+  function publishedRevision(roomId,worldId){
+    try{
+      const id='rpg-'+runtime.hash(roomId+'\n'+worldId),bundle=runtime.readMemory(),record=bundle&&Array.isArray(bundle.objects)?bundle.objects.find(x=>x&&x.id===id):null;
+      if(!record||typeof record.content!=='string')return null;
+      const value=JSON.parse(record.content);
+      if(value&&value.schema==='seven-rpg-memory-projection'&&value.roomId===roomId&&value.worldId===worldId&&Number.isFinite(Number(value.revision)))return Number(value.revision);
+    }catch(_){}
+    return null;
+  }
   function writeIndex(roomId,worldId){try{storage.setItem(indexKey(roomId),worldId);return true}catch(_){return false}}
   function restoreIndex(roomId,worldId){try{worldId?storage.setItem(indexKey(roomId),worldId):storage.removeItem(indexKey(roomId));return true}catch(_){return false}}
   function getSession(roomId,worldId){
@@ -78,7 +87,8 @@ function createBridge(options){
     if(!writeIndex(id.roomId,id.worldId))return abort('active-index-write-failed');
     let memoryOk=false;try{memoryOk=publish(saved.session,legacy,input&&input.reason)}catch(_){memoryOk=false}
     if(!memoryOk)return abort('memory-projection-failed');
-    try{storage.removeItem(pendingKey(id.roomId))}catch(_){return blocked()}
+    if(!markJournal(id.roomId,{version:1,status:'pending',...id,previous:previous.ok?previous.session:null,previousIndex,baseRevision:previous.ok?Number(previous.session.state.revision):null,candidateRevision:Number(saved.session.state.revision)},'committed','memory-projection-committed'))return blocked({journalStatus:'pending',recoveryDetail:'commit-marker-write-failed'});
+    try{storage.removeItem(pendingKey(id.roomId))}catch(_){return blocked({journalStatus:'committed'})}
     return{ok:true,status:'SYNCED',session:saved.session,record:applied.record,memoryId:'rpg-'+runtime.hash(id.roomId+'\n'+id.worldId)};
   }
   function recover(roomIdInput){
@@ -89,6 +99,11 @@ function createBridge(options){
     if(j.status==='corrupt'||j.status==='abandoned')return blocked({journalStatus:j.status});
     const current=manager.load(roomId,worldId),previous=j.previous||null,previousRevision=previous&&previous.state?Number(previous.state.revision):null;
     if(!current.ok&&current.status!=='MISSING')return blocked({journalStatus:'pending',recoveryDetail:current.reason||current.status});
+    if(current.ok&&Number.isFinite(Number(j.candidateRevision))&&Number(current.session.state.revision)===Number(j.candidateRevision)&&publishedRevision(roomId,worldId)===Number(j.candidateRevision)){
+      if(!markJournal(roomId,j,'committed','memory-projection-evidence'))return blocked({journalStatus:'pending',recoveryDetail:'commit-marker-write-failed'});
+      try{storage.removeItem(pendingKey(roomId))}catch(_){return blocked({journalStatus:'committed'})}
+      return{ok:true,status:'RECOVERED',journalStatus:'committed',action:'commit-finalized',roomId,worldId};
+    }
     if(previous){
       if(current.ok){
         const currentRevision=Number(current.session.state.revision);
