@@ -1,0 +1,7 @@
+"use strict";
+const assert=require("assert/strict");
+const {createStateEnvelope}=require("./state-store.cjs");
+const {appendLearningRecord,loadLearningArchive,failedExperimentSeen}=require("./learning-store.cjs");
+function store(){let committed=null,temp=null;return{async writeTemp({envelope}){temp=envelope},async commitTemp({expectedChecksum}){if(!temp||temp.checksum!==expectedChecksum)throw Error("temp mismatch");committed=temp;temp=null},async readCommitted(){return committed},tamper(){if(committed)committed={...committed,state:{...committed.state,records:[{bad:true}]}}},seed(state){committed=createStateEnvelope(state,{savedAt:"2026-10-05T00:00:00.000Z"})}}}
+const record={experimentId:"e1",subsystem:"tools",hypothesis:"improve tool selection",baselineSha:"aaaaaaa",candidateSha:"bbbbbbb",patchSha:"bbbbbbb",tests:["x"],metrics:{baseline:.8,candidate:.9},outcome:"REJECTED",reason:"regression",recordedAt:"2026-10-05T00:00:00.000Z"};
+(async()=>{const s=store();await appendLearningRecord({storeAdapter:s,record});let a=await loadLearningArchive({storeAdapter:s});assert.deepEqual(a.verify(),{valid:true,count:1});assert.equal(await failedExperimentSeen({storeAdapter:s,experiment:record}),true);s.tamper();await assert.rejects(()=>loadLearningArchive({storeAdapter:s}),/invalid evolution state envelope/);console.log("learning store: PASS (atomic persistence/reload/tamper fail-closed)")})().catch(e=>{console.error(e);process.exit(1)});

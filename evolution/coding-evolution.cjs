@@ -4,6 +4,7 @@ const { createExperiment } = require("./experiment-lab.cjs");
 const { createEvalLock } = require("./eval-lock.cjs");
 const { runCodingCandidate, discardBestEffort, restoreIfStableChanged } = require("./coding-candidate.cjs");
 const { runDurableSystemEvolution } = require("./durable-engine.cjs");
+const { appendLearningRecord, failedExperimentSeen } = require("./learning-store.cjs");
 
 const METRIC_KEYS = Object.freeze(["tests", "quality", "reliability", "performance", "efficiency"]);
 
@@ -56,12 +57,21 @@ async function runCodingEvolution({
   promotionAdapter,
   storeAdapter,
   stateKey = "seven-evolution-state",
+  learningKey = "seven-evolution-learning-v1",
   maxRepairAttempts = 3,
   approvalPolicy = { autoPromotionEnabled: true, maxAutoRisk: "LOW" },
   manualApproved = false
 } = {}) {
   assertEvalsAdapter(evalsAdapter);
   const experiment = createExperiment(experimentConfig);
+  const repeatedFailure = await failedExperimentSeen({
+    storeAdapter,
+    key: learningKey,
+    experiment: { subsystem: experiment.subsystem, hypothesis: experiment.hypothesis, baselineSha }
+  });
+  if (repeatedFailure) {
+    return { outcome: "REJECTED_REPEAT_FAILURE", stage: "LEARNING_GUARD", experiment };
+  }
   // Freeze before coding or evaluation begins. Any benchmark drift during the
   // longer coding/eval phase will therefore fail promotion rather than inherit PASS.
   const evaluationLock = createEvalLock({ experimentId: experiment.id, purpose: "coding-evolution" });
@@ -152,6 +162,31 @@ async function runCodingEvolution({
     adapter: promotionAdapter
   });
 
+  let learningError = null;
+  if (evolution.outcome !== "PENDING_APPROVAL") {
+    try {
+      await appendLearningRecord({
+        storeAdapter,
+        key: learningKey,
+        record: {
+          experimentId: experiment.id,
+          subsystem: experiment.subsystem,
+          hypothesis: experiment.hypothesis,
+          baselineSha,
+          candidateSha: coding.candidateSha,
+          patchSha: coding.candidateSha,
+          tests: [String(evalBundle.evidenceId)],
+          metrics: { baseline: evalBundle.baselineMetrics, candidate: evalBundle.candidateMetrics },
+          outcome: evolution.outcome,
+          reason: evolution.stage || evolution.outcome,
+          rollback: evolution.outcome === "ROLLED_BACK" ? { baselineSha } : null
+        }
+      });
+    } catch (error) {
+      learningError = String(error && error.message || error);
+    }
+  }
+
   let discardError = null;
   if (evolution.outcome !== "PENDING_APPROVAL") {
     discardError = await discardBestEffort(codingAgent, { experiment, workspaceId: coding.workspaceId }, `evolution_${String(evolution.outcome).toLowerCase()}`);
@@ -165,6 +200,7 @@ async function runCodingEvolution({
     evalBundle,
     evaluationIdentity: evolution.evaluationIdentity || evaluationLock,
     evolution,
+    learningError,
     discardError
   };
 }
