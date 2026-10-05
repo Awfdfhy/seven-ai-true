@@ -104,7 +104,7 @@ export class ToolExecutor {
           definition,invocation,grants:snapshot.grants,now:authorizationNow,
         });
         const recovered=await this.resolveDurableReplay(
-          definition,invocation,parsed.data,fingerprint,durable,authorizationNow,
+          definition,invocation,parsed.data,fingerprint,durable,authorizationNow,externalSignal,
         );
         if(recovered)return recovered;
       }else{
@@ -126,7 +126,7 @@ export class ToolExecutor {
         }
         if(claim.status==="existing"){
           const recovered=await this.resolveDurableReplay(
-            definition,invocation,parsed.data,fingerprint,claim.record,authorizationNow,
+            definition,invocation,parsed.data,fingerprint,claim.record,authorizationNow,externalSignal,
           );
           if(recovered)return recovered;
         }
@@ -151,6 +151,7 @@ export class ToolExecutor {
     fingerprint:string,
     durable:ToolReplayRecord,
     authorizationNow:number,
+    externalSignal?:AbortSignal,
   ):Promise<ToolResult|null>{
     if(durable.state==="completed"&&durable.result)return durable.result;
     if(durable.state==="effect_started"){
@@ -184,7 +185,7 @@ export class ToolExecutor {
           startedAt:durable.preparedAt,errorCode:"INVOCATION_LEASE_CHANGED",
         });
       }
-      return this.startRun(definition,invocation,parsedInput,fingerprint);
+      return this.startRun(definition,invocation,parsedInput,fingerprint,externalSignal);
     }
     return null;
   }
