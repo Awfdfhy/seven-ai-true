@@ -1,5 +1,6 @@
 const fs=require('fs');
 const path=require('path');
+const {inventory,gitIdentity}=require('./build-provenance.cjs');
 const ROOT=path.resolve(__dirname,'..');
 const DIST=path.join(ROOT,'dist');
 const SRC=path.join(DIST,'seven_ai-release.html');
@@ -29,5 +30,5 @@ for(const name of ROOT_LAZY){
   if(!fs.existsSync(src))throw new Error('missing required lazy web runtime: '+name);
   fs.copyFileSync(src,dst);
 }
-fs.writeFileSync(path.join(WWW,'seven-packaging.json'),JSON.stringify({format:'seven-android-web-payload',version:4,lazyWorkspaces:true,adaptiveBrand:true,lazyRootAssets:ROOT_LAZY},null,2));
+fs.writeFileSync(path.join(WWW,'seven-packaging.json'),JSON.stringify({format:'seven-android-web-payload',version:5,...gitIdentity(ROOT),files:inventory(WWW),lazyWorkspaces:true,adaptiveBrand:true,lazyRootAssets:ROOT_LAZY},null,2));
 console.log('android web payload: PASS (root lazy assets: '+ROOT_LAZY.join(', ')+')');

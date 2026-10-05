@@ -65,6 +65,8 @@ function buildCharacterView(stateInput,stateApi,characterId,options){
     hidden:{globalCanonOmitted:true,globalLedgerOmitted:true,otherCharacterPrivateStateOmitted:true}
   };
   let serialized=JSON.stringify(view);const maxChars=Math.max(1200,Number(opts.maxChars)||18000);
+  function boundKnowledgeRefs(){const selected=new Set(view.knownCanon.map(e=>e.id));view.knowledgeRefs=Object.fromEntries(Object.entries(view.knowledgeRefs).filter(([id])=>selected.has(id)))}
+  boundKnowledgeRefs();serialized=JSON.stringify(view);
   if(serialized.length>maxChars){
     view.knownCanon=view.knownCanon.slice(0,12);
     const visibleFacts=new Set(view.knownCanon.map(x=>x&&x.id).filter(Boolean));
@@ -72,6 +74,7 @@ function buildCharacterView(stateInput,stateApi,characterId,options){
     view.quests=Object.fromEntries(Object.entries(view.quests).slice(0,8));
     view.relationships=Object.fromEntries(Object.entries(view.relationships).slice(0,12));
     view.inventory=view.inventory.slice(0,24);view.abilities=view.abilities.slice(0,24);
+    boundKnowledgeRefs();
     serialized=JSON.stringify(view);
   }
   if(serialized.length>maxChars){
@@ -84,6 +87,9 @@ function buildCharacterView(stateInput,stateApi,characterId,options){
     serialized=JSON.stringify(view);
   }
   view._diagnostics={serializedChars:serialized.length,bounded:serialized.length<=maxChars,canonCount:view.knownCanon.length};
+  for(let i=0;i<3;i++)view._diagnostics.serializedChars=JSON.stringify(view).length;
+  view._diagnostics.bounded=view._diagnostics.serializedChars<=maxChars;
+  if(!view._diagnostics.bounded)return {ok:false,status:'BLOCKED',reason:'context-budget-exceeded'};
   return {ok:true,status:'READY',view};
 }
 function buildNarratorView(stateInput,stateApi,options){

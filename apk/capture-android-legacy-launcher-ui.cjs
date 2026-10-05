@@ -27,7 +27,7 @@ function nodes(xml){return [...String(xml).matchAll(/<node\b([^>]*)\/?>/g)].map(
 function bounds(s){const m=String(s||"").match(/^\[(\d+),(\d+)\]\[(\d+),(\d+)\]$/);if(!m)return null;const x1=+m[1],y1=+m[2],x2=+m[3],y2=+m[4];if(x2<=x1||y2<=y1)return null;return{x1,y1,x2,y2,cx:Math.round((x1+x2)/2),cy:Math.round((y1+y2)/2)}}
 function text(n){return `${n.text||""} ${n["content-desc"]||""}`.trim()}
 function labeled(n){return `${text(n)} ${n["resource-id"]||""}`.trim()}
-function sevenNode(xml){return nodes(xml).find(n=>/(^|\s)Seven(?:\s|$)/i.test(text(n))&&bounds(n.bounds))||null}
+function sevenNode(xml){return nodes(xml).find(n=>/(^|\s)Seven 2\.4\.3(?:\s|$)/i.test(text(n))&&bounds(n.bounds))||null}
 function appsNode(xml){
   const candidates=nodes(xml).filter(n=>bounds(n.bounds));
   return candidates.find(n=>/(?:^|:id\/)(?:all_?apps(?:_button|_handle)?|apps_?button|allapps)(?:$|\b)/i.test(n["resource-id"]||""))
@@ -95,10 +95,10 @@ function dismissLauncherOnboarding(launcherPackage,trace){
 }
 function trySearch(xml,trace){
   const s=searchNode(xml);if(!s)return null;
-  const b=tap(s,"launcher app search");trace.push({action:"search-apps",bounds:b,query:"Seven"});
+  const b=tap(s,"launcher app search");trace.push({action:"search-apps",bounds:b,query:"Seven 2.4.3"});
   run(["shell","input","keyevent","KEYCODE_CTRL_LEFT"],{allow:true,timeout:3000});
   run(["shell","input","keyevent","KEYCODE_A"],{allow:true,timeout:3000});
-  run(["shell","input","text","Seven"],{allow:false,timeout:5000});sleep(850);
+  run(["shell","input","text","Seven 2.4.3"],{allow:false,timeout:5000});sleep(850);
   const q=dumpUi(),n=sevenNode(q);return n?{xml:q,node:n,context:"all-apps-search"}:null;
 }
 function inspectAndSearch(trace){const xml=dumpUi(),n=sevenNode(xml);if(n)return{xml,node:n,context:"all-apps"};return trySearch(xml,trace)}

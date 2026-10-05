@@ -142,3 +142,43 @@ Seven is not considered integrated until:
 4. Update this file.
 5. Run integration tests.
 6. Update CURRENT_STATUS.md.
+
+
+## Release Manager Addendum — 2026-10-05
+
+### GitHub Self-Development verification/publication
+- `atomicCommit(branch, files, message)` keeps its public signature and `{sha,files}` result. All paths validate before writes. Publish one commit containing the whole set via a non-forced ref update; duplicate/protected paths, unsupported modes and truncated tree snapshots fail closed.
+- Exact workflow: `seven-tests.yml`; exact `head_sha` and `head_branch` required. Explicitly dispatch after each candidate/repair commit. An older successful run or unfinished timeout is never verification evidence.
+- `mergePullRequest(number, expectedSha)` adds an optional expected SHA; autonomous verified merges must supply it.
+- `repositoryTree` adds `truncated` metadata; callers must not treat truncated inventories as complete.
+- Eval corpus, memory/runtime regression entrypoints, static/browser/APK/provenance gates remain outside autonomous edit authority. HTTP 503/auth/network failures propagate; only 404 permits file creation.
+
+### APK web payload identity
+- `www/seven-packaging.json`: format `seven-android-web-payload`, version 5, `sourceCommit`, `sourceDirty`, optional `workflowRunId`, `files[{path,bytes,sha256}]` plus existing lazy asset metadata.
+- `sourceCommit` must match checkout/workflow identity. APK verification requires committed source and checks packaged bytes against the recorded inventory. Identity checks supplement, not replace, manifest/version/signature/install/upgrade checks.
+- Build generators must not leave tracked changes at verification; synchronize label source before committing changed app names.
+
+### Bounded RPG character projection
+- `SevenRpgContext.buildCharacterView`: `knowledgeRefs` represents the selected known Canon subset, not all historical canonical knowledge.
+- Complete serialized context including diagnostics must fit the budget. Unavoidable oversize returns `{ok:false,status:'BLOCKED',reason:'context-budget-exceeded'}` without a prompt-ready view; callers must not continue generation using oversized state.
+- Shared Memory and canonical RPG state are unchanged by this projection. Live turn/persistence/generation wiring still needs acceptance tests.
+
+### Test/startup ownership
+- `all.cjs` discovers every top-level `release/*.test.cjs` and `apk/*.test.cjs` automatically, while retaining explicit browser/eval/gateway/evolution/packaging gates.
+- Actual compiled `build.startupBytes` is authoritative for both static/browser startup audits; strict budget remains below 100000 bytes. Byte count is not a startup-latency measurement.
+
+Memory VM test report output is dist/memory-results.json. Historical root memory-results.json is not a current acceptance result. Test runs must not mutate tracked source.
+
+### Actual APK binary identity (ADR-REL-006)
+- verify-apk.cjs now requires Android SDK aapt/apksigner (resolved from ANDROID_SDK_ROOT/ANDROID_HOME build-tools or PATH) and fails closed if unavailable.
+- Binary package/version must equal capacitor.config.json appId and package.json version/sevenAndroidVersionCode. The actual signature must verify successfully; signer certificate digests are evidence, not proof of upgrade continuity.
+- dist/apk-verification.json format seven-apk-verification v1 contains sourceCommit, workflowRunId, apkSha256, bytes, webAssetCount, packageName, versionCode, versionName, signatureVerified, signerCertificateSha256[], upgradeContinuity: UNVERIFIED. Existing installed-app migration/signing continuity needs a separate acceptance result.
+
+### Live RPG bridge uncertainty boundary (ADR-REL-007)
+- Upstream live bridge syncs legacy snapshots to structured sessions and public derived RpgStateSnapshot memory; this does not prove character-local model prompting or semantic delta extraction.
+- New pending journal key is <session prefix>:pending:<encoded roomId>, version 1 with roomId/worldId/previous session/previousIndex. It contains recovery data and must not be deleted blindly.
+- sync/load/loadLatest fail with {ok:false,status:BLOCKED,reason:recovery-required}; context returns null while a journal exists. journal-write-failed performs no mutation. Existing ordinary failure reason strings remain when compensation succeeds.
+- No schema migration or automatic destructive repair is performed. Process interruption, rollback storage failure and finalization uncertainty require verified recovery before resuming. Low-level manager access is diagnostic, not a bypass for live hydrate.
+
+### RPG production packaging (ADR-REL-008)
+Four RPG kernel/bridge files are transformed by pinned parser-based minification. Public module exports, property names and function names remain available; generated local variable names are not an integration contract. The same deterministic suites exercise source and packaged implementations. Package consumers must install project devDependencies for build/test. Shared persistence/context schemas and byte limits are unchanged.

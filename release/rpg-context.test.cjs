@@ -46,4 +46,8 @@ a=Ctx.buildCharacterView(s,State,'a',{maxChars:9000,canonLimit:40});b=Ctx.buildC
 assert.equal(a.view._diagnostics.bounded,true);assert.equal(b.view._diagnostics.bounded,true);
 assert.ok(a.view.knownCanon.length<=40);assert.ok(b.view.knownCanon.length<=40);
 assert.equal(Ctx.validateNoKnowledgeLeak(a.view,s,State,'a').valid,true);assert.equal(Ctx.validateNoKnowledgeLeak(b.view,s,State,'b').valid,true);
+assert.ok(JSON.stringify(a.view).length<=9000);
+assert.ok(Object.keys(a.view.knowledgeRefs).every(id=>a.view.knownCanon.some(e=>e.id===id)));
+const oversized=State.createState(s);oversized.characters.a.identity.biography='x'.repeat(15000);
+assert.equal(Ctx.buildCharacterView(oversized,State,'a',{maxChars:9000}).reason,'context-budget-exceeded');
 console.log('rpg context views: PASS',JSON.stringify({aCanon:a.view.knownCanon.length,bCanon:b.view.knownCanon.length,aChars:a.view._diagnostics.serializedChars,bChars:b.view._diagnostics.serializedChars}));

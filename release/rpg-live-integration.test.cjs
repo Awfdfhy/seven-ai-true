@@ -3,8 +3,8 @@ const State=require('./workspaces/rpg-state.js');
 const Session=require('./workspaces/rpg-session.js');
 const Live=require('./workspaces/rpg-live-integration.js');
 const backingStorage=Session.memoryStorage(),mem={objects:[]};
-let seq=0,failMemory=false,failIndex=false;
-const storage={getItem:k=>backingStorage.getItem(k),setItem:(k,v)=>{if(failIndex&&String(k).includes(':active:'))throw Error('fixture index write failure');return backingStorage.setItem(k,v)},removeItem:k=>backingStorage.removeItem(k)};
+let seq=0,failMemory=false,failIndex=false,failAll=false,quotaAfterIndex=false;
+const storage={getItem:k=>backingStorage.getItem(k),setItem:(k,v)=>{if(failAll)throw Error('fixture quota');if(failIndex&&String(k).includes(':active:')){if(quotaAfterIndex)failAll=true;throw Error('fixture index write failure')}return backingStorage.setItem(k,v)},removeItem:k=>{if(failAll)throw Error('fixture quota');return backingStorage.removeItem(k)}};
 const runtime={
   hash:s=>{let h=2166136261;for(const c of String(s)){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return(h>>>0).toString(16)},
   lineage:(source,transformation,parentRefs=[])=>({source,transformation,parentRefs}),
@@ -31,4 +31,18 @@ assert.equal(out.ok,false);assert.equal(out.reason,'memory-projection-failed');a
 const b=Live.createBridge({stateApi:State,sessionApi:Session,runtime,storage});
 assert.equal(b.loadLatest('room-a').session.legacy.worldSession.position,2);
 assert.ok(b.context('room-a','valen',{maxChars:4000})._diagnostics.bounded);
+failMemory=false;failIndex=true;quotaAfterIndex=true;
+out=a.sync({roomId:'room-a',worldId:'valen',legacy:four,reason:'compound-storage-failure'});
+assert.equal(out.reason,'recovery-required');
+assert.equal(a.load('room-a','valen').ok,false);
+assert.equal(a.loadLatest('room-a').reason,'recovery-required');
+assert.equal(a.context('room-a','valen'),null);
+const restarted=Live.createBridge({stateApi:State,sessionApi:Session,runtime,storage});
+assert.equal(restarted.loadLatest('room-a').reason,'recovery-required');
+assert.equal(JSON.parse(backingStorage.getItem('seven_rpg_session_v3:pending:room-a')).previous.legacy.worldSession.position,2);
+failAll=false;failIndex=false;
+assert.equal(restarted.sync({roomId:'room-a',worldId:'valen',legacy:four}).reason,'recovery-required');
+const count=backingStorage.keys().length;failAll=true;
+assert.equal(restarted.sync({roomId:'new-room',worldId:'valen',legacy:one}).reason,'journal-write-failed');
+assert.equal(backingStorage.keys().length,count);
 console.log('rpg live integration: PASS');

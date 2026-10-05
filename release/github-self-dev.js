@@ -12,9 +12,15 @@ const PROTECTED_PATHS=[
   /^hardening\//,
   /^all\.cjs$/,
   /^verify\.cjs$/,
+  /^memory\.cjs$/,
+  /^runtime-smoke\.cjs$/,
+  /^eval\//,
   /^PROJECT_MANIFEST\.json$/,
   /^release\/github-self-dev\.js$/,
   /^apk\/materialize-native-platform\.cjs$/,
+  /^apk\/(?:verify-apk|build-provenance(?:\.test)?)\.cjs$/,
+  /^apk\/binary-verification(?:\.test)?\.cjs$/,
+  /^release\/(?:static-audit|release-verify)\.cjs$/,
   /^release\/.*\.test\.cjs$/,
   /^release\/(?:exact-rc|final-seven-closure|full-seven-red-team|source-integrity|production-release-contract|visual-red-team|material-design-quality).*\.cjs$/
 ];
@@ -152,7 +158,7 @@ async function createBranch(base,name){
 async function repositoryTree(branch){
   const head=await branchHead(branch);
   const tree=await api("GET",REPO_API+"/git/trees/"+head.treeSha+"?recursive=1");
-  return {head,items:Array.isArray(tree&&tree.tree)?tree.tree:[]};
+  return {head,items:Array.isArray(tree&&tree.tree)?tree.tree:[],truncated:tree&&tree.truncated===true};
 }
 async function readFile(path,ref){
   path=safeRepoPath(path);
@@ -165,19 +171,26 @@ async function createBlob(content){
 }
 async function atomicCommit(branch,files,message){
   if(!Array.isArray(files)||!files.length)throw new Error("No changes to commit.");
-  let latestSha=null;
+  const entries=[],seen=new Set();
   for(const file of files){
     const path=safeRepoPath(file.path);
     if(protectedPath(path))throw new Error("Autonomous edits are blocked for protected path: "+path);
-    let existing=null;
-    try{existing=await readFile(path,branch)}catch(e){if(Number(e&&e.status)!==404)throw e}
-    const body={message:String(message||"Seven autonomous development")+" · "+path,content:encodeBase64(file.content),branch:String(branch)};
-    if(existing&&existing.sha)body.sha=existing.sha;
-    const row=await api("PUT",REPO_API+"/contents/"+path,body);
-    latestSha=row&&row.commit&&row.commit.sha||latestSha;
+    if(seen.has(path))throw new Error("Duplicate change path: "+path);
+    seen.add(path);entries.push({path,type:"blob",content:String(file.content)});
   }
-  if(!latestSha)throw new Error("GitHub did not return a commit SHA.");
-  return {sha:latestSha,files:files.map(x=>x.path)};
+  const snapshot=await repositoryTree(branch);
+  if(snapshot.truncated)throw new Error("Truncated repository tree refused.");
+  if(!snapshot.head.treeSha)throw new Error("Branch tree unavailable.");
+  if(snapshot.items.length===0)throw new Error("Repository tree unavailable.");
+  const modes=new Map(snapshot.items.map(x=>[x.path,x.mode]));
+  for(const entry of entries){entry.mode=modes.get(entry.path)||"100644";if(!["100644","100755"].includes(entry.mode))throw new Error("Unsupported file mode: "+entry.path)}
+  const tree=await api("POST",REPO_API+"/git/trees",{base_tree:snapshot.head.treeSha,tree:entries});
+  if(!tree||!tree.sha)throw new Error("GitHub did not return a tree SHA.");
+  const commit=await api("POST",REPO_API+"/git/commits",{message:String(message||"Seven autonomous development"),tree:tree.sha,parents:[snapshot.head.sha]});
+  if(!commit||!commit.sha)throw new Error("GitHub did not return a commit SHA.");
+  // One non-forced ref update publishes all files; a concurrent writer causes rejection.
+  await api("PATCH",REPO_API+"/git/refs/heads/"+encodeURIComponent(branch),{sha:commit.sha,force:false});
+  return {sha:commit.sha,files:entries.map(x=>x.path)};
 }
 function taskTokens(task){
   return [...new Set(String(task||"").toLowerCase().match(/[a-z0-9_.-]{3,}|[\u0600-\u06ff]{3,}/g)||[])].slice(0,32);
@@ -250,7 +263,7 @@ async function materializeChanges(branch,changes){
   const out=[];let total=0;
   for(const [path,rows] of grouped){
     let content="",exists=true;
-    try{content=(await readFile(path,branch)).content}catch(e){exists=false}
+    try{content=(await readFile(path,branch)).content}catch(e){if(Number(e&&e.status)!==404)throw e;exists=false}
     for(const ch of rows){
       if(ch.type==="create"){
         if(exists||content)throw new Error("Create target already exists: "+path);
@@ -296,20 +309,18 @@ async function prepareImplementation(task,branch,selected,repairContext){
   return askJson(system,user,16000);
 }
 async function waitForRun(branch,headSha,timeoutMs){
-  const deadline=Date.now()+(timeoutMs||15*60*1000);let seen=null;
+  const deadline=Date.now()+(timeoutMs||15*60*1000);
   while(Date.now()<deadline){
-    const data=await api("GET",REPO_API+"/actions/runs?branch="+encodeURIComponent(branch)+"&event=push&per_page=20");
+    const data=await api("GET",REPO_API+"/actions/workflows/seven-tests.yml/runs?branch="+encodeURIComponent(branch)+"&per_page=20");
     const runs=Array.isArray(data&&data.workflow_runs)?data.workflow_runs:[];
-    const run=runs.find(x=>x.head_sha===headSha)||runs[0];
+    const run=runs.find(x=>x.head_sha===headSha&&x.head_branch===branch);
     if(run){
-      seen=run;
       setStage("ci","CI "+run.status+(run.conclusion?" / "+run.conclusion:"")+" · run #"+run.run_number);
       if(run.status==="completed")return run;
     }
     await sleep(9000);
   }
-  if(seen)return seen;
-  throw new Error("No CI run appeared for the autonomous commit.");
+  throw new Error("CI did not complete for the exact autonomous commit: "+headSha);
 }
 async function failureEvidence(run){
   const jobsData=await api("GET",REPO_API+"/actions/runs/"+run.id+"/jobs?per_page=100");
@@ -326,8 +337,8 @@ async function failureEvidence(run){
 async function openPullRequest(task,branch,base,summary){
   return api("POST",REPO_API+"/pulls",{title:"Seven self-dev: "+String(task).slice(0,90),head:branch,base,body:"Autonomous Seven development run.\n\nTask: "+task+"\n\nSummary: "+String(summary||"")+"\n\nAll autonomous edits were constrained by Seven's protected-path policy."});
 }
-async function mergePullRequest(number){
-  return api("PUT",REPO_API+"/pulls/"+Number(number)+"/merge",{merge_method:"squash"});
+async function mergePullRequest(number,expectedSha){
+  return api("PUT",REPO_API+"/pulls/"+Number(number)+"/merge",{merge_method:"squash",...(expectedSha?{sha:expectedSha}:{})});
 }
 async function dispatchWorkflow(workflow,ref){
   const name=String(workflow||"android-apk.yml").replace(/[^A-Za-z0-9._-]/g,"");
@@ -352,6 +363,7 @@ async function selfDevelop(task,options){
     setStage("commit","Creating atomic Git commit…");
     lastCommit=await atomicCommit(branch,files,"Seven self-dev: "+task.slice(0,120));
     pushLog("Committed "+lastCommit.sha.slice(0,12)+".","ok");
+    await dispatchWorkflow("seven-tests.yml",branch);
     let run=await waitForRun(branch,lastCommit.sha);
     let repairs=0;
     while(run.conclusion!=="success"&&repairs<Number(opts.maxRepairs||0)){
@@ -363,6 +375,7 @@ async function selfDevelop(task,options){
       summary=String(payload.summary||summary);
       files=await materializeChanges(branch,normalizeChanges(payload));
       lastCommit=await atomicCommit(branch,files,"Seven self-dev repair "+repairs+": "+task.slice(0,100));
+      await dispatchWorkflow("seven-tests.yml",branch);
       run=await waitForRun(branch,lastCommit.sha);
     }
     if(run.conclusion!=="success")throw new Error("CI did not pass after "+repairs+" repair attempt(s). Branch kept for inspection: "+branch);
@@ -375,7 +388,7 @@ async function selfDevelop(task,options){
     }
     if(opts.autoMerge){
       setStage("merge","Merging verified pull request…");
-      merge=await mergePullRequest(pr.number);
+      merge=await mergePullRequest(pr.number,lastCommit.sha);
       if(!merge||!merge.merged)throw new Error("GitHub did not merge PR #"+pr.number+": "+(merge&&merge.message||"unknown reason"));
       pushLog("Merged PR #"+pr.number+".","ok");
     }

@@ -14,6 +14,9 @@ function createBridge(options){
   const storage=o.storage||root.localStorage,manager=sessionApi.createManager({stateApi,storage,prefix:o.prefix||'seven_rpg_session_v3'}),INDEX_PREFIX=(o.prefix||'seven_rpg_session_v3')+':active:';
   function ids(input){const roomId=text(input&&input.roomId),worldId=text(input&&input.worldId);if(!roomId||!worldId)throw Error('roomId/worldId required');return{roomId,worldId}}
   function indexKey(roomId){return INDEX_PREFIX+encodeURIComponent(roomId)}
+  function pendingKey(roomId){return INDEX_PREFIX.replace(':active:',':pending:')+encodeURIComponent(roomId)}
+  function pending(roomId){try{return storage.getItem(pendingKey(roomId))!==null}catch(_){return true}}
+  function blocked(){return{ok:false,status:'BLOCKED',reason:'recovery-required'}}
   function readIndex(roomId){try{return text(storage.getItem(indexKey(roomId)))}catch(_){return''}}
   function writeIndex(roomId,worldId){try{storage.setItem(indexKey(roomId),worldId);return true}catch(_){return false}}
   function restoreIndex(roomId,worldId){try{worldId?storage.setItem(indexKey(roomId),worldId):storage.removeItem(indexKey(roomId));return true}catch(_){return false}}
@@ -45,20 +48,25 @@ function createBridge(options){
   }
   function sync(input){
     let id;try{id=ids(input)}catch(e){return{ok:false,status:'BLOCKED',reason:'invalid-identity',error:String(e&&e.message||e)}}
-    const legacy=clone(input&&input.legacy||{}),previous=manager.load(id.roomId,id.worldId),previousIndex=readIndex(id.roomId),base=getSession(id.roomId,id.worldId);
-    if(!base.ok)return base;
+    if(pending(id.roomId))return blocked();
+    const legacy=clone(input&&input.legacy||{}),previous=manager.load(id.roomId,id.worldId),previousIndex=readIndex(id.roomId);
+    try{storage.setItem(pendingKey(id.roomId),JSON.stringify({version:1,...id,previous:previous.ok?previous.session:null,previousIndex}))}catch(_){return{ok:false,status:'BLOCKED',reason:'journal-write-failed'}}
+    function abort(reason){const r=rollback(id.roomId,id.worldId,previous);if(r.ok&&(readIndex(id.roomId)===previousIndex||restoreIndex(id.roomId,previousIndex)))try{storage.removeItem(pendingKey(id.roomId))}catch(_){}return pending(id.roomId)?blocked():{ok:false,status:'BLOCKED',reason}}
+    const base=getSession(id.roomId,id.worldId);
+    if(!base.ok)return abort(base.reason);
     const event={id:'legacy-sync-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),type:'world.set',source:'runtime',authority:'runtime',countsAsTurn:false,summary:text(input&&input.reason)||'live-rpg-sync',payload:{path:['integration','legacySnapshot'],value:legacy}};
     const applied=stateApi.applyEvent(base.session.state,event);
-    if(!applied||applied.ok!==true)return{ok:false,status:'BLOCKED',reason:'state-rejected',details:applied};
+    if(!applied||applied.ok!==true)return abort('state-rejected');
     const saved=manager.persist({roomId:id.roomId,worldId:id.worldId,state:applied.state,legacy,persistedRevision:base.session.persistedRevision});
-    if(!saved.ok)return saved;
-    if(!writeIndex(id.roomId,id.worldId)){rollback(id.roomId,id.worldId,previous);return{ok:false,status:'BLOCKED',reason:'active-index-write-failed'}}
+    if(!saved.ok)return abort(saved.reason);
+    if(!writeIndex(id.roomId,id.worldId))return abort('active-index-write-failed');
     let memoryOk=false;try{memoryOk=publish(saved.session,legacy,input&&input.reason)}catch(_){memoryOk=false}
-    if(!memoryOk){rollback(id.roomId,id.worldId,previous);restoreIndex(id.roomId,previousIndex);return{ok:false,status:'BLOCKED',reason:'memory-projection-failed'}}
+    if(!memoryOk)return abort('memory-projection-failed');
+    try{storage.removeItem(pendingKey(id.roomId))}catch(_){return blocked()}
     return{ok:true,status:'SYNCED',session:saved.session,record:applied.record,memoryId:'rpg-'+runtime.hash(id.roomId+'\n'+id.worldId)};
   }
-  function load(roomId,worldId){return manager.load(text(roomId),text(worldId))}
-  function loadLatest(roomIdInput){const roomId=text(roomIdInput),worldId=readIndex(roomId);if(!roomId||!worldId)return{ok:false,status:'MISSING',reason:'no-active-world'};return manager.load(roomId,worldId)}
+  function load(roomId,worldId){return pending(text(roomId))?blocked():manager.load(text(roomId),text(worldId))}
+  function loadLatest(roomIdInput){const roomId=text(roomIdInput);if(pending(roomId))return blocked();const worldId=readIndex(roomId);if(!roomId||!worldId)return{ok:false,status:'MISSING',reason:'no-active-world'};return manager.load(roomId,worldId)}
   function context(roomIdInput,worldIdInput,options){const out=load(roomIdInput,worldIdInput);return out.ok?stateApi.buildContextPacket(out.session.state,options||{}):null}
   function inspect(roomId,worldId){return manager.inspect(text(roomId),text(worldId))}
   return{version:1,sync,load,loadLatest,context,inspect,manager};

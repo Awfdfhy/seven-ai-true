@@ -33,7 +33,7 @@ function dumpUi(){
   if(r.error||r.status!==0||!r.stdout.includes("<hierarchy"))throw Error(`launcher UI dump unavailable: ${r.error?.message||r.stderr||r.stdout}`);
   return r.stdout;
 }
-function sevenNode(xml){return parseNodes(xml).find(n=>{const t=`${n.text||""} ${n["content-desc"]||""}`.trim();return /(^|\s)Seven(\s|$)/i.test(t)&&parseBounds(n.bounds)})||null}
+function sevenNode(xml){return parseNodes(xml).find(n=>{const t=`${n.text||""} ${n["content-desc"]||""}`.trim();return /(^|\s)Seven 2\.4\.3(\s|$)/i.test(t)&&parseBounds(n.bounds)})||null}
 function appsNode(xml){return parseNodes(xml).find(n=>/^(apps|all apps)$/i.test(String(n.text||n["content-desc"]||"").trim())&&parseBounds(n.bounds))||null}
 function homeComponent(){
   const args=["resolve-activity","--brief","-a","android.intent.action.MAIN","-c","android.intent.category.HOME"];

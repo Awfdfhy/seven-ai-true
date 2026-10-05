@@ -91,7 +91,10 @@ function copyDir(src,dst){
     if(e.isDirectory())out.push(...copyDir(a,b));else{
       let data=fs.readFileSync(a);
       if(e.name.endsWith('.css'))data=Buffer.from(compactCss(data.toString('utf8')));
-      else if(e.name.endsWith('.js'))data=Buffer.from(compactJs(data.toString('utf8')));
+      else if(e.name.endsWith('.js')){
+        const rpg=require('./rpg-minifier.cjs');
+        data=Buffer.from(rpg.files.has(e.name)?rpg.minifyRpg(data.toString('utf8')):compactJs(data.toString('utf8')));
+      }
       fs.writeFileSync(b,data);
       out.push({path:path.relative(DIST_DIR,b).replace(/\\/g,'/'),bytes:data.length,sha256:crypto.createHash('sha256').update(data).digest('hex')});
     }
@@ -141,7 +144,7 @@ function build(){
   const ui=compactJs(read('ui-runtime.js')).replace(/<\/script/gi,'<\\/script');
   const attachments=compactJs(read('attachment-runtime.js')).replace(/<\/script/gi,'<\\/script');
   const attachmentLoader=compactJs(read('attachment-loader.js')).replace(/<\/script/gi,'<\\/script');
-  const betaUi=compactJs(read('beta-ui-runtime.js')).replace(/<\/script/gi,'<\\/script');
+  const betaUi=require('./rpg-minifier.cjs').minifyStartup(read('beta-ui-runtime.js')).replace(/<\/script/gi,'<\\/script');
   const uiPolishLoader=compactJs(read('ui-polish-loader.js')).replace(/<\/script/gi,'<\\/script');
   const githubSelfDev=compactJs(read('github-self-dev.js')).replace(/<\/script/gi,'<\\/script');
   const workspaceSource=fs.existsSync(WORKSPACE_DIR)?fs.readdirSync(WORKSPACE_DIR).sort().map(name=>fs.readFileSync(path.join(WORKSPACE_DIR,name))).join(''):'';

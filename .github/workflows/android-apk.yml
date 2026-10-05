@@ -131,3 +131,11 @@ jobs:
           archive: false
           if-no-files-found: error
           retention-days: 14
+
+      - name: Upload APK identity and verification evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: seven-apk-verification
+          path: dist/apk-verification.json
+          if-no-files-found: error
+          retention-days: 14
