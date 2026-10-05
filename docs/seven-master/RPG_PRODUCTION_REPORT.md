@@ -90,6 +90,24 @@ Current Batch 02 exact-SHA CI is pending and must pass before integration readin
 4. Coordinate Android process-death/app-upgrade RPG persistence with CHAT 1.
 5. Run limited live-provider dialogue/no-leak/voice-continuity evaluation when provider access is available.
 
+
+## Batch 03 — Size Gate + Transaction Deduplication
+
+CI run `37304741613` on `2cffd66871453e999ba324474cd4006c1d08dcaf` failed the unchanged static lazy-workspace budget: 322150 bytes vs 320000. No benchmark or threshold was raised.
+
+A first whitespace-only compaction demonstrated that the release builder already removes most formatting and therefore was not an acceptable fix by itself. The production fix instead:
+- unified legacy `sync()` and structured `transact()` through one `runTxn()` pipeline;
+- removed duplicated journal/persist/index/Memory/finalize/rollback logic;
+- replaced the mutating `getSession/start` pre-journal path with non-mutating `manager.create()` for virgin sessions;
+- therefore guarantees journal-write failure cannot create durable virgin state;
+- compacted recovery control flow without dropping revision-divergence, newer-state, commit-evidence, corrupt/abandoned, index-restore, or fail-closed checks.
+
+Added evidence:
+- failure injection proves a virgin structured transaction with a journal-write failure leaves session inspection at `MISSING`;
+- browser product-boundary regression calls `SevenRpgWorkspace.commitStateEvents()` and proves a runtime-originated move of a player-controlled character is rejected with `player-control` and the persisted location is unchanged.
+
+The first compaction retest, run `37305266877`, still failed only the unchanged static budget at 321824/320000. The subsequent shared-pipeline refactor removes substantially more production logic; latest exact-SHA CI is required before claiming the size gate green.
+
 ## Integration status
 
 PARTIAL — not ready for merge or RC acceptance yet.
