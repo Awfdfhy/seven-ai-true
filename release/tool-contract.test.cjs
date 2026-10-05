@@ -4,7 +4,7 @@ const {normalizeTool,createRegistry,execute}=require("./tool-contract.cjs");
 (async()=>{
  const legacy=normalizeTool({id:"web.search",schema:{type:"object"},risk:"side_effect",requiredPermissions:["network"],timeout:250,retryPolicy:{maxRetries:2}});
  assert.equal(legacy.inputSchema.type,"object");assert.equal(legacy.risk,"WRITE");assert.deepEqual([...legacy.permissions],["network"]);assert.equal(legacy.retryPolicy.maxRetries,2);
- const typed=normalizeTool({name:"artifact.search",inputSchema:{type:"object"},riskLevel:"read"});assert.equal(typed.id,"artifact.search");assert.equal(typed.risk,"READ");
+ const typed=normalizeTool({name:"artifact.search",inputSchema:{type:"object"},riskLevel:"read",permissions:"artifact.read",resources:"room:1"});assert.equal(typed.id,"artifact.search");assert.equal(typed.risk,"READ");assert.deepEqual([...typed.permissions],["artifact.read"]);assert.deepEqual([...typed.resources],["room:1"]);
  assert.throws(()=>createRegistry([{id:"x"},{id:"x"}]),/duplicate/);
  const unavailable=await execute({tool:{id:"stub"},input:{},authorize:()=>({allowed:true})});assert.equal(unavailable.error.code,"UNAVAILABLE");
  let ran=false;const denied=await execute({tool:{id:"write",executor:()=>{ran=true}},input:{},authorize:()=>({allowed:false,reason:"scope"})});assert.equal(denied.error.code,"PERMISSION_ERROR");assert.equal(ran,false);
