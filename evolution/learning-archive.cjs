@@ -8,7 +8,7 @@ function normalizeRecord(r={}){
  return Object.freeze({...body,checksum:hash(body)});
 }
 function verifyRecord(r){if(!r||typeof r!=="object"||!r.checksum)return false;const {checksum,...body}=r;return checksum===hash(body)}
-function experimentFingerprint(r={}){return hash({subsystem:String(r.subsystem||"unknown").trim().toLowerCase(),hypothesis:String(r.hypothesis||"").trim().replace(/\\s+/g," ").toLowerCase(),baselineSha:String(r.baselineSha||"").trim().toLowerCase()})}
+function experimentFingerprint(r={}){return hash({subsystem:String(r.subsystem||"unknown").trim().toLowerCase(),hypothesis:String(r.hypothesis||"").trim().replace(/\s+/g," ").toLowerCase(),baselineSha:String(r.baselineSha||"").trim().toLowerCase()})}
 function createArchive(seed=[]){
  const rows=[];for(const r of seed){if(!verifyRecord(r))throw new Error("invalid learning archive seed");rows.push(Object.freeze({...r}))}
  function append(input){const record=normalizeRecord(input);rows.push(record);return record}
