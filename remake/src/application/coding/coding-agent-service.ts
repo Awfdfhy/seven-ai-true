@@ -70,7 +70,7 @@ export class CodingAgentService{
    if(diffReview.status==="REJECT"){run=transitionCodingRun(run,"FAILED",{kind:"diff-policy-rejected",summary:"Deterministic diff review rejected the proposed patch."});return{status:"FAIL",run,attempts:attempt,message:"Diff policy rejected the proposed patch."};}
   if(attempt===1)run=transitionCodingRun(run,"EDIT",{kind:"edit-authorized",summary:`Applying ${plan.operations.length} validated operations.`});
    else run=transitionCodingRun(run,"EDIT",{kind:"repair-authorized",summary:`Applying bounded repair attempt ${attempt}.`});
-  let applied;
+  let applied: Awaited<ReturnType<CodingWorkspaceService["apply"]>>;
   try{
     applied=await this.workspace.apply({snapshot,plan,message:`Seven Coding: ${proposal.summary}`.slice(0,512),signal:input.signal});
   }catch(error){
