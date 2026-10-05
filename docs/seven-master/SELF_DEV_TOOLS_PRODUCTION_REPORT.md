@@ -141,3 +141,29 @@ Run 37304844600 failed because the newly added retry regression fixture itself w
 
 Latest implementation SHA before this report update: `0c0a4b2aa257a89ea2b61619de6071f67c64620a`.
 Exact-SHA Seven AI tests run 37305481877 was pending when recorded.
+
+
+## Batch 6 — Contract validation, side-effect safety, rollback learning
+
+### CI failure retained
+Run 37305550986 failed at the unified legacy contract assertion. The assertion relied on cross-VM object/reference semantics rather than the contract's schema meaning. It was replaced with explicit semantic checks for type, required field, property type and additionalProperties; execution authorization requirements were not weakened.
+
+### Concurrent branch safety
+A GitHub 409 occurred while updating `release/tool-contract.cjs`, proving the branch advanced concurrently. The update was not forced. The latest blob was re-read before further work, preserving concurrent hardening.
+
+### Tool contract now present on branch
+- cloned and deep-frozen input/output schemas and metadata
+- conservative schema validation before execution and output validation after execution
+- malformed output -> `MALFORMED_OUTPUT`
+- invalid input -> `VALIDATION_ERROR`
+- non-idempotent side-effect tools cannot retry
+- side-effect tools require cooperative abort semantics before bounded timeout execution
+- timed-out read/idempotent execution is aborted when possible and late results are quarantined in audit semantics
+- normalized scalar/array permissions and resources
+- bounded retry only for retryable normalized failures
+
+### Rollback learning evidence
+The post-apply regression test now verifies the durable learning archive records `ROLLED_BACK`, candidate SHA and rollback baseline SHA after the promotion adapter restores baseline.
+
+Latest Chat 4 SHA before this report update: `e0761cd4a52e8d5f59bbd9db46f1fa391e6a66cd`.
+Exact-SHA run 37305863396 was queued when recorded.
