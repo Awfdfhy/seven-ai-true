@@ -12,7 +12,11 @@ function execute(file,code){
   const fn=vm.runInContext('(function(require,module,exports,__dirname,__filename){\n'+code+'\n})',context,{filename:file,timeout:120000});
   fn(packedRequire,module,module.exports,path.dirname(file),file);return module.exports;
 }
-for(const file of ['rpg-state.test.cjs','rpg-session.test.cjs','rpg-context.test.cjs','rpg-live-integration.test.cjs'])execute(path.join(__dirname,file),fs.readFileSync(path.join(__dirname,file),'utf8'));
-assert.equal(cache.size,4);
+for(const file of ['rpg-state.test.cjs','rpg-session.test.cjs','rpg-context.test.cjs','rpg-live-integration.test.cjs','rpg-rules.test.cjs','rpg-planner.test.cjs','rpg-orchestrator.test.cjs','rpg-unified-live.test.cjs'])execute(path.join(__dirname,file),fs.readFileSync(path.join(__dirname,file),'utf8'));
+assert.equal(cache.size,6);
+const livePacked=minifyRpg(fs.readFileSync(path.join(__dirname,'workspaces','rpg-live.js'),'utf8'));
+const workspacePacked=minifyRpg(fs.readFileSync(path.join(__dirname,'workspaces','rpg.js'),'utf8'));
+assert.ok(livePacked.includes('SevenRpgLive'));
+assert.ok(workspacePacked.includes('SevenRpgWorkspace'));
 assert.throws(()=>minifyRpg('function {'),/Unexpected|Name|token/i);
-console.log('Packaged RPG kernels: PASS (state, session, context, live failure/restart gates)');
+console.log('Packaged RPG runtime: PASS (state/session/context/recovery/rules/planner/orchestrator/live/workspace)');
