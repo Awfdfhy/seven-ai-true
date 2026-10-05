@@ -259,4 +259,70 @@ describe("Integration + Verification permanent regression scenarios", () => {
     await expect(researchRun.result).resolves.toMatchObject({ answer: "ok" });
     expect(tasks.listActive()).toEqual([]);
   });
+
+  it("Restart during active chat preserves the committed user turn but no partial assistant", async () => {
+    const databaseName = `integration-active-restart-${crypto.randomUUID()}`;
+    const first = new IndexedDbRoomRepository({ databaseName });
+    await first.put(createRoom({ id: "restart-active", now: 1 }));
+
+    const tasks = new TaskManager();
+    const chat = new ChatService(tasks, first);
+    let signalStarted!: () => void;
+    const started = new Promise<void>((resolve) => { signalStarted = resolve; });
+    let releaseStream!: () => void;
+    const gate = new Promise<void>((resolve) => { releaseStream = resolve; });
+
+    const run = await chat.send("restart-active", "persist me", {
+      async *stream() {
+        signalStarted();
+        await gate;
+        yield "must never be committed after restart cancellation";
+      },
+    });
+    await started;
+
+    const restarted = new IndexedDbRoomRepository({ databaseName });
+    const during = await restarted.get("restart-active");
+    expect(during?.messages.map((message) => message.role)).toEqual(["user"]);
+    expect(during?.messages[0]?.content).toBe("persist me");
+
+    expect(run.cancel("restart")).toBe(true);
+    releaseStream();
+    await expect(run.result).rejects.toMatchObject({ code: "CANCELLED" });
+
+    const after = await restarted.get("restart-active");
+    expect(after?.messages.map((message) => message.role)).toEqual(["user"]);
+    expect(tasks.listActive()).toEqual([]);
+
+    await Promise.all([first.close(), restarted.close()]);
+  });
+
+  it("Concurrency — simultaneous attachment writes remain isolated and complete", async () => {
+    const tasks = new TaskManager();
+    const repository = new InMemoryAttachmentRepository();
+    const service = new AttachmentService(
+      tasks,
+      repository,
+      new SingleFlightPdfParserLoader(async () => ({
+        async parse() { return "unused"; },
+      })),
+      () => 456,
+    );
+
+    const runs = Array.from({ length: 12 }, (_, index) => service.ingest({
+      roomId: index % 2 === 0 ? "files-a" : "files-b",
+      id: `file-${index}`,
+      name: `file-${index}.txt`,
+      declaredMimeType: "text/plain",
+      bytes: new TextEncoder().encode(`payload-${index}`),
+    }));
+    const records = await Promise.all(runs.map((run) => run.result));
+
+    expect(records).toHaveLength(12);
+    expect(await repository.list("files-a")).toHaveLength(6);
+    expect(await repository.list("files-b")).toHaveLength(6);
+    expect(new Set(records.map((record) => record.contentHash)).size).toBe(12);
+    expect(tasks.listActive()).toEqual([]);
+  });
+
 });
