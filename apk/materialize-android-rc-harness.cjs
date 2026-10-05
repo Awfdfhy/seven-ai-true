@@ -232,6 +232,7 @@ public class SevenTestGrantReceiver extends BroadcastReceiver {
   @Override public void onReceive(Context context,Intent intent){
     Uri uri=Uri.parse(${javaString(DOC_URI)});
     context.grantUriPermission(${javaString(APP_ID)},uri,Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+    setResultCode(1);
   }
 }
 `;

@@ -19,6 +19,7 @@ const materializer=fs.readFileSync(path.join(__dirname,'materialize-android-rc-h
 assert.match(materializer,/takePersistableUriPermission/);
 assert.match(materializer,/class SevenTestGrantReceiver extends BroadcastReceiver/);
 assert.match(materializer,/grantUriPermission/);
+assert.match(materializer,/setResultCode\(1\)/,'SAF grant receiver must acknowledge successful grant');
 assert.match(materializer,/getPersistedUriPermissions/);
 assert.match(materializer,/versionCode\(\)>before/);
 assert.match(materializer,/host did not kill the target process/);
@@ -29,6 +30,8 @@ assert.match(signing,/signingConfig signingConfigs\.sevenRelease/);
 const runner=fs.readFileSync(path.join(__dirname,'run-android-rc-acceptance.sh'),'utf8');
 assert.match(runner,/pm clear "\$APP_ID"/);
 assert.match(runner,/SevenTestGrantReceiver/);
+assert.match(runner,/am broadcast --include-stopped-packages -n/,'fresh test APK must receive SAF grant broadcast');
+assert.match(runner,/Broadcast completed: result=1/,'undelivered SAF broadcast must fail acceptance');
 assert.equal((runner.match(/pm clear "\$APP_ID"/g)||[]).length,1,'target data may be cleared only before Build A seed');
 assert.match(runner,/kill_window precommit/);
 assert.match(runner,/kill_window postcommit/);
