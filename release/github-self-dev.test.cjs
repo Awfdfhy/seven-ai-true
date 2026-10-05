@@ -45,6 +45,7 @@ function load(handler){
   console.log('PASS concurrent ref updates fail without overwriting the branch');
   const forbidden=load(()=>{throw new Error('unexpected write')});
   await assert.rejects(forbidden.api.atomicCommit('work',[{path:'safe.js',content:'x'},{path:'all.cjs',content:'weaken'}],'change'),/protected path/);
+  await assert.rejects(forbidden.api.atomicCommit('work',[{path:'.github/CODEOWNERS',content:'* @autonomous'}],'change'),/protected path/);
   await assert.rejects(forbidden.api.atomicCommit('work',[{path:'a.js',content:'x'},{path:'a.js',content:'y'}],'change'),/Duplicate/);
   assert.equal(forbidden.calls.length,0);console.log('PASS all paths validate before any remote mutation');
   for(const path of ['.github/CODEOWNERS','.github/dependabot.yml','eval/baseline.json','memory.cjs','runtime-smoke.cjs','apk/verify-apk.cjs','apk/build-provenance.cjs','apk/binary-verification.cjs','apk/binary-verification.test.cjs','release/static-audit.cjs','release/release-verify.cjs'])assert.equal(forbidden.api.protectedPath(path),true);
