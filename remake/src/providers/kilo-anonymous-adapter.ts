@@ -16,6 +16,77 @@ function retryableStatus(status: number): boolean {
   return status === 408 || status === 429 || status >= 500;
 }
 
+function retryAfterMs(headers: Headers): number | undefined {
+  const raw = headers.get("retry-after")?.trim();
+  if (!raw) return undefined;
+  const seconds = Number(raw);
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.round(seconds * 1_000);
+  const at = Date.parse(raw);
+  return Number.isFinite(at) ? Math.max(0, at - Date.now()) : undefined;
+}
+
+function httpFailure(operation: "model discovery" | "chat", response: Response): SevenError {
+  const retryAfter = retryAfterMs(response.headers);
+  return new SevenError({
+    code: "PROVIDER",
+    message: `Kilo ${operation} failed with HTTP ${response.status}.`,
+    retryable: retryableStatus(response.status),
+    details: {
+      providerId: "kilo",
+      httpStatus: response.status,
+      rateLimited: response.status === 429,
+      ...(retryAfter === undefined ? {} : { retryAfterMs: retryAfter }),
+    },
+  });
+}
+
+async function safeFetch(
+  fetchImpl: FetchLike,
+  input: RequestInfo | URL,
+  init: RequestInit,
+): Promise<Response> {
+  try {
+    return await fetchImpl(input, init);
+  } catch (cause) {
+    if (cause instanceof DOMException && cause.name === "AbortError") throw cause;
+    throw new SevenError({
+      code: "NETWORK",
+      message: "Kilo network request failed.",
+      retryable: true,
+      cause,
+      details: { providerId: "kilo" },
+    });
+  }
+}
+
+async function parseJsonResponse<T>(response: Response, operation: string): Promise<T> {
+  try {
+    return await response.json() as T;
+  } catch (cause) {
+    throw new SevenError({
+      code: "PROVIDER",
+      message: `Kilo ${operation} returned malformed JSON.`,
+      retryable: true,
+      cause,
+      details: { providerId: "kilo", reason: "MALFORMED_JSON" },
+    });
+  }
+}
+
+function parseSsePayload(data: string): unknown {
+  try {
+    return JSON.parse(data) as unknown;
+  } catch (cause) {
+    throw new SevenError({
+      code: "PROVIDER",
+      message: "Kilo stream emitted malformed JSON.",
+      retryable: true,
+      cause,
+      details: { providerId: "kilo", reason: "MALFORMED_STREAM_JSON" },
+    });
+  }
+}
+
 function normalizeModel(raw: unknown): ModelDescriptor | null {
   if (!raw || typeof raw !== "object") return null;
   const item = raw as Record<string, unknown>;
@@ -50,19 +121,14 @@ export class KiloAnonymousProviderAdapter implements ProviderAdapter {
   constructor(private readonly fetchImpl: FetchLike = fetch) {}
 
   async listModels(signal: AbortSignal): Promise<readonly ModelDescriptor[]> {
-    const response = await this.fetchImpl(MODELS_URL, {
+    const response = await safeFetch(this.fetchImpl, MODELS_URL, {
       method: "GET",
       headers: { Accept: "application/json" },
       signal,
     });
-    if (!response.ok) {
-      throw new SevenError({
-        code: "PROVIDER",
-        message: `Kilo model discovery failed with HTTP ${response.status}.`,
-        retryable: retryableStatus(response.status),
-      });
-    }
-    const payload = await response.json() as { data?: unknown[] };
+    if (!response.ok) throw httpFailure("model discovery", response);
+
+    const payload = await parseJsonResponse<{ data?: unknown[] }>(response, "model discovery");
     const models = Array.isArray(payload.data)
       ? payload.data.map(normalizeModel).filter((model): model is ModelDescriptor => model !== null)
       : [];
@@ -78,7 +144,7 @@ export class KiloAnonymousProviderAdapter implements ProviderAdapter {
       throw new SevenError({ code: "VALIDATION", message: "Kilo modelId must not be empty." });
     }
 
-    const response = await this.fetchImpl(CHAT_URL, {
+    const response = await safeFetch(this.fetchImpl, CHAT_URL, {
       method: "POST",
       headers: {
         Accept: "text/event-stream, application/json",
@@ -93,21 +159,13 @@ export class KiloAnonymousProviderAdapter implements ProviderAdapter {
       signal,
     });
 
-    if (!response.ok) {
-      let detail = "";
-      try { detail = (await response.text()).slice(0, 500); } catch { /* ignore */ }
-      throw new SevenError({
-        code: "PROVIDER",
-        message: `Kilo chat failed with HTTP ${response.status}${detail ? `: ${detail}` : ""}.`,
-        retryable: retryableStatus(response.status),
-      });
-    }
+    if (!response.ok) throw httpFailure("chat", response);
 
     const contentType = response.headers.get("content-type") ?? "";
     if (!contentType.includes("text/event-stream")) {
-      const payload = await response.json() as {
+      const payload = await parseJsonResponse<{
         choices?: Array<{ message?: { content?: string; reasoning_content?: string } }>;
-      };
+      }>(response, "chat");
       const message = payload.choices?.[0]?.message;
       const text = message?.content ?? message?.reasoning_content ?? "";
       if (text) yield Object.freeze({ delta: text });
@@ -115,7 +173,12 @@ export class KiloAnonymousProviderAdapter implements ProviderAdapter {
     }
 
     if (!response.body) {
-      throw new SevenError({ code: "PROVIDER", message: "Kilo stream response had no body.", retryable: true });
+      throw new SevenError({
+        code: "PROVIDER",
+        message: "Kilo stream response had no body.",
+        retryable: true,
+        details: { providerId: "kilo", reason: "MISSING_STREAM_BODY" },
+      });
     }
 
     const reader = response.body.getReader();
@@ -134,8 +197,7 @@ export class KiloAnonymousProviderAdapter implements ProviderAdapter {
             if (!line.startsWith("data:")) continue;
             const data = line.slice(5).trim();
             if (!data || data === "[DONE]") continue;
-            let payload: unknown;
-            try { payload = JSON.parse(data); } catch { continue; }
+            const payload = parseSsePayload(data);
             if (!payload || typeof payload !== "object") continue;
             const choices = (payload as { choices?: unknown[] }).choices;
             if (!Array.isArray(choices)) continue;
