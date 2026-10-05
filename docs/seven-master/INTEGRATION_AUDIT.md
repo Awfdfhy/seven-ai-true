@@ -122,3 +122,40 @@ Scores are evidence-weighted estimates, not completion percentages. No subsystem
 6. Add trace/request IDs across model/tool/web/memory phases.
 7. Add E2E scenarios A–J plus failure injection and long-session benchmarks.
 8. Reconcile the master bughunt ledger and close only reproduced-and-verified defects.
+
+## Integration Batch 02 — Repair and reconciliation
+
+Implemented after the baseline:
+- request-safe room/mode cancellation;
+- provider-safe Deep Think system-message shaping;
+- explicit Arabic IME composition lock;
+- selected-model context budgeting + conservative Arabic token estimate;
+- provider discovery timeout, fair-share fallback deadline and health/cooldown integration;
+- GitHub token expiry/refresh, exact repository boundary and non-silent job-log cap;
+- attachment loader retry + byte/type budgets;
+- temporal citation metadata/hash;
+- privacy-bounded request diagnostics/error taxonomy;
+- link-state vs end-to-end reachability separation;
+- RPG character-context compaction, deep snapshots, transactional pack loading, input budgets and incremental copy observer.
+
+Evidence:
+- Seven AI tests green on 7e320564c9c519283a5e93fb6c0b9a0343a16bcd.
+- Seven AI tests green on 6f5063d61526880542107c825d2f48c64715e46f.
+- Reality Lab green on 428f5fd027c2203aa03808e782a1a0367d58a583.
+- Static startup gate observed at 98,775 / 100,000 bytes.
+
+### Updated scorecard
+
+| System | Functional | Integrated | Tested | Regression Safe | Performance | Status |
+|---|---:|---:|---:|---:|---:|---|
+| Chat Core | 92 | 88 | 92 | 88 | 82 | STRONG / RC validation |
+| Model Routing | 92 | 88 | 92 | 88 | 85 | STRONG / RC validation |
+| Memory | 90 | 84 | 90 | 86 | 78 | STRONG / long-session debt |
+| Web Research | 94 | 90 | 94 | 90 | 80 | STRONG |
+| Tools/Execution | 94 | 92 | 92 | 92 | 82 | STRONG |
+| Coding/Self-Dev | 86 | 78 | 82 | 78 | 72 | PARTIAL — repo enforcement/workflow isolation |
+| RPG | 84 | 66 | 84 | 76 | 76 | PARTIAL — live session unification open |
+| Android/APK | 88 | 82 | 84 | 82 | 76 | PENDING latest device gate |
+| Observability | 82 | 78 | 82 | 78 | 78 | IMPLEMENTED core trace/error layer |
+
+These are evidence-weighted maturity scores, not completion percentages.

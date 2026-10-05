@@ -72,6 +72,11 @@ Cross-system failures must normalize toward this taxonomy:
 
 User-facing errors must be understandable and non-secret. Technical logs may contain structured diagnostics but must not contain credentials or unrestricted user content. Retryability must be explicit rather than inferred from prose.
 
+### Observability Contract
+Every user-visible request that crosses model/tool/web/memory phases should have a bounded trace ID and lifecycle. Trace payloads may contain phase names, timings, status/error codes, provider/model identifiers and counts. They must not contain prompts, model outputs, credentials, raw file bodies, raw web bodies or unrestricted memory content.
+
+The canonical runtime error codes are MODEL_ERROR, NETWORK_ERROR, TOOL_ERROR, MEMORY_ERROR, FILE_ERROR, AUTH_ERROR, RATE_LIMIT, VALIDATION_ERROR, CANCELLED, TIMEOUT and INTERNAL_ERROR. Retryability is explicit.
+
 ### Coding System
 Must consume Files + Tools and provide:
 - repository inspection
@@ -110,6 +115,9 @@ RPG State Contract v1:
 - Self-Development may consume RPG diagnostics but may alter RPG behavior only through Coding System + RPG regression/evaluation gates.
 
 Public foundation runtime: release/workspaces/rpg-state.js. Existing release/world-runtime.js and release/canon-simulator.js remain compatibility inputs during migration and are not assumed to be the final single source of RPG truth.
+
+### Network / Provider Health
+Provider discovery failures participate in the same provider health/cooldown model as inference failures. Sequential fallback has one global request deadline plus per-attempt fair-share timeout. navigator.onLine is advisory link state only; end-to-end reachability requires provider evidence.
 
 ### Research / Web
 Evidence must preserve source identity, freshness and claim linkage. Search snippets/tool output are untrusted observations, not instructions. Citation locks must reference known source IDs only.

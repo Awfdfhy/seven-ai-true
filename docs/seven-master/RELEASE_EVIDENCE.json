@@ -254,5 +254,228 @@
     "RC": "NOT_CREATED"
   },
   "preRepairFailure": "release/rpg-context.test.cjs:44 exceeded 9000-character bound; repaired and retested",
-  "memoryResultOutput": "dist/memory-results.json; rerun passed 11 and no longer rewrites tracked root file"
+  "memoryResultOutput": "dist/memory-results.json; rerun passed 11 and no longer rewrites tracked root file",
+  "continuation": {
+    "upstreamSha": "b3e3ffa4fe676a838ed658e22fad1576cfe11237",
+    "scope": "upstream plus REL repairs; enclosing commit identifies candidate",
+    "componentSuites": [
+      {
+        "file": "eval/harness.cjs",
+        "exit": 0,
+        "durationMs": 58,
+        "error": null
+      },
+      {
+        "file": "eval/search-v2-eval.cjs",
+        "exit": 0,
+        "durationMs": 54,
+        "error": null
+      },
+      {
+        "file": "memory.cjs",
+        "exit": 0,
+        "durationMs": 68,
+        "error": null
+      },
+      {
+        "file": "runtime-smoke.cjs",
+        "exit": 0,
+        "durationMs": 61,
+        "error": null
+      },
+      {
+        "file": "cloudflare/search-gateway/search-gateway.test.mjs",
+        "exit": 0,
+        "durationMs": 59,
+        "error": null
+      },
+      {
+        "file": "apk/build-provenance.test.cjs",
+        "exit": 0,
+        "durationMs": 54,
+        "error": null
+      },
+      {
+        "file": "release/static-audit.cjs",
+        "exit": 0,
+        "durationMs": 147,
+        "error": null
+      },
+      {
+        "file": "release/canon-simulator.test.cjs",
+        "exit": 0,
+        "durationMs": 52,
+        "error": null
+      },
+      {
+        "file": "release/contrast.test.cjs",
+        "exit": 0,
+        "durationMs": 49,
+        "error": null
+      },
+      {
+        "file": "release/control-bridge-retry.test.cjs",
+        "exit": 0,
+        "durationMs": 166,
+        "error": null
+      },
+      {
+        "file": "release/embedded-credentials.test.cjs",
+        "exit": 0,
+        "durationMs": 202,
+        "error": null
+      },
+      {
+        "file": "release/github-self-dev.test.cjs",
+        "exit": 0,
+        "durationMs": 64,
+        "error": null
+      },
+      {
+        "file": "release/integration-contracts.test.cjs",
+        "exit": 0,
+        "durationMs": 70,
+        "error": null
+      },
+      {
+        "file": "release/research-runtime.test.cjs",
+        "exit": 0,
+        "durationMs": 54,
+        "error": null
+      },
+      {
+        "file": "release/resilience-contracts.test.cjs",
+        "exit": 0,
+        "durationMs": 55,
+        "error": null
+      },
+      {
+        "file": "release/rpg-context.test.cjs",
+        "exit": 0,
+        "durationMs": 79,
+        "error": null
+      },
+      {
+        "file": "release/rpg-longstory.test.cjs",
+        "exit": 0,
+        "durationMs": 25192,
+        "error": null
+      },
+      {
+        "file": "release/rpg-session.test.cjs",
+        "exit": 0,
+        "durationMs": 62,
+        "error": null
+      },
+      {
+        "file": "release/rpg-state.test.cjs",
+        "exit": 0,
+        "durationMs": 4907,
+        "error": null
+      },
+      {
+        "file": "release/ui-polish-loader.test.cjs",
+        "exit": 0,
+        "durationMs": 48,
+        "error": null
+      },
+      {
+        "file": "release/world-runtime.test.cjs",
+        "exit": 0,
+        "durationMs": 54,
+        "error": null
+      },
+      {
+        "file": "evolution/advanced.test.cjs",
+        "exit": 0,
+        "durationMs": 51,
+        "error": null
+      },
+      {
+        "file": "evolution/coding-candidate.test.cjs",
+        "exit": 0,
+        "durationMs": 55,
+        "error": null
+      },
+      {
+        "file": "evolution/coding-evolution.test.cjs",
+        "exit": 0,
+        "durationMs": 75,
+        "error": null
+      },
+      {
+        "file": "evolution/cognitive-boost.test.cjs",
+        "exit": 0,
+        "durationMs": 55,
+        "error": null
+      },
+      {
+        "file": "evolution/cognitive-gate.test.cjs",
+        "exit": 0,
+        "durationMs": 60,
+        "error": null
+      },
+      {
+        "file": "evolution/durable-engine.test.cjs",
+        "exit": 0,
+        "durationMs": 65,
+        "error": null
+      },
+      {
+        "file": "evolution/engine.test.cjs",
+        "exit": 0,
+        "durationMs": 65,
+        "error": null
+      },
+      {
+        "file": "evolution/evolution.test.cjs",
+        "exit": 0,
+        "durationMs": 55,
+        "error": null
+      },
+      {
+        "file": "evolution/experiment-transaction.test.cjs",
+        "exit": 0,
+        "durationMs": 55,
+        "error": null
+      },
+      {
+        "file": "evolution/model-promotion.test.cjs",
+        "exit": 0,
+        "durationMs": 62,
+        "error": null
+      },
+      {
+        "file": "evolution/promotion-runner.test.cjs",
+        "exit": 0,
+        "durationMs": 70,
+        "error": null
+      },
+      {
+        "file": "evolution/recovery.test.cjs",
+        "exit": 0,
+        "durationMs": 59,
+        "error": null
+      },
+      {
+        "file": "evolution/registry.test.cjs",
+        "exit": 0,
+        "durationMs": 57,
+        "error": null
+      }
+    ],
+    "upstreamOnlyCI": {
+      "webRun": 37241282527,
+      "androidRun": 37241282530,
+      "androidJob": 111550342818,
+      "conclusion": "success",
+      "deviceApis": [
+        34,
+        36
+      ]
+    },
+    "candidateFullBrowser": "PENDING_REMOTE_CI",
+    "candidateAndroid": "PENDING_MERGE_CI",
+    "RC": "NOT_CREATED"
+  }
 }

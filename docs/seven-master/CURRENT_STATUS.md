@@ -1,67 +1,53 @@
 # Seven AI — Current Status
 
-## Lead Release Manager — 2026-10-05 verified snapshot
+## Lead Release Manager — continuation integration snapshot
 
-This section supersedes older batch acceptance statements below. Audited upstream main through `9c51dc7ee7c467d02a7fee0714952370323ebca8`; the commit containing this update identifies the integrated release repairs. Later commits require fresh evidence.
+Release remains **NOT ACCEPTED / no RC**. PR #105 reconciles upstream `b3e3ffa4fe676a838ed658e22fad1576cfe11237` with the release repairs, preserving both ADR-REL-001..005 and ADR-015..019 and specialist history. The enclosing commit identifies this candidate; later commits require separate evidence.
 
-**Release decision: NOT ACCEPTED / no RC / no fresh APK produced locally.** Evidence score 43/100, with rubric and limitations in [PROJECT_TRUTH_REPORT.md](PROJECT_TRUTH_REPORT.md); machine-readable checks and benchmark results in [RELEASE_EVIDENCE.json](RELEASE_EVIDENCE.json).
+- All 34 local component suites reran on the merged source and passed; exact durations are in RELEASE_EVIDENCE.json. Full local browser gate remains unavailable because the Chromium archive download fails.
+- Verified upstream-only CI: Seven AI tests run 37241282527 and Seven Android APK run 37241282530 passed on `b3e3ffa4fe676a838ed658e22fad1576cfe11237`. Android job 111550342818 passed lint/unit/build, packaged-content checks, and connected API34/API36 WebView tests. These results do not certify the PR candidate.
+- Upstream added room write-ahead recovery, canonical response modes, originating-room cancellation, controller context budgets, fallback deadlines, temporal citations and native GitHub boundary/log fixes. Browser regressions exist for WAL staging/replay; actual Android process-kill/upgrade durability remains unproven.
+- Pending: PR candidate full browser CI, merge to main, fresh Android workflow for the exact merged SHA, embedded version-5 provenance/package/signature verification and install/upgrade persistence.
+- Root HTML/Capacitor and typed remake remain different product trains. Live RPG atomic turn integration and Coding/Evolution wiring remain architectural blockers. Evidence score stays 43/100 until final-SHA gates are verified.
 
-- 34 local component suites verified; 119 tracked JS syntax checks passed. New RPG context suite failed first, then passed after bounded knowledge-reference repair; long-story benchmark passes 1006 committed events.
-- Web build and Android native-project generation passed. Browser/full all.cjs verification was blocked by Chromium download; Gradle compilation blocked by network access. Neither is counted as PASS.
-- Repaired exact-SHA self-dev CI selection/dispatch, atomic multi-file commits, SHA-bound merges, protected acceptance gates and network-read error handling.
-- Added APK web-payload SHA/run provenance and hashes, unified the startup budget, repaired UI loader failure/retry and committed synchronized launcher source labels.
-- Incorporated upstream checkpoint/cancellation/Control boot/storage recovery work with explicit provenance.
-- Root main builds HTML/Capacitor. The typed remake Memory/Tools branches are a different application and remain unmerged/unaccepted as root APK capabilities.
-- RPG State/Session/Context kernels now exist and have component tests; importing them from hub is not live atomic RPG turn integration. Persisted-kernel tests do not establish actual app restart/upgrade behavior.
-- Live provider quality/TTFT, device lifecycle/UI/RTL/dark mode, install/upgrade/signature continuity, complete cancellation isolation and error taxonomy remain gates.
-
-Next exact action: pin an integrated candidate SHA, run root full tests + Android/API34/API36 CI on that SHA, verify embedded source/hash/package/signature and install/upgrade persistence; reconcile the product split and live RPG/Coding/Self-Development wiring before RC1.
+See PROJECT_TRUTH_REPORT.md and RELEASE_EVIDENCE.json. No fresh candidate APK or RC is claimed here.
 
 ## Earlier specialist batch history
 
 Last integration update: 2026-10-05
 
-## Current Position
-Cross-system Integration / Verification is active. Specialist chats may continue subsystem work, but main is judged by shared contracts and regression/build evidence.
+## Integration position
+**Release candidate validation in progress. Seven is not yet final-accepted.**
 
-### Implemented / under active hardening
-- Chat Core
-- Model Routing
-- Memory
-- Files
-- Web Research
-- Deep Think
-- Tools
-- Coding System / GitHub Self-Dev execution surfaces
-- Self-Development foundations
-- RPG world/canon/state foundations
-- Android/Capacitor release pipeline
+The Integration track has now repaired and regression-locked the highest-confidence cross-system failures found in the master bughunt: execution checkpoint integrity/retention, Canon chronology/branch boundaries, IndexedDB recovery, Arabic IME send safety, response-mode truth, room/mode cancellation, Deep Think role ordering and telemetry ownership, multilingual/context-window budgeting, fallback deadlines, provider discovery timeouts/health, GitHub credential expiry/path/log handling, attachment retry/size/type gates, research temporal citation locks, and multiple RPG projection/pack/snapshot defects.
 
-## Integration Batch 01
-Implemented:
-- Added release/integration-contracts.test.cjs and registered it in all.cjs.
-- Hardened execution checkpoint restore with schema v2 identity + checksum validation and bounded retention.
-- Replaced hard-coded Canon chronology PASS with ledger position-regression detection.
-- Unified the release stop shim so Android and web attempt actual controller abort instead of Android nulling the controller.
-- Added contract/state isolation coverage across Control → Runtime → Execution, Research citation locks, World player-agency, Canon chronology and context scope isolation.
+## Evidence already green
+- Seven AI tests: SUCCESS on main SHA 6f5063d61526880542107c825d2f48c64715e46f.
+- Seven AI tests: SUCCESS on main SHA 7e320564c9c519283a5e93fb6c0b9a0343a16bcd.
+- Seven Reality Lab: SUCCESS on SHA 428f5fd027c2203aa03808e782a1a0367d58a583.
+- Recent static audit: PASS at 98,775 hot release-layer bytes, under the 100,000-byte gate.
+- RPG focused evidence: 1010 state events, versioned session rollback/isolation/quarantine tests, bounded character context, and 1006-event long-story restart harness.
 
-Observed during this batch:
-- Multi-chat writes moved main while integration work was in progress; integration must always re-read current HEAD before shared edits.
-- A CI failure was caused by exceeding the 100,000-byte hot release-layer budget after checkpoint hardening. The implementation was compacted rather than weakening the budget.
-- RPG state kernel work is landing concurrently and remains integration/acceptance work, not automatically complete.
+## Current RC batch
+The next code SHA after this document update must pass:
+1. all.cjs / Seven AI tests;
+2. production release verifier/static audit;
+3. Android lint + unit tests + APK build;
+4. APK content verification;
+5. Android 16 connected WebView tests;
+6. Android 14 connected WebView/UI tests.
 
-## Known Open Integration Risks
-- Legacy generation/cancellation state still has broader global/per-room scoping debt; the immediate Android/web abort bug is fixed, but full cross-room cancellation isolation is not yet proven.
-- RPG persistence, prompt projection and public-memory seam require end-to-end verification against the newly landing state kernel.
-- Unified error taxonomy is now a contract; implementation coverage across all legacy surfaces remains to be audited.
-- Trace/observability coverage is incomplete and requires a request lifecycle audit.
-- Android acceptance must come from the latest Seven Android APK run, not from web tests alone.
-- The existing master bughunt remains the defect backlog; repaired items require regression evidence before closure.
+No later code push should be credited without rerunning those gates.
 
-## Acceptance State
-NOT YET ACCEPTED AS FULLY INTEGRATED. No claim of zero bugs is made.
+## Known acceptance blockers / external dependencies
+- Live legacy RPG workspace is not yet atomically unified with the new structured RPG session manager/public Memory projection.
+- Android background/process-death during queued room persistence is not fully proven.
+- Repository required-status enforcement cannot be verified or configured through the current GitHub App. Repository rulesets currently return an empty list; branch-protection read requires unavailable administration permission.
+- Agent workflow isolation is not fully proven.
+- Several PARTIAL UI/lifecycle ownership items remain; see BUG_STATUS.md.
 
-See docs/seven-master/INTEGRATION_AUDIT.md for inventory, dependency map, contract status and scorecard.
+## Acceptance statement
+**No zero-bugs claim.** Current meaning of green is only: zero known reproducible blockers in the specific suites that passed. Full Integration Acceptance requires the latest release-code SHA to complete Web + Android gates and resolution/explicit acceptance of the blockers above.
 
 
 ## RPG Specialist Batch 01 — Structured State Foundation
@@ -125,3 +111,7 @@ Still open:
 - directional relationship model;
 - semantic character voice/emotion/narrative evaluation;
 - Android RPG restart/RTL/mobile acceptance.
+See:
+- docs/seven-master/INTEGRATION_AUDIT.md
+- docs/seven-master/BUG_STATUS.md
+- docs/seven-master/INTEGRATION_CONTRACTS.md

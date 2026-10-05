@@ -79,3 +79,22 @@ Status: Accepted
 Decision: all.cjs discovers release/*.test.cjs automatically. Static and browser release audits consume build.startupBytes with the same strict <100000-byte gate; no budget increase was used. UI loader public API stays load/loadShell/loadFinal and supports failure recovery.
 
 Generated test reports belong under dist/, not tracked source. Memory output moved to dist/memory-results.json to keep acceptance/build source identity clean.
+## ADR-015 — Response Mode State Is Canonical
+Status: Accepted
+Decision: Chat/Think/Search/Research are controlled by one idempotent runtime state surface. CSS classes are projections only. Changing mode while generation is active cancels the originating work before changing semantics.
+
+## ADR-016 — Context Budget Follows the Controller Model
+Status: Accepted
+Decision: Context input budget is derived from the controller-selected model window, not the largest configured provider window. Fallback candidates must fit the actual compiled request.
+
+## ADR-017 — Research Citation Locks Preserve Temporal Identity
+Status: Accepted
+Decision: Locked citations preserve retrievedAt, publishedAt when available, source identity and deterministic content hash so freshness and source mutation are auditable.
+
+## ADR-018 — Diagnostics Are Bounded and Content-Free
+Status: Accepted
+Decision: Request traces retain IDs, phases, timings, counts, model/provider identifiers and normalized errors only. Prompt, response, secret, file-body and source-body content is excluded.
+
+## ADR-019 — Network Link State Is Not Reachability
+Status: Accepted
+Decision: navigator.onLine is represented as link-online/offline only. End-to-end reachability is a separate evidence field updated from provider outcomes.

@@ -22,3 +22,9 @@ assert.match(html,/fetchProviderWithTimeout\(provider\.modelsUrl[\s\S]{0,160}800
 assert.match(html,/fallbackAttemptBudgetV2/);
 assert.match(html,/requestDeadlineMs/);
 console.log('network resilience contracts: PASS');
+
+const native=fs.readFileSync(__dirname+'/../apk/materialize-native-platform.cjs','utf8');
+assert.match(native,/path\.equals\(GITHUB_REPO\)\|\|path\.startsWith\(GITHUB_REPO\+"\/"\)/,'GitHub native path boundary must be exact');
+assert.doesNotMatch(native,/out\.length\(\)>180000/,'job logs must not be silently cut to 180KB');
+assert.match(native,/ret\.put\("truncated",text\.size\(\)>=MAX_GITHUB_RESPONSE\)/);
+console.log('GitHub native path/log contracts: PASS');

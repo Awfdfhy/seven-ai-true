@@ -121,3 +121,11 @@ Signing identity continuity, package/data migration across older variants, actua
 5. Only then issue **Seven AI RC1**, with SHA/run/tests/known issues/blockers/artifact recorded in one acceptance record.
 
 Final recheck: all 34 available component suites passed on the merged upstream snapshot plus these repairs. Full browser/Android gates remain unverified.
+
+## Continuation evidence — integrated upstream b3e3ffa
+
+PR #105 merges upstream b3e3ffa4fe676a838ed658e22fad1576cfe11237 with all REL repairs. Documentation conflicts were reconciled by preserving both architectural decision sets and specialist history. All 34 component suites reran and passed on this merged source. No full-browser candidate pass is claimed locally: Chromium headless archive download still fails.
+
+Independent upstream evidence: root Seven AI tests run 37241282527 and Android run 37241282530 succeeded at b3e3ffa; job 111550342818 passed lint, unit tests, APK build/content verification and connected API34/API36 tests. Artifact 11318020327 belongs to that upstream SHA, not the repaired candidate. It is not promoted as the new candidate artifact.
+
+Upstream now has synchronous room WAL staging and browser replay/revision tests, mode/room cancellation regressions, request-scoped Deep Think telemetry, selected-model context budgeting, fair-share network deadlines, citation temporal metadata and exact native GitHub repository boundaries. This improves implementation coverage but does not establish Android process-kill durability or upgrade continuity. Acceptance remains withheld pending fresh final-SHA CI and unresolved product/live-RPG integration. Historical measurements above remain tied to their original scope.
