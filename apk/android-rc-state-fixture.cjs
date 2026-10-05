@@ -109,8 +109,9 @@ function stageProcessScript(phase){
       await new Promise((resolve,reject)=>{const tx=blockerDb.transaction(['state'],'readwrite'),store=tx.objectStore('state');window.__sevenRcIdbBlocker={db:blockerDb,tx};let first=true;const pump=()=>{const q=store.get('rooms');q.onerror=()=>reject(q.error);q.onsuccess=()=>{if(first){first=false;resolve()}pump()}};pump()});
       ${mutate}
       roomPersistence.save();
-      await new Promise(r=>setTimeout(r,120));
-      const ps=roomPersistence.status();if(ps.failed||ps.pending<1||!ps.walStaged||ps.revision!==before.revision)throw Error('precommit window not held '+JSON.stringify(ps));
+      let ps=null;
+      for(let i=0;i<160;i++){ps=roomPersistence.status();if(ps.failed)break;if(ps.pending>=1&&ps.walStaged&&ps.revision===before.revision)break;await new Promise(r=>setTimeout(r,10))}
+      ps=roomPersistence.status();if(ps.failed||ps.pending<1||!ps.walStaged||ps.revision!==before.revision)throw Error('precommit window not held '+JSON.stringify(ps));
       window.__sevenRcProcess={status:'ready',phase:'precommit',revision:ps.revision,pending:ps.pending};
     })().catch(e=>window.__sevenRcProcess={status:'error',phase:'precommit',error:String(e&&e.message||e)});return true})()`;
   }
