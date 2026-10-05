@@ -31,7 +31,7 @@ const experimentConfig = {
 };
 
 function adapter({ drift = false, verify = { ciPassed: true, regressionFree: true } } = {}) {
-  let head = drift ? "ccccccc" : "aaaaaaa";
+  let head = drift ? "c".repeat(40) : "a".repeat(40);
   const calls = [];
   return {
     calls,
@@ -58,8 +58,8 @@ function common(extra = {}) {
     canaryPassed: true,
     approvalPolicy: { autoPromotionEnabled: true, maxAutoRisk: "LOW" },
     riskAssessment: { verified: true, source: "trusted-policy", level: "LOW" },
-    baselineSha: "aaaaaaa",
-    candidateSha: "bbbbbbb",
+    baselineSha: "a".repeat(40),
+    candidateSha: "b".repeat(40),
     adapter: adapter(),
     ...extra
   };
