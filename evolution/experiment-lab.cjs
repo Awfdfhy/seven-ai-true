@@ -4,12 +4,16 @@ const { REQUIRED_METRICS, evaluateCandidate } = require("./gates.cjs");
 
 const PROTECTED_PATHS = Object.freeze([
   ".github/workflows/",
+  ".seven-team/autonomy/",
   "evolution/",
+  "eval/",
   "all.cjs",
   "verify.cjs",
   "runtime-smoke.cjs",
   "memory.cjs",
-  "PROJECT_MANIFEST.json"
+  "PROJECT_MANIFEST.json",
+  "release/static-audit.cjs",
+  "release/release-verify.cjs"
 ]);
 
 function normalizeRepoPath(value) {
