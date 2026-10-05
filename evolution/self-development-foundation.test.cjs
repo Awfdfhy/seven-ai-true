@@ -174,6 +174,30 @@ pass("risk policy is conservative and protects evaluator/self-development plane"
   assert.equal(classifyChangeRisk({ changeClass: "unknown-new-class", targetPaths: ["release/new.js"] }).level, "HIGH");
 });
 
+pass("improvement proposal requires an exact full baseline SHA", () => {
+  const diagnosis = diagnoseWeakness(aggregateWeaknesses([
+    observation({ id: "sha-a" }),
+    observation({ id: "sha-b", timestamp: "2026-10-05T00:01:00Z" })
+  ])[0]);
+
+  assert.throws(() => createImprovementProposal({
+    id: "short-sha",
+    diagnosis,
+    baselineSha: "abcdef1",
+    changeClass: "routing",
+    allowedPaths: ["release/router.js"]
+  }), /exact 40-char SHA/);
+
+  const exact = createImprovementProposal({
+    id: "exact-sha",
+    diagnosis,
+    baselineSha: "A".repeat(40),
+    changeClass: "routing",
+    allowedPaths: ["release/router.js"]
+  });
+  assert.equal(exact.baselineSha, "a".repeat(40));
+});
+
 pass("proposal cannot route protected-plane edits into ordinary Coding System execution", () => {
   const diagnosis = diagnoseWeakness(aggregateWeaknesses([
     observation({ id: "a" }),
@@ -183,7 +207,7 @@ pass("proposal cannot route protected-plane edits into ordinary Coding System ex
   const safe = createImprovementProposal({
     id: "proposal-safe",
     diagnosis,
-    baselineSha: "abcdef1234567",
+    baselineSha: "a".repeat(40),
     changeClass: "tool_selection",
     allowedPaths: ["release/router.js"],
     affectedSystems: ["Tools", "Model Routing"],
@@ -197,7 +221,7 @@ pass("proposal cannot route protected-plane edits into ordinary Coding System ex
   const protectedProposal = createImprovementProposal({
     id: "proposal-protected",
     diagnosis,
-    baselineSha: "abcdef1234567",
+    baselineSha: "a".repeat(40),
     changeClass: "prompt",
     allowedPaths: ["evolution/gates.cjs"],
     affectedSystems: ["Self-Development"],
