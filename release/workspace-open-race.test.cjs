@@ -8,3 +8,6 @@ const guards=(src.match(/if\(epoch!==S\.openEpoch\)return next/g)||[]).length;
 assert.equal(guards,2,'both RPG and specialist mount paths must reject stale opens');
 assert.match(src,/function close\(\)\{S\.openEpoch\+\+/,'closing chat must invalidate pending workspace opens');
 console.log('workspace concurrent-open ownership: PASS');
+
+assert.match(src,/old&&old\.remove\(\)/,'stale failed script elements must be removed before retry');
+assert.match(src,/s\.onerror=\(\)=>\{s\.remove\(\);reject/,'failed lazy loads must remove their script element');
