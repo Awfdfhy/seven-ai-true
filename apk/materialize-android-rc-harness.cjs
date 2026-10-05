@@ -12,6 +12,21 @@ const javaString=v=>JSON.stringify(String(v));
 const AUTHORITY=APP_ID+'.rc.documents';
 const DOC_ID='seven-rc-fixture';
 const DOC_URI='content://'+AUTHORITY+'/document/'+DOC_ID;
+const performanceScript=`(()=>{window.__sevenRcPerf={status:'pending'};try{
+  const original=currentRoom,id='rc-perf-500';if(!rooms[original])throw Error('original room missing');
+  rooms[id]=createEmptyRoom();roomTitles[id]='RC Performance';
+  for(let i=0;i<500;i++)rooms[id].history.push({role:i%2?'assistant':'user',content:'performance message '+i+' '+('payload '.repeat(12))});
+  currentRoom=id;chatRenderLimits.delete(id);
+  const renderStart=performance.now();renderChatHistory();const render500Ms=performance.now()-renderStart;
+  const rendered=document.getElementById('chat').querySelectorAll('.message').length;
+  const input=document.getElementById('userInput'),oldValue=input.value;const inputStart=performance.now();
+  for(let i=0;i<50;i++){input.value='latency-'+i+'-'+('x'.repeat(i%16));input.dispatchEvent(new Event('input',{bubbles:true}));}
+  const composer50InputMs=performance.now()-inputStart;input.value=oldValue;input.dispatchEvent(new Event('input',{bubbles:true}));
+  const timerStart=performance.now();
+  setTimeout(()=>{const timerTurnMs=performance.now()-timerStart;delete rooms[id];delete roomTitles[id];chatRenderLimits.delete(id);currentRoom=original;updateRoomTitle();renderChatHistory();updateRoomListUI();
+    window.__sevenRcPerf={status:'ok',canonical:500,rendered,render500Ms,composer50InputMs,timerTurnMs};
+  },0);
+}catch(e){window.__sevenRcPerf={status:'error',error:String(e&&e.message||e)}}return true})()`;
 
 const test=`package ${APP_ID};
 
@@ -132,6 +147,29 @@ public class SevenRcHarnessTest {
     assertTrue("Build B versionCode did not increase",versionCode()>before);
     verifySafGrant();
     verifyProcess("upgrade",${javaString(verifyProcessScript('cleancommit'))});
+  }
+
+  @Test public void measureRuntimePerformance()throws Exception{
+    try(ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)){
+      WebView w=web(scenario);assertEquals("true",js(w,${javaString(performanceScript)}));
+      waitFor(w,"window.__sevenRcPerf&&window.__sevenRcPerf.status!=='pending'");
+      assertEquals("true",js(w,"window.__sevenRcPerf.status==='ok'&&window.__sevenRcPerf.canonical===500&&window.__sevenRcPerf.rendered<=100&&Number.isFinite(window.__sevenRcPerf.render500Ms)&&window.__sevenRcPerf.render500Ms>=0&&Number.isFinite(window.__sevenRcPerf.composer50InputMs)&&window.__sevenRcPerf.composer50InputMs>=0&&Number.isFinite(window.__sevenRcPerf.timerTurnMs)&&window.__sevenRcPerf.timerTurnMs>=0"));
+      System.out.println("SEVEN_RC_PERFORMANCE="+js(w,"JSON.stringify(window.__sevenRcPerf)"));
+    }
+  }
+
+  @Test public void backgroundForegroundPreservesDurableState()throws Exception{
+    try(ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)){
+      WebView first=web(scenario);
+      assertEquals("true",js(first,${javaString(verifyProcessScript('cleancommit'))}));
+      waitFor(first,"window.__sevenRcVerify&&window.__sevenRcVerify.status==='ok'");
+      scenario.moveToState(androidx.lifecycle.Lifecycle.State.STARTED);Thread.sleep(250);
+      scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED);
+      WebView resumed=web(scenario);
+      assertEquals("true",js(resumed,${javaString(verifyProcessScript('cleancommit'))}));
+      waitFor(resumed,"window.__sevenRcVerify&&window.__sevenRcVerify.status==='ok'");
+      verifySafGrant();
+    }
   }
 
   @Test public void stageProcessPreCommit()throws Exception{stage("precommit",${javaString(stageProcessScript('precommit'))});}
