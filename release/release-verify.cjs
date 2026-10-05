@@ -76,13 +76,20 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       await page.waitForFunction(()=>document.documentElement.dataset.sevenTheme==='day');
       const dayBefore=await page.evaluate(()=>({root:getComputedStyle(document.getElementById('seven-app')).getPropertyValue('--s-bg').trim(),main:getComputedStyle(document.querySelector('.main')).backgroundColor,composer:getComputedStyle(document.querySelector('.composer')).backgroundColor}));
       assert.equal(dayBefore.root,'#f5f7f5');
+      const autoDark=await page.evaluate(()=>{
+        const old=window.matchMedia;
+        window.matchMedia=q=>({matches:q.includes('prefers-color-scheme: dark'),media:q,addEventListener(){},removeEventListener(){}});
+        localStorage.setItem('theme','auto');const resolved=SevenTheme.getResolvedTheme();SevenTheme.sync();
+        const applied=document.documentElement.dataset.sevenTheme;window.matchMedia=old;return{resolved,applied};
+      });
+      assert.deepEqual(autoDark,{resolved:'night',applied:'night'});
       await page.evaluate(()=>SevenTheme.setPreference('night'));
       await page.waitForFunction(()=>document.documentElement.dataset.sevenTheme==='night');
       // Theme state flips synchronously, while composer/background colors animate.
       // Gate the settled visual state rather than sampling the first transition frame.
       await page.waitForFunction(()=>{
         const main=document.querySelector('.main'),composer=document.querySelector('.composer');
-        return !!main&&!!composer&&getComputedStyle(main).backgroundColor==='rgb(23, 33, 29)'&&getComputedStyle(composer).backgroundColor==='rgb(23, 33, 29)';
+        return !!main&&!!composer&&getComputedStyle(main).backgroundColor==='rgb(17, 24, 21)'&&getComputedStyle(composer).backgroundColor==='rgb(17, 24, 21)';
       },null,{timeout:2500});
       const night=await page.evaluate(()=>{
         const app=document.getElementById('seven-app'),main=document.querySelector('.main'),composer=document.querySelector('.composer');
@@ -102,10 +109,10 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
           composerInApp:app.contains(composer)
         };
       });
-      if(night.main!=='rgb(23, 33, 29)'||night.composer!=='rgb(23, 33, 29)')console.error('NIGHT_THEME_DIAGNOSTIC',JSON.stringify(night));
+      if(night.main!=='rgb(17, 24, 21)'||night.composer!=='rgb(17, 24, 21)')console.error('NIGHT_THEME_DIAGNOSTIC',JSON.stringify(night));
       assert.equal(night.root,'#111815');
-      assert.equal(night.main,'rgb(23, 33, 29)');
-      assert.equal(night.composer,'rgb(23, 33, 29)');
+      assert.equal(night.main,'rgb(17, 24, 21)');
+      assert.equal(night.composer,'rgb(17, 24, 21)');
       assert.notEqual(night.root,dayBefore.root);
       assert.notEqual(night.main,dayBefore.main);
       assert.match(night.text,/rgb\((?:237, 245, 240|238, 246, 241)\)/);
@@ -419,7 +426,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       });
       assert.equal(state.parent,'seven-app');
       assert.equal(state.modalInert,false);
-      assert.equal(state.background,'rgb(23, 33, 29)');
+      assert.equal(state.background,'rgb(17, 24, 21)');
       assert.match(state.color,/rgb\((?:237, 245, 240|238, 246, 241)\)/);
       assert.notEqual(state.border,'none');
       assert.equal(state.rounded,true);
