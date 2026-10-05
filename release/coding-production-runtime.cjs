@@ -29,7 +29,7 @@ async function runCodingTransaction(adapter,input){
     step("RETEST");testResult=await a.runTests({task,baseSha:run.base.sha,candidateSha:applied.sha,changed:run.filesChanged,phase:"targeted"});run.tests.push(...(testResult.tests||[]));
   }
   if(!testResult.ok){run.failures.push(...(testResult.failures||["test-failed"]));run.resultSha=applied.sha;return evidence(run)}
-  step("REVIEW");const diff=await a.diff({baseSha:run.base.sha,headSha:applied.sha});run.diffDigest=digest(diff&&diff.text||"");
+  step("REVIEW");const diff=await a.diff({baseSha:run.base.sha,headSha:applied.sha});const actualFiles=Array.isArray(diff&&diff.files)?diff.files.map(cleanPath):null;if(actualFiles){const declared=new Set(run.filesChanged);const unexpected=actualFiles.filter(x=>!declared.has(x));if(unexpected.length)throw Error("unexpected-diff-files:"+unexpected.join(","))}run.diffDigest=digest(diff&&diff.text||"");
   step("VERIFY");const verified=await a.verify({task,baseSha:run.base.sha,candidateSha:applied.sha,changed:run.filesChanged,diffDigest:run.diffDigest});
   if(!verified||verified.ok!==true){run.failures.push(...(verified&&verified.failures||["verification-failed"]));run.resultSha=applied.sha;return evidence(run)}
   const live=await a.snapshot();if(live.sha!==applied.sha)throw Error("candidate-moved-before-proposal");
