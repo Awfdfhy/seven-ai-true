@@ -13,12 +13,12 @@ Integration branch: `integration/verification-v1` / PR #103.
 | Web Research | ResearchService + repository/evidence contracts | no concrete production Web source/synthesizer in SevenRuntime | component + cross-system failure tests | PARTIAL / NOT PRODUCT-WIRED |
 | Deep Think | two-pass DeepThinkTransport | per-room Deep Think flag via ModeAwareChatTransport | component/runtime routing tests | INTEGRATED CORE / MULTI-PROVIDER OPEN |
 | Tools | Registry + planner + authority + executor + ledger + approvals | read tools + memory mutations + Coding repository Tool Fabric | adversarial/idempotency/approval suites | INTEGRATED CORE |
-| Coding System | typed V1 under `application/coding/` + GitHub repository/Actions adapters; merged to base via PR #104 | specialist runtime exists; SevenRuntime/UI product dispatch reconciliation remains | exact-SHA CI + Android evidence on Coding merge line | IMPLEMENTED + VERIFIED / PRODUCT ADOPTION OPEN |
+| Coding System | typed V1 under `application/coding/` + GitHub repository/Actions adapters; reconciled into Integration after PR #104 | specialist runtime exists; SevenRuntime/UI Build dispatch adoption remains | `add0a474` 81/81 files, 469/469 tests + Android 14/16 PASS | IMPLEMENTED + VERIFIED / PRODUCT ADOPTION OPEN |
 | Self-Development | GitHub auth + bounded mutation service | fails closed behind CodingVerificationPort before credentials/mutation | Phase8 + manager + malformed-evidence tests | SAFE FOUNDATION / ADOPTION OPEN |
 | RPG | structured canon snapshots + CAS/checksum repository | not yet one shared Memory/Chat transactional turn path in Remake | long continuity/restart/isolation suites | PARTIAL |
-| Android / Capacitor | typed bridge + platform service + release pipeline | wired when native transport exists | exact-SHA Android 14/16 gates | STRONG GATE / FINAL RECONCILIATION RUN OPEN |
+| Android / Capacitor | typed bridge + platform service + release pipeline | wired when native transport exists | reconciliation candidate APK identity + Android 14/16 PASS; PR-head rerun required | STRONG GATE |
 | Observability | bounded redacted diagnostics + task/tool/model timings | runtime TaskManager/model/tool paths | deterministic TTFT/duration tests + perf budgets | INTEGRATED CORE |
-| Integration | contract/E2E/failure/performance branch | PR #103 | permanent regression suite + final gates | ACTIVE |
+| Integration | contract/E2E/failure/performance branch; Coding lineage reconciled | PR #103 (`behind_by=0`) | permanent regression suite; current-head final checks before merge | ACTIVE / MERGEABLE |
 
 ## Ownership rule
 Ownership means primary responsibility, not exclusive access. Cross-system changes require contract review.
