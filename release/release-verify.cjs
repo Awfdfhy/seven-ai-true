@@ -225,6 +225,46 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       assert.equal(ui.options.includes('brave'),false);assert.equal(ui.keyFields,0);
       await context.close();
     });
+    await test('room persistence fails closed when the recovery WAL cannot be staged',async()=>{
+      const context=await browser.newContext({viewport:{width:390,height:844}});
+      const page=await context.newPage();
+      await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');});
+      await page.goto(origin,{waitUntil:'domcontentloaded'});
+      await page.waitForFunction(()=>typeof roomPersistence!=='undefined'&&roomPersistence.status().ready);
+      const result=await page.evaluate(async()=>{
+        if(!currentRoom||!rooms[currentRoom]){createNewChat();await roomPersistence.flush();}
+        const base=roomPersistence.status(),roomId=currentRoom,oldTitle=roomTitles[roomId],marker='WAL stage must fail closed';
+        roomTitles[roomId]=marker;
+        const nativeSet=Storage.prototype.setItem;
+        Storage.prototype.setItem=function(key,value){
+          if(key==='seven_ai_room_wal_v1')throw new DOMException('injected WAL failure','QuotaExceededError');
+          return nativeSet.call(this,key,value);
+        };
+        let ok;
+        try{ok=await roomPersistence.save();}finally{Storage.prototype.setItem=nativeSet;}
+        const durable=await new Promise((resolve,reject)=>{
+          const req=indexedDB.open('seven_ai_canonical_v1');
+          req.onerror=()=>reject(req.error);
+          req.onsuccess=()=>{
+            const db=req.result,tx=db.transaction('state'),get=tx.objectStore('state').get('rooms');
+            get.onerror=()=>{db.close();reject(get.error)};
+            get.onsuccess=()=>{const rec=get.result;db.close();resolve({revision:rec.revision,title:rec.value.roomTitles[roomId]})};
+          };
+        });
+        return{ok,baseRevision:base.revision,status:roomPersistence.status(),oldTitle,marker,memoryTitle:roomTitles[roomId],durable,
+          wal:localStorage.getItem('seven_ai_room_wal_v1'),statusText:document.getElementById('persistenceStatus')?.textContent||''};
+      });
+      assert.equal(result.ok,false);
+      assert.equal(result.status.failed,true);
+      assert.equal(result.status.pending,0);
+      assert.equal(result.status.revision,result.baseRevision);
+      assert.equal(result.durable.revision,result.baseRevision);
+      assert.equal(result.durable.title,result.oldTitle);
+      assert.equal(result.memoryTitle,result.marker);
+      assert.equal(result.wal,null);
+      assert.match(result.statusText,/recovery journal unavailable/i);
+      await context.close();
+    });
     await test('responsive UI matrix stays bounded on phone widths themes and directions',async()=>{
       const sizes=[[320,800],[360,800],[390,844],[412,915]];
       for(const [width,height] of sizes)for(const dir of ['ltr','rtl'])for(const theme of ['day','night']){
@@ -234,8 +274,8 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
         await page.waitForFunction(()=>window.SevenRemake&&window.SevenTheme&&document.getElementById('seven-app'));
         await page.evaluate(({dir,theme})=>{document.documentElement.dir=dir;document.body.dir=dir;SevenTheme.setPreference(theme);document.querySelector('.sidebar')?.classList.add('collapsed');},{dir,theme});
         await page.waitForTimeout(360);
-        const base=await page.evaluate(()=>{const q=s=>document.querySelector(s)?.getBoundingClientRect();const main=q('.main'),composer=q('.composer'),top=q('.topbar');return{doc:document.documentElement.scrollWidth<=innerWidth+2,main:!!main&&main.left>=-2&&main.right<=innerWidth+2,composer:!!composer&&composer.left>=-2&&composer.right<=innerWidth+2&&composer.bottom<=innerHeight+2,top:!!top&&top.left>=-2&&top.right<=innerWidth+2,theme:document.documentElement.dataset.sevenTheme,bg:getComputedStyle(document.getElementById('seven-app')).getPropertyValue('--s-bg').trim()}}); 
-        assert.equal(base.doc,true,`document overflow at ${width} ${dir} ${theme}`);assert.equal(base.main,true);assert.equal(base.composer,true);assert.equal(base.top,true);assert.equal(base.theme,theme);if(theme==='night')assert.equal(base.bg,'#111815');
+        const base=await page.evaluate(()=>{const q=s=>document.querySelector(s)?.getBoundingClientRect();const main=q('.main'),composer=q('.composer'),top=q('.topbar'),status=document.getElementById('persistenceStatus'),sr=status?.getBoundingClientRect(),sc=status?getComputedStyle(status):null;return{doc:document.documentElement.scrollWidth<=innerWidth+2,main:!!main&&main.left>=-2&&main.right<=innerWidth+2,composer:!!composer&&composer.left>=-2&&composer.right<=innerWidth+2&&composer.bottom<=innerHeight+2,top:!!top&&top.left>=-2&&top.right<=innerWidth+2,persistence:!!sr&&status.parentElement?.classList.contains('topbar')&&sc.position!=='fixed'&&sr.left>=-2&&sr.right<=innerWidth+2&&sr.top>=-2&&sr.bottom<=innerHeight+2&&/IndexedDB|Opening|Saving|Recovered/.test(status.textContent),theme:document.documentElement.dataset.sevenTheme,bg:getComputedStyle(document.getElementById('seven-app')).getPropertyValue('--s-bg').trim()}}); 
+        assert.equal(base.doc,true,`document overflow at ${width} ${dir} ${theme}`);assert.equal(base.main,true);assert.equal(base.composer,true);assert.equal(base.top,true);assert.equal(base.persistence,true,`persistence status must stay in owned topbar at ${width} ${dir} ${theme}`);assert.equal(base.theme,theme);if(theme==='night')assert.equal(base.bg,'#111815');
         await page.evaluate(()=>openSettings());await page.waitForTimeout(40);
         const modal=await page.evaluate(()=>{const e=document.querySelector('#settingsModal .modal-content'),b=e.getBoundingClientRect();return{overflow:e.scrollWidth<=e.clientWidth+1,left:b.left,right:b.right,top:b.top,bottom:b.bottom,w:innerWidth,h:innerHeight}});
         assert.equal(modal.overflow,true);assert.ok(modal.left>=-2&&modal.right<=modal.w+2&&modal.top>=-2&&modal.bottom<=modal.h+2,`settings clipped: ${JSON.stringify(modal)}`);
@@ -252,10 +292,10 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
         await page.waitForTimeout(120);
         let state=await page.evaluate(()=>{
           const rect=s=>document.querySelector(s)?.getBoundingClientRect();
-          const top=rect('.topbar'),main=rect('.main'),composer=rect('.composer');
-          return{doc:document.documentElement.scrollWidth<=innerWidth+2,top:!!top&&top.left>=-2&&top.right<=innerWidth+2,main:!!main&&main.left>=-2&&main.right<=innerWidth+2,composer:!!composer&&composer.left>=-2&&composer.right<=innerWidth+2&&composer.bottom<=innerHeight+2};
+          const top=rect('.topbar'),main=rect('.main'),composer=rect('.composer'),persistence=rect('#persistenceStatus'),status=document.getElementById('persistenceStatus');
+          return{doc:document.documentElement.scrollWidth<=innerWidth+2,top:!!top&&top.left>=-2&&top.right<=innerWidth+2,main:!!main&&main.left>=-2&&main.right<=innerWidth+2,composer:!!composer&&composer.left>=-2&&composer.right<=innerWidth+2&&composer.bottom<=innerHeight+2,persistence:!!persistence&&status.parentElement?.classList.contains('topbar')&&getComputedStyle(status).position!=='fixed'&&persistence.left>=-2&&persistence.right<=innerWidth+2&&persistence.top>=-2&&persistence.bottom<=innerHeight+2};
         });
-        assert.deepEqual(state,{doc:true,top:true,main:true,composer:true},'base '+width+'x'+height+' '+JSON.stringify(state));
+        assert.deepEqual(state,{doc:true,top:true,main:true,composer:true,persistence:true},'base '+width+'x'+height+' '+JSON.stringify(state));
 
         await page.evaluate(()=>openSettings());
         state=await page.evaluate(()=>{const e=document.querySelector('#settingsModal .modal-content'),r=e.getBoundingClientRect();return{overflow:e.scrollWidth<=e.clientWidth+1,bounded:r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2,scrollable:e.scrollHeight>=e.clientHeight}});
