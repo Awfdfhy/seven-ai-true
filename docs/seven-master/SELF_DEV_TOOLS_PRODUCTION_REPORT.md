@@ -46,7 +46,7 @@ Execution fails closed when no executor or authorization gate exists. A discover
 
 Draft PR: #121
 Candidate SHA: `c985aa250b5b18d9999e4af2a79def00ff981a07`
-Exact-SHA Seven AI tests run: 37303610007 (pending at report creation).
+Earlier exact-SHA Seven AI tests run: 37303610007 was started for SHA `c985aa250b5b18d9999e4af2a79def00ff981a07`; it is not evidence for later commits.
 
 Focused regression covers schema/risk normalization, duplicate IDs, unavailable executor, denied authorization, successful audited execution, pre-cancellation and timeout.
 
@@ -79,3 +79,13 @@ No benchmark/test threshold was lowered and no existing test was deleted.
 ## Readiness
 
 PARTIAL. Not READY FOR INTEGRATION until exact-SHA CI is green and one existing root tool is proven through the adapter. Self-Development remains PARTIAL until the Coding/Evolution production seam is proven E2E.
+
+
+## Batch 2 — Acceptance and learning hardening
+
+- Root integration contracts now exercise the unified Tool normalization seam against the existing SevenExecution boundary; the adapter does not grant execution.
+- Evolution acceptance changed from candidate score >= baseline score to strict candidate score > baseline score. Equal candidates are rejected.
+- Added `evolution/learning-archive.cjs` and focused tests. Records bind hypothesis, baseline/candidate/patch SHA, tests, metrics, outcome, reason and rollback metadata with a checksum. The archive exposes a guard for previously failed identical baseline+hypothesis experiments.
+- The archive is intentionally not yet auto-wired to production promotion. Wiring must be atomic with durable evolution state or explicitly recoverable; otherwise an archive write failure could create false history.
+
+Latest implementation SHA before this report update: `12c393bdf3f736bc15b4418f9fced87908729612`.
