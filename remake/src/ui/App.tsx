@@ -21,16 +21,29 @@ function upsertRoom(list: readonly Room[], updated: Room): readonly Room[] {
     : [updated, ...list];
 }
 
+type RoomRunState = Readonly<{
+  run: ChatRun | null;
+  pendingUser: string;
+  assistantDraft: string;
+}>;
+
+function withoutKey<T>(
+  record: Readonly<Record<string, T>>,
+  key: string,
+): Readonly<Record<string, T>> {
+  const next = { ...record };
+  delete next[key];
+  return next;
+}
+
 export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
   const { shell, theme, kernel, rooms, chat, chatTransport, memory, attachments, toolApprovalCoordinator } = runtime;
   const snapshot = useSyncExternalStore(shell.subscribe, shell.getSnapshot, shell.getSnapshot);
   const [roomList, setRoomList] = useState<readonly Room[]>([]);
   const [currentRoom, setCurrentRoom] = useState<Room | null>(null);
   const [input, setInput] = useState("");
-  const [pendingUser, setPendingUser] = useState<string | null>(null);
-  const [assistantDraft, setAssistantDraft] = useState("");
-  const [activeRun, setActiveRun] = useState<ChatRun | null>(null);
-  const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
+  const [roomRuns, setRoomRuns] = useState<Readonly<Record<string, RoomRunState>>>({});
+  const [chatErrors, setChatErrors] = useState<Readonly<Record<string, string>>>({});
   const [error, setError] = useState<string | null>(null);
   const [booting, setBooting] = useState(true);
   const [showMemory, setShowMemory] = useState(false);
@@ -43,11 +56,20 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
   const [pendingToolQuery, setPendingToolQuery] = useState<string | null>(null);
   const [toolActionBusy, setToolActionBusy] = useState(false);
   const [toolActionNotice, setToolActionNotice] = useState<string | null>(null);
+  const [toolActionNoticeRoomId, setToolActionNoticeRoomId] = useState<string | null>(null);
   const [attachmentBusy, setAttachmentBusy] = useState(false);
   const [attachmentNotice, setAttachmentNotice] = useState<string | null>(null);
+  const [attachmentNoticeRoomId, setAttachmentNoticeRoomId] = useState<string | null>(null);
   const isAr = snapshot.locale === "ar";
   const t = (en: string, ar: string) => isAr ? ar : en;
   const workspaceIntegrated = snapshot.activeWorkspace === "core";
+  const activeRoomState = currentRoom ? roomRuns[currentRoom.id] : undefined;
+  const activeRun = activeRoomState?.run ?? null;
+  const pendingUser = activeRoomState?.pendingUser ?? null;
+  const assistantDraft = activeRoomState?.assistantDraft ?? "";
+  const chatError = currentRoom ? chatErrors[currentRoom.id] ?? null : null;
+  const currentPendingToolAction =
+    pendingToolAction?.roomId === currentRoom?.id ? pendingToolAction : null;
 
   useEffect(() => {
     const onResize = () => {
@@ -229,13 +251,15 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
 
   const ingestTextAttachment = async (file: File | null) => {
     if (!file || !currentRoom || attachmentBusy || !workspaceIntegrated) return;
+    const roomId = currentRoom.id;
     setAttachmentBusy(true);
     setAttachmentNotice(null);
+    setAttachmentNoticeRoomId(null);
     setError(null);
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
       const record = await attachments.ingest({
-        roomId: currentRoom.id,
+        roomId,
         name: file.name,
         declaredMimeType: "text/plain",
         bytes,
@@ -244,6 +268,7 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
         `${record.name} attached to this chat and available as context.`,
         `تم إرفاق ${record.name} بهذه المحادثة وأصبح متاحًا ضمن السياق.`,
       ));
+      setAttachmentNoticeRoomId(roomId);
     } catch (reason: unknown) {
       setError(reason instanceof Error ? reason.message : String(reason));
     } finally {
@@ -252,7 +277,7 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
   };
 
   const setDeepThink = async (enabled: boolean) => {
-    if (!currentRoom || activeRun) return;
+    if (!currentRoom || roomRuns[currentRoom.id]) return;
     try {
       const updated = withRoomDeepThink(currentRoom, enabled);
       await rooms.put(updated);
@@ -266,7 +291,7 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
   };
 
   const setChatMode = async (mode: ChatMode) => {
-    if (!currentRoom || activeRun) return;
+    if (!currentRoom || roomRuns[currentRoom.id]) return;
     try {
       const updated = withRoomMode(currentRoom, mode);
       await rooms.put(updated);
@@ -327,6 +352,7 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
       setPendingToolAction(null);
       setPendingToolQuery(null);
       setToolActionNotice(message);
+      setToolActionNoticeRoomId(action.roomId);
       await recordToolActionTurn(action.roomId, query, message);
       await refreshMemory();
     } catch (reason: unknown) {
@@ -338,16 +364,20 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
 
   const rejectToolAction = () => {
     if (!pendingToolAction || toolActionBusy) return;
+    const roomId = pendingToolAction.roomId;
     toolApprovalCoordinator.reject(pendingToolAction.actionId);
     setPendingToolAction(null);
     setPendingToolQuery(null);
     setToolActionNotice(t("Action cancelled.", "تم إلغاء الإجراء."));
+    setToolActionNoticeRoomId(roomId);
   };
 
   const submit = async () => {
     const content = input.trim();
-    if (!currentRoom || !content || activeRun || pendingToolAction) return;
+    if (!currentRoom || !content || roomRuns[currentRoom.id] || currentPendingToolAction) return;
+    const roomId = currentRoom.id;
     setError(null);
+    setChatErrors((existing) => withoutKey(existing, roomId));
     if (!workspaceIntegrated) {
       setError(t(
         "This workspace is isolated until its production integration adapter is verified. The request was not sent to normal Chat.",
@@ -355,15 +385,26 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
       ));
       return;
     }
-    setToolActionNotice(null);
+    if (toolActionNoticeRoomId === roomId) {
+      setToolActionNotice(null);
+      setToolActionNoticeRoomId(null);
+    }
 
     try {
       const action = await toolApprovalCoordinator.propose({
-        roomId: currentRoom.id,
+        roomId,
         taskId: `approval:${crypto.randomUUID()}`,
         query: content,
       });
       if (action) {
+        if (pendingToolAction && pendingToolAction.actionId !== action.actionId) {
+          toolApprovalCoordinator.reject(action.actionId);
+          setError(t(
+            "Resolve the pending tool approval in the other chat before starting another mutating action.",
+            "احسم موافقة الأداة المعلّقة في المحادثة الأخرى قبل بدء إجراء تعديلي جديد.",
+          ));
+          return;
+        }
         setInput("");
         setPendingToolAction(action);
         setPendingToolQuery(content);
@@ -375,34 +416,57 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
     }
 
     setInput("");
-    setPendingUser(content);
-    setAssistantDraft("");
-    setActiveRoomId(currentRoom.id);
+    setRoomRuns((existing) => ({
+      ...existing,
+      [roomId]: Object.freeze({
+        run: null,
+        pendingUser: content,
+        assistantDraft: "",
+      }),
+    }));
     try {
-      const run = await chat.send(currentRoom.id, content, chatTransport, {
+      const run = await chat.send(roomId, content, chatTransport, {
         onDraft(draft) {
-          if (draft.roomId === currentRoom.id) setAssistantDraft(draft.content);
+          setRoomRuns((existing) => {
+            const state = existing[draft.roomId];
+            if (!state) return existing;
+            return {
+              ...existing,
+              [draft.roomId]: Object.freeze({
+                ...state,
+                assistantDraft: draft.content,
+              }),
+            };
+          });
         },
       });
-      setActiveRun(run);
+      setRoomRuns((existing) => {
+        const state = existing[roomId];
+        if (!state) return existing;
+        return {
+          ...existing,
+          [roomId]: Object.freeze({ ...state, run }),
+        };
+      });
       const completed = await run.result;
       setCurrentRoom((selected) => selected?.id === completed.id ? completed : selected);
       setRoomList((existing) => upsertRoom(existing, completed));
-      setPendingUser(null);
-      setAssistantDraft("");
     } catch (reason: unknown) {
-      setError(classifySevenError(reason).userMessage);
+      const disposition = classifySevenError(reason);
+      if (disposition.category !== "CANCELLED") {
+        setChatErrors((existing) => ({
+          ...existing,
+          [roomId]: disposition.userMessage,
+        }));
+      }
     } finally {
-      setPendingUser(null);
-      setAssistantDraft("");
-      setActiveRun(null);
-      setActiveRoomId(null);
+      setRoomRuns((existing) => withoutKey(existing, roomId));
     }
   };
 
   const messages = currentRoom?.messages ?? [];
-  const showPending = currentRoom && activeRoomId === currentRoom.id && pendingUser;
-  const showDraft = currentRoom && activeRoomId === currentRoom.id && assistantDraft;
+  const showPending = currentRoom && pendingUser;
+  const showDraft = currentRoom && assistantDraft;
 
   return (
     <main
@@ -568,7 +632,7 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
               <button
                 key={mode}
                 type="button"
-                disabled={!!activeRun}
+                disabled={!!activeRoomState}
                 aria-pressed={(currentRoom.mode ?? "balanced") === mode}
                 onClick={() => void setChatMode(mode)}
               >
@@ -581,7 +645,7 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
             ))}
             <button
               type="button"
-              disabled={!!activeRun}
+              disabled={!!activeRoomState}
               aria-pressed={currentRoom.deepThink === true}
               onClick={() => void setDeepThink(currentRoom.deepThink !== true)}
             >
@@ -637,18 +701,18 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
           )}
         </div>
 
-        {error && <div className="seven-error" role="alert">{error}</div>}
+        {(error || chatError) && <div className="seven-error" role="alert">{error ?? chatError}</div>}
 
-        {pendingToolAction && (
+        {currentPendingToolAction && (
           <section className="seven-tool-approval" aria-live="polite" aria-label={t("Tool approval", "موافقة على أداة")}>
             <div className="seven-tool-approval-head">
-              <strong>{pendingToolAction.risk === "destructive" ? t("Confirm destructive action", "تأكيد إجراء حذفي") : t("Confirm action", "تأكيد الإجراء")}</strong>
-              <span>{pendingToolAction.toolId}</span>
+              <strong>{currentPendingToolAction.risk === "destructive" ? t("Confirm destructive action", "تأكيد إجراء حذفي") : t("Confirm action", "تأكيد الإجراء")}</strong>
+              <span>{currentPendingToolAction.toolId}</span>
             </div>
-            <p className="seven-tool-approval-title">{pendingToolAction.title}</p>
+            <p className="seven-tool-approval-title">{currentPendingToolAction.title}</p>
             <div className="seven-tool-preview">
               <small>{t("Exact memory target", "الذاكرة المستهدفة بالضبط")}</small>
-              <p>{pendingToolAction.memoryPreview}</p>
+              <p>{currentPendingToolAction.memoryPreview}</p>
             </div>
             <p className="seven-tool-approval-note">{t(
               "Seven will execute only this exact approved action. If the memory changes before execution, the action will be refused.",
@@ -664,10 +728,10 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
             </div>
           </section>
         )}
-        {toolActionNotice && !pendingToolAction && (
+        {toolActionNotice && !currentPendingToolAction && toolActionNoticeRoomId === currentRoom?.id && (
           <div className="seven-tool-notice" role="status">{toolActionNotice}</div>
         )}
-        {attachmentNotice && (
+        {attachmentNotice && attachmentNoticeRoomId === currentRoom?.id && (
           <div className="seven-tool-notice" role="status">{attachmentNotice}</div>
         )}
 
@@ -690,7 +754,7 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
             <textarea
               value={input}
               rows={1}
-              disabled={toolActionBusy || !!pendingToolAction || !workspaceIntegrated}
+              disabled={toolActionBusy || !!currentPendingToolAction || !workspaceIntegrated}
               maxLength={32_000}
               placeholder={t("Message Seven", "اكتب إلى Seven")}
               aria-label={t("Message Seven", "اكتب إلى Seven")}
@@ -705,7 +769,7 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
             {activeRun ? (
               <button className="seven-send seven-stop" type="button" onClick={() => activeRun.cancel("user-stop")} aria-label={t("Stop", "إيقاف")}>■</button>
             ) : (
-              <button className="seven-send" type="button" disabled={!input.trim() || !currentRoom || toolActionBusy || !!pendingToolAction || !workspaceIntegrated} onClick={() => void submit()} aria-label={t("Send", "إرسال")}>↑</button>
+              <button className="seven-send" type="button" disabled={!input.trim() || !currentRoom || toolActionBusy || !!currentPendingToolAction || !!activeRoomState || !workspaceIntegrated} onClick={() => void submit()} aria-label={t("Send", "إرسال")}>↑</button>
             )}
           </div>
           <div className="seven-composer-meta">
