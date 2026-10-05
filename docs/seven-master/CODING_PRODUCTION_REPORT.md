@@ -1,44 +1,81 @@
 # Coding Production Report
 
-Status: PARTIAL — first production-hardening batch
+Status: PARTIAL — production-hardening branch, not approved for integration yet.
 
 ## Reality audit
-- Root `release/workspaces/coding.js` is intentionally read-only: project import/map/context + chat execution are real, direct repository writes/shell are not wired there.
-- Root `release/github-self-dev.js` has real GitHub branch/tree/read/atomic-commit/CI primitives and protected paths, but it belongs to the Self-Development surface rather than a cohesive Coding Agent transaction.
-- `coding-system-v1` contains a much richer Typed/Remake coding runtime, but it diverges substantially from main. It must not be blind-merged.
-- Therefore presence of specialist Coding code is not treated as APK integration evidence.
+- Root `release/workspaces/coding.js` is deliberately read-only for project import/map/preview/context plus chat execution. It does not expose authoritative repository writes or shell execution.
+- Root `release/github-self-dev.js` contains real GitHub repository tree/read, atomic Git commit, workflow dispatch/wait, PR and merge primitives. These currently belong to the Self-Development surface and expose low-level WebView primitives; Coding must not silently bypass its own verification gate through them.
+- `coding-system-v1` contains a substantially richer Typed/Remake implementation but is highly divergent from main. No blind merge is permitted.
+- Specialist-branch presence is not APK/product integration evidence.
 
-## Batch 1 implementation
-Added a root-compatible, adapter-driven Coding transaction kernel:
-Understand → Inspect → Plan → Edit → Test → Diagnose → Repair → Retest → Review → Verify → Commit/Propose.
-
-Hard gates:
+## Implemented on chat3-coding-production
+### Transaction kernel
+`release/coding-production-runtime.cjs`
+- Understand → Inspect → Plan → Edit → Test → Diagnose → Repair → Retest → Review → Verify → Commit/Propose.
 - exact base SHA before edit;
-- stale-plan rejection;
-- concurrent-edit rejection before repair;
+- stale-plan and concurrent-repair rejection;
+- changed candidate SHA required (no no-op candidate evidence);
 - protected evaluator/test/workflow paths rejected;
-- bounded repair loop (max 3);
-- diff SHA-256 evidence;
-- proposal only after explicit verification;
-- immutable evidence envelope with base/result SHA, files, tests, failures, repairs and verdict.
+- bounded repair loop (0..3);
+- undeclared files in authoritative diff reject the candidate;
+- SHA-256 diff digest;
+- proposal only after explicit verification and final candidate freshness check;
+- immutable evidence envelope.
 
-## Evidence
-`release/coding-production-runtime.test.cjs` exercises:
-1. fixture failure on first test;
-2. diagnosis + repair;
-3. retest success;
-4. verified proposal;
-5. protected-test mutation rejection;
-6. stale-plan rejection.
+### Test selection
+`release/coding-test-selector.cjs`
+- deterministic touched-file rules;
+- escalates release/workspace, Android, RPG/canon/world, Memory and GitHub/Coding changes to relevant suites;
+- all Coding hardening suites are mandatory and cannot be dropped by model planning.
 
-This is not yet full product E2E. The next batch must bind this kernel to real root GitHub/files/test adapters without importing the Typed Remake wholesale, then execute the isolated fixture repository/worktree benchmark.
+### GitHub adapter
+`release/coding-github-adapter.cjs`
+- repository snapshot/tree inspection;
+- bounded file reads;
+- exact base-SHA check immediately before atomic write;
+- dispatches CI and requires an exact-SHA waiter;
+- fails closed if exact CI evidence, diff, verification or proposal ports are unavailable.
 
-## Remaining risks
-- Root Coding Workspace still has no authoritative direct write/shell adapter.
-- Real test selection is not yet bound to touched-file ownership.
-- Exact GitHub CI evidence for this branch is pending.
-- Android/APK exposure of the new kernel is not claimed.
-- Specialist branch capability migration remains capability-by-capability.
+### Deterministic E2E fixture
+`release/coding-fixture-e2e.test.cjs`
+Exercises a known bug:
+Issue → inspect → deliberately wrong first patch → failing test → diagnose → repair → retest → review → verify → verified proposal.
+This proves orchestration semantics in a deterministic fixture; it is not a claim of live GitHub CI success.
 
-## Cross-system dependencies
-Tools/Files/Git adapters and Self-Development must call the verified Coding transaction rather than bypass it. No integration contract was changed in this batch.
+## Tests added
+- `release/coding-production-runtime.test.cjs`: repair flow, protected path, stale plan, no-op candidate SHA, undeclared diff.
+- `release/coding-test-selector.test.cjs`: domain escalation, traversal rejection, mandatory gates.
+- `release/coding-github-adapter.test.cjs`: snapshot/read/atomic write/exact-CI binding/stale-write/fail-closed waiter.
+- `release/coding-fixture-e2e.test.cjs`: first-failure → repair → retest → verify E2E fixture.
+
+All files match `release/*.test.cjs`, so root `all.cjs` discovers them automatically.
+
+## Capability matrix
+| Capability | Root product truth | This branch |
+|---|---|---|
+| Project import/map/read | Real | preserved |
+| GitHub tree/read | Exists in Self-Dev | adapter-bound |
+| Multi-file atomic commit | Exists in Self-Dev | adapter-bound + SHA gate |
+| Touched-file test selection | missing as Coding authority | implemented |
+| Diagnose/repair orchestration | Self-Dev-specific | generic bounded kernel |
+| Exact candidate verification | fragmented | required by kernel |
+| Undeclared diff rejection | not Coding-owned | implemented |
+| Live Coding UI write action | absent | intentionally not claimed |
+| Exact CI run on this branch | no evidence yet | BLOCKER |
+| APK exposure | not established | not claimed |
+
+## CI evidence boundary
+At the latest checked branch heads, GitHub returned no workflow run associated with the Coding branch SHA. Therefore this report does **not** claim CI green. Local/deterministic test source has been added, but connector access does not provide a safe arbitrary shell runner here; CI remains the authoritative execution evidence required before integration.
+
+## Security/cross-system finding
+`release/github-self-dev.js` exports low-level GitHub mutation primitives to the WebView. Chat 3 does not change that cross-system contract. Tools/Self-Development owner and Master should decide whether those primitives require a narrower capability token/native enforcement. Coding integration must use the verified transaction path and must not call merge directly.
+
+## Remaining risks / next exact actions
+1. Obtain exact-SHA CI execution for this branch; repair every failure without weakening tests.
+2. Bind authoritative GitHub diff/verify/propose implementations to the adapter.
+3. Add a real isolated GitHub fixture/worktree benchmark (not production main) and retain its SHA/run evidence.
+4. Expose a product-facing Coding action only after 1–3 are green; keep current read-only UI truth boundary until then.
+5. Run root full suite plus release/browser gates; then assess Android packaging exposure.
+6. Send branch/SHA/tests/CI/risks/dependencies to Master and request integration review.
+
+No integration contract was silently changed. No main merge was performed. No “0 bugs” claim is made.
