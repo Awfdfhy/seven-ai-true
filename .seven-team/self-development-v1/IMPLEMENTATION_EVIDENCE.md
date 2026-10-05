@@ -267,3 +267,51 @@ Pull request: #111
 
 Decision: **PHASE_4_CI_PROVEN / REVIEW_PENDING**.
 
+---
+
+# Phase 6 — Trusted Review + Acceptance Gate
+
+Status: IMPLEMENTED + CI VERIFIED; STACKED REVIEW PENDING
+Date: 2026-10-05
+Pull request: #112
+Phase 5 live Coding integration: deliberately BLOCKED on root/main.
+
+## Exact verification
+
+- Hardened Phase 6 head: `984835d3a38bbf920170ac999e6fdf34b5a0329d`
+- Phase 4 base: `5fca0be9da9d01cdf86d827b1a27afb57cb1a940`
+- Workflow run: `37264635585`
+- Seven AI tests: `#3347`
+- Result: **SUCCESS**
+- `node all.cjs`: **all test suites: PASS (42 suites)**
+- `self-development review and acceptance test suite: PASS`
+- release artifact upload: SUCCESS
+
+## Controls proven
+
+- acceptance requires an orchestration-authorized Phase 4 plan;
+- Phase 3 hypothesis validation is re-run again at acceptance handoff;
+- planning validation/scope digests are checked;
+- evaluation manifest is reconstructed and bound to the current evaluator lock;
+- evaluation result must bind exact manifest, baseline, candidate, environment and metric set;
+- evidence-digest tampering is BLOCKED;
+- evaluator failure cannot be rescued by reviewer optimism;
+- proof JSON is not authority: trusted `proofVerifier` must validate it;
+- review JSON is not authority: trusted `reviewVerifier` must validate it;
+- MEDIUM self-review cannot satisfy independent review;
+- valid-looking independent review without authority verification is ignored/blocked;
+- HIGH requires independent review plus separately trusted manual approval;
+- builder cannot satisfy HIGH manual approval itself;
+- required evaluator-owned hard gates must exist in the manifest and pass;
+- CRITICAL changes stay `BLOCKED_GOVERNANCE` even with L8 proof and approvals;
+- successful normal-path result is only `ELIGIBLE_FOR_SHADOW`, never direct merge/promotion.
+
+## Authority model
+
+Phase 6 formalizes **data != authority**.
+A model can emit a structurally valid proof/review/approval object, but that object cannot authorize progress unless a trusted runtime verifier independently attests it.
+
+Production mutation authority added: **NO**.
+
+Decision: **PHASE_6_CI_PROVEN / REVIEW_PENDING**.
+
