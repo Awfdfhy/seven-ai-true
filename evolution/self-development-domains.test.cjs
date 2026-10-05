@@ -182,7 +182,7 @@ pass("domain optimizer cannot omit guard metrics or turn a guard into an undecla
   assert.throws(() => validateDomainHypothesis({
     domain: "prompts",
     hypothesis: missing
-  }), /domain validation metrics missing: taskSuccess/);
+  }), /(?:domain validation metrics missing: taskSuccess|expected metric missing from validation plan: taskSuccess)/);
 
   const guardTarget = {
     ...prompt,
