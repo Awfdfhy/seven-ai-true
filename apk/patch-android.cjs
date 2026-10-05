@@ -118,6 +118,27 @@ public class SevenSmokeTest {
   }
 
   @Test
+  public void roomWalAndMotionRecoverAcrossActivityRecreation() throws Exception {
+    try(ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)){
+      AtomicReference<WebView> firstRef=new AtomicReference<>();
+      scenario.onActivity(a -> firstRef.set(a.getBridge().getWebView()));
+      WebView first=firstRef.get();
+      assertNotNull(first);
+      waitFor(first,"Boolean(typeof roomPersistence!=='undefined'&&roomPersistence.status().ready&&window.SevenPerformance&&SevenPerformance.state.ready)");
+      assertEquals("true",js(first,"(()=>{const base=roomPersistence.status().revision,value=JSON.parse(JSON.stringify({version:1,rooms,roomTitles,currentRoom}));value.roomTitles[value.currentRoom]='Android recreation WAL';localStorage.setItem('seven_ai_room_wal_v1',JSON.stringify({schemaVersion:1,seq:Date.now()*1000+321,sessionId:'android-recreate-fixture',baseRevision:base,value}));return localStorage.getItem('seven_ai_room_wal_v1')!==null})()"));
+      scenario.recreate();
+      AtomicReference<WebView> secondRef=new AtomicReference<>();
+      scenario.onActivity(a -> secondRef.set(a.getBridge().getWebView()));
+      WebView second=secondRef.get();
+      assertNotNull(second);
+      waitFor(second,"Boolean(typeof roomPersistence!=='undefined'&&roomPersistence.status().ready)");
+      waitFor(second,"Boolean(window.__sevenAndroidMotion&&window.SevenPerformance&&SevenPerformance.state.ready)");
+      assertEquals("true",js(second,"roomTitles[currentRoom]==='Android recreation WAL'&&localStorage.getItem('seven_ai_room_wal_v1')===null"));
+      assertEquals("true",js(second,"document.documentElement.dataset.sevenReducedMotion===(SevenPerformance.state.reducedMotion?'1':'0')"));
+    }
+  }
+
+  @Test
   public void secureStoreEncryptsAtRest() throws Exception {
     Context context=InstrumentationRegistry.getInstrumentation().getTargetContext();
     assertEquals("${APP_ID}",context.getPackageName());
