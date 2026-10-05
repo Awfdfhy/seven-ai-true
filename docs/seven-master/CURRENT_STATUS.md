@@ -2,108 +2,116 @@
 
 Last integration update: 2026-10-05
 
-## Current Position
-Cross-system Integration / Verification is active. Specialist chats may continue subsystem work, but main is judged by shared contracts and regression/build evidence.
+## Integration position
+**Release candidate validation in progress. Seven is not yet final-accepted.**
 
-### Implemented / under active hardening
-- Chat Core
-- Model Routing
-- Memory
-- Files
-- Web Research
-- Deep Think
-- Tools
-- Coding System / GitHub Self-Dev execution surfaces
-- Self-Development foundations
-- RPG world/canon/state foundations
-- Android/Capacitor release pipeline
+The Integration track has now repaired and regression-locked the highest-confidence cross-system failures found in the master bughunt: execution checkpoint integrity/retention, Canon chronology/branch boundaries, IndexedDB recovery, Arabic IME send safety, response-mode truth, room/mode cancellation, Deep Think role ordering and telemetry ownership, multilingual/context-window budgeting, fallback deadlines, provider discovery timeouts/health, GitHub credential expiry/path/log handling, attachment retry/size/type gates, research temporal citation locks, and multiple RPG projection/pack/snapshot defects.
 
-## Integration Batch 01
-Implemented:
-- Added release/integration-contracts.test.cjs and registered it in all.cjs.
-- Hardened execution checkpoint restore with schema v2 identity + checksum validation and bounded retention.
-- Replaced hard-coded Canon chronology PASS with ledger position-regression detection.
-- Unified the release stop shim so Android and web attempt actual controller abort instead of Android nulling the controller.
-- Added contract/state isolation coverage across Control → Runtime → Execution, Research citation locks, World player-agency, Canon chronology and context scope isolation.
+## Evidence already green
+- Seven AI tests: SUCCESS on main SHA 6f5063d61526880542107c825d2f48c64715e46f.
+- Seven AI tests: SUCCESS on main SHA 7e320564c9c519283a5e93fb6c0b9a0343a16bcd.
+- Seven Reality Lab: SUCCESS on SHA 428f5fd027c2203aa03808e782a1a0367d58a583.
+- Recent static audit: PASS at 98,775 hot release-layer bytes, under the 100,000-byte gate.
+- RPG focused evidence: 1010 state events, versioned session rollback/isolation/quarantine tests, bounded character context, and 1006-event long-story restart harness.
 
-Observed during this batch:
-- Multi-chat writes moved main while integration work was in progress; integration must always re-read current HEAD before shared edits.
-- A CI failure was caused by exceeding the 100,000-byte hot release-layer budget after checkpoint hardening. The implementation was compacted rather than weakening the budget.
-- RPG state kernel work is landing concurrently and remains integration/acceptance work, not automatically complete.
+## Current RC batch
+The next code SHA after this document update must pass:
+1. all.cjs / Seven AI tests;
+2. production release verifier/static audit;
+3. Android lint + unit tests + APK build;
+4. APK content verification;
+5. Android 16 connected WebView tests;
+6. Android 14 connected WebView/UI tests.
 
-## Known Open Integration Risks
-- Legacy generation/cancellation state still has broader global/per-room scoping debt; the immediate Android/web abort bug is fixed, but full cross-room cancellation isolation is not yet proven.
-- RPG persistence, prompt projection and public-memory seam require end-to-end verification against the newly landing state kernel.
-- Unified error taxonomy is now a contract; implementation coverage across all legacy surfaces remains to be audited.
-- Trace/observability coverage is incomplete and requires a request lifecycle audit.
-- Android acceptance must come from the latest Seven Android APK run, not from web tests alone.
-- The existing master bughunt remains the defect backlog; repaired items require regression evidence before closure.
+No later code push should be credited without rerunning those gates.
 
-## Acceptance State
-NOT YET ACCEPTED AS FULLY INTEGRATED. No claim of zero bugs is made.
+## Known acceptance blockers / external dependencies
+- Live legacy RPG workspace is not yet atomically unified with the new structured RPG session manager/public Memory projection.
+- Android background/process-death during queued room persistence is not fully proven.
+- Repository required-status enforcement cannot be verified or configured through the current GitHub App. Repository rulesets currently return an empty list; branch-protection read requires unavailable administration permission.
+- Agent workflow isolation is not fully proven.
+- Several PARTIAL UI/lifecycle ownership items remain; see BUG_STATUS.md.
 
-See docs/seven-master/INTEGRATION_AUDIT.md for inventory, dependency map, contract status and scorecard.
+## Acceptance statement
+**No zero-bugs claim.** Current meaning of green is only: zero known reproducible blockers in the specific suites that passed. Full Integration Acceptance requires the latest release-code SHA to complete Web + Android gates and resolution/explicit acceptance of the blockers above.
 
-## RPG Specialist Batch 01 — Structured State Foundation
+See:
+- docs/seven-master/INTEGRATION_AUDIT.md
+- docs/seven-master/BUG_STATUS.md
+- docs/seven-master/INTEGRATION_CONTRACTS.md
 
-Implemented:
-- docs/seven-master/RPG_RESEARCH_REPORT.md — external research synthesis + repo gap analysis.
-- docs/seven-master/RPG_ARCHITECTURE.md — structured RPG architecture and integration boundaries.
-- docs/seven-master/RPG_IMPLEMENTATION_PLAN.md — staged build/evaluation plan through long-story + Android + Integration verification.
-- release/workspaces/rpg-state.js — pure structured-state kernel.
-- release/rpg-state.test.cjs — deterministic state/continuity acceptance coverage.
-- all.cjs now registers the RPG state suite.
-- RPG workspace dependency loader now loads SevenRpgState with legacy World/Canon runtimes.
-- RPG State Contract v1 and ADR-010..014 ratified.
+## Coding Specialist — V1 Verified Candidate
 
-Evidence from the kernel scenario:
-- PASS at 1010 committed events/turns.
-- Player-control mutation from runtime is blocked.
-- Invalid cross-location scene is blocked.
-- Future/local-secret knowledge is bounded by character.
-- Belief can disagree with truth without promoting to Canon.
-- Multi-dimensional relationship and emotion mutations persist.
-- Lower-priority Canon and conflicting HARD CANON mutations are blocked; explicit user override is accepted.
-- Inventory ownership and timeline rollback guards pass.
-- Test context projection remained bounded (~5.2k serialized chars for the long fixture).
+Status: **IMPLEMENTATION + SPECIALIST VERIFICATION COMPLETE; MERGE/PRODUCT UI INTEGRATION PENDING**
 
-Not yet accepted:
-- live model generation does not yet consume the new Character/Narrator views;
-- per-room/per-world RPG persistence is not yet wired;
-- legacy World/Canon + new state commit is not yet one atomic turn transaction;
-- state-level knowledge tests do not yet prove generation-level no-leak behavior;
-- directional relationships, production token-aware retrieval, semantic 100/500/1000-turn evaluation and Android restore UX remain open.
+Branch: `coding-system-v1`  
+PR: #104 — `Coding System V1 — full verified coding agent runtime`  
+Verified code-bearing SHA: `371db3e45aea21fd1f0d191ff88542d64c914490`
 
-Next RPG implementation target: versioned per-room persistence + atomic session ownership and corruption/restart tests.
+### Implemented runtime
+- Full lifecycle: Understand → Inspect → Research → Plan → Edit → Test → Debug → Verify → Review → Document.
+- Exact Git head + file SHA-256 + repository snapshot fingerprints.
+- Stale-head, stale-snapshot and stale-file rejection.
+- Transactional multi-file candidate construction, rollback snapshot and blast-radius budgets.
+- Bounded automatic repository discovery, language/build/test/instruction detection, symbols/imports and relevance-ranked repo map.
+- Provider-backed structured Coding model adapter.
+- Shared ModelRouter + ProviderHealthTracker routing/failover; no private Coding provider router.
+- ResearchService bridge.
+- Atomic exact-base GitHub tree/blob commit adapter with non-force branch update and post-commit verification.
+- Deterministic verification policy outside model authority.
+- Bounded debug/repair loop.
+- Deterministic anti-test-weakening diff review.
+- Optional independent reviewer route.
+- GitHub Actions candidate verification adapter.
+- Repository operations registered through ToolRegistry / ToolExecutor:
+  - coding.repo.head
+  - coding.repo.list
+  - coding.repo.read
+  - coding.repo.commit
+- Scoped capabilities, mutation approval, idempotency/replay protection, audit, effect ledger, mutation concurrency group and external cancellation propagation.
+- Uncertain mutation effects fail closed to BLOCKED/reconciliation instead of blind retry.
+- Runtime task scope is bound to the originating task ID.
 
-## Coding Specialist Batch 01 — Workspace Truth / Patch Kernel
+### Verification evidence on the same code SHA
+- Seven Remake V3 CI #407 — **SUCCESS**
+  - dependency audits
+  - strict TypeScript
+  - Vitest regression
+  - production build
+- Seven AI tests #3239 — **SUCCESS**
+  - `node all.cjs`
+  - verified release artifact
+- Seven Remake Android Release Gate #173 — **SUCCESS**
+  - Remake compile/tests/build
+  - deterministic payload identity
+  - Android lint + unit tests + APK build
+  - APK embedded identity verification
+  - Android 14 installed WebView/smoke gate
+  - Android 16 installed WebView/smoke gate
 
-Target branch: `coding-system-v1`
-Exact product base: `seven-remake-v3@6a8a16b31a6ccca1f5b412e71a15e55adb4cf162`
+### Adversarial / focused coverage added
+- stale workspace/head/file cases
+- ambiguous/missing patch anchors
+- critical-path authority denial
+- resulting-byte blast-radius enforcement
+- repository concurrent-head drift
+- test disabling/assertion reduction detection
+- mandatory verification cannot be removed by model
+- bounded failed-test → diagnose → repair → reverify loop
+- model-route provider failover/health penalty
+- Tool Fabric read/write capability enforcement
+- mutation approval and audit evidence
+- replay-safe repeated commit
+- cancellation propagation into tool execution
 
-Implemented:
-- deep current-agent research + Seven gap analysis in `docs/coding-system/RESEARCH_2026-10-05.md`;
-- layered Coding architecture and 12-phase implementation plan;
-- explicit Coding lifecycle: Understand → Inspect → Research → Plan → Edit → Test → Debug → Verify → Review → Document;
-- exact repository/branch/head workspace identity and SHA-256 source/snapshot fingerprints;
-- stale-head, stale-snapshot and stale-file rejection;
-- safe canonical paths and non-model authority for critical contract/evaluator/workflow paths;
-- bounded transactional multi-file candidate construction with rollback snapshot;
-- exact-anchor patch rejection for missing/ambiguous edits;
-- changed-file and actual resulting-byte blast-radius budgets;
-- deterministic verification selection owned by policy, including universal `git diff --check`, focused Coding tests, Remake typecheck, full tests and build gates.
+### Shared contract status
+`INTEGRATION_CONTRACTS.md` is synchronized from current main and is **not expanded or weakened** by Coding V1. The implementation fits underneath the existing Coding + Tool + Cancellation contracts.
 
-Local evidence before repository CI:
-- strict TypeScript production compile: PASS;
-- executable Node smoke for snapshot/patch/stale-state/verification/lifecycle: PASS;
-- strict TypeScript compile including `coding-kernel.test.ts`: PASS;
-- one real transition-table TypeScript defect was caught and repaired before push.
+### Remaining integration work
+These are not Coding-runtime implementation blockers:
+1. merge/reconcile PR #104 into the chosen product branch;
+2. expose the Coding runtime through the final Seven UI/workspace flow (Android/APK/UI owner);
+3. run a live provider + connected GitHub canary through the composed Seven runtime when production credentials/approvals are available;
+4. hand Self-Development to this verified Coding path only after integration accepts the merge.
 
-Concurrency note:
-- `main` changed during this Coding batch. The specialist branch detected the stale `seven-master` copy and was reconciled against the new authoritative Integration/RPG updates instead of overwriting them.
-
-Acceptance state:
-- Batch 1 is IMPLEMENTED, NOT YET PROMOTED COMPLETE until PR CI confirms the actual Remake unit/regression/typecheck/build gates.
-
-Next Coding target:
-- real Files/worktree adapter + repository intelligence (inventory, symbols, imports/references, test ownership, instruction discovery and relevance-ranked repo map), with stale/concurrent-edit tests against real Git state.
+No claim of zero bugs is made. The statement is narrower: **Coding V1 specialist implementation has no known reproducible blocker in the suites above and is ready for integration review.**
