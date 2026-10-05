@@ -84,6 +84,12 @@ public class SevenRcHarnessTest {
   }
   private void seedSafGrant()throws Exception{
     Context target=InstrumentationRegistry.getInstrumentation().getTargetContext();
+    // Re-issue the temporary grant in this instrumentation lifecycle, then
+    // persist it before ActivityScenario closes the receiving Activity.
+    Context test=InstrumentationRegistry.getInstrumentation().getContext();
+    Intent helper=new Intent().setClassName(test.getPackageName(),APP_ID+".SevenTestGrantActivity")
+      .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    target.startActivity(helper);
     Uri uri=Uri.parse(DOC_URI);boolean readable=false;
     for(int i=0;i<20;i++){try{assertEquals("seven-rc-saf-document",readAll(target,uri));readable=true;break;}catch(SecurityException e){Thread.sleep(100);}}
     assertTrue("temporary SAF grant from helper APK missing",readable);
@@ -134,8 +140,8 @@ public class SevenRcHarnessTest {
       WebView w=web(scenario);assertEquals("true",js(w,${javaString(seedUpgradeScript())}));
       waitFor(w,"window.__sevenRcFixture&&window.__sevenRcFixture.status!=='pending'");
       assertEquals("true",js(w,"window.__sevenRcFixture.status==='seeded'"));
+      seedSafGrant();
     }
-    seedSafGrant();
     assertTrue(prefs().edit().putLong("versionCodeA",versionCode()).putString("versionNameA",versionName()).putString("packageA",APP_ID).commit());
   }
 

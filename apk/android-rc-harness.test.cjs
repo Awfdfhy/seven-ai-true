@@ -19,6 +19,8 @@ const materializer=fs.readFileSync(path.join(__dirname,'materialize-android-rc-h
 assert.match(materializer,/takePersistableUriPermission/);
 assert.match(materializer,/class SevenTestGrantActivity extends Activity/);
 assert.match(materializer,/startActivity\(grant\)/);
+assert.match(materializer,/target\.startActivity\(helper\)/,'temporary SAF grant must be issued during instrumentation');
+assert.match(materializer,/window\.__sevenRcFixture.status==='seeded'[\s\S]*?seedSafGrant\(\);\s*\}/,'SAF grant must be persisted before receiver Activity closes');
 assert.match(materializer,/FLAG_GRANT_PERSISTABLE_URI_PERMISSION/);
 assert.match(materializer,/getPersistedUriPermissions/);
 assert.match(materializer,/versionCode\(\)>before/);
