@@ -2,12 +2,14 @@
 
 ## Lead Release Manager — continuation integration snapshot
 
-Release remains **NOT ACCEPTED / no RC**. PR #105 reconciles upstream `b3e3ffa4fe676a838ed658e22fad1576cfe11237` with the release repairs, preserving both ADR-REL-001..005 and ADR-015..019 and specialist history. The enclosing commit identifies this candidate; later commits require separate evidence.
+Release remains **NOT ACCEPTED / no RC**. PR #105 reconciles upstream `e40a655c0a71a24290a9515f3f72e7ffeb919329` with the release repairs, preserving both ADR-REL-001..005 and ADR-015..019 and specialist history. The enclosing commit identifies this candidate; later commits require separate evidence.
 
 - All 34 local component suites reran on the merged source and passed; exact durations are in RELEASE_EVIDENCE.json. Full local browser gate remains unavailable because the Chromium archive download fails.
 - Verified upstream-only CI: Seven AI tests run 37241282527 and Seven Android APK run 37241282530 passed on `b3e3ffa4fe676a838ed658e22fad1576cfe11237`. Android job 111550342818 passed lint/unit/build, packaged-content checks, and connected API34/API36 WebView tests. These results do not certify the PR candidate.
 - Upstream added room write-ahead recovery, canonical response modes, originating-room cancellation, controller context budgets, fallback deadlines, temporal citations and native GitHub boundary/log fixes. Browser regressions exist for WAL staging/replay; actual Android process-kill/upgrade durability remains unproven.
-- Pending: PR candidate full browser CI, merge to main, fresh Android workflow for the exact merged SHA, embedded version-5 provenance/package/signature verification and install/upgrade persistence.
+- Intermediate PR SHA ad00c123daedebf4193b8b158a725c2353fc455f passed full Seven AI tests run 37259977856. New binary/signature gate changes need their own CI. The added shell ownership and APK binary suites pass locally (36 component suites now available).
+- Added actual APK binary package/version/signature verification and a published JSON evidence artifact. Existing root debug build does not establish stable signing identity across runs; data-preserving upgrade remains unaccepted.
+- Pending: final PR full browser CI, merge to main, fresh Android workflow for the exact merged SHA, embedded version-5 provenance/package/signature verification and install/upgrade persistence.
 - Root HTML/Capacitor and typed remake remain different product trains. Live RPG atomic turn integration and Coding/Evolution wiring remain architectural blockers. Evidence score stays 43/100 until final-SHA gates are verified.
 
 See PROJECT_TRUTH_REPORT.md and RELEASE_EVIDENCE.json. No fresh candidate APK or RC is claimed here.

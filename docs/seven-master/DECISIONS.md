@@ -98,3 +98,8 @@ Decision: Request traces retain IDs, phases, timings, counts, model/provider ide
 ## ADR-019 — Network Link State Is Not Reachability
 Status: Accepted
 Decision: navigator.onLine is represented as link-online/offline only. End-to-end reachability is a separate evidence field updated from provider outcomes.
+
+## ADR-REL-006 — Verify the APK binary and signature, retain explicit upgrade gate
+Status: Accepted
+Decision: APK acceptance reads package/version from aapt dump badging and verifies the actual APK with apksigner verify --verbose --print-certs. Missing SDK tools, wrong binary identity or invalid signatures fail the gate. Record APK SHA-256, certificate SHA-256, source SHA/run and web inventory count in dist/apk-verification.json and publish it beside the APK. A valid signature is not evidence of cross-build signing continuity or data-preserving upgrades; those remain explicit gates. Root debug workflow currently does not pass the optional persistent CI keystore properties.
+Reference: https://developer.android.com/tools/apksigner

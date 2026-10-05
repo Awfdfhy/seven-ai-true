@@ -3,6 +3,8 @@ const path=require('path');
 const {spawnSync}=require('child_process');
 const assert=require('assert/strict');
 const {gitIdentity,verifyPayload}=require('./build-provenance.cjs');
+const {sha256}=require('./build-provenance.cjs');
+const {verifyBinary}=require('./binary-verification.cjs');
 const ROOT=path.resolve(__dirname,'..');
 const PACKAGE=JSON.parse(fs.readFileSync(path.join(ROOT,'package.json'),'utf8'));
 const EXPECTED_VERSION_NAME=String(PACKAGE.version||'').trim();
@@ -20,6 +22,8 @@ const APK=path.resolve(process.env.SEVEN_APK_PATH||process.argv[2]||DEFAULT_APK)
 assert.ok(fs.existsSync(APK),`APK missing: ${APK}`);
 const bytes=fs.statSync(APK).size;
 assert.ok(bytes<30*1024*1024,`APK too large: ${bytes}`);
+const appId=JSON.parse(fs.readFileSync(path.join(ROOT,'capacitor.config.json'),'utf8')).appId;
+const binary=verifyBinary(APK,{packageName:appId,versionCode:EXPECTED_VERSION_CODE,versionName:EXPECTED_VERSION_NAME});
 const listing=spawnSync('unzip',['-l',APK],{encoding:'utf8'});
 assert.equal(listing.status,0,listing.stderr);
 assert.match(listing.stdout,/assets\/public\/index\.html/);
@@ -59,4 +63,6 @@ assert.ok(!bundledRemakeJs.stdout.includes('s-brave-key'),'APK still contains ma
 assert.ok(!bundledRemakeJs.stdout.includes('Brave API key'),'APK still asks for a Brave API key');
 assert.ok(!bundledRemakeJs.stdout.includes('Enter API key'),'APK still contains manual API-key prompt');
 
-console.log(`apk package gate: PASS (${path.basename(APK)}, ${bytes} bytes)`);
+fs.mkdirSync(path.join(ROOT,'dist'),{recursive:true});
+fs.writeFileSync(path.join(ROOT,'dist','apk-verification.json'),JSON.stringify({format:'seven-apk-verification',version:1,sourceCommit:provenance.sourceCommit,workflowRunId:provenance.workflowRunId,apkSha256:sha256(fs.readFileSync(APK)),bytes,webAssetCount:provenance.files.length,...binary},null,2));
+console.log(`apk package gate: PASS (${path.basename(APK)}, ${bytes} bytes, ${binary.packageName} ${binary.versionName}/${binary.versionCode}, signature verified)`);

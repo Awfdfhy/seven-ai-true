@@ -19,6 +19,7 @@ const PROTECTED_PATHS=[
   /^release\/github-self-dev\.js$/,
   /^apk\/materialize-native-platform\.cjs$/,
   /^apk\/(?:verify-apk|build-provenance(?:\.test)?)\.cjs$/,
+  /^apk\/binary-verification(?:\.test)?\.cjs$/,
   /^release\/(?:static-audit|release-verify)\.cjs$/,
   /^release\/.*\.test\.cjs$/,
   /^release\/(?:exact-rc|final-seven-closure|full-seven-red-team|source-integrity|production-release-contract|visual-red-team|material-design-quality).*\.cjs$/

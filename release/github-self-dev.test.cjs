@@ -47,7 +47,7 @@ function load(handler){
   await assert.rejects(forbidden.api.atomicCommit('work',[{path:'safe.js',content:'x'},{path:'all.cjs',content:'weaken'}],'change'),/protected path/);
   await assert.rejects(forbidden.api.atomicCommit('work',[{path:'a.js',content:'x'},{path:'a.js',content:'y'}],'change'),/Duplicate/);
   assert.equal(forbidden.calls.length,0);console.log('PASS all paths validate before any remote mutation');
-  for(const path of ['eval/baseline.json','memory.cjs','runtime-smoke.cjs','apk/verify-apk.cjs','apk/build-provenance.cjs','release/static-audit.cjs','release/release-verify.cjs'])assert.equal(forbidden.api.protectedPath(path),true);
+  for(const path of ['eval/baseline.json','memory.cjs','runtime-smoke.cjs','apk/verify-apk.cjs','apk/build-provenance.cjs','apk/binary-verification.cjs','apk/binary-verification.test.cjs','release/static-audit.cjs','release/release-verify.cjs'])assert.equal(forbidden.api.protectedPath(path),true);
   console.log('PASS autonomous edits cannot weaken measured acceptance gates');
   const outage=load(()=>{const e=new Error('provider unavailable');e.status=503;throw e});
   await assert.rejects(outage.materialize('work',[{path:'existing.js',type:'create',content:'replacement'}]),/provider unavailable/);

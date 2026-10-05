@@ -164,7 +164,12 @@ Seven is not considered integrated until:
 - Shared Memory and canonical RPG state are unchanged by this projection. Live turn/persistence/generation wiring still needs acceptance tests.
 
 ### Test/startup ownership
-- `all.cjs` discovers every top-level `release/*.test.cjs` automatically, while retaining explicit browser/eval/gateway/evolution/packaging gates.
+- `all.cjs` discovers every top-level `release/*.test.cjs` and `apk/*.test.cjs` automatically, while retaining explicit browser/eval/gateway/evolution/packaging gates.
 - Actual compiled `build.startupBytes` is authoritative for both static/browser startup audits; strict budget remains below 100000 bytes. Byte count is not a startup-latency measurement.
 
 Memory VM test report output is dist/memory-results.json. Historical root memory-results.json is not a current acceptance result. Test runs must not mutate tracked source.
+
+### Actual APK binary identity (ADR-REL-006)
+- verify-apk.cjs now requires Android SDK aapt/apksigner (resolved from ANDROID_SDK_ROOT/ANDROID_HOME build-tools or PATH) and fails closed if unavailable.
+- Binary package/version must equal capacitor.config.json appId and package.json version/sevenAndroidVersionCode. The actual signature must verify successfully; signer certificate digests are evidence, not proof of upgrade continuity.
+- dist/apk-verification.json format seven-apk-verification v1 contains sourceCommit, workflowRunId, apkSha256, bytes, webAssetCount, packageName, versionCode, versionName, signatureVerified, signerCertificateSha256[], upgradeContinuity: UNVERIFIED. Existing installed-app migration/signing continuity needs a separate acceptance result.

@@ -476,6 +476,22 @@
     },
     "candidateFullBrowser": "PENDING_REMOTE_CI",
     "candidateAndroid": "PENDING_MERGE_CI",
-    "RC": "NOT_CREATED"
+    "RC": "NOT_CREATED",
+    "latestUpstreamSha": "e40a655c0a71a24290a9515f3f72e7ffeb919329",
+    "intermediateWebCI": {
+      "sha": "ad00c123daedebf4193b8b158a725c2353fc455f",
+      "run": 37259977856,
+      "conclusion": "success"
+    },
+    "additionalFocusedChecks": {
+      "shellOwnership": "PASS",
+      "apkBinary": "PASS",
+      "provenance": "PASS",
+      "selfDev": "PASS",
+      "syntax": "PASS",
+      "staticAudit": "PASS",
+      "startupBytes": 99668
+    },
+    "signingUpgrade": "UNVERIFIED; root debug workflow does not set persistent CI keystore properties"
   }
 }
