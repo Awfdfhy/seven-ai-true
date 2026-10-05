@@ -7,7 +7,7 @@ function adapter(opts={}){
  applyAtomic:async({baseSha})=>{assert.equal(baseSha,sha);sha="c"+(++attempt);return{sha}},
  runTests:async()=>attempt===1&&opts.failFirst?{ok:false,tests:["fixture"],failures:["expected 2 got 1"]}:{ok:true,tests:["fixture"]},
  diagnose:async()=>({root:"fixture bug"}),repair:async()=>({changes:[{path:"src/a.js",content:"fixed-again"}]}),
- diff:async()=>({text:"diff --git a/src/a.js b/src/a.js"}),
+ diff:async()=>({text:"diff --git a/src/a.js b/src/a.js",files:["src/a.js"]}),
  verify:async()=>({ok:true}),propose:async x=>{proposals++;return{id:"proposal-1",sha:x.candidateSha}},get proposals(){return proposals},
  move:()=>{sha="external"}};
 }
