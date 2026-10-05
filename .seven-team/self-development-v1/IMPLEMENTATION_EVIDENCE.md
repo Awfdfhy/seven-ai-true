@@ -1,213 +1,233 @@
-# Seven Self-Development v1 — Implementation Evidence
+# Seven Self-Development v1 — Phase 1 Implementation Evidence
 
-Updated: 2026-10-05
-Tracking issue: #100
-Phase 1 PR: #102
+Status: IMPLEMENTED + CI VERIFIED; INDEPENDENT REVIEW STILL REQUIRED
+Date: 2026-10-05
+Tracking: issue #100
+Pull request: #102
 
-## Phase 1 — Observation & Diagnosis Foundation
+## Verified candidate identity
 
-Status: **CI_PROVEN / INDEPENDENT_REVIEW_PENDING**
+- Candidate head verified by Seven AI tests #3253: `1227380af229e03d53e2b6c779c88bb3453332b6`
+- PR base at verification: `ecf20643fd7518ae25902af5d6137e6a7779b9c0`
+- Workflow run: `37260383931`
+- Workflow: `Seven AI tests`
+- Result: **SUCCESS**
+- Main command: `node all.cjs`
+- Result: **all test suites: PASS (38 suites)**
 
-### Exact candidate identity
+## Phase 1 implementation
 
-- PR base SHA: `b3e3ffa4fe676a838ed658e22fad1576cfe11237`
-- tested branch head SHA: `7a5ec226f954e915188174111d46e21740e327c0`
-- PR merge candidate observed before CI: `c612a17ea90e69b63341e63f2662a639104d4cb2`
-- GitHub Actions workflow: **Seven AI tests #3221**
-- workflow run id: `37259817886`
-- conclusion: **SUCCESS**
+Implemented:
+- `evolution/self-development-observer.cjs`
+- `evolution/self-development-diagnosis.cjs`
+- `evolution/self-development-foundation.test.cjs`
 
-The candidate was rebuilt/reconciled after earlier base drift. PR #101 was closed without merge when its baseline became stale; no stale candidate was promoted.
+Architecture/research:
+- `.seven-team/self-development-v1/RESEARCH_SYNTHESIS.md`
+- `.seven-team/self-development-v1/ARCHITECTURE.md`
+- `.seven-team/self-development-v1/EXECUTION_PLAN.md`
 
-## Full regression evidence
+Shared governance:
+- ADR-020 — evidence-gated experiment controller
+- ADR-021 — evaluator plane immutable during candidate evaluation
+- ADR-022 — content-minimized Self-Development telemetry
+- expanded Self-Development integration contract
 
-`node all.cjs`:
-- **PASS**
-- **34 suites**
-- release artifact upload: **PASS**
+## Direct Phase 1 test evidence
 
-Relevant exact log evidence:
+The exact CI log contains:
+
+- `PASS observation records are content-minimized and deterministic`
+- `PASS prompt, response and credential-shaped metadata are structurally rejected`
+- `PASS secret-like run identifiers and evidence references fail closed`
+- `PASS unknown, non-finite and out-of-range metrics fail closed`
+- `PASS observation buffer is bounded and returns detached snapshots`
+- `PASS buffer revalidates caller-supplied records instead of trusting forged normalization flags`
+- `PASS successful observations do not become weakness clusters`
+- `PASS repeated coherent failures aggregate deterministically`
+- `PASS diagnosis stays a hypothesis even with repeated evidence`
+- `PASS single critical crash can escalate without pretending causal certainty`
+- `PASS insufficient non-critical evidence blocks planning`
+- `PASS risk policy is conservative and protects evaluator/self-development plane`
+- `PASS proposal cannot route protected-plane edits into ordinary Coding System execution`
+- `PASS telemetry policy tables are not caller-mutable exports`
+- `PASS self-development phase 1 exports no production mutation capability`
 - `self-development foundation test suite: PASS`
-- `all test suites: PASS (34 suites)`
-- `static audit: PASS`
 
-Static audit on the exact PR run:
-- hot release layer: **99,710 / 100,000 bytes**
-- result: PASS
-- warning: `release-layer-low-headroom 290`
+## Whole-repository evidence
 
-Phase 1 modifies `evolution/`, `.seven-team/` and coordination documentation, not the hot release runtime. The low-headroom warning is therefore recorded as a shared release risk, not claimed as a Phase 1 regression.
+The same run also completed:
+- static audit: PASS
+- Canon/World/RPG suites: PASS
+- integration contracts: PASS
+- model registry/observatory: PASS
+- release artifact upload: SUCCESS
 
-## Phase 1 capabilities proven
+The CI log ended with:
+- `all test suites: PASS (38 suites)`
 
-The deterministic foundation suite proved:
+## Safety properties proven in Phase 1 scope
 
-1. observation records are content-minimized and deterministic;
-2. prompt/response/credential-shaped metadata is rejected;
-3. secret-like run identifiers and evidence references are rejected;
-4. unknown, non-finite and out-of-range metrics fail closed;
-5. observation buffer is bounded and snapshots are detached;
-6. caller-supplied forged normalization flags cannot bypass revalidation;
-7. successful observations do not become weakness clusters;
-8. repeated coherent failures aggregate deterministically;
-9. diagnosis remains `HYPOTHESIS` even after repeated evidence;
-10. a single critical crash can escalate without claiming causal certainty;
-11. insufficient non-critical evidence blocks planning;
-12. risk policy protects evaluator/Self-Development plane;
-13. protected-plane proposals route to `GOVERNANCE_REQUIRED`;
-14. telemetry policy tables are not caller-mutable exports;
-15. Phase 1 exports no production mutation capability.
+### Observation privacy boundary
+- prompt/response-like metadata is rejected;
+- secret-like metadata is rejected;
+- secret-like run/evidence identifiers are rejected;
+- unknown telemetry keys and metrics fail closed;
+- policy tables are module-private;
+- callers cannot bypass validation by forging a normalized-record flag.
 
-## Authority proof
+### Diagnosis boundary
+- repeated observation supports a root-cause **hypothesis**, not causal proof;
+- non-critical single observations do not create sufficient planning evidence;
+- CRITICAL crash signals can escalate without being labeled causally confirmed.
 
-Phase 1 modules do **not** export:
+### Mutation boundary
+Phase 1 exports no:
 - file write;
 - shell execution;
 - GitHub API mutation;
-- commit/merge;
 - patch application;
-- promotion authority.
+- merge;
+- promotion capability.
 
-They produce observations, diagnoses and bounded improvement proposals only.
+A protected evaluator/Self-Development path is classified CRITICAL/GOVERNANCE_REQUIRED rather than ordinary Coding execution.
 
-## Known open proof obligations
+## Regression / performance note
 
-- Independent reviewer verdict is still required because this is a CRITICAL authority-plane change.
-- Production patching is still blocked on the authoritative Coding System contract. The dedicated `.seven-team/coding-v1/IMPLEMENTATION_EVIDENCE.md` was absent at the tested baseline.
-- Phase 2 metric registry / paired evaluator is not part of the Phase 1 proof.
-- End-to-end Self-Development Definition of Done is not yet satisfied.
+The verified CI run reported:
+- hot release layer: `99,710 / 100,000 bytes`
+- warning: `release-layer-low-headroom 290`
 
-## Decision
+Phase 1 adds files under `evolution/` and documentation, not release hot-layer runtime, so this is not attributed as a Phase 1 byte regression. It remains a repository-wide RC constraint and MUST NOT be silenced by raising the budget.
 
-**Phase 1 implementation evidence is ACCEPTABLE FOR REVIEW, not yet ACCEPTED FOR MERGE.**
+## Remaining acceptance condition
 
-No completion claim is made for the full Self-Development System.
+Phase 1 changes the Self-Development/Evolution authority plane and is therefore CRITICAL-risk governance work.
 
-## Phase 2 — Metric Registry + Paired Evaluator
+**CI verification is complete, but merge acceptance remains blocked on independent review.**
 
-Status: **CI_PROVEN / STACKED_REVIEW_PENDING**
+No automatic merge or autonomous self-approval is claimed.
 
-### Exact tested identity
+## Phase 1 verdict
 
-- stacked PR: #108
-- tested Phase 2 head: `357525adcc5f2864c5cca34a88cc1bd293fc3de3`
-- base branch at test: `self-development-v1-phase1`
-- GitHub Actions workflow: **Seven AI tests #3254**
-- workflow run id: `37260411667`
-- conclusion: **SUCCESS**
-- `all test suites: PASS (39 suites)`
-- release artifact upload: **PASS**
+Implementation evidence: **PASS**
+Repository regression suite: **PASS**
+Self-development specific suite: **PASS**
+Production mutation authority added: **NO**
+Independent review: **PENDING**
+
+Decision: **READY_FOR_INDEPENDENT_REVIEW**, not autonomously accepted.
+
+---
+
+# Phase 2 — Metric Registry + Locked Paired Evaluator
+
+Status: IMPLEMENTED + CI VERIFIED; STACKED ON PHASE 1
+Date: 2026-10-05
+Pull request: #108
+
+## Verified candidate identity
+
+- Candidate head: `d6028b1cbaba530596b54ba2462536c517f8ec59`
+- Phase 1 base: `78d0b9ad35d4d03d264d33a88e33d747a11aef76`
+- Workflow run: `37263361857`
+- Seven AI tests run: `#3318`
+- Result: **SUCCESS**
+- `node all.cjs`: **all test suites: PASS (39 suites)**
 - `self-development paired evaluator test suite: PASS`
+- release artifact upload: SUCCESS
 
-### Proven controls
+## Implemented
 
-- static metric definitions; callers cannot invent a success metric;
-- exact 40-char baseline/candidate SHA identity;
-- evaluator lock verified when manifest is created and again when evaluation runs;
-- environment identity is bound to the manifest;
-- secret-like environment identity is rejected;
-- unequal paired run counts become INCONCLUSIVE;
-- insufficient samples become INCONCLUSIVE;
+- `evolution/self-development-metrics.cjs`
+- `evolution/self-development-paired-eval.cjs`
+- `evolution/self-development-paired-eval.test.cjs`
+
+## Evidence properties proven
+
+### Locked criteria
+- unknown/invented metrics are rejected;
+- target metrics must be declared before evaluation;
+- manifest digest binds evaluator identity, identities, environment, metrics, targets and hard gates;
+- manifest tampering is BLOCKED;
+- evaluator lock drift is BLOCKED.
+
+### Exact identity
+- baseline and candidate require exact 40-char SHAs;
+- symbolic refs such as `main` are rejected;
+- candidate identity must differ from baseline;
+- optional artifact digest must be a full SHA-256 digest.
+
+### Comparable runs
+- every run is bound to the exact `manifestDigest`;
+- every run is bound to the exact `environmentDigest`;
+- unknown environment fields fail closed;
+- secret-like environment values are rejected;
+- partial metric evidence is INCONCLUSIVE;
+- invalid metric values are BLOCKED;
+- unequal baseline/candidate run counts are INCONCLUSIVE to prevent cherry-picking.
+
+### Statistical / metric discipline
+- metrics have explicit HIGHER_IS_BETTER / LOWER_IS_BETTER direction;
+- minimum sample count is enforced;
 - excessive variance becomes INCONCLUSIVE;
-- environment mismatch becomes BLOCKED;
-- metric not present in locked manifest becomes BLOCKED;
-- missing mandatory hard-gate evidence becomes INCONCLUSIVE;
-- failed hard gate overrides metric gains;
-- hard metric regression overrides quality gains;
-- regression beyond tolerance rejects candidate;
-- declared target must actually improve;
-- manifest tampering becomes BLOCKED;
-- deterministic evidence digest is produced for the comparison.
+- minimum improvement and regression tolerance are metric-specific;
+- hard constraints such as crash/test regressions override quality gains.
 
-### Authority state
+### Acceptance behavior
+- missing hard-gate evidence => INCONCLUSIVE;
+- failed hard gate => FAIL;
+- target metric not improved => FAIL;
+- non-hard regression beyond tolerance => FAIL;
+- hard metric violation => FAIL even when target quality improves;
+- valid paired improvement with all hard gates passing => PASS.
 
-Phase 2 still has no patch, shell, GitHub mutation, merge or promotion authority.
-It measures and compares evidence only.
+## Phase 2 verdict
 
-### Open obligations
+Implementation evidence: **PASS**
+Whole-repository regression: **PASS**
+Paired evaluator suite: **PASS**
+Production mutation authority added: **NO**
+Independent authority-plane review: **PENDING**
 
-- stacked PR #108 must not merge before Phase 1 review/merge;
-- independent review remains required for authority-plane changes;
-- Phase 3 research/hypothesis generation and Phase 4 planning remain separate work;
-- production Coding integration remains blocked on the authoritative Coding contract.
+Decision: **READY_FOR_STACKED_REVIEW**, not autonomously promoted.
 
-## Phase 3 — Selective Research + Hypothesis Engine
+---
 
-Status: **CI_PROVEN / STACKED_REVIEW_PENDING**
+# Phase 3 — Selective Research + Grounded Hypothesis Engine
 
-### Exact tested identity
+Status: IMPLEMENTED + CI VERIFIED; STACKED REVIEW PENDING
+Date: 2026-10-05
+Pull request: #110
 
-- stacked PR: #110
-- tested Phase 3 head: `54ab1f8b70c1546c1a12ebd74bfa87a6b1f4c99a`
-- base branch: `self-development-v1-phase2`
-- GitHub Actions: **Seven AI tests #3281**
-- workflow run id: `37260946250`
-- conclusion: **SUCCESS**
-- `all test suites: PASS (40 suites)`
+## Exact verification
+
+- Hardened Phase 3 head: `6cca3fa70183fe3bc5092f22d8144aae3c03713e`
+- Phase 2 base: `84e379993e5b3d5744118a2be5f0ec86f443900e`
+- Workflow run: `37263759584`
+- Seven AI tests: `#3324`
+- Result: **SUCCESS**
+- `node all.cjs`: **all test suites: PASS (40 suites)**
 - `self-development research and hypothesis test suite: PASS`
-- release artifact upload: **PASS**
+- release artifact upload: SUCCESS
 
-### Proven controls
+## Controls proven
 
-- high-confidence low-risk internal diagnoses may skip unnecessary web research;
-- uncertain, ambiguous, prior-failed, external or HIGH/CRITICAL work triggers research;
-- research source identity is HTTPS-only, credential-free and query/hash stripped;
-- research summary exposes coverage, gaps, independent hosts, contradictions and staleness;
-- hypotheses require known measurable effects and validation metrics;
-- CRITICAL protected-plane hypotheses are governance-only;
-- caller cannot bypass required research by supplying a fake precomputed decision;
-- uncertainty/solution ambiguity/evidence contradiction requires multiple distinct hypotheses;
-- duplicate candidates do not count twice;
-- previously rejected/rolled-back identical hypotheses are blocked without new evidence;
-- new evidence can permit a controlled retest;
-- all-required-research-stale blocks planning.
+- high-confidence/low-risk internal diagnosis may skip unnecessary research;
+- uncertain, ambiguous, external, prior-failed, HIGH and CRITICAL work triggers research;
+- source URLs are HTTPS-only, credential-free and canonicalized without query/hash storage;
+- research summarizes coverage, gaps, contradictions, freshness, source types and independent hosts;
+- hypothesis effects must use known registered metrics;
+- uncertain/contradictory/ambiguous cases require multiple distinct hypotheses;
+- duplicate hypotheses do not count twice;
+- prior REJECT/ROLLBACK cannot be retried merely by inventing a new evidence reference;
+- retry evidence must be grounded in current validated research/diagnostic evidence;
+- HIGH planning requires at least 2 independent research hosts;
+- CRITICAL planning requires at least 3 independent research hosts;
+- all-required-research-stale blocks planning;
+- CRITICAL protected-plane hypotheses remain GOVERNANCE_REQUIRED.
 
-### Authority state
+Authority added: **NO network mutation, NO code mutation, NO shell/GitHub write, NO promotion.**
 
-Phase 3 does not perform web requests itself and does not mutate code.
-It defines when research is required, validates structured evidence, and constrains hypotheses.
-
-## Phase 4 — Pareto-Aware Improvement Planner
-
-Status: **CI_PROVEN / STACKED_REVIEW_PENDING**
-
-### Exact tested identity
-
-- stacked PR: #111
-- tested head: `784fccb99b81411c8f9ec9f29c0f92f30ccfccfa`
-- base branch: `self-development-v1-phase3`
-- GitHub Actions: **Seven AI tests #3294**
-- workflow run id: `37261320461`
-- conclusion: **SUCCESS**
-- `self-development planner test suite: PASS`
-- `all test suites: PASS (41 suites)`
-- artifact upload: **PASS**
-
-### Proven controls
-
-- risk derives immutable proof and scope budgets;
-- LOW, MEDIUM, HIGH and CRITICAL plans have progressively stronger proof requirements;
-- CRITICAL evaluator/Self-Development changes cannot enter ordinary Coding planning;
-- HIGH requires manual approval and recovery/security evidence;
-- MEDIUM requires independent review;
-- scope over-budget fails closed instead of widening authority;
-- genuine multi-objective tradeoffs remain on a Pareto frontier;
-- strictly dominated candidates are separated;
-- hard-failure repairs outrank cheap cosmetic gain when both remain viable;
-- governance/blocked candidates cannot win through estimated utility;
-- malformed/missing planner assessments fail closed;
-- callers cannot downgrade proof requirements through hypothesis fields;
-- prioritization is deterministic;
-- planner utility is explicitly estimate-only and never acceptance evidence.
-
-## Phase 5 — Coding System Integration
-
-Status: **BLOCKED BY DEPENDENCY**
-
-At this checkpoint:
-- `.seven-team/coding-v1/IMPLEMENTATION_EVIDENCE.md` is absent on main;
-- no authoritative `CodingSystem.prepareCandidate/applyPlan/runTargetedVerification/discard` runtime was found;
-- legacy `release/github-self-dev.js` therefore remains an incompatible parallel mutation path for governed Self-Development.
-
-Self-Development does not fall back to that legacy path.
+Decision: **PHASE_3_CI_PROVEN / REVIEW_PENDING**.
 

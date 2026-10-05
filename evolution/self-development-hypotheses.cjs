@@ -151,13 +151,16 @@ function validateHypothesisSet({
     }
   }
 
+  const prior = priorAttempts.map(normalizePriorAttempt);
+  const observedPriorFailures = prior.filter((attempt) => ["REJECT", "ROLLBACK", "BLOCKED"].includes(attempt.decision)).length;
+  const declaredPriorFailures = Math.max(0, Number(researchContext.priorFailedAttempts) || 0);
   const maxRisk = prepared.reduce((best, item) => riskRank(item.risk.level) > riskRank(best) ? item.risk.level : best, "LOW");
   const researchDecision = decideResearch({
     diagnosis,
     riskLevel: maxRisk,
     fastMoving: researchContext.fastMoving === true,
     externalDependency: researchContext.externalDependency === true,
-    priorFailedAttempts: researchContext.priorFailedAttempts || 0,
+    priorFailedAttempts: Math.max(observedPriorFailures, declaredPriorFailures),
     solutionAmbiguity: researchContext.solutionAmbiguity || 0
   });
 
@@ -208,12 +211,29 @@ function validateHypothesisSet({
         researchSummary
       });
     }
+
+    const requiredHosts = maxRisk === "CRITICAL" ? 3 : maxRisk === "HIGH" ? 2 : 1;
+    if (researchSummary.independentHosts.length < requiredHosts) {
+      return Object.freeze({
+        readyForPlanning: false,
+        decision: "BLOCKED_RESEARCH_DIVERSITY",
+        minCandidates: 0,
+        accepted: Object.freeze([]),
+        rejected: Object.freeze(invalid),
+        reasons: Object.freeze([`need_${requiredHosts}_independent_research_hosts`]),
+        researchDecision,
+        researchSummary
+      });
+    }
   }
 
   const contradictionCount = researchSummary ? researchSummary.contradictions.length : 0;
   const ambiguityRequiresAlternatives = researchDecision.reasons.includes("multiple_plausible_remedies");
   const minCandidates = confidence < 0.65 || contradictionCount > 0 || ambiguityRequiresAlternatives ? 2 : 1;
-  const prior = priorAttempts.map(normalizePriorAttempt);
+  const availableEvidenceRefs = new Set([
+    ...(Array.isArray(diagnosis.observationIds) ? diagnosis.observationIds.map(String) : []),
+    ...(researchSummary ? researchSummary.evidenceRefs : [])
+  ]);
   const seen = new Set();
   const accepted = [];
   const rejected = [...invalid];
@@ -228,12 +248,15 @@ function validateHypothesisSet({
     const matchingPrior = prior.filter((attempt) => attempt.fingerprint === candidate.fingerprint && ["REJECT", "ROLLBACK"].includes(attempt.decision));
     if (matchingPrior.length) {
       const oldEvidence = new Set(matchingPrior.flatMap((attempt) => attempt.evidenceRefs));
-      const newEvidence = candidate.evidenceRefs.filter((ref) => !oldEvidence.has(ref));
-      if (!newEvidence.length) {
+      const claimedNewEvidence = candidate.evidenceRefs.filter((ref) => !oldEvidence.has(ref));
+      const groundedNewEvidence = claimedNewEvidence.filter((ref) => availableEvidenceRefs.has(ref));
+      if (!groundedNewEvidence.length) {
         rejected.push(Object.freeze({
           id: candidate.id,
           fingerprint: candidate.fingerprint,
-          reason: "repeated_failed_hypothesis_without_new_evidence"
+          reason: claimedNewEvidence.length
+            ? "repeated_failed_hypothesis_new_evidence_not_grounded"
+            : "repeated_failed_hypothesis_without_new_evidence"
         }));
         continue;
       }
