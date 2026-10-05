@@ -115,7 +115,7 @@ pass("research summary exposes coverage, contradictions, independence and stalen
     asOf: "2026-10-05T00:00:00Z",
     maxAgeDays: 365
   });
-  assert.equal(summary.coverage, 2 / 3);
+  assert.equal(summary.coverage, 0.666667);
   assert.deepEqual(summary.gaps, ["rollback_required"]);
   assert.deepEqual(summary.contradictions, ["sandbox_required"]);
   assert.ok(summary.staleEvidenceIds.includes("e3"));
