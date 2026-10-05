@@ -272,6 +272,9 @@ function validateRuns(manifest, runs, side) {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
       return { valid: false, blocked: true, reason: `${side}_run_invalid`, runs: [] };
     }
+    if (String(raw.manifestDigest || "") !== manifest.manifestDigest) {
+      return { valid: false, blocked: true, reason: `${side}_manifest_mismatch`, runs: [] };
+    }
     if (String(raw.environmentDigest || "") !== manifest.environmentDigest) {
       return { valid: false, blocked: true, reason: `${side}_environment_mismatch`, runs: [] };
     }
@@ -283,10 +286,20 @@ function validateRuns(manifest, runs, side) {
       if (!manifest.metrics.includes(key)) {
         return { valid: false, blocked: true, reason: `${side}_metric_not_in_manifest:${key}`, runs: [] };
       }
-      validateMetricValue(key, metrics[key]);
+      try {
+        validateMetricValue(key, metrics[key]);
+      } catch (error) {
+        return { valid: false, blocked: true, reason: `${side}_metric_invalid:${key}`, runs: [] };
+      }
+    }
+    for (const metricId of manifest.metrics) {
+      if (!Object.prototype.hasOwnProperty.call(metrics, metricId)) {
+        return { valid: false, blocked: false, reason: `${side}_metric_missing:${metricId}`, runs: [] };
+      }
     }
     normalized.push(Object.freeze({
       runId: safeToken(raw.runId, `${side}.runId`, { max: 160 }),
+      manifestDigest: manifest.manifestDigest,
       environmentDigest: manifest.environmentDigest,
       metrics: Object.freeze({ ...metrics })
     }));
