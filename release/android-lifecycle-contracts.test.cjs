@@ -15,7 +15,7 @@ assert.match(motion,/const p=window\.SevenPerformance/);
 assert.match(motion,/p\.state\.ready!==true/);
 assert.match(visual,/persistenceStatus/,'Android visual gate must assert persistence status ownership');
 assert.match(visual,/parentElement\?\.classList\.contains\('topbar'\)/);
-assert.match(visual,/getComputedStyle\(s\)\.position!='fixed'/);
+assert.match(visual,/getComputedStyle\(s\)\.position!==['"]fixed['"]/);
 
 const rcFixture=fs.readFileSync(__dirname+'/../apk/android-rc-state-fixture.cjs','utf8');
 const rcHarness=fs.readFileSync(__dirname+'/../apk/materialize-android-rc-harness.cjs','utf8');
