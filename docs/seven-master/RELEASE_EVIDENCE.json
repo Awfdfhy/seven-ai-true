@@ -555,9 +555,9 @@
       "p95Ms": 54.920800000000014
     },
     "latestStaticAudit": {
-      "startupBytes": 99397,
+      "startupBytes": 99531,
       "workspaceBytes": 312627,
-      "staticBytes": 4184053
+      "staticBytes": 4184187
     },
     "latestFocusedChecks": [
       "agent-workflow-isolation",
@@ -579,6 +579,16 @@
       "repair": "pinned parser beta runtime packaging",
       "preferenceCases": 14,
       "sourcePackagedComparison": "PASS"
+    },
+    "nightFailure": {
+      "run": 37261393766,
+      "head": "a68c7e9f18ec0e0d97618c084afb33692f124746",
+      "job": 111609185057,
+      "failure": "release-verify.cjs:90 waitForFunction timeout; night core surface specificity conflict",
+      "repair": "rooted authoritative core surface selectors",
+      "staticAudit": "PASS",
+      "contrast": "PASS",
+      "browserRetest": "PENDING"
     }
   }
 }

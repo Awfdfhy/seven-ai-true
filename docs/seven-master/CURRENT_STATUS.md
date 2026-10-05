@@ -129,3 +129,5 @@ See:
 
 - REL-19: latest upstream night/system-auto-theme fixes caused a reproducible startup gate failure (100085 bytes). Parser-based beta startup packaging now gives 99397 bytes without changing the limit; 14 preference/system/legacy cases match source behavior. Source and packaged API names remain available. Latest contrast, zero-room, static and native generation checks pass; full final code CI is pending.
 - Isolated release-branch Web/Android validation added upstream is preserved; main artifact acceptance still requires the exact main SHA/run. There are 42 component suites plus two browser suites.
+
+- REL-20: actual packaged browser run 37261393766 failed night surface verification after component/packaged gates passed. Rooted lazy CSS overrode the lower-specificity inline theme bridge. Added rooted authoritative main/composer selectors; contrast/static checks pass (99531 startup bytes), full browser retest pending.

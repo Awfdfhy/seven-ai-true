@@ -292,13 +292,14 @@ html[data-seven-hidden="1"] *{animation-play-state:paused!important}
 
 /* Authoritative resolved-theme bridge for core surfaces.
    This inline layer must not depend on the lazily materialized remake root. */
-html[data-seven-theme="night"] body:not(.light) .main{
+html[data-seven-theme="night"] body:not(.light) .main,
+html[data-seven-theme="night"] body:not(.light) #seven-app .main{
   background:#111815!important;
   color:#edf5f0!important;
 }
-html[data-seven-theme="night"] body:not(.light) .composer{
+html[data-seven-theme="night"] body:not(.light) .composer,
+html[data-seven-theme="night"] body:not(.light) #seven-app .composer{
   background:#111815!important;
   color:#edf5f0!important;
   border-color:#33443b!important;
 }
-
