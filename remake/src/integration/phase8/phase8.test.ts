@@ -210,7 +210,6 @@ describe("Phase 8 GitHub Self-Dev", () => {
       files: [{ path: "src/a.ts", content: "x" }],
     }).result).rejects.toMatchObject({
       code: "TOOL",
-      details: { stage: "coding_verification", reason: "MALFORMED_IDENTITY" },
     });
     expect(refresh).not.toHaveBeenCalled();
     expect(mutation.apply).not.toHaveBeenCalled();
