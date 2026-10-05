@@ -93,7 +93,7 @@ describe("KiloAnonymousProviderAdapter", () => {
       for await (const _chunk of adapter.stream(
         {
           modelId: "kilo-auto/free",
-          messages: [{ role: "user", content: "Hello" }],
+          messages: [{ role: "system", content: "You are Seven." }, { role: "user", content: "Hello" }],
         },
         new AbortController().signal,
       )) {
@@ -137,7 +137,7 @@ describe("KiloAnonymousProviderAdapter", () => {
       for await (const _chunk of adapter.stream(
         {
           modelId: "kilo-auto/free",
-          messages: [{ role: "user", content: "Hello" }],
+          messages: [{ role: "system", content: "You are Seven." }, { role: "user", content: "Hello" }],
         },
         new AbortController().signal,
       )) {
