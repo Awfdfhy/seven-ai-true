@@ -10,7 +10,6 @@
     "D05_SELF_DEVELOPMENT",
     "D06_RPG_WORLD",
     "D07_RESEARCH_WEB",
-    "D08_MODEL_ROUTING",
     "D09_DEEP_THINK",
     "D10_FILES_MULTIMODAL",
     "D11_ANDROID_NATIVE",
@@ -18,7 +17,6 @@
     "D13_ARABIC_RTL_A11Y",
     "D14_SECURITY_PRIVACY",
     "D15_PERSISTENCE_RECOVERY",
-    "D16_NETWORK_RESILIENCE",
     "D17_PERFORMANCE_CONCURRENCY",
     "D18_TESTING_EVALS",
     "D19_AGENT_ORCHESTRATION",
@@ -28,9 +26,7 @@
     "D23_IMPORT_EXPORT_BACKUP",
     "D24_RELEASE_APK",
     "D25_HISTORY_ROOMS",
-    "D26_SETTINGS_CONTROLS",
     "D27_ERROR_RECOVERY_UX",
-    "D28_LOCAL_INTELLIGENCE",
     "D29_REAL_WORKS_CANON",
     "D30_AUTONOMOUS_QUALITY"
   ],
@@ -97,7 +93,7 @@
       "id": "D03_TOOLS_CAPABILITY",
       "status": "INSUFFICIENT",
       "urls": 20,
-      "primaryTagged": 18,
+      "primaryTagged": 17,
       "target": 20,
       "owners": [
         "A04",
@@ -155,8 +151,8 @@
     {
       "id": "D08_MODEL_ROUTING",
       "status": "INSUFFICIENT",
-      "urls": 11,
-      "primaryTagged": 11,
+      "urls": 31,
+      "primaryTagged": 31,
       "target": 10,
       "owners": [
         "A05",
@@ -243,8 +239,8 @@
     {
       "id": "D16_NETWORK_RESILIENCE",
       "status": "INSUFFICIENT",
-      "urls": 7,
-      "primaryTagged": 7,
+      "urls": 31,
+      "primaryTagged": 31,
       "target": 8,
       "owners": [
         "B07",
@@ -353,8 +349,8 @@
     {
       "id": "D26_SETTINGS_CONTROLS",
       "status": "INSUFFICIENT",
-      "urls": 7,
-      "primaryTagged": 7,
+      "urls": 31,
+      "primaryTagged": 31,
       "target": 6,
       "owners": [
         "A05",
@@ -375,8 +371,8 @@
     {
       "id": "D28_LOCAL_INTELLIGENCE",
       "status": "INSUFFICIENT",
-      "urls": 5,
-      "primaryTagged": 5,
+      "urls": 31,
+      "primaryTagged": 31,
       "target": 8,
       "owners": [
         "A05",
