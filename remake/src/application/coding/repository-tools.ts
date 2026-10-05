@@ -36,7 +36,7 @@ export function registerCodingRepositoryTools(
     requiredCapabilities:["coding.repo.read"],
     annotations:{risk:"read",idempotency:"idempotent",approval:"never",sensitivity:"user-data",reversibility:"reversible"},
     timeoutMs:60_000,maxResultBytes:1_000_000,
-    handler:async(ctx,input)=>({entries:await backend.listFiles({...input,signal:ctx.signal})}),
+    handler:async(ctx,input)=>({entries:[...await backend.listFiles({...input,signal:ctx.signal})]}),
   });
   registry.register({
     id:"coding.repo.read",version:"1.0.0",title:"Coding repository read",
@@ -50,7 +50,7 @@ export function registerCodingRepositoryTools(
       const files=await backend.readFiles({...input,signal:ctx.signal});
       const bytes=files.reduce((sum,file)=>sum+new TextEncoder().encode(file.content).byteLength,0);
       if(bytes>900_000)throw new SevenError({code:"TOOL",message:"Coding repository read exceeds tool result budget."});
-      return {files};
+      return {files:[...files]};
     },
   });
   registry.register({
@@ -70,10 +70,11 @@ export function registerCodingRepositoryTools(
       const current=await backend.getHead({repository:input.repository,branch:input.branch,signal:ctx.signal});
       if(current.toLowerCase()!==input.baseSha.toLowerCase())throw new SevenError({code:"VALIDATION",message:"Coding commit base is stale."});
       await ctx.markEffectStarted();
-      return backend.commit({
+      const result=await backend.commit({
         repository:input.repository,branch:input.branch,baseSha:input.baseSha,
         message:input.message,changes:input.changes as readonly RepositoryCommitChange[],signal:ctx.signal,
       });
+      return {commitSha:result.commitSha,changedPaths:[...result.changedPaths]};
     },
   });
 }
