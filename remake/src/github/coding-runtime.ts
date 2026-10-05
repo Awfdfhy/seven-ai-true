@@ -48,5 +48,6 @@ export function createGitHubCodingRuntime(input: Readonly<{
     verification,
     research,
     input.reviewer,
+    input.taskId,
   );
 }
