@@ -47,3 +47,6 @@ assert.equal(a.view._diagnostics.bounded,true);assert.equal(b.view._diagnostics.
 assert.ok(a.view.knownCanon.length<=40);assert.ok(b.view.knownCanon.length<=40);
 assert.equal(Ctx.validateNoKnowledgeLeak(a.view,s,State,'a').valid,true);assert.equal(Ctx.validateNoKnowledgeLeak(b.view,s,State,'b').valid,true);
 console.log('rpg context views: PASS',JSON.stringify({aCanon:a.view.knownCanon.length,bCanon:b.view.knownCanon.length,aChars:a.view._diagnostics.serializedChars,bChars:b.view._diagnostics.serializedChars}));
+
+const sceneView=Ctx.buildSceneGenerationView(s,State,{maxChars:12000,characterLimit:4,canonLimit:20});
+assert.equal(sceneView.ok,true);assert.equal(sceneView.view._diagnostics.bounded,true);assert.equal(sceneView.view.controlRules.player,'player');assert.ok(!sceneView.view.characters.b.knownCanon.some(x=>x.id==='secret'));
