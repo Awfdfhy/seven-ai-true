@@ -14,8 +14,8 @@ const STATES = Object.freeze([
 
 function requireSha(value, name) {
   const sha = String(value || "").trim();
-  if (!/^[0-9a-f]{7,64}$/i.test(sha)) throw new Error(`${name} must be a commit-like SHA`);
-  return sha;
+  if (!/^[0-9a-f]{40}$/i.test(sha)) throw new Error(`${name} requires exact 40-char SHA`);
+  return sha.toLowerCase();
 }
 
 function createUpdateTransaction({ id, baselineSha, candidateSha, experimentId } = {}) {
