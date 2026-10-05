@@ -48,13 +48,13 @@ function promotionAdapter(initialHead) {
 }
 
 function txTo(state) {
-  const tx = createUpdateTransaction({ id: `recovery-${state}`, experimentId: "exp", baselineSha: "aaaaaaa", candidateSha: "bbbbbbb" });
+  const tx = createUpdateTransaction({ id: `recovery-${state}`, experimentId: "exp", baselineSha: "a".repeat(40), candidateSha: "b".repeat(40) });
   if (state === "PREPARED") return tx;
-  validateUpdate(tx, { observedBaseSha: "aaaaaaa", experimentPass: true, rollbackCheckpointSha: "aaaaaaa" });
+  validateUpdate(tx, { observedBaseSha: "a".repeat(40), experimentPass: true, rollbackCheckpointSha: "a".repeat(40) });
   if (state === "VALIDATED") return tx;
-  markApplied(tx, { appliedSha: "bbbbbbb" });
+  markApplied(tx, { appliedSha: "b".repeat(40) });
   if (state === "APPLIED") return tx;
-  verifyApplied(tx, { observedSha: "bbbbbbb", ciPassed: true, regressionFree: true });
+  verifyApplied(tx, { observedSha: "b".repeat(40), ciPassed: true, regressionFree: true });
   if (state === "VERIFIED") return tx;
   commitUpdate(tx);
   return tx;
@@ -85,42 +85,42 @@ function txTo(state) {
 
   await pass("crash after apply but before commit conservatively rolls back", async () => {
     const tx = txTo("APPLIED");
-    const result = await recoverTransaction({ transaction: tx, adapter: promotionAdapter("bbbbbbb") });
+    const result = await recoverTransaction({ transaction: tx, adapter: promotionAdapter("b".repeat(40)) });
     assert.equal(result.outcome, "ROLLED_BACK");
     assert.equal(tx.state, "ROLLED_BACK");
   });
 
   await pass("candidate visible from merely validated state is treated as uncertain apply and rolled back", async () => {
     const tx = txTo("VALIDATED");
-    const result = await recoverTransaction({ transaction: tx, adapter: promotionAdapter("bbbbbbb") });
+    const result = await recoverTransaction({ transaction: tx, adapter: promotionAdapter("b".repeat(40)) });
     assert.equal(result.outcome, "ROLLED_BACK");
     assert.equal(tx.state, "ROLLED_BACK");
   });
 
   await pass("prepared state with unexpected candidate head halts instead of guessing", async () => {
     const tx = txTo("PREPARED");
-    const result = await recoverTransaction({ transaction: tx, adapter: promotionAdapter("bbbbbbb") });
+    const result = await recoverTransaction({ transaction: tx, adapter: promotionAdapter("b".repeat(40)) });
     assert.equal(result.outcome, "HALT");
     assert.equal(result.recovery.reason, "candidate_visible_without_validated_state");
   });
 
   await pass("committed transaction at candidate head resumes as stable", async () => {
     const tx = txTo("COMMITTED");
-    const result = await recoverTransaction({ transaction: tx, adapter: promotionAdapter("bbbbbbb") });
+    const result = await recoverTransaction({ transaction: tx, adapter: promotionAdapter("b".repeat(40)) });
     assert.equal(result.outcome, "STABLE");
     assert.equal(tx.state, "COMMITTED");
   });
 
   await pass("committed transaction with unknown or reverted head halts for explicit inspection", async () => {
     const tx = txTo("COMMITTED");
-    assert.equal(classifyRecovery(tx, "aaaaaaa").action, "HALT");
-    assert.equal(classifyRecovery(tx, "ccccccc").reason, "unknown_head");
+    assert.equal(classifyRecovery(tx, "a".repeat(40)).action, "HALT");
+    assert.equal(classifyRecovery(tx, "c".repeat(40)).reason, "unknown_head");
   });
 
   await pass("corrupted transaction ledger always halts recovery", async () => {
     const tx = txTo("APPLIED");
     tx.ledger = tx.ledger.map((entry, index) => index === 0 ? { ...entry, payload: { tampered: true } } : entry);
-    const result = await recoverTransaction({ transaction: tx, adapter: promotionAdapter("bbbbbbb") });
+    const result = await recoverTransaction({ transaction: tx, adapter: promotionAdapter("b".repeat(40)) });
     assert.equal(result.outcome, "HALT");
     assert.equal(result.recovery.reason, "ledger_integrity");
   });
