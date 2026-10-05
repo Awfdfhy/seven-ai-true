@@ -67,3 +67,16 @@ Verification state:
 - because this is Evolution/Self-Development authority-plane code, independent review remains required before merge;
 - full Self-Development is not complete; Phase 2+ and end-to-end accept/reject/rollback proof remain open.
 
+### Self-Development Phase 2 candidate
+
+Stacked PR #108 adds a locked metric registry and paired baseline/candidate evaluator.
+
+Evidence:
+- tested head `357525adcc5f2864c5cca34a88cc1bd293fc3de3`;
+- Seven AI tests #3254: SUCCESS;
+- 39/39 suites PASS;
+- paired evaluator suite PASS;
+- artifact upload PASS.
+
+Phase 2 proves PASS/FAIL/BLOCKED/INCONCLUSIVE comparison with evaluator/environment/criteria locking. It still owns no production mutation authority.
+
