@@ -117,3 +117,27 @@ Exact-SHA run 37304323351 failed in `release/tool-contract.cjs` with a Node synt
 
 Latest candidate implementation SHA before this report update: `457f0ff04698209e67a84ead49a13b695c9ff938`.
 Exact-SHA Seven AI tests run 37304769178 was pending when recorded.
+
+
+## Batch 5 — Retry execution and learning-loop guard
+
+### CI failure retained
+Run 37304844600 failed because the newly added retry regression fixture itself was malformed by an unsafe textual replacement (`timeoutMs:10,...}0`). The fixture was repaired without weakening any assertion. This is recorded as a Chat 4 regression, not hidden.
+
+### Tool runtime
+- Scalar permission/resource declarations now normalize as one item rather than being spread into characters.
+- Retry policy is executable, not metadata-only.
+- Retry is bounded to max 3 retries.
+- Only normalized retryable failures (network/rate-limit/timeout) retry.
+- Non-retryable tool failures fail fast.
+- Cancellation is checked between attempts and never intentionally retried.
+- Audit evidence records attempt count.
+
+### Self-Development learning loop
+- Before Coding begins, `runCodingEvolution` checks the durable learning archive for the same subsystem+hypothesis+baseline fingerprint.
+- A prior terminal failure/rollback rejects the duplicate experiment as `REJECTED_REPEAT_FAILURE` at `LEARNING_GUARD`.
+- Regression proves the second Coding Agent receives zero calls.
+- A changed hypothesis or changed baseline remains eligible, so learning does not permanently blacklist a subsystem.
+
+Latest implementation SHA before this report update: `0c0a4b2aa257a89ea2b61619de6071f67c64620a`.
+Exact-SHA Seven AI tests run 37305481877 was pending when recorded.
