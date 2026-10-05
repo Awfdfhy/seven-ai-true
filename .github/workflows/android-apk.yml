@@ -1,3 +1,4 @@
+# Pinned main validation is also run on an isolated release/rc-* branch.
 name: Seven Android APK
 
 on:
