@@ -167,3 +167,22 @@ PR:
 - branch: `coding-system-v1`
 - base: `seven-remake-v3`
 - status: acceptance-ready for integration review. Merge/reconciliation with the currently released root product remains an Integration/Release Manager responsibility.
+
+
+## Coding Specialist — merged + post-merge verified
+
+PR #104 is **MERGED** into `seven-remake-v3`.
+
+Merge SHA:
+`42ff64c01074cff0d9358ba58ec6a0a316b83316`
+
+Post-merge evidence on the exact merge SHA:
+- Seven Remake V3 CI #428 / run 37263362539 — **SUCCESS** (audits, strict typecheck, Vitest, production build).
+- Seven Remake Android Release Gate #194 / run 37263362532 — **SUCCESS** (strict Remake compile/tests/build, Android lint/unit/APK build, release identity, Android 14 installed smoke, Android 16 installed smoke).
+
+Specialist regression evidence retained from the exact code-bearing candidate `371db3e45aea21fd1f0d191ff88542d64c914490`:
+- Seven AI tests #3239 / run 37260125250 — **SUCCESS**, including `node all.cjs`.
+- Seven Remake V3 CI #407 — **SUCCESS**.
+- Seven Remake Android Release Gate #173 — **SUCCESS**.
+
+Coding V1 is therefore complete at the specialist + typed-Remake branch level. The remaining work is product-level reconciliation with root/main, final UI/approval UX, live-provider/GitHub canary under explicit credentials/authorization, and Self-Development adoption through this verified path. Those remain Integration / Release Manager responsibilities rather than Coding V1 blockers.
