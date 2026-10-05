@@ -10,8 +10,8 @@ async function pass(name, fn) {
   console.log("PASS", name);
 }
 
-function fakeAdapter({ baseline = "aaaaaaa", candidate = "bbbbbbb", verify = { ciPassed: true, regressionFree: true }, applyThrows = false, rollbackThrows = false, drift = false } = {}) {
-  let head = drift ? "ccccccc" : baseline;
+function fakeAdapter({ baseline = "a".repeat(40), candidate = "b".repeat(40), verify = { ciPassed: true, regressionFree: true }, applyThrows = false, rollbackThrows = false, drift = false } = {}) {
+  let head = drift ? "c".repeat(40) : baseline;
   const calls = [];
   return {
     calls,
@@ -41,7 +41,7 @@ function fakeAdapter({ baseline = "aaaaaaa", candidate = "bbbbbbb", verify = { c
 }
 
 function tx(id = "tx") {
-  return createUpdateTransaction({ id, experimentId: "exp", baselineSha: "aaaaaaa", candidateSha: "bbbbbbb" });
+  return createUpdateTransaction({ id, experimentId: "exp", baselineSha: "a".repeat(40), candidateSha: "b".repeat(40) });
 }
 
 function promote(options = {}) {
