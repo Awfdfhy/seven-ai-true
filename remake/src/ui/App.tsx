@@ -27,10 +27,13 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
   const [roomList, setRoomList] = useState<readonly Room[]>([]);
   const [currentRoom, setCurrentRoom] = useState<Room | null>(null);
   const [input, setInput] = useState("");
-  const [pendingUser, setPendingUser] = useState<string | null>(null);
-  const [assistantDraft, setAssistantDraft] = useState("");
-  const [activeRun, setActiveRun] = useState<ChatRun | null>(null);
-  const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
+  const [generationByRoom, setGenerationByRoom] = useState<
+    Readonly<Record<string, Readonly<{
+      pendingUser: string;
+      assistantDraft: string;
+      run: ChatRun | null;
+    }>>>
+  >({});
   const [error, setError] = useState<string | null>(null);
   const [booting, setBooting] = useState(true);
   const [showMemory, setShowMemory] = useState(false);
@@ -252,7 +255,7 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
   };
 
   const setDeepThink = async (enabled: boolean) => {
-    if (!currentRoom || activeRun) return;
+    if (!currentRoom || generationByRoom[currentRoom.id]) return;
     try {
       const updated = withRoomDeepThink(currentRoom, enabled);
       await rooms.put(updated);
@@ -266,7 +269,7 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
   };
 
   const setChatMode = async (mode: ChatMode) => {
-    if (!currentRoom || activeRun) return;
+    if (!currentRoom || generationByRoom[currentRoom.id]) return;
     try {
       const updated = withRoomMode(currentRoom, mode);
       await rooms.put(updated);
@@ -346,7 +349,8 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
 
   const submit = async () => {
     const content = input.trim();
-    if (!currentRoom || !content || activeRun || pendingToolAction) return;
+    const room = currentRoom;
+    if (!room || !content || generationByRoom[room.id] || pendingToolAction) return;
     setError(null);
     if (!workspaceIntegrated) {
       setError(t(
@@ -359,7 +363,7 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
 
     try {
       const action = await toolApprovalCoordinator.propose({
-        roomId: currentRoom.id,
+        roomId: room.id,
         taskId: `approval:${crypto.randomUUID()}`,
         query: content,
       });
@@ -375,34 +379,60 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
     }
 
     setInput("");
-    setPendingUser(content);
-    setAssistantDraft("");
-    setActiveRoomId(currentRoom.id);
+    setGenerationByRoom((existing) => ({
+      ...existing,
+      [room.id]: Object.freeze({
+        pendingUser: content,
+        assistantDraft: "",
+        run: null,
+      }),
+    }));
     try {
-      const run = await chat.send(currentRoom.id, content, chatTransport, {
+      const run = await chat.send(room.id, content, chatTransport, {
         onDraft(draft) {
-          if (draft.roomId === currentRoom.id) setAssistantDraft(draft.content);
+          setGenerationByRoom((existing) => {
+            const active = existing[draft.roomId];
+            if (!active) return existing;
+            return {
+              ...existing,
+              [draft.roomId]: Object.freeze({
+                ...active,
+                assistantDraft: draft.content,
+              }),
+            };
+          });
         },
       });
-      setActiveRun(run);
+      setGenerationByRoom((existing) => {
+        const active = existing[room.id];
+        if (!active) {
+          run.cancel("ui-state-cleared");
+          return existing;
+        }
+        return {
+          ...existing,
+          [room.id]: Object.freeze({ ...active, run }),
+        };
+      });
       const completed = await run.result;
       setCurrentRoom((selected) => selected?.id === completed.id ? completed : selected);
       setRoomList((existing) => upsertRoom(existing, completed));
-      setPendingUser(null);
-      setAssistantDraft("");
     } catch (reason: unknown) {
       setError(classifySevenError(reason).userMessage);
     } finally {
-      setPendingUser(null);
-      setAssistantDraft("");
-      setActiveRun(null);
-      setActiveRoomId(null);
+      setGenerationByRoom((existing) => {
+        if (!(room.id in existing)) return existing;
+        const next = { ...existing };
+        delete next[room.id];
+        return next;
+      });
     }
   };
 
   const messages = currentRoom?.messages ?? [];
-  const showPending = currentRoom && activeRoomId === currentRoom.id && pendingUser;
-  const showDraft = currentRoom && activeRoomId === currentRoom.id && assistantDraft;
+  const currentGeneration = currentRoom ? generationByRoom[currentRoom.id] : undefined;
+  const showPending = currentGeneration?.pendingUser ?? null;
+  const showDraft = currentGeneration?.assistantDraft ?? "";
 
   return (
     <main
@@ -568,7 +598,7 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
               <button
                 key={mode}
                 type="button"
-                disabled={!!activeRun}
+                disabled={!!currentGeneration}
                 aria-pressed={(currentRoom.mode ?? "balanced") === mode}
                 onClick={() => void setChatMode(mode)}
               >
@@ -581,7 +611,7 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
             ))}
             <button
               type="button"
-              disabled={!!activeRun}
+              disabled={!!currentGeneration}
               aria-pressed={currentRoom.deepThink === true}
               onClick={() => void setDeepThink(currentRoom.deepThink !== true)}
             >
@@ -624,13 +654,13 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
               {showPending && (
                 <article className="seven-message seven-message-user seven-pending">
                   <span className="seven-message-label">{t("You", "أنت")}</span>
-                  <div>{pendingUser}</div>
+                  <div>{showPending}</div>
                 </article>
               )}
               {showDraft && (
                 <article className="seven-message seven-message-assistant seven-streaming">
                   <span className="seven-message-label">Seven</span>
-                  <div>{assistantDraft}<span className="seven-caret">▍</span></div>
+                  <div>{showDraft}<span className="seven-caret">▍</span></div>
                 </article>
               )}
             </div>
@@ -702,8 +732,14 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
                 }
               }}
             />
-            {activeRun ? (
-              <button className="seven-send seven-stop" type="button" onClick={() => activeRun.cancel("user-stop")} aria-label={t("Stop", "إيقاف")}>■</button>
+            {currentGeneration ? (
+              <button
+                className="seven-send seven-stop"
+                type="button"
+                disabled={!currentGeneration.run}
+                onClick={() => currentGeneration.run?.cancel("user-stop")}
+                aria-label={t("Stop", "إيقاف")}
+              >■</button>
             ) : (
               <button className="seven-send" type="button" disabled={!input.trim() || !currentRoom || toolActionBusy || !!pendingToolAction || !workspaceIntegrated} onClick={() => void submit()} aria-label={t("Send", "إرسال")}>↑</button>
             )}
