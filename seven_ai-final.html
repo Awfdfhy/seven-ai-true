@@ -1297,14 +1297,13 @@
         // the start of the room, gets folded into room.summary instead.
         const HISTORY_KEEP_RAW_TOKENS = Math.floor(CONTEXT_WINDOW_TOKENS * 0.1); // ~13,107
 
-        // No real tokenizer is loaded in this app, so this uses the common
-        // ~4-characters-per-token approximation for English. It undercounts
-        // for languages with denser tokenization (Arabic, CJK, etc.), which
-        // is fine here — this is only a trigger for *when* to summarize, not
-        // something billed against exactly, and erring toward summarizing a
-        // little early is harmless.
+        // Shared conservative multilingual estimate: ASCII averages ~4 chars/token,
+        // while non-ASCII text (Arabic/CJK/etc.) is budgeted at up to one token/char.
+        // This intentionally prefers early summarization over context overflow.
         function estimateTokens(text) {
-            return Math.ceil((text || "").length / 4);
+            let units = 0;
+            for (const ch of String(text || "")) units += ch.charCodeAt(0) < 128 ? 0.25 : 1;
+            return Math.max(1, Math.ceil(units));
         }
         function estimateMessageTokens(msg) {
             return estimateTokens(msg.content) + 4; // +4 for role/formatting overhead, same rough order as OpenAI's own estimate
