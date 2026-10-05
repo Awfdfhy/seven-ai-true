@@ -64,6 +64,26 @@ pass("experiment cannot grant itself access to evaluator or CI paths", () => {
   }), /protected evaluator paths/);
 });
 
+pass("expanded evaluator plane protects corpus autonomy and release gates", () => {
+  for (const protectedPath of [
+    "eval/tasks.jsonl",
+    "eval/baseline.json",
+    ".seven-team/autonomy/constitution.json",
+    ".seven-team/autonomy/proof-policy.json",
+    "release/static-audit.cjs",
+    "release/release-verify.cjs"
+  ]) {
+    assert.throws(() => createExperiment({
+      id: `protected-${protectedPath}`,
+      subsystem: "evolution",
+      hypothesis: "attempt to change the judge",
+      baselineRef: "a",
+      candidateRef: "b",
+      allowedPaths: [protectedPath]
+    }), /protected evaluator paths/);
+  }
+});
+
 pass("path traversal and undeclared files fail scope validation", () => {
   const exp = experiment();
   assert.throws(() => validateChangedPaths(exp, ["../secret"]), /unsafe repository path/);
