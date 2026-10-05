@@ -1,0 +1,48 @@
+'use strict';
+const fs=require('fs'),assert=require('assert/strict'),path=require('path');
+const root=path.resolve(__dirname,'..');
+const config=JSON.parse(fs.readFileSync(path.join(root,'capacitor.config.json'),'utf8'));
+const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
+assert.equal(config.appId,'ai.seven.v243','RC install lineage package ID must remain stable');
+assert.equal(pkg.sevenAndroidVersionCode,243,'baseline Android versionCode changed without a migration decision');
+const fixture=require('./android-rc-state-fixture.cjs');
+for(const phase of ['precommit','postcommit','cleancommit']){
+  const script=fixture.stageProcessScript(phase);
+  assert.match(script,/roomPersistence\.save\(\)/,'process phase must exercise the real save path');
+  assert.match(script,/seven_ai_room_wal_v1|walStaged/,'process phase must observe the real WAL');
+  assert.match(fixture.verifyProcessScript(phase),/roomPersistence\.status\(\)/);
+}
+assert.match(fixture.stageProcessScript('precommit'),/indexedDB\.open\('seven_ai_canonical_v1'\)/,'precommit phase must hold the real IndexedDB transaction');
+const seed=fixture.seedUpgradeScript();
+for(const required of ['createKnowledgeArtifact','addMemory','SevenRpgSession.createManager','secureSet','roomPersistence.save'])assert.ok(seed.includes(required),'upgrade fixture missing '+required);
+const materializer=fs.readFileSync(path.join(__dirname,'materialize-android-rc-harness.cjs'),'utf8');
+assert.match(materializer,/takePersistableUriPermission/);
+assert.match(materializer,/getPersistedUriPermissions/);
+assert.match(materializer,/versionCode\(\)>before/);
+assert.match(materializer,/host did not kill the target process/);
+const signing=fs.readFileSync(path.join(__dirname,'patch-production-signing.cjs'),'utf8');
+assert.match(signing,/sevenReleaseKeystore/);
+assert.match(signing,/signingConfig signingConfigs\.sevenRelease/);
+
+const runner=fs.readFileSync(path.join(__dirname,'run-android-rc-acceptance.sh'),'utf8');
+assert.match(runner,/pm clear "\$APP_ID"/);
+assert.equal((runner.match(/pm clear "\$APP_ID"/g)||[]).length,1,'target data may be cleared only before Build A seed');
+assert.match(runner,/kill_window precommit/);
+assert.match(runner,/kill_window postcommit/);
+assert.match(runner,/kill_window cleancommit/);
+assert.match(runner,/adb install -r -t "\$TMP\/build-b\.apk"/);
+assert.match(runner,/versionCode\\s\+\\d\+/);
+assert.match(runner,/A_SIGNER.*B_SIGNER/s);
+assert.match(runner,/am start -W -n "\$APP_ID\/\.MainActivity"/);
+assert.match(runner,/dumpsys meminfo "\$APP_ID"/);
+assert.match(runner,/measureRuntimePerformance/);
+assert.match(runner,/send-trim-memory "\$APP_ID" RUNNING_LOW/);
+assert.match(materializer,/SEVEN_RC_PERFORMANCE/);
+assert.match(materializer,/backgroundForegroundPreservesDurableState/);
+
+console.log('android RC acceptance harness contracts: PASS');
+
+assert.match(materializer,/new java\.io\.File\(target\.getFilesDir\(\),"seven-rc-process-ready"\)/);
+assert.match(materializer,/out\.getFD\(\)\.sync\(\)/,'readiness marker must be committed before the host kills');
+assert.match(runner,/adb shell run-as "\$APP_ID" cat "\$marker"/,'host must read the actual target-owned marker');
+assert.doesNotMatch(materializer,/executeShellCommand\("sh -c/,'UiAutomation command parser is not a shell quoting interface');

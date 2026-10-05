@@ -7,7 +7,7 @@ const REPO="Awfdfhy/seven-ai-true";
 const REPO_API="/repos/"+REPO;
 const DEFAULT_BASE="main";
 const PROTECTED_PATHS=[
-  /^\.github\/workflows\//,
+  /^\.github\//,
   /^evolution\//,
   /^hardening\//,
   /^all\.cjs$/,
@@ -348,59 +348,30 @@ async function dispatchWorkflow(workflow,ref){
 async function selfDevelop(task,options){
   task=String(task||"").trim();if(!task)throw new Error("Development task is empty.");
   if(S.busy)throw new Error("Seven is already running a development operation.");
+  // The shipped UI must never substitute its own edit/repair loop for Coding.
+  const bridge=r.SevenSelfDevelopment;
+  if(!bridge||bridge.contract!=="seven-self-development-public-coding-v1"||typeof bridge.runCodingEvolution!=="function"){
+    throw new Error("Self-Development is blocked: the public Coding and Trusted Eval production bridge is unavailable.");
+  }
   const opts=Object.assign({base:DEFAULT_BASE,maxRepairs:2,autoMerge:false,buildApk:false},options||{});
-  S.busy=true;S.last=null;S.log=[];setStage("start","Starting autonomous development: "+task);
-  let branch=null,lastCommit=null,summary="";
+  S.busy=true;S.last=null;S.log=[];setStage("start","Starting verified self-development: "+task);
   try{
     const state=await connectionState();if(!state.connected||!state.identity)throw new Error("Connect GitHub and install Seven Self Dev on "+REPO+" first.");
-    branch="seven-selfdev-"+Date.now().toString(36);
-    await createBranch(opts.base,branch);pushLog("Created branch "+branch+" from "+opts.base+".","ok");
-    const planning=await planFiles(task,branch);pushLog(planning.plan.plan||"Plan ready.","info");
-    let selected=planning.files;
-    let payload=await prepareImplementation(task,branch,selected,null);
-    summary=String(payload.summary||"Autonomous implementation");
-    let files=await materializeChanges(branch,normalizeChanges(payload));
-    setStage("commit","Creating atomic Git commit…");
-    lastCommit=await atomicCommit(branch,files,"Seven self-dev: "+task.slice(0,120));
-    pushLog("Committed "+lastCommit.sha.slice(0,12)+".","ok");
-    await dispatchWorkflow("seven-tests.yml",branch);
-    let run=await waitForRun(branch,lastCommit.sha);
-    let repairs=0;
-    while(run.conclusion!=="success"&&repairs<Number(opts.maxRepairs||0)){
-      repairs++;
-      const evidence=await failureEvidence(run);
-      pushLog("CI failed. Repair attempt "+repairs+" of "+opts.maxRepairs+".","warn");
-      const paths=[...new Set(selected.concat((String(evidence).match(/(?:[A-Za-z0-9_.-]+\/)+[A-Za-z0-9_.-]+\.(?:js|cjs|html|css|json|java|kt|md)/g)||[]).filter(p=>!protectedPath(p))))].slice(0,10);
-      payload=await prepareImplementation(task,branch,paths,evidence);
-      summary=String(payload.summary||summary);
-      files=await materializeChanges(branch,normalizeChanges(payload));
-      lastCommit=await atomicCommit(branch,files,"Seven self-dev repair "+repairs+": "+task.slice(0,100));
-      await dispatchWorkflow("seven-tests.yml",branch);
-      run=await waitForRun(branch,lastCommit.sha);
+    const result=await bridge.runCodingEvolution({task,options:opts});
+    const receipt=result&&result.coding&&result.coding.receipt;
+    if(!receipt||receipt.contract!=="seven-coding-integration-v1"||receipt.verdict!=="READY_FOR_INTEGRATION"||receipt.baseSha!==result.coding.baselineSha||receipt.resultSha!==result.coding.candidateSha){
+      throw new Error("Self-Development did not return an exact-SHA Verified Coding Receipt.");
     }
-    if(run.conclusion!=="success")throw new Error("CI did not pass after "+repairs+" repair attempt(s). Branch kept for inspection: "+branch);
-    pushLog("CI passed.","ok");
-    setStage("pr","Opening pull request…");
-    const pr=await openPullRequest(task,branch,opts.base,summary);
-    let merge=null;
-    if(opts.buildApk){
-      try{await dispatchWorkflow("android-apk.yml",branch);pushLog("Android APK workflow dispatched for "+branch+".","ok")}catch(e){pushLog("APK dispatch failed: "+e.message,"warn")}
+    if(result.outcome!=="COMMITTED"||result.learningRecorded!==true){
+      throw new Error("Self-Development was not accepted and archived: "+String(result.outcome||"unknown"));
     }
-    if(opts.autoMerge){
-      setStage("merge","Merging verified pull request…");
-      merge=await mergePullRequest(pr.number,lastCommit.sha);
-      if(!merge||!merge.merged)throw new Error("GitHub did not merge PR #"+pr.number+": "+(merge&&merge.message||"unknown reason"));
-      pushLog("Merged PR #"+pr.number+".","ok");
-    }
-    S.last={task,branch,base:opts.base,commit:lastCommit.sha,runId:run.id,prNumber:pr.number,prUrl:pr.html_url,merged:!!(merge&&merge.merged),summary};
-    setStage("done","Self-development run completed.");
-    return S.last;
+    S.last={task,commit:receipt.resultSha,baseSha:receipt.baseSha,outcome:result.outcome,receipt,learningRecorded:true};
+    setStage("done","Verified self-development completed.");return S.last;
   }catch(e){
-    setStage("error",e.message);
-    S.last={task,branch,commit:lastCommit&&lastCommit.sha||null,error:e.message};
-    throw e;
+    setStage("error",e.message);S.last={task,error:e.message};throw e;
   }finally{S.busy=false;render()}
 }
+
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
 function isArabic(){return /^ar\b/i.test(String(d.documentElement.lang||""))}
 function L(en,ar){return isArabic()?ar:en}
