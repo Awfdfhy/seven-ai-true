@@ -359,7 +359,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
         const memory=SevenRuntime.readMemory().objects.find(x=>x.type==='RpgStateSnapshot'&&x.scope==='rpg'&&x.content.includes(rid)&&x.content.includes('rpg-live-world'));
         return{schema:projection?.schema,access:projection?.access,worldId:projection?.worldId,revision:projection?.revision,source:!!source&&source.content.includes('"access":"character-local"'),renSecret:!!renProjection?.knownCanon?.some(x=>x.id==='secret'),renPublic:!!renProjection?.knownCanon?.some(x=>x.id==='public'),memory:!!memory,title:document.querySelector('[data-rpg-world-name]')?.textContent.trim()};
       },roomId);
-      assert.equal(state.schema,'seven-rpg-narrator-view');assert.equal(state.access,'world-truth');assert.equal(state.worldId,'rpg-live-world');assert.equal(state.source,true);assert.equal(state.renSecret,false);assert.equal(state.renPublic,true);assert.equal(state.memory,true);assert.equal(state.title,'RPG Live World');
+      assert.equal(state.schema,'seven-rpg-context');assert.equal(state.access,'world-truth');assert.equal(state.worldId,'rpg-live-world');assert.equal(state.source,true);assert.equal(state.renSecret,false);assert.equal(state.renPublic,true);assert.equal(state.memory,true);assert.equal(state.title,'RPG Live World');
       const before={worldId:state.worldId,revision:state.revision};
       await page.evaluate(async rid=>{
         SevenWorkspaces.close();const other=rid+'-empty';rooms[other]=createEmptyRoom();roomTitles[other]='Empty RPG';currentRoom=other;await saveRooms();
