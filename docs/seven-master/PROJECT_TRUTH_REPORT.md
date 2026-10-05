@@ -163,3 +163,10 @@ REL-21: source inspection found mount called hydrate without clearing prior room
 
 ### REL-22 — Modern night dialog surface mismatch
 Run 37261947268 passed night core surfaces, the mobile/RTL matrix and real RPG Memory/context/restart/empty-room isolation regression, then failed release-verify.cjs:440: modern dialog background was rgb(23,33,29), expected canonical rgb(17,24,21). Added a targeted rooted night dialog rule in tracked ui-hardening.css (materialized into remake.css), retaining the acceptance expectation. Static/contrast pass; full final retest required.
+
+### Integrated main and APK signer-output repair
+PR #105 merged at 29b26c6417b9fa332ae55f129bae983fb9efae02; no code-tree delta from candidate c5d63bf4ce51f1b21a3af6a186e3e8af5eac3500. Full Web passes: PR run 37262152839 and exact-commit isolated push run 37262150543. All 42 final local components passed. Actual packaged night/dialog/RTL/responsive/RPG Memory/context/restart/empty-room isolation gates passed.
+
+REL-23 (introduced gate assumption): Android run 37262150559 compiled successfully but certificate parsing failed without retaining tool stdout. Parser formerly accepted only numbered signer labels; official apksigner also emits API-range labels for v3.1. Extended supported label parsing, deduplicated certificate fingerprints, excluded source stamps/public-key lines and added diagnostic output. Added API-range/dev-release/uppercase/source-stamp rejection cases. Focused tests pass, real SDK retest remains required; no valid APK is inferred from this repair.
+
+Official implementation reference: https://android.googlesource.com/platform/tools/apksig/+/master/src/apksigner/java/com/android/apksigner/ApkSignerTool.java

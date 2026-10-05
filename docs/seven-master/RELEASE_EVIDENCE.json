@@ -859,5 +859,21 @@
         "error": null
       }
     ]
+  },
+  "integratedMain": {
+    "mergeSha": "29b26c6417b9fa332ae55f129bae983fb9efae02",
+    "verifiedHead": "c5d63bf4ce51f1b21a3af6a186e3e8af5eac3500",
+    "treeDelta": false,
+    "webRuns": [
+      37262152839,
+      37262150543
+    ],
+    "webConclusion": "success",
+    "localComponents": 42,
+    "androidCompiledRun": 37262150559,
+    "androidFailure": "certificate-output parsing; numbered-only assumption",
+    "parserRepairTests": "PASS API range, dev label, uppercase, source stamp/public key rejection",
+    "finalAndroid": "PENDING",
+    "RC": "NOT_CREATED"
   }
 }

@@ -1,18 +1,14 @@
 # Seven AI — Current Status
 
-## Lead Release Manager — continuation integration snapshot
+## Lead Release Manager — integrated main, final Android acceptance in progress
 
-Release remains **NOT ACCEPTED / no RC**. PR #105 reconciles upstream `00d271e1f9b457e205f641b086303161b1a156b6` with the release repairs, preserving both ADR-REL-001..005 and ADR-015..019 and specialist history. The enclosing commit identifies this candidate; later commits require separate evidence.
+PR #105 is **MERGED** at main SHA `29b26c6417b9fa332ae55f129bae983fb9efae02`, with the same source tree as the verified candidate. Full Web/all.cjs passed both PR run 37262152839 and isolated push run 37262150543 on head c5d63bf4ce51f1b21a3af6a186e3e8af5eac3500. All 42 local component suites passed; native generation and source-clean payload manifests pass. This is not a full release acceptance or RC.
 
-- All 34 local component suites reran on the merged source and passed; exact durations are in RELEASE_EVIDENCE.json. Full local browser gate remains unavailable because the Chromium archive download fails.
-- Verified upstream-only CI: Seven AI tests run 37241282527 and Seven Android APK run 37241282530 passed on `b3e3ffa4fe676a838ed658e22fad1576cfe11237`. Android job 111550342818 passed lint/unit/build, packaged-content checks, and connected API34/API36 WebView tests. These results do not certify the PR candidate.
-- Upstream added room write-ahead recovery, canonical response modes, originating-room cancellation, controller context budgets, fallback deadlines, temporal citations and native GitHub boundary/log fixes. Browser regressions exist for WAL staging/replay; actual Android process-kill/upgrade durability remains unproven.
-- Intermediate PR SHA ad00c123daedebf4193b8b158a725c2353fc455f passed full Seven AI tests run 37259977856. New binary/signature gate changes need their own CI. 39 component suites passed after incorporating upstream live RPG/lifecycle/workflow isolation. The RPG failure-path repair subsequently passed focused integration/static checks.
-- Added actual APK binary package/version/signature verification and a published JSON evidence artifact. Existing root debug build does not establish stable signing identity across runs; data-preserving upgrade remains unaccepted.
-- Pending: final PR full browser CI, merge to main, fresh Android workflow for the exact merged SHA, embedded version-5 provenance/package/signature verification and install/upgrade persistence.
-- Root HTML/Capacitor and typed remake remain different product trains. Live RPG session/public-memory bridge now exists and passes ordinary rollback tests. Injected index-plus-rollback storage failure reproduced divergent disk/session memory; a durable uncertainty journal now blocks hydrate/context/sync across restart and preserves the previous session. Automatic verified recovery, complete character generation binding and Coding/Evolution wiring remain blockers. Evidence score stays 43/100 until final-SHA gates are verified.
+Android validation run 37262150559 passed pre-APK Web gates, lint, unit tests and compilation, then failed in the new certificate-output parser. Main Android run 37262300975 requires fresh verification after the parser repair. Numbered and official API-range/v3.1 signer-label formats are now regression-tested, excluding source-stamp/public-key digests; a failed parse includes public certificate diagnostics. Cryptographic signature verification still requires apksigner success. Final exact-SHA APK/API34/API36 acceptance remains pending.
 
-See PROJECT_TRUTH_REPORT.md and RELEASE_EVIDENCE.json. No fresh candidate APK or RC is claimed here.
+Current implementation evidence: root HTML/Capacitor product; room WAL/cancellation/IME/modes/context/token/attachments/network/research integration; live room-scoped RPG session/public-memory/context/reload and empty-room isolation passed packaged browser gates. Source and packaged RPG state/session/context/failure modules pass. Uncertain RPG persistence is quarantined by a durable journal; automatic verified journal recovery remains incomplete.
+
+Open release gates: fresh final main Web/Android evidence; Android process-kill and upgrade persistence/signing continuity; live provider quality/TTFT; typed remake Memory/Tools/Coding product reconciliation; automatic RPG journal recovery and character-specific semantic model evaluation. No RC or zero-bugs claim. See PROJECT_TRUTH_REPORT.md and RELEASE_EVIDENCE.json.
 
 ## Earlier specialist batch history
 

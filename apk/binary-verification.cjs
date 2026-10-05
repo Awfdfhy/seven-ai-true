@@ -7,9 +7,9 @@ function parseBadging(output){
   return {packageName,versionCode:Number(versionCode),versionName};
 }
 function parseCertificates(output){
-  const certificates=[...String(output).matchAll(/^Signer #\d+ certificate SHA-256 digest: ([a-f0-9]{64})\s*$/gmi)].map(x=>x[1].toLowerCase());
-  if(!certificates.length)throw new Error('APK signing certificate unavailable');
-  return certificates;
+  const certificates=[...String(output).matchAll(/^Signer (?:#\d+|\(minSdkVersion=[^\r\n]*\)) certificate SHA-256 digest: ([a-f0-9]{64})[ \t]*$/gmi)].map(x=>x[1].toLowerCase());
+  if(!certificates.length)throw new Error('APK signing certificate unavailable: '+String(output).slice(0,2500));
+  return [...new Set(certificates)];
 }
 function assertIdentity(actual,expected){
   for(const key of ['packageName','versionCode','versionName'])if(actual[key]!==expected[key])throw new Error('APK binary '+key+' mismatch');
