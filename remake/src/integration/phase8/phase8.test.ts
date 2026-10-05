@@ -182,6 +182,40 @@ describe("Phase 8 GitHub Self-Dev", () => {
     expect(mutation.apply).not.toHaveBeenCalled();
   });
 
+  it("normalizes malformed Coding identity evidence before credentials are touched", async () => {
+    const refresh = vi.fn(async () => ({
+      accessToken: "token",
+      expiresAt: 10_000,
+      scopes: ["repo"],
+    }));
+    const auth = new GitHubAuthService({ refresh }, () => 100, 100);
+    const mutation = { apply: vi.fn(async () => ({ commitSha, changedPaths: ["src/a.ts"] })) };
+    const service = new GitHubSelfDevService(new TaskManager(), auth, mutation, {
+      async verify(input) {
+        return {
+          approved: true,
+          repository: input.repository,
+          baseSha: undefined as unknown as string,
+          verifiedPaths: input.files.map((file) => file.path),
+          checks: ["tests"],
+          evidenceId: "malformed",
+        };
+      },
+    });
+
+    await expect(service.apply({
+      repository: "owner/repo",
+      baseSha,
+      message: "Update",
+      files: [{ path: "src/a.ts", content: "x" }],
+    }).result).rejects.toMatchObject({
+      code: "TOOL",
+      details: { stage: "coding_verification", reason: "MALFORMED_IDENTITY" },
+    });
+    expect(refresh).not.toHaveBeenCalled();
+    expect(mutation.apply).not.toHaveBeenCalled();
+  });
+
   it("cancellation prevents a late GitHub mutation from becoming successful task truth", async () => {
     const auth = new GitHubAuthService({
       async refresh() {
