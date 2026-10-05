@@ -17,6 +17,8 @@ const seed=fixture.seedUpgradeScript();
 for(const required of ['createKnowledgeArtifact','addMemory','SevenRpgSession.createManager','secureSet','roomPersistence.save'])assert.ok(seed.includes(required),'upgrade fixture missing '+required);
 const materializer=fs.readFileSync(path.join(__dirname,'materialize-android-rc-harness.cjs'),'utf8');
 assert.match(materializer,/takePersistableUriPermission/);
+assert.match(materializer,/class SevenTestGrantReceiver extends BroadcastReceiver/);
+assert.match(materializer,/grantUriPermission/);
 assert.match(materializer,/getPersistedUriPermissions/);
 assert.match(materializer,/versionCode\(\)>before/);
 assert.match(materializer,/host did not kill the target process/);
@@ -26,6 +28,7 @@ assert.match(signing,/signingConfig signingConfigs\.sevenRelease/);
 
 const runner=fs.readFileSync(path.join(__dirname,'run-android-rc-acceptance.sh'),'utf8');
 assert.match(runner,/pm clear "\$APP_ID"/);
+assert.match(runner,/SevenTestGrantReceiver/);
 assert.equal((runner.match(/pm clear "\$APP_ID"/g)||[]).length,1,'target data may be cleared only before Build A seed');
 assert.match(runner,/kill_window precommit/);
 assert.match(runner,/kill_window postcommit/);
