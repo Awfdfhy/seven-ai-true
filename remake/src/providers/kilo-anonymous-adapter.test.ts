@@ -126,6 +126,20 @@ describe("KiloAnonymousProviderAdapter", () => {
     });
   });
 
+
+  it("preserves AbortError semantics when fetch rejects after cancellation", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const fakeFetch = (async () => {
+      throw new TypeError("browser fetch aborted");
+    }) as typeof fetch;
+    const adapter = new KiloAnonymousProviderAdapter(fakeFetch);
+
+    await expect(adapter.listModels(controller.signal)).rejects.toMatchObject({
+      name: "AbortError",
+    });
+  });
+
   it("fails explicitly on malformed SSE JSON instead of silently dropping it", async () => {
     const fakeFetch = (async () => new Response(
       "data: {not-json}\n\n",
