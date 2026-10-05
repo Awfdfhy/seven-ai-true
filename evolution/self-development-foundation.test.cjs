@@ -209,6 +209,13 @@ pass("proposal cannot route protected-plane edits into ordinary Coding System ex
   assert.deepEqual(protectedProposal.protectedPaths, ["evolution/gates.cjs"]);
 });
 
+pass("telemetry policy tables are not caller-mutable exports", () => {
+  const observer = require("./self-development-observer.cjs");
+  for (const key of ["OUTCOMES", "SEVERITIES", "METRIC_RULES", "METADATA_KEYS"]) {
+    assert.equal(Object.prototype.hasOwnProperty.call(observer, key), false);
+  }
+});
+
 pass("self-development phase 1 exports no production mutation capability", () => {
   const observer = require("./self-development-observer.cjs");
   const diagnosis = require("./self-development-diagnosis.cjs");
