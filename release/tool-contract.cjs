@@ -89,9 +89,9 @@ async function execute({tool,input,authorize,signal,traceId,now=()=>Date.now()}=
   let timer,parentAbort,settled=false;
   const effectiveSignal=controller?controller.signal:signal;
   try{
-   const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{if(controller&&!controller.signal.aborted)controller.abort("timeout");reject(Object.assign(new Error("tool timeout"),{code:"TIMEOUT"}))},t.timeoutMs)});
+   const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{reject(Object.assign(new Error("tool timeout"),{code:"TIMEOUT"}));if(controller&&!controller.signal.aborted)controller.abort("timeout")},t.timeoutMs)});
    const cancelled=new Promise((_,reject)=>{
-    if(signal){parentAbort=()=>{if(controller&&!controller.signal.aborted)controller.abort("caller-cancelled");reject(Object.assign(new Error("cancelled"),{code:"CANCELLED"}))};signal.addEventListener("abort",parentAbort,{once:true})}
+    if(signal){parentAbort=()=>{reject(Object.assign(new Error("cancelled"),{code:"CANCELLED"}));if(controller&&!controller.signal.aborted)controller.abort("caller-cancelled")};signal.addEventListener("abort",parentAbort,{once:true})}
    });
    const execution=Promise.resolve().then(()=>t.executor(input,{signal:effectiveSignal,traceId,attempt})).then(
     output=>{settled=true;return output},
