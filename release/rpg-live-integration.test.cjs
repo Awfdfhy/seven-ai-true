@@ -13,6 +13,22 @@ const runtime={
   commitMemory:(obj,op)=>{if(failMemory)return false;const i=mem.objects.findIndex(x=>x.id===obj.id);if(op==='CREATE'){if(i>=0)return false;mem.objects.push(JSON.parse(JSON.stringify(obj)));return true}if(op==='UPDATE'){if(i<0)return false;mem.objects[i]=JSON.parse(JSON.stringify(obj));return true}return false}
 };
 const a=Live.createBridge({stateApi:State,sessionApi:Session,runtime,storage});
+
+// Structured live transaction: deterministic validation owns mutation, including player agency and HARD CANON.
+const txSeed={worldId:'tx-world',world:{locations:{home:{},road:{}}},characters:{hero:{control:'player',locationId:'home'},npc:{control:'ai',locationId:'home'}},canon:{entries:{law:{level:'HARD',value:'old law',public:true}}}};
+assert.equal(a.manager.start({roomId:'tx-room',worldId:'tx-world',state:txSeed,legacy:null}).ok,true);
+let txOut=a.transact({roomId:'tx-room',worldId:'tx-world',events:[{id:'bad-player',type:'character.move',source:'runtime',actorId:'hero',payload:{characterId:'hero',toLocationId:'road'}}]});
+assert.equal(txOut.ok,false);assert.equal(txOut.eventReason,'player-control');assert.equal(a.load('tx-room','tx-world').session.state.characters.hero.locationId,'home');
+txOut=a.transact({roomId:'tx-room',worldId:'tx-world',events:[{id:'user-move',type:'character.move',source:'user',actorId:'hero',payload:{characterId:'hero',toLocationId:'road'}}]});
+assert.equal(txOut.ok,true);assert.equal(txOut.status,'COMMITTED');assert.equal(a.loadLatest('tx-room').session.state.characters.hero.locationId,'road');
+const revisionAfterMove=a.load('tx-room','tx-world').session.state.revision;
+txOut=a.transact({roomId:'tx-room',worldId:'tx-world',events:[{id:'bad-canon',type:'canon.set',source:'runtime',authority:'runtime',payload:{id:'law',entry:{level:'HARD',value:'new law',public:true}}}]});
+assert.equal(txOut.ok,false);assert.equal(txOut.eventReason,'hard-canon-conflict');assert.equal(a.load('tx-room','tx-world').session.state.revision,revisionAfterMove);
+failMemory=true;
+txOut=a.transact({roomId:'tx-room',worldId:'tx-world',events:[{id:'memory-fail',type:'world.set',source:'runtime',payload:{path:['flags','temp'],value:true}}]});
+assert.equal(txOut.ok,false);assert.equal(txOut.reason,'memory-projection-failed');assert.equal(a.load('tx-room','tx-world').session.state.world.flags.temp,undefined);
+failMemory=false;
+
 const one={work:{id:'valen',title:'Valen'},worldSession:{position:1,titles:[]},canonPack:{id:'canon'},canonSession:{position:1,ledger:[]}};
 let out=a.sync({roomId:'room-a',worldId:'valen',legacy:one,reason:'load'});
 assert.equal(out.ok,true);assert.equal(mem.objects.length,1);assert.equal(a.loadLatest('room-a').session.legacy.worldSession.position,1);
