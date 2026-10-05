@@ -2,8 +2,9 @@
 
 const assert = require("assert/strict");
 const { createHypothesis } = require("./self-development-hypotheses.cjs");
+const { createResearchEvidence } = require("./self-development-research.cjs");
 const {
-  createPlanningCandidate,
+  derivePlanningCandidate,
   prioritizeCandidates,
   dominates
 } = require("./self-development-planner.cjs");
@@ -24,7 +25,7 @@ function hypothesis(id, overrides = {}) {
     validationMetrics: overrides.validationMetrics || ["qualityScore"],
     assumptions: overrides.assumptions || ["baseline and candidate environment remain comparable"],
     rollbackPlan: overrides.rollbackPlan || "restore exact baseline SHA",
-    evidenceRefs: overrides.evidenceRefs || ["research:phase4"]
+    evidenceRefs: overrides.evidenceRefs || ["obs:phase4"]
   });
 }
 
@@ -44,14 +45,59 @@ function assessment(overrides = {}) {
   };
 }
 
-pass("LOW planning derives fixed proof and bounded coding scope", () => {
-  const plan = createPlanningCandidate({
+function validationInput(candidates, overrides = {}) {
+  return {
+    diagnosis: {
+      id: "diag-phase4",
+      confidence: 0.9,
+      observationIds: ["obs:phase4"],
+      ...(overrides.diagnosis || {})
+    },
+    candidates,
+    researchContext: overrides.researchContext || {},
+    researchEvidence: overrides.researchEvidence || [],
+    requiredClaimKeys: overrides.requiredClaimKeys || [],
+    researchAsOf: overrides.researchAsOf,
+    researchMaxAgeDays: overrides.researchMaxAgeDays || 365,
+    priorAttempts: overrides.priorAttempts || []
+  };
+}
+
+function evidence(id, host) {
+  return createResearchEvidence({
+    id,
+    claimKey: "root_cause",
+    stance: "SUPPORT",
+    sourceUrl: `https://${host}/phase4/${id}`,
+    sourceType: "PAPER",
+    publishedAt: "2026-09-20T00:00:00Z",
+    retrievedAt: "2026-10-05T00:00:00Z",
+    confidence: 0.9
+  });
+}
+
+function criticalValidation(candidates) {
+  return validationInput(candidates, {
+    researchEvidence: [
+      evidence("r1", "one.example.com"),
+      evidence("r2", "two.example.com"),
+      evidence("r3", "three.example.com")
+    ],
+    requiredClaimKeys: ["root_cause"],
+    researchAsOf: "2026-10-05T00:00:00Z"
+  });
+}
+
+pass("direct derivation re-computes LOW proof profile but is never orchestration-authorized", () => {
+  const plan = derivePlanningCandidate({
     hypothesis: hypothesis("low"),
     assessment: assessment()
   });
   assert.equal(plan.riskLevel, "LOW");
   assert.equal(plan.disposition, "READY_FOR_CODING_PLAN");
   assert.equal(plan.ordinaryCodingAllowed, true);
+  assert.equal(plan.orchestrationAuthorized, false);
+  assert.equal(plan.validationDigest, null);
   assert.equal(plan.proofPlan.requiredProofLevel, "L2");
   assert.deepEqual(plan.proofPlan.requiredHardGates, ["contracts", "regression", "rollback"]);
   assert.equal(plan.proofPlan.automaticPromotionAllowed, false);
@@ -60,8 +106,8 @@ pass("LOW planning derives fixed proof and bounded coding scope", () => {
   assert.ok(/^[0-9a-f]{64}$/.test(plan.scopeManifest.scopeDigest));
 });
 
-pass("MEDIUM planning requires independent review and stronger proof", () => {
-  const plan = createPlanningCandidate({
+pass("MEDIUM derivation requires independent review and stronger proof", () => {
+  const plan = derivePlanningCandidate({
     hypothesis: hypothesis("medium", { changeClass: "routing" }),
     assessment: assessment()
   });
@@ -74,8 +120,8 @@ pass("MEDIUM planning requires independent review and stronger proof", () => {
   assert.ok(plan.proofPlan.requiredHardGates.includes("domain-benchmark"));
 });
 
-pass("HIGH planning requires manual approval, recovery and security gates", () => {
-  const plan = createPlanningCandidate({
+pass("HIGH derivation requires manual approval recovery and security gates", () => {
+  const plan = derivePlanningCandidate({
     hypothesis: hypothesis("high", {
       changeClass: "storage_schema",
       targetPaths: ["release/storage-migration.js"]
@@ -93,7 +139,7 @@ pass("HIGH planning requires manual approval, recovery and security gates", () =
 });
 
 pass("CRITICAL evaluator/self-development work never enters ordinary Coding planning", () => {
-  const plan = createPlanningCandidate({
+  const plan = derivePlanningCandidate({
     hypothesis: hypothesis("critical", {
       changeClass: "self_development",
       targetPaths: ["evolution/gates.cjs"],
@@ -113,14 +159,9 @@ pass("CRITICAL evaluator/self-development work never enters ordinary Coding plan
 });
 
 pass("scope budget blocks oversized LOW candidate instead of silently widening authority", () => {
-  const plan = createPlanningCandidate({
+  const plan = derivePlanningCandidate({
     hypothesis: hypothesis("wide-low", {
-      targetPaths: [
-        "release/a.js",
-        "release/b.js",
-        "release/c.js",
-        "release/d.js"
-      ]
+      targetPaths: ["release/a.js", "release/b.js", "release/c.js", "release/d.js"]
     }),
     assessment: assessment()
   });
@@ -129,11 +170,57 @@ pass("scope budget blocks oversized LOW candidate instead of silently widening a
   assert.equal(plan.ordinaryCodingAllowed, false);
 });
 
+pass("planner refuses raw hypotheses and re-runs Phase 3 validation itself", () => {
+  assert.throws(() => prioritizeCandidates({
+    hypotheses: [hypothesis("raw")],
+    assessments: { raw: assessment() }
+  }), /hypothesisValidation input required/);
+
+  assert.throws(() => prioritizeCandidates({
+    hypothesisValidation: {
+      readyForPlanning: true,
+      decision: "READY_FOR_PLANNING",
+      accepted: [hypothesis("fake")]
+    },
+    assessments: { fake: assessment() }
+  }), /diagnosis required/);
+});
+
+pass("failed Phase 3 validation blocks planning with no chosen candidate", () => {
+  const result = prioritizeCandidates({
+    hypothesisValidation: validationInput(
+      [hypothesis("uncertain", { diagnosisId: "diag-phase4" })],
+      { diagnosis: { confidence: 0.4 } }
+    ),
+    assessments: { uncertain: assessment() }
+  });
+  assert.equal(result.decision, "BLOCKED_HYPOTHESIS_VALIDATION");
+  assert.equal(result.chosen, null);
+  assert.equal(result.candidates.length, 0);
+  assert.ok(/^[0-9a-f]{64}$/.test(result.validation.digest));
+});
+
+pass("successful planning carries the Phase 3 validation digest into every candidate", () => {
+  const a = hypothesis("authorized-a");
+  const b = hypothesis("authorized-b");
+  const result = prioritizeCandidates({
+    hypothesisValidation: validationInput([a, b]),
+    assessments: {
+      "authorized-a": assessment(),
+      "authorized-b": assessment({ expectedGain: 0.7 })
+    }
+  });
+  assert.equal(result.decision, "PLANNED");
+  assert.ok(/^[0-9a-f]{64}$/.test(result.validation.digest));
+  assert.ok(result.candidates.every((item) => item.orchestrationAuthorized === true));
+  assert.ok(result.candidates.every((item) => item.validationDigest === result.validation.digest));
+});
+
 pass("Pareto frontier preserves real tradeoffs instead of collapsing to one scalar", () => {
   const quality = hypothesis("quality");
   const cheap = hypothesis("cheap");
   const result = prioritizeCandidates({
-    hypotheses: [quality, cheap],
+    hypothesisValidation: validationInput([quality, cheap]),
     assessments: {
       quality: assessment({
         expectedGain: 0.95,
@@ -160,42 +247,37 @@ pass("Pareto frontier preserves real tradeoffs instead of collapsing to one scal
 });
 
 pass("strictly dominated candidate is removed from the Pareto frontier", () => {
-  const strong = createPlanningCandidate({
-    hypothesis: hypothesis("strong"),
-    assessment: assessment({
-      expectedGain: 0.8,
-      confidence: 0.9,
-      implementationCost: 0.2,
-      evaluationCost: 0.2,
-      blastRadius: 0.1,
-      reversibility: 0.95,
-      userImpact: 0.8,
-      urgency: 0.8,
-      problemSeverity: 0.8
-    })
+  const strongHypothesis = hypothesis("strong");
+  const weakHypothesis = hypothesis("weak");
+  const strongAssessment = assessment({
+    expectedGain: 0.8,
+    confidence: 0.9,
+    implementationCost: 0.2,
+    evaluationCost: 0.2,
+    blastRadius: 0.1,
+    reversibility: 0.95,
+    userImpact: 0.8,
+    urgency: 0.8,
+    problemSeverity: 0.8
   });
-  const weak = createPlanningCandidate({
-    hypothesis: hypothesis("weak"),
-    assessment: assessment({
-      expectedGain: 0.4,
-      confidence: 0.6,
-      implementationCost: 0.4,
-      evaluationCost: 0.5,
-      blastRadius: 0.3,
-      reversibility: 0.7,
-      userImpact: 0.5,
-      urgency: 0.4,
-      problemSeverity: 0.5
-    })
+  const weakAssessment = assessment({
+    expectedGain: 0.4,
+    confidence: 0.6,
+    implementationCost: 0.4,
+    evaluationCost: 0.5,
+    blastRadius: 0.3,
+    reversibility: 0.7,
+    userImpact: 0.5,
+    urgency: 0.4,
+    problemSeverity: 0.5
   });
+  const strong = derivePlanningCandidate({ hypothesis: strongHypothesis, assessment: strongAssessment });
+  const weak = derivePlanningCandidate({ hypothesis: weakHypothesis, assessment: weakAssessment });
   assert.equal(dominates(strong, weak), true);
 
   const result = prioritizeCandidates({
-    hypotheses: [strong.hypothesis, weak.hypothesis],
-    assessments: {
-      strong: strong.assessment,
-      weak: weak.assessment
-    }
+    hypothesisValidation: validationInput([strongHypothesis, weakHypothesis]),
+    assessments: { strong: strongAssessment, weak: weakAssessment }
   });
   assert.deepEqual(result.frontier.map((item) => item.id), ["strong"]);
   assert.deepEqual(result.dominated.map((item) => item.id), ["weak"]);
@@ -205,7 +287,7 @@ pass("hard-failure repair outranks cheap cosmetic gain when both are on the fron
   const hard = hypothesis("hard-fix");
   const cosmetic = hypothesis("cosmetic");
   const result = prioritizeCandidates({
-    hypotheses: [hard, cosmetic],
+    hypothesisValidation: validationInput([hard, cosmetic]),
     assessments: {
       "hard-fix": assessment({
         expectedGain: 0.35,
@@ -247,7 +329,7 @@ pass("governance and scope-blocked candidates cannot win via estimated utility",
   const normal = hypothesis("normal");
 
   const result = prioritizeCandidates({
-    hypotheses: [critical, wide, normal],
+    hypothesisValidation: criticalValidation([critical, wide, normal]),
     assessments: {
       "critical-win": assessment({ expectedGain: 1, confidence: 1, userImpact: 1, problemSeverity: 1, hardFailureFix: true }),
       wide: assessment({ expectedGain: 0.99, confidence: 1, userImpact: 1 }),
@@ -255,35 +337,36 @@ pass("governance and scope-blocked candidates cannot win via estimated utility",
     }
   });
 
+  assert.equal(result.decision, "PLANNED");
   assert.deepEqual(result.governance.map((item) => item.id), ["critical-win"]);
   assert.deepEqual(result.blocked.map((item) => item.id), ["wide"]);
   assert.equal(result.chosen.id, "normal");
 });
 
 pass("planner assessment is fail-closed on missing or out-of-range inputs", () => {
-  assert.throws(() => createPlanningCandidate({
+  assert.throws(() => derivePlanningCandidate({
     hypothesis: hypothesis("missing-assessment"),
     assessment: { expectedGain: 0.5 }
   }), /planner assessment missing/);
 
-  assert.throws(() => createPlanningCandidate({
+  assert.throws(() => derivePlanningCandidate({
     hypothesis: hypothesis("bad-assessment"),
     assessment: assessment({ blastRadius: 1.1 })
   }), /blastRadius must be between 0 and 1/);
 
-  assert.throws(() => createPlanningCandidate({
+  assert.throws(() => derivePlanningCandidate({
     hypothesis: hypothesis("bad-hard"),
     assessment: { ...assessment(), hardFailureFix: "yes" }
   }), /hardFailureFix must be boolean/);
 });
 
-pass("proof and validation requirements come from risk + hypothesis, not caller downgrade", () => {
+pass("proof and validation requirements come from risk + hypothesis not caller downgrade", () => {
   const medium = hypothesis("proof-lock", {
     changeClass: "memory",
     expectedEffects: { memoryRecall: "IMPROVE", memoryPrecision: "PRESERVE" },
     validationMetrics: ["memoryRecall", "memoryPrecision"]
   });
-  const plan = createPlanningCandidate({
+  const plan = derivePlanningCandidate({
     hypothesis: {
       ...medium,
       proofPlan: { requiredProofLevel: "L0", requiredHardGates: [] }
@@ -293,21 +376,21 @@ pass("proof and validation requirements come from risk + hypothesis, not caller 
   assert.equal(plan.proofPlan.requiredProofLevel, "L3");
   assert.ok(plan.proofPlan.requiredHardGates.length > 0);
   assert.deepEqual(plan.proofPlan.validationMetrics, ["memoryPrecision", "memoryRecall"]);
+  assert.equal(plan.orchestrationAuthorized, false);
 });
 
-pass("prioritization is deterministic for the same inputs", () => {
+pass("prioritization is deterministic for the same validated inputs", () => {
   const hypotheses = [hypothesis("b"), hypothesis("a")];
-  const assessments = {
-    a: assessment(),
-    b: assessment()
-  };
-  const first = prioritizeCandidates({ hypotheses, assessments });
-  const second = prioritizeCandidates({ hypotheses, assessments });
+  const assessments = { a: assessment(), b: assessment() };
+  const input = validationInput(hypotheses);
+  const first = prioritizeCandidates({ hypothesisValidation: input, assessments });
+  const second = prioritizeCandidates({ hypothesisValidation: input, assessments });
   assert.deepEqual(
-    first.frontier.map((item) => [item.id, item.estimatedUtility, item.disposition]),
-    second.frontier.map((item) => [item.id, item.estimatedUtility, item.disposition])
+    first.frontier.map((item) => [item.id, item.estimatedUtility, item.disposition, item.validationDigest]),
+    second.frontier.map((item) => [item.id, item.estimatedUtility, item.disposition, item.validationDigest])
   );
   assert.equal(first.chosen.id, second.chosen.id);
+  assert.equal(first.validation.digest, second.validation.digest);
 });
 
 console.log("self-development planner test suite: PASS");
