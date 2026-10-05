@@ -14,7 +14,7 @@ function api(){
  const g=api();let waited=null;
  const a=createGithubCodingAdapter(g,{branch:"work",waitForExactRun:async(b,s)=>{waited={b,s};return{conclusion:"success"}},diff:async()=>({text:"diff",files:["src/bug.js"]}),verify:async()=>({ok:true}),propose:async()=>({id:1})});
  const snap=await a.snapshot();assert.equal(snap.sha,"base");
- const ins=await a.inspect({task:"fix src bug",snapshot:snap});assert.ok(ins.filesRead.includes("src/bug.js"));
+ const ins=await a.inspect({task:"fix src bug",snapshot:snap});assert.ok(ins.filesRead.includes("src/bug.js"));const rr=await a.research({task:"fix src bug",inspection:ins});assert.ok(rr.notes.some(x=>x.includes("Inspected")));
  const applied=await a.applyAtomic({baseSha:"base",changes:[{path:"src/bug.js",content:"fixed"}]});assert.equal(applied.sha,"candidate-1");
  const tr=await a.runTests({candidateSha:applied.sha,changed:["src/bug.js"]});assert.equal(tr.ok,true);assert.deepEqual(waited,{b:"work",s:"candidate-1"});assert.equal(g.dispatches,1);
  await assert.rejects(()=>a.applyAtomic({baseSha:"base",changes:[{path:"x",content:"x"}]}),/stale-write/);
