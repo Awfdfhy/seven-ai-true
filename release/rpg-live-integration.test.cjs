@@ -3,8 +3,8 @@ const State=require('./workspaces/rpg-state.js');
 const Session=require('./workspaces/rpg-session.js');
 const Live=require('./workspaces/rpg-live-integration.js');
 const backingStorage=Session.memoryStorage(),mem={objects:[]};
-let seq=0,failMemory=false,failIndex=false,failAll=false,quotaAfterIndex=false,failJournalRemove=false;
-const storage={getItem:k=>backingStorage.getItem(k),setItem:(k,v)=>{if(failAll)throw Error('fixture quota');if(failIndex&&String(k).includes(':active:')){if(quotaAfterIndex)failAll=true;throw Error('fixture index write failure')}return backingStorage.setItem(k,v)},removeItem:k=>{if(failAll)throw Error('fixture quota');if(failJournalRemove&&String(k).includes(':pending:'))throw Error('fixture journal remove failure');return backingStorage.removeItem(k)}};
+let seq=0,failMemory=false,failIndex=false,failAll=false,quotaAfterIndex=false,failJournalRemove=false,failJournalWrite=false;
+const storage={getItem:k=>backingStorage.getItem(k),setItem:(k,v)=>{if(failAll)throw Error('fixture quota');if(failJournalWrite&&String(k).includes(':pending:'))throw Error('fixture journal write failure');if(failIndex&&String(k).includes(':active:')){if(quotaAfterIndex)failAll=true;throw Error('fixture index write failure')}return backingStorage.setItem(k,v)},removeItem:k=>{if(failAll)throw Error('fixture quota');if(failJournalRemove&&String(k).includes(':pending:'))throw Error('fixture journal remove failure');return backingStorage.removeItem(k)}};
 const runtime={
   hash:s=>{let h=2166136261;for(const c of String(s)){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return(h>>>0).toString(16)},
   lineage:(source,transformation,parentRefs=[])=>({source,transformation,parentRefs}),
@@ -28,6 +28,12 @@ failMemory=true;
 txOut=a.transact({roomId:'tx-room',worldId:'tx-world',events:[{id:'memory-fail',type:'world.set',source:'runtime',payload:{path:['flags','temp'],value:true}}]});
 assert.equal(txOut.ok,false);assert.equal(txOut.reason,'memory-projection-failed');assert.equal(a.load('tx-room','tx-world').session.state.world.flags.temp,undefined);
 failMemory=false;
+
+// Journal-first invariant: a brand-new transaction cannot create durable state if the journal cannot be written.
+failJournalWrite=true;
+txOut=a.transact({roomId:'virgin-room',worldId:'virgin-world',events:[{id:'virgin-e1',type:'world.set',source:'runtime',payload:{path:['flags','x'],value:1}}]});
+assert.equal(txOut.ok,false);assert.equal(txOut.reason,'journal-write-failed');assert.equal(a.manager.inspect('virgin-room','virgin-world').status,'MISSING');
+failJournalWrite=false;
 
 const one={work:{id:'valen',title:'Valen'},worldSession:{position:1,titles:[]},canonPack:{id:'canon'},canonSession:{position:1,ledger:[]}};
 let out=a.sync({roomId:'room-a',worldId:'valen',legacy:one,reason:'load'});
