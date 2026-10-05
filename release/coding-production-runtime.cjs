@@ -7,7 +7,7 @@ function cleanPath(p){p=String(p||"").replace(/^\/+|\/+$/g,"");if(!p||p.includes
 function protectedPath(p){p=cleanPath(p);return PROTECTED.some(r=>r.test(p))}
 function digest(v){return crypto.createHash("sha256").update(String(v)).digest("hex")}
 function requireAdapter(a){for(const m of ["snapshot","inspect","applyAtomic","runTests","diff","verify","propose"]){if(!a||typeof a[m]!=="function")throw Error("coding-adapter-missing:"+m)}return a}
-function evidence(run){return Object.freeze({schema:"seven-coding-evidence-v1",task:run.task,baseSha:run.base.sha,resultSha:run.resultSha||null,states:[...run.states],filesRead:[...run.filesRead],filesChanged:[...run.filesChanged],tests:[...run.tests],failures:[...run.failures],repairs:run.repairs,diffDigest:run.diffDigest||null,verdict:run.verdict,proposal:run.proposal||null})}
+function evidence(run){return Object.freeze({schema:"seven-coding-evidence-v1",task:run.task,baseSha:run.base.sha,resultSha:run.resultSha||null,states:[...run.states],filesRead:[...run.filesRead],filesChanged:[...run.filesChanged],tests:[...new Set(run.tests)],failures:[...new Set(run.failures)],repairs:run.repairs,diffDigest:run.diffDigest||null,verdict:run.verdict,proposal:run.proposal||null})}
 async function runCodingTransaction(adapter,input){
   const a=requireAdapter(adapter),task=String(input&&input.task||"").trim();if(!task)throw Error("task-required");
   const maxRepairs=Math.max(0,Math.min(3,Number(input.maxRepairs??2)));
@@ -18,14 +18,14 @@ async function runCodingTransaction(adapter,input){
   step("PLAN");const plan=await a.plan?.({task,snapshot:run.base,inspection})||inspection.plan;if(!plan||!Array.isArray(plan.changes)||!plan.changes.length)throw Error("bounded-plan-required");
   for(const c of plan.changes){c.path=cleanPath(c.path);if(protectedPath(c.path))throw Error("protected-path:"+c.path)}
   const beforeApply=await a.snapshot();if(beforeApply.sha!==run.base.sha)throw Error("stale-plan");
-  step("EDIT");let applied=await a.applyAtomic({baseSha:run.base.sha,changes:plan.changes});run.filesChanged=[...new Set(plan.changes.map(c=>c.path))];
+  step("EDIT");let applied=await a.applyAtomic({baseSha:run.base.sha,changes:plan.changes});if(!applied||!applied.sha||applied.sha===run.base.sha)throw Error("candidate-sha-required");run.filesChanged=[...new Set(plan.changes.map(c=>c.path))];
   let testResult;step("TEST");testResult=await a.runTests({task,baseSha:run.base.sha,candidateSha:applied.sha,changed:run.filesChanged,phase:"targeted"});run.tests.push(...(testResult.tests||[]));
   while(!testResult.ok&&run.repairs<maxRepairs){
     step("DIAGNOSE");run.failures.push(...(testResult.failures||["test-failed"]));const diagnosis=await a.diagnose?.({task,inspection,plan,testResult,candidateSha:applied.sha});if(!diagnosis)break;
     step("REPAIR");const repair=await a.repair?.({task,diagnosis,candidateSha:applied.sha});if(!repair||!Array.isArray(repair.changes)||!repair.changes.length)break;
     for(const c of repair.changes){c.path=cleanPath(c.path);if(protectedPath(c.path))throw Error("protected-path:"+c.path)}
     const live=await a.snapshot();if(live.sha!==applied.sha)throw Error("concurrent-edit");
-    applied=await a.applyAtomic({baseSha:applied.sha,changes:repair.changes});run.filesChanged=[...new Set(run.filesChanged.concat(repair.changes.map(c=>c.path)))];run.repairs++;
+    const repairBase=applied.sha;applied=await a.applyAtomic({baseSha:repairBase,changes:repair.changes});if(!applied||!applied.sha||applied.sha===repairBase)throw Error("repair-sha-required");run.filesChanged=[...new Set(run.filesChanged.concat(repair.changes.map(c=>c.path)))];run.repairs++;
     step("RETEST");testResult=await a.runTests({task,baseSha:run.base.sha,candidateSha:applied.sha,changed:run.filesChanged,phase:"targeted"});run.tests.push(...(testResult.tests||[]));
   }
   if(!testResult.ok){run.failures.push(...(testResult.failures||["test-failed"]));run.resultSha=applied.sha;return evidence(run)}
