@@ -133,6 +133,22 @@ function baseInput({ agent = codingAgent(), evals = evalsAdapter(), promotion = 
     assert.equal(archive.list()[0].candidateSha, "bbbbbbb");
   });
 
+  await pass("previously failed identical baseline hypothesis is blocked before Coding", async () => {
+    const store = storeAdapter();
+    const firstAgent = codingAgent();
+    const first = await runCodingEvolution(baseInput({
+      agent: firstAgent,
+      store,
+      evals: evalsAdapter(evalBundle({ shadowPassed: false }))
+    }));
+    assert.equal(first.outcome, "REJECTED");
+    const secondAgent = codingAgent();
+    const second = await runCodingEvolution(baseInput({ agent: secondAgent, store }));
+    assert.equal(second.outcome, "REJECTED_REPEAT_FAILURE");
+    assert.equal(second.stage, "LEARNING_GUARD");
+    assert.equal(secondAgent.calls.length, 0);
+  });
+
   await pass("untrusted eval bundle is rejected before stable promotion", async () => {
     const promotion = promotionAdapter();
     const agent = codingAgent();
