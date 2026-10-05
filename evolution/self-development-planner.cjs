@@ -1,7 +1,10 @@
 "use strict";
 
 const crypto = require("crypto");
-const { createHypothesis } = require("./self-development-hypotheses.cjs");
+const {
+  createHypothesis,
+  validateHypothesisSet
+} = require("./self-development-hypotheses.cjs");
 
 const PROFILES = Object.freeze({
   LOW: Object.freeze({
@@ -120,7 +123,7 @@ function utility(assessment, riskLevel) {
   return Number((benefit - cost * 0.55 - riskPenalty).toFixed(6));
 }
 
-function createPlanningCandidate({ hypothesis, assessment } = {}) {
+function buildPlanningCandidate({ hypothesis, assessment, orchestrationAuthorized = false, validationDigest = null } = {}) {
   const validatedHypothesis = createHypothesis(hypothesis);
   const normalizedAssessment = normalizeAssessment(assessment);
   const riskLevel = validatedHypothesis.risk.level;
@@ -156,7 +159,7 @@ function createPlanningCandidate({ hypothesis, assessment } = {}) {
   else if (profile.independentReview) disposition = "INDEPENDENT_REVIEW_REQUIRED";
 
   return Object.freeze({
-    schemaVersion: 1,
+    schemaVersion: 2,
     id: validatedHypothesis.id,
     hypothesis: validatedHypothesis,
     assessment: normalizedAssessment,
@@ -166,7 +169,20 @@ function createPlanningCandidate({ hypothesis, assessment } = {}) {
     scopeManifest,
     estimatedUtility: utility(normalizedAssessment, riskLevel),
     disposition,
-    ordinaryCodingAllowed: profile.ordinaryCodingAllowed && !scopeOverBudget
+    ordinaryCodingAllowed: profile.ordinaryCodingAllowed && !scopeOverBudget,
+    orchestrationAuthorized: orchestrationAuthorized === true,
+    validationDigest: validationDigest || null
+  });
+}
+
+// Used by the acceptance layer only to re-derive risk/proof requirements from
+// a hypothesis. This is intentionally NOT an orchestration authorization.
+function derivePlanningCandidate({ hypothesis, assessment } = {}) {
+  return buildPlanningCandidate({
+    hypothesis,
+    assessment,
+    orchestrationAuthorized: false,
+    validationDigest: null
   });
 }
 
@@ -208,26 +224,121 @@ function priorityCompare(a, b) {
   return a.id.localeCompare(b.id);
 }
 
-function prioritizeCandidates({ hypotheses = [], assessments = {} } = {}) {
-  if (!Array.isArray(hypotheses) || !hypotheses.length) throw new Error("planner hypotheses required");
+function validationSummary(set) {
+  const core = {
+    decision: set.decision,
+    minCandidates: set.minCandidates,
+    acceptedFingerprints: set.accepted.map((item) => item.fingerprint).sort(),
+    rejected: set.rejected.map((item) => ({
+      fingerprint: item.fingerprint || null,
+      reason: item.reason
+    })).sort((a, b) => String(a.fingerprint).localeCompare(String(b.fingerprint)) || String(a.reason).localeCompare(String(b.reason))),
+    researchRequired: Boolean(set.researchDecision && set.researchDecision.required),
+    researchReasons: set.researchDecision ? [...set.researchDecision.reasons].sort() : [],
+    researchCoverage: set.researchSummary ? set.researchSummary.coverage : null,
+    researchHosts: set.researchSummary ? [...set.researchSummary.independentHosts].sort() : []
+  };
+  return Object.freeze({ ...core, digest: digest(core) });
+}
+
+function authorizePlanningCandidate({ hypothesisValidation, hypothesisId, assessment } = {}) {
+  if (!hypothesisValidation || typeof hypothesisValidation !== "object" || Array.isArray(hypothesisValidation)) {
+    throw new Error("hypothesisValidation input required");
+  }
+  const id = String(hypothesisId || "").trim();
+  if (!id) throw new Error("hypothesisId required");
+
+  const set = validateHypothesisSet(hypothesisValidation);
+  const validation = validationSummary(set);
+  if (set.readyForPlanning !== true || set.decision !== "READY_FOR_PLANNING") {
+    return Object.freeze({
+      schemaVersion: 2,
+      decision: "BLOCKED_HYPOTHESIS_VALIDATION",
+      validation,
+      candidate: null
+    });
+  }
+
+  const matches = set.accepted.filter((item) => item.id === id);
+  if (matches.length !== 1) {
+    return Object.freeze({
+      schemaVersion: 2,
+      decision: matches.length > 1 ? "BLOCKED_DUPLICATE_HYPOTHESIS_ID" : "BLOCKED_HYPOTHESIS_NOT_ACCEPTED",
+      validation,
+      candidate: null
+    });
+  }
+
+  return Object.freeze({
+    schemaVersion: 2,
+    decision: "AUTHORIZED",
+    validation,
+    candidate: buildPlanningCandidate({
+      hypothesis: matches[0],
+      assessment,
+      orchestrationAuthorized: true,
+      validationDigest: validation.digest
+    })
+  });
+}
+
+function prioritizeCandidates({ hypothesisValidation, assessments = {} } = {}) {
+  if (!hypothesisValidation || typeof hypothesisValidation !== "object" || Array.isArray(hypothesisValidation)) {
+    throw new Error("hypothesisValidation input required");
+  }
   if (!assessments || typeof assessments !== "object" || Array.isArray(assessments)) throw new Error("planner assessments object required");
 
+  // Re-run Phase 3 validation inside the planner. The caller cannot substitute
+  // a precomputed READY flag or pass raw hypotheses around the research gate.
+  const set = validateHypothesisSet(hypothesisValidation);
+  const validation = validationSummary(set);
+
+  if (set.readyForPlanning !== true || set.decision !== "READY_FOR_PLANNING") {
+    return Object.freeze({
+      schemaVersion: 2,
+      decision: "BLOCKED_HYPOTHESIS_VALIDATION",
+      validation,
+      candidates: Object.freeze([]),
+      frontier: Object.freeze([]),
+      dominated: Object.freeze([]),
+      governance: Object.freeze([]),
+      blocked: Object.freeze([]),
+      chosen: null,
+      estimateNotice: "No planning occurs until Phase 3 validation passes."
+    });
+  }
+
+  const hypotheses = set.accepted;
+  const ids = hypotheses.map((item) => String(item.id));
+  if (new Set(ids).size !== ids.length) throw new Error("duplicate hypothesis id in validated set");
+  const fingerprints = hypotheses.map((item) => String(item.fingerprint));
+  if (new Set(fingerprints).size !== fingerprints.length) throw new Error("duplicate hypothesis fingerprint in validated set");
+
   const candidates = hypotheses.map((hypothesis) => {
-    const id = String(hypothesis && hypothesis.id || "");
+    const id = String(hypothesis.id);
     if (!Object.prototype.hasOwnProperty.call(assessments, id)) throw new Error(`missing planner assessment for ${id}`);
-    return createPlanningCandidate({ hypothesis, assessment: assessments[id] });
+    return buildPlanningCandidate({
+      hypothesis,
+      assessment: assessments[id],
+      orchestrationAuthorized: true,
+      validationDigest: validation.digest
+    });
   });
 
   const governance = candidates.filter((item) => item.disposition === "GOVERNANCE_REQUIRED");
   const blocked = candidates.filter((item) => item.disposition === "BLOCKED_SCOPE_BUDGET");
   const eligible = candidates.filter((item) => !governance.includes(item) && !blocked.includes(item));
 
-  const frontier = eligible.filter((candidate) => !eligible.some((other) => other !== candidate && dominates(other, candidate))).sort(priorityCompare);
+  const frontier = eligible
+    .filter((candidate) => !eligible.some((other) => other !== candidate && dominates(other, candidate)))
+    .sort(priorityCompare);
   const frontierIds = new Set(frontier.map((item) => item.id));
   const dominated = eligible.filter((item) => !frontierIds.has(item.id)).sort(priorityCompare);
 
   return Object.freeze({
-    schemaVersion: 1,
+    schemaVersion: 2,
+    decision: "PLANNED",
+    validation,
     candidates: Object.freeze(candidates),
     frontier: Object.freeze(frontier),
     dominated: Object.freeze(dominated),
@@ -239,7 +350,8 @@ function prioritizeCandidates({ hypotheses = [], assessments = {} } = {}) {
 }
 
 module.exports = {
-  createPlanningCandidate,
+  derivePlanningCandidate,
+  authorizePlanningCandidate,
   prioritizeCandidates,
   dominates
 };

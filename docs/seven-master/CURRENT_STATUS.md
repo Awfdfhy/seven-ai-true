@@ -67,40 +67,33 @@ Verification state:
 - because this is Evolution/Self-Development authority-plane code, independent review remains required before merge;
 - full Self-Development is not complete; Phase 2+ and end-to-end accept/reject/rollback proof remain open.
 
-### Self-Development Phase 2 candidate
+### Self-Development Phase 3 — hardened research/hypothesis candidate
 
-Stacked PR #108 adds a locked metric registry and paired baseline/candidate evaluator.
-
-Evidence:
-- tested head `357525adcc5f2864c5cca34a88cc1bd293fc3de3`;
-- Seven AI tests #3254: SUCCESS;
-- 39/39 suites PASS;
-- paired evaluator suite PASS;
-- artifact upload PASS.
-
-Phase 2 proves PASS/FAIL/BLOCKED/INCONCLUSIVE comparison with evaluator/environment/criteria locking. It still owns no production mutation authority.
-
-### Self-Development Phase 3 candidate
-
-Stacked PR #110 adds selective Research + Hypothesis contracts.
+Stacked PR #110 is CI-proven on head `6cca3fa70183fe3bc5092f22d8144aae3c03713e`.
 
 Evidence:
-- tested head `54ab1f8b70c1546c1a12ebd74bfa87a6b1f4c99a`;
-- Seven AI tests #3281: SUCCESS;
+- Seven AI tests #3324: SUCCESS;
 - 40/40 suites PASS;
 - research/hypothesis suite PASS;
 - artifact upload PASS.
 
-Research requirement is derived internally from diagnosis + actual candidate risk + raw evidence context. A caller cannot simply mark research optional. Failed hypotheses are not repeated without new evidence.
+New hardening in this batch:
+- prior failed attempts force research from the actual prior-attempt record, not a caller hint;
+- retry evidence must be grounded in current evidence;
+- HIGH requires >=2 independent research hosts;
+- CRITICAL requires >=3 independent research hosts.
 
-### Self-Development Phase 4 / Phase 5 state
+Phase 3 remains non-mutating and stacked behind Phase 1/2 review.
 
-Phase 4 PR #111 is CI-proven:
-- tested head `784fccb99b81411c8f9ec9f29c0f92f30ccfccfa`;
-- Seven AI tests #3294: SUCCESS;
-- planner suite PASS;
+### Self-Development Phase 4 — revalidating planner candidate
+
+Stacked PR #111 is CI-proven on head `9783f6065fc6982c65eacbfbbb7ca926aaf5577b`.
+
+Evidence:
+- Seven AI tests #3338: SUCCESS;
 - 41/41 suites PASS;
+- planner suite PASS;
 - artifact upload PASS.
 
-Phase 5 production Coding integration remains BLOCKED because the dedicated Coding v1 implementation evidence/runtime contract is not proven on main. Self-Development will not substitute the legacy direct GitHub self-dev mutation path.
+Planner now re-runs Phase 3 rather than trusting raw/fake validated hypotheses. Direct profile derivation never grants orchestration authority; executable planning candidates carry a validation digest from the re-run gate.
 

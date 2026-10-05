@@ -31,7 +31,7 @@ function hypothesis(id, overrides = {}) {
     assumptions: overrides.assumptions || ["fixture distribution remains comparable"],
     validationMetrics: overrides.validationMetrics || ["qualityScore", "p90LatencyMs"],
     rollbackPlan: overrides.rollbackPlan || "restore exact baseline SHA",
-    evidenceRefs: overrides.evidenceRefs || ["research:source-1"]
+    evidenceRefs: overrides.evidenceRefs || ["research-e1"]
   });
 }
 
@@ -150,6 +150,10 @@ pass("research summary exposes coverage, contradictions, independence and stalen
   assert.deepEqual(summary.contradictions, ["sandbox_required"]);
   assert.ok(summary.staleEvidenceIds.includes("e3"));
   assert.equal(summary.independentHosts.length, 3);
+  assert.equal(summary.freshEvidenceCount, 2);
+  assert.ok(summary.evidenceRefs.includes("e1"));
+  assert.ok(summary.sourceTypes.includes("OFFICIAL"));
+  assert.ok(summary.sourceTypes.includes("PAPER"));
 });
 
 pass("hypothesis requires known measurable effects and a validation plan", () => {
@@ -269,17 +273,19 @@ pass("previously rejected identical hypothesis is blocked without new evidence",
     priorAttempts: [{
       fingerprint: a.fingerprint,
       decision: "REJECT",
-      evidenceRefs: ["research:source-1"]
-    }]
+      evidenceRefs: ["research-e1"]
+    }],
+    ...completeResearch()
   });
   assert.equal(result.readyForPlanning, false);
   assert.equal(result.rejected[0].reason, "repeated_failed_hypothesis_without_new_evidence");
+  assert.ok(result.researchDecision.reasons.includes("prior_attempt_failed"));
 });
 
-pass("previously failed hypothesis may be reconsidered only with new evidence", () => {
+pass("previously failed hypothesis may be reconsidered only with grounded new evidence", () => {
   const a = hypothesis("retry-new", {
     diagnosisId: "diag-high",
-    evidenceRefs: ["research:source-1", "research:new-source"]
+    evidenceRefs: ["research-e1", "research-new"]
   });
   const result = validateHypothesisSet({
     diagnosis: highConfidenceDiagnosis,
@@ -287,11 +293,91 @@ pass("previously failed hypothesis may be reconsidered only with new evidence", 
     priorAttempts: [{
       fingerprint: a.fingerprint,
       decision: "ROLLBACK",
-      evidenceRefs: ["research:source-1"]
-    }]
+      evidenceRefs: ["research-e1"]
+    }],
+    researchEvidence: [
+      evidence({ id: "research-e1", host: "one.example.com" }),
+      evidence({ id: "research-new", host: "two.example.com" })
+    ],
+    requiredClaimKeys: ["root_cause"],
+    researchAsOf: "2026-10-05T00:00:00Z"
   });
   assert.equal(result.readyForPlanning, true);
   assert.equal(result.accepted.length, 1);
+});
+
+pass("claimed new evidence cannot bypass retry suppression unless grounded in current evidence", () => {
+  const a = hypothesis("retry-fake", {
+    diagnosisId: "diag-high",
+    evidenceRefs: ["research-e1", "research-fake"]
+  });
+  const result = validateHypothesisSet({
+    diagnosis: highConfidenceDiagnosis,
+    candidates: [a],
+    priorAttempts: [{
+      fingerprint: a.fingerprint,
+      decision: "REJECT",
+      evidenceRefs: ["research-e1"]
+    }],
+    ...completeResearch()
+  });
+  assert.equal(result.readyForPlanning, false);
+  assert.equal(result.rejected[0].reason, "repeated_failed_hypothesis_new_evidence_not_grounded");
+});
+
+pass("HIGH-risk planning requires at least two independent research hosts", () => {
+  const highRisk = hypothesis("high-risk", {
+    diagnosisId: "diag-high",
+    changeClass: "shared_contract",
+    targetPaths: ["release/shared-contract.js"],
+    evidenceRefs: ["research-e1"]
+  });
+  const oneHost = validateHypothesisSet({
+    diagnosis: highConfidenceDiagnosis,
+    candidates: [highRisk],
+    researchEvidence: [evidence({ id: "research-e1", host: "one.example.com" })],
+    requiredClaimKeys: ["root_cause"],
+    researchAsOf: "2026-10-05T00:00:00Z"
+  });
+  assert.equal(oneHost.readyForPlanning, false);
+  assert.equal(oneHost.decision, "BLOCKED_RESEARCH_DIVERSITY");
+  assert.ok(oneHost.reasons.includes("need_2_independent_research_hosts"));
+
+  const twoHosts = validateHypothesisSet({
+    diagnosis: highConfidenceDiagnosis,
+    candidates: [highRisk],
+    researchEvidence: [
+      evidence({ id: "research-e1", host: "one.example.com" }),
+      evidence({ id: "research-e2", host: "two.example.com" })
+    ],
+    requiredClaimKeys: ["root_cause"],
+    researchAsOf: "2026-10-05T00:00:00Z"
+  });
+  assert.equal(twoHosts.readyForPlanning, true);
+  assert.equal(twoHosts.accepted.length, 1);
+  assert.equal(twoHosts.accepted[0].planningDisposition, "MANUAL_APPROVAL_REQUIRED");
+});
+
+pass("CRITICAL planning requires at least three independent research hosts", () => {
+  const critical = hypothesis("critical-set", {
+    diagnosisId: "diag-high",
+    changeClass: "self_development",
+    targetPaths: ["evolution/gates.cjs"],
+    evidenceRefs: ["research-e1"]
+  });
+  const result = validateHypothesisSet({
+    diagnosis: highConfidenceDiagnosis,
+    candidates: [critical],
+    researchEvidence: [
+      evidence({ id: "research-e1", host: "one.example.com" }),
+      evidence({ id: "research-e2", host: "two.example.com" })
+    ],
+    requiredClaimKeys: ["root_cause"],
+    researchAsOf: "2026-10-05T00:00:00Z"
+  });
+  assert.equal(result.readyForPlanning, false);
+  assert.equal(result.decision, "BLOCKED_RESEARCH_DIVERSITY");
+  assert.ok(result.reasons.includes("need_3_independent_research_hosts"));
 });
 
 pass("all required research being stale blocks planning", () => {
