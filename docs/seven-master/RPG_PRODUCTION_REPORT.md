@@ -51,9 +51,13 @@ Existing `load`, `loadLatest`, `context`, and `sync` continue to fail closed whi
 - persistent block state for abandoned/ambiguous recovery;
 - journal-write failure remains mutation-free.
 
+### Evidence
+
+- Exact-SHA Seven AI tests run `37303792567`: SUCCESS on `0437f9135b5cb0393865467cac0c4e7701287166`.
+
 ### Known limits / remaining risks
 
-- Exact-SHA CI for the latest Batch 01 commit is still required.
+- Later Batch 02 commits require their own exact-SHA CI; the Batch 01 pass is not reused as evidence for them.
 - Recovery is explicit, not yet invoked automatically by product lifecycle/UI.
 - Public Memory projection rollback is not a general multi-store transaction; recovery currently relies on revision evidence and avoids destructive action when ambiguous.
 - Multi-tab/process concurrent writers are not yet arbitrated.
@@ -61,12 +65,30 @@ Existing `load`, `loadLatest`, `context`, and `sync` continue to fail closed whi
 - Semantic model delta extraction and live player-agency rejection remain unverified.
 - Android process-death and app-upgrade RPG continuity remain cross-chat dependencies.
 
+## Batch 02 — Live Turn + Model Context Hardening
+
+Implemented:
+- `transact({roomId, worldId, events})` in the live bridge: validated state events -> session persistence -> active index -> public Memory projection -> commit journal -> finalize.
+- transaction rollback on validation/index/Memory failures;
+- live player-agency regression: runtime/model-originated movement of a player-controlled character is rejected and not persisted;
+- live HARD CANON conflict rejection;
+- `SevenRpgWorkspace.commitStateEvents()` as the product boundary for validated structured RPG event commits;
+- workspace context now defaults to bounded Narrator View and can explicitly switch to Character View;
+- Character View carries `access: character-local`;
+- the existing real context collection seam consumes that Character View, with a browser regression proving a hidden Canon fact is excluded while public Canon remains visible;
+- safe pending journals are recovered during workspace hydrate; ambiguous/abandoned journals remain fail-closed;
+- browser recovery regression simulates interrupted durable state, closes/reopens the workspace, and verifies deterministic rollback plus journal cleanup;
+- long-story benchmark now records state size, bounded context size, load latency and context construction latency at 100/500/1000 episode-equivalent checkpoints, with unchanged 9000-char context gate and a 2 MiB structured-state ceiling.
+
+Current Batch 02 exact-SHA CI is pending and must pass before integration readiness is claimed.
+
 ## Next exact action
 
-1. Obtain exact-SHA CI evidence for Batch 01.
-2. Add a verified transaction coordinator around validated RPG delta -> session persist -> Memory projection -> active index -> commit/finalize.
-3. Wire Character/Narrator views into the live generation context and add no-leak/player-agency regressions.
-4. Extend long-story growth measurements and Android restart/process-death integration evidence.
+1. Hold the branch SHA stable and obtain full exact-SHA CI evidence for Batch 02.
+2. If green, inspect CI long-story measurements and record them here.
+3. Add semantic model-output delta extraction only if it can preserve the current propose -> validate -> commit boundary.
+4. Coordinate Android process-death/app-upgrade RPG persistence with CHAT 1.
+5. Run limited live-provider dialogue/no-leak/voice-continuity evaluation when provider access is available.
 
 ## Integration status
 
