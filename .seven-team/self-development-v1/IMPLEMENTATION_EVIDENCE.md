@@ -192,3 +192,42 @@ Independent authority-plane review: **PENDING**
 
 Decision: **READY_FOR_STACKED_REVIEW**, not autonomously promoted.
 
+---
+
+# Phase 3 — Selective Research + Grounded Hypothesis Engine
+
+Status: IMPLEMENTED + CI VERIFIED; STACKED REVIEW PENDING
+Date: 2026-10-05
+Pull request: #110
+
+## Exact verification
+
+- Hardened Phase 3 head: `6cca3fa70183fe3bc5092f22d8144aae3c03713e`
+- Phase 2 base: `84e379993e5b3d5744118a2be5f0ec86f443900e`
+- Workflow run: `37263759584`
+- Seven AI tests: `#3324`
+- Result: **SUCCESS**
+- `node all.cjs`: **all test suites: PASS (40 suites)**
+- `self-development research and hypothesis test suite: PASS`
+- release artifact upload: SUCCESS
+
+## Controls proven
+
+- high-confidence/low-risk internal diagnosis may skip unnecessary research;
+- uncertain, ambiguous, external, prior-failed, HIGH and CRITICAL work triggers research;
+- source URLs are HTTPS-only, credential-free and canonicalized without query/hash storage;
+- research summarizes coverage, gaps, contradictions, freshness, source types and independent hosts;
+- hypothesis effects must use known registered metrics;
+- uncertain/contradictory/ambiguous cases require multiple distinct hypotheses;
+- duplicate hypotheses do not count twice;
+- prior REJECT/ROLLBACK cannot be retried merely by inventing a new evidence reference;
+- retry evidence must be grounded in current validated research/diagnostic evidence;
+- HIGH planning requires at least 2 independent research hosts;
+- CRITICAL planning requires at least 3 independent research hosts;
+- all-required-research-stale blocks planning;
+- CRITICAL protected-plane hypotheses remain GOVERNANCE_REQUIRED.
+
+Authority added: **NO network mutation, NO code mutation, NO shell/GitHub write, NO promotion.**
+
+Decision: **PHASE_3_CI_PROVEN / REVIEW_PENDING**.
+

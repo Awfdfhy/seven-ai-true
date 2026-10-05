@@ -67,3 +67,21 @@ Verification state:
 - because this is Evolution/Self-Development authority-plane code, independent review remains required before merge;
 - full Self-Development is not complete; Phase 2+ and end-to-end accept/reject/rollback proof remain open.
 
+### Self-Development Phase 3 — hardened research/hypothesis candidate
+
+Stacked PR #110 is CI-proven on head `6cca3fa70183fe3bc5092f22d8144aae3c03713e`.
+
+Evidence:
+- Seven AI tests #3324: SUCCESS;
+- 40/40 suites PASS;
+- research/hypothesis suite PASS;
+- artifact upload PASS.
+
+New hardening in this batch:
+- prior failed attempts force research from the actual prior-attempt record, not a caller hint;
+- retry evidence must be grounded in current evidence;
+- HIGH requires >=2 independent research hosts;
+- CRITICAL requires >=3 independent research hosts.
+
+Phase 3 remains non-mutating and stacked behind Phase 1/2 review.
+
