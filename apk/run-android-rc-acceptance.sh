@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# RC gate rerun marker: durable WAL verification
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
