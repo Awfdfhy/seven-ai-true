@@ -422,8 +422,11 @@ export class RoutedChatTransport implements ChatTransport {
       );
 
       const attemptToken = this.health?.beginAttempt(provider.id);
-      const attemptStartedAt = this.now();
-      if (!Number.isFinite(attemptStartedAt) || attemptStartedAt < 0) {
+      const attemptStartedAt = this.observer === undefined ? null : this.now();
+      if (
+        attemptStartedAt !== null &&
+        (!Number.isFinite(attemptStartedAt) || attemptStartedAt < 0)
+      ) {
         throw new SevenError({
           code: "VALIDATION",
           message: "Provider timing clock returned an invalid timestamp.",
@@ -493,12 +496,14 @@ export class RoutedChatTransport implements ChatTransport {
             }
 
             meaningfulOutputStarted = true;
-            firstMeaningfulAt = this.now();
-            if (!Number.isFinite(firstMeaningfulAt) || firstMeaningfulAt < 0) {
-              throw new SevenError({
-                code: "VALIDATION",
-                message: "Provider timing clock returned an invalid timestamp.",
-              });
+            if (this.observer !== undefined) {
+              firstMeaningfulAt = this.now();
+              if (!Number.isFinite(firstMeaningfulAt) || firstMeaningfulAt < 0) {
+                throw new SevenError({
+                  code: "VALIDATION",
+                  message: "Provider timing clock returned an invalid timestamp.",
+                });
+              }
             }
             yield prelude + chunk.delta;
             prelude = "";
@@ -517,35 +522,49 @@ export class RoutedChatTransport implements ChatTransport {
           if (this.health !== undefined && attemptToken !== undefined) {
             this.health.recordAttemptSuccess(provider.id, attemptToken);
           }
-          const succeededAt = this.now();
-          if (!Number.isFinite(succeededAt) || succeededAt < 0) {
-            throw new SevenError({
-              code: "VALIDATION",
-              message: "Provider timing clock returned an invalid timestamp.",
+          if (this.observer !== undefined) {
+            const succeededAt = this.now();
+            if (!Number.isFinite(succeededAt) || succeededAt < 0) {
+              throw new SevenError({
+                code: "VALIDATION",
+                message: "Provider timing clock returned an invalid timestamp.",
+              });
+            }
+            emitTrace(this.observer, {
+              type: "attempt_success",
+              taskId: context.taskId ?? null,
+              mode: this.plan.mode,
+              providerId: provider.id,
+              modelId: candidate.modelId,
+              ...(attemptStartedAt === null
+                ? {}
+                : { durationMs: Math.max(0, succeededAt - attemptStartedAt) }),
+              ...(firstMeaningfulAt === null || attemptStartedAt === null
+                ? {}
+                : { ttftMs: Math.max(0, firstMeaningfulAt - attemptStartedAt) }),
             });
           }
-          emitTrace(this.observer, {
-            type: "attempt_success",
-            taskId: context.taskId ?? null,
-            mode: this.plan.mode,
-            providerId: provider.id,
-            modelId: candidate.modelId,
-            durationMs: Math.max(0, succeededAt - attemptStartedAt),
-            ...(firstMeaningfulAt === null
-              ? {}
-              : { ttftMs: Math.max(0, firstMeaningfulAt - attemptStartedAt) }),
-          });
           return;
         }
 
-        const failedAt = this.now();
-        if (!Number.isFinite(failedAt) || failedAt < 0) {
+        const failedAt =
+          this.health !== undefined || this.observer !== undefined
+            ? this.now()
+            : null;
+        if (
+          failedAt !== null &&
+          (!Number.isFinite(failedAt) || failedAt < 0)
+        ) {
           throw new SevenError({
             code: "VALIDATION",
             message: "Provider timing clock returned an invalid timestamp.",
           });
         }
-        if (this.health !== undefined && attemptToken !== undefined) {
+        if (
+          this.health !== undefined &&
+          attemptToken !== undefined &&
+          failedAt !== null
+        ) {
           this.health.recordAttemptFailure(
             provider.id,
             attemptToken,
@@ -560,20 +579,32 @@ export class RoutedChatTransport implements ChatTransport {
           providerId: provider.id,
           modelId: candidate.modelId,
           reason: "empty",
-          durationMs: Math.max(0, failedAt - attemptStartedAt),
+          ...(failedAt === null || attemptStartedAt === null
+            ? {}
+            : { durationMs: Math.max(0, failedAt - attemptStartedAt) }),
         });
       } catch (error) {
         if (context.signal.aborted) throw error;
 
-        const failedAt = this.now();
-        if (!Number.isFinite(failedAt) || failedAt < 0) {
+        const failedAt =
+          this.health !== undefined || this.observer !== undefined
+            ? this.now()
+            : null;
+        if (
+          failedAt !== null &&
+          (!Number.isFinite(failedAt) || failedAt < 0)
+        ) {
           throw new SevenError({
             code: "VALIDATION",
             message: "Provider timing clock returned an invalid timestamp.",
           });
         }
 
-        if (this.health !== undefined && attemptToken !== undefined) {
+        if (
+          this.health !== undefined &&
+          attemptToken !== undefined &&
+          failedAt !== null
+        ) {
           const retryAfter = retryAfterMs(error);
           this.health.recordAttemptFailure(
             provider.id,
@@ -600,7 +631,9 @@ export class RoutedChatTransport implements ChatTransport {
           providerId: provider.id,
           modelId: candidate.modelId,
           reason,
-          durationMs: Math.max(0, failedAt - attemptStartedAt),
+          ...(failedAt === null || attemptStartedAt === null
+            ? {}
+            : { durationMs: Math.max(0, failedAt - attemptStartedAt) }),
         });
       }
     }
