@@ -203,3 +203,14 @@ Exact-SHA run 37306572590 was pending when recorded.
 
 Latest implementation SHA before this report update: `c340f2412cb2be009c539bcd2d34990c97d465ab`.
 Exact-SHA run 37307076968 was pending when recorded.
+
+
+## Batch 10 — Coding handoff and archive snapshot integrity
+
+- Added `docs/seven-master/SELF_DEV_CODING_HANDOFF.md` defining the exact ten-method Coding adapter consumed by `runCodingCandidate`, mandatory stable/candidate isolation invariants, and fourteen required production integration proofs.
+- Repository search confirms the public production Coding/platform bridge remains partial; Chat 4 does not invent a parallel Coding implementation.
+- Shipped GitHub Self-Dev now has behavioral proof that a `.github/CODEOWNERS` atomic commit is rejected before any remote API mutation.
+- Learning Archive `list()` now returns deep snapshots. Callers cannot mutate nested metrics/rollback data inside the archive through returned objects; regression mutates a returned nested metric and proves internal checksum/state remains valid.
+
+Latest implementation SHA before this report update: `2e521f396e72498118910734097f767b7c811d1a`.
+Exact-SHA run 37307400711 was queued when recorded.
