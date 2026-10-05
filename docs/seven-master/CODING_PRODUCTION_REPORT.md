@@ -65,14 +65,18 @@ All files match `release/*.test.cjs`, so root `all.cjs` discovers them automatic
 | APK exposure | not established | not claimed |
 
 ## CI evidence boundary
-At the latest checked branch heads, GitHub returned no workflow run associated with the Coding branch SHA. Therefore this report does **not** claim CI green. Local/deterministic test source has been added, but connector access does not provide a safe arbitrary shell runner here; CI remains the authoritative execution evidence required before integration.
+- Run #3390 / id 37304278803 executed the branch and failed in `node all.cjs`.
+- The logs proved `coding-fixture-e2e.test.cjs` PASS and `coding-github-adapter.test.cjs` PASS before the failure.
+- Root cause was a literal escaped `\\n` accidentally written into `coding-production-runtime.test.cjs`, producing a JavaScript SyntaxError. The test was repaired in commit `7d802ae46226d9248a741e5e7b2a19e6bbd29e84`; no test was weakened or removed.
+- After additional authoritative-diff/live-SHA hardening, exact-head run #3399 / id 37304526837 was created for `8655dd4bd306485a1e3a41da8d581f5999cbf0e6` and is pending at the time of this report.
+Therefore CI green is still **not** claimed until #3399 completes successfully.
 
 ## Security/cross-system finding
 `release/github-self-dev.js` exports low-level GitHub mutation primitives to the WebView. Chat 3 does not change that cross-system contract. Tools/Self-Development owner and Master should decide whether those primitives require a narrower capability token/native enforcement. Coding integration must use the verified transaction path and must not call merge directly.
 
 ## Remaining risks / next exact actions
 1. Obtain exact-SHA CI execution for this branch; repair every failure without weakening tests.
-2. Bind authoritative GitHub diff/verify/propose implementations to the adapter.
+2. Bind the remaining authoritative proposal implementation; authoritative diff shape and live-SHA verification are now enforced by the adapter.
 3. Add a real isolated GitHub fixture/worktree benchmark (not production main) and retain its SHA/run evidence.
 4. Expose a product-facing Coding action only after 1–3 are green; keep current read-only UI truth boundary until then.
 5. Run root full suite plus release/browser gates; then assess Android packaging exposure.
