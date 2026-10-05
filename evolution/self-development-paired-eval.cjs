@@ -324,6 +324,17 @@ function evaluatePaired({
   hardGateResults = {}
 } = {}) {
   if (!manifest || manifest.schemaVersion !== 1 || !manifest.manifestDigest) throw new Error("valid evaluation manifest required");
+
+  try {
+    assertEvalLock(manifest.evaluatorIdentity);
+  } catch (error) {
+    return Object.freeze({
+      decision: "BLOCKED",
+      reasons: Object.freeze(["evaluator_identity_drift"]),
+      comparisons: Object.freeze([]),
+      hardGates: Object.freeze({})
+    });
+  }
   const manifestCore = {
     schemaVersion: manifest.schemaVersion,
     experimentId: manifest.experimentId,
@@ -355,6 +366,7 @@ function evaluatePaired({
   }
 
   const hardGates = evaluateHardGates(manifest, hardGateResults);
+  const runCountMismatch = baseline.valid && candidate.valid && baseline.runs.length !== candidate.runs.length;
   const comparisons = manifest.metrics.map((metricId) => compareMetric(
     metricId,
     baseline.runs.map((run) => run.metrics[metricId]).filter((value) => value !== undefined),
@@ -373,10 +385,11 @@ function evaluatePaired({
   } else if (hardGates.decision === "FAIL" || hardMetricFailures.length || regressions.length) {
     decision = "FAIL";
     for (const item of regressions) reasons.push(`metric_regressed:${item.metricId}`);
-  } else if (!baseline.valid || !candidate.valid || hardGates.decision === "INCONCLUSIVE" || inconclusive.length) {
+  } else if (!baseline.valid || !candidate.valid || runCountMismatch || hardGates.decision === "INCONCLUSIVE" || inconclusive.length) {
     decision = "INCONCLUSIVE";
     if (!baseline.valid) reasons.push(baseline.reason);
     if (!candidate.valid) reasons.push(candidate.reason);
+    if (runCountMismatch) reasons.push("run_count_mismatch");
     for (const item of inconclusive) reasons.push(`metric_inconclusive:${item.metricId}:${item.reason}`);
   } else {
     const improvedTargets = comparisons.filter((item) => manifest.targetMetrics.includes(item.metricId) && item.status === "IMPROVED");
