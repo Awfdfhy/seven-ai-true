@@ -167,3 +167,47 @@ Status: **CI_PROVEN / STACKED_REVIEW_PENDING**
 Phase 3 does not perform web requests itself and does not mutate code.
 It defines when research is required, validates structured evidence, and constrains hypotheses.
 
+## Phase 4 — Pareto-Aware Improvement Planner
+
+Status: **CI_PROVEN / STACKED_REVIEW_PENDING**
+
+### Exact tested identity
+
+- stacked PR: #111
+- tested head: `784fccb99b81411c8f9ec9f29c0f92f30ccfccfa`
+- base branch: `self-development-v1-phase3`
+- GitHub Actions: **Seven AI tests #3294**
+- workflow run id: `37261320461`
+- conclusion: **SUCCESS**
+- `self-development planner test suite: PASS`
+- `all test suites: PASS (41 suites)`
+- artifact upload: **PASS**
+
+### Proven controls
+
+- risk derives immutable proof and scope budgets;
+- LOW, MEDIUM, HIGH and CRITICAL plans have progressively stronger proof requirements;
+- CRITICAL evaluator/Self-Development changes cannot enter ordinary Coding planning;
+- HIGH requires manual approval and recovery/security evidence;
+- MEDIUM requires independent review;
+- scope over-budget fails closed instead of widening authority;
+- genuine multi-objective tradeoffs remain on a Pareto frontier;
+- strictly dominated candidates are separated;
+- hard-failure repairs outrank cheap cosmetic gain when both remain viable;
+- governance/blocked candidates cannot win through estimated utility;
+- malformed/missing planner assessments fail closed;
+- callers cannot downgrade proof requirements through hypothesis fields;
+- prioritization is deterministic;
+- planner utility is explicitly estimate-only and never acceptance evidence.
+
+## Phase 5 — Coding System Integration
+
+Status: **BLOCKED BY DEPENDENCY**
+
+At this checkpoint:
+- `.seven-team/coding-v1/IMPLEMENTATION_EVIDENCE.md` is absent on main;
+- no authoritative `CodingSystem.prepareCandidate/applyPlan/runTargetedVerification/discard` runtime was found;
+- legacy `release/github-self-dev.js` therefore remains an incompatible parallel mutation path for governed Self-Development.
+
+Self-Development does not fall back to that legacy path.
+
