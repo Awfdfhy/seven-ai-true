@@ -49,6 +49,7 @@ async function safeFetch(
     return await fetchImpl(input, init);
   } catch (cause) {
     if (cause instanceof DOMException && cause.name === "AbortError") throw cause;
+    if (init.signal?.aborted) throw new DOMException("Aborted", "AbortError");
     throw new SevenError({
       code: "NETWORK",
       message: "Kilo network request failed.",
