@@ -80,3 +80,16 @@ Evidence:
 
 Phase 2 proves PASS/FAIL/BLOCKED/INCONCLUSIVE comparison with evaluator/environment/criteria locking. It still owns no production mutation authority.
 
+### Self-Development Phase 3 candidate
+
+Stacked PR #110 adds selective Research + Hypothesis contracts.
+
+Evidence:
+- tested head `54ab1f8b70c1546c1a12ebd74bfa87a6b1f4c99a`;
+- Seven AI tests #3281: SUCCESS;
+- 40/40 suites PASS;
+- research/hypothesis suite PASS;
+- artifact upload PASS.
+
+Research requirement is derived internally from diagnosis + actual candidate risk + raw evidence context. A caller cannot simply mark research optional. Failed hypotheses are not repeated without new evidence.
+
