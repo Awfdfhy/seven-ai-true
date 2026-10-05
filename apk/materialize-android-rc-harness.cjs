@@ -83,12 +83,10 @@ public class SevenRcHarnessTest {
     PackageInfo p=c.getPackageManager().getPackageInfo(APP_ID,0);return p.versionName;
   }
   private void seedSafGrant()throws Exception{
-    Context test=InstrumentationRegistry.getInstrumentation().getContext();
     Context target=InstrumentationRegistry.getInstrumentation().getTargetContext();
-    Uri uri=Uri.parse(DOC_URI);
-    Intent grant=new Intent(Intent.ACTION_VIEW,uri).setClassName(APP_ID,APP_ID+".MainActivity")
-      .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
-    test.startActivity(grant);Thread.sleep(300);
+    Uri uri=Uri.parse(DOC_URI);boolean readable=false;
+    for(int i=0;i<20;i++){try{assertEquals("seven-rc-saf-document",readAll(target,uri));readable=true;break;}catch(SecurityException e){Thread.sleep(100);}}
+    assertTrue("temporary SAF grant from helper APK missing",readable);
     target.getContentResolver().takePersistableUriPermission(uri,Intent.FLAG_GRANT_READ_URI_PERMISSION);
     boolean persisted=target.getContentResolver().getPersistedUriPermissions().stream().anyMatch(p->uri.equals(p.getUri())&&p.isReadPermission());
     assertTrue("target app did not persist SAF permission",persisted);
@@ -223,15 +221,30 @@ public class SevenTestDocumentsProvider extends DocumentsProvider {
   }
 }
 `;
+const grantReceiver=`package ${APP_ID};
+
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
+
+public class SevenTestGrantReceiver extends BroadcastReceiver {
+  @Override public void onReceive(Context context,Intent intent){
+    Uri uri=Uri.parse(${javaString(DOC_URI)});
+    context.grantUriPermission(${javaString(APP_ID)},uri,Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+  }
+}
+`;
 fs.writeFileSync(path.join(TEST_DIR,'SevenRcHarnessTest.java'),test);
 fs.writeFileSync(path.join(TEST_DIR,'SevenTestDocumentsProvider.java'),provider);
+fs.writeFileSync(path.join(TEST_DIR,'SevenTestGrantReceiver.java'),grantReceiver);
 
 const manifestDir=path.join(ANDROID,'app','src','androidTest'),manifestPath=path.join(manifestDir,'AndroidManifest.xml');
 fs.mkdirSync(manifestDir,{recursive:true});
 let manifest=fs.existsSync(manifestPath)?fs.readFileSync(manifestPath,'utf8'):'<manifest xmlns:android="http://schemas.android.com/apk/res/android"><application /></manifest>';
 if(!manifest.includes('SevenTestDocumentsProvider')){
   if(!/<application\b[^>]*\/>/.test(manifest)&&!/<application\b[^>]*>/.test(manifest))throw Error('androidTest manifest application anchor missing');
-  const entry=`<provider android:name="${APP_ID}.SevenTestDocumentsProvider" android:authorities="${AUTHORITY}" android:exported="true" android:grantUriPermissions="true" android:permission="android.permission.MANAGE_DOCUMENTS"><intent-filter><action android:name="android.content.action.DOCUMENTS_PROVIDER"/></intent-filter></provider>`;
+  const entry=`<provider android:name="${APP_ID}.SevenTestDocumentsProvider" android:authorities="${AUTHORITY}" android:exported="true" android:grantUriPermissions="true" android:permission="android.permission.MANAGE_DOCUMENTS"><intent-filter><action android:name="android.content.action.DOCUMENTS_PROVIDER"/></intent-filter></provider><receiver android:name="${APP_ID}.SevenTestGrantReceiver" android:exported="true"/>`;
   if(/<application\b([^>]*)\/>/.test(manifest))manifest=manifest.replace(/<application\b([^>]*)\/>/,`<application$1>${entry}</application>`);
   else manifest=manifest.replace(/<application\b([^>]*)>/,m=>m+entry);
 }
