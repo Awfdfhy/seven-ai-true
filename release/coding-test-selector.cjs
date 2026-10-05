@@ -1,6 +1,6 @@
 "use strict";
 const path=require("path");
-const ALWAYS=Object.freeze(["release/coding-production-runtime.test.cjs","release/coding-github-adapter.test.cjs","release/coding-test-selector.test.cjs","release/coding-fixture-e2e.test.cjs"]);
+const ALWAYS=Object.freeze(["release/coding-production-runtime.test.cjs","release/coding-github-adapter.test.cjs","release/coding-test-selector.test.cjs","release/coding-fixture-e2e.test.cjs","release/coding-proposal-policy.test.cjs"]);
 const RULES=Object.freeze([
  {match:/^(release\/|seven_ai-final\.html$)/,tests:["release/github-self-dev.test.cjs","release/release-verify.cjs"]},
  {match:/^(release\/workspaces\/|release\/.*(?:css|js)$)/,tests:["release/static-audit.cjs"]},
