@@ -361,6 +361,17 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       },roomId);
       assert.equal(state.schema,'seven-rpg-context');assert.equal(state.access,'world-truth');assert.equal(state.worldId,'rpg-live-world');assert.equal(state.source,true);assert.equal(state.renSecret,false);assert.equal(state.renPublic,true);assert.equal(state.memory,true);assert.equal(state.title,'RPG Live World');
       const before={worldId:state.worldId,revision:state.revision};
+      const autoRecovery=await page.evaluate(async rid=>{
+        const b=SevenRpgWorkspace.state.live,prev=b.loadLatest(rid),worldId=prev.session.worldId;
+        const candidate=b.manager.commitEvents(prev.session,[{id:'browser-interrupted',type:'world.set',source:'runtime',payload:{path:['flags','interrupted'],value:true}}]);
+        if(!candidate.ok)throw Error('fixture candidate failed');
+        const key='seven_rpg_session_v3:pending:'+encodeURIComponent(rid);
+        localStorage.setItem(key,JSON.stringify({version:1,status:'pending',roomId:rid,worldId,previous:prev.session,previousIndex:worldId,baseRevision:prev.session.state.revision,candidateRevision:candidate.session.state.revision}));
+        SevenWorkspaces.close();await SevenRemake.openWorkspace('rpg');
+        const restored=SevenRpgWorkspace.state.live.loadLatest(rid);
+        return{ok:restored.ok,revision:restored.session?.state?.revision,interrupted:restored.session?.state?.world?.flags?.interrupted,journal:localStorage.getItem(key)};
+      },roomId);
+      assert.equal(autoRecovery.ok,true);assert.equal(autoRecovery.revision,before.revision);assert.equal(autoRecovery.interrupted,undefined);assert.equal(autoRecovery.journal,null);
       await page.evaluate(async rid=>{
         SevenWorkspaces.close();const other=rid+'-empty';rooms[other]=createEmptyRoom();roomTitles[other]='Empty RPG';currentRoom=other;await saveRooms();
         updateRoomTitle();renderChatHistory();updateRoomListUI();await SevenRemake.openWorkspace('rpg');
