@@ -36,6 +36,7 @@ Decision: Cancellation belongs to the originating generation/tool request. Platf
 Status: Accepted
 Decision: Integration surfaces normalize failures into MODEL_ERROR, NETWORK_ERROR, TOOL_ERROR, MEMORY_ERROR, FILE_ERROR, AUTH_ERROR, RATE_LIMIT, VALIDATION_ERROR, CANCELLED, TIMEOUT or INTERNAL_ERROR, while preserving technical details in safe structured diagnostics.
 
+
 ## ADR-010 — RPG Structured State Is Authoritative
 Status: Accepted
 Decision: RPG continuity-critical truth lives in validated structured state plus provenance ledger. Narrative prose, summaries and retrieved memories are projections/evidence, not authoritative state.
@@ -56,6 +57,28 @@ Decision: RPG-specific memory schemas/adapters layer on the shared Memory system
 Status: Accepted
 Decision: For player-controlled characters, Seven cannot invent irreversible actions, internal thoughts/emotions or decisions unless the user explicitly grants control.
 
+
+## ADR-REL-001 — Release scope is identified by product and commit
+Status: Accepted
+Decision: Root main currently builds the HTML/Capacitor product. Typed remake branches are separate candidates; their tests/features are not credited to a root APK. Do not silently merge the divergent architectures or delete historical branches. Acceptance is bound to one product entrypoint and SHA.
+
+## ADR-REL-002 — Self-development accepts exact required CI only
+Status: Accepted
+Decision: Explicitly dispatch the required test workflow for isolated work branches, require matching branch/SHA, reject unfinished timeouts and bind merge to that verified SHA. Publication uses one tree/commit and a non-forced ref update. Autonomous patches cannot edit measured acceptance gates; only 404 means a file is absent.
+
+## ADR-REL-003 — APK provenance and source cleanliness are release gates
+Status: Accepted
+Decision: Packaging v5 records source commit, source dirty status, workflow run and SHA-256 asset inventory. APK verification rejects different SHA, dirty source or mismatched packaged bytes. Build generators must be idempotent with committed sources; label synchronizer output was committed for the current label. Actual binary/version/signature/install remains an additional acceptance gate.
+
+## ADR-REL-004 — RPG context budgets include knowledge references and diagnostics
+Status: Accepted
+Decision: Character context knowledge references are projections restricted to selected known Canon. Serialized size includes diagnostics. An unavoidable oversized projection returns BLOCKED/context-budget-exceeded rather than READY. Canonical knowledge is not deleted or changed. Narrative/character generation callers must honor this blocked result.
+
+## ADR-REL-005 — Regression discovery and startup budget share authoritative inputs
+Status: Accepted
+Decision: all.cjs discovers release/*.test.cjs automatically. Static and browser release audits consume build.startupBytes with the same strict <100000-byte gate; no budget increase was used. UI loader public API stays load/loadShell/loadFinal and supports failure recovery.
+
+Generated test reports belong under dist/, not tracked source. Memory output moved to dist/memory-results.json to keep acceptance/build source identity clean.
 ## ADR-015 — Response Mode State Is Canonical
 Status: Accepted
 Decision: Chat/Think/Search/Research are controlled by one idempotent runtime state surface. CSS classes are projections only. Changing mode while generation is active cancels the originating work before changing semantics.
@@ -76,22 +99,39 @@ Decision: Request traces retain IDs, phases, timings, counts, model/provider ide
 Status: Accepted
 Decision: navigator.onLine is represented as link-online/offline only. End-to-end reachability is a separate evidence field updated from provider outcomes.
 
-## ADR-020 — Coding Plans Are Bound to Exact Workspace Truth
+## ADR-REL-006 — Verify the APK binary and signature, retain explicit upgrade gate
 Status: Accepted
-Decision: Mutating Coding plans bind to an exact Git head SHA, repository snapshot fingerprint and per-file SHA-256 preconditions. Head, snapshot or source drift fails closed; stale plans are never silently applied.
+Decision: APK acceptance reads package/version from aapt dump badging and verifies the actual APK with apksigner verify --verbose --print-certs. Missing SDK tools, wrong binary identity or invalid signatures fail the gate. Record APK SHA-256, certificate SHA-256, source SHA/run and web inventory count in dist/apk-verification.json and publish it beside the APK. A valid signature is not evidence of cross-build signing continuity or data-preserving upgrades; those remain explicit gates. Root debug workflow currently does not pass the optional persistent CI keystore properties.
+Reference: https://developer.android.com/tools/apksigner
 
-## ADR-021 — Mandatory Coding Verification Is Outside Model Authority
+## ADR-REL-007 — Uncertain RPG persistence must quarantine before hydrate
 Status: Accepted
-Decision: Deterministic policy selects mandatory Coding gates from the change surface. Models may add checks but cannot remove mandatory diff, typecheck, test, build or release gates. Completion requires execution evidence.
+Decision: The live RPG bridge stages a durable per-room pending journal before mutation, containing previous session/index for recovery. Ordinary rollback removes the journal only when session/index restoration succeeds. Uncertain rollback, interruption or failed finalization leaves the journal and load/loadLatest/context/sync fail closed with recovery-required, including after restart. Journal write failure prevents all mutation. This is a safety quarantine, not a cross-store atomic transaction or automatic recovery claim; unresolved journal repair and user-visible recovery remain release gates.
 
-## ADR-022 — Coding Repository Effects Use the Tool Fabric
+## ADR-REL-008 — Reduce RPG payload through parser-based packaging
 Status: Accepted
-Decision: Repository head/list/read/commit operations used by Coding are registered Seven tools. Mutation therefore remains subject to scoped capabilities, approval, audit, replay/idempotency protection, effect tracking, concurrency control and cancellation. Coding does not receive a privileged Git bypass.
+Decision: Pin Terser 5.51.2 as a build dependency and minify only four whitelisted RPG kernel/bridge files. Compression is disabled; local identifier mangling is allowed while function names and property/API names are retained. Other assets retain their existing packaging. Execute the existing state/session/context/live failure/restart suites against the packaged modules in one isolated VM. Preserve all startup/workspace size gates; source stays readable. This repairs the 320506-byte CI workspace failure without raising the 320000-byte budget.
+Reference: https://terser.org/docs/api-reference/
 
-## ADR-023 — Coding Reuses Model Routing
-Status: Accepted
-Decision: Coding editor/reviewer model selection consumes the shared ModelRegistry, ModelRouter and ProviderHealthTracker. Coding does not introduce a private provider-routing architecture. Reviewer routing may be independently offset/scoped while remaining under the same routing contract.
+ADR-REL-008 addendum: upstream theme fixes pushed startup bytes to 100085. The same parser packaging now covers beta-ui-runtime.js with local mangling, compression disabled and function/property names retained. Fourteen source-vs-packaged preference/system/legacy cases and public API checks pass. Other startup scripts keep their existing transform.
 
-## ADR-024 — Uncertain Coding Effects Block Further Mutation
+
+## ADR-COD-001 — Coding plans are bound to exact workspace truth
 Status: Accepted
-Decision: A repository mutation with uncertain external effect is not treated as a normal failure and is never blindly retried. The Coding run enters BLOCKED and requires repository reconciliation before further mutation.
+Decision: Coding plans bind repository/branch/full head SHA, snapshot fingerprint and expected source-file hashes. Concurrent/stale workspace changes fail closed instead of being overwritten or silently rebased.
+
+## ADR-COD-002 — Coding verification is outside model authority
+Status: Accepted
+Decision: The model may suggest supplemental checks but cannot remove mandatory diff/type/test/build gates. PASS requires executed evidence; independent review cannot approve failed verification.
+
+## ADR-COD-003 — Coding repository mutation uses Tool Fabric
+Status: Accepted
+Decision: Production repository head/list/read/commit operations are registered Seven tools and pass through scoped capabilities, mutating approval, replay/idempotency protection, effect ledger, audit and cancellation. GitHub mutation is not a privileged side channel around Tools.
+
+## ADR-COD-004 — Uncertain Coding side effects fail closed
+Status: Accepted
+Decision: A repository mutation with uncertain external effect is BLOCKED until reconciliation. Coding must not automatically retry an effect-unknown commit. Exact-base non-force Git updates plus post-commit verification define the normal safe path.
+
+## ADR-COD-005 — Coding reuses shared routing and research
+Status: Accepted
+Decision: Coding uses Seven ModelRouter/ProviderHealthTracker for editor/diagnostic/reviewer routing and ResearchService for external evidence. Independent reviewer routing may differ from editor routing, but no separate model-health or research authority is created.
