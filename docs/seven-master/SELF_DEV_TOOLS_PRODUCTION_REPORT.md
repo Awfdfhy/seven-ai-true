@@ -167,3 +167,14 @@ The post-apply regression test now verifies the durable learning archive records
 
 Latest Chat 4 SHA before this report update: `e0761cd4a52e8d5f59bbd9db46f1fa391e6a66cd`.
 Exact-SHA run 37305863396 was queued when recorded.
+
+
+## Batch 7 — Learning fingerprint hardening and idempotent retry proof
+
+- Repeat-failure fingerprints now canonicalize subsystem, hypothesis whitespace/case, and baseline SHA case. Cosmetic changes can no longer bypass the learning guard and re-run an already failed experiment.
+- Regression proves `TOOLS` / `tools`, repeated spaces, and SHA case normalize to the same failed-experiment fingerprint.
+- Added explicit execution proof that a WRITE tool retries only when it declares both idempotency and cooperative abort support. Non-idempotent side effects remain retry-disabled.
+- Older run 37305926980 was cancelled after the branch advanced and is not counted as pass/fail evidence.
+
+Latest implementation SHA before this report update: `fb8d4162dce100822942eb1026ea2a5ccef2a520`.
+Exact-SHA run 37306204165 was pending when recorded.
