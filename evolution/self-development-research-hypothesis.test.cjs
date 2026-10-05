@@ -23,17 +23,47 @@ const uncertainDiagnosis = { id: "diag-low", confidence: 0.5 };
 function hypothesis(id, overrides = {}) {
   return createHypothesis({
     id,
-    diagnosisId: "diag-low",
-    mechanism: `Mechanism ${id} changes a bounded ranking policy and predicts measurable quality gain.`,
-    changeClass: "ranking",
-    targetPaths: [`release/${id}.js`],
-    expectedEffects: { qualityScore: "IMPROVE", p90LatencyMs: "PRESERVE" },
-    assumptions: ["fixture distribution remains comparable"],
-    validationMetrics: ["qualityScore", "p90LatencyMs"],
-    rollbackPlan: "restore exact baseline SHA",
-    evidenceRefs: ["research:source-1"],
-    ...overrides
+    diagnosisId: overrides.diagnosisId || "diag-low",
+    mechanism: overrides.mechanism || `Mechanism ${id} changes a bounded ranking policy and predicts measurable quality gain.`,
+    changeClass: overrides.changeClass || "ranking",
+    targetPaths: overrides.targetPaths || [`release/${id}.js`],
+    expectedEffects: overrides.expectedEffects || { qualityScore: "IMPROVE", p90LatencyMs: "PRESERVE" },
+    assumptions: overrides.assumptions || ["fixture distribution remains comparable"],
+    validationMetrics: overrides.validationMetrics || ["qualityScore", "p90LatencyMs"],
+    rollbackPlan: overrides.rollbackPlan || "restore exact baseline SHA",
+    evidenceRefs: overrides.evidenceRefs || ["research:source-1"]
   });
+}
+
+function evidence({
+  id = "research-e1",
+  claimKey = "root_cause",
+  stance = "SUPPORT",
+  host = "example.com",
+  publishedAt = "2026-09-20T00:00:00Z",
+  retrievedAt = "2026-10-04T00:00:00Z"
+} = {}) {
+  return createResearchEvidence({
+    id,
+    claimKey,
+    stance,
+    sourceUrl: `https://${host}/evidence/${id}?tracking=1`,
+    sourceType: "PAPER",
+    publishedAt,
+    retrievedAt,
+    confidence: 0.9
+  });
+}
+
+function completeResearch(overrides = {}) {
+  return {
+    researchContext: {},
+    researchEvidence: [evidence()],
+    requiredClaimKeys: ["root_cause"],
+    researchAsOf: "2026-10-05T00:00:00Z",
+    researchMaxAgeDays: 365,
+    ...overrides
+  };
 }
 
 pass("high-confidence low-risk internal diagnosis can skip external research", () => {
@@ -77,7 +107,7 @@ pass("research URLs are HTTPS-only, credential-free and query-stripped", () => {
 });
 
 pass("research summary exposes coverage, contradictions, independence and staleness", () => {
-  const evidence = [
+  const rows = [
     createResearchEvidence({
       id: "e1",
       claimKey: "sandbox_required",
@@ -110,7 +140,7 @@ pass("research summary exposes coverage, contradictions, independence and stalen
     })
   ];
   const summary = summarizeResearch({
-    evidence,
+    evidence: rows,
     requiredClaimKeys: ["sandbox_required", "eval_lock_required", "rollback_required"],
     asOf: "2026-10-05T00:00:00Z",
     maxAgeDays: 365
@@ -155,24 +185,25 @@ pass("critical protected-plane hypothesis is governance-only", () => {
   assert.equal(value.planningDisposition, "GOVERNANCE_REQUIRED");
 });
 
-pass("required research blocks hypothesis planning when evidence is incomplete", () => {
-  const researchDecision = decideResearch({ diagnosis: uncertainDiagnosis, riskLevel: "MEDIUM" });
+pass("caller cannot bypass required research by supplying a fake decision object", () => {
   const result = validateHypothesisSet({
     diagnosis: uncertainDiagnosis,
     candidates: [hypothesis("h1"), hypothesis("h2")],
-    researchDecision,
-    researchSummary: { complete: false, evidenceCount: 1, staleEvidenceIds: [], contradictions: [] }
+    researchContext: {},
+    researchEvidence: [],
+    requiredClaimKeys: ["root_cause"],
+    researchAsOf: "2026-10-05T00:00:00Z"
   });
   assert.equal(result.readyForPlanning, false);
   assert.equal(result.decision, "BLOCKED_RESEARCH_INCOMPLETE");
+  assert.equal(result.researchDecision.required, true);
 });
 
-pass("uncertain or contradictory diagnosis requires multiple distinct hypotheses", () => {
+pass("uncertain diagnosis requires multiple distinct hypotheses after research is complete", () => {
   const one = validateHypothesisSet({
     diagnosis: uncertainDiagnosis,
     candidates: [hypothesis("h1")],
-    researchDecision: { required: false },
-    researchSummary: { complete: true, evidenceCount: 1, staleEvidenceIds: [], contradictions: [] }
+    ...completeResearch()
   });
   assert.equal(one.readyForPlanning, false);
   assert.equal(one.minCandidates, 2);
@@ -180,37 +211,61 @@ pass("uncertain or contradictory diagnosis requires multiple distinct hypotheses
   const two = validateHypothesisSet({
     diagnosis: uncertainDiagnosis,
     candidates: [hypothesis("h1"), hypothesis("h2")],
-    researchDecision: { required: false },
-    researchSummary: { complete: true, evidenceCount: 1, staleEvidenceIds: [], contradictions: [] }
+    ...completeResearch()
   });
   assert.equal(two.readyForPlanning, true);
   assert.equal(two.accepted.length, 2);
+  assert.equal(two.researchSummary.complete, true);
+});
+
+pass("explicit solution ambiguity also requires alternative hypotheses", () => {
+  const result = validateHypothesisSet({
+    diagnosis: highConfidenceDiagnosis,
+    candidates: [hypothesis("h1", { diagnosisId: "diag-high" })],
+    ...completeResearch({ researchContext: { solutionAmbiguity: 0.8 } })
+  });
+  assert.equal(result.readyForPlanning, false);
+  assert.equal(result.minCandidates, 2);
+  assert.ok(result.researchDecision.reasons.includes("multiple_plausible_remedies"));
+});
+
+pass("contradictory research requires multiple hypotheses and critic review", () => {
+  const researchEvidence = [
+    evidence({ id: "support", stance: "SUPPORT", host: "a.example.com" }),
+    evidence({ id: "contra", stance: "CONTRADICT", host: "b.example.com" })
+  ];
+  const result = validateHypothesisSet({
+    diagnosis: highConfidenceDiagnosis,
+    candidates: [hypothesis("h1", { diagnosisId: "diag-high" })],
+    researchContext: { externalDependency: true },
+    researchEvidence,
+    requiredClaimKeys: ["root_cause"],
+    researchAsOf: "2026-10-05T00:00:00Z"
+  });
+  assert.equal(result.readyForPlanning, false);
+  assert.equal(result.minCandidates, 2);
+  assert.equal(result.requiresCritic, true);
+  assert.deepEqual(result.researchSummary.contradictions, ["root_cause"]);
 });
 
 pass("duplicate hypotheses in one candidate set do not count twice", () => {
   const a = hypothesis("same");
-  const b = createHypothesis({
-    ...a,
-    id: "same-copy"
-  });
+  const b = createHypothesis({ ...a, id: "same-copy" });
   const result = validateHypothesisSet({
     diagnosis: uncertainDiagnosis,
     candidates: [a, b],
-    researchDecision: { required: false },
-    researchSummary: { complete: true, evidenceCount: 1, staleEvidenceIds: [], contradictions: [] }
+    ...completeResearch()
   });
   assert.equal(result.readyForPlanning, false);
   assert.equal(result.accepted.length, 1);
-  assert.equal(result.rejected[0].reason, "duplicate_hypothesis_in_set");
+  assert.equal(result.rejected.some((item) => item.reason === "duplicate_hypothesis_in_set"), true);
 });
 
 pass("previously rejected identical hypothesis is blocked without new evidence", () => {
-  const a = hypothesis("retry");
+  const a = hypothesis("retry", { diagnosisId: "diag-high" });
   const result = validateHypothesisSet({
     diagnosis: highConfidenceDiagnosis,
     candidates: [a],
-    researchDecision: { required: false },
-    researchSummary: { complete: true, evidenceCount: 1, staleEvidenceIds: [], contradictions: [] },
     priorAttempts: [{
       fingerprint: a.fingerprint,
       decision: "REJECT",
@@ -222,12 +277,13 @@ pass("previously rejected identical hypothesis is blocked without new evidence",
 });
 
 pass("previously failed hypothesis may be reconsidered only with new evidence", () => {
-  const a = hypothesis("retry-new", { evidenceRefs: ["research:source-1", "research:new-source"] });
+  const a = hypothesis("retry-new", {
+    diagnosisId: "diag-high",
+    evidenceRefs: ["research:source-1", "research:new-source"]
+  });
   const result = validateHypothesisSet({
     diagnosis: highConfidenceDiagnosis,
     candidates: [a],
-    researchDecision: { required: false },
-    researchSummary: { complete: true, evidenceCount: 2, staleEvidenceIds: [], contradictions: [] },
     priorAttempts: [{
       fingerprint: a.fingerprint,
       decision: "ROLLBACK",
@@ -239,17 +295,18 @@ pass("previously failed hypothesis may be reconsidered only with new evidence", 
 });
 
 pass("all required research being stale blocks planning", () => {
-  const decision = decideResearch({ diagnosis: uncertainDiagnosis, riskLevel: "MEDIUM" });
+  const stale = evidence({
+    id: "stale",
+    publishedAt: "2020-01-01T00:00:00Z",
+    retrievedAt: "2026-10-04T00:00:00Z"
+  });
   const result = validateHypothesisSet({
     diagnosis: uncertainDiagnosis,
     candidates: [hypothesis("h1"), hypothesis("h2")],
-    researchDecision: decision,
-    researchSummary: {
-      complete: true,
-      evidenceCount: 2,
-      staleEvidenceIds: ["e1", "e2"],
-      contradictions: []
-    }
+    researchEvidence: [stale],
+    requiredClaimKeys: ["root_cause"],
+    researchAsOf: "2026-10-05T00:00:00Z",
+    researchMaxAgeDays: 365
   });
   assert.equal(result.decision, "BLOCKED_RESEARCH_STALE");
 });
