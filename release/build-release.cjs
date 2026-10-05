@@ -102,7 +102,8 @@ function copyDir(src,dst){
   return out;
 }
 function writeLazyRuntime(dst,name,source){
-  const data=Buffer.from(compactJs(source));
+  const rpg=require('./rpg-minifier.cjs');
+  const data=Buffer.from(rpg.files.has(name)?rpg.minifyRpg(source):compactJs(source));
   const file=path.join(dst,name);fs.mkdirSync(dst,{recursive:true});fs.writeFileSync(file,data);
   return {path:path.relative(DIST_DIR,file).replace(/\\/g,'/'),bytes:data.length,sha256:crypto.createHash('sha256').update(data).digest('hex')};
 }
