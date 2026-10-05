@@ -33,5 +33,11 @@ assert.match(runner,/kill_window cleancommit/);
 assert.match(runner,/adb install -r -t "\$TMP\/build-b\.apk"/);
 assert.match(runner,/versionCode\\s\+\\d\+/);
 assert.match(runner,/A_SIGNER.*B_SIGNER/s);
+assert.match(runner,/am start -W -n "\$APP_ID\/\.MainActivity"/);
+assert.match(runner,/dumpsys meminfo "\$APP_ID"/);
+assert.match(runner,/measureRuntimePerformance/);
+assert.match(runner,/send-trim-memory "\$APP_ID" RUNNING_LOW/);
+assert.match(materializer,/SEVEN_RC_PERFORMANCE/);
+assert.match(materializer,/backgroundForegroundPreservesDurableState/);
 
 console.log('android RC acceptance harness contracts: PASS');
