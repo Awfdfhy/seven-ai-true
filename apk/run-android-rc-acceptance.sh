@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# UI/runtime blocker verification trigger
 # RC1 final integration verification trigger
 # RC gate rerun marker: durable WAL verification
 set -euo pipefail
