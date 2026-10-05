@@ -42,4 +42,7 @@ assert.match(materializer,/backgroundForegroundPreservesDurableState/);
 
 console.log('android RC acceptance harness contracts: PASS');
 
-// RC1 device-gate dispatch marker: no runtime behavior change.
+assert.match(materializer,/new java\.io\.File\(target\.getFilesDir\(\),"seven-rc-process-ready"\)/);
+assert.match(materializer,/out\.getFD\(\)\.sync\(\)/,'readiness marker must be committed before the host kills');
+assert.match(runner,/adb shell run-as "\$APP_ID" cat "\$marker"/,'host must read the actual target-owned marker');
+assert.doesNotMatch(materializer,/executeShellCommand\("sh -c/,'UiAutomation command parser is not a shell quoting interface');
