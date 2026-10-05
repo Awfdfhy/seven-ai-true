@@ -42,6 +42,23 @@ assert.equal(restarted.loadLatest('room-a').reason,'recovery-required');
 assert.equal(JSON.parse(backingStorage.getItem('seven_rpg_session_v3:pending:room-a')).previous.legacy.worldSession.position,2);
 failAll=false;failIndex=false;
 assert.equal(restarted.sync({roomId:'room-a',worldId:'valen',legacy:four}).reason,'recovery-required');
+assert.equal(restarted.inspectRecovery('room-a').journalStatus,'pending');
+const recovered=restarted.recover('room-a');
+assert.equal(recovered.ok,true);assert.equal(recovered.status,'RECOVERED');assert.equal(recovered.journalStatus,'rolled_back');
+assert.equal(restarted.loadLatest('room-a').session.legacy.worldSession.position,2);
+assert.equal(restarted.inspectRecovery('room-a').status,'CLEAN');
+out=restarted.sync({roomId:'room-a',worldId:'valen',legacy:four,reason:'post-recovery'});
+assert.equal(out.ok,true);assert.equal(restarted.loadLatest('room-a').session.legacy.worldSession.position,4);
+
+// A recovery journal must never overwrite a newer valid revision.
+const latest=restarted.loadLatest('room-a').session;
+const previous=JSON.parse(JSON.stringify(latest));previous.state.revision=Math.max(0,latest.state.revision-2);previous.persistedRevision=previous.state.revision;
+backingStorage.setItem('seven_rpg_session_v3:pending:room-a',JSON.stringify({version:1,status:'pending',roomId:'room-a',worldId:'valen',previous,previousIndex:'valen',baseRevision:previous.state.revision,candidateRevision:previous.state.revision+1}));
+const refused=restarted.recover('room-a');
+assert.equal(refused.ok,false);assert.equal(refused.reason,'recovery-required');assert.equal(refused.journalStatus,'abandoned');assert.equal(refused.recoveryDetail,'newer-valid-state');
+assert.equal(restarted.loadLatest('room-a').reason,'recovery-required');
+backingStorage.removeItem('seven_rpg_session_v3:pending:room-a');
+
 const count=backingStorage.keys().length;failAll=true;
 assert.equal(restarted.sync({roomId:'new-room',worldId:'valen',legacy:one}).reason,'journal-write-failed');
 assert.equal(backingStorage.keys().length,count);
