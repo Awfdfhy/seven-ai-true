@@ -9,7 +9,7 @@ function normalizeTool(raw={}){
  const schema=raw.inputSchema||raw.schema||{type:"object",properties:{},additionalProperties:false};
  if(!schema||typeof schema!=="object"||Array.isArray(schema))throw new Error("invalid tool input schema");
  const timeoutMs=Math.max(100,Math.min(120000,Number(raw.timeoutMs||raw.timeout||15000)||15000));
- const retries=Math.max(0,Math.min(3,Number(raw.retryPolicy&&raw.retryPolicy.maxRetries??raw.maxRetries??0)||0));
+ const retries=Math.max(0,Math.min(3,Number((raw.retryPolicy&&raw.retryPolicy.maxRetries)??raw.maxRetries??0)||0));
  return Object.freeze({
   id,name:text(raw.name||id),inputSchema:schema,outputSchema:raw.outputSchema&&typeof raw.outputSchema==="object"?raw.outputSchema:null,
   risk:normalizeRisk(raw.risk||raw.riskLevel),permissions:Object.freeze([...(raw.permissions||raw.requiredPermissions||[])].map(text).filter(Boolean)),
