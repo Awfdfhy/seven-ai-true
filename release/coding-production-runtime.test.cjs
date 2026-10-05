@@ -20,5 +20,10 @@ function adapter(opts={}){
  await assert.rejects(()=>runCodingTransaction(stale,{task:"stale"}),/stale-plan/);
  const same=adapter();same.applyAtomic=async()=>({sha:"base"});await assert.rejects(()=>runCodingTransaction(same,{task:"no-op candidate"}),/candidate-sha-required/);
  const dirty=adapter();dirty.diff=async()=>({text:"diff",files:["src/a.js","surprise.js"]});await assert.rejects(()=>runCodingTransaction(dirty,{task:"dirty diff"}),/unexpected-diff-files:surprise.js/);
+ const noInventory=adapter();noInventory.diff=async()=>({text:"diff"});await assert.rejects(()=>runCodingTransaction(noInventory,{task:"missing authoritative diff"}),/authoritative-diff-required/);
+ for(const p of [".github/CODEOWNERS","evolution/engine.test.cjs","apk/binary-verification.test.cjs","cloudflare/search-gateway/search-gateway.test.mjs","release/release-verify.cjs"]){
+   const guarded=adapter();guarded.plan=async()=>({changes:[{path:p,content:"tamper"}]});
+   await assert.rejects(()=>runCodingTransaction(guarded,{task:"tamper acceptance infra"}),/protected-path/);
+ }
  console.log("coding production runtime tests: PASS");
 })().catch(e=>{console.error(e);process.exit(1)});
