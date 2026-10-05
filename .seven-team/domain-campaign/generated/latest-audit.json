@@ -3,16 +3,23 @@
   "domains": 30,
   "ready": 0,
   "missing": [
+    "D01_CHAT_CORE",
+    "D02_MEMORY_CONTEXT",
+    "D03_TOOLS_CAPABILITY",
     "D04_CODING_SYSTEM",
     "D05_SELF_DEVELOPMENT",
+    "D06_RPG_WORLD",
     "D07_RESEARCH_WEB",
     "D08_MODEL_ROUTING",
+    "D09_DEEP_THINK",
     "D10_FILES_MULTIMODAL",
     "D11_ANDROID_NATIVE",
     "D12_UI_DESIGN_SYSTEM",
     "D13_ARABIC_RTL_A11Y",
     "D14_SECURITY_PRIVACY",
+    "D15_PERSISTENCE_RECOVERY",
     "D16_NETWORK_RESILIENCE",
+    "D17_PERFORMANCE_CONCURRENCY",
     "D18_TESTING_EVALS",
     "D19_AGENT_ORCHESTRATION",
     "D20_PRODUCT_QUALITY",
@@ -20,6 +27,7 @@
     "D22_PROTOCOLS_INTEROP",
     "D23_IMPORT_EXPORT_BACKUP",
     "D24_RELEASE_APK",
+    "D25_HISTORY_ROOMS",
     "D26_SETTINGS_CONTROLS",
     "D27_ERROR_RECOVERY_UX",
     "D28_LOCAL_INTELLIGENCE",
@@ -62,8 +70,8 @@
     {
       "id": "D01_CHAT_CORE",
       "status": "INSUFFICIENT",
-      "urls": 30,
-      "primaryTagged": 22,
+      "urls": 11,
+      "primaryTagged": 11,
       "target": 10,
       "owners": [
         "B01",
@@ -73,8 +81,8 @@
     {
       "id": "D02_MEMORY_CONTEXT",
       "status": "INSUFFICIENT",
-      "urls": 248,
-      "primaryTagged": 83,
+      "urls": 20,
+      "primaryTagged": 11,
       "target": 20,
       "owners": [
         "A06",
@@ -88,8 +96,8 @@
     {
       "id": "D03_TOOLS_CAPABILITY",
       "status": "INSUFFICIENT",
-      "urls": 74,
-      "primaryTagged": 57,
+      "urls": 20,
+      "primaryTagged": 17,
       "target": 20,
       "owners": [
         "A04",
@@ -125,8 +133,8 @@
     {
       "id": "D06_RPG_WORLD",
       "status": "INSUFFICIENT",
-      "urls": 195,
-      "primaryTagged": 26,
+      "urls": 14,
+      "primaryTagged": 14,
       "target": 12,
       "owners": [
         "B05",
@@ -158,8 +166,8 @@
     {
       "id": "D09_DEEP_THINK",
       "status": "INSUFFICIENT",
-      "urls": 21,
-      "primaryTagged": 11,
+      "urls": 10,
+      "primaryTagged": 10,
       "target": 10,
       "owners": [
         "B04",
@@ -224,8 +232,8 @@
     {
       "id": "D15_PERSISTENCE_RECOVERY",
       "status": "INSUFFICIENT",
-      "urls": 74,
-      "primaryTagged": 57,
+      "urls": 11,
+      "primaryTagged": 11,
       "target": 10,
       "owners": [
         "B08",
@@ -246,8 +254,8 @@
     {
       "id": "D17_PERFORMANCE_CONCURRENCY",
       "status": "INSUFFICIENT",
-      "urls": 74,
-      "primaryTagged": 57,
+      "urls": 12,
+      "primaryTagged": 7,
       "target": 10,
       "owners": [
         "A09",
@@ -334,8 +342,8 @@
     {
       "id": "D25_HISTORY_ROOMS",
       "status": "INSUFFICIENT",
-      "urls": 30,
-      "primaryTagged": 22,
+      "urls": 10,
+      "primaryTagged": 10,
       "target": 8,
       "owners": [
         "B01",
