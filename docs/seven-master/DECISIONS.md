@@ -56,14 +56,42 @@ Decision: RPG-specific memory schemas/adapters layer on the shared Memory system
 Status: Accepted
 Decision: For player-controlled characters, Seven cannot invent irreversible actions, internal thoughts/emotions or decisions unless the user explicitly grants control.
 
-## ADR-015 — Coding Builds on the Modern Tool Product Branch
+## ADR-015 — Response Mode State Is Canonical
 Status: Accepted
-Decision: Coding System implementation targets `seven-remake-v3` because it contains the modern Tool Fabric and TaskManager. The specialist branch `coding-system-v1` begins from an exact product SHA and carries current coordination documentation for review.
+Decision: Chat/Think/Search/Research are controlled by one idempotent runtime state surface. CSS classes are projections only. Changing mode while generation is active cancels the originating work before changing semantics.
 
-## ADR-016 — Coding Plans Are Bound to Exact Workspace Truth
+## ADR-016 — Context Budget Follows the Controller Model
 Status: Accepted
-Decision: Every mutating Coding plan is bound to an exact Git head SHA, repository snapshot fingerprint and per-file source fingerprint. Head, snapshot or source-file drift fails closed; an old plan is never silently applied to changed workspace state.
+Decision: Context input budget is derived from the controller-selected model window, not the largest configured provider window. Fallback candidates must fit the actual compiled request.
 
-## ADR-017 — Mandatory Coding Verification Is Outside Model Authority
+## ADR-017 — Research Citation Locks Preserve Temporal Identity
 Status: Accepted
-Decision: Deterministic policy selects mandatory verification commands from changed paths. Models may request additional checks but cannot remove required verification gates. PASS requires recorded execution evidence, not a model assertion.
+Decision: Locked citations preserve retrievedAt, publishedAt when available, source identity and deterministic content hash so freshness and source mutation are auditable.
+
+## ADR-018 — Diagnostics Are Bounded and Content-Free
+Status: Accepted
+Decision: Request traces retain IDs, phases, timings, counts, model/provider identifiers and normalized errors only. Prompt, response, secret, file-body and source-body content is excluded.
+
+## ADR-019 — Network Link State Is Not Reachability
+Status: Accepted
+Decision: navigator.onLine is represented as link-online/offline only. End-to-end reachability is a separate evidence field updated from provider outcomes.
+
+## ADR-020 — Coding Plans Are Bound to Exact Workspace Truth
+Status: Accepted
+Decision: Mutating Coding plans bind to an exact Git head SHA, repository snapshot fingerprint and per-file SHA-256 preconditions. Head, snapshot or source drift fails closed; stale plans are never silently applied.
+
+## ADR-021 — Mandatory Coding Verification Is Outside Model Authority
+Status: Accepted
+Decision: Deterministic policy selects mandatory Coding gates from the change surface. Models may add checks but cannot remove mandatory diff, typecheck, test, build or release gates. Completion requires execution evidence.
+
+## ADR-022 — Coding Repository Effects Use the Tool Fabric
+Status: Accepted
+Decision: Repository head/list/read/commit operations used by Coding are registered Seven tools. Mutation therefore remains subject to scoped capabilities, approval, audit, replay/idempotency protection, effect tracking, concurrency control and cancellation. Coding does not receive a privileged Git bypass.
+
+## ADR-023 — Coding Reuses Model Routing
+Status: Accepted
+Decision: Coding editor/reviewer model selection consumes the shared ModelRegistry, ModelRouter and ProviderHealthTracker. Coding does not introduce a private provider-routing architecture. Reviewer routing may be independently offset/scoped while remaining under the same routing contract.
+
+## ADR-024 — Uncertain Coding Effects Block Further Mutation
+Status: Accepted
+Decision: A repository mutation with uncertain external effect is not treated as a normal failure and is never blindly retried. The Coding run enters BLOCKED and requires repository reconciliation before further mutation.
