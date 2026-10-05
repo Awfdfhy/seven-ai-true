@@ -121,6 +121,19 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
+      - name: Upload Android gate diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: seven-android-gate-diagnostics
+          path: |
+            android/app/build/reports/androidTests/**
+            android/app/build/outputs/androidTest-results/**
+            android/app/build/reports/lint-results-debug.html
+            dist/apk-verification.json
+          if-no-files-found: warn
+          retention-days: 7
+
       - name: Verify APK again after device tests
         run: npm run android:verify
 

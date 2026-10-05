@@ -1,5 +1,6 @@
 const fs=require('fs');
 const path=require('path');
+const {walFixtureScript}=require('./android-wal-fixture.cjs');
 const ROOT=path.resolve(__dirname,'..');
 const ANDROID=path.join(ROOT,'android');
 const CONFIG=JSON.parse(fs.readFileSync(path.join(ROOT,'capacitor.config.json'),'utf8'));
@@ -84,7 +85,7 @@ public class SevenSmokeTest {
       if("true".equals(js(webView,code)))return;
       Thread.sleep(250);
     }
-    fail("Seven runtime did not become ready: "+code);
+    fail("Seven runtime did not become ready: "+code+"; state="+js(webView,"JSON.stringify({theme:document.documentElement.dataset.sevenTheme,motion:document.documentElement.dataset.sevenReducedMotion,persistence:typeof roomPersistence!=='undefined'?roomPersistence.status():null,main:document.querySelector('.main')?getComputedStyle(document.querySelector('.main')).backgroundColor:null})"));
   }
 
   @Test
@@ -125,8 +126,9 @@ public class SevenSmokeTest {
       WebView first=firstRef.get();
       assertNotNull(first);
       waitFor(first,"Boolean(typeof roomPersistence!=='undefined'&&roomPersistence.status().ready&&window.SevenPerformance&&SevenPerformance.state.ready)");
-      assertEquals("true",js(first,"(()=>{window.__sevenWalFixture='pending';(async()=>{let id=currentRoom;if(!id||!own(rooms,id)){id='android-recreate-room';rooms[id]=createEmptyRoom();roomTitles[id]='Android recreation';currentRoom=id;const ok=await saveRooms();if(!ok){window.__sevenWalFixture='save-failed';return}}const base=roomPersistence.status().revision,value=JSON.parse(JSON.stringify({version:1,rooms,roomTitles,currentRoom}));value.roomTitles[value.currentRoom]='Android recreation WAL';localStorage.setItem('seven_ai_room_wal_v1',JSON.stringify({schemaVersion:1,seq:Date.now()*1000+321,sessionId:'android-recreate-fixture',baseRevision:base,value}));window.__sevenWalFixture=localStorage.getItem('seven_ai_room_wal_v1')!==null?'ok':'stage-failed'})().catch(()=>window.__sevenWalFixture='error');return true})()"));
-      waitFor(first,"window.__sevenWalFixture==='ok'");
+      assertEquals("true",js(first,${JSON.stringify(walFixtureScript('Android recreation WAL'))}));
+      waitFor(first,"window.__sevenWalFixture.status!=='pending'");
+      assertEquals("WAL fixture must have a durable base: "+js(first,"JSON.stringify(window.__sevenWalFixture)"),"true",js(first,"window.__sevenWalFixture.status==='staged'"));
       scenario.recreate();
       AtomicReference<WebView> secondRef=new AtomicReference<>();
       scenario.onActivity(a -> secondRef.set(a.getBridge().getWebView()));
@@ -134,8 +136,8 @@ public class SevenSmokeTest {
       assertNotNull(second);
       waitFor(second,"Boolean(typeof roomPersistence!=='undefined'&&roomPersistence.status().ready)");
       waitFor(second,"Boolean(window.__sevenAndroidMotion&&window.SevenPerformance&&SevenPerformance.state.ready)");
-      assertEquals("true",js(second,"roomTitles[currentRoom]==='Android recreation WAL'&&localStorage.getItem('seven_ai_room_wal_v1')===null"));
-      assertEquals("true",js(second,"document.documentElement.dataset.sevenReducedMotion===(SevenPerformance.state.reducedMotion?'1':'0')"));
+      waitFor(second,"roomTitles[currentRoom]==='Android recreation WAL'&&localStorage.getItem('seven_ai_room_wal_v1')===null");
+      waitFor(second,"document.documentElement.dataset.sevenReducedMotion===(SevenPerformance.state.reducedMotion?'1':'0')");
     }
   }
 

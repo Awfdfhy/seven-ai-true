@@ -1,5 +1,6 @@
 const fs=require("fs"),path=require("path");
 const ROOT=path.resolve(__dirname,".."),ANDROID=path.join(ROOT,"android"),CONFIG=JSON.parse(fs.readFileSync(path.join(ROOT,"capacitor.config.json"),"utf8")),APP_ID=String(CONFIG.appId||"").trim(),testRoot=path.join(ANDROID,"app","src","androidTest"),testDir=path.join(testRoot,"java",...APP_ID.split("."));
+const {walFixtureScript}=require('./android-wal-fixture.cjs');
 if(!fs.existsSync(ANDROID))throw Error("generated Android project missing");
 fs.mkdirSync(testDir,{recursive:true});
 const source=`package ${APP_ID};
@@ -31,7 +32,7 @@ public class SevenVisualEvidenceTest {
   }
   private void waitFor(WebView webView,String code) throws Exception {
     for(int i=0;i<100;i++){ if("true".equals(js(webView,code)))return; Thread.sleep(200); }
-    fail("Seven visual state did not become ready: "+code);
+    fail("Seven visual state did not become ready: "+code+"; state="+js(webView,"JSON.stringify({theme:document.documentElement.dataset.sevenTheme,motion:document.documentElement.dataset.sevenReducedMotion,persistence:typeof roomPersistence!=='undefined'?roomPersistence.status():null,rootBg:document.getElementById('seven-app')?getComputedStyle(document.getElementById('seven-app')).getPropertyValue('--s-bg'):null,main:document.querySelector('.main')?getComputedStyle(document.querySelector('.main')).backgroundColor:null,composer:document.querySelector('.composer')?getComputedStyle(document.querySelector('.composer')).backgroundColor:null})"));
   }
   private String shell(String command) throws Exception {
     ParcelFileDescriptor pfd=InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand(command);
@@ -87,7 +88,7 @@ public class SevenVisualEvidenceTest {
         assertEquals("true",js(webView,"getComputedStyle(document.getElementById('seven-app')).getPropertyValue('--s-bg').trim()==='#f5f7f5'"));
         shot("chat-day");
         theme(webView,"night");
-        assertEquals("true",js(webView,"(()=>{const root=document.getElementById('seven-app'),main=document.querySelector('.main'),composer=document.querySelector('.composer');const rs=getComputedStyle(root),ms=getComputedStyle(main),cs=getComputedStyle(composer);return rs.getPropertyValue('--s-bg').trim()==='#111815'&&ms.backgroundColor==='rgb(17, 24, 21)'&&cs.backgroundColor==='rgb(17, 24, 21)'&&rs.color!=='rgb(0, 0, 0)'})()"));
+        waitFor(webView,"(()=>{const root=document.getElementById('seven-app'),main=document.querySelector('.main'),composer=document.querySelector('.composer');const rs=getComputedStyle(root),ms=getComputedStyle(main),cs=getComputedStyle(composer);return rs.getPropertyValue('--s-bg').trim()==='#111815'&&ms.backgroundColor==='rgb(17, 24, 21)'&&cs.backgroundColor==='rgb(17, 24, 21)'&&rs.color!=='rgb(0, 0, 0)'})()");
         shot("chat-night");
 
         js(webView,"(()=>{const b=document.querySelector('.seven-shell-model-chip');if(b)b.click();return true})()");
@@ -176,13 +177,13 @@ public class SevenVisualEvidenceTest {
     try(ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)){
       WebView webView=webView(scenario);
       waitFor(webView,"Boolean(typeof roomPersistence!=='undefined'&&roomPersistence.status().ready&&typeof rooms!=='undefined'&&typeof roomTitles!=='undefined')");
-      assertEquals("true",js(webView,"(()=>{window.__sevenVisualWal='pending';(async()=>{let id=currentRoom;if(!id||!own(rooms,id)){id='android-visual-wal-room';rooms[id]=createEmptyRoom();roomTitles[id]='Android WAL';currentRoom=id;const ok=await saveRooms();if(!ok){window.__sevenVisualWal='save-failed';return}}const base=roomPersistence.status().revision,value=JSON.parse(JSON.stringify({version:1,rooms,roomTitles,currentRoom}));value.roomTitles[value.currentRoom]='Android WAL recovery';localStorage.setItem('seven_ai_room_wal_v1',JSON.stringify({schemaVersion:1,seq:Date.now()*1000+4242,sessionId:'android-activity-recreate-fixture',baseRevision:base,value}));window.__sevenVisualWal=localStorage.getItem('seven_ai_room_wal_v1')!==null?'ok':'stage-failed'})().catch(()=>window.__sevenVisualWal='error');return true})()"));
-      waitFor(webView,"window.__sevenVisualWal==='ok'");
-    }
-    try(ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)){
-      WebView webView=webView(scenario);
-      waitFor(webView,"Boolean(typeof roomPersistence!=='undefined'&&roomPersistence.status().ready)");
-      assertEquals("true",js(webView,"(()=>roomTitles[currentRoom]==='Android WAL recovery'&&localStorage.getItem('seven_ai_room_wal_v1')===null)()"));
+      assertEquals("true",js(webView,${JSON.stringify(walFixtureScript('Android WAL recovery'))}));
+      waitFor(webView,"window.__sevenWalFixture.status!=='pending'");
+      assertEquals("WAL fixture must have a durable base: "+js(webView,"JSON.stringify(window.__sevenWalFixture)"),"true",js(webView,"window.__sevenWalFixture.status==='staged'"));
+      scenario.recreate();
+      WebView restored=webView(scenario);
+      waitFor(restored,"Boolean(typeof roomPersistence!=='undefined'&&roomPersistence.status().ready)");
+      waitFor(restored,"roomTitles[currentRoom]==='Android WAL recovery'&&localStorage.getItem('seven_ai_room_wal_v1')===null");
     }
   }
 }

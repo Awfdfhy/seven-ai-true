@@ -2,6 +2,35 @@
 
 Audit date: 2026-10-05 (Asia/Baghdad). Release decision: **NO RC / NOT RELEASE-ACCEPTED**.
 
+## Latest verified release-code snapshot
+
+Release-code SHA: `120420b076ad7803bc06f15d73fa58546925785b`, on main after PR #105 was merged. Web run [37262979369](https://github.com/Awfdfhy/seven-ai-true/actions/runs/37262979369), job 111613870503: **SUCCESS, all 44 suites** (42 components and two browser suites). Android run [37262979489](https://github.com/Awfdfhy/seven-ai-true/actions/runs/37262979489), job 111613870959: lint/unit/build/first binary and payload verification **PASS**; API36 **FAILED (3/5 tests)**; API34 and final artifact acceptance were skipped. Harness repairs are pending device retest. The initial audit and continuation chronology below retain earlier observations; this snapshot and the following table supersede their old pending/wiring statements.
+
+| System | Current real implementation / evidence | Verified completeness | Test status | Integration status | Known problem / risk | Next action |
+|---|---|---|---|---|---|---|
+| Chat Core | Root `seven_ai-final.html`: streaming, room WAL/IndexedDB, IME, stop/switch and context lifecycle | Root chat scenarios verified; live service acceptance incomplete | Current 44-suite CI PASS, including browser scenarios | In root release | Process kill/upgrade and real network races remain; HIGH | Device persistence and live-provider matrix |
+| Model Routing | Root registry, health/quarantine, discovery deadlines, request/context budgets | Deterministic routing verified; quality/TTFT not measured | Current runtime/browser fixtures PASS | Root chat/Deep Think consumes it | Catalog claims do not prove provider availability/quality; HIGH | Measure requests, errors, fallback and TTFT with live providers |
+| Memory | Root canonical fabric/events/retrieval/permissions; separate typed remake implementation remains on specialist branches | Root storage/recovery fixtures verified | Memory component/browser scope checks PASS | Root chat and RPG public snapshot wired | Multiple product/storage owners and 10k-record scan latency; HIGH | Explicit typed migration boundary; indexing benchmark |
+| Files | Local PDF/attachments/knowledge extraction and generated native SAF; bounded text input | Root parsing/context verified; universal editing absent | Current component/browser gates PASS; native device gates pending | Root chat/SAF boundary | Large real PDFs, concurrent native IO and persisted URI grants not comprehensively tested; MEDIUM | Device large-file/restart/URI tests |
+| Web Research | Root search gateway/evidence/citation locks, bounded deep research and lazy research workspace | Deterministic evidence pipeline verified | Gateway, eval corpus and browser fixtures PASS | Root chat gateway wired; multiple research owners remain | Live source quality/availability unmeasured; HIGH | Live Arabic/current/technical corpus and latency |
+| Deep Think | Root role pipeline, token/request budgets, cancellation and diagnostics | Stage/control behavior verified | Current fixtures/browser checks PASS | Root chat/routing connected | Live reasoning quality and latency unmeasured; HIGH | Live staged-provider/cancellation benchmark |
+| Tools | Root schema/policy/discovery; actual native executors `web.search`, `artifact.search`; separate runtime gate | Limited adapters verified | Runtime/integration fixtures PASS | Root adapters exist; typed kernel outside APK | Different schema/risk vocabularies; discovery != executable tool; HIGH | One explicit adapter contract before importing typed tools |
+| Coding System | Root read-only project workspace/context and native GitHub patch path | Inspection/chat/Git boundary fixtures verified; full coding agent incomplete | Workspace browser and evolution/Git fixtures PASS | Full Coding/Evolution production wiring not established | Typed specialist app and root have separate release trains; HIGH | Capability map and one real gated coding transaction |
+| Self-Development | Evolution policy/state/repair/recovery and GitHub path; exact-SHA CI/merge and atomic Git writes repaired | Policy/transaction core verified with injected adapters | 13 evolution suites and failure hunt PASS | Real provider/account autonomous loop unverified | Baseline/eval trust and production adapter wiring; HIGH | Bounded live repository experiment with immutable evidence |
+| RPG | `rpg-live-integration.js`: room/world sessions, public Memory snapshot, bounded character context, reload and empty-room reset | Live root adapter verified; validated atomic multi-store recovery incomplete | Source/packaged kernels, 1006-event story and browser live/reload/isolation PASS | UI/chat/Memory connected; uncertain journal blocks hydration/context | Recovery UI, multi-tab arbitration and semantic character evaluation missing; HIGH | Verified journal recovery, then process-kill and dialogue corpus |
+| Integration | Runtime/Control/Execution/context/cancellation/persistence seams and source-vs-packaged regressions | Tested root seams verified; cross-product acceptance incomplete | Current all.cjs 44 suites PASS | One root code snapshot integrated on main | Typed product split and shared-state edge cases; HIGH | Resolve ownership and acceptance blockers explicitly |
+| Android / APK | Capacitor root package with secure store/SAF/motion/activity recreation instrumentation | Compilation and binary verification observed | Lint/unit/build/signature/package/payload PASS; API34/36 pending | Exact-SHA main workflow | Debug signing continuity, upgrade and process death remain; HIGH | Finish devices, download and independently hash artifact |
+| UI | Root shell/remake materialized assets, RTL/day/night/reduced motion | Packaged browser matrix verified | Current browser gate PASS, including repaired dialog/search/RPG state | Canonical palette/Arabic labels and source transforms aligned | Actual phone usability/startup not measured; MEDIUM | Review API34/36 visual evidence and physical phone |
+| CI/CD / Actions | Root test/APK workflows, automatic suite discovery, SHA-bound acceptance/provenance | Current root Web gate verified; Android completion pending | 44 suites PASS on current SHA | Typed Reality Lab remains a different workflow/product | `main` branch API reports protected=false and status enforcement off; HIGH | Configure required gates with repository administration access |
+| tests / evals / performance | Component, browser, gateway/evolution/research/RPG fixtures; synthetic performance measurements | Deterministic scope verified; live performance/quality incomplete | 42 local components + 44 CI suites PASS; no root lint/typecheck scripts | Root train tested; typed branch tests not credited | Fixtures do not prove live quality; HIGH | Live provider eval + Android startup + 10k-memory regression benchmark |
+| Build artifacts / docs | v5 APK inventory, source SHA/run binding, binary metadata/certificate evidence; master contracts/ADRs/report | Web artifact inspected; APK final acceptance pending | Web ZIP CRC/digest/static audit PASS | Old artifacts excluded | Root Web artifact omitted browser results due stale upload path; MEDIUM | REL-25 archival fix, final APK evidence and current status |
+
+REL-26/27: Android run 37262979489 failed 3/5 instrumentation tests. Confirmed incorrect window aliases for global lexical room state, and WAL fixtures lacked a stable persisted room/base revision. Shared fixture now creates a room when needed and awaits a successful flush before staging; empty/existing/failed-flush executable cases PASS. Activity recreation assertions retain title and cleared-WAL requirements. Night core surfaces wait for the same actual canonical colors instead of assuming a 120 ms delay; root cause of that visual failure is not yet established. Failed-test XML/HTML and binary diagnostics now upload even on failure. Device retest remains required. Test discovery is now 43 components plus two browser suites.
+
+REL-25: downloaded current Web artifact contains neither the advertised `release/release-results.json` nor actual browser results. `verify.cjs` writes `results.json` at root; release verifier does not produce the advertised file. Workflow now requires the actual result file before upload and archives it. Producer/upload path consistency check passes; actual post-fix upload remains to be observed. This changes evidence archival only, with no application/runtime/native changes.
+
+Current static evidence from downloaded run artifact: startup 99,176 bytes / 100,000; workspaces 312,727 / 320,000; total static 4,183,932 / 8,388,608. Limits were not raised. Web artifact 11325333676 ZIP SHA256: `f9bb90e4099a8d94bb11714720d05b4888e9dbda44205795a78fec6e89671c7b` (matches GitHub digest). No RC is authorized by passing these gates alone.
+
 ## Executive summary
 
 The inspected main application is the HTML/Capacitor product, not the separate React/TypeScript remake found on specialist branches. Root `package.json` builds `seven_ai-final.html` through `release/build-release.cjs`; it does not build `remake/`. A successful main APK therefore cannot be evidence that all recent Memory/Tools work is included.
@@ -10,7 +39,7 @@ Initial inspected main: `ff9693077d5cedfaf4dd8213f9536c8f981f5f91`. Integrated u
 
 Read the six master documents in full, inventoried the complete initial Git tree (452 entries, not truncated), inspected build/runtime/CI entrypoints and representative subsystem implementations, examined branches and open PRs, ran component suites and injected failures. This is a bounded engineering audit, not a claim that every line or every branch was reviewed.
 
-## Current true system status
+## Initial audit system status — historical, superseded above
 
 Completeness below means verified capability scope, not an invented percentage. Tests marked PASS refer to local deterministic/component checks; browser scenarios and live services are distinct gates.
 
@@ -94,7 +123,7 @@ RPG state reached approximately 298 KB in the benchmark. These measurements diag
 
 Startup time, TTFT, total response latency, live routing overhead, live tool/web latency, large-chat rendering, APK startup/battery/RAM/thermal remain UNMEASURED in this pass. Existing telemetry functions and catalog speed numbers are not substituted for measurements.
 
-## Release readiness and artifact decision
+## Initial readiness and artifact decision — historical
 
 Evidence score: **43/100** (engineering rubric, not percent feature completion).
 

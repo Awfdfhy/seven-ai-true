@@ -1,14 +1,14 @@
 # Seven AI — Current Status
 
-## Lead Release Manager — integrated main, final Android acceptance in progress
+## Lead Release Manager — main integrated, Android failure under diagnosis
 
-PR #105 is **MERGED** at main SHA `29b26c6417b9fa332ae55f129bae983fb9efae02`, with the same source tree as the verified candidate. Full Web/all.cjs passed both PR run 37262152839 and isolated push run 37262150543 on head c5d63bf4ce51f1b21a3af6a186e3e8af5eac3500. All 42 local component suites passed; native generation and source-clean payload manifests pass. This is not a full release acceptance or RC.
+PR #105 is merged. Release-code SHA `120420b076ad7803bc06f15d73fa58546925785b` passed full Web run 37262979369: **44 suites**. Android run 37262979489 passed pre-APK gates, native generation, lint/unit/build and actual APK package/version/signature/payload verification, then **FAILED API36 instrumentation: 3 of 5 tests**. API34/final APK uploads were skipped. No fresh APK is accepted or delivered, and no RC exists.
 
-Android validation run 37262150559 passed pre-APK Web gates, lint, unit tests and compilation, then failed in the new certificate-output parser. Main Android run 37262300975 requires fresh verification after the parser repair. Numbered, API-range/v3.1 and observed scheme-labelled V2/V3.1/V3.2 signer formats are now regression-tested, excluding source-stamp/public-key digests; a failed parse includes public certificate diagnostics. Cryptographic signature verification still requires apksigner success. Final exact-SHA APK/API34/API36 acceptance remains pending.
+Confirmed harness defects: visual recovery waited for window properties although room state is global lexical; recovery fixtures assumed a room and staged WAL without flushing the actual base revision. Repairs use lexical bindings, create a real room if needed, wait for durable flush and preserve the same recovery assertions. Three new fixture cases pass. Night surfaces now wait for the actual canonical computed colors rather than assuming a 120 ms update; this does not establish a PASS until device rerun. XML/HTML gate diagnostics are now archived even on failure. Total discovery is now 43 component suites plus two browser suites (45); previous 44-suite PASS does not cover the new fixture.
 
-Current implementation evidence: root HTML/Capacitor product; room WAL/cancellation/IME/modes/context/token/attachments/network/research integration; live room-scoped RPG session/public-memory/context/reload and empty-room isolation passed packaged browser gates. Source and packaged RPG state/session/context/failure modules pass. Uncertain RPG persistence is quarantined by a durable journal; automatic verified journal recovery remains incomplete.
+Root HTML/Capacitor is the APK product. Chat/context/cancellation/memory/files/research and live room-scoped RPG Memory/context/reload/empty-room browser scenarios pass within deterministic scope. Typed remake Memory/Tools/Coding specialist branches are a separate product train. Full Coding/Evolution production wiring, live provider quality/TTFT, verified RPG journal recovery, process-kill and upgrade persistence/signing continuity remain open. The main branch API reports protected=false and required status checks off.
 
-Open release gates: fresh final main Web/Android evidence; Android process-kill and upgrade persistence/signing continuity; live provider quality/TTFT; typed remake Memory/Tools/Coding product reconciliation; automatic RPG journal recovery and character-specific semantic model evaluation. No RC or zero-bugs claim. See PROJECT_TRUTH_REPORT.md and RELEASE_EVIDENCE.json.
+The authoritative current per-system table and defect evidence are in PROJECT_TRUTH_REPORT.md and RELEASE_EVIDENCE.json. Historical specialist entries below are preserved; old claims of absent RPG live binding or pending Web gates are superseded. No zero-bugs claim.
 
 ## Earlier specialist batch history
 

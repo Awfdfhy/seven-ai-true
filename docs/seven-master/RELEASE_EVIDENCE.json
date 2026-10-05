@@ -886,10 +886,48 @@
     "copyRace": {
       "run": 37262557069,
       "job": 111612651526,
-      "expected": "\u0628\u062d\u062b \u0627\u0644\u0645\u062d\u0627\u062f\u062b\u0627\u062a",
-      "actual": "\u0627\u0628\u062d\u062b \u0641\u064a \u0627\u0644\u0645\u062d\u0627\u062f\u062b\u0627\u062a",
+      "expected": "بحث المحادثات",
+      "actual": "ابحث في المحادثات",
       "repair": "canonical Remake materialization and repeated late update regression",
       "fullRetest": "PENDING"
     }
+  },
+  "finalMainValidation": {
+    "sourceCommit": "120420b076ad7803bc06f15d73fa58546925785b",
+    "web": {
+      "run": 37262979369,
+      "job": 111613870503,
+      "conclusion": "success",
+      "suites": 44,
+      "artifact": 11325333676,
+      "artifactSha256": "f9bb90e4099a8d94bb11714720d05b4888e9dbda44205795a78fec6e89671c7b",
+      "zipCRC": "PASS",
+      "static": {
+        "startupBytes": 99176,
+        "workspaceBytes": 312727,
+        "totalBytes": 4183932
+      }
+    },
+    "android": {
+      "run": 37262979489,
+      "job": 111613870959,
+      "conclusion": "failure",
+      "lintUnitBuild": "PASS",
+      "binarySignatureIdentityPayload": "PASS",
+      "api36": {
+        "tests": 5,
+        "failures": 3
+      },
+      "api34": "SKIPPED",
+      "apkArtifact": "NOT_UPLOADED",
+      "failureEvidenceArtifact": 11325477601
+    },
+    "harnessRepairs": {
+      "lexicalRoomBindings": true,
+      "stableWalFixture": "PASS empty/existing/failed flush",
+      "nightSurfacePredicate": "bounded actual computed-color wait; retest pending",
+      "failureReportArchival": "added; retest pending"
+    },
+    "RC": "NOT_CREATED"
   }
 }
