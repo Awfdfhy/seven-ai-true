@@ -23,4 +23,15 @@ assert.match(materializer,/host did not kill the target process/);
 const signing=fs.readFileSync(path.join(__dirname,'patch-production-signing.cjs'),'utf8');
 assert.match(signing,/sevenReleaseKeystore/);
 assert.match(signing,/signingConfig signingConfigs\.sevenRelease/);
+
+const runner=fs.readFileSync(path.join(__dirname,'run-android-rc-acceptance.sh'),'utf8');
+assert.match(runner,/pm clear "\$APP_ID"/);
+assert.equal((runner.match(/pm clear "\$APP_ID"/g)||[]).length,1,'target data may be cleared only before Build A seed');
+assert.match(runner,/kill_window precommit/);
+assert.match(runner,/kill_window postcommit/);
+assert.match(runner,/kill_window cleancommit/);
+assert.match(runner,/adb install -r -t "\$TMP\/build-b\.apk"/);
+assert.match(runner,/versionCode\\s\+\\d\+/);
+assert.match(runner,/A_SIGNER.*B_SIGNER/s);
+
 console.log('android RC acceptance harness contracts: PASS');
