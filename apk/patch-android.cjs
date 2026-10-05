@@ -125,7 +125,8 @@ public class SevenSmokeTest {
       WebView first=firstRef.get();
       assertNotNull(first);
       waitFor(first,"Boolean(typeof roomPersistence!=='undefined'&&roomPersistence.status().ready&&window.SevenPerformance&&SevenPerformance.state.ready)");
-      assertEquals("true",js(first,"(()=>{const base=roomPersistence.status().revision,value=JSON.parse(JSON.stringify({version:1,rooms,roomTitles,currentRoom}));value.roomTitles[value.currentRoom]='Android recreation WAL';localStorage.setItem('seven_ai_room_wal_v1',JSON.stringify({schemaVersion:1,seq:Date.now()*1000+321,sessionId:'android-recreate-fixture',baseRevision:base,value}));return localStorage.getItem('seven_ai_room_wal_v1')!==null})()"));
+      assertEquals("true",js(first,"(()=>{window.__sevenWalFixture='pending';(async()=>{let id=currentRoom;if(!id||!own(rooms,id)){id='android-recreate-room';rooms[id]=createEmptyRoom();roomTitles[id]='Android recreation';currentRoom=id;const ok=await saveRooms();if(!ok){window.__sevenWalFixture='save-failed';return}}const base=roomPersistence.status().revision,value=JSON.parse(JSON.stringify({version:1,rooms,roomTitles,currentRoom}));value.roomTitles[value.currentRoom]='Android recreation WAL';localStorage.setItem('seven_ai_room_wal_v1',JSON.stringify({schemaVersion:1,seq:Date.now()*1000+321,sessionId:'android-recreate-fixture',baseRevision:base,value}));window.__sevenWalFixture=localStorage.getItem('seven_ai_room_wal_v1')!==null?'ok':'stage-failed'})().catch(()=>window.__sevenWalFixture='error');return true})()"));
+      waitFor(first,"window.__sevenWalFixture==='ok'");
       scenario.recreate();
       AtomicReference<WebView> secondRef=new AtomicReference<>();
       scenario.onActivity(a -> secondRef.set(a.getBridge().getWebView()));
