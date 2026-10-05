@@ -18,5 +18,5 @@ function adapter(opts={}){
  await assert.rejects(()=>runCodingTransaction(protectedAdapter,{task:"cheat"}),/protected-path/);
  const stale=adapter();stale.plan=async({inspection})=>{stale.move();return inspection.plan};
  await assert.rejects(()=>runCodingTransaction(stale,{task:"stale"}),/stale-plan/);
- const same=adapter();same.applyAtomic=async()=>({sha:"base"});await assert.rejects(()=>runCodingTransaction(same,{task:"no-op candidate"}),/candidate-sha-required/);\n console.log("coding production runtime tests: PASS");
+ const same=adapter();same.applyAtomic=async()=>({sha:"base"});await assert.rejects(()=>runCodingTransaction(same,{task:"no-op candidate"}),/candidate-sha-required/);\n const dirty=adapter();dirty.diff=async()=>({text:"diff",files:["src/a.js","surprise.js"]});await assert.rejects(()=>runCodingTransaction(dirty,{task:"dirty diff"}),/unexpected-diff-files:surprise.js/);\n console.log("coding production runtime tests: PASS");
 })().catch(e=>{console.error(e);process.exit(1)});
