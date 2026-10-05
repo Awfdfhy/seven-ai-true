@@ -630,7 +630,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
         if(await roomPersistence.flush()!==true)throw Error('jump fixture persistence unavailable');
         const id='rc-jump-long-chat';
         rooms[id]=createEmptyRoom();roomTitles[id]='RC long chat';currentRoom=id;
-        rooms[id].history=Array.from({length:32},(_,i)=>({role:'assistant',content:'رسالة طويلة '+i+'\u005cn\u005cn'+('نص '.repeat(40))}));
+        rooms[id].history=Array.from({length:32},(_,i)=>({role:'assistant',content:'رسالة طويلة '+i+'\n\n'+('نص '.repeat(40))}));
         updateRoomTitle();updateRoomListUI();renderChatHistory();
       });
       await page.waitForFunction(()=>document.querySelectorAll('#chat .message').length===32);
