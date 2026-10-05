@@ -203,15 +203,15 @@ public class SevenTestDocumentsProvider extends DocumentsProvider {
     r.add(DocumentsContract.Document.COLUMN_SIZE,BODY.length);r.add(DocumentsContract.Document.COLUMN_FLAGS,0);return r;
   }
   @Override public Cursor queryRoots(String[] projection){
-    String[] cols=projection==null?DocumentsContract.Root.DEFAULT_ROOT_PROJECTION:projection;MatrixCursor c=new MatrixCursor(cols);
+    String[] cols=projection==null?new String[]{DocumentsContract.Root.COLUMN_ROOT_ID,DocumentsContract.Root.COLUMN_DOCUMENT_ID,DocumentsContract.Root.COLUMN_TITLE,DocumentsContract.Root.COLUMN_FLAGS,DocumentsContract.Root.COLUMN_MIME_TYPES}:projection;MatrixCursor c=new MatrixCursor(cols);
     MatrixCursor.RowBuilder r=c.newRow();r.add(DocumentsContract.Root.COLUMN_ROOT_ID,ROOT);r.add(DocumentsContract.Root.COLUMN_DOCUMENT_ID,DOC);
     r.add(DocumentsContract.Root.COLUMN_TITLE,"Seven RC Fixture");r.add(DocumentsContract.Root.COLUMN_FLAGS,0);r.add(DocumentsContract.Root.COLUMN_MIME_TYPES,"text/plain");return c;
   }
   @Override public Cursor queryDocument(String documentId,String[] projection){
-    String[] cols=projection==null?DocumentsContract.Document.DEFAULT_DOCUMENT_PROJECTION:projection;MatrixCursor c=new MatrixCursor(cols);doc(c,DOC,"seven-rc-saf.txt");return c;
+    String[] cols=projection==null?new String[]{DocumentsContract.Document.COLUMN_DOCUMENT_ID,DocumentsContract.Document.COLUMN_DISPLAY_NAME,DocumentsContract.Document.COLUMN_MIME_TYPE,DocumentsContract.Document.COLUMN_SIZE,DocumentsContract.Document.COLUMN_FLAGS}:projection;MatrixCursor c=new MatrixCursor(cols);doc(c,DOC,"seven-rc-saf.txt");return c;
   }
   @Override public Cursor queryChildDocuments(String parentDocumentId,String[] projection,String sortOrder){
-    String[] cols=projection==null?DocumentsContract.Document.DEFAULT_DOCUMENT_PROJECTION:projection;MatrixCursor c=new MatrixCursor(cols);doc(c,DOC,"seven-rc-saf.txt");return c;
+    String[] cols=projection==null?new String[]{DocumentsContract.Document.COLUMN_DOCUMENT_ID,DocumentsContract.Document.COLUMN_DISPLAY_NAME,DocumentsContract.Document.COLUMN_MIME_TYPE,DocumentsContract.Document.COLUMN_SIZE,DocumentsContract.Document.COLUMN_FLAGS}:projection;MatrixCursor c=new MatrixCursor(cols);doc(c,DOC,"seven-rc-saf.txt");return c;
   }
   @Override public ParcelFileDescriptor openDocument(String documentId,String mode,CancellationSignal signal)throws java.io.FileNotFoundException{
     if(!DOC.equals(documentId)||!mode.contains("r"))throw new java.io.FileNotFoundException(documentId);
