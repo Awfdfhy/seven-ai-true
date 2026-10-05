@@ -563,7 +563,7 @@ export class RoutedChatTransport implements ChatTransport {
         if (this.health !== undefined && attemptToken !== undefined) {
           if (failedAt === null) {
             throw new SevenError({
-              code: "INTERNAL",
+              code: "UNKNOWN",
               message: "Provider health timing was unexpectedly disabled.",
             });
           }
@@ -602,7 +602,7 @@ export class RoutedChatTransport implements ChatTransport {
         if (this.health !== undefined && attemptToken !== undefined) {
           if (failedAt === null) {
             throw new SevenError({
-              code: "INTERNAL",
+              code: "UNKNOWN",
               message: "Provider health timing was unexpectedly disabled.",
             });
           }
