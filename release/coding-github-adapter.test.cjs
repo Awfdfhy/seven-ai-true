@@ -6,7 +6,8 @@ function api(){
  repositoryTree:async()=>({head:{sha,treeSha:"tree-"+sha},truncated:false,items:[{path:"src/bug.js",type:"blob"},{path:"README.md",type:"blob"}]}),
  readFile:async path=>({path,content:path==="src/bug.js"?"bug":"docs"}),
  atomicCommit:async(branch,changes)=>{assert.equal(branch,"work");assert.ok(changes.length);sha="candidate-"+(++commits);return{sha}},
- dispatchWorkflow:async(name,branch)=>{assert.equal(name,"seven-tests.yml");assert.equal(branch,"work");dispatches++;return true}
+ dispatchWorkflow:async(name,branch)=>{assert.equal(name,"seven-tests.yml");assert.equal(branch,"work");dispatches++;return true},
+ openPullRequest:async()=>({number:12,url:"pr12"})
  };
 }
 (async()=>{
@@ -18,6 +19,7 @@ function api(){
  const tr=await a.runTests({candidateSha:applied.sha,changed:["src/bug.js"]});assert.equal(tr.ok,true);assert.deepEqual(waited,{b:"work",s:"candidate-1"});assert.equal(g.dispatches,1);
  await assert.rejects(()=>a.applyAtomic({baseSha:"base",changes:[{path:"x",content:"x"}]}),/stale-write/);
  const badDiff=createGithubCodingAdapter(api(),{branch:"work",diff:async()=>({text:"diff"}),verify:async()=>({ok:true}),propose:async()=>({})});await assert.rejects(()=>badDiff.diff({baseSha:"a",headSha:"b"}),/authoritative-diff-required/);
+ const autoApi=api();const auto=createGithubCodingAdapter(autoApi,{branch:"work",ciForSha:async()=>({id:12,status:"completed",conclusion:"success"}),diff:async()=>({text:"d",files:[]}),verify:async()=>({ok:true}),waitForExactRun:async()=>({conclusion:"success"})});const autoApplied=await auto.applyAtomic({baseSha:"base",changes:[{path:"src/bug.js",content:"x"}]});const autoPr=await auto.propose({task:"x",baseSha:"a".repeat(40),candidateSha:autoApplied.sha,evidence:{tests:["gate"],diffDigest:"d".repeat(64)}}).catch(e=>e);assert.match(String(autoPr.message||""),/invalid-sha/);
  const noWait=createGithubCodingAdapter(api(),{branch:"work",diff:async()=>({}),verify:async()=>({ok:true}),propose:async()=>({})});
  const blocked=await noWait.runTests({candidateSha:"x",changed:["src/x.js"]});assert.equal(blocked.ok,false);assert.ok(blocked.failures.includes("exact-ci-wait-adapter-required"));
  console.log("coding GitHub adapter: PASS");
