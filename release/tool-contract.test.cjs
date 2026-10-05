@@ -64,6 +64,10 @@ const {ERROR_CODES,normalizeTool,createRegistry,execute}=require("./tool-contrac
  const retried=await execute({tool:{id:"net",risk:"read",retryPolicy:{maxRetries:2},executor:()=>{tries++;if(tries<3)throw Object.assign(new Error("network"),{code:"NETWORK_ERROR"});return "ok"}},input:{},authorize:()=>({allowed:true})});
  assert.equal(retried.ok,true);assert.equal(tries,3);assert.equal(retried.audit.attempts,3);
 
+ let sideTries=0;
+ const sideRetry=await execute({tool:{id:"side-retry",risk:"write",idempotent:true,supportsAbort:true,retryPolicy:{maxRetries:2},executor:()=>{sideTries++;if(sideTries===1)throw Object.assign(new Error("network"),{code:"NETWORK_ERROR"});return true}},input:{},authorize:()=>({allowed:true})});
+ assert.equal(sideRetry.ok,true);assert.equal(sideTries,2,"only explicitly idempotent side effects may retry");
+
  let hardTries=0;
  const hard=await execute({tool:{id:"hard",risk:"read",retryPolicy:{maxRetries:3},executor:()=>{hardTries++;throw Object.assign(new Error("bad"),{code:"TOOL_ERROR"})}},input:{},authorize:()=>({allowed:true})});
  assert.equal(hard.ok,false);assert.equal(hardTries,1);
