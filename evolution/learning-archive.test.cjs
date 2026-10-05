@@ -1,0 +1,12 @@
+"use strict";
+const assert=require("assert/strict");
+const {normalizeRecord,verifyRecord,createArchive}=require("./learning-archive.cjs");
+const base={experimentId:"e1",subsystem:"tools",hypothesis:"adapter improves reliability",baselineSha:"aaaaaaa",candidateSha:"bbbbbbb",patchSha:"bbbbbbb",tests:["tool-contract"],metrics:{baseline:.8,candidate:.9},outcome:"REJECTED",reason:"regression",recordedAt:"2026-10-05T00:00:00.000Z"};
+const r=normalizeRecord(base);assert.equal(verifyRecord(r),true);
+const bad={...r,reason:"changed"};assert.equal(verifyRecord(bad),false);
+const a=createArchive([r]);assert.equal(a.failedBefore(base),true);
+assert.equal(a.failedBefore({...base,hypothesis:"different"}),false);
+a.append({...base,experimentId:"e2",candidateSha:"ccccccc",outcome:"COMMITTED",reason:"better"});
+assert.deepEqual(a.verify(),{valid:true,count:2});
+assert.throws(()=>createArchive([bad]),/invalid learning archive seed/);
+console.log("learning archive: PASS (integrity/history/repeat-failure guard)");
