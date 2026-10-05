@@ -41,8 +41,8 @@ run_one(){
 
 kill_window(){
   local phase="$1" stage="$2" verify="$3"
-  local marker="/data/local/tmp/seven-rc-process-ready"
-  adb shell rm -f "$marker" || true
+  local marker="files/seven-rc-process-ready"
+  adb shell run-as "$APP_ID" rm -f "$marker"
   # End the previous instrumentation/activity process before starting this window.
   # force-stop retains app data and persisted SAF grants; no pm clear is permitted here.
   adb shell am force-stop "$APP_ID"
@@ -51,7 +51,7 @@ kill_window(){
   local host_pid=$!
   local ready=""
   for _ in $(seq 1 120); do
-    ready="$(adb shell cat "$marker" 2>/dev/null | tr -d '\r\n' || true)"
+    ready="$(adb shell run-as "$APP_ID" cat "$marker" 2>/dev/null | tr -d '\r\n' || true)"
     if [[ "$ready" == "$phase" ]]; then break; fi
     if ! kill -0 "$host_pid" 2>/dev/null; then cat "$OUT/${phase}-stage.log"; echo "stage instrumentation exited before kill window: $phase" >&2; return 1; fi
     sleep 0.25
