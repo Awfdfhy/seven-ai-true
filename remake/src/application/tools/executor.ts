@@ -42,15 +42,19 @@ export class ToolExecutor {
     }
   }
 
-  execute(rawInvocation:ToolInvocation):Promise<ToolResult>{
+  execute(rawInvocation:ToolInvocation, externalSignal?:AbortSignal):Promise<ToolResult>{
     const invocation=this.validateInvocation(rawInvocation);
     const definition=this.registry.require(invocation.toolId);
-    return this.prepareAndRun(definition,invocation);
+    if(externalSignal!==undefined && (!externalSignal || typeof externalSignal.aborted!=="boolean" || typeof externalSignal.addEventListener!=="function")){
+      throw new SevenError({code:"VALIDATION",message:"Tool external cancellation signal is invalid."});
+    }
+    return this.prepareAndRun(definition,invocation,externalSignal);
   }
 
   private async prepareAndRun(
     definition:ReturnType<ToolRegistry["require"]>,
     invocation:ToolInvocation,
+    externalSignal?:AbortSignal,
   ):Promise<ToolResult>{
     const parsed=definition.inputSchema.safeParse(invocation.args);
     if(!parsed.success){
@@ -137,7 +141,7 @@ export class ToolExecutor {
       });
     }
 
-    return this.startRun(definition,invocation,parsed.data,fingerprint);
+    return this.startRun(definition,invocation,parsed.data,fingerprint,externalSignal);
   }
 
   private async resolveDurableReplay(
@@ -190,8 +194,9 @@ export class ToolExecutor {
     invocation:ToolInvocation,
     parsedInput:unknown,
     fingerprint:string,
+    externalSignal?:AbortSignal,
   ):Promise<ToolResult>{
-    const promise=this.runHandler(definition,invocation,parsedInput,fingerprint);
+    const promise=this.runHandler(definition,invocation,parsedInput,fingerprint,externalSignal);
     this.replay.set(invocation.idempotencyKey,Object.freeze({fingerprint,result:promise}));
     void promise.then((result)=>{
       if(
@@ -214,6 +219,7 @@ export class ToolExecutor {
     invocation:ToolInvocation,
     parsedInput:unknown,
     fingerprint:string,
+    externalSignal?:AbortSignal,
   ):Promise<ToolResult>{
     const startedAt=nowMs();
     let effectStarted=false;
@@ -251,6 +257,9 @@ export class ToolExecutor {
         return validated.data;
       });
 
+      const cancelFromExternal=()=>run.cancel("external");
+      if(externalSignal?.aborted)cancelFromExternal();
+      else externalSignal?.addEventListener("abort",cancelFromExternal,{once:true});
       let result:ToolResult;
       try{
         const output=await run.result;
@@ -277,6 +286,7 @@ export class ToolExecutor {
         });
       }
 
+      externalSignal?.removeEventListener("abort",cancelFromExternal);
       if(
         result.status==="succeeded" ||
         result.status==="effect_unknown" ||
