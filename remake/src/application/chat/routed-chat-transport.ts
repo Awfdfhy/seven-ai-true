@@ -538,14 +538,14 @@ export class RoutedChatTransport implements ChatTransport {
           return;
         }
 
+        const failedAt = this.now();
+        if (!Number.isFinite(failedAt) || failedAt < 0) {
+          throw new SevenError({
+            code: "VALIDATION",
+            message: "Provider timing clock returned an invalid timestamp.",
+          });
+        }
         if (this.health !== undefined && attemptToken !== undefined) {
-          const failedAt = this.now();
-          if (!Number.isFinite(failedAt) || failedAt < 0) {
-            throw new SevenError({
-              code: "VALIDATION",
-              message: "Provider health clock returned an invalid timestamp.",
-            });
-          }
           this.health.recordAttemptFailure(
             provider.id,
             attemptToken,
