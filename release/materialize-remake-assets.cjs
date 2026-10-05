@@ -36,6 +36,10 @@ function applyCompatibilityFixes(name,raw){
     text=text.replace(discoverOld,discoverNew);
   }
   if(name==="remake.js"){
+    const roomSearchOld="search.placeholder='ابحث في المحادثات';search.setAttribute('aria-label','ابحث في المحادثات')";
+    const roomSearchNew="search.placeholder='بحث المحادثات';search.setAttribute('aria-label','بحث المحادثات')";
+    if(!text.includes(roomSearchOld))throw new Error("Seven room search localization anchor missing");
+    text=text.replace(roomSearchOld,roomSearchNew);
     const bootAnchor="d.documentElement.lang=language;d.documentElement.dir=language==='ar'?'rtl':'ltr';r.SevenRemake={version:'2.0.0',update,openWorkspace,searchSettings,depthDialog,modeDialog,closeDialog,welcome,t:T};";
     const bootFixed="d.documentElement.lang=language;d.documentElement.dir=language==='ar'?'rtl':'ltr';const appRoot=d.getElementById('seven-app');if(appRoot){appRoot.lang=language;appRoot.dir=d.documentElement.dir;appRoot.dataset.sevenTheme=r.SevenTheme?.getResolvedTheme?.()||d.documentElement.dataset.sevenTheme||'day';}r.SevenRemake={version:'2.0.1',update,openWorkspace,searchSettings,depthDialog,modeDialog,closeDialog,welcome,t:T};";
     if(!text.includes(bootAnchor))throw new Error("Seven UI Remake root-state boot anchor missing");

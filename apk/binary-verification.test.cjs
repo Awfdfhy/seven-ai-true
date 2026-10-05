@@ -12,6 +12,11 @@ assert.throws(()=>parseCertificates('Signer #1 public key SHA-256 digest: '+cert
 assert.deepEqual(parseCertificates('Signer (minSdkVersion=33, maxSdkVersion=2147483647) certificate SHA-256 digest: '+certificate+'\nSigner (minSdkVersion=28, maxSdkVersion=32) certificate SHA-256 digest: '+certificate+'\n'),[certificate]);
 assert.deepEqual(parseCertificates('Signer (minSdkVersion=33 (dev release=true), maxSdkVersion=2147483647) certificate SHA-256 digest: '+certificate.toUpperCase()),[certificate]);
 assert.throws(()=>parseCertificates('Source Stamp Signer certificate SHA-256 digest: '+certificate),/certificate unavailable/);
+const sdkCertificate='3901d241232f31c6815adc3fb04cb2a8bed4a8dfb45ee4f8c9b58eb87c9c0833';
+const sdkOutput='Verifies\nVerified using v2 scheme (APK Signature Scheme v2): true\nNumber of signers: 1\nV2 Signer: certificate SHA-256 digest: '+sdkCertificate+'\nV2 Signer: public key SHA-256 digest: '+certificate+'\n';
+assert.deepEqual(parseCertificates(sdkOutput),[sdkCertificate]);
+assert.deepEqual(parseCertificates('V3.1 Signer: certificate SHA-256 digest: '+certificate+'\nV3.2 Signer: certificate SHA-256 digest: '+certificate),[certificate]);
+assert.throws(()=>parseCertificates('V2 Signer: public key SHA-256 digest: '+certificate),/certificate unavailable/);
 assert.throws(()=>verifyBinary('unsigned.apk',expected,{tool:x=>x,run:name=>name==='aapt'?run(name):{status:1,stderr:'DOES NOT VERIFY'}}),/verification failed/);
 assert.throws(()=>verifyBinary('candidate.apk',expected,{tool:x=>x,run:()=>({status:null,error:new Error('ENOENT')})}),/verification failed/);
 console.log('APK binary gate: PASS (identity, wrong package/version, malformed data, unsigned APK, missing SDK tool)');

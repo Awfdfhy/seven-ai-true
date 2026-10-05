@@ -182,3 +182,6 @@ Memory VM test report output is dist/memory-results.json. Historical root memory
 
 ### RPG production packaging (ADR-REL-008)
 Four RPG kernel/bridge files are transformed by pinned parser-based minification. Public module exports, property names and function names remain available; generated local variable names are not an integration contract. The same deterministic suites exercise source and packaged implementations. Package consumers must install project devDependencies for build/test. Shared persistence/context schemas and byte limits are unchanged.
+
+### Sidebar room search localization ownership
+The Arabic room-search placeholder and aria-label are both بحث المحادثات across Remake translation and UiPolish updates. Packaging normalizes the older compressed Remake copy; alternating late sync/update calls must preserve this invariant. Other translations remain unchanged.

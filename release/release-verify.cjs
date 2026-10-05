@@ -536,6 +536,8 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       });
       assert.equal(state.searchPlaceholder,'بحث المحادثات');
       assert.equal(state.searchAria,'بحث المحادثات');
+      await page.evaluate(()=>{SevenRemake.update();SevenUiPolish.sync();SevenRemake.update();});
+      assert.deepEqual(await page.evaluate(()=>({placeholder:document.querySelector('#seven-room-search').placeholder,aria:document.querySelector('#seven-room-search').getAttribute('aria-label')})),{placeholder:'بحث المحادثات',aria:'بحث المحادثات'});
       assert.equal(state.modelAria,'اختيار النموذج');
       assert.equal(state.modelHead,'النماذج');
       assert.equal(state.modelClose,'إغلاق قائمة النماذج');
