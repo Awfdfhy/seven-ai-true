@@ -123,12 +123,37 @@ function createBridge(options){
     try{storage.removeItem(pendingKey(roomId))}catch(_){return blocked({journalStatus:'rolled_back'})}
     return{ok:true,status:'RECOVERED',journalStatus:'rolled_back',action:'rollback',roomId,worldId};
   }
+  function transact(input){
+    let id;try{id=ids(input)}catch(e){return{ok:false,status:'BLOCKED',reason:'invalid-identity',error:String(e&&e.message||e)}}
+    if(pending(id.roomId))return blocked();
+    const events=Array.isArray(input&&input.events)?clone(input.events):[];
+    if(!events.length)return{ok:false,status:'BLOCKED',reason:'empty-transaction'};
+    const previous=manager.load(id.roomId,id.worldId),previousIndex=readIndex(id.roomId),base=getSession(id.roomId,id.worldId);
+    if(!base.ok)return base;
+    const legacy=input&&Object.prototype.hasOwnProperty.call(input,'legacy')?clone(input.legacy):clone(base.session.legacy||null);
+    const journal={version:1,status:'pending',...id,previous:previous.ok?previous.session:null,previousIndex,baseRevision:previous.ok?Number(previous.session.state.revision):null,candidateRevision:Number(base.session.state.revision)+events.length};
+    try{storage.setItem(pendingKey(id.roomId),JSON.stringify(journal))}catch(_){if(!previous.ok)manager.remove(id.roomId,id.worldId);return{ok:false,status:'BLOCKED',reason:'journal-write-failed'}}
+    function abort(reason,details){
+      const r=rollback(id.roomId,id.worldId,previous);
+      if(r.ok&&(readIndex(id.roomId)===previousIndex||restoreIndex(id.roomId,previousIndex)))try{storage.removeItem(pendingKey(id.roomId))}catch(_){}
+      return pending(id.roomId)?blocked():Object.assign({ok:false,status:'BLOCKED',reason},details||{});
+    }
+    const committed=manager.commitEvents({roomId:id.roomId,worldId:id.worldId,state:base.session.state,legacy,persistedRevision:base.session.persistedRevision},events);
+    if(!committed.ok)return abort(committed.reason||'event-rejected',{eventReason:committed.eventReason||null,eventId:committed.eventId||null,index:committed.index??null});
+    if(!writeIndex(id.roomId,id.worldId))return abort('active-index-write-failed');
+    let memoryOk=false;try{memoryOk=publish(committed.session,legacy,input&&input.reason||'turn-transaction')}catch(_){memoryOk=false}
+    if(!memoryOk)return abort('memory-projection-failed');
+    const committedJournal=Object.assign({},journal,{candidateRevision:Number(committed.session.state.revision)});
+    if(!markJournal(id.roomId,committedJournal,'committed','memory-projection-committed'))return blocked({journalStatus:'pending',recoveryDetail:'commit-marker-write-failed'});
+    try{storage.removeItem(pendingKey(id.roomId))}catch(_){return blocked({journalStatus:'committed'})}
+    return{ok:true,status:'COMMITTED',session:committed.session,records:committed.records,memoryId:'rpg-'+runtime.hash(id.roomId+'\n'+id.worldId)};
+  }
   function load(roomId,worldId){return pending(text(roomId))?blocked():manager.load(text(roomId),text(worldId))}
   function loadLatest(roomIdInput){const roomId=text(roomIdInput);if(pending(roomId))return blocked();const worldId=readIndex(roomId);if(!roomId||!worldId)return{ok:false,status:'MISSING',reason:'no-active-world'};return manager.load(roomId,worldId)}
   function context(roomIdInput,worldIdInput,options){const out=load(roomIdInput,worldIdInput);return out.ok?stateApi.buildContextPacket(out.session.state,options||{}):null}
   function inspect(roomId,worldId){return manager.inspect(text(roomId),text(worldId))}
   function inspectRecovery(roomIdInput){const roomId=text(roomIdInput),jr=readJournal(roomId);if(!jr.ok)return jr;return jr.journal?{ok:true,status:'FOUND',journalStatus:jr.journal.status,roomId,worldId:jr.journal.worldId,baseRevision:jr.journal.baseRevision??null,candidateRevision:jr.journal.candidateRevision??null}:{ok:true,status:'CLEAN',journalStatus:null}}
-  return{version:1,sync,recover,load,loadLatest,context,inspect,inspectRecovery,manager};
+  return{version:1,sync,transact,recover,load,loadLatest,context,inspect,inspectRecovery,manager};
 }
 return{createBridge};
 });
