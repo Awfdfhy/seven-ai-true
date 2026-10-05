@@ -178,11 +178,20 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          number="$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --head "$SEVEN_SUPERLOOP_BRANCH" --base "$SEVEN_PRODUCT_BRANCH" --json number --jq '.[0].number // empty')"
-          if [[ -z "$number" ]]; then
-            gh pr create               --repo "$GITHUB_REPOSITORY"               --base "$SEVEN_PRODUCT_BRANCH"               --head "$SEVEN_SUPERLOOP_BRANCH"               --title "Seven AI — continuous 20-agent Superloop"               --body "Continuous Manager + 20-agent engineering branch. Each cycle performs research → implementation → compatibility verification → bug hunt/fix → agent-driven exploratory QA → polish/APK. Changes are integrated only after deterministic gates. Raw cycle evidence is attached to Actions runs."
-          else
+          number="$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --head "$SEVEN_SUPERLOOP_BRANCH" --base "$SEVEN_PRODUCT_BRANCH" --json number --jq '.[0].number // empty' 2>/dev/null || true)"
+          if [[ -n "$number" ]]; then
             echo "Superloop PR #$number updated."
+          elif gh pr create --repo "$GITHUB_REPOSITORY" --base "$SEVEN_PRODUCT_BRANCH" --head "$SEVEN_SUPERLOOP_BRANCH" --title "Seven AI — continuous 20-agent Superloop" --body "Continuous Manager + 20-agent engineering branch. Each cycle performs research → implementation → compatibility verification → bug hunt/fix → agent-driven exploratory QA → polish/APK. Changes are integrated only after deterministic gates. Raw cycle evidence is attached to Actions runs."; then
+            echo "Superloop PR created."
+          else
+            echo "::warning::Repository policy does not allow GitHub Actions to create pull requests. The validated branch was pushed successfully; keeping the cycle healthy and leaving promotion in HOLD until a PR can be created by an authorized actor."
+            {
+              echo "### Superloop PR promotion deferred"
+              echo "- Validated branch: `$SEVEN_SUPERLOOP_BRANCH`"
+              echo "- Target branch: `$SEVEN_PRODUCT_BRANCH`"
+              echo "- Reason: repository policy blocks GitHub Actions PR creation."
+              echo "- Product validation results remain preserved; this is an orchestration permission boundary, not a product test failure."
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Ensure successor remains queued
