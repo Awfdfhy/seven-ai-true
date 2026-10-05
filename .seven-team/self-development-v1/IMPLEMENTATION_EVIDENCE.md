@@ -231,3 +231,39 @@ Authority added: **NO network mutation, NO code mutation, NO shell/GitHub write,
 
 Decision: **PHASE_3_CI_PROVEN / REVIEW_PENDING**.
 
+---
+
+# Phase 4 — Revalidating Pareto-Aware Improvement Planner
+
+Status: IMPLEMENTED + CI VERIFIED; STACKED REVIEW PENDING
+Date: 2026-10-05
+Pull request: #111
+
+## Exact verification
+
+- Hardened Phase 4 head: `9783f6065fc6982c65eacbfbbb7ca926aaf5577b`
+- Phase 3 base: `12c0f0020d00be761272715168bb4696a6cce255`
+- Workflow run: `37264308101`
+- Seven AI tests: `#3338`
+- Result: **SUCCESS**
+- `node all.cjs`: **all test suites: PASS (41 suites)**
+- `self-development planner test suite: PASS`
+- release artifact upload: SUCCESS
+
+## Controls proven
+
+- raw hypotheses are not accepted by the orchestration planner;
+- Phase 3 `validateHypothesisSet` is re-run inside planning;
+- fake precomputed `READY_FOR_PLANNING` objects cannot bypass diagnosis/research validation;
+- a single-candidate handoff can be re-authorized by ID only after Phase 3 revalidation;
+- direct risk/proof derivation is explicitly `orchestrationAuthorized=false`;
+- orchestration candidates carry a Phase 3 validation digest;
+- LOW/MEDIUM/HIGH/CRITICAL proof profiles are derived from risk, not caller-supplied proof plans;
+- CRITICAL candidates are governance-only;
+- file/scope budgets fail closed;
+- Pareto frontier preserves real cost/gain tradeoffs;
+- hard-failure repair receives deterministic priority;
+- planner estimates remain non-evidence; evaluator decides acceptance.
+
+Decision: **PHASE_4_CI_PROVEN / REVIEW_PENDING**.
+

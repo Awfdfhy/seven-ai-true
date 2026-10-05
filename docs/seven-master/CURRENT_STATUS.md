@@ -85,3 +85,15 @@ New hardening in this batch:
 
 Phase 3 remains non-mutating and stacked behind Phase 1/2 review.
 
+### Self-Development Phase 4 — revalidating planner candidate
+
+Stacked PR #111 is CI-proven on head `9783f6065fc6982c65eacbfbbb7ca926aaf5577b`.
+
+Evidence:
+- Seven AI tests #3338: SUCCESS;
+- 41/41 suites PASS;
+- planner suite PASS;
+- artifact upload PASS.
+
+Planner now re-runs Phase 3 rather than trusting raw/fake validated hypotheses. Direct profile derivation never grants orchestration authority; executable planning candidates carry a validation digest from the re-run gate.
+
