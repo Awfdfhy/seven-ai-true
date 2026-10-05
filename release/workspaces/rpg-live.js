@@ -19,11 +19,15 @@ function ensureRuntime(){
 }
 function ensure(){const id=roomId();return id?ensureRuntime().ensure(id):{ok:false,status:'BLOCKED',reason:'no-active-room'}}
 function contextSource(req){
- const id=req&&req.roomId?String(req.roomId):roomId();if(!id)return null;
- const rt=ensureRuntime(),view=rt.generationContext(id,{maxChars:18000,canonLimit:18,characterLimit:16});if(!view||!view.ok)return null;
- const planned=rt.plan(id,{limit:10});
- const payload={scene:view.view,plan:planned&&planned.ok?planned.plan:null};
- return {content:JSON.stringify(payload),priority:92,provenance:'rpg_runtime',metadata:{worldId:view.view.worldId,turn:view.view.turn,bounded:view.view._diagnostics&&view.view._diagnostics.bounded===true}};
+ const o=req&&typeof req==='object'?req:{},id=o.roomId?String(o.roomId):roomId();if(!id)return null;
+ const maxChars=Math.max(4000,Math.min(9500,Number(o.maxChars)||9000));
+ const rt=ensureRuntime(),view=rt.generationContext(id,{maxChars:Math.max(3000,maxChars-1600),canonLimit:Math.max(4,Math.min(24,Number(o.canonLimit)||14)),characterLimit:Math.max(1,Math.min(16,Number(o.characterLimit)||12))});if(!view||!view.ok)return null;
+ const planned=rt.plan(id,{limit:Math.max(1,Math.min(8,Number(o.planLimit)||6))});
+ let payload={scene:view.view,plan:planned&&planned.ok?planned.plan:null},content=JSON.stringify(payload);
+ if(content.length>maxChars){payload.plan=null;content=JSON.stringify(payload)}
+ if(content.length>maxChars){const tighter=rt.generationContext(id,{maxChars:Math.max(2400,maxChars-500),canonLimit:8,characterLimit:8});if(tighter&&tighter.ok){payload={scene:tighter.view,plan:null};content=JSON.stringify(payload)}}
+ if(content.length>maxChars)return null;
+ return {content,priority:92,provenance:'rpg_runtime',metadata:{worldId:payload.scene.worldId,turn:payload.scene.turn,bounded:true,serializedChars:content.length}};
 }
 function mount(){
  const ready=ensure();
