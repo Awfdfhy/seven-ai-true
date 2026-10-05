@@ -84,7 +84,19 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   assert.equal(r.requestedRoom,'room-a');assert.equal(r.rpgCount,1);assert.equal(r.trusted,false);assert.match(r.serialized,/<rpg_state>/);assert.match(r.serialized,/valen/);assert.equal(r.chatCount,0);
  });
  await test('room persistence stages durable WAL before async commit and clears it after commit',async()=>{
-  const r=await page.evaluate(async()=>{roomTitles.default='wal-stage-'+Date.now();const p=saveRooms();let staged=false;for(let i=0;i<80;i++){if(roomPersistence.status().walStaged){staged=true;break}await new Promise(r=>setTimeout(r,10))}const ok=await p,cleared=!roomPersistence.status().walStaged&&localStorage.getItem('seven_ai_room_wal_v1')===null;return{staged,ok,cleared}});
+  const r=await page.evaluate(async()=>{
+    await roomPersistence.flush();
+    const blockerDb=await new Promise((resolve,reject)=>{const q=indexedDB.open('seven_ai_canonical_v1');q.onerror=()=>reject(q.error);q.onsuccess=()=>resolve(q.result)});
+    let releaseBlocker;
+    const blockerReady=new Promise((resolve,reject)=>{const tx=blockerDb.transaction(['state'],'readwrite'),store=tx.objectStore('state');let released=false;releaseBlocker=()=>{released=true};const pump=()=>{const q=store.get('rooms');q.onerror=()=>reject(q.error);q.onsuccess=()=>{resolve();if(!released)pump()}};pump()});
+    await blockerReady;
+    roomTitles.default='wal-stage-'+Date.now();
+    const p=saveRooms();
+    let staged=false;for(let i=0;i<120;i++){if(roomPersistence.status().walStaged){staged=true;break}await new Promise(r=>setTimeout(r,10))}
+    releaseBlocker();
+    const ok=await p,cleared=!roomPersistence.status().walStaged&&localStorage.getItem('seven_ai_room_wal_v1')===null;
+    blockerDb.close();return{staged,ok,cleared};
+  });
   assert.deepEqual(r,{staged:true,ok:true,cleared:true});
  });
  await test('room persistence replays a newer crash WAL exactly once',async()=>{
