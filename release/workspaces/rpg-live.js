@@ -82,7 +82,7 @@ function newWorld(label,targetRoom){
  if(out&&out.ok){try{g.publishCurrent(id,worldId,'new-world-title')}catch(_){}}
  return out&&out.ok?{ok:true,status:'CREATED',worldId,session:out.session}:out;
 }
-function mount(){return ensureRoom()}
+function mount(){const id=roomId();if(!id)return{ok:false,status:'BLOCKED',reason:'no-active-room'};const g=guard(),recovery=g.recoveryStatus?g.recoveryStatus(id):null;if(recovery&&recovery.blocked)return{ok:false,status:'BLOCKED',reason:recovery.reason||'recovery-required'};const latest=g.loadLatest(id);return latest.ok?{ok:true,status:'READY',roomId:id,worldId:latest.session.worldId}:{ok:false,status:latest.status||'MISSING',reason:latest.reason||'missing'}}
 function unmount(){return true}
 r.SevenRpgLive=Object.freeze({version:'2.0.0',mount,unmount,ensure:ensureRoom,contextSource,processGeneratedTurn,snapshot,plan,memoryScopeRef,newWorld});
 })(typeof globalThis!=='undefined'?globalThis:this);
