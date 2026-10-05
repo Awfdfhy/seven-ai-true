@@ -53,7 +53,7 @@ function buildCharacterView(stateInput,stateApi,characterId,options){
   const participants=scene?scene.participantIds:[];
   const location=c.locationId?clone(state.world.locations[c.locationId]||null):null;
   const view={
-    schema:'seven-rpg-character-view',version:1,worldId:state.worldId,sessionId:state.sessionId,turn:state.turn,timeline:{tick:state.timeline.tick,dateLabel:state.timeline.dateLabel},
+    schema:'seven-rpg-character-view',version:1,access:'character-local',worldId:state.worldId,sessionId:state.sessionId,turn:state.turn,timeline:{tick:state.timeline.tick,dateLabel:state.timeline.dateLabel},
     character:{id:c.id,control:c.control,identity:clone(c.identity),age:c.age,appearance:clone(c.appearance),personality:clone(c.personality),motivations:clone(c.motivations),goals:clone(c.goals),fears:clone(c.fears),preferences:clone(c.preferences),locationId:c.locationId,emotions:clone(c.emotions),beliefs:clone(c.beliefs),injuries:clone(c.injuries),status:c.status,loyalties:clone(c.loyalties),opinions:clone(c.opinions),intent:c.intent,voice:clone(c.voice)},
     scene,location,knownCanon:knownCanon(state,stateApi,characterId,opts.canonLimit),
     relationships:relationshipSlice(state,characterId,participants),
