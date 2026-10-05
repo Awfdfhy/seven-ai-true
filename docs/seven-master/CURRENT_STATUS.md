@@ -111,3 +111,15 @@ Acceptance now revalidates Phase 3/4 authority, reconstructs the Phase 2 manifes
 
 Phase 5 remains blocked in root/main: Coding V1 is verified/merged in `seven-remake-v3`, but that authoritative Coding runtime is not yet reconciled into the root product path. No legacy GitHub-self-dev fallback is permitted.
 
+### Self-Development Phase 7 — learning archive candidate
+
+Stacked PR #117 is CI-proven on code head `deb4ae244d87c898e937d5c8c0c0034e8e2371e3`.
+
+Evidence:
+- Seven AI tests #3353: SUCCESS;
+- 43/43 suites PASS;
+- learning archive suite PASS;
+- artifact upload PASS.
+
+The Learning Archive is schema-constrained and hash-chained. Failed and rolled-back experiments remain queryable by hypothesis fingerprint, while learning data cannot contain hidden permission/approval/capability authority. Corruption or an unfinished active experiment blocks unsafe continuation.
+
