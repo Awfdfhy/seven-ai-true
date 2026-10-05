@@ -10,7 +10,7 @@
 | Deep Think | Master | Existing / iterative | Models, Routing, Context | quality + latency + cancellation |
 | Tools | 3 | Existing / hardening | Runtime, Permissions | schema + authorization + execution |
 | Coding System | 4 | Existing / verification | Tools, Files, Git | inspect/patch/test/build/Git E2E |
-| Self-Development | 5 | Existing / verification | Coding, Tools, Git, Verification | bounded improve/test/accept loop |
+| Self-Development | 5 | Phase 1 candidate / verification | Coding, Tools, Git, Verification | observe/diagnose + bounded improve/test/accept loop |
 | RPG System | 6 | Active implementation / verification | Memory, Models, World/Canon state | continuity + knowledge-boundary + isolation + persistence |
 | Integration | 7 | ACTIVE | All systems | contract/E2E/failure/regression |
 | Android/APK/UI | 8 | Continuous | Integrated app, Capacitor/WebView | build/install/device tests |

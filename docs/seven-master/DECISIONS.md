@@ -77,3 +77,15 @@ Decision: Request traces retain IDs, phases, timings, counts, model/provider ide
 Status: Accepted
 Decision: navigator.onLine is represented as link-online/offline only. End-to-end reachability is a separate evidence field updated from provider outcomes.
 
+## ADR-020 — Self-Development Is an Evidence-Gated Experiment Controller
+Status: Accepted
+Decision: Seven Self-Development may observe, measure, diagnose, research, hypothesize and prioritize improvements, but production mutation authority remains in the Coding System. A builder or critic cannot certify its own change; promotion requires exact baseline/candidate/evaluator identity, comparable evidence, hard regression gates and rollback readiness.
+
+## ADR-021 — Evaluator Plane Is Immutable During Candidate Evaluation
+Status: Accepted
+Decision: Tests, benchmark manifests, baselines, constitution/proof policy, acceptance rules and protected-path policy cannot be changed by the candidate they judge. Changes to the evaluator or Self-Development authority plane are CRITICAL governance work requiring a separate change and stronger review.
+
+## ADR-022 — Self-Development Telemetry Is Content-Minimized
+Status: Accepted
+Decision: Observation records use allowlisted metrics, categorical metadata, bounded identifiers and evidence references. Prompt/response content, credentials, secret-like identifiers and unrestricted raw diagnostic bodies are rejected by default.
+

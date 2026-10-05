@@ -39,3 +39,31 @@ See:
 - docs/seven-master/INTEGRATION_AUDIT.md
 - docs/seven-master/BUG_STATUS.md
 - docs/seven-master/INTEGRATION_CONTRACTS.md
+
+## Self-Development specialist status — Phase 1 candidate
+
+Tracking:
+- roadmap issue #100
+- PR #102
+- earlier stale candidate PR #101 was closed without merge after base drift
+
+Implemented on the isolated candidate:
+- research synthesis + target architecture + 10-phase execution plan;
+- content-minimized Observation Engine;
+- deterministic weakness aggregation;
+- evidence-bounded Diagnosis Engine;
+- LOW/MEDIUM/HIGH/CRITICAL change-risk classification;
+- tests for content/secret rejection, bounded buffering, forged-normalization bypass, critical escalation and protected-plane governance.
+
+Authority state:
+- Phase 1 exports no file-write, shell, GitHub mutation, merge or promotion capability;
+- telemetry policy tables are module-private;
+- evaluator/Self-Development paths route to governance rather than ordinary Coding execution;
+- production mutation remains blocked on proving the authoritative Coding System contract. The dedicated `.seven-team/coding-v1/IMPLEMENTATION_EVIDENCE.md` is not present at this captured baseline.
+
+Verification state:
+- Phase 1 implementation candidate `7a5ec226f954e915188174111d46e21740e327c0` passed Seven AI tests #3221 (34/34 suites + artifact upload);
+- exact evidence is recorded in `.seven-team/self-development-v1/IMPLEMENTATION_EVIDENCE.md`;
+- because this is Evolution/Self-Development authority-plane code, independent review remains required before merge;
+- full Self-Development is not complete; Phase 2+ and end-to-end accept/reject/rollback proof remain open.
+

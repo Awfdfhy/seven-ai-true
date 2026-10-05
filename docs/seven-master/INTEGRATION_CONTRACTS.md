@@ -91,8 +91,37 @@ A code change is not accepted solely because a patch was produced; verification 
 
 ### Self-Development
 Must never bypass Coding System verification.
-Improvement loop:
-Observe → Diagnose → Propose → Patch → Test → Compare → Accept/Reject → Record
+
+Canonical loop:
+Observe → Measure → Diagnose → Research → Generate Hypotheses → Prioritize → Plan → Coding System → Patch → Test → Benchmark → Compare → Critique → Accept/Reject → Rollback if needed → Document → Learn
+
+Observation contract:
+- content-minimized structured records only;
+- allowlisted numeric metrics and categorical metadata;
+- bounded trace/run/request/evidence identifiers;
+- prompt/response text, credentials, secret-like identifiers and unrestricted raw bodies are rejected by default;
+- missing evidence stays INCONCLUSIVE/UNPROVEN, never PASS.
+
+Mutation contract:
+- Self-Development does not own direct repository mutation;
+- production candidates must use Coding System with exact baseline SHA, isolated scope, stale/base-drift rejection, deterministic mandatory tests, exact diff/test evidence and rollback/discard support;
+- if the authoritative Coding contract is unavailable or unproven, Self-Development stops at PLAN/SHADOW_ONLY.
+
+Evaluation contract:
+- baseline and candidate are judged under the same locked evaluator identity and comparable environment;
+- evaluator/test/baseline/constitution/acceptance-policy changes are outside candidate authority;
+- hard security, permission, persistence, crash, constitution and shared-contract failures cannot be averaged away by a higher aggregate score.
+
+Risk contract:
+- LOW — prompts, local ranking/tie-breakers and bounded thresholds;
+- MEDIUM — routing, memory/context algorithms, tool selection, research/search, latency/token efficiency and agent workflow;
+- HIGH — shared contracts, auth/permissions, storage/migration, core execution, GitHub mutation and rollback/recovery;
+- CRITICAL — evaluator plane, constitution/proof policy, protected-path policy and Self-Development itself.
+
+HIGH requires stronger integration/recovery evidence and manual approval. CRITICAL changes are separate governance work and may not be autonomously self-modified.
+
+Learning contract:
+Accepted, rejected, blocked and rolled-back experiments preserve diagnosis, hypothesis, exact identities, metrics/tests/proof, confounders, decision reason and ADOPT/AVOID/RETEST lesson. Learning records never grant permissions by themselves.
 
 Protected evaluation/CI/auth boundaries must not be weakened by the system being evaluated.
 
