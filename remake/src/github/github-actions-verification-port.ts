@@ -64,7 +64,7 @@ export class GitHubActionsVerificationPort implements VerificationExecutionPort{
  }
  private async json(path:string,token:string,signal:AbortSignal,init:RequestInit={}):Promise<unknown>{
   let response:Response;try{response=await this.fetchImpl(`https://api.github.com${path}`,{...init,signal,headers:{Accept:"application/vnd.github+json",Authorization:`Bearer ${token}`,"X-GitHub-Api-Version":"2022-11-28",...(init.body?{"Content-Type":"application/json"}:{}),...(init.headers??{})}})}catch(error){if(signal.aborted)throw new DOMException("Aborted","AbortError");throw new SevenError({code:"NETWORK",message:"GitHub Actions verification request failed.",retryable:true,cause:error})}
-  const body=await response.text();if(!response.ok)throw new SevenError({code:response.status===401||response.status===403?"PERMISSION":"PROVIDER",message:`GitHub Actions verification HTTP ${response.status}.`,retryable:response.status>=500||response.status===429});try{return body?JSON.parse(body):{}}catch(error){throw new SevenError({code:"PROVIDER",message:"GitHub Actions verification returned invalid JSON.",cause:error})}
+  const body=await response.text();if(!response.ok)throw new SevenError({code:response.status===401||response.status===403?"PERMISSION":"PROVIDER",message:`GitHub Actions verification HTTP ${response.status}.`,retryable:response.status>=500||response.status===429,details:{httpStatus:response.status,rateLimited:response.status===429}});try{return body?JSON.parse(body):{}}catch(error){throw new SevenError({code:"PROVIDER",message:"GitHub Actions verification returned invalid JSON.",cause:error})}
  }
 }
 
