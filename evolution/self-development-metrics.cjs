@@ -249,6 +249,43 @@ const DEFINITIONS = Object.freeze({
     minImprovement: 0.02,
     regressionTolerance: 0.01,
     maxCv: 0.40
+  }),
+  mutationKillRate: Object.freeze({
+    id: "mutationKillRate",
+    domain: "tests",
+    direction: "HIGHER_IS_BETTER",
+    unit: "ratio",
+    min: 0,
+    max: 1,
+    minSamples: 3,
+    minImprovement: 0.02,
+    regressionTolerance: 0.01,
+    maxCv: 0.30
+  }),
+  regressionDetectionRate: Object.freeze({
+    id: "regressionDetectionRate",
+    domain: "tests",
+    direction: "HIGHER_IS_BETTER",
+    unit: "ratio",
+    min: 0,
+    max: 1,
+    minSamples: 3,
+    minImprovement: 0.02,
+    regressionTolerance: 0.01,
+    maxCv: 0.30
+  }),
+  flakinessRate: Object.freeze({
+    id: "flakinessRate",
+    domain: "tests",
+    direction: "LOWER_IS_BETTER",
+    unit: "ratio",
+    min: 0,
+    max: 1,
+    minSamples: 3,
+    minImprovement: 0.005,
+    regressionTolerance: 0.005,
+    maxCv: 0.80,
+    hardConstraint: Object.freeze({ max: 0.05 })
   })
 });
 
