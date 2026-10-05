@@ -65,11 +65,19 @@ function createBridge(options){
     try{storage.removeItem(pendingKey(id.roomId))}catch(_){return blocked()}
     return{ok:true,status:'SYNCED',session:saved.session,record:applied.record,memoryId:'rpg-'+runtime.hash(id.roomId+'\n'+id.worldId)};
   }
+  function publishCurrent(roomIdInput,worldIdInput,reason){
+    const roomId=text(roomIdInput),worldId=text(worldIdInput);if(!roomId||!worldId)return{ok:false,status:'BLOCKED',reason:'invalid-identity'};
+    if(pending(roomId))return blocked();
+    const loaded=manager.load(roomId,worldId);if(!loaded.ok)return loaded;
+    let ok=false;try{ok=publish(loaded.session,loaded.session.legacy||{},reason||'structured-turn')}catch(_){ok=false}
+    return ok?{ok:true,status:'PUBLISHED',session:loaded.session,memoryId:'rpg-'+runtime.hash(roomId+'\n'+worldId)}:{ok:false,status:'BLOCKED',reason:'memory-projection-failed'};
+  }
+  function recoveryStatus(roomIdInput){const roomId=text(roomIdInput);return{blocked:!roomId||pending(roomId),reason:!roomId?'invalid-room':(pending(roomId)?'recovery-required':null)}}
   function load(roomId,worldId){return pending(text(roomId))?blocked():manager.load(text(roomId),text(worldId))}
   function loadLatest(roomIdInput){const roomId=text(roomIdInput);if(pending(roomId))return blocked();const worldId=readIndex(roomId);if(!roomId||!worldId)return{ok:false,status:'MISSING',reason:'no-active-world'};return manager.load(roomId,worldId)}
   function context(roomIdInput,worldIdInput,options){const out=load(roomIdInput,worldIdInput);return out.ok?stateApi.buildContextPacket(out.session.state,options||{}):null}
   function inspect(roomId,worldId){return manager.inspect(text(roomId),text(worldId))}
-  return{version:1,sync,load,loadLatest,context,inspect,manager};
+  return{version:2,sync,load,loadLatest,context,inspect,publishCurrent,recoveryStatus,manager};
 }
 return{createBridge};
 });
