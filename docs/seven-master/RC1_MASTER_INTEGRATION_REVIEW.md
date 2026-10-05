@@ -23,6 +23,8 @@ Repair `6812aa77b74e646a0515f3b0b3c1c970941b0bbc` launches a test-APK Activity i
 
 The SAF repair's rerun `37311725580` passed `seedUpgradeState`, then FAILED before a real kill because `precommit` was never armed. Repair `6378f7774462359e179e6182991ee88be9926cd4` ends the previous instrumentation/activity processes (without clearing data), drains and verifies the shell marker command output before closing its descriptor, and logs the native stage state. The 120-poll host arm limit and all fixture/persistence assertions remain unchanged. This fix must pass the real device gate before Android can be frozen.
 
+The second repair rerun `37313619964` reached the precommit stage but FAILED its marker acknowledgment: expected `precommit`, observed empty output. The readiness marker now uses a synced file in the target app's files directory, with a native readback assertion and host `adb shell run-as` read. This removes the quoted UiAutomation shell-command signaling path. The real held IndexedDB/WAL state, PID disappearance, 120-poll arm limit, kill and reload assertions are retained.
+
 ## Integration changes
 
 - Preserve both Android WAL/status/topbar and RPG context/knowledge/player-agency/recovery browser assertions in `release/release-verify.cjs`.
