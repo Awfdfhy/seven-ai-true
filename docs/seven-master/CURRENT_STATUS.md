@@ -97,3 +97,17 @@ Evidence:
 
 Planner now re-runs Phase 3 rather than trusting raw/fake validated hypotheses. Direct profile derivation never grants orchestration authority; executable planning candidates carry a validation digest from the re-run gate.
 
+### Self-Development Phase 6 — trusted acceptance candidate
+
+Stacked PR #112 is CI-proven on head `984835d3a38bbf920170ac999e6fdf34b5a0329d`.
+
+Evidence:
+- Seven AI tests #3347: SUCCESS;
+- 42/42 suites PASS;
+- review/acceptance suite PASS;
+- artifact upload PASS.
+
+Acceptance now revalidates Phase 3/4 authority, reconstructs the Phase 2 manifest against the current evaluator lock, and requires trusted runtime verifiers for proof, independent review and HIGH-risk manual approval. Structurally valid model JSON is never treated as authority.
+
+Phase 5 remains blocked in root/main: Coding V1 is verified/merged in `seven-remake-v3`, but that authoritative Coding runtime is not yet reconciled into the root product path. No legacy GitHub-self-dev fallback is permitted.
+
