@@ -5,6 +5,7 @@ import type { ChatRun } from "../application/chat/chat-service";
 import { type ThemePreference } from "./shell/shell-store";
 import type { MemoryFact } from "../domain/memory/fabric";
 import type { PendingToolAction } from "../application/tools/approval-coordinator";
+import { classifySevenError } from "../core/error-taxonomy";
 
 const THEMES: readonly ThemePreference[] = ["auto", "light", "dark"];
 
@@ -12,6 +13,12 @@ function shortTitle(room: Room): string {
   if (room.title !== "New chat") return room.title;
   const first = room.messages.find((message) => message.role === "user")?.content.trim();
   return first ? first.slice(0, 42) : room.title;
+}
+
+function upsertRoom(list: readonly Room[], updated: Room): readonly Room[] {
+  return list.some((room) => room.id === updated.id)
+    ? list.map((room) => room.id === updated.id ? updated : room)
+    : [updated, ...list];
 }
 
 export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
@@ -287,15 +294,14 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
     shell.setSidebarOpen(false);
   };
 
-  const recordToolActionTurn = async (userText: string, assistantText: string) => {
-    if (!currentRoom) return;
-    const latest = await rooms.get(currentRoom.id);
+  const recordToolActionTurn = async (roomId: string, userText: string, assistantText: string) => {
+    const latest = await rooms.get(roomId);
     if (!latest) return;
     const withUser = commitMessage(latest, { role: "user", content: userText });
     const completed = commitMessage(withUser, { role: "assistant", content: assistantText });
     await rooms.put(completed);
-    setCurrentRoom(completed);
-    await refreshRooms(completed.id);
+    setCurrentRoom((selected) => selected?.id === roomId ? completed : selected);
+    setRoomList((existing) => upsertRoom(existing, completed));
   };
 
   const approveToolAction = async () => {
@@ -321,7 +327,7 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
       setPendingToolAction(null);
       setPendingToolQuery(null);
       setToolActionNotice(message);
-      await recordToolActionTurn(query, message);
+      await recordToolActionTurn(action.roomId, query, message);
       await refreshMemory();
     } catch (reason: unknown) {
       setError(reason instanceof Error ? reason.message : String(reason));
@@ -381,15 +387,11 @@ export function App({ runtime }: Readonly<{ runtime: SevenRuntime }>) {
       setActiveRun(run);
       const completed = await run.result;
       setCurrentRoom((selected) => selected?.id === completed.id ? completed : selected);
+      setRoomList((existing) => upsertRoom(existing, completed));
       setPendingUser(null);
       setAssistantDraft("");
-      await refreshRooms(completed.id);
     } catch (reason: unknown) {
-      setError(
-        reason instanceof Error
-          ? reason.message
-          : t("Seven could not complete this message.", "تعذر على Seven إكمال هذه الرسالة."),
-      );
+      setError(classifySevenError(reason).userMessage);
     } finally {
       setPendingUser(null);
       setAssistantDraft("");
