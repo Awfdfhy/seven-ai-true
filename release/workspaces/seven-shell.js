@@ -7,15 +7,15 @@ function visible(el){if(!el||el.hidden)return false;const cs=r.getComputedStyle?
 function reduced(){return !!(r.matchMedia&&r.matchMedia('(prefers-reduced-motion: reduce)').matches)}
 function isAr(){return String(d.documentElement.lang||'').toLowerCase().startsWith('ar')}
 function localizeShell(){
-  const ar=isAr();
-  const backdrop=$('.seven-shell-backdrop');if(backdrop)backdrop.setAttribute('aria-label',ar?'إغلاق التنقل':'Close navigation');
-  const jump=$('.seven-shell-jump');if(jump){jump.setAttribute('aria-label',ar?'الانتقال إلى أحدث رسالة':'Jump to latest message');jump.title=ar?'الأحدث':'Latest'}
-  const model=$('.seven-shell-model-chip');if(model)model.setAttribute('aria-label',ar?'اختيار النموذج':'Choose model');
-  const section=$('.seven-shell-section-label');if(section)section.textContent=ar?'المحادثات':'Chats';
-  const input=$('#userInput');if(input&&(!input.dataset.sevenShellCustomPlaceholder||/^(Message seven\\.ai|اكتب إلى seven\\.ai)$/i.test(input.placeholder||''))){input.placeholder=ar?'اكتب إلى seven.ai':'Message seven.ai'}
-  const send=$('#sendBtn,.input-area .send');if(send)send.setAttribute('aria-label',ar?'إرسال الرسالة':'Send message');
-  const empty=$('.seven-shell-empty');if(empty){const strong=empty.querySelector('strong'),desc=empty.querySelector('span:not([aria-hidden])'),btn=empty.querySelector('.seven-shell-new');if(strong)strong.textContent=ar?'كيف يمكن لـ Seven مساعدتك؟':'What can Seven do for you?';if(desc)desc.textContent=ar?'ابدأ محادثة جديدة أو اكتب أدناه. سينشئ Seven المحادثة عند الإرسال.':'Start a new conversation, or type below. Seven will create the chat when you send.';if(btn){btn.textContent=ar?'محادثة جديدة':'New chat';btn.setAttribute('aria-label',ar?'محادثة جديدة':'New chat')}}
-  qa('.seven-shell-copy').forEach(copy=>{copy.setAttribute('aria-label',ar?'نسخ الرسالة':'Copy message');copy.title=ar?'نسخ':'Copy';const label=copy.lastElementChild;if(label&&!copy.dataset.sevenShellCopyBusy)label.textContent=ar?'نسخ':'Copy'});
+const ar=isAr();
+const backdrop=$('.seven-shell-backdrop');if(backdrop)backdrop.setAttribute('aria-label',ar?'إغلاق التنقل':'Close navigation');
+const jump=$('.seven-shell-jump');if(jump){jump.setAttribute('aria-label',ar?'الانتقال إلى أحدث رسالة':'Jump to latest message');jump.title=ar?'الأحدث':'Latest'}
+const model=$('.seven-shell-model-chip');if(model)model.setAttribute('aria-label',ar?'اختيار النموذج':'Choose model');
+const section=$('.seven-shell-section-label');if(section)section.textContent=ar?'المحادثات':'Chats';
+const input=$('#userInput');if(input&&(!input.dataset.sevenShellCustomPlaceholder||/^(Message seven\\.ai|اكتب إلى seven\\.ai)$/i.test(input.placeholder||''))){input.placeholder=ar?'اكتب إلى seven.ai':'Message seven.ai'}
+const send=$('#sendBtn,.input-area .send');if(send)send.setAttribute('aria-label',ar?'إرسال الرسالة':'Send message');
+const empty=$('.seven-shell-empty');if(empty){const strong=empty.querySelector('strong'),desc=empty.querySelector('span:not([aria-hidden])'),btn=empty.querySelector('.seven-shell-new');if(strong)strong.textContent=ar?'كيف يمكن لـ Seven مساعدتك؟':'What can Seven do for you?';if(desc)desc.textContent=ar?'ابدأ محادثة جديدة أو اكتب أدناه. سينشئ Seven المحادثة عند الإرسال.':'Start a new conversation, or type below. Seven will create the chat when you send.';if(btn){btn.textContent=ar?'محادثة جديدة':'New chat';btn.setAttribute('aria-label',ar?'محادثة جديدة':'New chat')}}
+qa('.seven-shell-copy').forEach(copy=>{copy.setAttribute('aria-label',ar?'نسخ الرسالة':'Copy message');copy.title=ar?'نسخ':'Copy';const label=copy.lastElementChild;if(label&&!copy.dataset.sevenShellCopyBusy)label.textContent=ar?'نسخ':'Copy'});
 }
 function mark(){const h=d.documentElement;h.dataset.sevenShell='2';h.classList.add('seven-shell-ready');if(d.body)d.body.dataset.sevenShell='2'}
 function roomRows(){const list=$('#roomList');return list?qa('#roomList .room-item').filter(visible):[]}
