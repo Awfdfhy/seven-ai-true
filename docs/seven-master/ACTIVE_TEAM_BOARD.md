@@ -14,10 +14,10 @@ Authority: Chat 0 — Master / Release Manager
 
 | Chat | Lane | Branch | Current branch SHA | Primary ownership |
 |---|---|---|---|---|
-| 1 | Android + Persistence + UI | `chat1/android-rc1-hardening-20261005` | `8a856fd4764ec9d93492b46df76d1791ab0862b5` | process-kill persistence, upgrade continuity, signing continuity, SAF, Android lifecycle, UI/UX release blockers |
+| 1 | Android + Persistence + UI | `chat1/android-rc1-hardening-20261005` | `84fec5decf2a9b7092598908ede560b0455bd881` | **WEB GREEN / ANDROID DEVICE GATE RUNNING** — real force-stop + A→B + signer/SAF harness is in Android run `37309642697` |
 | 2 | RPG Release Maintainer | `chat2/rpg-production-hardening` | `f4abac186b6e7415dbf77fcb0ed57474165da67e` | **READY FOR INTEGRATION / FROZEN** — regression-only ownership for RPG during RC1 convergence |
-| 3 | Coding System | `chat3-coding-production` | `b7afa47a654d7109208db26b96e3f268a35feaa4` | inspect→plan→edit→test→debug→verify→Git E2E |
-| 4 | Self-Development + Tools | `chat4-selfdev-tools-hardening` | `c985aa250b5b18d9999e4af2a79def00ff981a07` | executable tool contract/adapters + bounded self-improvement loop through Coding |
+| 3 | Coding System | `chat3-coding-production` | `41da1b3e64332e3e3897c1a97af9f1c64d595a7c` | **GREEN / READY FOR MASTER INTEGRATION REVIEW** — Coding transaction + public request/receipt contract proven in CI `37308841712` |
+| 4 | Self-Development + Tools | `chat4-selfdev-tools-hardening` | `441323687f4777156c42329011d1d60c51cabbe9` | **GREEN COMPONENT GATES / PRODUCT SEAM STILL PARTIAL** — Tool contract + Evolution + Learning Archive pass in CI `37308864986` |
 
 ## Master responsibilities
 Chat 0 does not duplicate specialist implementation. It:
