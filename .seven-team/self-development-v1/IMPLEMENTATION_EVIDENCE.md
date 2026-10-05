@@ -315,3 +315,43 @@ Production mutation authority added: **NO**.
 
 Decision: **PHASE_6_CI_PROVEN / REVIEW_PENDING**.
 
+---
+
+# Phase 7 — Tamper-Evident Learning Archive
+
+Status: IMPLEMENTED + CI VERIFIED; STACKED REVIEW PENDING
+Date: 2026-10-05
+Pull request: #117
+
+## Exact verification
+
+- Phase 7 code head: `deb4ae244d87c898e937d5c8c0c0034e8e2371e3`
+- Phase 6 base: `08f653d627b41ac6e2c69b7c47f468b26675d238`
+- Workflow run: `37264979259`
+- Seven AI tests: `#3353`
+- Result: **SUCCESS**
+- `node all.cjs`: **all test suites: PASS (43 suites)**
+- `self-development learning archive test suite: PASS`
+- release artifact upload: SUCCESS
+
+## Controls proven
+
+- learning records bind experiment, diagnosis, hypothesis fingerprint, exact baseline/candidate SHA and evaluator evidence digests;
+- accepted/rejected/rolled-back/blocked/inconclusive terminal outcomes are retained;
+- ACCEPT -> ADOPT, REJECT/ROLLBACK cannot claim ADOPT, BLOCKED/INCONCLUSIVE -> RETEST;
+- only registered metrics can enter metric summaries;
+- permission/approval/capability fields are structurally rejected;
+- secret-like identifiers/evidence refs are rejected;
+- archive reuses the existing Evolution SHA-256 hash chain;
+- schema validation still rejects authority-smuggling even if an attacker recomputes the generic ledger hash;
+- unexpected event types cannot be inserted into the learning archive;
+- duplicate experiment IDs cannot overwrite terminal history;
+- failed/rolled-back hypothesis history is directly queryable for Phase 3 retry suppression;
+- snapshot/restore validates checksum, chain and head identity;
+- unfinished experiments block starting a different experiment;
+- corrupt archive blocks new experiment start.
+
+Production mutation authority added: **NO**.
+
+Decision: **PHASE_7_CI_PROVEN / REVIEW_PENDING**.
+
