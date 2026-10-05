@@ -83,6 +83,14 @@ function fakeAgent(options = {}) {
     assert.ok(agent.calls.some((call) => call[0] === "discardCandidate"));
   });
 
+  await pass("candidate cannot mutate any GitHub verification infrastructure", async () => {
+    const agent = fakeAgent({ changedPaths: ["seven_ai-final.html", ".github/CODEOWNERS"] });
+    const result = await runCodingCandidate({ experiment: experiment(), baselineSha: "aaaaaaa", agent });
+    assert.equal(result.outcome, "REJECTED_SCOPE");
+    assert.ok(result.scope.protectedChanges.includes(".github/CODEOWNERS"));
+    assert.ok(agent.calls.some((call) => call[0] === "discardCandidate"));
+  });
+
   await pass("stable mutation during repair is restored then candidate is rejected", async () => {
     const agent = fakeAgent({ repairMutatesStable: true });
     const result = await runCodingCandidate({ experiment: experiment(), baselineSha: "aaaaaaa", agent });
