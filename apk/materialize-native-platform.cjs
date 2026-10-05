@@ -89,6 +89,7 @@ const plugin=`package ${APP_ID};
 import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Intent;
+import android.content.UriPermission;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
@@ -316,8 +317,19 @@ public class SevenPlatformPlugin extends Plugin {
   }
 
   @PluginMethod public void releaseDocument(PluginCall call){
-    try{Uri uri=contentUri(call.getString("uri"));int flags=Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION;getContext().getContentResolver().releasePersistableUriPermission(uri,flags);call.resolve();}
-    catch(Exception e){call.reject("Native document permission release failed","SEVEN_NATIVE_IO",e);}
+    try{
+      Uri uri=contentUri(call.getString("uri"));ContentResolver resolver=getContext().getContentResolver();int flags=0;
+      for(UriPermission permission:resolver.getPersistedUriPermissions()){
+        if(!uri.equals(permission.getUri()))continue;
+        if(permission.isReadPermission())flags|=Intent.FLAG_GRANT_READ_URI_PERMISSION;
+        if(permission.isWritePermission())flags|=Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
+        break;
+      }
+      JSObject ret=new JSObject();
+      if(flags==0){ret.put("released",false);ret.put("reason","not-persisted");call.resolve(ret);return;}
+      resolver.releasePersistableUriPermission(uri,flags);
+      ret.put("released",true);ret.put("read",(flags&Intent.FLAG_GRANT_READ_URI_PERMISSION)!=0);ret.put("write",(flags&Intent.FLAG_GRANT_WRITE_URI_PERMISSION)!=0);call.resolve(ret);
+    }catch(Exception e){call.reject("Native document permission release failed","SEVEN_NATIVE_IO",e);}
   }
 }
 `;

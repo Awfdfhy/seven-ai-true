@@ -1,0 +1,14 @@
+const fs=require('fs'),assert=require('assert/strict');
+const native=fs.readFileSync(__dirname+'/../apk/materialize-native-platform.cjs','utf8');
+const patch=fs.readFileSync(__dirname+'/../apk/patch-android.cjs','utf8');
+const motion=fs.readFileSync(__dirname+'/../apk/materialize-android-motion-bridge.cjs','utf8');
+assert.match(native,/getPersistedUriPermissions\(\)/,'SAF release must inspect actual persisted grants');
+assert.match(native,/permission\.isReadPermission\(\)/);
+assert.match(native,/permission\.isWritePermission\(\)/);
+assert.doesNotMatch(native,/releasePersistableUriPermission\(uri,Intent\.FLAG_GRANT_READ_URI_PERMISSION\|Intent\.FLAG_GRANT_WRITE_URI_PERMISSION\)/);
+assert.match(patch,/roomWalAndMotionRecoverAcrossActivityRecreation/);
+assert.match(patch,/scenario\.recreate\(\)/);
+assert.match(patch,/seven_ai_room_wal_v1/);
+assert.match(motion,/SEVEN_MOTION_SYNC_MAX_ATTEMPTS/);
+assert.match(motion,/SevenPerformance\.state\.ready/);
+console.log('android lifecycle contracts: PASS');
