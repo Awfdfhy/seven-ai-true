@@ -86,10 +86,17 @@ public class SevenRcHarnessTest {
     Context test=InstrumentationRegistry.getInstrumentation().getContext();
     Context target=InstrumentationRegistry.getInstrumentation().getTargetContext();
     Uri uri=Uri.parse(DOC_URI);
-    Intent grant=new Intent(Intent.ACTION_VIEW,uri).setClassName(APP_ID,APP_ID+".MainActivity")
-      .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
-    test.startActivity(grant);Thread.sleep(300);
-    target.getContentResolver().takePersistableUriPermission(uri,Intent.FLAG_GRANT_READ_URI_PERMISSION);
+    // Instrumentation executes in the target UID even when using the test Context.
+    // The provider-owning test APK must issue the URI grant from its own process.
+    Intent broker=new Intent().setClassName(test.getPackageName(),APP_ID+".SevenRcGrantActivity")
+      .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    target.startActivity(broker);
+    boolean taken=false;
+    for(int i=0;i<120&&!taken;i++){
+      try{target.getContentResolver().takePersistableUriPermission(uri,Intent.FLAG_GRANT_READ_URI_PERMISSION);taken=true;}
+      catch(SecurityException pending){Thread.sleep(250);}
+    }
+    assertTrue("provider owner did not deliver a persistable SAF grant",taken);
     boolean persisted=target.getContentResolver().getPersistedUriPermissions().stream().anyMatch(p->uri.equals(p.getUri())&&p.isReadPermission());
     assertTrue("target app did not persist SAF permission",persisted);
     assertEquals("seven-rc-saf-document",readAll(target,uri));
@@ -225,6 +232,24 @@ public class SevenTestDocumentsProvider extends DocumentsProvider {
 `;
 fs.writeFileSync(path.join(TEST_DIR,'SevenRcHarnessTest.java'),test);
 fs.writeFileSync(path.join(TEST_DIR,'SevenTestDocumentsProvider.java'),provider);
+const broker=`package ${APP_ID};
+import android.app.Activity;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
+public class SevenRcGrantActivity extends Activity {
+  @Override public void onCreate(Bundle state){
+    super.onCreate(state);
+    Intent grant=new Intent(Intent.ACTION_VIEW,Uri.parse(${javaString(DOC_URI)}))
+      .setClassName(${javaString(APP_ID)},${javaString(APP_ID+'.MainActivity')})
+      .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+    startActivity(grant);
+    finish();
+  }
+}
+`;
+fs.writeFileSync(path.join(TEST_DIR,'SevenRcGrantActivity.java'),broker);
+
 
 const manifestDir=path.join(ANDROID,'app','src','androidTest'),manifestPath=path.join(manifestDir,'AndroidManifest.xml');
 fs.mkdirSync(manifestDir,{recursive:true});
@@ -234,6 +259,9 @@ if(!manifest.includes('SevenTestDocumentsProvider')){
   const entry=`<provider android:name="${APP_ID}.SevenTestDocumentsProvider" android:authorities="${AUTHORITY}" android:exported="true" android:grantUriPermissions="true" android:permission="android.permission.MANAGE_DOCUMENTS"><intent-filter><action android:name="android.content.action.DOCUMENTS_PROVIDER"/></intent-filter></provider>`;
   if(/<application\b([^>]*)\/>/.test(manifest))manifest=manifest.replace(/<application\b([^>]*)\/>/,`<application$1>${entry}</application>`);
   else manifest=manifest.replace(/<application\b([^>]*)>/,m=>m+entry);
+}
+if(!manifest.includes('SevenRcGrantActivity')){
+  manifest=manifest.replace('</application>',`<activity android:name="${APP_ID}.SevenRcGrantActivity" android:exported="true"/></application>`);
 }
 fs.writeFileSync(manifestPath,manifest);
 console.log('android RC acceptance harness materialized: '+APP_ID+' '+DOC_URI);
