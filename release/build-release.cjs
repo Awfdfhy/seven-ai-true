@@ -129,8 +129,6 @@ function build(){
   if(!html.includes('id="seven-app"')) html=replaceRequired(html,'<body>','<body>\n<div id="seven-app" data-seven-remake="1">','Seven UI Remake app root');
   const css=compactCss(read('seven-final.css'));
   const betaCss=compactCss(read('beta-ui.css'));
-  const canon=compactJs(read('canon-simulator.js'));
-  const world=compactJs(read('world-runtime.js'));
   const research=compactJs(read('research-runtime.js')).replace(/<\/script/gi,'<\\/script');
   const performance=compactJs(read('performance-runtime.js')).replace(/<\/script/gi,'<\\/script');
   const control=compactJs(read('control-runtime.js')).replace(/<\/script/gi,'<\\/script');
@@ -145,7 +143,7 @@ function build(){
   const uiPolishLoader=compactJs(read('ui-polish-loader.js')).replace(/<\/script/gi,'<\\/script');
   const githubSelfDev=compactJs(read('github-self-dev.js')).replace(/<\/script/gi,'<\\/script');
   const workspaceSource=fs.existsSync(WORKSPACE_DIR)?fs.readdirSync(WORKSPACE_DIR).sort().map(name=>fs.readFileSync(path.join(WORKSPACE_DIR,name))).join(''):'';
-  const workspaceDigest=digest(workspaceSource+canon+world);
+  const workspaceDigest=digest(workspaceSource);
   const attachmentDigest=digest(attachments);
   const brandSource=fs.existsSync(BRAND_DIR)?fs.readdirSync(BRAND_DIR).sort().map(name=>fs.readFileSync(path.join(BRAND_DIR,name))).join(''):'';
   const brandDigest=digest(brandSource);
@@ -162,12 +160,10 @@ function build(){
   const githubSelfDevFile=writeLazyRuntime(DIST_DIR,'github-self-dev.js',githubSelfDev);
   const workspaceOut=path.join(DIST_DIR,'workspaces');fs.rmSync(workspaceOut,{recursive:true,force:true});
   const workspaceFiles=copyDir(WORKSPACE_DIR,workspaceOut);
-  workspaceFiles.push(writeLazyRuntime(workspaceOut,'canon-simulator.js',canon));
-  workspaceFiles.push(writeLazyRuntime(workspaceOut,'world-runtime.js',world));
   const workspaceBytes=workspaceFiles.reduce((n,x)=>n+x.bytes,0);
   const byName=Object.fromEntries(workspaceFiles.map(x=>[path.basename(x.path),x.bytes]));
   const base=(byName['hub.js']||0)+(byName['hub.css']||0)+(byName['rtl.css']||0);
-  const paths=[base+(byName['coding.js']||0),base+(byName['research.js']||0),base+(byName['rpg.js']||0)+(byName['canon-simulator.js']||0)+(byName['world-runtime.js']||0),base+(byName['generated-ui.js']||0)+(byName['generated-ui.css']||0)];
+  const paths=[base+(byName['coding.js']||0),base+(byName['research.js']||0),base+(byName['rpg.js']||0)+(byName['rpg-state.js']||0)+(byName['rpg-session.js']||0)+(byName['rpg-context.js']||0)+(byName['rpg-planner.js']||0)+(byName['rpg-orchestrator.js']||0)+(byName['rpg-live.js']||0),base+(byName['generated-ui.js']||0)+(byName['generated-ui.css']||0)];
   const workspacePathBytes=Math.max.apply(null,paths);
   const brandOut=path.join(DIST_DIR,'brand');fs.rmSync(brandOut,{recursive:true,force:true});
   const brandFiles=copyDir(BRAND_DIR,brandOut),brandBytes=brandFiles.reduce((n,x)=>n+x.bytes,0);
