@@ -14,13 +14,12 @@
     if(node.classList.contains('system'))return 'system';
     return 'unknown';
   }
-  function decorateMessage(node){
+  function decorateMessage(node,arrival){
     if(!node||node.nodeType!==1||!node.classList.contains('message'))return;
     node.dataset.sevenMessageRole=messageRole(node);
-    const bubble=node.querySelector('.bubble');
-    if(bubble)bubble.dataset.sevenBubble='1';
-    if(node.dataset.sevenUiDecorated)return;
-    node.dataset.sevenUiDecorated='1';
+    const bubble=node.querySelector('.bubble');if(bubble)bubble.dataset.sevenBubble='1';
+    if(node.dataset.sevenUiDecorated)return;node.dataset.sevenUiDecorated='1';
+    if(arrival){node.classList.add('seven-message-arriving');(root.requestAnimationFrame||root.setTimeout)(()=>{if(!node.isConnected)return;node.classList.add('seven-message-live');root.setTimeout(()=>node.classList.remove('seven-message-arriving','seven-message-live'),220)})}
   }
   function syncToolState(){
     doc.querySelectorAll('.tool-btn.toggle').forEach(btn=>{
@@ -61,8 +60,8 @@
       for(const record of records){
         for(const node of record.addedNodes){
           if(node.nodeType!==1)continue;
-          if(node.matches&&node.matches('.message'))decorateMessage(node);
-          if(node.querySelectorAll)node.querySelectorAll('.message').forEach(decorateMessage);
+          if(node.matches&&node.matches('.message'))decorateMessage(node,true);
+          if(node.querySelectorAll)node.querySelectorAll('.message').forEach(x=>decorateMessage(x,true));
         }
       }
       syncComposer();syncToolState();
