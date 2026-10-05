@@ -62,7 +62,7 @@ public class SevenVisualEvidenceTest {
   private void theme(WebView webView,String value) throws Exception {
     js(webView,"(()=>{SevenTheme.setPreference('"+value+"');return true})()");
     waitFor(webView,"document.documentElement.dataset.sevenTheme==='"+value+"'");
-    Thread.sleep(120);
+    waitFor(webView,"(()=>{const app=document.getElementById('seven-app'),main=document.querySelector('.main'),composer=document.querySelector('.composer');if(!app||!main||!composer)return false;const rs=getComputedStyle(app),ms=getComputedStyle(main),cs=getComputedStyle(composer);if('"+value+"'==='night')return app.dataset.sevenTheme==='night'&&rs.getPropertyValue('--s-bg').trim()==='#111815'&&ms.backgroundColor==='rgb(17, 24, 21)'&&cs.backgroundColor==='rgb(17, 24, 21)';return app.dataset.sevenTheme==='day'&&rs.getPropertyValue('--s-bg').trim()==='#f5f7f5'})()");
   }
   private void ensureWorkspaces(WebView webView) throws Exception {
     js(webView,"(()=>{if(window.SevenWorkspaces){window.__sevenWsReady='ok';return true}window.__sevenWsReady='loading';let s=document.createElement('script');s.src='./workspaces/hub.js';s.onload=()=>window.__sevenWsReady=window.SevenWorkspaces?'ok':'bad';s.onerror=()=>window.__sevenWsReady='error';document.head.appendChild(s);return true})()");
@@ -175,12 +175,13 @@ public class SevenVisualEvidenceTest {
     final String marker="Android WAL recovery";
     try(ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)){
       WebView webView=webView(scenario);
-      waitFor(webView,"Boolean(window.roomPersistence&&roomPersistence.status().ready&&window.rooms&&window.roomTitles)");
-      assertEquals("true",js(webView,"(()=>{const base=roomPersistence.status().revision,value=JSON.parse(JSON.stringify({version:1,rooms,roomTitles,currentRoom}));value.roomTitles[value.currentRoom]='Android WAL recovery';localStorage.setItem('seven_ai_room_wal_v1',JSON.stringify({schemaVersion:1,seq:Date.now()*1000+4242,sessionId:'android-activity-recreate-fixture',baseRevision:base,value}));return localStorage.getItem('seven_ai_room_wal_v1')!==null})()"));
+      waitFor(webView,"Boolean(typeof roomPersistence!=='undefined'&&roomPersistence.status().ready&&typeof rooms!=='undefined'&&typeof roomTitles!=='undefined')");
+      assertEquals("true",js(webView,"(()=>{window.__sevenVisualWal='pending';(async()=>{let id=currentRoom;if(!id||!own(rooms,id)){id='android-visual-wal-room';rooms[id]=createEmptyRoom();roomTitles[id]='Android WAL';currentRoom=id;const ok=await saveRooms();if(!ok){window.__sevenVisualWal='save-failed';return}}const base=roomPersistence.status().revision,value=JSON.parse(JSON.stringify({version:1,rooms,roomTitles,currentRoom}));value.roomTitles[value.currentRoom]='Android WAL recovery';localStorage.setItem('seven_ai_room_wal_v1',JSON.stringify({schemaVersion:1,seq:Date.now()*1000+4242,sessionId:'android-activity-recreate-fixture',baseRevision:base,value}));window.__sevenVisualWal=localStorage.getItem('seven_ai_room_wal_v1')!==null?'ok':'stage-failed'})().catch(()=>window.__sevenVisualWal='error');return true})()"));
+      waitFor(webView,"window.__sevenVisualWal==='ok'");
     }
     try(ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)){
       WebView webView=webView(scenario);
-      waitFor(webView,"Boolean(window.roomPersistence&&roomPersistence.status().ready)");
+      waitFor(webView,"Boolean(typeof roomPersistence!=='undefined'&&roomPersistence.status().ready)");
       assertEquals("true",js(webView,"(()=>roomTitles[currentRoom]==='Android WAL recovery'&&localStorage.getItem('seven_ai_room_wal_v1')===null)()"));
     }
   }
