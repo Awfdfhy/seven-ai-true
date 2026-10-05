@@ -201,6 +201,7 @@ async function runCodingEvolution({
     evaluationIdentity: evolution.evaluationIdentity || evaluationLock,
     evolution,
     learningError,
+    learningRecorded: evolution.outcome === "PENDING_APPROVAL" ? null : learningError === null,
     discardError
   };
 }
