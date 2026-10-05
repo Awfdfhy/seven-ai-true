@@ -14,14 +14,14 @@ function experiment() {
     id: "coding-agent-fix",
     subsystem: "coding-agent",
     hypothesis: "candidate repair improves coding reliability",
-    baselineRef: "aaaaaaa",
+    baselineRef: "a".repeat(40),
     candidateRef: "candidate-workspace",
     allowedPaths: ["seven_ai-final.html"]
   });
 }
 
 function fakeAgent(options = {}) {
-  let stable = "aaaaaaa";
+  let stable = "a".repeat(40);
   let repairCalls = 0;
   const calls = [];
   return {
@@ -29,16 +29,16 @@ function fakeAgent(options = {}) {
     async getStableHeadSha() { calls.push(["getStableHeadSha", stable]); return stable; },
     async prepareCandidate() {
       calls.push(["prepareCandidate"]);
-      if (options.prepareMutatesStable) stable = "ccccccc";
+      if (options.prepareMutatesStable) stable = "c".repeat(40);
       return options.invalidIsolation
-        ? { isolated: false, baselineSha: "aaaaaaa", workspaceId: "ws" }
-        : { isolated: true, baselineSha: "aaaaaaa", workspaceId: "ws-1" };
+        ? { isolated: false, baselineSha: "a".repeat(40), workspaceId: "ws" }
+        : { isolated: true, baselineSha: "a".repeat(40), workspaceId: "ws-1" };
     },
     async reproduce() { calls.push(["reproduce"]); return { reproduced: options.reproduced !== false }; },
     async repair({ attempt }) {
       repairCalls += 1;
       calls.push(["repair", attempt]);
-      if (options.repairMutatesStable && repairCalls === 1) stable = "ccccccc";
+      if (options.repairMutatesStable && repairCalls === 1) stable = "c".repeat(40);
       return { changed: options.changed !== false };
     },
     async review({ attempt }) {
@@ -55,7 +55,7 @@ function fakeAgent(options = {}) {
       calls.push(["getChangedPaths"]);
       return options.changedPaths || ["seven_ai-final.html"];
     },
-    async getCandidateSha() { calls.push(["getCandidateSha"]); return options.candidateSha || "bbbbbbb"; },
+    async getCandidateSha() { calls.push(["getCandidateSha"]); return options.candidateSha || "b".repeat(40); },
     async discardCandidate({ reason }) { calls.push(["discardCandidate", reason]); if (options.discardThrows) throw new Error("discard failed"); },
     async restoreStable({ baselineSha }) {
       calls.push(["restoreStable", baselineSha]);
@@ -68,16 +68,16 @@ function fakeAgent(options = {}) {
 (async () => {
   await pass("safe isolated coding candidate completes without touching stable", async () => {
     const agent = fakeAgent();
-    const result = await runCodingCandidate({ experiment: experiment(), baselineSha: "aaaaaaa", agent });
+    const result = await runCodingCandidate({ experiment: experiment(), baselineSha: "a".repeat(40), agent });
     assert.equal(result.outcome, "PASS");
-    assert.equal(result.candidateSha, "bbbbbbb");
+    assert.equal(result.candidateSha, "b".repeat(40));
     assert.deepEqual(result.changedPaths, ["seven_ai-final.html"]);
     assert.equal(agent.calls.some((call) => call[0] === "restoreStable"), false);
   });
 
   await pass("scope violation discards candidate before finalization", async () => {
     const agent = fakeAgent({ changedPaths: ["seven_ai-final.html", "evolution/gates.cjs"] });
-    const result = await runCodingCandidate({ experiment: experiment(), baselineSha: "aaaaaaa", agent });
+    const result = await runCodingCandidate({ experiment: experiment(), baselineSha: "a".repeat(40), agent });
     assert.equal(result.outcome, "REJECTED_SCOPE");
     assert.ok(result.scope.protectedChanges.includes("evolution/gates.cjs"));
     assert.ok(agent.calls.some((call) => call[0] === "discardCandidate"));
@@ -85,7 +85,7 @@ function fakeAgent(options = {}) {
 
   await pass("stable mutation during repair is restored then candidate is rejected", async () => {
     const agent = fakeAgent({ repairMutatesStable: true });
-    const result = await runCodingCandidate({ experiment: experiment(), baselineSha: "aaaaaaa", agent });
+    const result = await runCodingCandidate({ experiment: experiment(), baselineSha: "a".repeat(40), agent });
     assert.equal(result.outcome, "REJECTED_STABLE_MUTATION");
     assert.equal(result.stage, "REPAIR");
     assert.ok(agent.calls.some((call) => call[0] === "restoreStable"));
@@ -93,13 +93,13 @@ function fakeAgent(options = {}) {
 
   await pass("failed stable restoration halts instead of continuing", async () => {
     const agent = fakeAgent({ repairMutatesStable: true, restoreThrows: true });
-    const result = await runCodingCandidate({ experiment: experiment(), baselineSha: "aaaaaaa", agent });
+    const result = await runCodingCandidate({ experiment: experiment(), baselineSha: "a".repeat(40), agent });
     assert.equal(result.outcome, "HALT_STABLE_RESTORE_FAILED");
   });
 
   await pass("review failure can retry within bounded attempts", async () => {
     const agent = fakeAgent({ reviewFirstFails: true });
-    const result = await runCodingCandidate({ experiment: experiment(), baselineSha: "aaaaaaa", agent, maxAttempts: 2 });
+    const result = await runCodingCandidate({ experiment: experiment(), baselineSha: "a".repeat(40), agent, maxAttempts: 2 });
     assert.equal(result.outcome, "PASS");
     assert.equal(result.attempts, 2);
     assert.equal(agent.calls.filter((call) => call[0] === "repair").length, 2);
@@ -107,15 +107,15 @@ function fakeAgent(options = {}) {
 
   await pass("invalid isolation proof rejects before reproduction", async () => {
     const agent = fakeAgent({ invalidIsolation: true });
-    const result = await runCodingCandidate({ experiment: experiment(), baselineSha: "aaaaaaa", agent });
+    const result = await runCodingCandidate({ experiment: experiment(), baselineSha: "a".repeat(40), agent });
     assert.equal(result.outcome, "REJECTED_ISOLATION");
     assert.equal(agent.calls.some((call) => call[0] === "reproduce"), false);
   });
 
   await pass("candidate SHA must differ from baseline and look commit-like", async () => {
-    const same = await runCodingCandidate({ experiment: experiment(), baselineSha: "aaaaaaa", agent: fakeAgent({ candidateSha: "aaaaaaa" }) });
+    const same = await runCodingCandidate({ experiment: experiment(), baselineSha: "a".repeat(40), agent: fakeAgent({ candidateSha: "a".repeat(40) }) });
     assert.equal(same.outcome, "REJECTED_CANDIDATE_SHA");
-    const invalid = await runCodingCandidate({ experiment: experiment(), baselineSha: "aaaaaaa", agent: fakeAgent({ candidateSha: "not-a-sha" }) });
+    const invalid = await runCodingCandidate({ experiment: experiment(), baselineSha: "a".repeat(40), agent: fakeAgent({ candidateSha: "not-a-sha" }) });
     assert.equal(invalid.outcome, "REJECTED_CANDIDATE_SHA");
   });
 
