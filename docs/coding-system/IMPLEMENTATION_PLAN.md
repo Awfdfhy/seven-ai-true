@@ -1,205 +1,70 @@
-# Seven Coding System — Implementation Plan
+# Seven Coding System — Implementation Plan / Completion Record
 
 Date: 2026-10-05
-Execution strategy: small verifiable batches. No phase is promoted merely because code exists.
+Verified code-bearing SHA: `371db3e45aea21fd1f0d191ff88542d64c914490`
+PR: #104
+Rule: code presence is not completion; phase status below is evidence-based.
 
-## Phase 0 — Research and repository audit
+## Phase status
 
-Status: COMPLETE for baseline.
+| Phase | Status | Evidence / implementation |
+|---|---|---|
+| 0 — Research + repo audit | COMPLETE | Current agent architectures + Seven gap analysis documented. |
+| 1 — Coding Kernel / Workspace Truth | COMPLETE | Exact SHA/snapshot/file fingerprints, lifecycle, patch transaction, rollback, path/critical authority and blast-radius gates. |
+| 2 — Repository Intelligence | COMPLETE for V1 | Bounded discovery, language/build/test/instruction detection, symbol/import extraction and relevance-ranked repo map. Parser-depth/tree-sitter expansion remains optional V2 work. |
+| 3 — Repository Adapter | COMPLETE for GitHub V1 | Exact tree/blob reads, stale-head checks, atomic Git commit, non-force branch update, post-commit verification and Tool Fabric mediation. |
+| 4 — Execution Sandbox | COMPLETE by isolated CI design | V1 deliberately does not expose arbitrary model shell. Mandatory commands execute through isolated GitHub Actions with bounded known command mapping, cancellation/timeouts and evidence. A future local shell tool requires a separate security review. |
+| 5 — Repository Planner | COMPLETE | Structured model proposal is rebound deterministically to exact inspected source hashes before mutation. |
+| 6 — Verification Engine | COMPLETE | Policy-owned mandatory gates, output evidence hashes, Git diff check, Remake typecheck/tests/build and release escalation. |
+| 7 — Debug / Repair Loop | COMPLETE | Bounded diagnose → re-inspect → repair → reverify loop with attempt limits and fail-closed terminal states. |
+| 8 — Diff Review + Independent Review | COMPLETE for V1 | Test-disable/assertion/typecheck/lint bypass checks plus independently routable read-only reviewer. |
+| 9 — Git Completion + Documentation | COMPLETE | Atomic exact-base Git commits, freshness/post-content checks, evidence lifecycle and current documentation. |
+| 10 — Product Runtime Integration | BACKEND COMPLETE / UI HANDOFF | GitHub runtime factory, ModelRouter, ResearchService and Tool Fabric integration are complete. Final user-facing Coding workspace/progress UI belongs to Android/APK/UI. |
+| 11 — Evaluation Campaign | V1 GATES COMPLETE / BROADER BENCHMARKS ITERATIVE | Adversarial stale-state, mutation authority, repair, routing, replay and Android release tests pass. SWE-style larger benchmark corpus remains iterative quality work, not a runtime blocker. |
+| 12 — Self-Development handoff | READY AFTER MERGE | Self-Development may consume Coding only after Integration accepts PR #104; no bypass is permitted. |
 
-Acceptance:
-- master coordination docs read;
-- current Tool Fabric inspected;
-- legacy coding/self-dev/evolution code inspected;
-- current external agent architectures researched;
-- architecture decisions recorded.
+## V1 safety invariants
 
-## Phase 1 — Coding Kernel / Workspace Truth
+1. Every mutation is tied to an exact Git base SHA and exact inspected file hashes.
+2. Repository drift invalidates the plan; no last-write-wins behavior.
+3. Model output cannot grant capabilities, approvals, critical-path authority or remove mandatory tests.
+4. Repository mutation flows through ToolRegistry / ToolExecutor.
+5. A repeated identical commit is replay-safe.
+6. A side effect with uncertain outcome becomes BLOCKED and requires reconciliation.
+7. External cancellation propagates into ToolExecutor/TaskManager.
+8. Verification PASS requires recorded successful execution, not model prose.
+9. Independent review cannot approve failed verification.
+10. Critical evaluator/workflow/contract paths require authority outside the model.
+11. Coding uses shared ModelRouter/ProviderHealthTracker rather than a private provider stack.
+12. Research/tool/repository content is treated as untrusted data, not executable policy.
 
-Status: IN PROGRESS, Batch 1 implementation created.
+## V1 verification
 
-Deliverables:
-- lifecycle state machine;
-- RepositorySnapshot exact SHA + fingerprints;
-- safe path rules;
-- PatchPlan exact-source preconditions;
-- transactional candidate + rollback;
-- deterministic verification selector;
-- unit/adversarial tests.
+All three top-level gates succeeded on the same code-bearing SHA:
 
-Promotion gates:
-- TypeScript strict compile;
-- coding unit tests;
-- existing Remake tests;
-- Remake typecheck/build;
-- no integration contract change.
+- **Seven Remake V3 CI #407 — SUCCESS**
+  - production dependency audit
+  - full dependency audit
+  - strict TypeScript
+  - Vitest
+  - production build
+- **Seven AI tests #3239 — SUCCESS**
+  - `node all.cjs`
+  - verified release artifact
+- **Seven Remake Android Release Gate #173 — SUCCESS**
+  - strict Remake compile/tests/build
+  - deterministic payload identity
+  - Android lint + unit tests + APK build
+  - APK embedded release identity
+  - installed Android 14 connected smoke
+  - installed Android 16 connected smoke
 
-## Phase 2 — Repository Intelligence
+## Non-blocking follow-up owned outside Coding V1
 
-Deliverables:
-- inventory adapter;
-- language/package/build detection;
-- symbol index using parsers/tree-sitter where practical;
-- import/export/reference graph;
-- test ownership map;
-- instruction discovery;
-- relevance-ranked repo map with token budget;
-- incremental invalidation after edits.
+- Merge/reconcile PR #104 into the chosen product branch.
+- Final user-facing Coding UI/evidence viewer/approval UX.
+- Live provider + connected GitHub canary when production credentials and explicit mutation approval are available.
+- Larger benchmark corpora and parser-depth improvements.
+- Self-Development adoption only after Integration accepts the merged Coding runtime.
 
-Critical evals:
-- large repo localization;
-- renamed/moved files;
-- ambiguous symbols;
-- generated/vendor exclusion;
-- repo-map staleness.
-
-## Phase 3 — Files/Worktree Adapter
-
-Deliverables:
-- isolated worktree per run;
-- exact base-SHA checkout;
-- scoped read/list/search/write operations through Tool Fabric;
-- candidate application followed by actual-fingerprint verification;
-- checkpoint/rollback;
-- concurrent edit detection.
-
-Critical evals:
-- user edit during plan;
-- user edit during apply;
-- symlink/path traversal;
-- stale SHA;
-- rollback after partial platform failure.
-
-## Phase 4 — Sandbox Command Runtime
-
-Deliverables:
-- command tool registered in Tool Fabric;
-- read-only / workspace-write execution modes;
-- network deny by default and explicit expansion;
-- timeout/cancel/resource bounds;
-- output truncation with retained evidence digest;
-- secret redaction;
-- command policy for destructive/external operations.
-
-Critical evals:
-- escape attempts;
-- dangerous shell syntax;
-- package install/network escalation;
-- cancellation during child process;
-- uncertain effect after crash.
-
-## Phase 5 — Repository Planner
-
-Deliverables:
-- normalize task + acceptance criteria;
-- inspect/research budget;
-- structured plan schema;
-- base snapshot binding;
-- expected file hashes;
-- impact/risk estimate;
-- plan review for complex/high-risk work.
-
-Critical evals:
-- underspecified task -> BLOCKED/clarification evidence;
-- plan refers to non-existent symbol;
-- plan becomes stale;
-- excessive blast radius.
-
-## Phase 6 — Verification Engine
-
-Deliverables:
-- deterministic rule registry;
-- touched-file tests;
-- test ownership/dependency escalation;
-- lint/type/build gates;
-- actual command-result evidence;
-- flaky-test classification and controlled reruns;
-- Android/release escalation.
-
-Critical evals:
-- model attempts to omit tests;
-- only targeted tests green but regression broken;
-- changed build config;
-- test command exits zero without expected artifact.
-
-## Phase 7 — Debug / Repair Loop
-
-Deliverables:
-- failure classifier;
-- minimal failure context extraction;
-- re-inspection before each repair;
-- bounded repair attempts;
-- repeated-failure detection;
-- rollback or BLOCKED terminal state.
-
-Critical evals:
-- same patch repeated;
-- failure changes after repair;
-- external dependency failure;
-- non-deterministic/flaky failure.
-
-## Phase 8 — Diff Verification + Independent Review
-
-Deliverables:
-- canonical git diff parser;
-- intended-path comparison;
-- contract/evaluator/test weakening detectors;
-- reviewer agent with read-only authority;
-- severity-ranked findings;
-- repair loop on reviewer rejection.
-
-Critical evals:
-- hidden unrelated change;
-- deleted assertion;
-- disabled security gate;
-- added credential;
-- reviewer attempts mutation.
-
-## Phase 9 — Git Completion + Documentation
-
-Deliverables:
-- atomic commit from exact candidate;
-- remote head freshness check;
-- branch/PR support;
-- generated documentation/update notes;
-- final CodingEvidenceBundle;
-- clean workspace assertion.
-
-Critical evals:
-- remote branch moved;
-- commit contains unverified file;
-- dirty workspace after completion;
-- documentation contradicts evidence.
-
-## Phase 10 — Product Integration
-
-Deliverables:
-- Coding mode/workspace UI;
-- progress stages and evidence viewer;
-- approval prompts only where policy requires;
-- stop/cancel/recover;
-- model routing by coding subtask;
-- mobile-safe presentation.
-
-## Phase 11 — Evaluation Campaign
-
-Suites:
-- Seven repository bug-fix corpus;
-- multi-file feature corpus;
-- SWE-bench style issue corpus;
-- concurrent-edit/SWE-Touch-inspired corpus;
-- adversarial safety corpus;
-- long-horizon tasks;
-- Android/product reality tasks.
-
-Required zero-tolerance failures:
-- overwrite an unacknowledged concurrent user edit;
-- mutate forbidden path;
-- mutate critical evaluator/contract without external authority;
-- mark COMPLETE after mandatory gate failure;
-- claim a command/test was run without execution evidence;
-- leave a partial transaction without rollback/effect-unknown evidence.
-
-## Phase 12 — Self-Development handoff
-
-Only after Coding is production-verified may Self-Development use it for autonomous Seven changes. Self-Development receives no bypass around Coding or Tool contracts.
+No zero-bugs claim is made. V1 status means no known reproducible blocker remains in the specialist verification scope above.
