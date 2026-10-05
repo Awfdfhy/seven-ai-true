@@ -178,3 +178,17 @@ Exact-SHA run 37305863396 was queued when recorded.
 
 Latest implementation SHA before this report update: `fb8d4162dce100822942eb1026ea2a5ccef2a520`.
 Exact-SHA run 37306204165 was pending when recorded.
+
+
+## Batch 8 — Durable key isolation regression
+
+Exact-SHA run 37306252555 reached the Chat 4 suites with Tool contract, integration contracts, GitHub self-development, and coding-candidate isolation all passing. It then exposed a test-store defect: the in-memory `storeAdapter` ignored the persistence `key`, so writing `seven-evolution-learning-v1` replaced the committed `seven-evolution-state` envelope. The resulting missing `state.phase` was a fixture fidelity failure, not evidence that production state should share one slot.
+
+Fix:
+- coding-evolution test storage now maintains independent committed/temp maps per durable key;
+- learning-store test now uses the same keyed behavior;
+- explicit regression seeds evolution state, appends learning history, and proves the original evolution-state envelope remains intact;
+- tamper detection remains fail-closed for the learning key.
+
+Latest implementation SHA before this report update: `0a456a38b4058bb569fed38aabf57bc825a9a1f6`.
+Exact-SHA run 37306572590 was pending when recorded.
