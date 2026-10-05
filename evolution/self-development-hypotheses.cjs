@@ -4,6 +4,7 @@ const crypto = require("crypto");
 const { normalizeRepoPath } = require("./experiment-lab.cjs");
 const { classifyChangeRisk } = require("./self-development-diagnosis.cjs");
 const { getMetricDefinition } = require("./self-development-metrics.cjs");
+const { decideResearch, summarizeResearch } = require("./self-development-research.cjs");
 
 const EFFECTS = Object.freeze(new Set(["IMPROVE", "PRESERVE"]));
 const SECRET_LIKE = /(?:bearer\s+[a-z0-9._~-]+|gh[pousr]_[a-z0-9_]+|sk-[a-z0-9_-]{12,})/i;
@@ -120,59 +121,104 @@ function normalizePriorAttempt(value) {
   };
 }
 
+function riskRank(level) {
+  return ({ LOW: 1, MEDIUM: 2, HIGH: 3, CRITICAL: 4 })[String(level || "").toUpperCase()] || 3;
+}
+
 function validateHypothesisSet({
   diagnosis,
   candidates = [],
-  researchDecision,
-  researchSummary,
+  researchContext = {},
+  researchEvidence = [],
+  requiredClaimKeys = [],
+  researchAsOf,
+  researchMaxAgeDays = 365,
   priorAttempts = []
 } = {}) {
   if (!diagnosis || typeof diagnosis !== "object") throw new Error("diagnosis required");
   const confidence = Number(diagnosis.confidence);
   if (!Number.isFinite(confidence) || confidence < 0 || confidence > 1) throw new Error("invalid diagnosis confidence");
   if (!Array.isArray(candidates) || !candidates.length) throw new Error("hypothesis candidates required");
+  if (!researchContext || typeof researchContext !== "object" || Array.isArray(researchContext)) throw new Error("researchContext must be an object");
 
-  if (researchDecision && researchDecision.required === true) {
+  const prepared = [];
+  const invalid = [];
+  for (const raw of candidates) {
+    try {
+      prepared.push(raw && raw.fingerprint && raw.schemaVersion === 1 ? createHypothesis(raw) : createHypothesis(raw));
+    } catch (error) {
+      invalid.push(Object.freeze({ id: raw && raw.id ? String(raw.id) : null, reason: `invalid_hypothesis:${error.message}` }));
+    }
+  }
+
+  const maxRisk = prepared.reduce((best, item) => riskRank(item.risk.level) > riskRank(best) ? item.risk.level : best, "LOW");
+  const researchDecision = decideResearch({
+    diagnosis,
+    riskLevel: maxRisk,
+    fastMoving: researchContext.fastMoving === true,
+    externalDependency: researchContext.externalDependency === true,
+    priorFailedAttempts: researchContext.priorFailedAttempts || 0,
+    solutionAmbiguity: researchContext.solutionAmbiguity || 0
+  });
+
+  let researchSummary = null;
+  if (researchDecision.required || (Array.isArray(researchEvidence) && researchEvidence.length > 0)) {
+    if (!researchAsOf) {
+      return Object.freeze({
+        readyForPlanning: false,
+        decision: "BLOCKED_RESEARCH_INCOMPLETE",
+        minCandidates: 0,
+        accepted: Object.freeze([]),
+        rejected: Object.freeze(invalid),
+        reasons: Object.freeze(["research_as_of_required"]),
+        researchDecision,
+        researchSummary: null
+      });
+    }
+    researchSummary = summarizeResearch({
+      evidence: researchEvidence,
+      requiredClaimKeys,
+      asOf: researchAsOf,
+      maxAgeDays: researchMaxAgeDays
+    });
+  }
+
+  if (researchDecision.required) {
     if (!researchSummary || researchSummary.complete !== true || Number(researchSummary.evidenceCount || 0) === 0) {
       return Object.freeze({
         readyForPlanning: false,
         decision: "BLOCKED_RESEARCH_INCOMPLETE",
         minCandidates: 0,
         accepted: Object.freeze([]),
-        rejected: Object.freeze([]),
-        reasons: Object.freeze(["required_research_incomplete"])
+        rejected: Object.freeze(invalid),
+        reasons: Object.freeze(["required_research_incomplete"]),
+        researchDecision,
+        researchSummary
       });
     }
-    if (researchSummary.staleEvidenceIds && researchSummary.staleEvidenceIds.length >= researchSummary.evidenceCount) {
+    if (researchSummary.staleEvidenceIds.length >= researchSummary.evidenceCount) {
       return Object.freeze({
         readyForPlanning: false,
         decision: "BLOCKED_RESEARCH_STALE",
         minCandidates: 0,
         accepted: Object.freeze([]),
-        rejected: Object.freeze([]),
-        reasons: Object.freeze(["all_required_research_stale"])
+        rejected: Object.freeze(invalid),
+        reasons: Object.freeze(["all_required_research_stale"]),
+        researchDecision,
+        researchSummary
       });
     }
   }
 
-  const contradictionCount = researchSummary && Array.isArray(researchSummary.contradictions)
-    ? researchSummary.contradictions.length
-    : 0;
-  const minCandidates = confidence < 0.65 || contradictionCount > 0 ? 2 : 1;
+  const contradictionCount = researchSummary ? researchSummary.contradictions.length : 0;
+  const ambiguityRequiresAlternatives = researchDecision.reasons.includes("multiple_plausible_remedies");
+  const minCandidates = confidence < 0.65 || contradictionCount > 0 || ambiguityRequiresAlternatives ? 2 : 1;
   const prior = priorAttempts.map(normalizePriorAttempt);
   const seen = new Set();
   const accepted = [];
-  const rejected = [];
+  const rejected = [...invalid];
 
-  for (const raw of candidates) {
-    let candidate;
-    try {
-      candidate = raw && raw.fingerprint && raw.schemaVersion === 1 ? createHypothesis(raw) : createHypothesis(raw);
-    } catch (error) {
-      rejected.push(Object.freeze({ id: raw && raw.id ? String(raw.id) : null, reason: `invalid_hypothesis:${error.message}` }));
-      continue;
-    }
-
+  for (const candidate of prepared) {
     if (seen.has(candidate.fingerprint)) {
       rejected.push(Object.freeze({ id: candidate.id, fingerprint: candidate.fingerprint, reason: "duplicate_hypothesis_in_set" }));
       continue;
@@ -204,7 +250,9 @@ function validateHypothesisSet({
     accepted: Object.freeze(accepted),
     rejected: Object.freeze(rejected),
     reasons: Object.freeze(enough ? [] : [`need_${minCandidates}_distinct_hypotheses`]),
-    requiresCritic: contradictionCount > 0 || accepted.some((item) => ["HIGH", "CRITICAL"].includes(item.risk.level))
+    requiresCritic: contradictionCount > 0 || accepted.some((item) => ["HIGH", "CRITICAL"].includes(item.risk.level)),
+    researchDecision,
+    researchSummary
   });
 }
 
