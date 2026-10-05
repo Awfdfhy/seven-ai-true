@@ -135,3 +135,28 @@ Decision: A repository mutation with uncertain external effect is BLOCKED until 
 ## ADR-COD-005 — Coding reuses shared routing and research
 Status: Accepted
 Decision: Coding uses Seven ModelRouter/ProviderHealthTracker for editor/diagnostic/reviewer routing and ResearchService for external evidence. Independent reviewer routing may differ from editor routing, but no separate model-health or research authority is created.
+
+## ADR-INT-001 — Seven Remake V3 Is the Typed Integration Product Base
+Status: Accepted — 2026-10-05
+Decision: Typed Integration/Verification changes target `seven-remake-v3` and `remake/`. Evidence must identify the exact tested SHA and must not credit unrelated root/main product gates to the typed Remake.
+
+## ADR-INT-002 — Production and Integration Tests Share Routing Code
+Status: Accepted — 2026-10-05
+Decision: `application/chat/routed-chat-transport.ts` is the canonical routed/fallback transport. Phase-specific integration code imports/re-exports it rather than maintaining a parallel implementation.
+
+## ADR-INT-003 — Self-Development Is Fail-Closed Behind Coding Verification
+Status: Accepted — 2026-10-05
+Decision: Self-Development cannot acquire GitHub credentials or mutate a repository without valid Coding verification evidence bound to repository, exact base SHA, exact paths and executed checks.
+
+## ADR-INT-004 — Unwired Workspaces Cannot Fall Back to Core Chat
+Status: Accepted — 2026-10-05
+Decision: Research/Build/RPG workspace selection must not silently dispatch through normal Chat. Until a workspace production adapter is composed and verified, submission fails closed.
+
+## ADR-INT-005 — Interactive Chat State Is Room-Scoped
+Status: Accepted — 2026-10-05
+Decision: Active generation, pending user text, assistant draft, generation error, unsent composer draft and origin-sensitive notices are keyed to the originating room/request. Switching rooms does not transfer or cancel another room's work. Tool approvals retain their origin room.
+
+## ADR-INT-006 — Coding V1 Is Reconciled as Shared Infrastructure, Not Automatic Product Completion
+Status: Accepted — 2026-10-05
+Decision: The verified Coding V1 implementation merged through PR #104 is adopted into the Integration lineage together with its Tool Fabric/GitHub Actions boundaries. Specialist completion does not by itself mean the Build workspace, SevenRuntime or Self-Development product path is fully composed; those require separate integration evidence.
+

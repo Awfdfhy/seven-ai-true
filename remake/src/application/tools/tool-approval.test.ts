@@ -43,6 +43,7 @@ describe("Tool approval coordinator",()=>{
       roomId:"r2",taskId:"t1",query:"Pin my dark mode memory",
     });
     expect(pending).not.toBeNull();
+    expect(pending?.roomId).toBe("r2");
     expect(pending?.toolId).toBe("memory.set_tier");
     expect(pending?.memoryPreview).toBe("I prefer dark mode");
     expect((await memory.listActive("r2"))[0]?.tier).toBe("recall");

@@ -9,8 +9,13 @@ import { createCapacitorAndroidNativeTransport } from "../platform/android/capac
 import { AndroidPlatformService } from "../application/android/android-platform-service";
 import { IndexedDbRoomRepository } from "../storage/room-repository";
 import { ChatService } from "../application/chat/chat-service";
-import { ProviderChatTransport } from "../application/chat/provider-chat-transport";
+import { RoutingChatTransport } from "../application/chat/routed-chat-transport";
+import { ModeAwareChatTransport } from "../application/chat/mode-aware-chat-transport";
+import { DeepThinkTransport } from "../application/deep-think/deep-think-transport";
 import { KiloAnonymousProviderAdapter } from "../providers/kilo-anonymous-adapter";
+import { ModelRegistry, ModelRouter, ProviderHealthTracker } from "../routing/model-router";
+import { IntegratedChatContextSource } from "../application/context/integrated-chat-context-source";
+import { classifySevenError } from "../core/error-taxonomy";
 import { IndexedDbMemoryFabricRepository } from "../storage/memory-fabric-repository";
 import { MemoryFabricService } from "../application/memory/memory-fabric-service";
 import { IndexedDbMemoryRepository } from "../storage/memory-repository";
@@ -32,6 +37,9 @@ import { OrchestratedReadToolContextSource } from "../application/tools/chat-too
 import { registerBuiltinMemoryMutationTools } from "../application/tools/mutation-builtins";
 import { LocalMemoryMutationProposer } from "../application/tools/memory-mutation-proposer";
 import { ToolApprovalCoordinator } from "../application/tools/approval-coordinator";
+import { AttachmentService, SingleFlightPdfParserLoader } from "../application/attachments/attachment-service";
+import { StoredAttachmentContextSource } from "../application/attachments/attachment-context-source";
+import { IndexedDbAttachmentRepository } from "../storage/attachment-repository";
 
 export type SevenRuntime = Readonly<{
   taskManager: TaskManager;
@@ -42,8 +50,14 @@ export type SevenRuntime = Readonly<{
   android: AndroidPlatformService | null;
   rooms: IndexedDbRoomRepository;
   chat: ChatService;
-  chatTransport: ProviderChatTransport;
+  chatTransport: ModeAwareChatTransport;
+  routedChatTransport: RoutingChatTransport;
+  deepThinkTransport: DeepThinkTransport;
+  modelRegistry: ModelRegistry;
+  modelRouter: ModelRouter;
+  providerHealth: ProviderHealthTracker;
   memory: MemoryFabricService;
+  attachments: AttachmentService;
   toolRegistry: ToolRegistry;
   toolOrchestrator: ToolOrchestrator;
   toolApprovalCoordinator: ToolApprovalCoordinator;
@@ -70,6 +84,24 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
     options.diagnosticsCapacity ?? 256,
     options.diagnosticsNow ?? Date.now,
   );
+  taskManager.subscribe((task) => {
+    const disposition = task.error ? classifySevenError(task.error) : null;
+    diagnostics.record({
+      level: task.status === "failed" ? "warn" : "info",
+      category: "task",
+      name: "lifecycle",
+      correlationId: task.taskId,
+      attributes: {
+        kind: task.kind,
+        status: task.status,
+        errorCategory: disposition?.category ?? null,
+        retryable: disposition?.retryable ?? false,
+        durationMs: task.finishedAt === undefined
+          ? null
+          : Math.max(0, task.finishedAt - task.startedAt),
+      },
+    });
+  });
   const shell = new ShellStore(options.initialShell ?? {});
 
   const themeNow = options.themeNow ?? (() => new Date());
@@ -84,6 +116,31 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
 
   const rooms = new IndexedDbRoomRepository();
   const kilo = new KiloAnonymousProviderAdapter();
+  const modelRegistry = new ModelRegistry();
+  modelRegistry.replaceProviderModels("kilo", [Object.freeze({
+    id: "kilo-auto/free",
+    providerId: "kilo",
+    displayName: "Kilo Auto Free",
+    contextWindow: 131_072,
+    qualityScore: 50,
+    speedScore: 50,
+    capabilities: Object.freeze({ streaming: true, tools: true, vision: false }),
+  })]);
+  const modelRouter = new ModelRouter();
+  const providerHealth = new ProviderHealthTracker();
+  const attachmentRepository = new IndexedDbAttachmentRepository();
+  const attachments = new AttachmentService(
+    taskManager,
+    attachmentRepository,
+    new SingleFlightPdfParserLoader(async () => {
+      throw new SevenError({
+        code: "VALIDATION",
+        message: "PDF extraction is not enabled in this build. Use a UTF-8 text file.",
+        details: { domain: "file", reason: "PDF_PARSER_UNAVAILABLE" },
+      });
+    }),
+  );
+  const attachmentContextSource = new StoredAttachmentContextSource(attachmentRepository);
   const memoryRepository = new IndexedDbMemoryFabricRepository();
   const queryRewriter = new ProviderMemoryQueryRewriter(kilo, "kilo-auto/free");
   const memory = new MemoryFabricService(memoryRepository, new MemoryRetrievalEngine(), queryRewriter);
@@ -135,6 +192,7 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
             toolId: event.toolId,
             status: event.status,
             effectStarted: event.effectStarted,
+            durationMs: Math.max(0, event.completedAt - event.startedAt),
           },
         });
       },
@@ -173,14 +231,67 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
   const contextSource = new MemoryContextService(summaryRepository, summarizer, undefined, {
     maxSummaryPasses: 8,
   });
-  const chatTransport = new ProviderChatTransport(
-    kilo,
-    "kilo-auto/free",
-    "You are Seven, a precise and helpful AI assistant.",
-    memory,
+  const integratedContextSource = new IntegratedChatContextSource(
     contextSource,
-    32_768,
+    memory,
     toolContextSource,
+    attachmentContextSource,
+  );
+  const routedChatTransport = new RoutingChatTransport(
+    modelRegistry,
+    modelRouter,
+    providerHealth,
+    new Map([["kilo", kilo]]),
+    {
+      mode: (room) => room.mode ?? "balanced",
+      maxAttempts: 3,
+      systemPrompt: "You are Seven, a precise and helpful AI assistant.",
+      contextSource: integratedContextSource,
+      observer: {
+        record(event) {
+          diagnostics.record({
+            level: event.type === "attempt_failure" ? "warn" : "info",
+            category: "model",
+            name: event.type,
+            correlationId: event.taskId,
+            attributes: {
+              mode: event.mode,
+              providerId: event.providerId ?? null,
+              modelId: event.modelId ?? null,
+              reason: event.reason ?? null,
+              candidateCount: event.candidateCount ?? null,
+              durationMs: event.durationMs ?? null,
+              ttftMs: event.ttftMs ?? null,
+            },
+          });
+        },
+      },
+    },
+  );
+  const deepThinkTransport = new DeepThinkTransport(
+    { provider: kilo, modelId: "kilo-auto/free", contextWindow: 131_072 },
+    { provider: kilo, modelId: "kilo-auto/free", contextWindow: 131_072 },
+    integratedContextSource,
+    {
+      systemPrompt: "You are Seven, a precise and helpful AI assistant.",
+      plannerOutputTokens: 768,
+      finalOutputTokens: 2048,
+    },
+  );
+  const chatTransport = new ModeAwareChatTransport(
+    routedChatTransport,
+    deepThinkTransport,
+    {
+      record(event) {
+        diagnostics.record({
+          level: "info",
+          category: "model",
+          name: "transport_selected",
+          correlationId: event.taskId,
+          attributes: { transport: event.transport },
+        });
+      },
+    },
   );
 
   const kernel = new AppKernel(diagnostics);
@@ -227,6 +338,19 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
   });
 
   kernel.register({
+    id: "runtime-storage",
+    async start() {},
+    async stop() {
+      await Promise.allSettled([
+        rooms.close(),
+        attachmentRepository.close(),
+        memoryRepository.close(),
+        summaryRepository.close(),
+      ]);
+    },
+  });
+
+  kernel.register({
     id: "theme",
     async start() {
       theme.start();
@@ -246,7 +370,13 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
     rooms,
     chat,
     chatTransport,
+    routedChatTransport,
+    deepThinkTransport,
+    modelRegistry,
+    modelRouter,
+    providerHealth,
     memory,
+    attachments,
     toolRegistry,
     toolOrchestrator,
     toolApprovalCoordinator,

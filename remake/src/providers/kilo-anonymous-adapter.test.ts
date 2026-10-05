@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { SevenError } from "../core/errors";
+import { classifySevenError } from "../core/error-taxonomy";
 import { KiloAnonymousProviderAdapter } from "./kilo-anonymous-adapter";
 
 describe("KiloAnonymousProviderAdapter", () => {
@@ -78,4 +80,90 @@ describe("KiloAnonymousProviderAdapter", () => {
     });
     expect(requestHeaders.has("authorization")).toBe(false);
   });
+
+  it("classifies HTTP 429 without exposing provider response bodies", async () => {
+    const fakeFetch = (async () => new Response(
+      "sensitive upstream detail",
+      { status: 429, headers: { "retry-after": "3" } },
+    )) as typeof fetch;
+    const adapter = new KiloAnonymousProviderAdapter(fakeFetch);
+
+    let failure: unknown;
+    try {
+      for await (const _chunk of adapter.stream(
+        {
+          modelId: "kilo-auto/free",
+          messages: [{ role: "system", content: "You are Seven." }, { role: "user", content: "Hello" }],
+        },
+        new AbortController().signal,
+      )) {
+        // no-op
+      }
+    } catch (error) {
+      failure = error;
+    }
+
+    expect(failure).toBeInstanceOf(SevenError);
+    expect(failure).toMatchObject({
+      code: "PROVIDER",
+      retryable: true,
+      details: { httpStatus: 429, rateLimited: true, retryAfterMs: 3000 },
+    });
+    expect((failure as Error).message).not.toContain("sensitive upstream detail");
+    expect(classifySevenError(failure).category).toBe("RATE_LIMIT");
+  });
+
+  it("normalizes fetch failures as retryable NETWORK errors", async () => {
+    const fakeFetch = (async () => {
+      throw new TypeError("Failed to fetch");
+    }) as typeof fetch;
+    const adapter = new KiloAnonymousProviderAdapter(fakeFetch);
+
+    await expect(adapter.listModels(new AbortController().signal)).rejects.toMatchObject({
+      code: "NETWORK",
+      retryable: true,
+      details: { providerId: "kilo" },
+    });
+  });
+
+
+  it("preserves AbortError semantics when fetch rejects after cancellation", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const fakeFetch = (async () => {
+      throw new TypeError("browser fetch aborted");
+    }) as typeof fetch;
+    const adapter = new KiloAnonymousProviderAdapter(fakeFetch);
+
+    await expect(adapter.listModels(controller.signal)).rejects.toMatchObject({
+      name: "AbortError",
+    });
+  });
+
+  it("fails explicitly on malformed SSE JSON instead of silently dropping it", async () => {
+    const fakeFetch = (async () => new Response(
+      "data: {not-json}\n\n",
+      { status: 200, headers: { "content-type": "text/event-stream" } },
+    )) as typeof fetch;
+    const adapter = new KiloAnonymousProviderAdapter(fakeFetch);
+
+    const consume = async () => {
+      for await (const _chunk of adapter.stream(
+        {
+          modelId: "kilo-auto/free",
+          messages: [{ role: "system", content: "You are Seven." }, { role: "user", content: "Hello" }],
+        },
+        new AbortController().signal,
+      )) {
+        // no-op
+      }
+    };
+
+    await expect(consume()).rejects.toMatchObject({
+      code: "PROVIDER",
+      retryable: true,
+      details: { reason: "MALFORMED_STREAM_JSON" },
+    });
+  });
+
 });

@@ -1,22 +1,30 @@
 # Seven AI — System Registry
 
-| System | Owner Chat | Status | Depends On | Primary Validation |
-|---|---:|---|---|---|
-| Chat Core | Master | Existing / hardening | Models, Storage | conversation + state regression |
-| Model Routing | Master | Existing / hardening | Providers, Runtime health | routing/eval matrix |
-| Memory | 1 | Active / iterative | Chat Core, Storage | retrieval, isolation, retention |
-| Files | Master | Existing / iterative | Tools, Storage | parse/read/write + size/type gates |
-| Web Research | 2 | Active / iterative | Tools, Models, Network | evidence/citation/freshness tests |
-| Deep Think | Master | Existing / iterative | Models, Routing, Context | quality + latency + cancellation |
-| Tools | 3 | Existing / hardening | Runtime, Permissions | schema + authorization + execution |
-| Coding System | 4 | Merged + post-merge verified on `seven-remake-v3` / PR #104 | Tools, Files, Git, Model Routing, Research | exact-SHA inspect/patch/CI/Android/Git E2E |
-| Self-Development | 5 | Existing / verification | Coding, Tools, Git, Verification | bounded improve/test/accept loop |
-| RPG System | 6 | Active implementation / verification | Memory, Models, World/Canon state | continuity + knowledge-boundary + isolation + persistence |
-| Integration | 7 | ACTIVE | All systems | contract/E2E/failure/regression |
-| Android/APK/UI | 8 | Continuous | Integrated app, Capacitor/WebView | build/install/device tests |
+Last reconciled for Integration: 2026-10-05.
+Product base: `seven-remake-v3`.
+Integration branch: `integration/verification-v1` / PR #103.
 
-## Ownership Rule
+| System | Implementation truth | Product composition | Verification state | Status |
+|---|---|---|---|---|
+| Chat Core | `application/chat/chat-service.ts` + room persistence | SevenRuntime + App UI | unit/integration/stress + restart cases | STRONG / ACTIVE |
+| Model Routing | ModelRegistry + ModelRouter + ProviderHealthTracker + canonical RoutedChatTransport | production Core Chat route | fallback/cooldown/context/TTFT traces | INTEGRATED CORE |
+| Memory | Memory Fabric + retrieval/query rewrite + context summarization | Core Chat + tools/context | retrieval/isolation/restart/concurrency suites | INTEGRATED CORE |
+| Files / Attachments | AttachmentService + IndexedDB + bounded context source | UTF-8 text wired to SevenRuntime/UI/context | room isolation + concurrent writes | TXT INTEGRATED / PDF PARTIAL |
+| Web Research | ResearchService + repository/evidence contracts | no concrete production Web source/synthesizer in SevenRuntime | component + cross-system failure tests | PARTIAL / NOT PRODUCT-WIRED |
+| Deep Think | two-pass DeepThinkTransport | per-room Deep Think flag via ModeAwareChatTransport | component/runtime routing tests | INTEGRATED CORE / MULTI-PROVIDER OPEN |
+| Tools | Registry + planner + authority + executor + ledger + approvals | read tools + memory mutations + Coding repository Tool Fabric | adversarial/idempotency/approval suites | INTEGRATED CORE |
+| Coding System | typed V1 under `application/coding/` + GitHub repository/Actions adapters; reconciled into Integration after PR #104 | specialist runtime exists; SevenRuntime/UI Build dispatch adoption remains | `add0a474` 81/81 files, 469/469 tests + Android 14/16 PASS | IMPLEMENTED + VERIFIED / PRODUCT ADOPTION OPEN |
+| Self-Development | GitHub auth + bounded mutation service | fails closed behind CodingVerificationPort before credentials/mutation | Phase8 + manager + malformed-evidence tests | SAFE FOUNDATION / ADOPTION OPEN |
+| RPG | structured canon snapshots + CAS/checksum repository | not yet one shared Memory/Chat transactional turn path in Remake | long continuity/restart/isolation suites | PARTIAL |
+| Android / Capacitor | typed bridge + platform service + release pipeline | wired when native transport exists | reconciliation candidate APK identity + Android 14/16 PASS; PR-head rerun required | STRONG GATE |
+| Observability | bounded redacted diagnostics + task/tool/model timings | runtime TaskManager/model/tool paths | deterministic TTFT/duration tests + perf budgets | INTEGRATED CORE |
+| Integration | contract/E2E/failure/performance branch; Coding lineage reconciled | PR #103 (`behind_by=0`) | permanent regression suite; current-head final checks before merge | ACTIVE / MERGEABLE |
+
+## Ownership rule
 Ownership means primary responsibility, not exclusive access. Cross-system changes require contract review.
 
-## Verification Rule
-Existing means code exists. It does not mean acceptance-ready. Completion is gated by evidence in CI/device runs and the Integration Acceptance Gate.
+## Product-truth rule
+"Implementation exists" is not equivalent to "production-integrated." A system is product-integrated only when it is reachable through the intended SevenRuntime/application path and has evidence on that same path.
+
+## Canonical product line
+The executable typed TypeScript/Capacitor product lives under `remake/` on `seven-remake-v3`. Integration reconciles specialist changes into that product line and records exact-SHA evidence.

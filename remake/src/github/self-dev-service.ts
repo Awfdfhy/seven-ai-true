@@ -27,6 +27,22 @@ export interface GitHubMutationPort {
   ): Promise<GitHubMutationResult>;
 }
 
+export type CodingVerificationEvidence = Readonly<{
+  approved: boolean;
+  repository: string;
+  baseSha: string;
+  verifiedPaths: readonly string[];
+  checks: readonly string[];
+  evidenceId: string;
+}>;
+
+export interface CodingVerificationPort {
+  verify(
+    input: SelfDevChangeSet,
+    signal: AbortSignal,
+  ): Promise<CodingVerificationEvidence>;
+}
+
 export type SelfDevRun = Readonly<{
   taskId: string;
   result: Promise<GitHubMutationResult>;
@@ -112,6 +128,64 @@ function normalizeChangeSet(input: SelfDevChangeSet): SelfDevChangeSet {
   });
 }
 
+function validateCodingEvidence(
+  evidence: CodingVerificationEvidence,
+  expected: SelfDevChangeSet,
+): CodingVerificationEvidence {
+  if (!evidence || typeof evidence !== "object" || Array.isArray(evidence)) {
+    throw new SevenError({ code: "TOOL", message: "Coding verification evidence is malformed." });
+  }
+  if (evidence.approved !== true) {
+    throw new SevenError({
+      code: "TOOL",
+      message: "Coding verification rejected the self-development change set.",
+      details: { stage: "coding_verification" },
+    });
+  }
+  if (
+    typeof evidence.repository !== "string" ||
+    typeof evidence.baseSha !== "string" ||
+    !/^[a-f0-9]{40}$/i.test(evidence.baseSha)
+  ) {
+    throw new SevenError({
+      code: "TOOL",
+      message: "Coding verification identity evidence is malformed.",
+      details: { stage: "coding_verification", reason: "MALFORMED_IDENTITY" },
+    });
+  }
+  if (evidence.repository !== expected.repository || evidence.baseSha.toLowerCase() !== expected.baseSha) {
+    throw new SevenError({ code: "TOOL", message: "Coding verification evidence does not match the requested repository/base." });
+  }
+  if (
+    !Array.isArray(evidence.verifiedPaths) ||
+    evidence.verifiedPaths.length !== expected.files.length ||
+    !Array.isArray(evidence.checks) ||
+    evidence.checks.length === 0 ||
+    evidence.checks.length > 64
+  ) {
+    throw new SevenError({ code: "TOOL", message: "Coding verification evidence is incomplete." });
+  }
+  const expectedPaths = new Set(expected.files.map((file) => file.path));
+  const seen = new Set<string>();
+  for (const path of evidence.verifiedPaths) {
+    const normalized = normalizePath(path);
+    if (!expectedPaths.has(normalized) || seen.has(normalized)) {
+      throw new SevenError({ code: "TOOL", message: "Coding verification paths do not exactly match the change set." });
+    }
+    seen.add(normalized);
+  }
+  for (const check of evidence.checks) canonical(check, "Coding verification check", 256);
+  const evidenceId = canonical(evidence.evidenceId, "Coding verification evidence id", 512);
+  return Object.freeze({
+    approved: true,
+    repository: expected.repository,
+    baseSha: expected.baseSha,
+    verifiedPaths: Object.freeze([...seen]),
+    checks: Object.freeze([...evidence.checks]),
+    evidenceId,
+  });
+}
+
 function validateMutationResult(
   result: GitHubMutationResult,
   expected: SelfDevChangeSet,
@@ -149,6 +223,7 @@ export class GitHubSelfDevService {
     private readonly tasks: TaskManager,
     private readonly auth: GitHubAuthService,
     private readonly mutation: GitHubMutationPort,
+    private readonly codingVerification?: CodingVerificationPort,
   ) {
     if (!tasks || typeof tasks !== "object" || typeof tasks.run !== "function") {
       throw new SevenError({ code: "VALIDATION", message: "GitHubSelfDevService requires TaskManager." });
@@ -158,6 +233,14 @@ export class GitHubSelfDevService {
     }
     if (!mutation || typeof mutation !== "object" || typeof mutation.apply !== "function") {
       throw new SevenError({ code: "VALIDATION", message: "GitHubSelfDevService requires a mutation port." });
+    }
+    if (
+      codingVerification !== undefined &&
+      (!codingVerification ||
+        typeof codingVerification !== "object" ||
+        typeof codingVerification.verify !== "function")
+    ) {
+      throw new SevenError({ code: "VALIDATION", message: "GitHubSelfDevService coding verification port is malformed." });
     }
   }
 
@@ -169,13 +252,24 @@ export class GitHubSelfDevService {
         ownerId: `github:${normalized.repository}`,
         timeoutMs,
       },
-      async ({ signal }) =>
-        this.auth.withAccessToken(signal, async (accessToken, innerSignal) => {
+      async ({ signal }) => {
+        if (!this.codingVerification) {
+          throw new SevenError({
+            code: "TOOL",
+            message: "Self-development is blocked until Coding System verification is available.",
+            details: { stage: "coding_verification", reason: "MISSING_VERIFIER" },
+          });
+        }
+        const evidence = await this.codingVerification.verify(normalized, signal);
+        if (signal.aborted) throw new DOMException("Aborted", "AbortError");
+        validateCodingEvidence(evidence, normalized);
+        return this.auth.withAccessToken(signal, async (accessToken, innerSignal) => {
           if (innerSignal.aborted) throw new DOMException("Aborted", "AbortError");
           const result = await this.mutation.apply(normalized, accessToken, innerSignal);
           if (innerSignal.aborted) throw new DOMException("Aborted", "AbortError");
           return validateMutationResult(result, normalized);
-        }),
+        });
+      },
     );
     return Object.freeze({ taskId: run.taskId, result: run.result, cancel: run.cancel });
   }

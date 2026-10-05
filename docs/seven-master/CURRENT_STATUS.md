@@ -1,5 +1,66 @@
 # Seven AI — Current Status
 
+Last integration update: 2026-10-05
+Working branch: `integration/verification-v1`
+Pull request: #103 → `seven-remake-v3`
+
+## Integration Reconciliation — MERGED / PRODUCT GAPS OPEN
+
+Integration has reconciled the verified typed Remake line with Coding V1 and concurrent specialist work. PR #103 is no longer behind `seven-remake-v3`. Seven is **not yet fully accepted** because product-composition gaps remain.
+
+Current integrated repairs/evidence include:
+- production ModelRouter/ProviderHealth routed Chat path and canonical fallback implementation;
+- Memory + read-only Tools + UTF-8 Attachment evidence in bounded Chat context;
+- per-room Quick/Balanced/Deep and separate per-room two-pass Deep Think dispatch;
+- Kilo HTTP/network/rate-limit/malformed-JSON semantics with no raw provider-body leakage;
+- public error taxonomy and redacted task/model/tool diagnostics with duration + TTFT fields;
+- request-scoped cancellation, active-restart coverage and independent cross-owner cancellation;
+- room-scoped generation/draft/error/composer state, room-scoped Tool approvals/notices and no completion-driven room hijack;
+- Self-Development fail-closed Coding verification before credential acquisition/mutation, including malformed-evidence hardening;
+- permanent cross-system regression scenarios and broad CI performance budgets;
+- Coding V1 from PR #104 is reconciled into this Integration lineage with its Tool Fabric, exact-SHA workspace truth, verification runner, shared routing/research adapters and GitHub Actions verification ports.
+
+## Exact evidence already established
+
+Typed Integration baseline `c66d979de0244edf359720151405c5d1e994f690`:
+- Seven Remake V3 CI run **37263230219** — SUCCESS.
+- Seven AI tests run **37263230215** — SUCCESS.
+- Seven Remake Android Release Gate run **37263230207** — SUCCESS.
+
+State-isolation staging `78241fd8b29864c7d0063828823954a4c175fe6d`:
+- Seven Remake V3 CI run **37263909624** — SUCCESS, **75/75 files and 441/441 tests**, production build PASS.
+- Seven AI tests run **37263909635** — SUCCESS.
+
+Coding + Integration reconciliation candidate `add0a47484a5d9e0adb17ea35b10b0bc533b75c4`:
+- Seven Remake V3 CI run **37264493292** — SUCCESS, **81/81 files and 469/469 tests**, production build PASS.
+- Seven AI tests run **37264493278** — SUCCESS.
+- Seven Remake Android Release Gate run **37264493272** — SUCCESS, including APK build/identity, Android 14 installed smoke and Android 16 installed smoke.
+- CI performance sample: routing 2,000×256 ≈ **473.85 ms**; 40 repeated 2,000-message context builds ≈ **99.16 ms**; 1,000 TaskManager operations ≈ **10.49 ms**. These are runner observations, not live-provider/device SLAs.
+
+Reconciliation was merged into `integration/verification-v1` as `8bf9147aa59d9331a0451ec126fec0f4cb07e6de`. PR #103 then reported `mergeable: true` and `behind_by=0` against `seven-remake-v3`.
+
+Coding V1 upstream:
+- merged through PR #104 on `seven-remake-v3`;
+- merge SHA `42ff64c01074cff0d9358ba58ec6a0a316b83316`;
+- post-merge Remake CI run **37263362539** — SUCCESS;
+- post-merge Android Release Gate run **37263362532** — SUCCESS.
+
+## Remaining acceptance gaps
+1. Wire/verify the Build workspace and Self-Development product path through the verified Coding runtime under real GitHub authorization; specialist existence alone is insufficient.
+2. ResearchService still lacks a concrete production Web source/synthesizer in SevenRuntime.
+3. PDF parsing remains disabled in the typed product; UTF-8 text attachments are integrated.
+4. RPG typed canonical persistence is strong but is not yet one atomic Chat + shared Memory + RPG turn orchestration.
+5. Deep Think uses the current bootstrapped provider for planner/final; multi-provider planner/final routing and live-provider latency/quality evaluation remain open.
+6. Live model catalog refresh remains outside lifecycle-managed runtime composition.
+7. The current PR head after documentation reconciliation must retain green Remake CI + Seven AI + Android 14/16 checks before PR #103 itself is merged.
+
+## Acceptance statement
+**NOT FULLY INTEGRATED YET.** The reconciled typed line has no known reproducible BLOCKER/CRITICAL defect in the tested paths, but the product-composition gaps above remain. This is not a zero-bugs claim.
+
+---
+
+## Upstream specialist / release status history
+
 ## Lead Release Manager — integrated main, final Android acceptance in progress
 
 PR #105 is **MERGED** at main SHA `29b26c6417b9fa332ae55f129bae983fb9efae02`, with the same source tree as the verified candidate. Full Web/all.cjs passed both PR run 37262152839 and isolated push run 37262150543 on head c5d63bf4ce51f1b21a3af6a186e3e8af5eac3500. All 42 local component suites passed; native generation and source-clean payload manifests pass. This is not a full release acceptance or RC.
@@ -186,3 +247,4 @@ Specialist regression evidence retained from the exact code-bearing candidate `3
 - Seven Remake Android Release Gate #173 — **SUCCESS**.
 
 Coding V1 is therefore complete at the specialist + typed-Remake branch level. The remaining work is product-level reconciliation with root/main, final UI/approval UX, live-provider/GitHub canary under explicit credentials/authorization, and Self-Development adoption through this verified path. Those remain Integration / Release Manager responsibilities rather than Coding V1 blockers.
+

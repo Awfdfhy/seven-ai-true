@@ -196,3 +196,30 @@ The Arabic room-search placeholder and aria-label are both بحث المحادث
 - Coding consumes the existing ModelRouter/ProviderHealthTracker for model selection/failover and the existing ResearchService for research. It does not introduce parallel routing or research authority.
 - Models may analyze, propose patches, request research and diagnose failures. They cannot remove mandatory verification, grant themselves repository capabilities, authorize critical paths, approve their own failed verification, or treat unverified execution claims as evidence.
 - Completion requires deterministic diff review, policy-owned verification evidence and a read-only review verdict. Older successful runs are not evidence for a newer candidate.
+
+## Integration Runtime Composition Addendum — 2026-10-05
+
+### Canonical production path
+- Production code and integration tests must exercise the same routing/fallback implementation; test-only parallel routing implementations are forbidden.
+- Provider fallback is allowed only before meaningful assistant output begins. After meaningful output, failure terminates the request rather than splicing a second provider response.
+- Model routing is recalculated per turn from registry + provider health + room model preference.
+- Optional Memory/Tool/Attachment context may degrade only on explicitly recoverable non-cancellation failures; cancellation always aborts the originating turn.
+- AppKernel owns shutdown of long-lived composed storage adapters.
+
+### Workspace dispatch
+An active workspace may only dispatch through its verified workspace adapter. Research, Build/Coding or RPG selection must never silently fall back to normal Chat Core. Missing production composition fails closed.
+
+### Request and room state isolation
+- generation run, pending user turn, assistant draft, user-visible generation error and unsent composer draft are scoped by room/request;
+- completing or cancelling work in room A must not select, overwrite, cancel or revive room B;
+- the Stop control targets only the current room's active run;
+- Tool approval is bound to the room and invocation fingerprint that created it; approval UI and result notices must not be projected into another room;
+- asynchronous attachment/tool notices preserve their origin room;
+- switching rooms during generation is supported without cross-room state contamination.
+
+### Self-Development verification evidence
+Before GitHub credentials are acquired or mutation is attempted, Self-Development must receive Coding verification evidence bound to repository, exact base SHA, exact changed paths, non-empty verification checks and an evidence ID. Missing, rejected, mismatched or malformed evidence fails closed. Public task errors may sanitize internal details, but credentials/mutation remain untouched.
+
+### Performance evidence
+Runtime observability records bounded task/model/tool durations and model TTFT without prompt/output content. CI also carries broad local performance budgets for routing at catalog scale, long-context assembly and TaskManager orchestration. These budgets detect catastrophic regressions; they are not claims about live network/provider latency or device-wide UX latency.
+
