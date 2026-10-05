@@ -4,6 +4,7 @@ const ERROR_CODES=Object.freeze(new Set(["TIMEOUT","NETWORK_ERROR","AUTH_ERROR",
 const RISK=Object.freeze({none:"NONE",read:"READ",low:"READ",write:"WRITE",side_effect:"WRITE",sideeffect:"WRITE",high:"HIGH",critical:"CRITICAL"});
 function text(v){return String(v==null?"":v).trim()}
 function normalizeRisk(v){const k=text(v).toLowerCase().replace(/[ -]/g,"_");return RISK[k]||"HIGH"}
+function list(v){if(v==null)return[];return(Array.isArray(v)?v:[v]).map(text).filter(Boolean)}
 function normalizeTool(raw={}){
  const id=text(raw.id||raw.name); if(!id)throw new Error("tool id required");
  const schema=raw.inputSchema||raw.schema||{type:"object",properties:{},additionalProperties:false};
@@ -12,8 +13,8 @@ function normalizeTool(raw={}){
  const retries=Math.max(0,Math.min(3,Number((raw.retryPolicy&&raw.retryPolicy.maxRetries)??raw.maxRetries??0)||0));
  return Object.freeze({
   id,name:text(raw.name||id),inputSchema:schema,outputSchema:raw.outputSchema&&typeof raw.outputSchema==="object"?raw.outputSchema:null,
-  risk:normalizeRisk(raw.risk||raw.riskLevel),permissions:Object.freeze([...(raw.permissions||raw.requiredPermissions||[])].map(text).filter(Boolean)),
-  resources:Object.freeze([...(raw.resources||raw.allowedResources||[])].map(text).filter(Boolean)),
+  risk:normalizeRisk(raw.risk||raw.riskLevel),permissions:Object.freeze(list(raw.permissions||raw.requiredPermissions)),
+  resources:Object.freeze(list(raw.resources||raw.allowedResources)),
   sideEffect:raw.sideEffect===true||["WRITE","HIGH","CRITICAL"].includes(normalizeRisk(raw.risk||raw.riskLevel)),
   confirmationRequired:raw.confirmationRequired===true||normalizeRisk(raw.risk||raw.riskLevel)==="CRITICAL",
   timeoutMs,retryPolicy:Object.freeze({maxRetries:retries}),cancelable:raw.cancelable!==false,
