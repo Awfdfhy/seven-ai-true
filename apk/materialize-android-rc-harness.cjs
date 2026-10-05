@@ -141,7 +141,9 @@ public class SevenRcHarnessTest {
     try(ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)){
       WebView w=web(scenario);assertEquals("true",js(w,script));
       waitFor(w,"window.__sevenRcVerify&&window.__sevenRcVerify.status!=='pending'");
-      assertEquals("true",js(w,"window.__sevenRcVerify.status==='ok'"));
+      String verifyState=js(w,"JSON.stringify({verify:window.__sevenRcVerify||null,persistence:typeof roomPersistence!=='undefined'?roomPersistence.status():null,wal:localStorage.getItem('seven_ai_room_wal_v1'),phase:localStorage.getItem('seven_android_rc_expected_phase')})");
+      System.out.println("SEVEN_RC_VERIFY_STATE="+phase+" "+verifyState);
+      assertEquals("RC verify failed for "+phase+": "+verifyState,"true",js(w,"window.__sevenRcVerify.status==='ok'"));
       verifySafGrant();
     }
   }
