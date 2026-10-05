@@ -1,8 +1,10 @@
 "use strict";
 const {selectTests}=require("./coding-test-selector.cjs");
+const {createVerifiedProposalPort}=require("./coding-proposal-policy.cjs");
 function requireApi(api){for(const k of ["repositoryTree","readFile","atomicCommit","dispatchWorkflow"]){if(!api||typeof api[k]!=="function")throw Error("github-api-missing:"+k)}return api}
 function createGithubCodingAdapter(api,options={}){
  api=requireApi(api);const branch=String(options.branch||"").trim();if(!branch)throw Error("branch-required");
+ const verifiedProposal=options.propose||(api.openPullRequest&&options.ciForSha?createVerifiedProposalPort(api,{branch,base:options.base||"main",currentHead:async()=>{const t=await api.repositoryTree(branch);return t.head.sha},ciForSha:options.ciForSha}):null);
  const readLimit=Math.max(1,Math.min(50,Number(options.readLimit||20)));
  return {
   async snapshot(){const t=await api.repositoryTree(branch);return{sha:t.head.sha,treeSha:t.head.treeSha,truncated:!!t.truncated}},
@@ -11,7 +13,7 @@ function createGithubCodingAdapter(api,options={}){
   async runTests({candidateSha,changed}){const selection=selectTests(changed);await api.dispatchWorkflow(options.workflow||"seven-tests.yml",branch);if(typeof options.waitForExactRun!=="function")return{ok:false,tests:selection.tests,failures:["exact-ci-wait-adapter-required"]};const run=await options.waitForExactRun(branch,candidateSha);return{ok:run&&run.conclusion==="success",tests:selection.tests,failures:run&&run.conclusion==="success"?[]:["ci:"+String(run&&run.conclusion||"unknown")],run}},
   async diff({baseSha,headSha}){if(typeof options.diff!=="function")throw Error("diff-adapter-required");const out=await options.diff(baseSha,headSha);if(!out||typeof out.text!=="string"||!Array.isArray(out.files))throw Error("authoritative-diff-required");return out},
   async verify(ctx){if(typeof options.verify!=="function")throw Error("verify-adapter-required");const live=await api.repositoryTree(branch);if(!live.head||live.head.sha!==ctx.candidateSha)return{ok:false,failures:["candidate-sha-moved"]};const out=await options.verify(ctx);if(!out||out.ok!==true)return out||{ok:false,failures:["verification-empty"]};return out},
-  async propose(ctx){if(typeof options.propose!=="function")throw Error("proposal-adapter-required");return options.propose(ctx)}
+  async propose(ctx){if(typeof verifiedProposal!=="function")throw Error("proposal-adapter-required");return verifiedProposal(ctx)}
  };
 }
 module.exports={createGithubCodingAdapter};
