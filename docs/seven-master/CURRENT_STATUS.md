@@ -2,7 +2,7 @@
 
 ## Lead Release Manager — continuation integration snapshot
 
-Release remains **NOT ACCEPTED / no RC**. PR #105 reconciles upstream `e5d9c70798d7edd4f2368ca6a5547570d5931ad9` with the release repairs, preserving both ADR-REL-001..005 and ADR-015..019 and specialist history. The enclosing commit identifies this candidate; later commits require separate evidence.
+Release remains **NOT ACCEPTED / no RC**. PR #105 reconciles upstream `00d271e1f9b457e205f641b086303161b1a156b6` with the release repairs, preserving both ADR-REL-001..005 and ADR-015..019 and specialist history. The enclosing commit identifies this candidate; later commits require separate evidence.
 
 - All 34 local component suites reran on the merged source and passed; exact durations are in RELEASE_EVIDENCE.json. Full local browser gate remains unavailable because the Chromium archive download fails.
 - Verified upstream-only CI: Seven AI tests run 37241282527 and Seven Android APK run 37241282530 passed on `b3e3ffa4fe676a838ed658e22fad1576cfe11237`. Android job 111550342818 passed lint/unit/build, packaged-content checks, and connected API34/API36 WebView tests. These results do not certify the PR candidate.
@@ -131,3 +131,6 @@ See:
 - Isolated release-branch Web/Android validation added upstream is preserved; main artifact acceptance still requires the exact main SHA/run. There are 42 component suites plus two browser suites.
 
 - REL-20: actual packaged browser run 37261393766 failed night surface verification after component/packaged gates passed. Rooted lazy CSS overrode the lower-specificity inline theme bridge. Added rooted authoritative main/composer selectors; contrast/static checks pass (99531 startup bytes), full browser retest pending.
+
+- Latest upstream canonical shell/remake night palette and removal of redundant auto-theme clock scheduler are incorporated. Current rooted theme bridge/static audit: 99176 startup bytes, 312627 workspaces, 4183832 total static bytes.
+- REL-21: reopening RPG in an empty room after leaving a populated room previously retained prior in-memory workspace state when hydrate found no saved session. Mount now clears room-owned state before hydration; actual packaged browser regression checks empty work/canon/context and then original room restart restore. Browser result is pending, so no acceptance claim is made yet.

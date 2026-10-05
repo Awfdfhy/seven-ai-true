@@ -155,3 +155,8 @@ Integrated e5d9c70798d7edd4f2368ca6a5547570d5931ad9, including stronger night su
 
 ### REL-20 — Night-theme specificity conflict in the actual packaged browser
 Run 37261393766 passed source/browser regressions, component/packaged RPG/byte gates, then failed release-verify.cjs:90 waiting for #111815 main/composer surfaces. Existing lazy remake rules use #seven-app and shell selectors more specific than the inline resolved-theme bridge, leaving #17211d. Added equally rooted authoritative selectors to the existing core theme bridge; day behavior and acceptance colors remain unchanged. Static audit 99531 bytes and contrast pass. Full browser revalidation remains mandatory; no pass is inferred from CSS alone.
+
+### Latest canonical theme integration and RPG room ownership
+Incorporated upstream canonical night canvas fixes and removal of redundant theme clock scheduling. Existing root bridge selectors are retained; all themed shell/remake surfaces target the same tested canvas. Latest static audit: startup 99176, workspaces 312627, total static 4183832 bytes.
+
+REL-21: source inspection found mount called hydrate without clearing prior room-owned state. Closing RPG, switching to an empty room while its listener was unmounted, then reopening could retain the previous world's in-memory workspace when loadLatest returns MISSING. Mount now invokes the existing roomChanged clear/hydrate handler. Extended packaged browser integration to close, reopen an empty room, verify null work/canon/context, then return and reload the original world. Exact browser gate pending; no pass inferred solely from source change.

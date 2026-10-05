@@ -349,6 +349,17 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       },roomId);
       assert.equal(state.schema,'seven-rpg-context');assert.equal(state.worldId,'rpg-live-world');assert.equal(state.source,true);assert.equal(state.memory,true);assert.equal(state.title,'RPG Live World');
       const before={worldId:state.worldId,revision:state.revision};
+      await page.evaluate(async rid=>{
+        SevenWorkspaces.close();const other=rid+'-empty';rooms[other]=createEmptyRoom();roomTitles[other]='Empty RPG';currentRoom=other;await saveRooms();
+        updateRoomTitle();renderChatHistory();updateRoomListUI();await SevenRemake.openWorkspace('rpg');
+      },roomId);
+      await page.waitForFunction(()=>document.documentElement.dataset.sevenWorkspace==='rpg');
+      const isolated=await page.evaluate(()=>({work:SevenRpgWorkspace.snapshot().work,canon:SevenRpgWorkspace.snapshot().canonPack,context:SevenRpgWorkspace.contextProjection()}));
+      assert.equal(isolated.work,null);assert.equal(isolated.canon,null);assert.equal(isolated.context,null);
+      await page.evaluate(async rid=>{
+        SevenWorkspaces.close();delete rooms[rid+'-empty'];delete roomTitles[rid+'-empty'];currentRoom=rid;await saveRooms();
+        updateRoomTitle();renderChatHistory();updateRoomListUI();await SevenRemake.openWorkspace('rpg');
+      },roomId);
       await page.reload({waitUntil:'domcontentloaded'});
       await page.waitForFunction(()=>window.SevenRemake&&typeof roomPersistence!=='undefined'&&roomPersistence.status().ready);
       await page.evaluate(async rid=>{currentRoom=rid;updateRoomTitle();renderChatHistory();updateRoomListUI();await SevenRemake.openWorkspace('rpg')},roomId);
