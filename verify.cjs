@@ -60,6 +60,29 @@ const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/ht
   });
   assert.equal(r.first.stopped,true);assert.equal(r.first.aborts,1);assert.equal(r.first.origin,'default');assert.equal(r.second.wrongRoomStop,false);assert.equal(r.second.stopped,false);assert.equal(r.second.aborts,0);
  });
+ await test('structured RPG context is room-scoped and absent from normal chat',async()=>{
+  const r=await page.evaluate(()=>{
+    const oldWs=window.SevenWorkspaces,oldRpg=window.SevenRpgWorkspace;
+    let requestedRoom=null;
+    try{
+      window.SevenWorkspaces={active:()=> 'rpg'};
+      window.SevenRpgWorkspace={contextProjection:opts=>{requestedRoom=opts.roomId;return {schema:'seven-rpg-context',version:1,sessionId:'s-a',worldId:'valen',turn:7,canon:[{id:'king',value:'Aldren'}],_diagnostics:{bounded:true}}}};
+      const room=createEmptyRoom();
+      const rpgSources=collectContextSources(room,'continue',null,{roomId:'room-a'});
+      const rpgBundle=compileContextBundle(room,'continue',null,{roomId:'room-a',inputBudgetTokens:4096});
+      window.SevenWorkspaces={active:()=> 'chat'};
+      const chatSources=collectContextSources(room,'continue',null,{roomId:'room-b'});
+      return {
+        requestedRoom,
+        rpgCount:rpgSources.filter(x=>x.kind==='rpg').length,
+        trusted:rpgSources.find(x=>x.kind==='rpg')?.trustedInstructions,
+        serialized:rpgBundle.messages[0]?.content||'',
+        chatCount:chatSources.filter(x=>x.kind==='rpg').length
+      };
+    }finally{window.SevenWorkspaces=oldWs;window.SevenRpgWorkspace=oldRpg}
+  });
+  assert.equal(r.requestedRoom,'room-a');assert.equal(r.rpgCount,1);assert.equal(r.trusted,false);assert.match(r.serialized,/<rpg_state>/);assert.match(r.serialized,/valen/);assert.equal(r.chatCount,0);
+ });
  await test('room persistence stages WAL before async commit and clears it after commit',async()=>{
   const r=await page.evaluate(async()=>{roomTitles.default='wal-stage-'+Date.now();const p=saveRooms(),staged=localStorage.getItem('seven_ai_room_wal_v1')!==null,ok=await p,cleared=localStorage.getItem('seven_ai_room_wal_v1')===null;return{staged,ok,cleared}});
   assert.deepEqual(r,{staged:true,ok:true,cleared:true});
