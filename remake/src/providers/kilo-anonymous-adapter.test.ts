@@ -128,7 +128,7 @@ describe("KiloAnonymousProviderAdapter", () => {
 
   it("fails explicitly on malformed SSE JSON instead of silently dropping it", async () => {
     const fakeFetch = (async () => new Response(
-      "data: {not-json}\\n\\n",
+      "data: {not-json}\n\n",
       { status: 200, headers: { "content-type": "text/event-stream" } },
     )) as typeof fetch;
     const adapter = new KiloAnonymousProviderAdapter(fakeFetch);
