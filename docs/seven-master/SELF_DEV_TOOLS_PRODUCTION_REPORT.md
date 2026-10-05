@@ -97,3 +97,23 @@ Latest implementation SHA before this report update: `12c393bdf3f736bc15b4418f9f
 - Regression proves an experiment cannot request `.github/CODEOWNERS` or workflow paths.
 - This strengthens MBR-043 but does not close it: behavioral candidate-worktree evidence is still required.
 - Exact-SHA CI requested for implementation SHA `6ea22050938719233234991392e7eebdbda2fc99`; run 37304286099 was pending when recorded.
+
+
+## Batch 4 — CI repair, durable learning, behavioral isolation
+
+### Failure found and fixed
+Exact-SHA run 37304323351 failed in `release/tool-contract.cjs` with a Node syntax error caused by mixing `&&` and nullish coalescing without explicit grouping in retry normalization. The expression was fixed and retry-policy normalization gained focused regression coverage. This failure is retained as evidence; it was not hidden or bypassed.
+
+### Durable learning
+- Added `evolution/learning-store.cjs` and test.
+- Learning records use the existing atomic state envelope/checksum store.
+- Reload verifies integrity; tampered committed state fails closed.
+- `runCodingEvolution` now archives terminal trusted-evaluation outcomes with baseline/candidate SHA, evidence ID, metrics, outcome and rollback metadata.
+- `PENDING_APPROVAL` is not misclassified as a terminal learning result.
+- Archive persistence errors are surfaced as `learningError`; they do not silently rewrite the already-observed promotion outcome.
+
+### Behavioral isolation
+`runCodingCandidate` now has a regression proving a candidate that reports `.github/CODEOWNERS` as a changed path is rejected as `REJECTED_SCOPE` and its isolated candidate is discarded.
+
+Latest candidate implementation SHA before this report update: `457f0ff04698209e67a84ead49a13b695c9ff938`.
+Exact-SHA Seven AI tests run 37304769178 was pending when recorded.
