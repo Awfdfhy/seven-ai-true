@@ -274,7 +274,8 @@ function createImprovementProposal({
   rollbackPlan
 } = {}) {
   if (!diagnosis || diagnosis.causalStatus !== "HYPOTHESIS") throw new Error("diagnosis hypothesis required");
-  if (!/^[0-9a-f]{7,64}$/i.test(String(baselineSha || ""))) throw new Error("baselineSha must be commit-like");
+  const exactBaselineSha = String(baselineSha || "").trim().toLowerCase();
+  if (!/^[0-9a-f]{40}$/.test(exactBaselineSha)) throw new Error("baselineSha requires exact 40-char SHA");
   if (!diagnosis.evidenceSufficientForPlanning) throw new Error("diagnosis evidence insufficient for planning");
   const paths = [...new Set(allowedPaths.map(normalizeRepoPath))].sort();
   if (!paths.length) throw new Error("proposal allowedPaths required");
@@ -287,7 +288,7 @@ function createImprovementProposal({
     schemaVersion: 1,
     id: String(id || `proposal:${diagnosis.id}`),
     diagnosisId: diagnosis.id,
-    baselineSha: String(baselineSha),
+    baselineSha: exactBaselineSha,
     changeClass: String(changeClass || "unknown"),
     allowedPaths: Object.freeze(paths),
     affectedSystems: Object.freeze([...new Set(affectedSystems.map(String))].sort()),
