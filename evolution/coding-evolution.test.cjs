@@ -209,13 +209,20 @@ function baseInput({ agent = codingAgent(), evals = evalsAdapter(), promotion = 
     assert.equal(agent.calls.some((call) => call[0] === "discardCandidate"), false);
   });
 
-  await pass("post-apply regression rolls back and cleans isolated workspace", async () => {
+  await pass("post-apply regression rolls back and archives rollback evidence", async () => {
     const agent = codingAgent();
+    const store = storeAdapter();
     const promotion = promotionAdapter({ ciPassed: false, regressionFree: false });
-    const result = await runCodingEvolution(baseInput({ agent, promotion }));
+    const result = await runCodingEvolution(baseInput({ agent, promotion, store }));
     assert.equal(result.outcome, "ROLLED_BACK");
     assert.ok(promotion.calls.some((call) => call[0] === "rollbackTo"));
     assert.ok(agent.calls.some((call) => call[0] === "discardCandidate"));
+    assert.equal(result.learningError, null);
+    const archive = await loadLearningArchive({ storeAdapter: store });
+    const record = archive.list()[0];
+    assert.equal(record.outcome, "ROLLED_BACK");
+    assert.equal(record.rollback.baselineSha, "aaaaaaa");
+    assert.equal(record.candidateSha, "bbbbbbb");
   });
 
   console.log("coding evolution integration test suite: PASS");
