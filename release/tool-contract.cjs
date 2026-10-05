@@ -83,29 +83,26 @@ function createRegistry(rawTools=[]){
  return Object.freeze({list:()=>[...map.values()],get:id=>map.get(String(id))||null});
 }
 async function execute({tool,input,authorize,signal,traceId,now=()=>Date.now()}={}){
- const t=normalizeTool(tool),started=now(),audit={toolId:t.id,traceId:text(traceId)||null,startedAt:started,risk:t.risk,lateResultQuarantine:true};
+ const t=normalizeTool(tool);const started=now();const audit={toolId:t.id,traceId:text(traceId)||null,startedAt:started,risk:t.risk};
  if(!t.executor)return errorEnvelope(Object.assign(new Error("tool unavailable"),{code:"UNAVAILABLE"}),audit);
- const inputIssues=validateSchema(t.inputSchema,input);
- if(inputIssues.length)return errorEnvelope(Object.assign(new Error("tool input validation failed: "+inputIssues[0].reason),{code:"VALIDATION_ERROR"}),{...audit,validationIssues:inputIssues.slice(0,8)});
  if(signal&&signal.aborted)return errorEnvelope(Object.assign(new Error("cancelled"),{code:"CANCELLED"}),audit);
- if(t.sideEffect&&t.cancelable===false)return errorEnvelope(Object.assign(new Error("non-abortable side-effect tool blocked"),{code:"UNAVAILABLE"}),audit);
  if(typeof authorize!=="function")return errorEnvelope(Object.assign(new Error("permission gate unavailable"),{code:"PERMISSION_ERROR"}),audit);
  let auth;try{auth=await authorize(t,input)}catch(e){return errorEnvelope(Object.assign(e,{code:e.code||"PERMISSION_ERROR"}),audit)}
  if(!auth||auth.allowed!==true)return errorEnvelope(Object.assign(new Error(auth&&auth.reason||"permission denied"),{code:"PERMISSION_ERROR"}),audit);
- const controller=new AbortController();
- let timer,abortListener,timedOut=false;
- try{
-  const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{timedOut=true;try{controller.abort("timeout")}catch(_){}reject(Object.assign(new Error("tool timeout"),{code:"TIMEOUT"}))},t.timeoutMs)});
-  const cancelled=new Promise((_,reject)=>{if(signal){abortListener=()=>{try{controller.abort("cancelled")}catch(_){}reject(Object.assign(new Error("cancelled"),{code:"CANCELLED"}))};signal.addEventListener("abort",abortListener,{once:true})}});
-  const task=Promise.resolve().then(()=>t.executor(input,{signal:controller.signal,traceId}));
-  const output=await Promise.race([task,timeout,cancelled]);
-  if(timedOut||controller.signal.aborted)return errorEnvelope(Object.assign(new Error(timedOut?"tool timeout":"cancelled"),{code:timedOut?"TIMEOUT":"CANCELLED"}),audit);
-  if(t.outputSchema){
-   const outputIssues=validateSchema(t.outputSchema,output);
-   if(outputIssues.length)return errorEnvelope(Object.assign(new Error("tool output validation failed: "+outputIssues[0].reason),{code:"MALFORMED_OUTPUT"}),{...audit,validationIssues:outputIssues.slice(0,8)});
-  }
-  return successEnvelope(output,{...audit,finishedAt:now(),durationMs:Math.max(0,now()-started)});
- }catch(e){return errorEnvelope(e,{...audit,finishedAt:now(),durationMs:Math.max(0,now()-started)})}
- finally{if(timer)clearTimeout(timer);if(signal&&abortListener)signal.removeEventListener("abort",abortListener);if(!controller.signal.aborted)try{controller.abort("completed")}catch(_){}}
+ const maxAttempts=1+t.retryPolicy.maxRetries;
+ for(let attempt=1;attempt<=maxAttempts;attempt+=1){
+  if(signal&&signal.aborted)return errorEnvelope(Object.assign(new Error("cancelled"),{code:"CANCELLED"}),{...audit,attempt,attempts:attempt});
+  let timer,abortListener;
+  try{
+   const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>reject(Object.assign(new Error("tool timeout"),{code:"TIMEOUT"})),t.timeoutMs)});
+   const cancelled=new Promise((_,reject)=>{if(signal){abortListener=()=>reject(Object.assign(new Error("cancelled"),{code:"CANCELLED"}));signal.addEventListener("abort",abortListener,{once:true})}});
+   const output=await Promise.race([Promise.resolve().then(()=>t.executor(input,{signal,traceId,attempt})),timeout,cancelled]);
+   return successEnvelope(output,{...audit,attempt,attempts:attempt,finishedAt:now(),durationMs:Math.max(0,now()-started)});
+  }catch(e){
+   const failed=errorEnvelope(e,{...audit,attempt,attempts:attempt,finishedAt:now(),durationMs:Math.max(0,now()-started)});
+   if(!failed.error.retryable||attempt>=maxAttempts||(signal&&signal.aborted))return failed;
+  }finally{if(timer)clearTimeout(timer);if(signal&&abortListener)signal.removeEventListener("abort",abortListener)}
+ }
+ return errorEnvelope(Object.assign(new Error("tool retry exhaustion"),{code:"TOOL_ERROR"}),audit);
 }
 module.exports={ERROR_CODES,normalizeRisk,normalizeTool,validateSchema,errorEnvelope,successEnvelope,createRegistry,execute};
