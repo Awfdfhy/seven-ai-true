@@ -15,7 +15,7 @@ Authority: Chat 0 — Master / Release Manager
 | Chat | Lane | Branch | Current branch SHA | Primary ownership |
 |---|---|---|---|---|
 | 1 | Android + Persistence + UI | `chat1/android-rc1-hardening-20261005` | `8a856fd4764ec9d93492b46df76d1791ab0862b5` | process-kill persistence, upgrade continuity, signing continuity, SAF, Android lifecycle, UI/UX release blockers |
-| 2 | RPG Production | `chat2/rpg-production-hardening` | `1c8fc7ef8f919120c732668417196913a374bb12` | RPG transaction, journal recovery, Canon/World/Memory/context, player agency, long-story production verification |
+| 2 | RPG Release Maintainer | `chat2/rpg-production-hardening` | `f4abac186b6e7415dbf77fcb0ed57474165da67e` | **READY FOR INTEGRATION / FROZEN** — regression-only ownership for RPG during RC1 convergence |
 | 3 | Coding System | `chat3-coding-production` | `b7afa47a654d7109208db26b96e3f268a35feaa4` | inspect→plan→edit→test→debug→verify→Git E2E |
 | 4 | Self-Development + Tools | `chat4-selfdev-tools-hardening` | `c985aa250b5b18d9999e4af2a79def00ff981a07` | executable tool contract/adapters + bounded self-improvement loop through Coding |
 
@@ -43,7 +43,7 @@ Chat 0 does not duplicate specialist implementation. It:
 ## RC1 acceptance queue
 1. Android real process-kill persistence + Build A→B upgrade/data continuity.
 2. UI status-badge overlap repair + visual regression.
-3. RPG verified journal recovery and live transaction recovery.
+3. RPG verified journal recovery and live transaction recovery. ✅ READY FOR INTEGRATION — SHA `f4abac186b6e7415dbf77fcb0ed57474165da67e`, CI `37306748021`, workspace `319517/320000` bytes.
 4. Coding real gated E2E transaction.
 5. Self-Development real bounded baseline→candidate→accept/reject experiment using Coding.
 6. Tool execution contract/adapters reconciliation.
@@ -66,3 +66,17 @@ No unrelated feature work enters the RC convergence branch without Master approv
 - ACCEPTED INTO INTEGRATION
 - REJECTED / NEEDS REPAIR
 - RC GATE PASS
+
+
+## Frozen specialist handoffs
+
+### Chat 2 — RPG Release Maintainer
+- Branch: `chat2/rpg-production-hardening`
+- Frozen SHA: `f4abac186b6e7415dbf77fcb0ed57474165da67e`
+- Exact successful CI: `37306748021`
+- Report: `docs/seven-master/RPG_PRODUCTION_REPORT.md`
+- Workspace budget: `319517 / 320000` bytes
+- State: **READY FOR INTEGRATION**
+- New feature work: **STOPPED**
+- Allowed future changes before RC1: regression repairs requested by Master only.
+- Final RC review response must be either `RC RPG PASS` or `RC RPG BLOCKED: <exact issue>`.
