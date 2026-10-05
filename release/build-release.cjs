@@ -170,7 +170,7 @@ function build(){
   const workspaceBytes=workspaceFiles.reduce((n,x)=>n+x.bytes,0);
   const byName=Object.fromEntries(workspaceFiles.map(x=>[path.basename(x.path),x.bytes]));
   const base=(byName['hub.js']||0)+(byName['hub.css']||0)+(byName['rtl.css']||0);
-  const paths=[base+(byName['coding.js']||0),base+(byName['research.js']||0),base+(byName['rpg.js']||0)+(byName['canon-simulator.js']||0)+(byName['world-runtime.js']||0),base+(byName['generated-ui.js']||0)+(byName['generated-ui.css']||0)];
+  const paths=[base+(byName['coding.js']||0),base+(byName['research.js']||0),base+(byName['rpg-state.js']||0)+(byName['rpg-session.js']||0)+(byName['rpg-live-integration.js']||0)+(byName['rpg-context.js']||0)+(byName['rpg-planner.js']||0)+(byName['rpg-orchestrator.js']||0)+(byName['rpg-live.js']||0)+(byName['rpg.js']||0)+(byName['canon-simulator.js']||0)+(byName['world-runtime.js']||0),base+(byName['generated-ui.js']||0)+(byName['generated-ui.css']||0)];
   const workspacePathBytes=Math.max.apply(null,paths);
   const brandOut=path.join(DIST_DIR,'brand');fs.rmSync(brandOut,{recursive:true,force:true});
   const brandFiles=copyDir(BRAND_DIR,brandOut),brandBytes=brandFiles.reduce((n,x)=>n+x.bytes,0);
