@@ -8,6 +8,7 @@ import type { LocalMemoryMutationProposer } from "./memory-mutation-proposer";
 
 export type PendingToolAction=Readonly<{
   actionId:string;
+  roomId:string;
   toolId:string;
   title:string;
   memoryPreview:string;
@@ -85,6 +86,7 @@ export class ToolApprovalCoordinator {
     const actionId=crypto.randomUUID();
     const view:PendingToolAction=Object.freeze({
       actionId,
+      roomId:input.roomId,
       toolId:definition.id,
       title:proposed.actionLabel,
       memoryPreview:proposed.memoryPreview,
