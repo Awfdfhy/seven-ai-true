@@ -12,17 +12,20 @@ async function pass(name, fn) {
 }
 
 function storeAdapter() {
-  let committed = null;
-  let temp = null;
+  const committed = new Map();
+  const temp = new Map();
+  const slot = (key) => String(key || "seven-evolution-state");
   return {
-    async writeTemp({ envelope }) { temp = envelope; },
-    async commitTemp({ expectedChecksum }) {
-      if (!temp || temp.checksum !== expectedChecksum) throw new Error("temp mismatch");
-      committed = temp;
-      temp = null;
+    async writeTemp({ key, envelope }) { temp.set(slot(key), envelope); },
+    async commitTemp({ key, expectedChecksum }) {
+      const k = slot(key);
+      const pending = temp.get(k);
+      if (!pending || pending.checksum !== expectedChecksum) throw new Error("temp mismatch");
+      committed.set(k, pending);
+      temp.delete(k);
     },
-    async readCommitted() { return committed; },
-    seed(state) { committed = createStateEnvelope(state, { savedAt: "2026-09-13T01:00:00.000Z" }); }
+    async readCommitted({ key } = {}) { return committed.get(slot(key)) || null; },
+    seed(state, key = "seven-evolution-state") { committed.set(slot(key), createStateEnvelope(state, { savedAt: "2026-09-13T01:00:00.000Z" })); }
   };
 }
 
