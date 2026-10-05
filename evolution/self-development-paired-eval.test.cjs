@@ -42,9 +42,10 @@ function manifest(overrides = {}) {
   });
 }
 
-function run(manifestValue, id, metrics, environmentDigest = manifestValue.environmentDigest) {
+function run(manifestValue, id, metrics, environmentDigest = manifestValue.environmentDigest, manifestDigest = manifestValue.manifestDigest) {
   return {
     runId: id,
+    manifestDigest,
     environmentDigest,
     metrics
   };
@@ -205,6 +206,57 @@ pass("environment mismatch is BLOCKED before metric comparison", () => {
   });
   assert.equal(result.decision, "BLOCKED");
   assert.ok(result.reasons.includes("candidate_environment_mismatch"));
+});
+
+pass("run evidence is bound to the exact locked manifest", () => {
+  const value = manifest();
+  const result = evaluatePaired({
+    manifest: value,
+    baselineRuns: threeRuns(value, "base", 0.70, 120),
+    candidateRuns: [
+      run(value, "c-1", { qualityScore: 0.80, testsPass: 1, crashRate: 0, p90LatencyMs: 100 }, value.environmentDigest, "f".repeat(64))
+    ],
+    hardGateResults: { contracts: true, regression: true }
+  });
+  assert.equal(result.decision, "BLOCKED");
+  assert.ok(result.reasons.includes("candidate_manifest_mismatch"));
+});
+
+pass("partial metric evidence is INCONCLUSIVE rather than silently aggregated", () => {
+  const value = manifest();
+  const candidateRuns = threeRuns(value, "candidate", 0.80, 100);
+  candidateRuns[0] = run(value, "candidate-1", {
+    qualityScore: 0.80,
+    testsPass: 1,
+    crashRate: 0
+  });
+  const result = evaluatePaired({
+    manifest: value,
+    baselineRuns: threeRuns(value, "base", 0.70, 120),
+    candidateRuns,
+    hardGateResults: { contracts: true, regression: true }
+  });
+  assert.equal(result.decision, "INCONCLUSIVE");
+  assert.ok(result.reasons.includes("candidate_metric_missing:p90LatencyMs"));
+});
+
+pass("invalid metric values are BLOCKED rather than crashing evaluation", () => {
+  const value = manifest();
+  const candidateRuns = threeRuns(value, "candidate", 0.80, 100);
+  candidateRuns[0] = run(value, "candidate-1", {
+    qualityScore: 9,
+    testsPass: 1,
+    crashRate: 0,
+    p90LatencyMs: 100
+  });
+  const result = evaluatePaired({
+    manifest: value,
+    baselineRuns: threeRuns(value, "base", 0.70, 120),
+    candidateRuns,
+    hardGateResults: { contracts: true, regression: true }
+  });
+  assert.equal(result.decision, "BLOCKED");
+  assert.ok(result.reasons.includes("candidate_metric_invalid:qualityScore"));
 });
 
 pass("run metrics cannot silently add a new success criterion", () => {
