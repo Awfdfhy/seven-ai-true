@@ -62,6 +62,14 @@ pass("experiment cannot grant itself access to evaluator or CI paths", () => {
     candidateRef: "b",
     allowedPaths: [".github/workflows/seven-tests.yml"]
   }), /protected evaluator paths/);
+  assert.throws(() => createExperiment({
+    id: "bad-github-infra",
+    subsystem: "ci",
+    hypothesis: "mutate repository verification metadata",
+    baselineRef: "a",
+    candidateRef: "b",
+    allowedPaths: [".github/CODEOWNERS"]
+  }), /protected evaluator paths/);
 });
 
 pass("path traversal and undeclared files fail scope validation", () => {
