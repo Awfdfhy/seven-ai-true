@@ -1,0 +1,29 @@
+/* Chat 3 RPG UI B scoped reference styles.
+   Not loaded by production build until B07/I01 integrates the canonical RPG inspector. */
+.seven-rpgb{display:grid;gap:12px;min-width:0;color:var(--seven-ui-text,var(--sb-t));font:inherit}
+.seven-rpgb *{box-sizing:border-box}
+.seven-rpgb-section,.seven-rpgb-card,.seven-rpgb-battle{min-width:0;border:1px solid var(--seven-ui-border,var(--sb-b));border-radius:var(--seven-ui-radius-md,16px);background:var(--seven-ui-surface-1,var(--sb-s))}
+.seven-rpgb-section{padding:12px}
+.seven-rpgb-section-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-block-end:8px}
+.seven-rpgb-section-head h2,.seven-rpgb-card h3{margin:0;font-size:.92rem;line-height:1.35}
+.seven-rpgb-stack{display:grid;gap:8px}
+.seven-rpgb-row{min-width:0;padding:10px 11px;border:1px solid color-mix(in srgb,var(--seven-ui-border,var(--sb-b)) 72%,transparent);border-radius:var(--seven-ui-radius-sm,12px);background:var(--seven-ui-surface-2,var(--sb-s2))}
+.seven-rpgb-row-main{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;min-width:0}
+.seven-rpgb-row-main strong{min-width:0;overflow-wrap:anywhere;font-size:.86rem;line-height:1.4}
+.seven-rpgb-sub{margin-block-start:4px;color:var(--seven-ui-muted,var(--sb-m));font-size:.74rem;line-height:1.45;overflow-wrap:anywhere}
+.seven-rpgb-chips{display:flex;align-items:center;justify-content:flex-end;gap:5px;flex-wrap:wrap;min-width:0}
+.seven-rpgb-chip{display:inline-flex;align-items:center;min-height:28px;padding:3px 8px;border:1px solid var(--seven-ui-border,var(--sb-b));border-radius:var(--seven-ui-radius-pill,999px);background:color-mix(in srgb,var(--seven-ui-surface-2,var(--sb-s2)) 82%,transparent);font-size:.68rem;line-height:1.2;white-space:normal}
+.seven-rpgb-chip[data-kind=ready]{border-color:color-mix(in srgb,var(--seven-ui-success,#20a878) 44%,var(--seven-ui-border,var(--sb-b)))}
+.seven-rpgb-chip[data-kind=blocked],.seven-rpgb-chip[data-kind=cooldown],.seven-rpgb-chip[data-kind=conflict]{border-color:color-mix(in srgb,var(--seven-ui-warning,#dc9418) 48%,var(--seven-ui-border,var(--sb-b)))}
+.seven-rpgb-card{padding:12px}
+.seven-rpgb-line{display:grid;grid-template-columns:minmax(72px,.65fr) minmax(0,1.35fr);gap:8px;align-items:start;margin-block-start:8px;font-size:.76rem;line-height:1.45}
+.seven-rpgb-line>span{color:var(--seven-ui-muted,var(--sb-m))}
+.seven-rpgb-line>strong{overflow-wrap:anywhere}
+.seven-rpgb-location{margin-block-end:8px;padding:8px 10px;border-radius:var(--seven-ui-radius-sm,12px);background:color-mix(in srgb,var(--seven-ui-accent,var(--sb-mode)) 7%,var(--seven-ui-surface-2,var(--sb-s2)));font-size:.76rem}
+.seven-rpgb-battle{padding:10px 12px;background:linear-gradient(135deg,color-mix(in srgb,var(--seven-ui-warning,#dc9418) 7%,var(--seven-ui-surface-1,var(--sb-s))),var(--seven-ui-surface-1,var(--sb-s)))}
+.seven-rpgb-battle-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-block-end:7px;font-size:.78rem}
+.seven-rpgb-battle-head span{color:var(--seven-ui-muted,var(--sb-m));overflow-wrap:anywhere;text-align:end}
+[dir=rtl] .seven-rpgb-row-main,[dir=rtl] .seven-rpgb-battle-head{direction:rtl}
+@media(max-width:360px){.seven-rpgb{gap:10px}.seven-rpgb-section{padding:10px}.seven-rpgb-row-main{display:grid;grid-template-columns:minmax(0,1fr)}.seven-rpgb-chips{justify-content:flex-start}.seven-rpgb-line{grid-template-columns:1fr}.seven-rpgb-chip{min-height:32px}}
+@media(min-width:720px){.seven-rpgb[data-wide=true]{grid-template-columns:minmax(0,1fr) minmax(260px,.72fr);align-items:start}}
+@media(prefers-reduced-motion:reduce){.seven-rpgb *{scroll-behavior:auto!important}}
