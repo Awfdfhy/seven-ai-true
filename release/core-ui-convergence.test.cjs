@@ -5,7 +5,7 @@ const final=fs.readFileSync(__dirname+'/workspaces/seven-shell-final.js','utf8')
 
 assert.doesNotMatch(polish,/seven-model-panel/,'UI polish must not create a second model panel');
 assert.doesNotMatch(polish,/function\s+modelPicker\s*\(/,'UI polish must not own model picker construction');
-assert.match(polish,/markCanonicalModelPicker/,'UI polish may only acknowledge the canonical shell picker');
+assert.doesNotMatch(polish,/markCanonicalModelPicker/,'UI polish must not retain a picker ownership shim');
 
 assert.match(shell,/seven-shell-model-menu/,'base shell currently owns the single model menu');
 assert.match(shell,/seven-shell-model-chip/,'base shell currently owns the model trigger');
