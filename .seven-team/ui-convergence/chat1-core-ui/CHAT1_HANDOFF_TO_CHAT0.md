@@ -89,3 +89,25 @@ For the hot layer, do **not** simply raise the 100KB threshold. Fold `ui-foundat
 
 ### Current test interpretation
 Run #3564 confirms the suite progressed through runtime, persistence, model, search, Android harness and other functional contracts before static audit failed. The active blocker at that SHA is packaging/UI architecture budget, not a demonstrated Memory/RPG/model regression.
+
+
+## Workspace budget resolution observed — not a Core deletion
+Run #3606 / `37398352964` on shared SHA `d1d1efd92452290043cfe616dac95960553e94b0` no longer reported `lazy-workspaces-too-heavy`.
+The remaining static-audit failure was only:
+- `release-layer-too-heavy: 102209`
+
+Important: the workspace budget improvement did **not** come from removing the legacy Core shell:
+- `release/workspaces/seven-shell.js` still exists: 15,897 B source
+- `release/workspaces/seven-shell.css` still exists: 15,350 B source
+- build still packages every file under `release/workspaces/`
+
+The observed payload reduction came primarily from RPG refactoring:
+- `rpg.js`: 27,753 B -> 19,771 B (−7,982 B source)
+- `rpg-ui-b-mount.js`: +1,515 B source
+
+Therefore:
+- **workspace budget is currently green**, but
+- **Core architecture duplication remains unresolved**.
+Do not interpret the budget pass as evidence that the legacy shell has been deleted or canonical ownership completed.
+
+The only confirmed static-audit blocker at #3606 is now the startup layer, which needs >2,209 compacted bytes removed without raising the budget.
