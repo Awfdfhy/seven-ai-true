@@ -55,3 +55,26 @@ Relationship, belief and local-knowledge internals are not dumped into the quick
 **NOT READY — VISUAL EVIDENCE REQUIRED.**
 
 Static design/contract review no longer finds a P0 conceptual blocker in the Chat 2 story surface. Final approval requires screenshot/device evidence and exact-head regression success.
+
+
+## Executable visual evidence matrix prepared
+The release verifier now contains an RPG UI A matrix that will run automatically after the global static budget gate passes.
+
+Coverage:
+- 320 / 360 / 390 / 420 px
+- LTR + Arabic RTL
+- day + night
+- default drawer closed
+- Story Context open
+- advanced tools remain collapsed
+- no per-message RPG copy affordance
+- document/bar/drawer overflow
+- 44px story trigger touch floor
+- screenshot output for all 16 mobile combinations
+- 150% text screenshot
+- 800×360 landscape screenshot
+- 390×430 keyboard-height screenshot
+
+Expected evidence directory: `dist/rpg-ui-a-evidence/` with 19 screenshots + manifest.
+
+Current limitation: `release/static-audit.cjs` executes before release browser verification and currently blocks at the shared hot-layer budget. Therefore these screenshots are **prepared but not yet produced** on the exact head; R04 must not mark them PASS until actual files exist.
