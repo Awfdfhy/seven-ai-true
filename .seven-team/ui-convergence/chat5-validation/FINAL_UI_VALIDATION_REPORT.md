@@ -68,3 +68,12 @@ At review time:
 - all Android 14/16, screenshot, RTL, theme and APK evidence must be regenerated or explicitly proven to target this SHA.
 
 Chat 5 validation artifacts created earlier are research/validator outputs and do not convert this moving target to READY.
+
+
+## Moving-head update
+The convergence branch advanced again during the same validation pass:
+`6046ba07910fc97df604779518f630993ee2dc35` → `832d2d3d11996b80a131dcf193bc5c6b3a437c0f`.
+
+Latest commit message: `perf(rpg): remove no-op observer and card noise`.
+
+Result: any CI/device/visual evidence produced for `6046ba0...` is not final release evidence for the latest head. I01 must freeze one SHA before final validation.
