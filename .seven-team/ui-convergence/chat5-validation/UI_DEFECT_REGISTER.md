@@ -15,6 +15,7 @@ Severity: P0 blocks use; P1 major/release-blocking; P2 visible polish inconsiste
 | UI-EVID-002 | P1 | Android 16 | convergence evidence | SHA-bound screenshot set | no accepted Android 16 visual evidence in current package | V02 | OPEN |
 | UI-EVID-003 | P1 | Before/After | convergence evidence | before/after screenshots with SHA/device/theme/lang metadata | not present as a complete acceptance set | V01/V02/V03 | OPEN |
 | UI-ARCH-001 | P1 | Shared UI architecture | LEGACY_UI_DELETION_PLAN.md | one canonical overlay/picker/token stack | plan still reports 3 overlay systems, 2+ model presentations, 5 token namespaces, runtime CSS precedence debt | I01 | OPEN |
+| UI-A11Y-001 | P1 | Touch targets | ui-foundation.css + seven-shell-final.css + rpg.js | interactive controls >=44px compact / 48dp Android target | RPG mini=40px, RPG copy=36px, shell code-copy=28px | B03/Chat 2/I01 | OPEN |
 | UI-ARCH-002 | P2 | CSS discipline | LEGACY_UI_DELETION_PLAN.md | no specificity escalation | audit reports ~471 !important declarations; canonical shell still contains many migration overrides | I01 | OPEN |
 | UI-RPG-001 | P1 | RPG convergence | independent RPG A/B reports + integrator status | implementation evidence sufficient for READY | integrator still records RPG baselines NOT READY and implementation slices incomplete | Chat 2/3 + I01 | OPEN |
 | UI-MATRIX-001 | P1 | Acceptance matrix | VISUAL_ACCEPTANCE_MATRIX.md | full surface/state matrix and screenshot verdicts | current matrix is a compact plan, not completed evidence | V03 | OPEN |
