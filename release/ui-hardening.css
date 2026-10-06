@@ -1,3 +1,4 @@
+/* Seven 2.4.2 UI Hardening — compatibility marker retained during Core convergence. */
 
 html,body{max-width:100%;overflow-x:hidden}
 #seven-app{--seven-ui-hardening-v242:1;box-sizing:border-box;min-width:0;max-width:100%;min-height:100%;overflow-x:clip}
