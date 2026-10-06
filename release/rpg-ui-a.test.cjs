@@ -1,0 +1,20 @@
+const assert=require('assert/strict');
+const fs=require('fs');
+const path=require('path');
+const src=fs.readFileSync(path.join(__dirname,'workspaces','rpg.js'),'utf8');
+
+new Function(src);
+assert.ok(src.includes('data-rpg-story'),'story context trigger must exist');
+assert.ok(src.includes('data-rpg-scene'),'scene context surface must exist');
+assert.ok(src.includes('Advanced story tools'),'advanced RPG tooling must be progressively disclosed');
+assert.ok(src.includes("T('Persistent story','قصة مستمرة')"),'RPG status copy should be story-facing');
+assert.ok(src.includes('function latestState()'),'scene UI must read runtime-backed state');
+assert.ok(src.includes('scene.participantIds'),'scene cast must be sourced from runtime scene participants');
+assert.ok(src.includes('state.world.locations'),'scene location must be resolved from runtime world locations');
+assert.ok(!src.includes("data-rpg-title-toggle aria-expanded"),'legacy Titles-first trigger must not be primary RPG chrome');
+assert.ok(src.includes("function observeChat(){const chat=$('#chat');if(!chat)return;S.observer&&S.observer.disconnect();S.observer=new MutationObserver(()=>{})"),'RPG layer must not inject copy controls into every message');
+assert.ok(src.includes('.seven-rpg-copy{display:none!important}'),'legacy RPG copy affordance must remain suppressed');
+assert.ok(src.includes('@media(max-width:620px)'),'mobile adaptation must be present');
+assert.ok(src.includes('margin-inline-start'),'logical/RTL-aware inline layout must be present');
+assert.ok(src.includes('@media(prefers-reduced-motion:reduce)'),'reduced-motion handling must remain present');
+console.log('rpg ui a: PASS',JSON.stringify({storyContext:true,sceneRuntime:true,progressiveDisclosure:true,mobile:true,rtl:true}));
