@@ -1,0 +1,3 @@
+Seven UI convergence RC validation trigger.
+Runtime-neutral file; do not package into app payload.
+Parent candidate: cc5ac0fdc0a38f2f0f0130a40d36d57eaab69ed1
