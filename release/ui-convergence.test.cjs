@@ -2,7 +2,7 @@ const fs=require('fs');
 const path=require('path');
 const assert=require('assert/strict');
 
-const foundation=fs.readFileSync(path.join(__dirname,'workspaces','ui-foundation.css'),'utf8');
+const foundation=fs.readFileSync(path.join(__dirname,'beta-ui.css'),'utf8');
 const shell=fs.readFileSync(path.join(__dirname,'workspaces','seven-shell-final.css'),'utf8');
 const rpg=fs.readFileSync(path.join(__dirname,'workspaces','rpg.js'),'utf8');
 const build=fs.readFileSync(path.join(__dirname,'build-release.cjs'),'utf8');
