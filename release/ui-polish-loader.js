@@ -14,11 +14,10 @@ function asset(global,id,file,method){
   pending.set(global,promise);return promise;
 }
 const load=()=>asset('SevenUiPolish','seven-ui-polish','ui-polish-fixes','sync');
-const loadShell=()=>asset('SevenShell','seven-shell','seven-shell','boot');
 const loadFinal=()=>asset('SevenShellFinal','seven-shell-final','seven-shell-final','boot');
-function warm(){loadShell().then(loadFinal).catch(()=>{});load().catch(()=>{})}
+function warm(){loadFinal().catch(()=>{});load().catch(()=>{})}
  d.addEventListener('click',e=>{if(e.target?.closest?.('.menu-toggle,.topbar .icon-btn,[onclick*="openSettings"],[data-seven-beta-tool="settings"]'))warm()},true);
  d.addEventListener('seven:workspacechange',warm);
 if(d.readyState==='loading')d.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(warm),{once:true});else requestAnimationFrame(warm);
-r.SevenUiPolishLoader={load,loadShell,loadFinal};
+r.SevenUiPolishLoader={load,loadFinal};
 })(typeof globalThis!='undefined'?globalThis:this);
