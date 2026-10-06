@@ -368,6 +368,33 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       await page.evaluate(()=>window.SevenWorkspaces?.close());
       await page.close();
     });
+    await test('RPG UI A visual matrix stays story-first across mobile RTL themes',async()=>{
+      const evidenceDir=path.join(dist,'rpg-ui-a-evidence');fs.mkdirSync(evidenceDir,{recursive:true});
+      const cases=[];
+      for(const width of [320,360,390,420])for(const dir of ['ltr','rtl'])for(const theme of ['day','night']){
+        const page=await browser.newPage({viewport:{width,height:844}});
+        await page.addInitScript(({dir})=>{localStorage.setItem('user_name_asked','1');localStorage.setItem('seven_ui_language',dir==='rtl'?'ar':'en');},{dir});
+        await page.goto(origin,{waitUntil:'domcontentloaded'});
+        await page.waitForFunction(()=>window.SevenRemake&&window.SevenTheme&&window.SevenWorkspaces);
+        await page.evaluate(({dir,theme})=>{document.documentElement.dir=dir;document.body.dir=dir;SevenTheme.setPreference(theme);},{dir,theme});
+        await page.evaluate(()=>SevenRemake.openWorkspace('rpg'));
+        await page.waitForFunction(()=>document.documentElement.dataset.sevenWorkspace==='rpg'&&!!document.querySelector('.seven-rpg-chatbar'),null,{timeout:10000});
+        let state=await page.evaluate(()=>{
+          const bar=document.querySelector('.seven-rpg-chatbar'),story=document.querySelector('[data-rpg-story]'),drawer=document.querySelector('[data-rpg-drawer]'),advanced=document.querySelector('.seven-rpg-advanced'),exit=document.querySelector('[data-rpg-exit]');
+          const br=bar.getBoundingClientRect(),sr=story.getBoundingClientRect(),er=exit.getBoundingClientRect();
+          return{doc:document.documentElement.scrollWidth<=innerWidth+2,bar:bar.scrollWidth<=bar.clientWidth+2,bounded:br.left>=-2&&br.right<=innerWidth+2,storyTouch:sr.width>=44&&sr.height>=44,exitTouch:er.width>=24&&er.height>=44,drawerHidden:drawer.hidden,advancedOpen:advanced.open,copy:!!document.querySelector('#chat .seven-rpg-copy'),dir:document.documentElement.dir,theme:document.documentElement.dataset.sevenTheme};
+        });
+        assert.equal(state.doc,true,JSON.stringify({width,dir,theme,state}));assert.equal(state.bar,true);assert.equal(state.bounded,true);assert.equal(state.storyTouch,true);assert.equal(state.exitTouch,true);assert.equal(state.drawerHidden,true);assert.equal(state.advancedOpen,false);assert.equal(state.copy,false);assert.equal(state.dir,dir);assert.equal(state.theme,theme);
+        await page.click('[data-rpg-story]');
+        state=await page.evaluate(()=>{const d=document.querySelector('[data-rpg-drawer]'),r=d.getBoundingClientRect(),a=document.querySelector('.seven-rpg-advanced');return{hidden:d.hidden,bounded:r.left>=-2&&r.right<=innerWidth+2,overflow:d.scrollWidth<=d.clientWidth+2,advancedOpen:a.open,scene:!!d.querySelector('[data-rpg-scene]')}});
+        assert.deepEqual(state,{hidden:false,bounded:true,overflow:true,advancedOpen:false,scene:true},JSON.stringify({width,dir,theme,state}));
+        const name=`rpg-a-${width}-${dir}-${theme}.png`;await page.screenshot({path:path.join(evidenceDir,name),fullPage:true});
+        cases.push({width,dir,theme,name});
+        await page.close();
+      }
+      fs.writeFileSync(path.join(evidenceDir,'manifest.json'),JSON.stringify({format:'seven-rpg-ui-a-evidence',version:1,cases},null,2));
+      assert.equal(cases.length,16);
+    });
     await test('live RPG workspace persists Memory and restores structured Context after reload',async()=>{
       const page=await browser.newPage({viewport:{width:390,height:844}});
       await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');});
