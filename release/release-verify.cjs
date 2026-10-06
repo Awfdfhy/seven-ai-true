@@ -456,12 +456,15 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
 
       await page.evaluate(()=>SevenRemake.openWorkspace('rpg'));
       await page.waitForFunction(()=>document.documentElement.dataset.sevenWorkspace==='rpg'&&!!document.querySelector('.seven-rpg-chatbar'),null,{timeout:10000});
-      state=await page.evaluate(()=>({world:document.querySelector('[data-rpg-world-name]')?.textContent.trim(),mode:document.querySelector('[data-rpg-state]')?.textContent.trim(),titles:document.querySelector('[data-rpg-title-toggle]')?.textContent.trim(),exit:document.querySelector('[data-rpg-exit]')?.textContent.trim(),aria:document.querySelector('.seven-rpg-chatbar')?.getAttribute('aria-label'),doc:document.documentElement.scrollWidth<=innerWidth+2}));
-      assert.equal(state.world,'RPG حر');assert.equal(state.mode,'وضع المحادثة');assert.equal(state.titles,'العناوين');assert.equal(state.exit,'الخروج من RPG');assert.equal(state.aria,'عناصر تحكم RPG');assert.equal(state.doc,true);
-      await page.evaluate(()=>addMessage('assistant','اختبار نسخ RPG'));
-      await page.waitForFunction(()=>!!document.querySelector('#chat .seven-rpg-copy'),null,{timeout:5000});
-      state=await page.evaluate(()=>{const b=document.querySelector('#chat .seven-rpg-copy');return{text:b?.textContent.trim(),aria:b?.getAttribute('aria-label'),title:b?.title}});
-      assert.match(state.text,/نسخ/);assert.equal(state.aria,'نسخ الرسالة');assert.equal(state.title,'نسخ');
+      state=await page.evaluate(()=>({world:document.querySelector('[data-rpg-world-name]')?.textContent.trim(),mode:document.querySelector('[data-rpg-state]')?.textContent.trim(),story:document.querySelector('[data-rpg-story]')?.textContent.trim(),exit:document.querySelector('[data-rpg-exit]')?.textContent.trim(),aria:document.querySelector('.seven-rpg-chatbar')?.getAttribute('aria-label'),drawerHidden:document.querySelector('[data-rpg-drawer]')?.hidden,advancedOpen:document.querySelector('.seven-rpg-advanced')?.open,doc:document.documentElement.scrollWidth<=innerWidth+2}));
+      assert.equal(state.world,'Seven RPG');assert.equal(state.mode,'قصة مستمرة');assert.equal(state.story,'القصة');assert.equal(state.exit,'خروج');assert.equal(state.aria,'سياق قصة RPG');assert.equal(state.drawerHidden,true);assert.equal(state.advancedOpen,false);assert.equal(state.doc,true);
+      await page.evaluate(()=>addMessage('assistant','اختبار سرد RPG'));
+      await page.waitForTimeout(50);
+      state=await page.evaluate(()=>({copy:!!document.querySelector('#chat .seven-rpg-copy'),doc:document.documentElement.scrollWidth<=innerWidth+2}));
+      assert.equal(state.copy,false,'RPG must not inject a permanent copy action into every story turn');assert.equal(state.doc,true);
+      await page.click('[data-rpg-story]');
+      state=await page.evaluate(()=>{const drawer=document.querySelector('[data-rpg-drawer]'),r=drawer?.getBoundingClientRect();return{hidden:drawer?.hidden,scene:!!document.querySelector('[data-rpg-scene]'),advancedOpen:document.querySelector('.seven-rpg-advanced')?.open,bounded:!!r&&r.left>=-2&&r.right<=innerWidth+2}});
+      assert.deepEqual(state,{hidden:false,scene:true,advancedOpen:false,bounded:true});
 
       await page.evaluate(()=>{SevenWorkspaces.close();SevenWorkspaces.openLauncher();});
       await page.waitForFunction(()=>document.querySelector('#seven-ws-launcher-title')?.textContent.trim()==='اختر مساحة عمل',null,{timeout:10000});
