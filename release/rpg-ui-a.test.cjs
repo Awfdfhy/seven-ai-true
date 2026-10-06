@@ -10,10 +10,10 @@ assert.ok(src.includes('Advanced story tools'),'advanced RPG tooling must be pro
 assert.ok(src.includes("T('Persistent story','قصة مستمرة')"),'RPG status copy should be story-facing');
 assert.ok(src.includes('function latestState()'),'scene UI must read runtime-backed state');
 assert.ok(src.includes('scene.participantIds'),'scene cast must be sourced from runtime scene participants');
-assert.ok(src.includes('function renderCharacterCard(state,id)'),'runtime-backed character quick view must exist');
+assert.ok(src.includes('function renderCharacterCard('),'runtime-backed character quick view must exist');
 assert.ok(src.includes("T('Only story-safe identity and current location are shown here."),'character quick view must state its spoiler-safe boundary');
-assert.ok(src.includes("ident.name||ident.displayName||ident.title"),'character labels must come from existing identity data');
-assert.ok(src.includes('state.world.locations'),'scene location must be resolved from runtime world locations');
+assert.ok(src.includes("i.name||i.displayName||i.title"),'character labels must come from existing identity data');
+assert.ok(src.includes('s.world.locations'),'scene location must be resolved from runtime world locations');
 assert.ok(!src.includes("data-rpg-title-toggle aria-expanded"),'legacy Titles-first trigger must not be primary RPG chrome');
 assert.ok(src.includes("function observeChat(){const chat=$('#chat');if(!chat)return;S.observer&&S.observer.disconnect();S.observer=new MutationObserver(()=>{})"),'RPG layer must not inject copy controls into every message');
 assert.ok(src.includes('.seven-rpg-copy{display:none!important}'),'legacy RPG copy affordance must remain suppressed');
