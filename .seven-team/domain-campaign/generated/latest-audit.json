@@ -39,8 +39,8 @@
     {
       "id": "D01_CHAT_CORE",
       "status": "INSUFFICIENT",
-      "urls": 73,
-      "primaryTagged": 87,
+      "urls": 69,
+      "primaryTagged": 86,
       "target": 10,
       "owners": [
         "B01",
@@ -50,8 +50,8 @@
     {
       "id": "D02_MEMORY_CONTEXT",
       "status": "INSUFFICIENT",
-      "urls": 140,
-      "primaryTagged": 343,
+      "urls": 136,
+      "primaryTagged": 339,
       "target": 20,
       "owners": [
         "A06",
@@ -65,8 +65,8 @@
     {
       "id": "D03_TOOLS_CAPABILITY",
       "status": "INSUFFICIENT",
-      "urls": 133,
-      "primaryTagged": 354,
+      "urls": 129,
+      "primaryTagged": 348,
       "target": 20,
       "owners": [
         "A04",
@@ -80,8 +80,8 @@
     {
       "id": "D04_CODING_SYSTEM",
       "status": "INSUFFICIENT",
-      "urls": 95,
-      "primaryTagged": 117,
+      "urls": 93,
+      "primaryTagged": 116,
       "target": 12,
       "owners": [
         "B06",
@@ -113,8 +113,8 @@
     {
       "id": "D07_RESEARCH_WEB",
       "status": "INSUFFICIENT",
-      "urls": 92,
-      "primaryTagged": 81,
+      "urls": 90,
+      "primaryTagged": 80,
       "target": 12,
       "owners": [
         "B03",
@@ -146,8 +146,8 @@
     {
       "id": "D10_FILES_MULTIMODAL",
       "status": "INSUFFICIENT",
-      "urls": 46,
-      "primaryTagged": 61,
+      "urls": 44,
+      "primaryTagged": 60,
       "target": 8,
       "owners": [
         "B02",
@@ -168,8 +168,8 @@
     {
       "id": "D12_UI_DESIGN_SYSTEM",
       "status": "INSUFFICIENT",
-      "urls": 90,
-      "primaryTagged": 123,
+      "urls": 88,
+      "primaryTagged": 122,
       "target": 10,
       "owners": [
         "A01",
@@ -190,8 +190,8 @@
     {
       "id": "D14_SECURITY_PRIVACY",
       "status": "INSUFFICIENT",
-      "urls": 69,
-      "primaryTagged": 93,
+      "urls": 67,
+      "primaryTagged": 92,
       "target": 12,
       "owners": [
         "A07",
@@ -201,8 +201,8 @@
     {
       "id": "D15_PERSISTENCE_RECOVERY",
       "status": "INSUFFICIENT",
-      "urls": 74,
-      "primaryTagged": 89,
+      "urls": 70,
+      "primaryTagged": 88,
       "target": 10,
       "owners": [
         "B08",
@@ -212,8 +212,8 @@
     {
       "id": "D16_NETWORK_RESILIENCE",
       "status": "INSUFFICIENT",
-      "urls": 61,
-      "primaryTagged": 67,
+      "urls": 57,
+      "primaryTagged": 66,
       "target": 8,
       "owners": [
         "B07",
@@ -223,8 +223,8 @@
     {
       "id": "D17_PERFORMANCE_CONCURRENCY",
       "status": "INSUFFICIENT",
-      "urls": 90,
-      "primaryTagged": 84,
+      "urls": 88,
+      "primaryTagged": 83,
       "target": 10,
       "owners": [
         "A09",
@@ -234,8 +234,8 @@
     {
       "id": "D18_TESTING_EVALS",
       "status": "INSUFFICIENT",
-      "urls": 95,
-      "primaryTagged": 129,
+      "urls": 93,
+      "primaryTagged": 128,
       "target": 12,
       "owners": [
         "A08",
@@ -245,8 +245,8 @@
     {
       "id": "D19_AGENT_ORCHESTRATION",
       "status": "INSUFFICIENT",
-      "urls": 97,
-      "primaryTagged": 150,
+      "urls": 95,
+      "primaryTagged": 148,
       "target": 10,
       "owners": [
         "B10",
@@ -256,8 +256,8 @@
     {
       "id": "D20_PRODUCT_QUALITY",
       "status": "INSUFFICIENT",
-      "urls": 90,
-      "primaryTagged": 123,
+      "urls": 88,
+      "primaryTagged": 122,
       "target": 8,
       "owners": [
         "B10",
@@ -267,8 +267,8 @@
     {
       "id": "D21_OBSERVABILITY_WORLD_MODEL",
       "status": "INSUFFICIENT",
-      "urls": 101,
-      "primaryTagged": 101,
+      "urls": 99,
+      "primaryTagged": 100,
       "target": 8,
       "owners": [
         "A04",
@@ -278,8 +278,8 @@
     {
       "id": "D22_PROTOCOLS_INTEROP",
       "status": "INSUFFICIENT",
-      "urls": 81,
-      "primaryTagged": 104,
+      "urls": 79,
+      "primaryTagged": 103,
       "target": 10,
       "owners": [
         "A04",
@@ -289,7 +289,7 @@
     {
       "id": "D23_IMPORT_EXPORT_BACKUP",
       "status": "INSUFFICIENT",
-      "urls": 47,
+      "urls": 45,
       "primaryTagged": 60,
       "target": 6,
       "owners": [
@@ -300,8 +300,8 @@
     {
       "id": "D24_RELEASE_APK",
       "status": "INSUFFICIENT",
-      "urls": 101,
-      "primaryTagged": 101,
+      "urls": 99,
+      "primaryTagged": 100,
       "target": 8,
       "owners": [
         "A02",
@@ -311,7 +311,7 @@
     {
       "id": "D25_HISTORY_ROOMS",
       "status": "INSUFFICIENT",
-      "urls": 44,
+      "urls": 42,
       "primaryTagged": 63,
       "target": 8,
       "owners": [
@@ -333,8 +333,8 @@
     {
       "id": "D27_ERROR_RECOVERY_UX",
       "status": "INSUFFICIENT",
-      "urls": 92,
-      "primaryTagged": 121,
+      "urls": 88,
+      "primaryTagged": 119,
       "target": 8,
       "owners": [
         "B07",
@@ -366,8 +366,8 @@
     {
       "id": "D30_AUTONOMOUS_QUALITY",
       "status": "INSUFFICIENT",
-      "urls": 102,
-      "primaryTagged": 214,
+      "urls": 100,
+      "primaryTagged": 212,
       "target": 12,
       "owners": [
         "A08",
