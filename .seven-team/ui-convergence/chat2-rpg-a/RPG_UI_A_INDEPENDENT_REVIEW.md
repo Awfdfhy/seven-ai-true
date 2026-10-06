@@ -1,37 +1,57 @@
-# Independent RPG UX Review — Baseline
+# Independent RPG UX Review — Post-Implementation Static Pass
 
 Role: R04 — independent reviewer
-Scope: pre-implementation baseline only. R04 does not fix production code.
+R04 did not author fixes in this review.
 
-## Baseline verdict
-**BLOCKED for RPG UI A READY.**
+## Scope reviewed
+- current `release/workspaces/rpg.js`
+- RPG-specific assertions in `release/release-verify.cjs`
+- `release/rpg-ui-a.test.cjs`
+- canonical `ui-foundation.css`
+- Chat 0 component ownership and selected RPG direction
+- Chat 3 component boundary
 
-## Evidence-based defects in current RPG surface
-1. Primary visible chrome is engine/control-oriented rather than story-oriented.
-2. Title/import controls dominate the specialized RPG layer.
-3. Raw state can surface as engine-like status text.
-4. Per-message copy affordances compete with narrative reading.
-5. Mobile CSS hides the "more" control while the drawer contains advanced functions.
-6. Physical directional CSS creates RTL risk.
-7. Hard-coded notice colors bypass theme semantics.
-8. Character, relationship, journal, canon and knowledge state are not given a coherent player-facing visual system.
-9. The current surface does not exploit Seven's most distinctive runtime capability: character-local knowledge vs global truth.
-10. The screen can function as chat, but does not yet communicate a persistent living world strongly enough.
+## Static findings
+
+### Narrative readability — PASS candidate
+The specialized RPG layer no longer requires a Titles-first control hierarchy. Story Context is the primary affordance and long assistant turns receive a reading-rhythm adjustment without converting each message into a card.
+
+### Immersion — PASS candidate
+World/scene identity can now be presented from actual persisted state. Engine-oriented pack/title tools are progressively disclosed.
+
+### Character identity — PASS candidate
+Active scene characters are visible as compact identity chips. Quick view exposes only story-safe identity/location/age/status fields when present.
+
+### Hierarchy — PASS candidate
+Default hierarchy is now:
+story → scene context on demand → character quick view → advanced tooling.
+
+### Density — PASS candidate
+No permanent relationship graph, character sheet, archive panel, or systems dashboard was added.
+
+### Spoiler safety — PASS candidate
+Relationship, belief and local-knowledge internals are not dumped into the quick card. The quick view explicitly preserves a boundary for deeper state.
+
+### RTL / tokens / accessibility — PASS candidate
+- logical CSS is used for new directional behavior
+- canonical muted token is consumed
+- 44px canonical touch floor is consumed
+- focus-visible styling exists
+- reduced-motion behavior remains
+
+## Remaining risks
+1. CSS/geometry still requires actual 320/360/390/420 rendering.
+2. Character names with extreme Arabic/Latin mixed text need screenshot review.
+3. 8-character scene cast at 150% text may produce tall wrapping; this is acceptable only if the composer remains reachable.
+4. The global shell still suppresses title-specific controls; this is currently compatible because those controls are advanced/debug, but integration must verify no confusing empty space.
+5. No Android WebView evidence exists on the exact head.
+6. No keyboard-open evidence exists.
 
 ## Two-question gate
-- Does it look like a real RPG? **No — not yet.**
-- Is it still easy like chat? **Mostly yes.**
+- Does the source architecture now support an RPG-looking story surface? **Yes, provisionally.**
+- Is it still chat-simple by default? **Yes, provisionally.**
 
-Therefore the current design fails the dual requirement.
+## Final verdict
+**NOT READY — VISUAL EVIDENCE REQUIRED.**
 
-## Review requirements after implementation
-R04 must review screenshots and interactions independently at:
-320 / 360 / 390 / 420 widths, Arabic RTL, day/night, large text, landscape and keyboard-open.
-
-R04 must reject if:
-- story is buried under panels
-- any permanent HUD becomes noisy
-- hidden knowledge leaks
-- relationship UI implies false directionality/precision
-- archive becomes a dense desktop dashboard on mobile
-- global shell/composer behavior regresses
+Static design/contract review no longer finds a P0 conceptual blocker in the Chat 2 story surface. Final approval requires screenshot/device evidence and exact-head regression success.
