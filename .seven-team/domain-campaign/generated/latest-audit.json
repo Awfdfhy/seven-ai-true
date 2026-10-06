@@ -51,7 +51,7 @@
       "id": "D02_MEMORY_CONTEXT",
       "status": "INSUFFICIENT",
       "urls": 136,
-      "primaryTagged": 338,
+      "primaryTagged": 339,
       "target": 20,
       "owners": [
         "A06",
@@ -103,7 +103,7 @@
       "id": "D06_RPG_WORLD",
       "status": "INSUFFICIENT",
       "urls": 38,
-      "primaryTagged": 40,
+      "primaryTagged": 42,
       "target": 12,
       "owners": [
         "B05",
@@ -356,7 +356,7 @@
       "id": "D29_REAL_WORKS_CANON",
       "status": "INSUFFICIENT",
       "urls": 22,
-      "primaryTagged": 18,
+      "primaryTagged": 19,
       "target": 8,
       "owners": [
         "B05",
