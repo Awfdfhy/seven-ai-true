@@ -111,3 +111,26 @@ Therefore:
 Do not interpret the budget pass as evidence that the legacy shell has been deleted or canonical ownership completed.
 
 The only confirmed static-audit blocker at #3606 is now the startup layer, which needs >2,209 compacted bytes removed without raising the budget.
+
+
+## Startup consolidation candidate — evidence from token consumers
+Read-only inspection of the shared branch shows:
+- `hub.css`: no `--seven-ui-*` / compatibility semantic aliases
+- `generated-ui.css`: no such aliases
+- `seven-shell.css`: no such aliases
+- `seven-shell-final.css`: no such aliases
+- `rpg.js` consumes the canonical `--seven-ui-*` family directly:
+  `--seven-ui-border`, `--seven-ui-radius-md`, `--seven-ui-radius-sm`,
+  `--seven-ui-surface-1`, `--seven-ui-surface-2`, `--seven-ui-text`,
+  `--seven-ui-text-muted`, `--seven-ui-touch-min`.
+
+This makes the compatibility alias block inside `ui-foundation.css`
+(`--seven-color-*`, `--seven-space-*`, `--seven-radius-*`, `--seven-z-*`, `--seven-duration-*`)
+a strong candidate for **deferred/lazy or build-time removal if no remaining consumers are proven**.
+
+Do not delete blindly: Chat 0 should run an exact branch-wide consumer scan first.
+But the safest direction is now clear:
+- preserve the directly-consumed `--seven-ui-*` canonical family;
+- remove/defer unused compatibility aliases;
+- avoid adding a third parallel token namespace;
+- target >2,209 compacted bytes of startup reduction, then rerun static audit unchanged.
