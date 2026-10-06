@@ -585,16 +585,15 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       await page.waitForFunction(()=>document.querySelector('#seven-room-search')?.placeholder==='بحث المحادثات'&&document.querySelector('.seven-shell-primary-nav'));
       const state=await page.evaluate(()=>{
         const search=document.querySelector('#seven-room-search');
-        const modelPanel=document.querySelector('.seven-model-panel');
-        const modelHead=document.querySelector('.seven-model-panel-head strong');
-        const modelClose=document.querySelector('[data-seven-model-close]');
+        const modelChip=document.querySelector('.seven-shell-model-chip');
+        const modelMenu=document.querySelector('.seven-shell-model-menu');
         const nav=[...document.querySelectorAll('.seven-shell-primary-nav .seven-shell-nav-btn')].map(x=>({text:x.textContent.trim(),aria:x.getAttribute('aria-label')||''}));
         return{
           searchPlaceholder:search?.placeholder,
           searchAria:search?.getAttribute('aria-label'),
-          modelAria:modelPanel?.getAttribute('aria-label'),
-          modelHead:modelHead?.textContent.trim(),
-          modelClose:modelClose?.getAttribute('aria-label'),
+          modelAria:modelChip?.getAttribute('aria-label'),
+          modelHasMenu:!!modelMenu,
+          modelMenuRole:modelMenu?.getAttribute('role'),
           nav,
           doc:document.documentElement.scrollWidth<=innerWidth+2
         };
@@ -604,8 +603,8 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       await page.evaluate(()=>{SevenRemake.update();SevenUiPolish.sync();SevenRemake.update();});
       assert.deepEqual(await page.evaluate(()=>({placeholder:document.querySelector('#seven-room-search').placeholder,aria:document.querySelector('#seven-room-search').getAttribute('aria-label')})),{placeholder:'بحث المحادثات',aria:'بحث المحادثات'});
       assert.equal(state.modelAria,'اختيار النموذج');
-      assert.equal(state.modelHead,'النماذج');
-      assert.equal(state.modelClose,'إغلاق قائمة النماذج');
+      assert.equal(state.modelHasMenu,true);
+      assert.equal(state.modelMenuRole,'listbox');
       assert.ok(state.nav.some(x=>x.text.includes('محادثة جديدة')));
       assert.ok(state.nav.some(x=>x.text.includes('تطوير ذاتي')&&x.aria.includes('GitHub')));
       assert.equal(state.doc,true);
