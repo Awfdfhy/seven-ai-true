@@ -19,5 +19,8 @@ assert.ok(src.includes("function observeChat(){const chat=$('#chat');if(!chat)re
 assert.ok(src.includes('.seven-rpg-copy{display:none!important}'),'legacy RPG copy affordance must remain suppressed');
 assert.ok(src.includes('@media(max-width:620px)'),'mobile adaptation must be present');
 assert.ok(src.includes('margin-inline-start'),'logical/RTL-aware inline layout must be present');
+assert.ok(src.includes('var(--seven-ui-touch-min,44px)'),'RPG controls must consume the canonical 44px touch floor');
+assert.ok(src.includes('var(--seven-ui-text-muted,var(--sb-m))'),'RPG muted text must consume the canonical semantic token');
+assert.ok(!src.includes('--seven-ui-muted'),'RPG must not fork a non-canonical muted token alias');
 assert.ok(src.includes('@media(prefers-reduced-motion:reduce)'),'reduced-motion handling must remain present');
 console.log('rpg ui a: PASS',JSON.stringify({storyContext:true,sceneRuntime:true,progressiveDisclosure:true,mobile:true,rtl:true}));
