@@ -395,6 +395,27 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       fs.writeFileSync(path.join(evidenceDir,'manifest.json'),JSON.stringify({format:'seven-rpg-ui-a-evidence',version:1,cases},null,2));
       assert.equal(cases.length,16);
     });
+    await test('RPG UI A remains usable with large text landscape and keyboard-height viewport',async()=>{
+      const evidenceDir=path.join(dist,'rpg-ui-a-evidence');fs.mkdirSync(evidenceDir,{recursive:true});
+      const scenarios=[{width:390,height:844,name:'large-text',font:'150%'},{width:800,height:360,name:'landscape',font:'100%'},{width:390,height:430,name:'keyboard-height',font:'100%'}];
+      for(const sc of scenarios){
+        const page=await browser.newPage({viewport:{width:sc.width,height:sc.height}});
+        await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');localStorage.setItem('seven_ui_language','ar');});
+        await page.goto(origin,{waitUntil:'domcontentloaded'});
+        await page.waitForFunction(()=>window.SevenRemake&&window.SevenTheme&&window.SevenWorkspaces);
+        await page.evaluate(({font})=>{document.documentElement.dir='rtl';document.body.dir='rtl';document.documentElement.style.fontSize=font;SevenTheme.setPreference('night');},{font:sc.font});
+        await page.evaluate(()=>SevenRemake.openWorkspace('rpg'));
+        await page.waitForFunction(()=>document.documentElement.dataset.sevenWorkspace==='rpg'&&!!document.querySelector('.seven-rpg-chatbar'),null,{timeout:10000});
+        await page.click('[data-rpg-story]');
+        const state=await page.evaluate(()=>{
+          const bar=document.querySelector('.seven-rpg-chatbar'),drawer=document.querySelector('[data-rpg-drawer]'),composer=document.querySelector('.composer'),br=bar.getBoundingClientRect(),dr=drawer.getBoundingClientRect(),cr=composer&&composer.getBoundingClientRect();
+          return{doc:document.documentElement.scrollWidth<=innerWidth+2,bar:br.left>=-2&&br.right<=innerWidth+2,drawer:dr.left>=-2&&dr.right<=innerWidth+2,drawerOverflow:drawer.scrollWidth<=drawer.clientWidth+2,composer:!cr||(cr.left>=-2&&cr.right<=innerWidth+2&&cr.bottom<=innerHeight+2),advanced:document.querySelector('.seven-rpg-advanced')?.open===false};
+        });
+        assert.deepEqual(state,{doc:true,bar:true,drawer:true,drawerOverflow:true,composer:true,advanced:true},sc.name+' '+JSON.stringify(state));
+        await page.screenshot({path:path.join(evidenceDir,`rpg-a-${sc.name}-rtl-night.png`),fullPage:true});
+        await page.close();
+      }
+    });
     await test('live RPG workspace persists Memory and restores structured Context after reload',async()=>{
       const page=await browser.newPage({viewport:{width:390,height:844}});
       await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');});
