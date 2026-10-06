@@ -9,7 +9,7 @@ Severity: P0 blocks use; P1 major/release-blocking; P2 visible polish inconsiste
 | UI-REF-002 | P1 | Reference DB | central JSONL | requested canonical schema | multiple required fields absent in all 1000 rows | V03/I01 | OPEN |
 | UI-REF-003 | P1 | Reference DB | corpus distribution | <=15–20/product normally | only 8 products; every product >20, max 181 | V03/I01 | OPEN |
 | UI-REF-004 | P1 | Reference DB | source distribution | broad source mix | 100% Interface In Game | V03/I01 | OPEN |
-| UI-REF-005 | P1 | Reference DB | branch tree | explicit Chat 1 + Chat 4 DB inputs | no identifiable DB at expected locations | Chat 1/4 + I01 | OPEN |
+| UI-REF-005 | P1 | Reference DB | branch tree | explicit Chat 1 + Chat 4 DB inputs | Chat 1/4 DBs found on separate branches; canonical integration/provenance still pending | Chat 1/4 + I01 | OPEN |
 | UI-GOLD-001 | P1 | Golden references | GOLDEN_REFERENCES.md | completed Top100→Top30→Golden12 | file explicitly says initial shortlist only | V03/I01 | OPEN |
 | UI-EVID-001 | P1 | Android 14 | convergence evidence | SHA-bound screenshot set | no accepted Android 14 visual evidence in current package | V01 | OPEN |
 | UI-EVID-002 | P1 | Android 16 | convergence evidence | SHA-bound screenshot set | no accepted Android 16 visual evidence in current package | V02 | OPEN |
@@ -19,6 +19,7 @@ Severity: P0 blocks use; P1 major/release-blocking; P2 visible polish inconsiste
 | UI-ARCH-002 | P2 | CSS discipline | LEGACY_UI_DELETION_PLAN.md | no specificity escalation | audit reports ~471 !important declarations; canonical shell still contains many migration overrides | I01 | OPEN |
 | UI-RPG-001 | P1 | RPG convergence | independent RPG A/B reports + integrator status | implementation evidence sufficient for READY | integrator still records RPG baselines NOT READY and implementation slices incomplete | Chat 2/3 + I01 | OPEN |
 | UI-MATRIX-001 | P1 | Acceptance matrix | VISUAL_ACCEPTANCE_MATRIX.md | full surface/state matrix and screenshot verdicts | current matrix is a compact plan, not completed evidence | V03 | OPEN |
+| UI-REL-001 | P1 | Release validation | convergence branch movement | freeze one exact candidate SHA before final visual/device review | branch advanced repeatedly during validation (61d7498 → ed292c0 → 6046ba0), cancelling runs and invalidating evidence inheritance | I01 | OPEN |
 | UI-CI-001 | P1 | Integrated SHA | integrator status | Seven tests successful on exact final SHA | missing for convergence head | I01 | OPEN |
 | UI-APK-001 | P1 | APK | integrator status | exact SHA/run/artifact/package/versionCode/signer/install/launch evidence | missing for convergence head | I01/V01/V02 | OPEN |
 
