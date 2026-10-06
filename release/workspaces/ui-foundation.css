@@ -1,0 +1,58 @@
+/* Seven UI Foundation — canonical semantic aliases.
+   Phase 1 intentionally preserves current visual values through fallbacks. */
+:root{
+  --seven-ui-canvas:var(--sb-bg,var(--bg,#0f0d1d));
+  --seven-ui-surface-1:var(--sb-s,var(--surface,#171426));
+  --seven-ui-surface-2:var(--sb-s2,var(--surface2,#211d33));
+  --seven-ui-border:var(--sb-b,var(--border,#302b45));
+  --seven-ui-text:var(--sb-t,var(--text,#f7f5ff));
+  --seven-ui-text-muted:var(--sb-m,var(--muted,#aaa4c2));
+  --seven-ui-accent:var(--sb-a,var(--accent,#7567ff));
+  --seven-ui-danger:#dd5263;
+  --seven-ui-warning:#dc9418;
+  --seven-ui-success:#20a878;
+
+  --seven-ui-space-0:0;
+  --seven-ui-space-1:4px;
+  --seven-ui-space-2:8px;
+  --seven-ui-space-3:12px;
+  --seven-ui-space-4:16px;
+  --seven-ui-space-5:20px;
+  --seven-ui-space-6:24px;
+  --seven-ui-space-8:32px;
+
+  --seven-ui-radius-xs:8px;
+  --seven-ui-radius-sm:12px;
+  --seven-ui-radius-md:16px;
+  --seven-ui-radius-lg:20px;
+  --seven-ui-radius-xl:28px;
+  --seven-ui-radius-pill:999px;
+
+  --seven-ui-touch-min:44px;
+  --seven-ui-touch-android:48px;
+
+  --seven-ui-z-sticky:20;
+  --seven-ui-z-dropdown:100;
+  --seven-ui-z-popover:200;
+  --seven-ui-z-sheet:300;
+  --seven-ui-z-modal:400;
+  --seven-ui-z-toast:500;
+
+  --seven-ui-motion-fast:90ms;
+  --seven-ui-motion-normal:140ms;
+  --seven-ui-motion-slow:220ms;
+  --seven-ui-motion-scene:320ms;
+  --seven-ui-ease:cubic-bezier(.2,.8,.2,1);
+
+  --seven-ui-dialog-width:min(520px,calc(100vw - 24px));
+  --seven-ui-dialog-max-height:min(88dvh,780px);
+  --seven-ui-menu-width:min(320px,calc(100vw - 24px));
+}
+@media (prefers-reduced-motion:reduce){
+  :root{
+    --seven-ui-motion-fast:0ms;
+    --seven-ui-motion-normal:0ms;
+    --seven-ui-motion-slow:0ms;
+    --seven-ui-motion-scene:0ms;
+  }
+}
