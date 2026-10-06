@@ -1,0 +1,49 @@
+# Chat 5 — UI Defect Register
+
+Status values: OPEN / VERIFY / CLOSED.
+Severity: P0 blocks use; P1 major/release-blocking; P2 visible polish inconsistency; P3 minor cosmetic.
+
+| ID | Sev | Surface | Evidence | Expected | Actual | Owner | Status |
+|---|---|---|---|---|---|---|---|
+| UI-REF-001 | P1 | Reference DB | central JSONL | 1000+ visually reviewed, diverse screens | 1000/1000 are CATALOGUED_PENDING_SCREEN_REVIEW | V03/I01 | OPEN |
+| UI-REF-002 | P1 | Reference DB | central JSONL | requested canonical schema | multiple required fields absent in all 1000 rows | V03/I01 | OPEN |
+| UI-REF-003 | P1 | Reference DB | corpus distribution | <=15–20/product normally | only 8 products; every product >20, max 181 | V03/I01 | OPEN |
+| UI-REF-004 | P1 | Reference DB | source distribution | broad source mix | 100% Interface In Game | V03/I01 | OPEN |
+| UI-REF-005 | P1 | Reference DB | branch tree | explicit Chat 1 + Chat 4 DB inputs | no identifiable DB at expected locations | Chat 1/4 + I01 | OPEN |
+| UI-GOLD-001 | P1 | Golden references | GOLDEN_REFERENCES.md | completed Top100→Top30→Golden12 | file explicitly says initial shortlist only | V03/I01 | OPEN |
+| UI-EVID-001 | P1 | Android 14 | convergence evidence | SHA-bound screenshot set | no accepted Android 14 visual evidence in current package | V01 | OPEN |
+| UI-EVID-002 | P1 | Android 16 | convergence evidence | SHA-bound screenshot set | no accepted Android 16 visual evidence in current package | V02 | OPEN |
+| UI-EVID-003 | P1 | Before/After | convergence evidence | before/after screenshots with SHA/device/theme/lang metadata | not present as a complete acceptance set | V01/V02/V03 | OPEN |
+| UI-ARCH-001 | P1 | Shared UI architecture | LEGACY_UI_DELETION_PLAN.md | one canonical overlay/picker/token stack | plan still reports 3 overlay systems, 2+ model presentations, 5 token namespaces, runtime CSS precedence debt | I01 | OPEN |
+| UI-ARCH-002 | P2 | CSS discipline | LEGACY_UI_DELETION_PLAN.md | no specificity escalation | audit reports ~471 !important declarations; canonical shell still contains many migration overrides | I01 | OPEN |
+| UI-RPG-001 | P1 | RPG convergence | independent RPG A/B reports + integrator status | implementation evidence sufficient for READY | integrator still records RPG baselines NOT READY and implementation slices incomplete | Chat 2/3 + I01 | OPEN |
+| UI-MATRIX-001 | P1 | Acceptance matrix | VISUAL_ACCEPTANCE_MATRIX.md | full surface/state matrix and screenshot verdicts | current matrix is a compact plan, not completed evidence | V03 | OPEN |
+| UI-CI-001 | P1 | Integrated SHA | integrator status | Seven tests successful on exact final SHA | missing for convergence head | I01 | OPEN |
+| UI-APK-001 | P1 | APK | integrator status | exact SHA/run/artifact/package/versionCode/signer/install/launch evidence | missing for convergence head | I01/V01/V02 | OPEN |
+
+## Visual defect format for future findings
+
+```
+ID:
+Severity:
+Surface:
+Screenshot:
+SHA:
+Device:
+Android:
+Viewport:
+Theme:
+Language/Direction:
+Font scale:
+Keyboard:
+Steps:
+Expected:
+Actual:
+Owner:
+Status:
+```
+
+## Automatic release-fail rules
+Any confirmed clipping, overlap, unreachable action, duplicate control, unclosable modal, unreadable contrast, broken RTL, undersized critical target, keyboard-covered composer, off-screen picker, unusable sidebar, visible legacy duplicate, cross-workspace language break, horizontal overflow, or broken font scaling is P0/P1 depending on impact.
+
+UI READY requires P0=0 and P1=0. P2 acceptance is Chat 0/I01-only.
