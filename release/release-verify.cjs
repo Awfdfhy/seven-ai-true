@@ -586,6 +586,8 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       await page.waitForFunction(()=>window.SevenShell&&window.SevenShellFinal&&window.SevenUiPolish&&document.documentElement.lang==='ar');
       await page.evaluate(()=>{SevenUiPolish.sync();SevenShell.sync();SevenShellFinal.sync();});
       await page.waitForFunction(()=>document.querySelector('#seven-room-search')?.placeholder==='بحث المحادثات'&&document.querySelector('.seven-shell-primary-nav'));
+      await page.click('.seven-shell-model-chip');
+      await page.waitForSelector('.seven-shell-model-menu');
       const state=await page.evaluate(()=>{
         const search=document.querySelector('#seven-room-search');
         const modelChip=document.querySelector('.seven-shell-model-chip');
