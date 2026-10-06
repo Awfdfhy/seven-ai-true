@@ -25,7 +25,7 @@ html,body{max-width:100%;overflow-x:hidden}
 .s-modal .s-dialog{width:min(560px,100%)!important;max-width:100%!important;max-height:calc(var(--seven-visual-height,100dvh) - 16px)!important;overflow:auto!important;overscroll-behavior:contain}
 [dir="rtl"] #seven-app .bubble,[dir="rtl"] #seven-app .markdown{text-align:start}
 @media(max-width:820px){
-#seven-app .sidebar{position:fixed!important;top:0!important;bottom:0!important;width:min(86vw,320px)!important;max-width:calc(100vw - 44px)!important;z-index:var(--seven-z-sheet)!important;will-change:transform}
+#seven-app .sidebar{position:fixed!important;top:0!important;bottom:0!important;width:min(86vw,320px)!important;max-width:calc(100vw - 44px)!important;z-index:var(--seven-ui-z-sheet)!important;will-change:transform}
 html[dir="ltr"] #seven-app .sidebar.collapsed:not(.open):not(.active){transform:translateX(-105%)!important}
 html[dir="rtl"] #seven-app .sidebar.collapsed:not(.open):not(.active){transform:translateX(105%)!important}
 #seven-app .sidebar.open,#seven-app .sidebar.active,#seven-app .sidebar:not(.collapsed),html[data-seven-shell-sidebar="open"] #seven-app .sidebar,#seven-app[data-seven-shell-sidebar="open"] .sidebar{transform:translateX(0)!important}
@@ -52,7 +52,7 @@ html[dir="rtl"] #seven-app .sidebar.collapsed:not(.open):not(.active){transform:
 #settingsModal [role="tabpanel"]{min-width:0;max-width:100%}
 #settingsModal [role="tabpanel"]>*{min-width:0;max-width:100%}
 #settingsModal .settings-core{display:contents}
-#settingsModal .settings-section{width:100%;max-width:100%;border:1px solid var(--s-line,var(--border,#d6ddd9));border-radius:var(--seven-radius-md,16px);overflow:hidden;margin:12px 0}
+#settingsModal .settings-section{width:100%;max-width:100%;border:1px solid var(--s-line,var(--border,#d6ddd9));border-radius:var(--seven-ui-radius-md,16px);overflow:hidden;margin:12px 0}
 #settingsModal .settings-section>summary{display:flex;align-items:center;min-height:48px;padding:12px 14px;cursor:pointer;overflow-wrap:anywhere}
 #settingsModal .settings-section-body{padding:12px 14px}
 #settingsModal .settings-row>*{min-width:0;flex:1 1 150px}
@@ -61,7 +61,7 @@ html[dir="rtl"] #seven-app .sidebar.collapsed:not(.open):not(.active){transform:
 #settingsModal #routeStatusCard,#settingsModal #automaticProviderCard{max-width:100%;overflow-wrap:anywhere}
 @media(max-width:420px){
 #settingsModal .s-settings-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}
-#settingsModal .s-settings-tabs button{min-height:var(--seven-touch-min,44px)}
+#settingsModal .s-settings-tabs button{min-height:var(--seven-ui-touch-min,44px)}
 #settingsModal .settings-row{display:grid;grid-template-columns:1fr}
 #settingsModal .settings-row>*{width:100%}
 }
@@ -80,7 +80,7 @@ html[dir="rtl"] #seven-app .sidebar.collapsed:not(.open):not(.active){transform:
 #seven-app .topbar #roomTitle,#seven-app .topbar .title{flex:1 1 0!important;max-width:none!important;min-width:36px!important}
 #seven-app .topbar .seven-shell-model-chip{flex:0 1 92px!important;max-width:92px!important;min-width:58px!important;padding-inline:6px!important}
 #seven-app .topbar .menu-toggle,#seven-app .topbar>.icon-btn{flex:0 0 38px!important;width:38px!important;min-width:38px!important;padding-inline:0!important}
-#seven-app .seven-shell-model-menu:not([hidden]){display:block!important;position:fixed!important;inset-inline:8px!important;left:auto!important;right:auto!important;width:auto!important;max-width:none!important;z-index:var(--seven-z-popover)!important}
+#seven-app .seven-shell-model-menu:not([hidden]){display:block!important;position:fixed!important;inset-inline:8px!important;left:auto!important;right:auto!important;width:auto!important;max-width:none!important;z-index:var(--seven-ui-z-popover)!important}
 }
 @media(max-width:420px){
 #seven-app .topbar #persistenceStatus{display:none!important}
@@ -88,7 +88,7 @@ html[dir="rtl"] #seven-app .sidebar.collapsed:not(.open):not(.active){transform:
 }
 
 /* Canonical settings/form geometry: shared design-system ownership. */
-#settingsModal input[type="text"],#settingsModal input[type="search"],#settingsModal input[type="number"],#settingsModal input[type="url"],#settingsModal input[type="email"],#settingsModal select,#settingsModal button{min-height:var(--seven-touch-min,44px)}
-#settingsModal input,#settingsModal select,#settingsModal textarea{border-radius:var(--seven-radius-sm,12px);border-color:var(--seven-border-soft,var(--border));background:var(--surface2);color:var(--text)}
-#settingsModal .modal-content{border-radius:var(--seven-radius-lg,22px)!important;background:var(--surface);color:var(--text)}
+#settingsModal input[type="text"],#settingsModal input[type="search"],#settingsModal input[type="number"],#settingsModal input[type="url"],#settingsModal input[type="email"],#settingsModal select,#settingsModal button{min-height:var(--seven-ui-touch-min,44px)}
+#settingsModal input,#settingsModal select,#settingsModal textarea{border-radius:var(--seven-ui-radius-sm,12px);border-color:var(--seven-border-soft,var(--border));background:var(--surface2);color:var(--text)}
+#settingsModal .modal-content{border-radius:var(--seven-ui-radius-lg,20px)!important;background:var(--surface);color:var(--text)}
 #settingsModal .settings-section>summary:focus-visible,#settingsModal button:focus-visible,#settingsModal input:focus-visible,#settingsModal select:focus-visible,#settingsModal textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px;box-shadow:none}
