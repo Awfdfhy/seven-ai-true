@@ -13,6 +13,8 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
   const frontier=patchFile(OUTPUT);
   const html=fs.readFileSync(OUTPUT,'utf8');
   const dist=path.dirname(OUTPUT);
+  const designEvidenceDir=path.join(dist,'vendor','design-system-evidence');
+  fs.mkdirSync(designEvidenceDir,{recursive:true});
   const deferredShell=new Set(['seven-shell.css','seven-shell.js','ui-polish-fixes.css','ui-polish-fixes.js','seven-shell-final.css','seven-shell-final.js','remake.css','remake.js','intelligence.js']);
   assert.ok(html.includes(MARK));
   assert.ok(html.includes('id="seven-app"')&&html.includes('data-seven-remake="1"'),'Seven UI Remake root missing');
@@ -194,6 +196,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       assert.equal(state.texts.includes('Automatic Providers'),false);
       assert.equal(state.texts.includes('Memory & Data'),false);
       assert.equal(state.texts.includes('Advanced'),false);
+      await page.screenshot({path:path.join(designEvidenceDir,'after-settings-320-rtl-arabic.png'),fullPage:false});
       await page.close();
     });
     await test('search settings require no manual API key',async()=>{
@@ -266,7 +269,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       await context.close();
     });
     await test('responsive UI matrix stays bounded on phone widths themes and directions',async()=>{
-      const sizes=[[320,800],[360,800],[390,844],[412,915]];
+      const sizes=[[320,800],[360,800],[390,844],[420,915]];
       for(const [width,height] of sizes)for(const dir of ['ltr','rtl'])for(const theme of ['day','night']){
         const page=await browser.newPage({viewport:{width,height}});
         await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');localStorage.setItem('user_name','Seven Tester');});
@@ -279,6 +282,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
         await page.evaluate(()=>openSettings());await page.waitForTimeout(40);
         const modal=await page.evaluate(()=>{const e=document.querySelector('#settingsModal .modal-content'),b=e.getBoundingClientRect();return{overflow:e.scrollWidth<=e.clientWidth+1,left:b.left,right:b.right,top:b.top,bottom:b.bottom,w:innerWidth,h:innerHeight}});
         assert.equal(modal.overflow,true);assert.ok(modal.left>=-2&&modal.right<=modal.w+2&&modal.top>=-2&&modal.bottom<=modal.h+2,`settings clipped: ${JSON.stringify(modal)}`);
+        await page.screenshot({path:path.join(designEvidenceDir,`after-settings-${width}-${dir}-${theme}.png`),fullPage:false});
         await page.close();
       }
     });
@@ -322,6 +326,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
         await page.waitForFunction(()=>!!document.querySelector('.seven-ws-picker'));
         state=await page.evaluate(()=>{const e=document.querySelector('.seven-ws-picker'),r=e.getBoundingClientRect();return{overflow:e.scrollWidth<=e.clientWidth+1,bounded:r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2}});
         assert.deepEqual(state,{overflow:true,bounded:true});
+        await page.screenshot({path:path.join(designEvidenceDir,`after-large-text-${width}x${height}-rtl-night.png`),fullPage:false});
         await page.close();
       }
     });
