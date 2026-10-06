@@ -4,16 +4,9 @@ if(!r||!r.document)return;
 const d=r.document,$=s=>d.querySelector(s);const AR=()=>String(d.documentElement.lang||'').toLowerCase().startsWith('ar');const T=(en,ar)=>AR()?ar:en;
 function setText(el,value){if(el&&el.textContent!==value)el.textContent=value}
 function brand(){d.querySelectorAll('.seven-beta-badge,[data-seven-beta-badge]').forEach(x=>x.remove());d.querySelectorAll('.app-name').forEach(x=>{const current=String(x.textContent||'').trim();if(/^Seven(?:\s+AI|\.ai)?$/i.test(current)&&current!=='Seven.ai')setText(x,'Seven.ai')});const title=d.querySelector('title');if(title&&/Seven\s*AI/i.test(title.textContent)){const next=title.textContent.replace(/Seven\s*AI/ig,'Seven.ai');if(next!==title.textContent)setText(title,next)}d.querySelectorAll('[aria-label],[title]').forEach(x=>{for(const a of['aria-label','title']){const v=x.getAttribute(a);if(v&&/\bbeta\b/i.test(v)){const next=v.replace(/\s*beta\s*/ig,' ').replace(/\s{2,}/g,' ').trim();if(next!==v)x.setAttribute(a,next)}}})}
-function cleanRpgCopy(){d.querySelectorAll('.seven-rpg-copy').forEach(b=>{const message=b.closest('.message'),hidden=!message;if(b.hidden!==hidden)b.hidden=hidden;if(!message){if(b.tabIndex!==-1)b.tabIndex=-1;if(b.getAttribute('aria-hidden')!=='true')b.setAttribute('aria-hidden','true')}else{if(b.hasAttribute('tabindex'))b.removeAttribute('tabindex');if(b.hasAttribute('aria-hidden'))b.removeAttribute('aria-hidden')}})}
 function roomItems(list){return[...list.children].filter(x=>x.classList&&x.classList.contains('room-item'))}
 function rooms(){const list=$('#roomList');if(!list)return;if(!$('#seven-room-search')){const box=d.createElement('div');box.className='seven-room-search-wrap';box.innerHTML='<span aria-hidden="true">⌕</span><input id="seven-room-search" type="search" autocomplete="off">';list.parentNode.insertBefore(box,list);box.querySelector('input').addEventListener('input',()=>filterRooms(list))}const search=$('#seven-room-search');if(search){const label=T('Search rooms','بحث المحادثات');search.placeholder=label;search.setAttribute('aria-label',label)}if(!list.dataset.sevenRoomObserved){list.dataset.sevenRoomObserved='1';new MutationObserver(()=>filterRooms(list)).observe(list,{childList:true})}filterRooms(list)}
 function filterRooms(list){const input=$('#seven-room-search'),term=String(input&&input.value||'').trim().toLocaleLowerCase();roomItems(list).forEach(row=>{const hidden=!!term&&!String(row.textContent||'').toLocaleLowerCase().includes(term);if(row.hidden!==hidden)row.hidden=hidden})}
-function markCanonicalModelPicker(){
-  const select=$('#modelSelect'),chip=$('.seven-shell-model-chip');
-  if(!select)return;
-  if(chip)select.dataset.sevenPicker='shell';
-  else if(select.dataset.sevenPicker==='shell')delete select.dataset.sevenPicker;
-}
 function installZeroRoomFacade(){
 if(r.__sevenZeroRoomFacade)return;
 try{
@@ -30,8 +23,8 @@ sendMessage=async function(){const id=emptyId();if(id){roomTitles[id]='New Chat'
 r.__sevenZeroRoomFacade=true;
 }catch(_){ }
 }
-let scheduled=false;function syncDynamic(){if(scheduled)return;scheduled=true;queueMicrotask(()=>{scheduled=false;brand();cleanRpgCopy();rooms();markCanonicalModelPicker();installZeroRoomFacade()})}
-function boot(){brand();cleanRpgCopy();rooms();markCanonicalModelPicker();installZeroRoomFacade();if(!d.body.dataset.sevenPolishObserved){d.body.dataset.sevenPolishObserved='1';new MutationObserver(syncDynamic).observe(d.body,{childList:true,subtree:true})}}
+let scheduled=false;function syncDynamic(){if(scheduled)return;scheduled=true;queueMicrotask(()=>{scheduled=false;brand();rooms();installZeroRoomFacade()})}
+function boot(){brand();rooms();installZeroRoomFacade();if(!d.body.dataset.sevenPolishObserved){d.body.dataset.sevenPolishObserved='1';new MutationObserver(syncDynamic).observe(d.body,{childList:true,subtree:true})}}
 d.readyState==='loading'?d.addEventListener('DOMContentLoaded',boot,{once:true}):boot();d.addEventListener('seven:workspacechange',syncDynamic);
 r.SevenUiPolish={version:'1.0.4',sync:boot};
 })(typeof globalThis!='undefined'?globalThis:this);
