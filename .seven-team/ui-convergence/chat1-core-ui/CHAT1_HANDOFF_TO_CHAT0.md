@@ -57,3 +57,35 @@ Chat 1 does **not** claim CORE UI READY until:
 - LTR/RTL + EN/AR + Day/Night + keyboard open/closed pass,
 - no duplicate model picker/message actions are visible,
 - C04 independent review changes from BLOCKED to PASS.
+
+
+## Static-audit follow-up — IMPORTANT
+Shared exact SHA `cc5ac0fdc0a38f2f0f0130a40d36d57eaab69ed1` failed Seven AI tests run #3564 / `37397454423` in `static-audit.cjs` with:
+- `release-layer-too-heavy: 102209` (limit: <100000)
+- `lazy-workspaces-too-heavy: 329589` (budget: 320000)
+
+### Root-cause evidence
+Comparing original UI wave base `f86d409...` with the failing shared SHA:
+- all pre-existing hot release assets measured by the audit are unchanged in source size;
+- newly embedded `release/workspaces/ui-foundation.css` is 3,546 source bytes and is now included in `startupBytes`;
+- therefore the hot-layer regression is the new foundation layer being **added on top of** existing token/style layers instead of replacing duplicate declarations.
+
+Workspace source inventory at the failing SHA shows:
+- `seven-shell.js`: 15,897 B
+- `seven-shell.css`: 15,350 B
+- `seven-shell-final.js`: 13,835 B
+- `seven-shell-final.css`: 10,953 B
+
+The build's `copyDir(WORKSPACE_DIR,...)` packages every file under `release/workspaces/`, so merely removing legacy shell files from the runtime loader does **not** reduce `workspaceBytes`.
+
+### Correct integration implication
+To pass the 320KB workspace budget after canonical ownership is proven, Chat 0 must do one of:
+1. physically delete superseded `seven-shell.js/css`, or
+2. explicitly exclude superseded rollback artifacts from packaged `copyDir` output.
+
+Keeping those files unreferenced but still copied will continue to fail the static budget.
+
+For the hot layer, do **not** simply raise the 100KB threshold. Fold `ui-foundation.css` canonical tokens/rules into replacement ownership and delete equivalent declarations from the older startup layers, or otherwise reduce the startup payload by >2,209 compacted bytes.
+
+### Current test interpretation
+Run #3564 confirms the suite progressed through runtime, persistence, model, search, Android harness and other functional contracts before static audit failed. The active blocker at that SHA is packaging/UI architecture budget, not a demonstrated Memory/RPG/model regression.
