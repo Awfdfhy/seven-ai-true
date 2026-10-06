@@ -56,3 +56,15 @@ UI-RPG-001,
 UI-MATRIX-001,
 UI-CI-001,
 UI-APK-001.
+
+
+## Revalidation update — latest convergence candidate
+Latest observed convergence head: `61d749847d8ec97c23fcb705a62e7401ca3d95e8`.
+
+At review time:
+- branch is 84 commits ahead of requested baseline;
+- Seven AI tests run `37397755926` is **IN PROGRESS** on this exact SHA;
+- therefore no CI PASS may be inherited from older convergence snapshots;
+- all Android 14/16, screenshot, RTL, theme and APK evidence must be regenerated or explicitly proven to target this SHA.
+
+Chat 5 validation artifacts created earlier are research/validator outputs and do not convert this moving target to READY.
