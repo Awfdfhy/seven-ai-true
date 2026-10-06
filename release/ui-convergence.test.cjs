@@ -19,8 +19,7 @@ assert.doesNotMatch(shell,/repeat\(4\s*,\s*minmax\(0\s*,\s*1fr\)\)/,'primary nav
 assert.match(shell,/grid-auto-flow:column/,'primary nav must be count-agnostic');
 assert.match(shell,/grid-auto-columns:minmax\(0,1fr\)/,'primary nav must allocate equal count-agnostic columns');
 
-assert.match(build,/uiFoundationCss=compactCss\(read\('workspaces\/ui-foundation\.css'\)\)/,'release build must load canonical UI foundation');
-assert.match(build,/seven-ui-foundation-style/,'release head must embed canonical UI foundation deterministically');
+assert.doesNotMatch(build,/uiFoundationCss|seven-ui-foundation-style/,'release build must not load a duplicate foundation layer');
 
 assert.match(rpg,/--seven-ui-accent/,'RPG visual layer must consume canonical UI tokens');
 assert.match(rpg,/--seven-ui-surface-1/,'RPG visual layer must share canonical Seven surfaces');
