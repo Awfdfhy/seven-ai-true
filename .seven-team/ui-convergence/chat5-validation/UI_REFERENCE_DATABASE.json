@@ -1,0 +1,76 @@
+{
+  "title": "Seven AI Canonical UI Reference Database — federated validation manifest",
+  "branch": "ui/chat5-validation-20261006",
+  "requested_base": "f86d409bcf914280246078d235e8f96ee73337a3",
+  "research_record_count": 1010,
+  "visually_reviewed_count": 0,
+  "release_status": "BLOCKED_PENDING_SCREEN_LEVEL_VALIDATION",
+  "components": [
+    {
+      "owner": "Chat 1",
+      "count": 200,
+      "category": "CORE APP",
+      "branch": "ui/chat1-core-ui-r2-20261006",
+      "path": ".seven-team/ui-convergence/chat1-core-ui/CORE_UI_REFERENCE_DATABASE.json"
+    },
+    {
+      "owner": "Chat 2",
+      "count": 260,
+      "category": "RPG NARRATIVE",
+      "branch": "ui/20-agent-convergence-20261006",
+      "path": ".seven-team/ui-convergence/chat2-rpg-a/RPG_UI_A_REFERENCE_DATABASE.csv"
+    },
+    {
+      "owner": "Chat 3",
+      "count": 250,
+      "category": "RPG SYSTEMS",
+      "branch": "ui/20-agent-convergence-20261006",
+      "path": ".seven-team/ui-convergence/chat3-rpg-b/RPG_UI_B_REFERENCE_DATABASE.csv"
+    },
+    {
+      "owner": "Chat 4",
+      "count": 200,
+      "category": "DESIGN SYSTEM",
+      "branch": "chat4/design-system-rtl-settings-20261006",
+      "path": ".seven-team/ui-convergence/chat4/DESIGN_SYSTEM_REFERENCE_DATABASE.csv"
+    },
+    {
+      "owner": "Chat 5",
+      "count": 100,
+      "category": "GAP FILL",
+      "branch": "ui/chat5-validation-20261006",
+      "path": ".seven-team/ui-convergence/chat5-validation/CHAT5_SUPPLEMENTAL_100.json"
+    }
+  ],
+  "canonical_schema": [
+    "id",
+    "source",
+    "source_url",
+    "product",
+    "platform",
+    "category",
+    "surface",
+    "subsurface",
+    "visual_style",
+    "interaction_pattern",
+    "layout_pattern",
+    "information_density",
+    "primary_strength",
+    "secondary_strengths",
+    "weaknesses",
+    "mobile_score",
+    "rtl_score",
+    "accessibility_score",
+    "visual_polish_score",
+    "clarity_score",
+    "seven_fit_score",
+    "rpg_fit_score",
+    "originality_score",
+    "what_to_extract",
+    "what_not_to_copy",
+    "notes",
+    "tags",
+    "review_status"
+  ],
+  "rule": "A federated research record is not VISUALLY_REVIEWED until the exact screen/image is independently inspected and scored. 1010 is a research-corpus count, not release evidence."
+}
