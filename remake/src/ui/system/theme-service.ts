@@ -7,8 +7,12 @@ export interface ThemeScheduler {
 }
 
 const defaultScheduler: ThemeScheduler = {
-  setTimeout: (callback, delayMs) => globalThis.setTimeout(callback, delayMs),
-  clearTimeout: (handle) => globalThis.clearTimeout(handle as ReturnType<typeof setTimeout>),
+  setTimeout: (callback, delayMs) =>
+    (globalThis as typeof globalThis & { setTimeout?: (callback: () => void, delayMs: number) => unknown })
+      .setTimeout?.(callback, delayMs) ?? setImmediate(callback),
+  clearTimeout: (handle) =>
+    (globalThis as typeof globalThis & { clearTimeout?: (handle: unknown) => void })
+      .clearTimeout?.(handle) ?? void 0,
 };
 
 function themeFor(preference: ThemePreference, date: Date): EffectiveTheme {
