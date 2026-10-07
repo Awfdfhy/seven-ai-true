@@ -1,13 +1,11 @@
 {
   "schemaVersion": 1,
   "domains": 30,
-  "ready": 0,
+  "ready": 3,
   "missing": [
     "D01_CHAT_CORE",
     "D02_MEMORY_CONTEXT",
     "D03_TOOLS_CAPABILITY",
-    "D04_CODING_SYSTEM",
-    "D05_SELF_DEVELOPMENT",
     "D06_RPG_WORLD",
     "D07_RESEARCH_WEB",
     "D08_MODEL_ROUTING",
@@ -24,7 +22,6 @@
     "D19_AGENT_ORCHESTRATION",
     "D20_PRODUCT_QUALITY",
     "D21_OBSERVABILITY_WORLD_MODEL",
-    "D22_PROTOCOLS_INTEROP",
     "D23_IMPORT_EXPORT_BACKUP",
     "D24_RELEASE_APK",
     "D25_HISTORY_ROOMS",
@@ -38,8 +35,6 @@
     "D01_CHAT_CORE",
     "D02_MEMORY_CONTEXT",
     "D03_TOOLS_CAPABILITY",
-    "D04_CODING_SYSTEM",
-    "D05_SELF_DEVELOPMENT",
     "D06_RPG_WORLD",
     "D07_RESEARCH_WEB",
     "D08_MODEL_ROUTING",
@@ -56,7 +51,6 @@
     "D19_AGENT_ORCHESTRATION",
     "D20_PRODUCT_QUALITY",
     "D21_OBSERVABILITY_WORLD_MODEL",
-    "D22_PROTOCOLS_INTEROP",
     "D23_IMPORT_EXPORT_BACKUP",
     "D24_RELEASE_APK",
     "D25_HISTORY_ROOMS",
@@ -110,9 +104,9 @@
     },
     {
       "id": "D04_CODING_SYSTEM",
-      "status": "INSUFFICIENT",
-      "urls": 14,
-      "primaryTagged": 14,
+      "status": "READY",
+      "urls": 143,
+      "primaryTagged": 57,
       "target": 12,
       "owners": [
         "B06",
@@ -121,9 +115,9 @@
     },
     {
       "id": "D05_SELF_DEVELOPMENT",
-      "status": "INSUFFICIENT",
-      "urls": 14,
-      "primaryTagged": 14,
+      "status": "READY",
+      "urls": 143,
+      "primaryTagged": 57,
       "target": 12,
       "owners": [
         "B06",
@@ -308,9 +302,9 @@
     },
     {
       "id": "D22_PROTOCOLS_INTEROP",
-      "status": "INSUFFICIENT",
-      "urls": 10,
-      "primaryTagged": 10,
+      "status": "READY",
+      "urls": 143,
+      "primaryTagged": 57,
       "target": 10,
       "owners": [
         "A04",
