@@ -4,6 +4,8 @@
   "ready": 0,
   "missing": [
     "D01_CHAT_CORE",
+    "D02_MEMORY_CONTEXT",
+    "D03_TOOLS_CAPABILITY",
     "D04_CODING_SYSTEM",
     "D05_SELF_DEVELOPMENT",
     "D06_RPG_WORLD",
@@ -15,7 +17,9 @@
     "D12_UI_DESIGN_SYSTEM",
     "D13_ARABIC_RTL_A11Y",
     "D14_SECURITY_PRIVACY",
+    "D15_PERSISTENCE_RECOVERY",
     "D16_NETWORK_RESILIENCE",
+    "D17_PERFORMANCE_CONCURRENCY",
     "D18_TESTING_EVALS",
     "D19_AGENT_ORCHESTRATION",
     "D20_PRODUCT_QUALITY",
@@ -77,8 +81,8 @@
     {
       "id": "D02_MEMORY_CONTEXT",
       "status": "INSUFFICIENT",
-      "urls": 64,
-      "primaryTagged": 48,
+      "urls": 20,
+      "primaryTagged": 11,
       "target": 20,
       "owners": [
         "A06",
@@ -92,8 +96,8 @@
     {
       "id": "D03_TOOLS_CAPABILITY",
       "status": "INSUFFICIENT",
-      "urls": 64,
-      "primaryTagged": 48,
+      "urls": 20,
+      "primaryTagged": 17,
       "target": 20,
       "owners": [
         "A04",
@@ -228,8 +232,8 @@
     {
       "id": "D15_PERSISTENCE_RECOVERY",
       "status": "INSUFFICIENT",
-      "urls": 64,
-      "primaryTagged": 48,
+      "urls": 11,
+      "primaryTagged": 11,
       "target": 10,
       "owners": [
         "B08",
@@ -250,8 +254,8 @@
     {
       "id": "D17_PERFORMANCE_CONCURRENCY",
       "status": "INSUFFICIENT",
-      "urls": 64,
-      "primaryTagged": 48,
+      "urls": 12,
+      "primaryTagged": 7,
       "target": 10,
       "owners": [
         "A09",
