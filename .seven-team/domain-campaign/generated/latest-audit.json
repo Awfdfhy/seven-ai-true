@@ -2,7 +2,9 @@
   "schemaVersion": 1,
   "domains": 30,
   "ready": 0,
-  "missing": [],
+  "missing": [
+    "D14_SECURITY_PRIVACY"
+  ],
   "insufficient": [
     "D01_CHAT_CORE",
     "D02_MEMORY_CONTEXT",
@@ -40,7 +42,7 @@
       "id": "D01_CHAT_CORE",
       "status": "INSUFFICIENT",
       "urls": 69,
-      "primaryTagged": 64,
+      "primaryTagged": 86,
       "target": 10,
       "owners": [
         "B01",
@@ -50,8 +52,8 @@
     {
       "id": "D02_MEMORY_CONTEXT",
       "status": "INSUFFICIENT",
-      "urls": 136,
-      "primaryTagged": 339,
+      "urls": 133,
+      "primaryTagged": 298,
       "target": 20,
       "owners": [
         "A06",
@@ -65,8 +67,8 @@
     {
       "id": "D03_TOOLS_CAPABILITY",
       "status": "INSUFFICIENT",
-      "urls": 129,
-      "primaryTagged": 348,
+      "urls": 122,
+      "primaryTagged": 307,
       "target": 20,
       "owners": [
         "A04",
@@ -91,8 +93,8 @@
     {
       "id": "D05_SELF_DEVELOPMENT",
       "status": "INSUFFICIENT",
-      "urls": 45,
-      "primaryTagged": 90,
+      "urls": 28,
+      "primaryTagged": 39,
       "target": 12,
       "owners": [
         "B06",
@@ -102,8 +104,8 @@
     {
       "id": "D06_RPG_WORLD",
       "status": "INSUFFICIENT",
-      "urls": 38,
-      "primaryTagged": 42,
+      "urls": 37,
+      "primaryTagged": 26,
       "target": 12,
       "owners": [
         "B05",
@@ -124,7 +126,7 @@
     {
       "id": "D08_MODEL_ROUTING",
       "status": "INSUFFICIENT",
-      "urls": 52,
+      "urls": 48,
       "primaryTagged": 67,
       "target": 10,
       "owners": [
@@ -146,8 +148,8 @@
     {
       "id": "D10_FILES_MULTIMODAL",
       "status": "INSUFFICIENT",
-      "urls": 44,
-      "primaryTagged": 60,
+      "urls": 15,
+      "primaryTagged": 19,
       "target": 8,
       "owners": [
         "B02",
@@ -190,8 +192,8 @@
     {
       "id": "D14_SECURITY_PRIVACY",
       "status": "INSUFFICIENT",
-      "urls": 69,
-      "primaryTagged": 92,
+      "urls": 13,
+      "primaryTagged": 13,
       "target": 12,
       "owners": [
         "A07",
@@ -201,8 +203,8 @@
     {
       "id": "D15_PERSISTENCE_RECOVERY",
       "status": "INSUFFICIENT",
-      "urls": 70,
-      "primaryTagged": 88,
+      "urls": 62,
+      "primaryTagged": 47,
       "target": 10,
       "owners": [
         "B08",
@@ -212,7 +214,7 @@
     {
       "id": "D16_NETWORK_RESILIENCE",
       "status": "INSUFFICIENT",
-      "urls": 61,
+      "urls": 57,
       "primaryTagged": 66,
       "target": 8,
       "owners": [
@@ -234,8 +236,8 @@
     {
       "id": "D18_TESTING_EVALS",
       "status": "INSUFFICIENT",
-      "urls": 95,
-      "primaryTagged": 128,
+      "urls": 89,
+      "primaryTagged": 77,
       "target": 12,
       "owners": [
         "A08",
@@ -289,8 +291,8 @@
     {
       "id": "D23_IMPORT_EXPORT_BACKUP",
       "status": "INSUFFICIENT",
-      "urls": 45,
-      "primaryTagged": 60,
+      "urls": 15,
+      "primaryTagged": 19,
       "target": 6,
       "owners": [
         "B02",
@@ -311,8 +313,8 @@
     {
       "id": "D25_HISTORY_ROOMS",
       "status": "INSUFFICIENT",
-      "urls": 39,
-      "primaryTagged": 41,
+      "urls": 13,
+      "primaryTagged": 22,
       "target": 8,
       "owners": [
         "B01",
@@ -322,7 +324,7 @@
     {
       "id": "D26_SETTINGS_CONTROLS",
       "status": "INSUFFICIENT",
-      "urls": 47,
+      "urls": 43,
       "primaryTagged": 69,
       "target": 6,
       "owners": [
@@ -344,7 +346,7 @@
     {
       "id": "D28_LOCAL_INTELLIGENCE",
       "status": "INSUFFICIENT",
-      "urls": 52,
+      "urls": 48,
       "primaryTagged": 67,
       "target": 8,
       "owners": [
@@ -355,8 +357,8 @@
     {
       "id": "D29_REAL_WORKS_CANON",
       "status": "INSUFFICIENT",
-      "urls": 22,
-      "primaryTagged": 19,
+      "urls": 6,
+      "primaryTagged": 3,
       "target": 8,
       "owners": [
         "B05",
@@ -366,8 +368,8 @@
     {
       "id": "D30_AUTONOMOUS_QUALITY",
       "status": "INSUFFICIENT",
-      "urls": 102,
-      "primaryTagged": 212,
+      "urls": 99,
+      "primaryTagged": 161,
       "target": 12,
       "owners": [
         "A08",
