@@ -1,0 +1,8 @@
+(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.SevenRpgUiBMount=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){'use strict';
+function resolveApis(root,overrides){overrides=overrides||{};return{adapter:overrides.adapter||root.SevenRpgUiBAdapter,renderer:overrides.renderer||root.SevenRpgUiBRender}}
+function ensureHost(host){if(!host||typeof host.innerHTML!=='string')throw new Error('RPG_UI_B_HOST_REQUIRED');return host}
+function mount(host,state,opts){host=ensureHost(host);opts=opts||{};const apis=resolveApis(typeof globalThis!=='undefined'?globalThis:{},opts.apis);if(!apis.adapter||typeof apis.adapter.project!=='function')throw new Error('RPG_UI_B_ADAPTER_UNAVAILABLE');if(!apis.renderer||typeof apis.renderer.render!=='function')throw new Error('RPG_UI_B_RENDERER_UNAVAILABLE');const model=apis.adapter.project(state||{}),html=apis.renderer.render(model,{lang:opts.lang||'en'});host.innerHTML=html;host.setAttribute&&host.setAttribute('data-rpgb-mounted','true');return{model,html,empty:!model.abilities.length&&!model.items.length&&!model.factions.length&&!model.battle.active&&!model.world.currentLocationId&&!Object.keys(model.world.activeEvents||{}).length}}
+function unmount(host){host=ensureHost(host);host.innerHTML='';host.removeAttribute&&host.removeAttribute('data-rpgb-mounted');return true}
+function refresh(host,state,opts){return mount(host,state,opts)}
+return Object.freeze({mount,unmount,refresh});
+});

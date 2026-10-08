@@ -83,6 +83,7 @@ public class SevenVisualEvidenceTest {
       try(ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)){
         WebView webView=webView(scenario);
         waitFor(webView,"Boolean(window.SevenPerformance&&SevenPerformance.state.ready&&window.SevenTheme&&window.SevenRemake&&window.SevenShell&&document.getElementById('userInput'))");
+        waitFor(webView,"(()=>{const s=document.getElementById('persistenceStatus');if(!s||!s.parentElement?.classList.contains('topbar'))return false;const cs=getComputedStyle(s);if(innerWidth<=420)return cs.display==='none';const r=s.getBoundingClientRect();return cs.position!=='fixed'&&r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2})()");
 
         theme(webView,"day");
         assertEquals("true",js(webView,"getComputedStyle(document.getElementById('seven-app')).getPropertyValue('--s-bg').trim()==='#f5f7f5'"));
@@ -92,7 +93,7 @@ public class SevenVisualEvidenceTest {
         shot("chat-night");
 
         js(webView,"(()=>{const b=document.querySelector('.seven-shell-model-chip');if(b)b.click();return true})()");
-        waitFor(webView,"Boolean(document.querySelector('.seven-shell-model-menu')&&!document.querySelector('.seven-shell-model-menu').hidden)");
+        waitFor(webView,"(()=>{const m=document.querySelector('.seven-shell-model-menu'),r=m?.getBoundingClientRect();return !!m&&!m.hidden&&m.children.length>1&&r.width>180&&r.height>70&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight})()");
         shot("model-menu-night");
         js(webView,"(()=>{document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));return true})()");Thread.sleep(80);
 
@@ -129,6 +130,7 @@ public class SevenVisualEvidenceTest {
 
         js(webView,"(()=>{SevenWorkspaces.close();document.documentElement.lang='ar-IQ';document.documentElement.dir='rtl';document.body.dir='rtl';const s=document.querySelector('.sidebar');s.classList.remove('open','active');document.body.classList.remove('sidebar-open');document.documentElement.dataset.sevenShellSidebar='closed';return true})()");
         waitFor(webView,"document.documentElement.dir==='rtl'&&document.documentElement.lang==='ar-IQ'&&getComputedStyle(document.documentElement).direction==='rtl'");
+        waitFor(webView,"(()=>{const s=document.getElementById('persistenceStatus'),r=s?.getBoundingClientRect();return !!s&&s.parentElement?.classList.contains('topbar')&&getComputedStyle(s).position!=='fixed'&&r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2})()");
         Thread.sleep(380);
         assertEquals("true",js(webView,"(()=>{const r=document.querySelector('.sidebar').getBoundingClientRect();return r.left>=innerWidth-2})()"));
         js(webView,"(()=>{window.SevenShell?.sync?.();document.querySelector('.sidebar').classList.add('open');return true})()");

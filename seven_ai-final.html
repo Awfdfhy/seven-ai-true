@@ -1659,20 +1659,28 @@
         // room snapshot + revision + structural audit event. Legacy keys are
         // retained untouched as migration recovery input, never dual-written.
         const roomPersistence = (() => {
-            const ROOM_WAL_KEY='seven_ai_room_wal_v1';
+            const ROOM_WAL_KEY='seven_ai_room_wal_v1', ROOM_WAL_DB='seven_ai_room_wal_durable_v1';
             const walSessionId='wal-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10);
-            let db = null, revision = 0, ready = false, failed = false, pending = 0, persistedWalSeq = 0, walCounter = 0;
+            let db = null, walDb = null, walCached = null, revision = 0, ready = false, failed = false, pending = 0, persistedWalSeq = 0, walCounter = 0;
             let queue = Promise.resolve(true);
-            function readWal(){try{const raw=localStorage.getItem(ROOM_WAL_KEY);if(!raw)return null;const w=JSON.parse(raw);if(!w||w.schemaVersion!==1||!Number.isSafeInteger(w.seq)||w.seq<1||!Number.isSafeInteger(w.baseRevision)||w.baseRevision<0||typeof w.sessionId!=='string'||!w.sessionId||!w.value)return null;validate(w.value);return w}catch(_){return null}}
-            function stageWal(value){const seq=Math.min(Number.MAX_SAFE_INTEGER,Date.now()*1000+(++walCounter%1000)),w={schemaVersion:1,seq,sessionId:walSessionId,baseRevision:revision,value:JSON.parse(JSON.stringify(value))};localStorage.setItem(ROOM_WAL_KEY,JSON.stringify(w));return w}
-            function clearWalThrough(seq){try{const w=readWal();if(!w||w.seq<=seq)localStorage.removeItem(ROOM_WAL_KEY)}catch(_){}}
-            function recoverableWal(record){const w=readWal();if(!w)return null;const storedSeq=Number.isSafeInteger(record&&record.walSeq)?record.walSeq:0,storedSession=String(record&&record.walSession||'');if(w.seq<=storedSeq)return null;if(w.baseRevision===Number(record&&record.revision))return w;if(storedSession&&storedSession===w.sessionId&&storedSeq>0)return w;return null}
+            function parseWal(raw){try{if(!raw)return null;const w=typeof raw==='string'?JSON.parse(raw):raw;if(!w||w.schemaVersion!==1||!Number.isSafeInteger(w.seq)||w.seq<1||!Number.isSafeInteger(w.baseRevision)||w.baseRevision<0||typeof w.sessionId!=='string'||!w.sessionId||!w.value)return null;validate(w.value);return w}catch(_){return null}}
+            function readLocalWal(){return parseWal(localStorage.getItem(ROOM_WAL_KEY))}
+            async function openWalDb(){if(walDb)return walDb;walDb=await new Promise((resolve,reject)=>{const q=indexedDB.open(ROOM_WAL_DB,1);q.onupgradeneeded=()=>{if(!q.result.objectStoreNames.contains('wal'))q.result.createObjectStore('wal',{keyPath:'id'})};q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);q.onblocked=()=>reject(new Error('WAL_DATABASE_BLOCKED'))});return walDb}
+            async function readDurableWal(){try{const d=await openWalDb();const row=await new Promise((resolve,reject)=>{const tx=d.transaction('wal','readonly'),q=tx.objectStore('wal').get('active');q.onsuccess=()=>resolve(q.result||null);q.onerror=()=>reject(q.error)});return parseWal(row&&row.value)}catch(_){return null}}
+            async function loadWal(){const local=readLocalWal(),durable=await readDurableWal();walCached=(!local?durable:!durable?local:(local.seq>=durable.seq?local:durable));return walCached}
+            async function stageWal(value){const seq=Math.min(Number.MAX_SAFE_INTEGER,Date.now()*1000+(++walCounter%1000)),w={schemaVersion:1,seq,sessionId:walSessionId,baseRevision:revision,value:JSON.parse(JSON.stringify(value))};localStorage.setItem(ROOM_WAL_KEY,JSON.stringify(w));const d=await openWalDb();await new Promise((resolve,reject)=>{const tx=d.transaction('wal','readwrite');tx.objectStore('wal').put({id:'active',value:w});tx.oncomplete=resolve;tx.onabort=()=>reject(tx.error||new Error('WAL_TRANSACTION_ABORTED'));tx.onerror=()=>{}});walCached=w;return w}
+            async function clearWalThrough(seq){try{const w=walCached||readLocalWal()||await readDurableWal();if(!w||w.seq<=seq){localStorage.removeItem(ROOM_WAL_KEY);const d=await openWalDb();await new Promise((resolve,reject)=>{const tx=d.transaction('wal','readwrite');tx.objectStore('wal').delete('active');tx.oncomplete=resolve;tx.onabort=()=>reject(tx.error||new Error('WAL_CLEAR_ABORTED'));tx.onerror=()=>{}});walCached=null}}catch(_){}}
+            function recoverableWal(record){const w=walCached;if(!w)return null;const storedSeq=Number.isSafeInteger(record&&record.walSeq)?record.walSeq:0,storedSession=String(record&&record.walSession||'');if(w.seq<=storedSeq)return null;if(w.baseRevision===Number(record&&record.revision))return w;if(storedSession&&storedSession===w.sessionId&&storedSeq>0)return w;return null}
             const status = document.createElement('div');
             status.id = 'persistenceStatus';
+            status.className = 'seven-persistence-status';
             status.setAttribute('role', 'status');
-            status.style.cssText = 'position:fixed;bottom:4px;right:8px;z-index:9999;font-size:12px;background:var(--bg,#222);color:var(--text,#fff);padding:4px 8px;border-radius:6px;max-width:90vw';
-            document.body.appendChild(status);
-            function show(text) { status.textContent = text; }
+            status.setAttribute('aria-live', 'polite');
+            status.style.cssText = 'position:static;flex:0 1 auto;min-width:0;max-width:min(34vw,190px);font-size:11px;line-height:1.25;background:var(--surface,var(--bg,#222));color:var(--text,#fff);padding:4px 8px;border:1px solid var(--border,rgba(127,127,127,.32));border-radius:999px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none';
+            const statusHost = document.querySelector('.topbar');
+            if (statusHost) statusHost.insertBefore(status, statusHost.lastElementChild || null);
+            else document.body.appendChild(status);
+            function show(text) { status.textContent = text; status.title = text; status.setAttribute('aria-label', text); }
             function validate(value) {
                 if (!value || value.version !== 1 || !value.rooms || typeof value.rooms !== 'object' || Array.isArray(value.rooms) ||
                     !value.roomTitles || typeof value.roomTitles !== 'object' || Array.isArray(value.roomTitles) ||
@@ -1743,13 +1751,14 @@
                     }
                     if (record.schemaVersion !== 1 || !Number.isSafeInteger(record.revision) || record.revision < 1) throw new Error('UNKNOWN_ROOM_SCHEMA');
                     apply(record.value); revision=record.revision; persistedWalSeq=Number.isSafeInteger(record.walSeq)?record.walSeq:0;
+                    await loadWal();
                     const wal=recoverableWal(record);
                     if(wal){
                         record=await transact(wal.value,false,wal);
-                        apply(record.value);revision=record.revision;persistedWalSeq=Number(record.walSeq)||persistedWalSeq;clearWalThrough(wal.seq);
+                        apply(record.value);revision=record.revision;persistedWalSeq=Number(record.walSeq)||persistedWalSeq;await clearWalThrough(wal.seq);
                         show('Recovered unsaved conversation · IndexedDB');
                     }else{
-                        try{const stale=readWal();if(stale&&stale.seq<=persistedWalSeq)localStorage.removeItem(ROOM_WAL_KEY)}catch(_){}
+                        if(walCached&&walCached.seq<=persistedWalSeq)await clearWalThrough(persistedWalSeq);
                         show('Saved · IndexedDB');
                     }
                     ready=true; document.body.inert=false;
@@ -1764,17 +1773,19 @@
                 if (!ready || failed) return Promise.resolve(false);
                 let value;
                 try { value=snapshot(); } catch (_) { failed=true; show('Cannot save invalid conversation state. Export and reload.'); return Promise.resolve(false); }
-                let wal=null;try{wal=stageWal(value)}catch(_){}
                 pending++; show('Saving…');
                 queue=queue.then(async () => {
                     if (failed) return false;
-                    try { const record=await transact(value,false,wal); revision=record.revision; persistedWalSeq=Number(record.walSeq)||persistedWalSeq;if(wal)clearWalThrough(wal.seq);return true; }
+                    let wal;
+                    try { wal=await stageWal(value); }
+                    catch (_) { failed=true; show('Not saved — recovery journal unavailable. Export before reloading.'); return false; }
+                    try { const record=await transact(value,false,wal); revision=record.revision; persistedWalSeq=Number(record.walSeq)||persistedWalSeq;if(wal)await clearWalThrough(wal.seq);return true; }
                     catch (_) { failed=true; show('Not saved — storage failure or another tab changed chats. Export before reloading.'); return false; }
                 }).finally(() => { pending--; if (!failed && pending===0) show('Saved · IndexedDB'); });
                 return queue;
             }
             window.addEventListener('beforeunload', e => { if(pending || (ready && failed)) { e.preventDefault(); e.returnValue=''; } });
-            return Object.freeze({init,save,flush:()=>queue,status:()=>({ready,failed,pending,revision,persistedWalSeq,walStaged:!!readWal()})});
+            return Object.freeze({init,save,flush:()=>queue,status:()=>({ready,failed,pending,revision,persistedWalSeq,walStaged:!!walCached})});
         })();
 
         function saveRooms() { return roomPersistence.save(); }
