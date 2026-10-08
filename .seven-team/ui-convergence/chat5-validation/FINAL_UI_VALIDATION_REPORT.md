@@ -77,3 +77,26 @@ The convergence branch advanced again during the same validation pass:
 Latest commit message: `perf(rpg): remove no-op observer and card noise`.
 
 Result: any CI/device/visual evidence produced for `6046ba0...` is not final release evidence for the latest head. I01 must freeze one SHA before final validation.
+
+
+## Exact-head validation update — 5a65efce
+Current convergence head: `5a65efcebb54f3581b1f2fae6e5a71cb53c7afba`.
+
+Evidence:
+- Seven AI tests run `37400365670`: **FAILURE**.
+- Failure step: `node all.cjs`.
+- Exact blocker: `release-layer-too-heavy`, startup bytes **102,209**, hard gate **<100,000**.
+- Browser evidence/upload steps were skipped after the failure.
+- Workflow artifacts on run `37400365670`: **none**.
+- Repository-wide actions query for this exact SHA returns only the failed Seven AI tests workflow; no Android 14/16 run exists for this head.
+
+RPG A has improved static review status and a prepared executable visual matrix:
+- 16 width/direction/theme combinations;
+- 150% text;
+- 800×360 landscape;
+- 390×430 keyboard-height;
+- expected total = 19 screenshots.
+
+However, these screenshots were **not generated** because the global static budget gate runs first. Prepared test code is not screenshot evidence.
+
+Bundle remediation target is documented in `HOT_RELEASE_LAYER_BUDGET_DIAGNOSIS.md`: minimum mathematical reduction 2,210 bytes; recommended target <=96,000 bytes without raising the budget.
