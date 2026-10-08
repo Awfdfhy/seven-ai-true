@@ -39,8 +39,8 @@
     {
       "id": "D01_CHAT_CORE",
       "status": "INSUFFICIENT",
-      "urls": 13,
-      "primaryTagged": 22,
+      "urls": 69,
+      "primaryTagged": 86,
       "target": 10,
       "owners": [
         "B01",
@@ -50,8 +50,8 @@
     {
       "id": "D02_MEMORY_CONTEXT",
       "status": "INSUFFICIENT",
-      "urls": 133,
-      "primaryTagged": 275,
+      "urls": 138,
+      "primaryTagged": 339,
       "target": 20,
       "owners": [
         "A06",
@@ -65,8 +65,8 @@
     {
       "id": "D03_TOOLS_CAPABILITY",
       "status": "INSUFFICIENT",
-      "urls": 125,
-      "primaryTagged": 284,
+      "urls": 131,
+      "primaryTagged": 348,
       "target": 20,
       "owners": [
         "A04",
@@ -80,8 +80,8 @@
     {
       "id": "D04_CODING_SYSTEM",
       "status": "INSUFFICIENT",
-      "urls": 95,
-      "primaryTagged": 117,
+      "urls": 93,
+      "primaryTagged": 116,
       "target": 12,
       "owners": [
         "B06",
@@ -91,8 +91,8 @@
     {
       "id": "D05_SELF_DEVELOPMENT",
       "status": "INSUFFICIENT",
-      "urls": 45,
-      "primaryTagged": 91,
+      "urls": 43,
+      "primaryTagged": 90,
       "target": 12,
       "owners": [
         "B06",
@@ -102,8 +102,8 @@
     {
       "id": "D06_RPG_WORLD",
       "status": "INSUFFICIENT",
-      "urls": 37,
-      "primaryTagged": 26,
+      "urls": 38,
+      "primaryTagged": 42,
       "target": 12,
       "owners": [
         "B05",
@@ -113,7 +113,7 @@
     {
       "id": "D07_RESEARCH_WEB",
       "status": "INSUFFICIENT",
-      "urls": 90,
+      "urls": 92,
       "primaryTagged": 80,
       "target": 12,
       "owners": [
@@ -135,7 +135,7 @@
     {
       "id": "D09_DEEP_THINK",
       "status": "INSUFFICIENT",
-      "urls": 41,
+      "urls": 43,
       "primaryTagged": 47,
       "target": 10,
       "owners": [
@@ -146,8 +146,8 @@
     {
       "id": "D10_FILES_MULTIMODAL",
       "status": "INSUFFICIENT",
-      "urls": 42,
-      "primaryTagged": 41,
+      "urls": 46,
+      "primaryTagged": 60,
       "target": 8,
       "owners": [
         "B02",
@@ -168,7 +168,7 @@
     {
       "id": "D12_UI_DESIGN_SYSTEM",
       "status": "INSUFFICIENT",
-      "urls": 88,
+      "urls": 90,
       "primaryTagged": 122,
       "target": 10,
       "owners": [
@@ -190,7 +190,7 @@
     {
       "id": "D14_SECURITY_PRIVACY",
       "status": "INSUFFICIENT",
-      "urls": 69,
+      "urls": 67,
       "primaryTagged": 92,
       "target": 12,
       "owners": [
@@ -245,8 +245,8 @@
     {
       "id": "D19_AGENT_ORCHESTRATION",
       "status": "INSUFFICIENT",
-      "urls": 82,
-      "primaryTagged": 84,
+      "urls": 97,
+      "primaryTagged": 148,
       "target": 10,
       "owners": [
         "B10",
@@ -256,7 +256,7 @@
     {
       "id": "D20_PRODUCT_QUALITY",
       "status": "INSUFFICIENT",
-      "urls": 88,
+      "urls": 90,
       "primaryTagged": 122,
       "target": 8,
       "owners": [
@@ -267,8 +267,8 @@
     {
       "id": "D21_OBSERVABILITY_WORLD_MODEL",
       "status": "INSUFFICIENT",
-      "urls": 41,
-      "primaryTagged": 36,
+      "urls": 99,
+      "primaryTagged": 100,
       "target": 8,
       "owners": [
         "A04",
@@ -278,8 +278,8 @@
     {
       "id": "D22_PROTOCOLS_INTEROP",
       "status": "INSUFFICIENT",
-      "urls": 29,
-      "primaryTagged": 40,
+      "urls": 79,
+      "primaryTagged": 103,
       "target": 10,
       "owners": [
         "A04",
@@ -289,8 +289,8 @@
     {
       "id": "D23_IMPORT_EXPORT_BACKUP",
       "status": "INSUFFICIENT",
-      "urls": 39,
-      "primaryTagged": 41,
+      "urls": 47,
+      "primaryTagged": 60,
       "target": 6,
       "owners": [
         "B02",
@@ -333,7 +333,7 @@
     {
       "id": "D27_ERROR_RECOVERY_UX",
       "status": "INSUFFICIENT",
-      "urls": 88,
+      "urls": 90,
       "primaryTagged": 119,
       "target": 8,
       "owners": [
@@ -355,8 +355,8 @@
     {
       "id": "D29_REAL_WORKS_CANON",
       "status": "INSUFFICIENT",
-      "urls": 6,
-      "primaryTagged": 3,
+      "urls": 24,
+      "primaryTagged": 19,
       "target": 8,
       "owners": [
         "B05",
@@ -366,7 +366,7 @@
     {
       "id": "D30_AUTONOMOUS_QUALITY",
       "status": "INSUFFICIENT",
-      "urls": 100,
+      "urls": 102,
       "primaryTagged": 212,
       "target": 12,
       "owners": [
