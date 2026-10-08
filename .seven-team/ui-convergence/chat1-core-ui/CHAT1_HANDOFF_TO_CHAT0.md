@@ -134,3 +134,36 @@ But the safest direction is now clear:
 - remove/defer unused compatibility aliases;
 - avoid adding a third parallel token namespace;
 - target >2,209 compacted bytes of startup reduction, then rerun static audit unchanged.
+
+
+## Exact hot-layer reduction target
+Latest shared run #3626 / `37400365670` on SHA `5a65efcebb54f3581b1f2fae6e5a71cb53c7afba` still fails only:
+- `release-layer-too-heavy: 102209`
+
+The workspace budget is no longer a failing audit.
+
+Read-only token-consumer inspection found runtime consumers in the checked core/RPG workspace files for only these current `--seven-ui-*` tokens:
+- `--seven-ui-surface-1`
+- `--seven-ui-surface-2`
+- `--seven-ui-border`
+- `--seven-ui-text`
+- `--seven-ui-text-muted`
+- `--seven-ui-radius-sm`
+- `--seven-ui-radius-md`
+- `--seven-ui-touch-min`
+
+No consumers were found in the checked runtime set for the compatibility families:
+`--seven-color-*`, `--seven-space-*`, `--seven-radius-*`, `--seven-z-*`, `--seven-duration-*`.
+
+Using the release build's own `compactCss` algorithm:
+- current compacted `ui-foundation.css`: **3,033 chars/ASCII bytes**
+- compatibility aliases only removal: saves **1,563**, projected startup **100,646** -> still FAIL
+- retaining only the eight currently observed runtime-consumed canonical tokens: compacted foundation **354**
+- projected saving: **2,679**
+- projected hot release layer: **99,530**
+- projected margin under the 100,000 threshold: **470**
+
+This is the smallest currently quantified path to green without weakening the static budget.
+
+### Safety requirement
+Do not apply the aggressive trim blindly. Run one final **branch-wide consumer scan** on the exact integration SHA before deleting any canonical token. If another surface consumes a token not present in the inspected runtime set, retain it. The target is to remove at least **2,210 compacted bytes** while preserving every proven consumer.
