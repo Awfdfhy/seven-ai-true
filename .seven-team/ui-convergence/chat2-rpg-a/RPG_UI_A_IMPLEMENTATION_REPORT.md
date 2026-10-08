@@ -87,3 +87,62 @@ Because of ownership or spoiler/data constraints:
 **IMPLEMENTED / STATICALLY VERIFIED / VISUAL GATE BLOCKED**
 
 Do not announce RPG UI A READY.
+
+
+## Continuation status — 2026-10-08
+
+### Current RPG-owned source
+- `release/workspaces/rpg.js` remains story-first.
+- latest static equivalent of `rpg-ui-a.test.cjs`: PASS on syntax + all checked contracts.
+- spoiler-safe quick card still excludes knowledge/relationship internals.
+- flex-layout regression introduced during size trimming was found before visual acceptance and repaired in commit `fed4e377ea405a92e88ff8e7a453b9e7425e7dd7`.
+- regression assertion added in `97dfdfb234b38f9c40277ac293da6fa101cbaed0`.
+
+### Lazy-workspace budget
+CI run `37722218977` on earlier exact head reported:
+- startup layer: 102209 (FAIL)
+- lazy workspaces: 320205 (205 bytes over)
+
+Chat 2 then removed a net ~372 source bytes from RPG chrome while restoring correct flex behavior. Expected lazy-workspace size is therefore back under the unchanged 320000-byte budget; exact-head CI remains the authority.
+
+### Shared hot-layer blocker
+Unchanged convergence foundation:
+- raw 3544 chars
+- compactCss 3033 chars
+
+Chat 4 current branch candidate:
+- branch `chat4/design-system-rtl-settings-current-20261006`
+- head `12920155f0c5be42a71d048d25363572058584f5`
+- compact foundation 1520 chars
+- insufficient alone: predicted startup ~100696
+
+Cross-owner consumed hot aliases were reduced to a safe required set in `HOT_LAYER_TRIM_HANDOFF.md`.
+Predicted compact subset:
+- ~480 chars
+- predicted startup ~99656
+- ~344-byte margin
+
+### Chat 4 merge blocker
+Chat 4 run `37399312586` failed its design-system contract.
+Missing canonical definitions:
+- `--seven-radius-pill`
+- `--seven-z-sticky`
+- `--seven-z-critical`
+- `--seven-touch-min`
+
+Do not merge that branch verbatim.
+
+### Visual evidence
+Prepared in `release/release-verify.cjs`:
+- 16 phone cases (320/360/390/420 × LTR/RTL × day/night)
+- 150% text
+- 800×360 landscape
+- 390×430 keyboard-height
+= 19 screenshots when the global static gate permits release verification to execute.
+
+Evidence publication gap remains: `seven-tests.yml` does not yet upload `dist/rpg-ui-a-evidence/**`.
+
+### Verdict
+**RPG UI A: IMPLEMENTED / STATIC CONTRACT PASS / RELEASE BLOCKED BY SHARED INTEGRATION GATES.**
+
+Do not claim READY until exact-head CI, published screenshots, R04 visual review and Android 14/16 evidence pass.
