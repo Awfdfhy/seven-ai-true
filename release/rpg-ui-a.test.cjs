@@ -16,6 +16,7 @@ assert.ok(src.includes("i.name||i.displayName||i.title"),'character labels must 
 assert.ok(src.includes('s.world.locations'),'scene location must be resolved from runtime world locations');
 assert.ok(!src.includes("data-rpg-title-toggle aria-expanded"),'legacy Titles-first trigger must not be primary RPG chrome');
 assert.ok(src.includes('flex-wrap:wrap'),'RPG context controls must wrap instead of overflowing narrow phones');
+assert.ok(src.includes('.seven-rpg-chatbar-main,.seven-rpg-brand,.seven-rpg-chat-actions,.seven-rpg-cast,.seven-rpg-pack-actions,.seven-rpg-character-head{display:flex'),'RPG story chrome groups must remain flex containers');
 assert.ok(src.includes('margin-inline-start'),'logical/RTL-aware inline layout must be present');
 assert.ok(src.includes('var(--seven-ui-touch-min,44px)'),'RPG controls must consume the canonical 44px touch floor');
 assert.ok(src.includes('var(--seven-ui-text-muted,var(--sb-m))'),'RPG muted text must consume the canonical semantic token');
