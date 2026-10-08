@@ -65,7 +65,7 @@
     {
       "id": "D03_TOOLS_CAPABILITY",
       "status": "INSUFFICIENT",
-      "urls": 131,
+      "urls": 129,
       "primaryTagged": 348,
       "target": 20,
       "owners": [
@@ -146,7 +146,7 @@
     {
       "id": "D10_FILES_MULTIMODAL",
       "status": "INSUFFICIENT",
-      "urls": 46,
+      "urls": 44,
       "primaryTagged": 60,
       "target": 8,
       "owners": [
@@ -190,7 +190,7 @@
     {
       "id": "D14_SECURITY_PRIVACY",
       "status": "INSUFFICIENT",
-      "urls": 69,
+      "urls": 67,
       "primaryTagged": 92,
       "target": 12,
       "owners": [
