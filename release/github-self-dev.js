@@ -444,7 +444,7 @@ function render(){
       ${last}
     </div>
     <details class="seven-gh-card"><summary><strong>${esc(L("Technical activity","النشاط التقني"))}</strong></summary><div class="seven-gh-log" style="margin-top:8px">${logs||'<div>'+esc(L("No development run yet.","لا توجد عملية تطوير بعد."))+'</div>'}</div></details>
-
+  `;
   const q=sel=>body.querySelector(sel);
   q("[data-gh-connect]")?.addEventListener("click",()=>connect().catch(e=>pushLog(e.message,"error")));
   q("[data-gh-refresh]")?.addEventListener("click",()=>connectionState().catch(e=>pushLog(e.message,"error")));
