@@ -632,7 +632,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       await page.waitForFunction(()=>window.SevenRemake&&!!document.querySelector('.seven-shell-jump'));
       await page.evaluate(()=>{
         const chat=document.getElementById('chat');
-        chat.innerHTML=Array.from({length:32},(_,i)=>'<div class="message assistant"><div class="bubble"><p>رسالة طويلة '+i+' '.repeat(12)+'</p><p>'+('نص '.repeat(40))+'</p></div></div>').join('');
+        chat.innerHTML=Array.from({length:32},(_,i)=>'<div class="message assistant" style="min-height:72px"><div class="bubble"><p>رسالة طويلة '+i+'</p><p>'+('نص '.repeat(40))+'</p></div></div>').join('');
         chat.scrollTop=0;
         window.SevenShell?.sync?.();
         chat.dispatchEvent(new Event('scroll'));
