@@ -27,3 +27,16 @@ test('SelfDev technical logs are disclosed and OAuth code stays LTR',()=>{
   assert.ok(selfdev.includes('<details><summary>'));
   assert.ok(selfdev.includes('class="seven-gh-code" dir="ltr"'));
 });
+
+test('SelfDev prefilled task is applied AFTER the first render',()=>{
+  assert.ok(selfdev.indexOf('  render();\n  if(task){const area=back.querySelector')>0);
+});
+test('SelfDev preserves expanded activity across progress renders',()=>{
+  assert.ok(selfdev.includes('logExpanded=!!(previousLog&&previousLog.open)'));
+  assert.ok(selfdev.includes('restoredLog.open=logExpanded'));
+});
+test('SelfDev uses accessible compact touch and state indicators',()=>{
+  assert.ok(selfdev.includes('min-height:44px;width:44px;height:44px'));
+  assert.ok(selfdev.includes('role="status" aria-live="polite"'));
+  assert.ok(selfdev.includes('.seven-gh-task:focus-visible'));
+});
