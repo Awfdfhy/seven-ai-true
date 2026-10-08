@@ -389,12 +389,13 @@ function ensureStyle(){
   .seven-gh-backdrop{position:fixed;inset:0;z-index:10020;background:rgba(5,7,14,.68);display:flex;align-items:center;justify-content:center;padding:16px}
   .seven-gh-panel{width:min(760px,100%);max-height:min(90dvh,860px);overflow:auto;border:1px solid var(--sb-b,#34334a);border-radius:20px;background:var(--sb-s,#171625);color:var(--sb-t,#f7f7fb);box-shadow:0 22px 70px rgba(0,0,0,.4)}
   .seven-gh-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;border-bottom:1px solid var(--sb-b,#34334a);position:sticky;top:0;background:inherit;z-index:1}
-  .seven-gh-head h2{margin:0;font-size:1rem}.seven-gh-close{width:38px;height:38px;border-radius:12px;border:1px solid var(--sb-b,#34334a);background:var(--sb-s2,#222136);color:inherit}
+  .seven-gh-head h2{margin:0;font-size:1rem}.seven-gh-close{min-width:44px;min-height:44px;width:44px;height:44px;border-radius:12px;border:1px solid var(--sb-b,#34334a);background:var(--sb-s2,#222136);color:inherit}
   .seven-gh-body{padding:16px;display:grid;gap:14px}.seven-gh-card{padding:13px;border:1px solid var(--sb-b,#34334a);border-radius:15px;background:var(--sb-s2,#222136)}
   .seven-gh-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.seven-gh-row strong{font-size:.82rem}.seven-gh-muted{font-size:.72rem;color:var(--sb-m,#aaa8bd);line-height:1.5}
-  .seven-gh-btn{min-height:42px;padding:8px 12px;border-radius:11px;border:1px solid var(--sb-b,#34334a);background:var(--sb-s,#171625);color:inherit;font:inherit;font-weight:700}.seven-gh-btn.primary{background:linear-gradient(135deg,#6d5cff,#8e78ff);border:0}.seven-gh-btn:disabled{opacity:.55}
+  .seven-gh-btn{min-height:44px;padding:8px 12px;border-radius:11px;border:1px solid var(--sb-b,#34334a);background:var(--sb-s,#171625);color:inherit;font:inherit;font-weight:700}.seven-gh-btn.primary{background:linear-gradient(135deg,#6d5cff,#8e78ff);border:0}.seven-gh-btn:disabled{opacity:.55}
   .seven-gh-code{font:700 1.15rem ui-monospace,monospace;letter-spacing:.08em;padding:9px 11px;border-radius:10px;background:#0f1020;user-select:all}
   .seven-gh-task{width:100%;min-height:92px;resize:vertical;border:1px solid var(--sb-b,#34334a);border-radius:12px;background:var(--sb-s,#171625);color:inherit;padding:10px;font:inherit;box-sizing:border-box}
+  .seven-gh-panel summary{cursor:pointer;min-height:44px;display:flex;align-items:center}.seven-gh-btn:focus-visible,.seven-gh-close:focus-visible,.seven-gh-task:focus-visible,.seven-gh-panel summary:focus-visible{outline:2px solid currentColor;outline-offset:2px}
   .seven-gh-log{max-height:210px;overflow:auto;display:grid;gap:5px;font:600 .68rem ui-monospace,monospace}.seven-gh-log div{padding:6px 8px;border-radius:8px;background:rgba(255,255,255,.035);white-space:pre-wrap;word-break:break-word}.seven-gh-log [data-kind=error]{color:#ff9ca6}.seven-gh-log [data-kind=ok]{color:#8fe3b3}.seven-gh-log [data-kind=warn]{color:#ffd78a}
   .seven-gh-nav{margin-top:6px}.seven-gh-switch{display:flex;gap:7px;align-items:center;font-size:.72rem}.seven-gh-switch input{width:auto}
   @media(max-width:620px){.seven-gh-backdrop{padding:max(6px,env(safe-area-inset-top,0px)) max(6px,env(safe-area-inset-right,0px)) max(6px,env(safe-area-inset-bottom,0px)) max(6px,env(safe-area-inset-left,0px));align-items:flex-end}.seven-gh-panel{max-height:calc(var(--seven-visual-height,100dvh) - 12px);border-radius:18px 18px 10px 10px}.seven-gh-body{padding:12px}}
@@ -412,8 +413,8 @@ function openPanel(task){
     back.__sevenInertSiblings=[...host.children].filter(x=>x!==back).map(x=>[x,!!x.inert]);for(const [el]of back.__sevenInertSiblings)el.inert=true;
   }
   S.panel=back;
-  if(task){const area=back.querySelector(".seven-gh-task");if(area)area.value=task}
   render();
+  if(task){const area=back.querySelector(".seven-gh-task");if(area)area.value=task}
   connectionState().catch(()=>{});
   return back;
 }
@@ -429,6 +430,8 @@ function render(){
   const taskFocused=priorTask&&d.activeElement===priorTask;
   const selectionStart=taskFocused?priorTask.selectionStart:0;
   const selectionEnd=taskFocused?priorTask.selectionEnd:0;
+  const previousLog=body.querySelector('details');
+  const logExpanded=!!(previousLog&&previousLog.open);
   body.innerHTML=`
     <div class="seven-gh-card">
       <div class="seven-gh-row"><strong>${esc(L("Connection","الاتصال"))}</strong><span class="seven-gh-muted">${S.connected?esc(L("Connected","متصل"))+" · "+identity:esc(L("Disconnected","غير متصل"))}</span></div>
@@ -447,11 +450,12 @@ function render(){
         <label class="seven-gh-switch"><input type="checkbox" data-gh-auto-merge> ${esc(L("Auto-merge only after green CI","دمج تلقائي فقط بعد نجاح CI"))}</label>
         <label class="seven-gh-switch"><input type="checkbox" data-gh-build-apk> ${esc(L("Build APK after green CI","بناء APK بعد نجاح CI"))}</label>
       </div>
-      <div class="seven-gh-row" style="margin-top:10px"><button class="seven-gh-btn primary" data-gh-run ${(!S.connected||S.busy)?"disabled":""}>${esc(S.busy?L("Working…","جارٍ العمل…"):L("Self Develop","تطوير ذاتي"))}</button><span class="seven-gh-muted">${esc(L("Stage","المرحلة"))}: ${esc(S.stage)}</span></div>
+      <div class="seven-gh-row" style="margin-top:10px"><button class="seven-gh-btn primary" data-gh-run ${(!S.connected||S.busy)?"disabled":""}>${esc(S.busy?L("Working…","جارٍ العمل…"):L("Self Develop","تطوير ذاتي"))}</button><span class="seven-gh-muted" role="status" aria-live="polite">${esc(L("Stage","المرحلة"))}: ${esc(S.stage)}</span></div>
       ${last}
     </div>
     <div class="seven-gh-card"><details><summary>${esc(L("Activity and technical log","النشاط والسجل التقني"))}</summary><div class="seven-gh-log" style="margin-top:8px">${logs||'<div>'+esc(L("No development run yet.","لا توجد عملية تطوير بعد."))+'</div>'}</div></details></div>
   `;
+  const restoredLog=body.querySelector('details');if(restoredLog)restoredLog.open=logExpanded;
   const restoredTask=body.querySelector('.seven-gh-task');
   if(restoredTask&&preservedTask!==null){restoredTask.value=preservedTask;if(taskFocused){restoredTask.focus();restoredTask.setSelectionRange(selectionStart,selectionEnd)}}
   const q=sel=>body.querySelector(sel);
