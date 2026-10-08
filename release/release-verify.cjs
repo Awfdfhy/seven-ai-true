@@ -402,7 +402,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
         const page=await browser.newPage({viewport:{width:sc.width,height:sc.height}});
         await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');localStorage.setItem('seven_ui_language','ar');});
         await page.goto(origin,{waitUntil:'domcontentloaded'});
-        await page.waitForFunction(()=>window.SevenRemake&&window.SevenTheme&&window.SevenWorkspaces);
+        await page.waitForFunction(()=>window.SevenRemake&&window.SevenTheme);
         await page.evaluate(({font})=>{document.documentElement.dir='rtl';document.body.dir='rtl';document.documentElement.style.fontSize=font;SevenTheme.setPreference('night');},{font:sc.font});
         await page.evaluate(()=>SevenRemake.openWorkspace('rpg'));
         await page.waitForFunction(()=>document.documentElement.dataset.sevenWorkspace==='rpg'&&!!document.querySelector('.seven-rpg-chatbar'),null,{timeout:10000});
