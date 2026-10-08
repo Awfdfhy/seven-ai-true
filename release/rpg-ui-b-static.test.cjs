@@ -11,7 +11,7 @@ assert.ok(!/localStorage|indexedDB|fetch\(|XMLHttpRequest/.test(mount),'mount he
 for(const term of ['HP','MP','XP','Level']) assert.ok(!render.includes('>'+term+'<'),'renderer must not invent '+term+' UI');
 assert.ok(!css.includes('!important'),'scoped RPG-B candidate must not introduce !important');
 assert.ok(!/(^|\n)\s*(html|body|:root|#seven-app|\.composer|\.sidebar|\.topbar)\b/.test(css),'scoped stylesheet must not own global/shell selectors');
-const blocks=css.split('}').map(x=>x.trim()).filter(Boolean);
+const blocks=css.replace(/\/\*[\s\S]*?\*\//g,'').split('}').map(x=>x.trim()).filter(Boolean);
 for(const block of blocks){const selector=block.split('{')[0].trim();if(selector.startsWith('@'))continue;for(const part of selector.split(',')){const s=part.trim();assert.ok(s.startsWith('.seven-rpgb')||s.startsWith('[dir=rtl] .seven-rpgb'),'unscoped RPG-B selector: '+s)}}
 assert.ok(!/\.reverse\s*\(/.test(render+adapter),'RTL/data rendering must not reverse source arrays implicitly');
 console.log('rpg ui b static gate: PASS',JSON.stringify({cssBytes:css.length,adapterBytes:adapter.length,renderBytes:render.length,mountBytes:mount.length}));
