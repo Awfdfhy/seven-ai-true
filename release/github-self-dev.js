@@ -421,9 +421,14 @@ function render(){
   const back=$("#seven-github-selfdev");if(!back)return;
   const body=back.querySelector(".seven-gh-body");if(!body)return;
   const identity=S.identity?esc(S.identity.login+" · "+S.identity.repo):esc(L("Not verified","غير متحقق"));
-  const device=S.device?'<div class="seven-gh-card"><div class="seven-gh-muted">'+esc(L("Authorize this device on GitHub","اسمح لهذا الجهاز عبر GitHub"))+'</div><div class="seven-gh-row" style="margin-top:8px"><span class="seven-gh-code">'+esc(S.device.userCode)+'</span><button class="seven-gh-btn" data-gh-open>'+esc(L("Open GitHub","فتح GitHub"))+'</button></div><div class="seven-gh-muted" style="margin-top:8px">'+esc(L("Seven never asks you to paste the access token. GitHub sends authorization to the native app after you approve this code.","لن يطلب منك Seven لصق رمز الوصول. يرسل GitHub التفويض إلى التطبيق بعد موافقتك على هذا الرمز."))+'</div></div>':"";
+  const device=S.device?'<div class="seven-gh-card"><div class="seven-gh-muted">'+esc(L("Authorize this device on GitHub","اسمح لهذا الجهاز عبر GitHub"))+'</div><div class="seven-gh-row" style="margin-top:8px"><span class="seven-gh-code" dir="ltr">'+esc(S.device.userCode)+'</span><button class="seven-gh-btn" data-gh-open>'+esc(L("Open GitHub","فتح GitHub"))+'</button></div><div class="seven-gh-muted" style="margin-top:8px">'+esc(L("Seven never asks you to paste the access token. GitHub sends authorization to the native app after you approve this code.","لن يطلب منك Seven لصق رمز الوصول. يرسل GitHub التفويض إلى التطبيق بعد موافقتك على هذا الرمز."))+'</div></div>':"";
   const logs=S.log.slice(-60).map(x=>'<div data-kind="'+esc(x.kind)+'">'+esc(x.message)+'</div>').join("");
   const last=S.last&&S.last.prUrl?'<div class="seven-gh-muted">PR #'+esc(S.last.prNumber)+' · '+esc(S.last.prUrl)+(S.last.merged?" · merged":"")+'</div>':"";
+  const priorTask=body.querySelector('.seven-gh-task');
+  const preservedTask=priorTask?priorTask.value:null;
+  const taskFocused=priorTask&&d.activeElement===priorTask;
+  const selectionStart=taskFocused?priorTask.selectionStart:0;
+  const selectionEnd=taskFocused?priorTask.selectionEnd:0;
   body.innerHTML=`
     <div class="seven-gh-card">
       <div class="seven-gh-row"><strong>${esc(L("Connection","الاتصال"))}</strong><span class="seven-gh-muted">${S.connected?esc(L("Connected","متصل"))+" · "+identity:esc(L("Disconnected","غير متصل"))}</span></div>
@@ -445,8 +450,10 @@ function render(){
       <div class="seven-gh-row" style="margin-top:10px"><button class="seven-gh-btn primary" data-gh-run ${(!S.connected||S.busy)?"disabled":""}>${esc(S.busy?L("Working…","جارٍ العمل…"):L("Self Develop","تطوير ذاتي"))}</button><span class="seven-gh-muted">${esc(L("Stage","المرحلة"))}: ${esc(S.stage)}</span></div>
       ${last}
     </div>
-    <div class="seven-gh-card"><strong>${esc(L("Run log","سجل التشغيل"))}</strong><div class="seven-gh-log" style="margin-top:8px">${logs||'<div>'+esc(L("No development run yet.","لا توجد عملية تطوير بعد."))+'</div>'}</div></div>
+    <div class="seven-gh-card"><details><summary>${esc(L("Activity and technical log","النشاط والسجل التقني"))}</summary><div class="seven-gh-log" style="margin-top:8px">${logs||'<div>'+esc(L("No development run yet.","لا توجد عملية تطوير بعد."))+'</div>'}</div></details></div>
   `;
+  const restoredTask=body.querySelector('.seven-gh-task');
+  if(restoredTask&&preservedTask!==null){restoredTask.value=preservedTask;if(taskFocused){restoredTask.focus();restoredTask.setSelectionRange(selectionStart,selectionEnd)}}
   const q=sel=>body.querySelector(sel);
   q("[data-gh-connect]")?.addEventListener("click",()=>connect().catch(e=>pushLog(e.message,"error")));
   q("[data-gh-refresh]")?.addEventListener("click",()=>connectionState().catch(e=>pushLog(e.message,"error")));
