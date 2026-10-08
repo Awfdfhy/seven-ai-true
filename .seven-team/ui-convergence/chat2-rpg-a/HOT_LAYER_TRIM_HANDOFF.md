@@ -84,3 +84,22 @@ After Integrator applies the hot-layer trim:
 7. Android 14/16 remains a separate final gate
 
 Never raise the startup budget.
+
+## Chat 4 branch contract blocker
+The discovered Chat 4 branch is **not green** and must not be merged verbatim.
+
+Branch CI:
+- head: `12920155f0c5be42a71d048d25363572058584f5`
+- Seven AI tests run: `37399312586`
+- result: FAIL
+- first reported assertion: `missing canonical token --seven-radius-pill`
+
+Full required-token comparison shows four canonical tokens missing from `seven-final.css + ui-hardening.css` on that branch:
+- `--seven-radius-pill`
+- `--seven-z-sticky`
+- `--seven-z-critical`
+- `--seven-touch-min`
+
+Integrator/Chat 4 must restore those canonical `--seven-*` definitions (or reconcile the contract intentionally) before treating the branch as mergeable.
+
+This is separate from the hot `--seven-ui-*` subset. Do not confuse canonical design-system definitions with hot compatibility aliases.
