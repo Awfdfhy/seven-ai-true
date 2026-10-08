@@ -1,66 +1,86 @@
 # HOT_LAYER_TRIM_HANDOFF
 
-Owner of fix: Chat 0 / I01 (shared/global lock)
+Owner of fix: Chat 0 / I01 with Chat 4 design-system ownership.
 
 ## Exact blocker
-Latest exact-head CI still fails only on:
+Latest convergence CI repeatedly fails:
 `release-layer-too-heavy = 102209`
 Budget: `100000`
-Required recovery: at least `2210` compiled bytes.
 
-RPG lazy-workspace budget is already green.
+RPG lazy-workspace budget is handled separately by Chat 2.
 
-## Attribution
-Compared against convergence base `f86d409bcf914280246078d235e8f96ee73337a3`.
+## Existing Chat 4 candidate discovered
+Branch:
+`chat4/design-system-rtl-settings-current-20261006`
 
-The only new startup-layer asset in the counted set is:
-`release/workspaces/ui-foundation.css`
+Head:
+`12920155f0c5be42a71d048d25363572058584f5`
 
-Raw size: ~3544 chars.
+Its `release/workspaces/ui-foundation.css`:
+- blob `a9fc8860c4154b310df72fd51ed07cc37ff6696c`
+- raw 1815 chars
+- compactCss 1520 chars
 
-All pre-existing startup assets inspected are byte-identical to base.
+Current convergence foundation:
+- raw 3544 chars
+- compactCss 3033 chars
 
-## Production-use scan
-Across current release/workspace production CSS/JS inspected, the foundation variables actually consumed are:
+Applying the Chat 4 file alone saves only ~1513 compiled bytes:
+predicted startup = `100696`.
+**Therefore Chat 4's current file alone is still insufficient.**
 
-- seven-ui-canvas
+## Cross-owner production usage scan
+Current RPG + Chat 4 settings/shell consumers require these `seven-ui-*` tokens:
+
 - seven-ui-surface-1
 - seven-ui-surface-2
 - seven-ui-border
 - seven-ui-text
 - seven-ui-text-muted
-- seven-ui-accent
-- seven-ui-danger
-- seven-ui-warning
-- seven-ui-success
 - seven-ui-radius-sm
 - seven-ui-radius-md
+- seven-ui-radius-lg
+- seven-ui-radius-pill
 - seven-ui-touch-min
+- seven-ui-z-sticky
+- seven-ui-z-popover
+- seven-ui-z-sheet
 
-The compatibility families below were not found in current production consumers inspected:
-- seven-color-*
-- seven-space-*
-- seven-radius-* compatibility aliases
-- seven-z-*
-- seven-duration-*
-- seven-ui-space-*
-- seven-ui-z-*
-- seven-ui-dialog-*
-- seven-ui-menu-*
-- most seven-ui-motion-* aliases
+Evidence:
+- RPG story surface consumes surfaces/border/text/radius-sm/md/touch.
+- Chat 4 `ui-hardening.css` consumes radius-sm/md/lg, touch, z-popover, z-sheet.
+- Chat 4 `seven-final.css` consumes touch, z-sticky, radius-pill.
 
-## Safe reduction direction
-Keep the 13 currently consumed hot tokens above in `ui-foundation.css`.
+## Proposed hot subset
+A hot foundation containing exactly the currently consumed aliases above compacts to approximately **480 chars**.
 
-Move the unused compatibility/scale vocabulary to a deferred/lazy design-system file if Chat 0 wants to preserve the vocabulary for future migration. Do not delete the vocabulary from documentation/design-system specs if it is still planned.
+Against the current 3033-char compact foundation:
+- estimated recovery: **2553 bytes**
+- predicted startup layer: **99656**
+- predicted margin: **344 bytes**
 
-Estimated raw reduction from a minimal hot foundation:
-~2724 characters.
+This is enough to restore the strict 100 KB gate without raising the budget.
 
-That exceeds the 2210-byte compiled deficit before any additional minifier gain.
+## Important design-system constraint
+Do not delete the broader vocabulary from design documentation. Compatibility/scale aliases that are not currently consumed can remain documented or be moved to a deferred design-system layer if Chat 0/4 wants to preserve them for later migration.
 
-## Constraints
-- Do not raise the 100 KB startup budget.
-- Do not alter RPG-owned code further to solve this shared-layer blocker.
-- Re-run exact-head `Seven AI tests`.
-- Only after static audit passes should the prepared RPG visual matrix be allowed to produce its 19 screenshots.
+Do not remove:
+- radius-lg
+- radius-pill
+- z-sticky
+- z-popover
+- z-sheet
+
+Those are already consumed by Chat 4-owned production CSS.
+
+## Required validation
+After Integrator applies the hot-layer trim:
+1. exact-head static audit < 100000
+2. design-system contract PASS
+3. core UI tests PASS
+4. RPG UI A/B tests PASS
+5. release-verify executes the prepared RPG visual matrix
+6. publish visual evidence artifact
+7. Android 14/16 remains a separate final gate
+
+Never raise the startup budget.
