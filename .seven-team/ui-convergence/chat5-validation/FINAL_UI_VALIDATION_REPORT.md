@@ -100,3 +100,24 @@ RPG A has improved static review status and a prepared executable visual matrix:
 However, these screenshots were **not generated** because the global static budget gate runs first. Prepared test code is not screenshot evidence.
 
 Bundle remediation target is documented in `HOT_RELEASE_LAYER_BUDGET_DIAGNOSIS.md`: minimum mathematical reduction 2,210 bytes; recommended target <=96,000 bytes without raising the budget.
+
+
+## PR #128 exact-head update — 2026-10-08
+PR head: `f203b140b72c356f1ba962ce3c58a7d66ba385d7`.
+Run: `37722218977` — **FAILURE**.
+
+Static audit now reports two independent P1 budget blockers:
+1. `release-layer-too-heavy`: **102,209 bytes** (gate <100,000).
+2. `lazy-workspaces-too-heavy`: **320,205 / 320,000 bytes**.
+
+Hot-layer attribution is now independently verified:
+- legacy hot assets are blob-identical to convergence base;
+- `release/workspaces/ui-foundation.css` is the only new hot startup asset and is 3,544 raw chars.
+
+Lazy-workspace attribution:
+- between the last candidate without this second budget failure and the current lineage, `release/workspaces/rpg-ui-b-render.js` grew +260 raw chars;
+- observed compact budget overage is +205 bytes, closely matching that delta;
+- this is the primary trim target for UI-BUNDLE-002.
+
+No budget may be raised to close either defect.
+Browser evidence/upload remains skipped while static audit fails.
