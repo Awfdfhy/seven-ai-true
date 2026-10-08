@@ -39,7 +39,7 @@
     {
       "id": "D01_CHAT_CORE",
       "status": "INSUFFICIENT",
-      "urls": 69,
+      "urls": 71,
       "primaryTagged": 86,
       "target": 10,
       "owners": [
@@ -50,7 +50,7 @@
     {
       "id": "D02_MEMORY_CONTEXT",
       "status": "INSUFFICIENT",
-      "urls": 136,
+      "urls": 138,
       "primaryTagged": 339,
       "target": 20,
       "owners": [
@@ -65,7 +65,7 @@
     {
       "id": "D03_TOOLS_CAPABILITY",
       "status": "INSUFFICIENT",
-      "urls": 129,
+      "urls": 131,
       "primaryTagged": 348,
       "target": 20,
       "owners": [
@@ -80,8 +80,8 @@
     {
       "id": "D04_CODING_SYSTEM",
       "status": "INSUFFICIENT",
-      "urls": 93,
-      "primaryTagged": 116,
+      "urls": 89,
+      "primaryTagged": 77,
       "target": 12,
       "owners": [
         "B06",
@@ -92,7 +92,7 @@
       "id": "D05_SELF_DEVELOPMENT",
       "status": "INSUFFICIENT",
       "urls": 43,
-      "primaryTagged": 90,
+      "primaryTagged": 51,
       "target": 12,
       "owners": [
         "B06",
@@ -102,7 +102,7 @@
     {
       "id": "D06_RPG_WORLD",
       "status": "INSUFFICIENT",
-      "urls": 38,
+      "urls": 40,
       "primaryTagged": 42,
       "target": 12,
       "owners": [
@@ -190,7 +190,7 @@
     {
       "id": "D14_SECURITY_PRIVACY",
       "status": "INSUFFICIENT",
-      "urls": 67,
+      "urls": 69,
       "primaryTagged": 92,
       "target": 12,
       "owners": [
@@ -201,7 +201,7 @@
     {
       "id": "D15_PERSISTENCE_RECOVERY",
       "status": "INSUFFICIENT",
-      "urls": 70,
+      "urls": 72,
       "primaryTagged": 88,
       "target": 10,
       "owners": [
@@ -223,7 +223,7 @@
     {
       "id": "D17_PERFORMANCE_CONCURRENCY",
       "status": "INSUFFICIENT",
-      "urls": 88,
+      "urls": 90,
       "primaryTagged": 83,
       "target": 10,
       "owners": [
@@ -234,7 +234,7 @@
     {
       "id": "D18_TESTING_EVALS",
       "status": "INSUFFICIENT",
-      "urls": 93,
+      "urls": 95,
       "primaryTagged": 128,
       "target": 12,
       "owners": [
@@ -278,8 +278,8 @@
     {
       "id": "D22_PROTOCOLS_INTEROP",
       "status": "INSUFFICIENT",
-      "urls": 79,
-      "primaryTagged": 103,
+      "urls": 69,
+      "primaryTagged": 64,
       "target": 10,
       "owners": [
         "A04",
@@ -311,7 +311,7 @@
     {
       "id": "D25_HISTORY_ROOMS",
       "status": "INSUFFICIENT",
-      "urls": 42,
+      "urls": 44,
       "primaryTagged": 63,
       "target": 8,
       "owners": [
@@ -355,7 +355,7 @@
     {
       "id": "D29_REAL_WORKS_CANON",
       "status": "INSUFFICIENT",
-      "urls": 22,
+      "urls": 24,
       "primaryTagged": 19,
       "target": 8,
       "owners": [
@@ -366,7 +366,7 @@
     {
       "id": "D30_AUTONOMOUS_QUALITY",
       "status": "INSUFFICIENT",
-      "urls": 100,
+      "urls": 102,
       "primaryTagged": 212,
       "target": 12,
       "owners": [
