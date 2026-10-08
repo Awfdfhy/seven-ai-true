@@ -50,7 +50,7 @@
     {
       "id": "D02_MEMORY_CONTEXT",
       "status": "INSUFFICIENT",
-      "urls": 138,
+      "urls": 136,
       "primaryTagged": 339,
       "target": 20,
       "owners": [
@@ -65,7 +65,7 @@
     {
       "id": "D03_TOOLS_CAPABILITY",
       "status": "INSUFFICIENT",
-      "urls": 131,
+      "urls": 129,
       "primaryTagged": 348,
       "target": 20,
       "owners": [
@@ -113,7 +113,7 @@
     {
       "id": "D07_RESEARCH_WEB",
       "status": "INSUFFICIENT",
-      "urls": 92,
+      "urls": 90,
       "primaryTagged": 80,
       "target": 12,
       "owners": [
@@ -135,7 +135,7 @@
     {
       "id": "D09_DEEP_THINK",
       "status": "INSUFFICIENT",
-      "urls": 43,
+      "urls": 41,
       "primaryTagged": 47,
       "target": 10,
       "owners": [
@@ -146,7 +146,7 @@
     {
       "id": "D10_FILES_MULTIMODAL",
       "status": "INSUFFICIENT",
-      "urls": 46,
+      "urls": 44,
       "primaryTagged": 60,
       "target": 8,
       "owners": [
@@ -168,7 +168,7 @@
     {
       "id": "D12_UI_DESIGN_SYSTEM",
       "status": "INSUFFICIENT",
-      "urls": 90,
+      "urls": 88,
       "primaryTagged": 122,
       "target": 10,
       "owners": [
@@ -245,7 +245,7 @@
     {
       "id": "D19_AGENT_ORCHESTRATION",
       "status": "INSUFFICIENT",
-      "urls": 97,
+      "urls": 95,
       "primaryTagged": 148,
       "target": 10,
       "owners": [
@@ -256,7 +256,7 @@
     {
       "id": "D20_PRODUCT_QUALITY",
       "status": "INSUFFICIENT",
-      "urls": 90,
+      "urls": 88,
       "primaryTagged": 122,
       "target": 8,
       "owners": [
@@ -289,7 +289,7 @@
     {
       "id": "D23_IMPORT_EXPORT_BACKUP",
       "status": "INSUFFICIENT",
-      "urls": 47,
+      "urls": 45,
       "primaryTagged": 60,
       "target": 6,
       "owners": [
@@ -333,7 +333,7 @@
     {
       "id": "D27_ERROR_RECOVERY_UX",
       "status": "INSUFFICIENT",
-      "urls": 90,
+      "urls": 88,
       "primaryTagged": 119,
       "target": 8,
       "owners": [
@@ -355,7 +355,7 @@
     {
       "id": "D29_REAL_WORKS_CANON",
       "status": "INSUFFICIENT",
-      "urls": 24,
+      "urls": 22,
       "primaryTagged": 19,
       "target": 8,
       "owners": [
@@ -366,7 +366,7 @@
     {
       "id": "D30_AUTONOMOUS_QUALITY",
       "status": "INSUFFICIENT",
-      "urls": 102,
+      "urls": 100,
       "primaryTagged": 212,
       "target": 12,
       "owners": [
