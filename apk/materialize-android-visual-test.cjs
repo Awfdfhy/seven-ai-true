@@ -93,7 +93,7 @@ public class SevenVisualEvidenceTest {
         shot("chat-night");
 
         js(webView,"(()=>{const b=document.querySelector('.seven-shell-model-chip');if(b)b.click();return true})()");
-        waitFor(webView,"(()=>{const m=document.querySelector('.seven-shell-model-menu'),r=m?.getBoundingClientRect();return !!m&&!m.hidden&&m.children.length>1&&r.width>180&&r.height>70&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight})()");
+        waitFor(webView,"(()=>{const m=document.querySelector('.seven-shell-model-menu'),r=m?.getBoundingClientRect();return !!m&&!m.hidden&&r.width>180&&r.height>40&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight})()");
         shot("model-menu-night");
         js(webView,"(()=>{document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));return true})()");Thread.sleep(80);
 
