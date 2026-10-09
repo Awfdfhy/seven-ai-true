@@ -154,7 +154,7 @@ export class IndexedDbRoomRepository implements RoomRepository {
     const id = requireRoomId(roomId);
     const db = await this.withSignal(this.open(), signal);
     throwIfAborted(signal);
-    const tx = db.transaction("rooms", "readonly");
+    const tx = this.startTransaction(db, "readonly");
     const raw = await this.request(
       tx.objectStore("rooms").get(id),
       tx,
@@ -175,7 +175,7 @@ export class IndexedDbRoomRepository implements RoomRepository {
     assertRoom(room);
     const db = await this.withSignal(this.open(), signal);
     throwIfAborted(signal);
-    const tx = db.transaction("rooms", "readwrite");
+    const tx = this.startTransaction(db, "readwrite");
     tx.objectStore("rooms").put(cloneRoom(room));
     await this.transaction(tx, signal);
   }
@@ -183,7 +183,7 @@ export class IndexedDbRoomRepository implements RoomRepository {
   async list(signal?: AbortSignal): Promise<readonly Room[]> {
     const db = await this.withSignal(this.open(), signal);
     throwIfAborted(signal);
-    const tx = db.transaction("rooms", "readonly");
+    const tx = this.startTransaction(db, "readonly");
     const raw = await this.request(
       tx.objectStore("rooms").getAll(),
       tx,
@@ -209,7 +209,7 @@ export class IndexedDbRoomRepository implements RoomRepository {
     const id = requireRoomId(roomId);
     const db = await this.withSignal(this.open(), signal);
     throwIfAborted(signal);
-    const tx = db.transaction("rooms", "readwrite");
+    const tx = this.startTransaction(db, "readwrite");
     tx.objectStore("rooms").delete(id);
     await this.transaction(tx, signal);
   }
@@ -253,6 +253,24 @@ export class IndexedDbRoomRepository implements RoomRepository {
           return;
         }
 
+        // Fail closed when another writer created an incompatible "rooms" store.
+        try {
+          const probe = db.transaction("rooms", "readonly");
+          if (probe.objectStore("rooms").keyPath !== "id") {
+            throw new Error("unexpected rooms keyPath");
+          }
+        } catch (error) {
+          db.close();
+          reject(
+            new SevenError({
+              code: "STORAGE",
+              message: "Room storage schema is incompatible.",
+              cause: error,
+            }),
+          );
+          return;
+        }
+
         settled = true;
         db.onversionchange = () => {
           db.close();
@@ -291,6 +309,18 @@ export class IndexedDbRoomRepository implements RoomRepository {
 
     this.dbPromise = promise;
     return promise;
+  }
+
+  private startTransaction(db: IDBDatabase, mode: IDBTransactionMode): IDBTransaction {
+    try {
+      return db.transaction("rooms", mode);
+    } catch (error) {
+      throw new SevenError({
+        code: "STORAGE",
+        message: "Room storage transaction could not be started.",
+        cause: error,
+      });
+    }
   }
 
   private withSignal<T>(
