@@ -66,7 +66,7 @@
       "id": "D03_TOOLS_CAPABILITY",
       "status": "INSUFFICIENT",
       "urls": 129,
-      "primaryTagged": 348,
+      "primaryTagged": 313,
       "target": 20,
       "owners": [
         "A04",
@@ -168,8 +168,8 @@
     {
       "id": "D12_UI_DESIGN_SYSTEM",
       "status": "INSUFFICIENT",
-      "urls": 88,
-      "primaryTagged": 122,
+      "urls": 82,
+      "primaryTagged": 84,
       "target": 10,
       "owners": [
         "A01",
@@ -179,8 +179,8 @@
     {
       "id": "D13_ARABIC_RTL_A11Y",
       "status": "INSUFFICIENT",
-      "urls": 30,
-      "primaryTagged": 61,
+      "urls": 25,
+      "primaryTagged": 23,
       "target": 8,
       "owners": [
         "A03",
@@ -212,8 +212,8 @@
     {
       "id": "D16_NETWORK_RESILIENCE",
       "status": "INSUFFICIENT",
-      "urls": 57,
-      "primaryTagged": 66,
+      "urls": 31,
+      "primaryTagged": 31,
       "target": 8,
       "owners": [
         "B07",
@@ -256,8 +256,8 @@
     {
       "id": "D20_PRODUCT_QUALITY",
       "status": "INSUFFICIENT",
-      "urls": 88,
-      "primaryTagged": 122,
+      "urls": 82,
+      "primaryTagged": 84,
       "target": 8,
       "owners": [
         "B10",
@@ -322,8 +322,8 @@
     {
       "id": "D26_SETTINGS_CONTROLS",
       "status": "INSUFFICIENT",
-      "urls": 43,
-      "primaryTagged": 69,
+      "urls": 31,
+      "primaryTagged": 31,
       "target": 6,
       "owners": [
         "A05",
@@ -333,8 +333,8 @@
     {
       "id": "D27_ERROR_RECOVERY_UX",
       "status": "INSUFFICIENT",
-      "urls": 88,
-      "primaryTagged": 119,
+      "urls": 82,
+      "primaryTagged": 84,
       "target": 8,
       "owners": [
         "B07",
