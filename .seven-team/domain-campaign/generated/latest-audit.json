@@ -39,7 +39,7 @@
     {
       "id": "D01_CHAT_CORE",
       "status": "INSUFFICIENT",
-      "urls": 69,
+      "urls": 71,
       "primaryTagged": 86,
       "target": 10,
       "owners": [
@@ -50,7 +50,7 @@
     {
       "id": "D02_MEMORY_CONTEXT",
       "status": "INSUFFICIENT",
-      "urls": 136,
+      "urls": 138,
       "primaryTagged": 339,
       "target": 20,
       "owners": [
@@ -65,7 +65,7 @@
     {
       "id": "D03_TOOLS_CAPABILITY",
       "status": "INSUFFICIENT",
-      "urls": 129,
+      "urls": 131,
       "primaryTagged": 348,
       "target": 20,
       "owners": [
@@ -80,7 +80,7 @@
     {
       "id": "D04_CODING_SYSTEM",
       "status": "INSUFFICIENT",
-      "urls": 93,
+      "urls": 95,
       "primaryTagged": 116,
       "target": 12,
       "owners": [
@@ -91,8 +91,8 @@
     {
       "id": "D05_SELF_DEVELOPMENT",
       "status": "INSUFFICIENT",
-      "urls": 43,
-      "primaryTagged": 90,
+      "urls": 30,
+      "primaryTagged": 39,
       "target": 12,
       "owners": [
         "B06",
@@ -190,8 +190,8 @@
     {
       "id": "D14_SECURITY_PRIVACY",
       "status": "INSUFFICIENT",
-      "urls": 67,
-      "primaryTagged": 92,
+      "urls": 40,
+      "primaryTagged": 41,
       "target": 12,
       "owners": [
         "A07",
@@ -234,8 +234,8 @@
     {
       "id": "D18_TESTING_EVALS",
       "status": "INSUFFICIENT",
-      "urls": 93,
-      "primaryTagged": 128,
+      "urls": 89,
+      "primaryTagged": 77,
       "target": 12,
       "owners": [
         "A08",
@@ -245,7 +245,7 @@
     {
       "id": "D19_AGENT_ORCHESTRATION",
       "status": "INSUFFICIENT",
-      "urls": 95,
+      "urls": 97,
       "primaryTagged": 148,
       "target": 10,
       "owners": [
@@ -267,7 +267,7 @@
     {
       "id": "D21_OBSERVABILITY_WORLD_MODEL",
       "status": "INSUFFICIENT",
-      "urls": 99,
+      "urls": 101,
       "primaryTagged": 100,
       "target": 8,
       "owners": [
@@ -278,7 +278,7 @@
     {
       "id": "D22_PROTOCOLS_INTEROP",
       "status": "INSUFFICIENT",
-      "urls": 79,
+      "urls": 81,
       "primaryTagged": 103,
       "target": 10,
       "owners": [
@@ -366,8 +366,8 @@
     {
       "id": "D30_AUTONOMOUS_QUALITY",
       "status": "INSUFFICIENT",
-      "urls": 100,
-      "primaryTagged": 212,
+      "urls": 99,
+      "primaryTagged": 161,
       "target": 12,
       "owners": [
         "A08",
