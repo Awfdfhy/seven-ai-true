@@ -50,8 +50,8 @@
     {
       "id": "D02_MEMORY_CONTEXT",
       "status": "INSUFFICIENT",
-      "urls": 119,
-      "primaryTagged": 262,
+      "urls": 136,
+      "primaryTagged": 339,
       "target": 20,
       "owners": [
         "A06",
@@ -65,8 +65,8 @@
     {
       "id": "D03_TOOLS_CAPABILITY",
       "status": "INSUFFICIENT",
-      "urls": 114,
-      "primaryTagged": 236,
+      "urls": 129,
+      "primaryTagged": 348,
       "target": 20,
       "owners": [
         "A04",
@@ -80,8 +80,8 @@
     {
       "id": "D04_CODING_SYSTEM",
       "status": "INSUFFICIENT",
-      "urls": 28,
-      "primaryTagged": 39,
+      "urls": 93,
+      "primaryTagged": 116,
       "target": 12,
       "owners": [
         "B06",
@@ -102,8 +102,8 @@
     {
       "id": "D06_RPG_WORLD",
       "status": "INSUFFICIENT",
-      "urls": 37,
-      "primaryTagged": 26,
+      "urls": 38,
+      "primaryTagged": 42,
       "target": 12,
       "owners": [
         "B05",
@@ -113,8 +113,8 @@
     {
       "id": "D07_RESEARCH_WEB",
       "status": "INSUFFICIENT",
-      "urls": 6,
-      "primaryTagged": 3,
+      "urls": 90,
+      "primaryTagged": 80,
       "target": 12,
       "owners": [
         "B03",
@@ -124,8 +124,8 @@
     {
       "id": "D08_MODEL_ROUTING",
       "status": "INSUFFICIENT",
-      "urls": 31,
-      "primaryTagged": 31,
+      "urls": 48,
+      "primaryTagged": 67,
       "target": 10,
       "owners": [
         "A05",
@@ -135,8 +135,8 @@
     {
       "id": "D09_DEEP_THINK",
       "status": "INSUFFICIENT",
-      "urls": 11,
-      "primaryTagged": 11,
+      "urls": 41,
+      "primaryTagged": 47,
       "target": 10,
       "owners": [
         "B04",
@@ -146,7 +146,7 @@
     {
       "id": "D10_FILES_MULTIMODAL",
       "status": "INSUFFICIENT",
-      "urls": 46,
+      "urls": 44,
       "primaryTagged": 60,
       "target": 8,
       "owners": [
@@ -157,8 +157,8 @@
     {
       "id": "D11_ANDROID_NATIVE",
       "status": "INSUFFICIENT",
-      "urls": 21,
-      "primaryTagged": 23,
+      "urls": 30,
+      "primaryTagged": 46,
       "target": 10,
       "owners": [
         "A02",
@@ -179,8 +179,8 @@
     {
       "id": "D13_ARABIC_RTL_A11Y",
       "status": "INSUFFICIENT",
-      "urls": 21,
-      "primaryTagged": 38,
+      "urls": 30,
+      "primaryTagged": 61,
       "target": 8,
       "owners": [
         "A03",
@@ -190,7 +190,7 @@
     {
       "id": "D14_SECURITY_PRIVACY",
       "status": "INSUFFICIENT",
-      "urls": 69,
+      "urls": 67,
       "primaryTagged": 92,
       "target": 12,
       "owners": [
@@ -212,8 +212,8 @@
     {
       "id": "D16_NETWORK_RESILIENCE",
       "status": "INSUFFICIENT",
-      "urls": 31,
-      "primaryTagged": 31,
+      "urls": 57,
+      "primaryTagged": 66,
       "target": 8,
       "owners": [
         "B07",
@@ -223,8 +223,8 @@
     {
       "id": "D17_PERFORMANCE_CONCURRENCY",
       "status": "INSUFFICIENT",
-      "urls": 62,
-      "primaryTagged": 47,
+      "urls": 88,
+      "primaryTagged": 83,
       "target": 10,
       "owners": [
         "A09",
@@ -234,8 +234,8 @@
     {
       "id": "D18_TESTING_EVALS",
       "status": "INSUFFICIENT",
-      "urls": 41,
-      "primaryTagged": 51,
+      "urls": 93,
+      "primaryTagged": 128,
       "target": 12,
       "owners": [
         "A08",
@@ -267,8 +267,8 @@
     {
       "id": "D21_OBSERVABILITY_WORLD_MODEL",
       "status": "INSUFFICIENT",
-      "urls": 69,
-      "primaryTagged": 64,
+      "urls": 99,
+      "primaryTagged": 100,
       "target": 8,
       "owners": [
         "A04",
@@ -300,8 +300,8 @@
     {
       "id": "D24_RELEASE_APK",
       "status": "INSUFFICIENT",
-      "urls": 21,
-      "primaryTagged": 23,
+      "urls": 99,
+      "primaryTagged": 100,
       "target": 8,
       "owners": [
         "A02",
@@ -333,8 +333,8 @@
     {
       "id": "D27_ERROR_RECOVERY_UX",
       "status": "INSUFFICIENT",
-      "urls": 82,
-      "primaryTagged": 84,
+      "urls": 88,
+      "primaryTagged": 119,
       "target": 8,
       "owners": [
         "B07",
@@ -344,8 +344,8 @@
     {
       "id": "D28_LOCAL_INTELLIGENCE",
       "status": "INSUFFICIENT",
-      "urls": 31,
-      "primaryTagged": 31,
+      "urls": 48,
+      "primaryTagged": 67,
       "target": 8,
       "owners": [
         "A05",
@@ -355,8 +355,8 @@
     {
       "id": "D29_REAL_WORKS_CANON",
       "status": "INSUFFICIENT",
-      "urls": 6,
-      "primaryTagged": 3,
+      "urls": 22,
+      "primaryTagged": 19,
       "target": 8,
       "owners": [
         "B05",
@@ -366,8 +366,8 @@
     {
       "id": "D30_AUTONOMOUS_QUALITY",
       "status": "INSUFFICIENT",
-      "urls": 91,
-      "primaryTagged": 135,
+      "urls": 100,
+      "primaryTagged": 212,
       "target": 12,
       "owners": [
         "A08",
