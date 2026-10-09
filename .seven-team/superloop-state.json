@@ -1,17 +1,17 @@
 {
   "schemaVersion": 1,
   "enabled": true,
-  "lastCompletedCycle": 95,
-  "lastCompletedAt": "2026-10-09T10:09:45.043525+00:00",
+  "lastCompletedCycle": 96,
+  "lastCompletedAt": "2026-10-09T10:41:58.132828+00:00",
   "workBranch": "autoloop/seven-24h-work-v6",
   "productBranch": "seven-remake-v3",
-  "runId": "37905484354",
-  "runNumber": "196",
+  "runId": "37913097156",
+  "runNumber": "197",
   "summary": {
-    "cycle": 95,
+    "cycle": 96,
     "featureCandidates": 0,
     "featuresAccepted": 0,
-    "fixCandidates": 1,
+    "fixCandidates": 0,
     "fixesAccepted": 0,
     "polishAccepted": false,
     "apkState": "BLOCKED_NO_PRODUCT_DELTA",
@@ -51,11 +51,11 @@
       "D29_REAL_WORKS_CANON",
       "D30_AUTONOMOUS_QUALITY"
     ],
-    "head": "d67d36c4751f3eecfcd8181dec77567253cbfe9a",
+    "head": "28fcdcda31ace63f55a139db1e9e88376eb206dc",
     "autonomy": {
       "schemaVersion": 1,
-      "cycle": 95,
-      "sourceSha": "d67d36c4751f3eecfcd8181dec77567253cbfe9a",
+      "cycle": 96,
+      "sourceSha": "28fcdcda31ace63f55a139db1e9e88376eb206dc",
       "proof": {
         "deterministicFinalGates": true,
         "apkBuilt": false,
