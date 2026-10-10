@@ -9,8 +9,20 @@ export class ProviderRegistry{
     const checked=assertProviderAdapter(adapter);
     if(normalizeProviderId(checked.id)!==normalized.id)throw new Error("adapter id does not match descriptor id");
     if(this.#providers.has(normalized.id))throw new Error(`provider already registered: ${normalized.id}`);
+    // Validate every alias before committing any registry mutation.
+    // Otherwise an invalid later alias leaves a partially registered provider.
+    const planned=new Set();
+    for(const rawAlias of aliases){
+      const alias=normalizeProviderId(rawAlias);
+      if(alias===normalized.id)continue;
+      if(planned.has(alias)||this.#providers.has(alias)||this.#aliases.has(alias)||alias===normalized.id)
+        throw new Error(`provider alias already exists: ${alias}`);
+      planned.add(alias);
+    }
+    if(this.#aliases.has(normalized.id))
+      throw new Error(`provider id conflicts with alias: ${normalized.id}`);
     this.#providers.set(normalized.id,Object.freeze({descriptor:normalized,adapter:checked}));
-    for(const alias of aliases)this.alias(alias,normalized.id);
+    for(const alias of planned)this.#aliases.set(alias,normalized.id);
     return normalized;
   }
 
