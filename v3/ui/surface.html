@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en" data-s7-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Seven v3 Surface</title>
+<link rel="stylesheet" href="./tokens.css">
+<link rel="stylesheet" href="./shell.css">
+<link rel="stylesheet" href="./workspaces.css">
+<style>html,body,#surface{margin:0;min-height:100%;background:var(--s7-canvas)}#surface{min-height:100dvh}</style>
+</head>
+<body>
+<div id="surface"></div>
+<script type="module">
+import {renderSurface} from "./workspaces.mjs";
+const params=new URLSearchParams(location.search);
+const name=params.get("name")||"coding";
+const rtl=params.get("rtl")==="1";
+document.documentElement.lang=rtl?"ar":"en";
+document.documentElement.dir=rtl?"rtl":"ltr";
+document.getElementById("surface").innerHTML=renderSurface(name);
+</script>
+</body>
+</html>
