@@ -11,23 +11,42 @@
   <div id="app"></div>
   <script type="module">
     import {mountSevenShell} from "./app-shell.mjs";
+    const q=new URLSearchParams(location.search);
+    const ar=q.get("rtl")==="1";
+    const empty=q.get("empty")==="1";
+    document.documentElement.lang=ar?"ar":"en";
+    document.documentElement.dir=ar?"rtl":"ltr";
     mountSevenShell(document.getElementById("app"),{
-      title:"Seven v3",
+      lang:ar?"ar":"en",
+      title:ar?"تصميم Seven v3":"Designing Seven v3",
       activeRoomId:"r1",
       activeModel:"GPT-OSS 120B",
-      rooms:[
-        {id:"r1",title:"Seven v3 architecture"},
-        {id:"r2",title:"RPG world notes"},
-        {id:"r3",title:"Coding session"}
+      rooms:ar?[
+        {id:"r1",title:"تصميم واجهة Seven"},
+        {id:"r2",title:"الذاكرة طويلة المدى"},
+        {id:"r3",title:"مشروع RPG"},
+        {id:"r4",title:"خطة تطوير v3"}
+      ]:[
+        {id:"r1",title:"Designing Seven v3"},
+        {id:"r2",title:"Long-term memory"},
+        {id:"r3",title:"Building the RPG world"},
+        {id:"r4",title:"Provider architecture"}
       ],
       models:[
         {id:"GPT-OSS 120B",label:"GPT-OSS 120B"},
         {id:"Qwen 3.6 27B",label:"Qwen 3.6 27B"},
         {id:"Kimi K3",label:"Kimi K3"}
       ],
-      messages:[
-        {role:"user",content:"Can you review the new architecture?"},
-        {role:"assistant",content:"Yes. The provider layer is now isolated from the product UI, so Seven can evolve without coupling model SDKs to workspaces."}
+      messages:empty?[]:ar?[
+        {role:"user",content:"ما التغييرات التي تقترحها لواجهة Seven الجديدة؟"},
+        {role:"assistant",content:"أقترح واجهة أكثر هدوءًا وتركيزًا على المحادثة، مع قائمة جانبية واضحة وشريط كتابة ثابت في الأسفل.\\n\\n• توحيد المكونات والمسافات بين جميع الشاشات.\\n• إظهار أدوات النماذج عند الحاجة فقط.\\n• دعم العربية وRTL منذ البداية."},
+        {role:"user",content:"وماذا عن مساحة البرمجة والذاكرة؟"},
+        {role:"assistant",content:"ستبقى لكل مساحة هويتها العملية، لكنها تشترك مع المحادثة في نظام التصميم نفسه. أما الذاكرة فستظهر حالتها بوضوح دون ازدحام في الشاشة."}
+      ]:[
+        {role:"user",content:"How should we improve Seven's chat interface?"},
+        {role:"assistant",content:"Make conversation the center of the experience. Keep navigation quiet, improve message readability, and give the composer one clear primary action.\\n\\n• Consistent spacing across every workspace\\n• Contextual tools instead of permanent clutter\\n• Reliable mobile and Arabic layouts"},
+        {role:"user",content:"Can we keep the advanced features without making it complicated?"},
+        {role:"assistant",content:"Absolutely. Model selection, research, coding, and RPG can stay a tap away. The default view should feel focused—powerful when needed, invisible when not."}
       ]
     });
   </script>
