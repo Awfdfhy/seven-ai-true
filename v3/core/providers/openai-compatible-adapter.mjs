@@ -47,18 +47,21 @@ async function* parseSse(response,{provider,model}){
   }
   yield createProviderEvent("start",{provider,model});
   const reader=response.body.getReader(),decoder=new TextDecoder();
-  let buffer="",done=false,finishReason=null;
+  let buffer="",done=false,finishReason=null,terminated=false;
+  try{
   while(!done){
     const part=await reader.read();
     done=part.done;
     buffer+=decoder.decode(part.value||new Uint8Array(),{stream:!done});
     const lines=buffer.split(/\r?\n/);
     buffer=lines.pop()||"";
+    // Some providers end their stream without a final newline.
+    if(part.done&&buffer){lines.push(buffer);buffer=""}
     for(const line of lines){
       if(!line.startsWith("data:"))continue;
       const data=line.slice(5).trim();
       if(!data)continue;
-      if(data==="[DONE]"){done=true;break}
+      if(data==="[DONE]"){done=true;terminated=true;break}
       let packet;
       try{packet=JSON.parse(data)}catch{continue}
       const choice=packet?.choices?.[0]||{},delta=choice.delta||{};
@@ -70,6 +73,16 @@ async function* parseSse(response,{provider,model}){
       if(packet.usage)yield createProviderEvent("usage",{provider,model,usage:packet.usage});
       if(choice.finish_reason!=null)finishReason=choice.finish_reason;
     }
+  }
+  }catch(error){
+    yield createProviderEvent("error",{provider,model,error:normalizeProviderError(error,provider)});
+    return;
+  }finally{
+    reader.releaseLock();
+  }
+  if(!terminated&&finishReason===null){
+    yield createProviderEvent("error",{provider,model,error:normalizeProviderError(new Error("provider stream ended before completion"),provider)});
+    return;
   }
   yield createProviderEvent("complete",{provider,model,finishReason:finishReason||"stop"});
 }
@@ -109,7 +122,8 @@ export function createOpenAICompatibleAdapter(options={}){
     async listModels(context={}){
       const response=await fetchImpl(endpoint(options.modelsPath||"/models"),{
         method:"GET",
-        headers:headers(context)
+        headers:headers(context),
+        signal:context.signal
       });
       const body=await readJson(response);
       const list=Array.isArray(body?.data)?body.data:(Array.isArray(body?.models)?body.models:[]);
