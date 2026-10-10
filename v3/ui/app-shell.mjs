@@ -41,6 +41,7 @@ function messageMarkup(message,t){
 export function renderShell(root,state){
   if(!root)throw new TypeError("root is required");
   const t=TEXT[state.lang]||TEXT.en;
+  root.__sevenShellController?.abort();
   root.dir=state.lang==="ar"?"rtl":"ltr";
   root.lang=state.lang;
   root.innerHTML=`
@@ -140,6 +141,7 @@ export function renderShell(root,state){
   }
 
   const controller=new AbortController();
+  root.__sevenShellController=controller;
   const signal=controller.signal;
   root.addEventListener("click",async event=>{
     const target=event.target.closest?.("button,[data-room-id]");
