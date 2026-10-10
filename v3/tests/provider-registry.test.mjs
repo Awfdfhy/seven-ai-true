@@ -41,3 +41,25 @@ test("legacy catalog bridge groups only verified-free entries",()=>{
   assert.equal(map.get("gemini").length,1);
   assert.equal(bridgeLegacyProvider("gemini").kind,PROVIDER_KINDS.GOOGLE);
 });
+
+test("alias conflicts do not partially register provider",()=>{
+  const registry=createProviderRegistry();
+  const adapter=id=>({id,async listModels(){return []},async generate(){return {}}});
+  registry.register({id:"groq"},adapter("groq"),{aliases:["shared"]});
+  assert.throws(()=>registry.register({id:"other"},adapter("other"),{aliases:["valid","shared"]}),/already exists/);
+  assert.equal(registry.has("other"),false);
+  assert.equal(registry.has("valid"),false);
+  assert.equal(registry.get("shared").descriptor.id,"groq");
+  registry.register({id:"other"},adapter("other"),{aliases:["valid"]});
+  assert.equal(registry.get("valid").descriptor.id,"other");
+});
+
+test("duplicate aliases and provider ids colliding with aliases are rejected",()=>{
+  const registry=createProviderRegistry();
+  const adapter=id=>({id,async listModels(){return []},async generate(){return {}}});
+  registry.register({id:"groq"},adapter("groq"),{aliases:["shared"]});
+  assert.throws(()=>registry.register({id:"new"},adapter("new"),{aliases:["DUP","dup"]}),/already exists/);
+  assert.equal(registry.has("new"),false);
+  assert.throws(()=>registry.register({id:"shared"},adapter("shared")),/conflicts with alias/);
+  assert.equal(registry.get("shared").descriptor.id,"groq");
+});
