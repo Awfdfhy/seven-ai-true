@@ -5,6 +5,26 @@ const TEXT={
   ar:{chats:"المحادثات",newChat:"محادثة جديدة",message:"اكتب إلى Seven",chooseModel:"اختيار النموذج",workspace:"مساحة العمل",emptyTitle:"كيف يمكن لـ Seven مساعدتك؟",emptyBody:"ابدأ محادثة، أكمل مشروعًا، أو افتح مساحة عمل.",copy:"نسخ",menu:"القائمة",recent:"الأخيرة",spaces:"مساحات العمل",search:"البحث في المحادثات",thinking:"التفكير",intro:"كل فكرة تبدأ بمحادثة.",tip1:"استكشف فكرة",tip2:"اكتب وحسّن",tip3:"برمج مع Seven",inputNote:"قد يخطئ Seven؛ تحقّق من المعلومات المهمة.",online:"جاهز",attach:"إضافة ملفات",send:"إرسال رسالة"}
 };
 
+
+function icon(name,size=18){
+  const p={
+    edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+    search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+    history:'<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/>',
+    grid:'<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/>',
+    chevron:'<path d="m8 10 4 4 4-4"/>',
+    menu:'<path d="M4 7h16M4 12h16M4 17h16"/>',
+    plus:'<path d="M12 5v14M5 12h14"/>',
+    send:'<path d="m5 12 14-7-4 14-3-6-7-1Z"/><path d="m12 13 7-8"/>',
+    copy:'<rect x="8" y="8" width="11" height="11" rx="2"/><path d="M5 16H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+    more:'<circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.2" fill="currentColor" stroke="none"/>',
+    spark:'<path d="m12 3 1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5Z"/><path d="m18 15 .8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8Z"/>',
+    arrow:'<path d="M5 12h14M14 7l5 5-5 5"/>',
+    paperclip:'<path d="m21.4 11.6-8.9 8.9a6 6 0 0 1-8.5-8.5l9.6-9.6a4 4 0 0 1 5.7 5.7l-9.7 9.7a2 2 0 1 1-2.8-2.8l8.9-8.9"/>',
+  }[name]||'';
+  return `<svg class="s7-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+}
+
 function locale(lang){
   return String(lang||"").toLowerCase().startsWith("ar")?"ar":"en";
 }
@@ -24,7 +44,7 @@ export function createShellState(input={}){
 }
 
 function roomMarkup(room,active){
-  return `<button class="s7-room" type="button" data-room-id="${esc(room.id)}" data-active="${room.id===active}"><span class="s7-room-glyph" aria-hidden="true">◷</span><span class="s7-room-name">${esc(room.title||"Untitled")}</span></button>`;
+  return `<button class="s7-room" type="button" data-room-id="${esc(room.id)}" data-active="${room.id===active}"><span class="s7-room-glyph" aria-hidden="true">${icon("history",15)}</span><span class="s7-room-name">${esc(room.title||"Untitled")}</span></button>`;
 }
 
 function messageMarkup(message,t){
@@ -34,7 +54,7 @@ function messageMarkup(message,t){
   return `<article class="s7-message" data-role="${role}">
     ${assistant?'<div class="s7-assistant-identity"><span class="s7-avatar">7</span><strong>Seven</strong><span class="s7-status-indicator"></span></div>':""}
     <div class="s7-message-bubble" dir="auto">${content}</div>
-    <div class="s7-message-actions"><button class="s7-message-action" type="button" data-copy-message aria-label="${esc(t.copy)}">⧉ <span>${esc(t.copy)}</span></button></div>
+    <div class="s7-message-actions"><button class="s7-message-action" type="button" data-copy-message aria-label="${esc(t.copy)}">${icon("copy",14)} <span>${esc(t.copy)}</span></button></div>
   </article>`;
 }
 
@@ -48,30 +68,30 @@ export function renderShell(root,state){
   <div class="s7-app" data-nav-open="false">
     <aside class="s7-sidebar" aria-label="${esc(t.chats)}">
       <div class="s7-sidebar-head"><div class="s7-brand"><span class="s7-brand-mark">7</span><span>Seven<span class="s7-brand-period">.</span></span></div><span class="s7-sidebar-meta">v3</span></div>
-      <button class="s7-new-chat" type="button" data-new-chat><span aria-hidden="true">✎</span><span>${esc(t.newChat)}</span><span class="s7-new-shortcut">＋</span></button><div class="s7-sidebar-search"><span aria-hidden="true">⌕</span><span>${esc(t.search)}</span><kbd>⌘K</kbd></div><div class="s7-sidebar-divider"></div>
+      <button class="s7-new-chat" type="button" data-new-chat>${icon("edit",17)}<span>${esc(t.newChat)}</span><span class="s7-new-shortcut">${icon("plus",14)}</span></button><div class="s7-sidebar-search">${icon("search",16)}<span>${esc(t.search)}</span><kbd>⌘K</kbd></div><div class="s7-sidebar-divider"></div>
       <div class="s7-section-label">${esc(t.recent)}</div>
-      <div class="s7-room-list">${state.rooms.map(r=>roomMarkup(r,state.activeRoomId)).join("")}</div><div class="s7-sidebar-bottom"><span class="s7-user-avatar">S</span><span>Seven workspace<small>Personal</small></span><span aria-hidden="true">⋯</span></div>
+      <div class="s7-room-list">${state.rooms.map(r=>roomMarkup(r,state.activeRoomId)).join("")}</div><div class="s7-sidebar-bottom"><span class="s7-user-avatar">S</span><span>Seven workspace<small>Personal</small></span>${icon("more",18)}</div>
     </aside>
 
     <main class="s7-main">
       <header class="s7-topbar">
-        <button class="s7-icon-btn s7-menu-toggle" type="button" data-nav-toggle aria-label="${esc(t.menu)}">☰</button>
+        <button class="s7-icon-btn s7-menu-toggle" type="button" data-nav-toggle aria-label="${esc(t.menu)}">${icon("menu",18)}</button>
         <div class="s7-title-group"><div class="s7-title">${esc(state.title)}</div><span class="s7-chat-context">${esc(t.online)} <span aria-hidden="true">·</span> Chat</span></div>
-        <button class="s7-workspace-trigger" type="button" data-workspace-trigger aria-haspopup="menu"><span aria-hidden="true">▦</span><span data-label>${esc(t.workspace)}</span></button>
-        <button class="s7-model-trigger" type="button" data-model-trigger aria-haspopup="listbox" aria-expanded="false"><span class="s7-model-dot"></span><span data-label>${esc(state.activeModel||t.chooseModel)}</span><span>⌄</span></button>
+        <button class="s7-workspace-trigger" type="button" data-workspace-trigger aria-haspopup="menu">${icon("grid",16)}<span data-label>${esc(t.workspace)}</span></button>
+        <button class="s7-model-trigger" type="button" data-model-trigger aria-haspopup="listbox" aria-expanded="false"><span class="s7-model-dot"></span><span data-label>${esc(state.activeModel||t.chooseModel)}</span>${icon("chevron",15)}</button>
       </header>
 
       <section class="s7-chat" data-chat>
         <div class="s7-chat-inner">
-          ${state.messages.length?state.messages.map(m=>messageMarkup(m,t)).join(""):`<section class="s7-empty"><div><div class="s7-empty-mark">7</div><div class="s7-eyebrow">SEVEN AI</div><h1>${esc(t.emptyTitle)}</h1><p>${esc(t.intro)}</p><div class="s7-starters"><button type="button" data-starter="${esc(t.tip1)}">${esc(t.tip1)} <span>↗</span></button><button type="button" data-starter="${esc(t.tip2)}">${esc(t.tip2)} <span>↗</span></button><button type="button" data-starter="${esc(t.tip3)}">${esc(t.tip3)} <span>↗</span></button></div></div></section>`}
+          ${state.messages.length?state.messages.map(m=>messageMarkup(m,t)).join(""):`<section class="s7-empty"><div><div class="s7-empty-mark">7</div><div class="s7-eyebrow">SEVEN AI</div><h1>${esc(t.emptyTitle)}</h1><p>${esc(t.intro)}</p><div class="s7-starters"><button type="button" data-starter="${esc(t.tip1)}">${esc(t.tip1)} <span>${icon("arrow",14)}</span></button><button type="button" data-starter="${esc(t.tip2)}">${esc(t.tip2)} <span>${icon("arrow",14)}</span></button><button type="button" data-starter="${esc(t.tip3)}">${esc(t.tip3)} <span>${icon("arrow",14)}</span></button></div></div></section>`}
         </div>
       </section>
 
       <footer class="s7-composer-wrap">
         <form class="s7-composer" data-composer>
-          <button class="s7-icon-btn s7-attach" type="button" data-attach aria-label="${esc(t.attach)}">＋</button>
+          <button class="s7-icon-btn s7-attach" type="button" data-attach aria-label="${esc(t.attach)}">${icon("paperclip",18)}</button>
           <textarea rows="1" data-input dir="auto" placeholder="${esc(t.message)}"></textarea>
-          <button class="s7-send" type="submit" data-send aria-label="${esc(t.send)}">↑</button>
+          <button class="s7-send" type="submit" data-send aria-label="${esc(t.send)}">${icon("send",18)}</button>
         </form><div class="s7-composer-meta"><span><i class="s7-ready-dot"></i> Seven <span class="s7-composer-meta-sub">${esc(t.online)}</span></span><span>${esc(t.inputNote)}</span></div>
       </footer>
     </main>
