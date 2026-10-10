@@ -82,3 +82,13 @@ test("model catalog request forwards AbortSignal",async()=>{
   await adapter.listModels({signal:controller.signal});
   assert.equal(actual,controller.signal);
 });
+
+test("premature provider EOF must never masquerade as a successful completion",async()=>{
+  const fetchImpl=async()=>new Response('data: {"choices":[{"delta":{"content":"partial"}}]}\n',{status:200});
+  const adapter=createOpenAICompatibleAdapter({id:"demo",baseURL:"https://example.test/v1",fetchImpl});
+  const request=createProviderRequest({provider:"demo",model:"m",messages:[{role:"user",content:"hi"}]});
+  const out=await collectProviderEvents(adapter.stream(request));
+  assert.equal(out.text,"partial");
+  assert.equal(out.events.at(-1).type,"error");
+  assert.equal(out.events.some(event=>event.type==="complete"),false);
+});
