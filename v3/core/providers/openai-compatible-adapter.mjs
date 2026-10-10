@@ -54,6 +54,8 @@ async function* parseSse(response,{provider,model}){
     buffer+=decoder.decode(part.value||new Uint8Array(),{stream:!done});
     const lines=buffer.split(/\r?\n/);
     buffer=lines.pop()||"";
+    // Some providers end their stream without a final newline.
+    if(part.done&&buffer){lines.push(buffer);buffer=""}
     for(const line of lines){
       if(!line.startsWith("data:"))continue;
       const data=line.slice(5).trim();
