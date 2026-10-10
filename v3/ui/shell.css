@@ -473,3 +473,82 @@ button{color:inherit}
 .s7-model-dot{background:var(--s7-accent-cyan);box-shadow:0 0 0 3px var(--s7-accent-cyan-soft)}
 .s7-status-indicator,.s7-ready-dot{box-shadow:0 0 0 3px color-mix(in srgb,var(--s7-success) 14%,transparent)}
 .s7-new-chat:hover,.s7-new-chat:focus-visible{border-color:color-mix(in srgb,var(--s7-accent-cyan) 45%,var(--s7-border));background:linear-gradient(90deg,var(--s7-accent-soft),var(--s7-accent-cyan-soft));outline:none}
+
+/* Chat polish pass: typography, hierarchy, actions and composer */
+body{
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  font-feature-settings:"cv02","cv03","cv04","cv11";
+  text-rendering:optimizeLegibility;
+}
+.s7-sidebar{border-inline-end-color:color-mix(in srgb,var(--s7-border) 78%,transparent)}
+.s7-sidebar-search{background:transparent}
+.s7-sidebar-search:hover{background:var(--s7-surface-hover);color:var(--s7-text)}
+.s7-room-list{padding-inline:10px}
+.s7-room{min-height:39px;padding-inline:10px}
+.s7-room-glyph{width:18px;display:grid;place-items:center;color:color-mix(in srgb,var(--s7-text-muted) 88%,transparent)}
+.s7-room[data-active="true"] .s7-room-glyph{color:var(--s7-accent-cyan)}
+.s7-section-label{margin-block-start:2px}
+.s7-title{font-size:.84rem;letter-spacing:-.012em}
+.s7-chat-context{letter-spacing:.01em}
+.s7-workspace-trigger{
+  min-height:38px;height:38px;padding-inline:10px;border:1px solid transparent;border-radius:11px;
+}
+.s7-workspace-trigger:hover,.s7-workspace-trigger:focus-visible{border-color:var(--s7-border)}
+.s7-topbar-label{
+  padding:3px 6px;border-radius:7px;background:var(--s7-surface-raised);color:var(--s7-text-muted);
+  font-size:.62rem;font-weight:750;text-transform:capitalize;
+}
+.s7-chat-inner{width:min(760px,100%)}
+.s7-message{margin-block:28px}
+.s7-message[data-role="user"]{padding-inline-start:14%}
+.s7-message[data-role="assistant"]{padding-inline-end:3%}
+.s7-assistant-identity strong{font-size:.76rem;letter-spacing:-.01em}
+.s7-message-bubble{font-size:.89rem;line-height:1.78;letter-spacing:.001em}
+.s7-message[data-role="user"] .s7-message-bubble{
+  background:linear-gradient(180deg,color-mix(in srgb,var(--s7-surface-raised) 96%,var(--s7-accent-soft)),var(--s7-surface-raised));
+  box-shadow:0 4px 14px rgba(0,0,0,.08);
+}
+.s7-message-actions{opacity:.48;transition:opacity var(--s7-fast) var(--s7-ease)}
+.s7-message:hover .s7-message-actions,.s7-message:focus-within .s7-message-actions{opacity:1}
+.s7-message-action{
+  display:inline-flex;align-items:center;gap:6px;min-width:30px;min-height:30px;padding-inline:7px;border-radius:8px;
+}
+.s7-action-label{font-size:.64rem}
+.s7-composer{
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  min-height:60px;
+  padding:8px 9px 8px 10px;
+  border-radius:20px;
+}
+.s7-composer textarea{min-height:42px;padding:10px 3px 8px;line-height:1.55}
+.s7-composer-actions{display:flex;align-items:center;gap:7px}
+.s7-mode-chip{
+  min-height:34px;display:inline-flex;align-items:center;gap:5px;padding-inline:9px;
+  border:1px solid var(--s7-border);border-radius:10px;background:var(--s7-surface-raised);
+  color:var(--s7-text-muted);font-size:.63rem;font-weight:750;white-space:nowrap;
+}
+.s7-mode-chip .s7-icon{color:var(--s7-accent-cyan)}
+.s7-send{box-shadow:0 6px 18px color-mix(in srgb,var(--s7-accent-strong) 28%,transparent)}
+.s7-composer-meta{margin-block-start:7px;opacity:.85}
+.s7-composer-meta>span:last-child{max-width:62%;text-align:end}
+.s7-starters button{
+  transition:border-color var(--s7-fast) var(--s7-ease),background var(--s7-fast) var(--s7-ease),transform var(--s7-fast) var(--s7-ease);
+}
+.s7-starters button:hover{background:var(--s7-surface-raised);transform:translateY(-1px)}
+@media(max-width:820px){
+  .s7-message[data-role="user"]{padding-inline-start:9%}
+  .s7-message[data-role="assistant"]{padding-inline-end:0}
+}
+@media(max-width:620px){
+  .s7-message{margin-block:22px}
+  .s7-message[data-role="user"]{padding-inline-start:14%}
+  .s7-message-bubble{font-size:.855rem;line-height:1.68}
+  .s7-action-label{display:none}
+  .s7-message-actions{opacity:.62}
+  .s7-mode-chip span{display:none}
+  .s7-mode-chip{width:34px;padding:0;justify-content:center}
+  .s7-composer-actions{gap:5px}
+  .s7-topbar-label{display:none}
+  .s7-composer-meta>span:last-child{max-width:72%}
+}
