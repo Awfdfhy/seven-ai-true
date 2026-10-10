@@ -9,10 +9,11 @@ await fs.mkdir(out,{recursive:true});
 
 const browser=await chromium.launch({headless:true});
 async function shot(name,url,viewport,{fullPage=false}={}){
-  const page=await browser.newPage({viewportSize:viewport,deviceScaleFactor:1});
+  const context=await browser.newContext({viewport,deviceScaleFactor:1});
+  const page=await context.newPage();
   await page.goto(url,{waitUntil:"networkidle"});
   await page.screenshot({path:path.join(out,name+".png"),fullPage});
-  await page.close();
+  await context.close();
 }
 
 const base=process.env.SEVEN_V3_UI_URL||"http://127.0.0.1:4173";
