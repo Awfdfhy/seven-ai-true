@@ -627,6 +627,33 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       assert.equal(await page.evaluate(()=>!document.getElementById('seven-github-selfdev')&&[...document.getElementById('seven-app').children].every(x=>!x.inert)),true);
       await page.close();
     });
+    await test('canonical model picker keeps cooled routes visible and disabled',async()=>{
+      const page=await browser.newPage({viewport:{width:320,height:800}});
+      await page.goto(origin,{waitUntil:'domcontentloaded'});
+      await page.waitForFunction(()=>window.SevenShell&&window.SevenRemake&&typeof populateFreeModelSelect==='function');
+      await page.evaluate(()=>{
+        window.__sevenOriginalPickerHealth=computeHealthSignalV3;
+        computeHealthSignalV3=()=>({state:'cooldown',score:0});
+        populateFreeModelSelect();SevenShell.sync();
+      });
+      await page.click('.seven-shell-model-chip');
+      await page.waitForFunction(()=>{
+        const m=document.querySelector('.seven-shell-model-menu');
+        return m&&!m.hidden&&m.children.length>1;
+      });
+      const state=await page.evaluate(()=>{
+        const m=document.querySelector('.seven-shell-model-menu'),r=m.getBoundingClientRect();
+        return{disabled:[...m.querySelectorAll('button')].every(b=>b.disabled&&b.getAttribute('aria-disabled')==='true'),bounded:r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight,labels:m.textContent,options:document.getElementById('modelSelect').options.length};
+      });
+      assert.ok(state.options>1);assert.equal(state.disabled,true);assert.equal(state.bounded,true);
+      assert.match(state.labels,/Cooling down|تهدئة مؤقتة/);
+      await page.evaluate(()=>{
+        document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+        computeHealthSignalV3=window.__sevenOriginalPickerHealth;populateFreeModelSelect();SevenShell.sync();
+      });
+      assert.equal(await page.evaluate(()=>[...document.getElementById('modelSelect').options].some(o=>!o.disabled)),true);
+      await page.close();
+    });
     await test('Arabic sidebar room search model picker and final nav are localized',async()=>{
       const page=await browser.newPage({viewport:{width:390,height:844}});
       await page.addInitScript(()=>{localStorage.setItem('seven_ui_language','ar');localStorage.setItem('user_name_asked','1');});

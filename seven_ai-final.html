@@ -2271,18 +2271,30 @@
             const pool = ready.length ? ready : all;
             const context = modelPickerContextV3();
             const ranked = rankModelCandidatesV3(pool,context);
+            // Keep temporarily unavailable catalog entries visible in the picker.
+            // Routing still uses eligible ranked candidates only.
+            const rankedKeys = new Set(ranked.map(row=>freeModelSelectionKey(row.model.provider,row.model.id)));
+            const unavailable = pool.filter(model=>!rankedKeys.has(freeModelSelectionKey(model.provider,model.id))).map(model=>{
+                const result=scoreModelCandidateV3(model,context);
+                return {model,score:0,unavailable:true,reason:result.parts?.reason||"unavailable"};
+            });
+            const pickerRows = ranked.concat(unavailable);
             select.innerHTML = "";
 
             const group = document.createElement("optgroup");
             group.label = "Recommended for this request — strongest first";
-            ranked.forEach((row,index)=>{
+            pickerRows.forEach((row,index)=>{
                 const model=row.model;
                 const opt=document.createElement("option");
                 opt.value=freeModelSelectionKey(model.provider,model.id);
                 opt.dataset.rank=String(index+1);
                 opt.dataset.score=row.score.toFixed(2);
                 opt.dataset.confidence=context.confidence.toFixed(2);
-                const reason=formatModelReasonV3(row);
+                const ar=String(document.documentElement.lang||"").toLowerCase().startsWith("ar");
+                const unavailableLabel=row.reason==="cooldown" ? (ar?"تهدئة مؤقتة":"Cooling down") : row.reason==="context" ? (ar?"يتجاوز الطلب سعة السياق":"Request exceeds context") : row.reason==="capability" ? (ar?"غير متوافق مع متطلبات الطلب":"Request requirements unavailable") : (ar?"غير متاح مؤقتًا":"Temporarily unavailable");
+                const reason=row.unavailable ? unavailableLabel : formatModelReasonV3(row);
+                opt.disabled=row.unavailable===true;
+                if(row.unavailable)opt.dataset.unavailableReason=row.reason;
                 const dynamic=model.discovered ? " • discovered" : "";
                 opt.textContent="#" + (index+1) + " " + model.label + " • " + providerDisplayName(model.provider) + " • " + Math.round(model.contextWindow/1024) + "K ctx" + (reason ? " • "+reason : "") + dynamic;
                 group.appendChild(opt);
@@ -2292,6 +2304,10 @@
             if (!select.value && select.options.length) select.selectedIndex=0;
 
             const status=document.getElementById("freeModelStatus");
+            if (status && !ranked.length && pickerRows.length) {
+                status.textContent=String(document.documentElement.lang||"").toLowerCase().startsWith("ar") ? "النماذج ظاهرة؛ لا يوجد مسار جاهز لهذا الطلب الآن." : "Models are shown; no route is ready for this request right now.";
+                updateRouteStatusUiV1();
+            }
             if (status && ranked.length) {
                 const top=ranked[0], confidence=Math.round(context.confidence*100);
                 status.textContent="Recommended #1: " + top.model.label + " • " + (formatModelReasonV3(top) || "best metadata fit") + " • confidence " + confidence + "%.";
