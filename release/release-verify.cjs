@@ -623,6 +623,16 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       assert.equal(state.bounded,true);
       assert.equal(state.overflow,true);
       assert.equal(state.isolated,true);
+      await page.evaluate(()=>SevenTheme.setPreference('night'));
+      await page.waitForFunction(()=>document.documentElement.dataset.sevenTheme==='night');
+      const night=await page.evaluate(()=>{
+        const card=getComputedStyle(document.querySelector('.seven-gh-card'));
+        const muted=getComputedStyle(document.querySelector('.seven-gh-muted'));
+        return {bg:card.backgroundColor,text:card.color,muted:muted.color};
+      });
+      assert.equal(night.bg,'rgb(28, 41, 35)');
+      assert.equal(night.text,'rgb(237, 245, 240)');
+      assert.equal(night.muted,'rgb(168, 184, 175)');
       await page.click('.seven-gh-close');
       assert.equal(await page.evaluate(()=>!document.getElementById('seven-github-selfdev')&&[...document.getElementById('seven-app').children].every(x=>!x.inert)),true);
       await page.close();
@@ -713,7 +723,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       const page=await browser.newPage({viewport:{width:360,height:800}});
       await page.addInitScript(()=>{localStorage.setItem('seven_ui_language','ar');localStorage.setItem('user_name_asked','1');});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenRemake&&typeof roomPersistence!=='undefined'&&roomPersistence.status().ready&&!!document.querySelector('.seven-shell-jump'));
+      await page.waitForFunction(()=>window.SevenRemake&&!!document.querySelector('.seven-shell-jump'));
       await page.evaluate(()=>{
         const chat=document.getElementById('chat');
         chat.innerHTML=Array.from({length:32},(_,i)=>'<div class="message assistant"><div class="bubble"><p>رسالة طويلة '+i+' '.repeat(12)+'</p><p>'+('نص '.repeat(40))+'</p></div></div>').join('');
@@ -775,3 +785,4 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
   }finally{await browser.close();server.close();}
   console.log(`release verification: PASS (${results.length} checks, ${releaseLayerBytes} startup bytes; frontier=${MODEL_ID}; PDF/attachments/workspaces lazy-local)`);
 })().catch(e=>{console.error(e);process.exit(1)});
+

@@ -32,7 +32,7 @@ public class SevenVisualEvidenceTest {
   }
   private void waitFor(WebView webView,String code) throws Exception {
     for(int i=0;i<100;i++){ if("true".equals(js(webView,code)))return; Thread.sleep(200); }
-    try { shot("failure-ready"); } catch(Exception ignored) {}
+    try { shot(webView,"failure-ready"); } catch(Exception ignored) {}
     fail("Seven visual state did not become ready: "+code+"; state="+js(webView,"JSON.stringify({theme:document.documentElement.dataset.sevenTheme,motion:document.documentElement.dataset.sevenReducedMotion,persistence:typeof roomPersistence!=='undefined'?roomPersistence.status():null,modelOptions:document.getElementById('modelSelect')?.options.length,modelPopulate:typeof populateFreeModelSelect,routeState:typeof getRouteUiStateV1==='function'?getRouteUiStateV1():null,modelMenu:(()=>{const m=document.querySelector('.seven-shell-model-menu'),rect=m?.getBoundingClientRect();return m?{hidden:m.hidden,children:m.children.length,display:getComputedStyle(m).display,left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom,width:rect.width,height:rect.height,viewport:[innerWidth,innerHeight]}:null})(),rootBg:document.getElementById('seven-app')?getComputedStyle(document.getElementById('seven-app')).getPropertyValue('--s-bg'):null,main:document.querySelector('.main')?getComputedStyle(document.querySelector('.main')).backgroundColor:null,composer:document.querySelector('.composer')?getComputedStyle(document.querySelector('.composer')).backgroundColor:null})"));
   }
   private String shell(String command) throws Exception {
@@ -51,8 +51,21 @@ public class SevenVisualEvidenceTest {
     String value=shell("settings get global "+key);
     assertEquals("Android animation scale must be genuinely disabled: "+key,0f,Float.parseFloat(value),0.0001f);
   }
-  private void shot(String name) throws Exception {
+  private void shot(WebView webView,String name) throws Exception {
     assertTrue("invalid evidence screenshot name",name!=null&&name.matches("[a-z0-9-]+"));
+    // DOM readiness precedes WebView composition. Keep each state open until
+    // transitions settle and Chromium confirms it is ready for the next draw.
+    Thread.sleep(450);
+    CountDownLatch drawn=new CountDownLatch(1);
+    webView.post(() -> {
+      webView.postVisualStateCallback(System.nanoTime(),new WebView.VisualStateCallback(){
+        @Override public void onComplete(long requestId){ drawn.countDown(); }
+      });
+      webView.invalidate();
+    });
+    assertTrue("WebView visual state timed out: "+name,drawn.await(12,TimeUnit.SECONDS));
+    InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+    Thread.sleep(150);
     String out=EVIDENCE_ROOT+"/"+name+".png";
     shell("screencap -p "+out);
   }
@@ -88,46 +101,47 @@ public class SevenVisualEvidenceTest {
 
         theme(webView,"day");
         assertEquals("true",js(webView,"getComputedStyle(document.getElementById('seven-app')).getPropertyValue('--s-bg').trim()==='#f5f7f5'"));
-        shot("chat-day");
+        shot(webView,"chat-day");
         theme(webView,"night");
         waitFor(webView,"(()=>{const root=document.getElementById('seven-app'),main=document.querySelector('.main'),composer=document.querySelector('.composer');const rs=getComputedStyle(root),ms=getComputedStyle(main),cs=getComputedStyle(composer);return rs.getPropertyValue('--s-bg').trim()==='#111815'&&ms.backgroundColor==='rgb(17, 24, 21)'&&cs.backgroundColor==='rgb(17, 24, 21)'&&rs.color!=='rgb(0, 0, 0)'})()");
-        shot("chat-night");
+        shot(webView,"chat-night");
 
         js(webView,"(()=>{const b=document.querySelector('.seven-shell-model-chip');if(b)b.click();return true})()");
         waitFor(webView,"(()=>{const m=document.querySelector('.seven-shell-model-menu'),r=m?.getBoundingClientRect();return !!m&&!m.hidden&&m.children.length>1&&r.width>180&&r.height>70&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight})()");
-        shot("model-menu-night");
+        shot(webView,"model-menu-night");
         js(webView,"(()=>{document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));return true})()");Thread.sleep(80);
 
-        js(webView,"(()=>{SevenRemake.modeDialog();return true})()");waitFor(webView,"Boolean(document.querySelector('#seven-app > .s-modal .s-dialog'))");shot("mode-dialog-night");js(webView,"(()=>{SevenRemake.closeDialog();return true})()");Thread.sleep(80);
-        js(webView,"(()=>{SevenRemake.depthDialog();return true})()");waitFor(webView,"Boolean(document.querySelector('#seven-app > .s-modal .s-dialog'))");shot("depth-dialog-night");js(webView,"(()=>{SevenRemake.closeDialog();return true})()");Thread.sleep(80);
-        js(webView,"(()=>{SevenRemake.searchSettings();return true})()");waitFor(webView,"Boolean(document.querySelector('#seven-app > .s-modal .s-dialog'))");shot("search-dialog-night");js(webView,"(()=>{SevenRemake.closeDialog();return true})()");Thread.sleep(80);
+        js(webView,"(()=>{SevenRemake.modeDialog();return true})()");waitFor(webView,"Boolean(document.querySelector('#seven-app > .s-modal .s-dialog'))");shot(webView,"mode-dialog-night");js(webView,"(()=>{SevenRemake.closeDialog();return true})()");Thread.sleep(80);
+        js(webView,"(()=>{SevenRemake.depthDialog();return true})()");waitFor(webView,"Boolean(document.querySelector('#seven-app > .s-modal .s-dialog'))");shot(webView,"depth-dialog-night");js(webView,"(()=>{SevenRemake.closeDialog();return true})()");Thread.sleep(80);
+        js(webView,"(()=>{SevenRemake.searchSettings();return true})()");waitFor(webView,"Boolean(document.querySelector('#seven-app > .s-modal .s-dialog'))");shot(webView,"search-dialog-night");js(webView,"(()=>{SevenRemake.closeDialog();return true})()");Thread.sleep(80);
 
         js(webView,"(()=>{window.__sevenAttachVisual='loading';SevenAttachmentLoader.load().then(()=>{document.querySelector('[data-seven-attach-trigger]')?.click();window.__sevenAttachVisual='ok'}).catch(()=>window.__sevenAttachVisual='error');return true})()");
         waitFor(webView,"window.__sevenAttachVisual==='ok'&&Boolean(document.querySelector('.seven-attach-menu')&&!document.querySelector('.seven-attach-menu').hidden)");
-        shot("attachments-night");
+        shot(webView,"attachments-night");
         js(webView,"(()=>{document.querySelector('[data-seven-attach-trigger]')?.click();return true})()");Thread.sleep(80);
 
         js(webView,"(()=>{window.__sevenGhVisual='loading';if(window.SevenGitHubSelfDev){SevenGitHubSelfDev.openPanel();window.__sevenGhVisual='ok';return true}const s=document.createElement('script');s.src='./github-self-dev.js';s.onload=()=>{if(window.SevenGitHubSelfDev){SevenGitHubSelfDev.openPanel();window.__sevenGhVisual='ok'}else window.__sevenGhVisual='bad'};s.onerror=()=>window.__sevenGhVisual='error';document.head.appendChild(s);return true})()");
         waitFor(webView,"window.__sevenGhVisual==='ok'&&Boolean(document.querySelector('#seven-github-selfdev .seven-gh-panel'))");
-        shot("github-selfdev-night");
+        assertEquals("true",js(webView,"getComputedStyle(document.querySelector('.seven-gh-card')).backgroundColor==='rgb(28, 41, 35)'&&getComputedStyle(document.querySelector('.seven-gh-muted')).color==='rgb(168, 184, 175)'"));
+        shot(webView,"github-selfdev-night");
         js(webView,"(()=>{document.querySelector('#seven-github-selfdev .seven-gh-close')?.click();return true})()");Thread.sleep(80);
 
         assertEquals("true",js(webView,"(()=>{openSettings();const panel=id=>document.getElementById(id)?.closest('[role=tabpanel]')?.id||'';return panel('temperatureRange')==='s-settings-generation'&&panel('reasoningEffort')==='s-settings-generation'&&panel('pinnedNotes')==='s-settings-context'&&panel('providersSection')==='s-settings-models'&&panel('advancedSection')==='s-settings-data'&&panel('s-theme')==='s-settings-data'})()"));
         assertEquals("true",js(webView,"(()=>{const m=document.querySelector('#settingsModal .modal-content'),r=m.getBoundingClientRect();return m.scrollWidth<=m.clientWidth+1&&r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2})()"));
-        shot("settings-models-night");
-        js(webView,"(()=>{document.getElementById('s-tab-generation').click();return true})()");Thread.sleep(80);shot("settings-intelligence-night");
-        js(webView,"(()=>{document.getElementById('s-tab-context').click();return true})()");Thread.sleep(80);shot("settings-context-night");
-        js(webView,"(()=>{document.getElementById('s-tab-data').click();return true})()");Thread.sleep(80);shot("settings-app-night");
+        shot(webView,"settings-models-night");
+        js(webView,"(()=>{document.getElementById('s-tab-generation').click();return true})()");Thread.sleep(80);shot(webView,"settings-intelligence-night");
+        js(webView,"(()=>{document.getElementById('s-tab-context').click();return true})()");Thread.sleep(80);shot(webView,"settings-context-night");
+        js(webView,"(()=>{document.getElementById('s-tab-data').click();return true})()");Thread.sleep(80);shot(webView,"settings-app-night");
         js(webView,"(()=>{closeSettings();return true})()");Thread.sleep(80);
 
         ensureWorkspaces(webView);
         js(webView,"(()=>{SevenWorkspaces.openLauncher();return true})()");
         waitFor(webView,"Boolean(document.querySelector('.seven-ws-launcher .seven-ws-picker'))");
-        shot("workspace-picker-night");
+        shot(webView,"workspace-picker-night");
         js(webView,"(()=>{document.querySelector('.seven-ws-close')?.click();return true})()");Thread.sleep(80);
-        workspace(webView,"coding");shot("coding");
-        workspace(webView,"research");shot("research");
-        workspace(webView,"rpg");shot("rpg");
+        workspace(webView,"coding");shot(webView,"coding");
+        workspace(webView,"research");shot(webView,"research");
+        workspace(webView,"rpg");shot(webView,"rpg");
 
         js(webView,"(()=>{SevenWorkspaces.close();document.documentElement.lang='ar-IQ';document.documentElement.dir='rtl';document.body.dir='rtl';const s=document.querySelector('.sidebar');s.classList.remove('open','active');document.body.classList.remove('sidebar-open');document.documentElement.dataset.sevenShellSidebar='closed';return true})()");
         waitFor(webView,"document.documentElement.dir==='rtl'&&document.documentElement.lang==='ar-IQ'&&getComputedStyle(document.documentElement).direction==='rtl'");
@@ -137,14 +151,14 @@ public class SevenVisualEvidenceTest {
         js(webView,"(()=>{window.SevenShell?.sync?.();document.querySelector('.sidebar').classList.add('open');return true})()");
         Thread.sleep(380);
         assertEquals("true",js(webView,"(()=>{const r=document.querySelector('.sidebar').getBoundingClientRect(),b=document.querySelector('.seven-shell-backdrop');return r.left>=-2&&r.right<=innerWidth+2&&b&&!b.hidden&&b.parentElement?.id==='seven-app'})()"));
-        shot("sidebar-rtl-night");
+        shot(webView,"sidebar-rtl-night");
         js(webView,"(()=>{document.querySelector('.sidebar').classList.remove('open');return true})()");
         Thread.sleep(380);
         js(webView,"(()=>{const chat=document.getElementById('chat');for(let i=0;i<18;i++)addMessage('assistant','رسالة اختبار طويلة رقم '+(i+1)+' — '+('نص '.repeat(24)));chat.scrollTop=0;window.SevenShell?.sync?.();return true})()");
         waitFor(webView,"(()=>{const b=document.querySelector('.seven-shell-jump');return !!b&&b.classList.contains('show')&&b.getAttribute('aria-label')==='الانتقال إلى أحدث رسالة'&&b.parentElement?.id==='seven-app'})()");
-        shot("long-chat-jump-rtl-night");
+        shot(webView,"long-chat-jump-rtl-night");
         js(webView,"(()=>{const chat=document.getElementById('chat');chat.scrollTop=chat.scrollHeight;return true})()");Thread.sleep(100);
-        Thread.sleep(120);shot("arabic-rtl");
+        Thread.sleep(120);shot(webView,"arabic-rtl");
       }
 
       shell("settings put global window_animation_scale 0");
@@ -165,7 +179,7 @@ public class SevenVisualEvidenceTest {
         js(reducedWebView,"(()=>{document.documentElement.lang='en';document.documentElement.dir='ltr';document.body.dir='ltr';SevenTheme.setPreference('night');return true})()");
         waitFor(reducedWebView,"document.documentElement.dir==='ltr'&&document.documentElement.dataset.sevenTheme==='night'");
         waitFor(reducedWebView,"Boolean(window.__sevenAndroidMotion&&__sevenAndroidMotion.source==='ANDROID_GLOBAL_ANIMATION_SCALES'&&__sevenAndroidMotion.reducedMotion===true&&window.SevenPerformance&&SevenPerformance.state.reducedMotion===true&&document.documentElement.dataset.sevenReducedMotion==='1'&&window.SevenMotion&&SevenMotion.allow('ambient')===false)");
-        Thread.sleep(120);shot("reduced-motion");
+        Thread.sleep(120);shot(reducedWebView,"reduced-motion");
       }
     } finally {
       restoreScale("window_animation_scale",oldWindow);
@@ -193,3 +207,4 @@ public class SevenVisualEvidenceTest {
 `;
 fs.writeFileSync(path.join(testDir,"SevenVisualEvidenceTest.java"),source);
 console.log("android visual instrumentation materialization: PASS");
+

@@ -26,6 +26,7 @@ html,body{max-width:100%;overflow-x:hidden}
 #seven-app[data-seven-theme="night"],html[data-seven-theme="night"] #seven-app{
 --s-bg:#111815;--s-panel:#17211d;--s-panel-2:#1c2923;--s-text:#edf5f0;--s-muted:#a8b8af;--s-border:#33443b;--s-accent:#4ad8ad;
 --bg:#111815;--surface:#17211d;--surface2:#1c2923;--text:#edf5f0;--muted:#a8b8af;--border:#33443b;--accent:#4ad8ad;
+--seven-ui-surface-1:#17211d;--seven-ui-surface-2:#1c2923;--seven-ui-text:#edf5f0;--seven-ui-text-muted:#a8b8af;--seven-ui-border:#33443b;--seven-ui-accent:#4ad8ad;
 background:#111815!important;color:#edf5f0!important
 }
 html[data-seven-theme="night"] body{background:#111815!important;color:#edf5f0!important}
@@ -103,3 +104,4 @@ html[dir="rtl"] #seven-app .sidebar.collapsed:not(.open):not(.active){transform:
 #seven-app .topbar #persistenceStatus{display:none!important}
 #seven-app .topbar .seven-shell-model-chip{max-width:82px!important}
 }
+
