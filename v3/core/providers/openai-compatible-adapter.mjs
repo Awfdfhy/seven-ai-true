@@ -47,7 +47,7 @@ async function* parseSse(response,{provider,model}){
   }
   yield createProviderEvent("start",{provider,model});
   const reader=response.body.getReader(),decoder=new TextDecoder();
-  let buffer="",done=false,finishReason=null;
+  let buffer="",done=false,finishReason=null,terminated=false;
   try{
   while(!done){
     const part=await reader.read();
@@ -61,7 +61,7 @@ async function* parseSse(response,{provider,model}){
       if(!line.startsWith("data:"))continue;
       const data=line.slice(5).trim();
       if(!data)continue;
-      if(data==="[DONE]"){done=true;break}
+      if(data==="[DONE]"){done=true;terminated=true;break}
       let packet;
       try{packet=JSON.parse(data)}catch{continue}
       const choice=packet?.choices?.[0]||{},delta=choice.delta||{};
@@ -79,6 +79,10 @@ async function* parseSse(response,{provider,model}){
     return;
   }finally{
     reader.releaseLock();
+  }
+  if(!terminated&&finishReason===null){
+    yield createProviderEvent("error",{provider,model,error:normalizeProviderError(new Error("provider stream ended before completion"),provider)});
+    return;
   }
   yield createProviderEvent("complete",{provider,model,finishReason:finishReason||"stop"});
 }
