@@ -1,0 +1,45 @@
+name: Seven v3 visual evidence
+
+on:
+  push:
+    branches:
+      - "v3/**"
+    paths:
+      - "v3/ui/**"
+      - "v3/scripts/capture-ui.mjs"
+      - ".github/workflows/seven-v3-visual.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Install Playwright
+        working-directory: v3
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Start UI server
+        working-directory: v3/ui
+        run: |
+          python3 -m http.server 4173 > /tmp/seven-v3-ui.log 2>&1 &
+          echo $! > /tmp/seven-v3-ui.pid
+      - name: Capture screenshots
+        working-directory: v3
+        run: node scripts/capture-ui.mjs
+      - name: Upload visual evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: seven-v3-ui-evidence
+          path: v3/artifacts/ui/*.png
+          retention-days: 14
