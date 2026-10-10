@@ -13182,6 +13182,8 @@
                 addMessage("system", "⚠️ This page is open directly from disk (file://), which can block connections to external model APIs in many browsers. Serve it over http:// instead — easiest way: open a terminal in this file's folder and run `python3 -m http.server 8000`, then visit `http://localhost:8000/" + fileName + "`.");
             }, 300);
         }
+        populateFreeModelSelect(currentModel);
+        renderFreeModelFabricStatus();
         if (hasAnyConfiguredFreeProvider()) {
             setTimeout(() => refreshFreeModelCatalog({ force:false }).then(() => {
                 populateFreeModelSelect(currentModel);
