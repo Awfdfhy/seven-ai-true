@@ -3,8 +3,8 @@
   "domains": 30,
   "ready": 0,
   "missing": [
-    "D15_PERSISTENCE_RECOVERY",
-    "D17_PERFORMANCE_CONCURRENCY"
+    "D09_DEEP_THINK",
+    "D21_OBSERVABILITY_WORLD_MODEL"
   ],
   "insufficient": [
     "D01_CHAT_CORE",
@@ -42,8 +42,8 @@
     {
       "id": "D01_CHAT_CORE",
       "status": "INSUFFICIENT",
-      "urls": 69,
-      "primaryTagged": 86,
+      "urls": 13,
+      "primaryTagged": 22,
       "target": 10,
       "owners": [
         "B01",
@@ -53,8 +53,8 @@
     {
       "id": "D02_MEMORY_CONTEXT",
       "status": "INSUFFICIENT",
-      "urls": 123,
-      "primaryTagged": 251,
+      "urls": 133,
+      "primaryTagged": 275,
       "target": 20,
       "owners": [
         "A06",
@@ -68,8 +68,8 @@
     {
       "id": "D03_TOOLS_CAPABILITY",
       "status": "INSUFFICIENT",
-      "urls": 119,
-      "primaryTagged": 266,
+      "urls": 115,
+      "primaryTagged": 243,
       "target": 20,
       "owners": [
         "A04",
@@ -94,7 +94,7 @@
     {
       "id": "D05_SELF_DEVELOPMENT",
       "status": "INSUFFICIENT",
-      "urls": 43,
+      "urls": 45,
       "primaryTagged": 90,
       "target": 12,
       "owners": [
@@ -116,8 +116,8 @@
     {
       "id": "D07_RESEARCH_WEB",
       "status": "INSUFFICIENT",
-      "urls": 89,
-      "primaryTagged": 77,
+      "urls": 90,
+      "primaryTagged": 80,
       "target": 12,
       "owners": [
         "B03",
@@ -138,8 +138,8 @@
     {
       "id": "D09_DEEP_THINK",
       "status": "INSUFFICIENT",
-      "urls": 11,
-      "primaryTagged": 11,
+      "urls": 10,
+      "primaryTagged": 10,
       "target": 10,
       "owners": [
         "B04",
@@ -149,8 +149,8 @@
     {
       "id": "D10_FILES_MULTIMODAL",
       "status": "INSUFFICIENT",
-      "urls": 44,
-      "primaryTagged": 60,
+      "urls": 15,
+      "primaryTagged": 19,
       "target": 8,
       "owners": [
         "B02",
@@ -193,8 +193,8 @@
     {
       "id": "D14_SECURITY_PRIVACY",
       "status": "INSUFFICIENT",
-      "urls": 67,
-      "primaryTagged": 92,
+      "urls": 43,
+      "primaryTagged": 51,
       "target": 12,
       "owners": [
         "A07",
@@ -204,8 +204,8 @@
     {
       "id": "D15_PERSISTENCE_RECOVERY",
       "status": "INSUFFICIENT",
-      "urls": 11,
-      "primaryTagged": 11,
+      "urls": 70,
+      "primaryTagged": 88,
       "target": 10,
       "owners": [
         "B08",
@@ -215,8 +215,8 @@
     {
       "id": "D16_NETWORK_RESILIENCE",
       "status": "INSUFFICIENT",
-      "urls": 31,
-      "primaryTagged": 31,
+      "urls": 57,
+      "primaryTagged": 66,
       "target": 8,
       "owners": [
         "B07",
@@ -226,8 +226,8 @@
     {
       "id": "D17_PERFORMANCE_CONCURRENCY",
       "status": "INSUFFICIENT",
-      "urls": 12,
-      "primaryTagged": 7,
+      "urls": 62,
+      "primaryTagged": 47,
       "target": 10,
       "owners": [
         "A09",
@@ -237,7 +237,7 @@
     {
       "id": "D18_TESTING_EVALS",
       "status": "INSUFFICIENT",
-      "urls": 93,
+      "urls": 95,
       "primaryTagged": 128,
       "target": 12,
       "owners": [
@@ -248,8 +248,8 @@
     {
       "id": "D19_AGENT_ORCHESTRATION",
       "status": "INSUFFICIENT",
-      "urls": 95,
-      "primaryTagged": 148,
+      "urls": 82,
+      "primaryTagged": 84,
       "target": 10,
       "owners": [
         "B10",
@@ -270,8 +270,8 @@
     {
       "id": "D21_OBSERVABILITY_WORLD_MODEL",
       "status": "INSUFFICIENT",
-      "urls": 69,
-      "primaryTagged": 64,
+      "urls": 2,
+      "primaryTagged": 2,
       "target": 8,
       "owners": [
         "A04",
@@ -281,8 +281,8 @@
     {
       "id": "D22_PROTOCOLS_INTEROP",
       "status": "INSUFFICIENT",
-      "urls": 79,
-      "primaryTagged": 103,
+      "urls": 28,
+      "primaryTagged": 39,
       "target": 10,
       "owners": [
         "A04",
@@ -292,8 +292,8 @@
     {
       "id": "D23_IMPORT_EXPORT_BACKUP",
       "status": "INSUFFICIENT",
-      "urls": 15,
-      "primaryTagged": 19,
+      "urls": 45,
+      "primaryTagged": 60,
       "target": 6,
       "owners": [
         "B02",
@@ -314,8 +314,8 @@
     {
       "id": "D25_HISTORY_ROOMS",
       "status": "INSUFFICIENT",
-      "urls": 13,
-      "primaryTagged": 22,
+      "urls": 42,
+      "primaryTagged": 63,
       "target": 8,
       "owners": [
         "B01",
@@ -336,8 +336,8 @@
     {
       "id": "D27_ERROR_RECOVERY_UX",
       "status": "INSUFFICIENT",
-      "urls": 82,
-      "primaryTagged": 84,
+      "urls": 88,
+      "primaryTagged": 119,
       "target": 8,
       "owners": [
         "B07",
@@ -358,8 +358,8 @@
     {
       "id": "D29_REAL_WORKS_CANON",
       "status": "INSUFFICIENT",
-      "urls": 18,
-      "primaryTagged": 16,
+      "urls": 22,
+      "primaryTagged": 19,
       "target": 8,
       "owners": [
         "B05",
@@ -369,7 +369,7 @@
     {
       "id": "D30_AUTONOMOUS_QUALITY",
       "status": "INSUFFICIENT",
-      "urls": 100,
+      "urls": 102,
       "primaryTagged": 212,
       "target": 12,
       "owners": [
