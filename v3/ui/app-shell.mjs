@@ -21,6 +21,8 @@ function icon(name,size=18){
     spark:'<path d="m12 3 1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5Z"/><path d="m18 15 .8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8Z"/>',
     arrow:'<path d="M5 12h14M14 7l5 5-5 5"/>',
     paperclip:'<path d="m21.4 11.6-8.9 8.9a6 6 0 0 1-8.5-8.5l9.6-9.6a4 4 0 0 1 5.7 5.7l-9.7 9.7a2 2 0 1 1-2.8-2.8l8.9-8.9"/>',
+    refresh:'<path d="M20 6v5h-5"/><path d="M4 18v-5h5"/><path d="M6.1 8a7 7 0 0 1 11.5-2L20 8M4 16l2.4 2A7 7 0 0 0 18 16"/>',
+    branch:'<path d="M6 3v12"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="6" r="3"/><path d="M9 18h2a7 7 0 0 0 7-7V9"/>',
   }[name]||'';
   return `<svg class="s7-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 }
@@ -54,7 +56,10 @@ function messageMarkup(message,t){
   return `<article class="s7-message" data-role="${role}">
     ${assistant?'<div class="s7-assistant-identity"><span class="s7-avatar">7</span><strong>Seven</strong><span class="s7-status-indicator"></span></div>':""}
     <div class="s7-message-bubble" dir="auto">${content}</div>
-    <div class="s7-message-actions"><button class="s7-message-action" type="button" data-copy-message aria-label="${esc(t.copy)}">${icon("copy",14)} <span>${esc(t.copy)}</span></button></div>
+    <div class="s7-message-actions">
+      <button class="s7-message-action" type="button" data-copy-message aria-label="${esc(t.copy)}" title="${esc(t.copy)}">${icon("copy",14)}<span class="s7-action-label">${esc(t.copy)}</span></button>
+      ${assistant?'<button class="s7-message-action" type="button" data-regenerate aria-label="Regenerate" title="Regenerate">'+icon("refresh",14)+'</button>':""}
+    </div>
   </article>`;
 }
 
@@ -77,7 +82,7 @@ export function renderShell(root,state){
       <header class="s7-topbar">
         <button class="s7-icon-btn s7-menu-toggle" type="button" data-nav-toggle aria-label="${esc(t.menu)}">${icon("menu",18)}</button>
         <div class="s7-title-group"><div class="s7-title">${esc(state.title)}</div><span class="s7-chat-context">${esc(t.online)} <span aria-hidden="true">·</span> Chat</span></div>
-        <button class="s7-workspace-trigger" type="button" data-workspace-trigger aria-haspopup="menu">${icon("grid",16)}<span data-label>${esc(t.workspace)}</span></button>
+        <button class="s7-workspace-trigger" type="button" data-workspace-trigger aria-haspopup="menu">${icon("grid",16)}<span data-label>${esc(t.workspace)}</span><span class="s7-topbar-label">${esc(state.activeWorkspace==="chat"?"Chat":state.activeWorkspace)}</span></button>
         <button class="s7-model-trigger" type="button" data-model-trigger aria-haspopup="listbox" aria-expanded="false"><span class="s7-model-dot"></span><span data-label>${esc(state.activeModel||t.chooseModel)}</span>${icon("chevron",15)}</button>
       </header>
 
@@ -89,9 +94,9 @@ export function renderShell(root,state){
 
       <footer class="s7-composer-wrap">
         <form class="s7-composer" data-composer>
-          <button class="s7-icon-btn s7-attach" type="button" data-attach aria-label="${esc(t.attach)}">${icon("paperclip",18)}</button>
+          <button class="s7-icon-btn s7-attach" type="button" data-attach aria-label="${esc(t.attach)}" title="${esc(t.attach)}">${icon("paperclip",18)}</button>
           <textarea rows="1" data-input dir="auto" placeholder="${esc(t.message)}"></textarea>
-          <button class="s7-send" type="submit" data-send aria-label="${esc(t.send)}">${icon("send",18)}</button>
+          <div class="s7-composer-actions"><span class="s7-mode-chip">${icon("spark",13)} <span>${esc(t.thinking)}</span></span><button class="s7-send" type="submit" data-send aria-label="${esc(t.send)}" title="${esc(t.send)}">${icon("send",18)}</button></div>
         </form><div class="s7-composer-meta"><span><i class="s7-ready-dot"></i> Seven <span class="s7-composer-meta-sub">${esc(t.online)}</span></span><span>${esc(t.inputNote)}</span></div>
       </footer>
     </main>
@@ -177,6 +182,7 @@ export function renderShell(root,state){
     if(target.dataset.roomId){state.activeRoomId=target.dataset.roomId;setNav(false);root.dispatchEvent(new CustomEvent("seven:roomchange",{detail:{roomId:state.activeRoomId}}));return}
     if(target.matches("[data-new-chat]")){root.dispatchEvent(new CustomEvent("seven:newchat"));setNav(false);return}
     if(target.matches("[data-copy-message]")){const text=target.closest(".s7-message")?.querySelector(".s7-message-bubble")?.textContent||"";try{await navigator.clipboard.writeText(text)}catch{}return}
+    if(target.matches("[data-regenerate]")){root.dispatchEvent(new CustomEvent("seven:regenerate"));return}
   },{signal});
 
   root.querySelector("[data-composer]")?.addEventListener("submit",event=>{
