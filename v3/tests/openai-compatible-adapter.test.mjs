@@ -56,3 +56,12 @@ test("OpenAI-compatible adapter normalizes HTTP failure",async()=>{
   assert.equal(error.error.status,429);
   assert.equal(error.error.retryable,true);
 });
+
+test("OpenAI-compatible adapter processes final SSE line without newline",async()=>{
+  const fetchImpl=async()=>new Response('data: {"choices":[{"delta":{"content":"final"},"finish_reason":"stop"}]}',{status:200});
+  const adapter=createOpenAICompatibleAdapter({id:"demo",baseURL:"https://example.test/v1",fetchImpl});
+  const request=createProviderRequest({provider:"demo",model:"m",messages:[{role:"user",content:"hi"}]});
+  const out=await collectProviderEvents(adapter.stream(request));
+  assert.equal(out.text,"final");
+  assert.equal(out.events.at(-1).type,"complete");
+});
