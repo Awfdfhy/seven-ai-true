@@ -65,3 +65,20 @@ test("OpenAI-compatible adapter processes final SSE line without newline",async(
   assert.equal(out.text,"final");
   assert.equal(out.events.at(-1).type,"complete");
 });
+
+test("stream read failure emits error without misleading complete",async()=>{
+  const body=new ReadableStream({start(controller){controller.error(new Error("network interrupted"))}});
+  const adapter=createOpenAICompatibleAdapter({id:"demo",baseURL:"https://example.test/v1",fetchImpl:async()=>new Response(body,{status:200})});
+  const request=createProviderRequest({provider:"demo",model:"m",messages:[{role:"user",content:"hi"}]});
+  const out=await collectProviderEvents(adapter.stream(request));
+  assert.equal(out.events.at(-1).type,"error");
+  assert.equal(out.events.some(event=>event.type==="complete"),false);
+});
+
+test("model catalog request forwards AbortSignal",async()=>{
+  const controller=new AbortController();
+  let actual;
+  const adapter=createOpenAICompatibleAdapter({id:"demo",baseURL:"https://example.test/v1",fetchImpl:async(_url,init)=>{actual=init.signal;return jsonResponse({data:[]})}});
+  await adapter.listModels({signal:controller.signal});
+  assert.equal(actual,controller.signal);
+});
