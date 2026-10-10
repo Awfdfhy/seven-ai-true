@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en" data-s7-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Seven v3 UI Showcase</title>
+<link rel="stylesheet" href="./tokens.css">
+<link rel="stylesheet" href="./shell.css">
+<link rel="stylesheet" href="./workspaces.css">
+<style>
+html,body{min-height:100%;height:auto;overflow:auto}
+body{padding:24px;background:var(--s7-canvas)}
+.showcase{display:grid;gap:32px;max-width:1320px;margin:auto}
+.frame{border:1px solid var(--s7-border);border-radius:22px;overflow:hidden;background:var(--s7-canvas);box-shadow:var(--s7-shadow-raised)}
+.frame>header{padding:9px 14px;border-block-end:1px solid var(--s7-border);color:var(--s7-text-muted);font-size:.72rem;font-weight:800}
+.frame .surface{min-height:560px}
+@media(max-width:620px){body{padding:0}.showcase{gap:12px}.frame{border-radius:0;border-inline:0}.frame .surface{min-height:100dvh}}
+</style>
+</head>
+<body>
+<div class="showcase" id="showcase"></div>
+<script type="module">
+import {renderSurface} from "./workspaces.mjs";
+const names=["settings","coding","selfdev","research","rpg"];
+const labels={settings:"Settings",coding:"Coding",selfdev:"Self-Development",research:"Research",rpg:"RPG"};
+const root=document.getElementById("showcase");
+for(const name of names){
+ const frame=document.createElement("section");
+ frame.className="frame";
+ frame.innerHTML="<header>"+labels[name]+"</header><div class=\"surface\">"+renderSurface(name)+"</div>";
+ root.appendChild(frame);
+}
+</script>
+</body>
+</html>
