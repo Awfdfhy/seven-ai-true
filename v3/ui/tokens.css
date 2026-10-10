@@ -1,18 +1,24 @@
 :root{
   color-scheme:dark;
-  --s7-canvas:#0d0f14;
-  --s7-surface:#141821;
-  --s7-surface-raised:#1a202b;
-  --s7-surface-hover:#202735;
-  --s7-border:#2a3342;
-  --s7-border-strong:#3a4659;
-  --s7-text:#f5f7fb;
-  --s7-text-muted:#9ba7b8;
-  --s7-accent:#7c6cff;
+  --s7-canvas:#090C12;
+  --s7-surface:#111722;
+  --s7-surface-raised:#171F2C;
+  --s7-surface-hover:#1E2837;
+  --s7-border:#273247;
+  --s7-border-strong:#384762;
+  --s7-text:#F7F9FC;
+  --s7-text-muted:#AAB4C5;
+
+  --s7-accent:#8B7CFF;
+  --s7-accent-strong:#715EFF;
   --s7-accent-soft:color-mix(in srgb,var(--s7-accent) 14%,transparent);
-  --s7-success:#42c995;
-  --s7-warning:#e2a23b;
-  --s7-danger:#ea6577;
+  --s7-accent-cyan:#59D6E7;
+  --s7-accent-cyan-soft:color-mix(in srgb,var(--s7-accent-cyan) 12%,transparent);
+
+  --s7-success:#50D2A2;
+  --s7-warning:#F0B45A;
+  --s7-danger:#F06E7E;
+  --s7-info:#67B7FF;
 
   --s7-space-1:4px;
   --s7-space-2:8px;
@@ -46,21 +52,29 @@
   --s7-slow:220ms;
   --s7-ease:cubic-bezier(.2,.8,.2,1);
 
-  --s7-shadow-raised:0 14px 36px rgba(0,0,0,.24);
+  --s7-shadow-raised:0 16px 40px rgba(0,0,0,.28);
+  --s7-shadow-accent:0 10px 30px rgba(113,94,255,.24);
 }
 
 :root[data-s7-theme="light"]{
   color-scheme:light;
-  --s7-canvas:#f7f8fb;
-  --s7-surface:#ffffff;
-  --s7-surface-raised:#f1f3f7;
-  --s7-surface-hover:#e9edf4;
-  --s7-border:#d9dee8;
-  --s7-border-strong:#c2cad8;
-  --s7-text:#161a22;
-  --s7-text-muted:#657083;
-  --s7-accent:#6557e8;
-  --s7-shadow-raised:0 14px 36px rgba(34,42,60,.12);
+  --s7-canvas:#F6F8FC;
+  --s7-surface:#FFFFFF;
+  --s7-surface-raised:#F0F3F8;
+  --s7-surface-hover:#E8EDF5;
+  --s7-border:#D7DEE9;
+  --s7-border-strong:#BDC8D8;
+  --s7-text:#161B24;
+  --s7-text-muted:#627087;
+  --s7-accent:#6E5BE7;
+  --s7-accent-strong:#5D49D6;
+  --s7-accent-cyan:#168DA3;
+  --s7-success:#16885F;
+  --s7-warning:#A66A11;
+  --s7-danger:#C84255;
+  --s7-info:#276DB8;
+  --s7-shadow-raised:0 14px 34px rgba(37,48,68,.12);
+  --s7-shadow-accent:0 10px 26px rgba(110,91,231,.18);
 }
 
 @media(prefers-reduced-motion:reduce){
