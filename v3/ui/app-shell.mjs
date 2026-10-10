@@ -1,8 +1,8 @@
 const esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
 
 const TEXT={
-  en:{chats:"Chats",newChat:"New chat",message:"Message Seven",chooseModel:"Choose model",workspace:"Workspace",emptyTitle:"What can Seven do for you?",emptyBody:"Start a conversation, continue a project, or open a workspace.",copy:"Copy",menu:"Menu"},
-  ar:{chats:"المحادثات",newChat:"محادثة جديدة",message:"اكتب إلى Seven",chooseModel:"اختيار النموذج",workspace:"مساحة العمل",emptyTitle:"كيف يمكن لـ Seven مساعدتك؟",emptyBody:"ابدأ محادثة، أكمل مشروعًا، أو افتح مساحة عمل.",copy:"نسخ",menu:"القائمة"}
+  en:{chats:"Chats",newChat:"New chat",message:"Message Seven",chooseModel:"Choose model",workspace:"Workspace",emptyTitle:"What can Seven do for you?",emptyBody:"Start a conversation, continue a project, or open a workspace.",copy:"Copy",menu:"Menu",recent:"Recent",spaces:"Workspaces",search:"Search chats",thinking:"Reasoning",intro:"Your ideas, one conversation away.",tip1:"Explore an idea",tip2:"Write & refine",tip3:"Build with code",inputNote:"Seven can make mistakes. Check important information.",online:"Ready",attach:"Add files",send:"Send message"},
+  ar:{chats:"المحادثات",newChat:"محادثة جديدة",message:"اكتب إلى Seven",chooseModel:"اختيار النموذج",workspace:"مساحة العمل",emptyTitle:"كيف يمكن لـ Seven مساعدتك؟",emptyBody:"ابدأ محادثة، أكمل مشروعًا، أو افتح مساحة عمل.",copy:"نسخ",menu:"القائمة",recent:"الأخيرة",spaces:"مساحات العمل",search:"البحث في المحادثات",thinking:"التفكير",intro:"كل فكرة تبدأ بمحادثة.",tip1:"استكشف فكرة",tip2:"اكتب وحسّن",tip3:"برمج مع Seven",inputNote:"قد يخطئ Seven؛ تحقّق من المعلومات المهمة.",online:"جاهز",attach:"إضافة ملفات",send:"إرسال رسالة"}
 };
 
 function locale(lang){
@@ -24,12 +24,18 @@ export function createShellState(input={}){
 }
 
 function roomMarkup(room,active){
-  return `<button class="s7-room" type="button" data-room-id="${esc(room.id)}" data-active="${room.id===active}"><span>◌</span><span>${esc(room.title||"Untitled")}</span></button>`;
+  return `<button class="s7-room" type="button" data-room-id="${esc(room.id)}" data-active="${room.id===active}"><span class="s7-room-glyph" aria-hidden="true">◷</span><span class="s7-room-name">${esc(room.title||"Untitled")}</span></button>`;
 }
 
 function messageMarkup(message,t){
   const role=message.role==="user"?"user":"assistant";
-  return `<article class="s7-message" data-role="${role}"><div class="s7-message-bubble" dir="auto">${esc(message.content)}</div><div class="s7-message-actions"><button class="s7-message-action" type="button" data-copy-message>${esc(t.copy)}</button></div></article>`;
+  const assistant=role==="assistant";
+  const content=esc(message.content).replace(/\\n/g,"<br>");
+  return `<article class="s7-message" data-role="${role}">
+    ${assistant?'<div class="s7-assistant-identity"><span class="s7-avatar">7</span><strong>Seven</strong><span class="s7-status-indicator"></span></div>':""}
+    <div class="s7-message-bubble" dir="auto">${content}</div>
+    <div class="s7-message-actions"><button class="s7-message-action" type="button" data-copy-message aria-label="${esc(t.copy)}">⧉ <span>${esc(t.copy)}</span></button></div>
+  </article>`;
 }
 
 export function renderShell(root,state){
@@ -40,32 +46,32 @@ export function renderShell(root,state){
   root.innerHTML=`
   <div class="s7-app" data-nav-open="false">
     <aside class="s7-sidebar" aria-label="${esc(t.chats)}">
-      <div class="s7-sidebar-head"><div class="s7-brand"><span class="s7-brand-mark">7</span><span>Seven</span></div></div>
-      <button class="s7-new-chat" type="button" data-new-chat><span>＋</span><span>${esc(t.newChat)}</span></button>
-      <div class="s7-section-label">${esc(t.chats)}</div>
-      <div class="s7-room-list">${state.rooms.map(r=>roomMarkup(r,state.activeRoomId)).join("")}</div>
+      <div class="s7-sidebar-head"><div class="s7-brand"><span class="s7-brand-mark">7</span><span>Seven<span class="s7-brand-period">.</span></span></div><span class="s7-sidebar-meta">v3</span></div>
+      <button class="s7-new-chat" type="button" data-new-chat><span aria-hidden="true">✎</span><span>${esc(t.newChat)}</span><span class="s7-new-shortcut">＋</span></button><div class="s7-sidebar-search"><span aria-hidden="true">⌕</span><span>${esc(t.search)}</span><kbd>⌘K</kbd></div><div class="s7-sidebar-divider"></div>
+      <div class="s7-section-label">${esc(t.recent)}</div>
+      <div class="s7-room-list">${state.rooms.map(r=>roomMarkup(r,state.activeRoomId)).join("")}</div><div class="s7-sidebar-bottom"><span class="s7-user-avatar">S</span><span>Seven workspace<small>Personal</small></span><span aria-hidden="true">⋯</span></div>
     </aside>
 
     <main class="s7-main">
       <header class="s7-topbar">
         <button class="s7-icon-btn s7-menu-toggle" type="button" data-nav-toggle aria-label="${esc(t.menu)}">☰</button>
-        <div class="s7-title">${esc(state.title)}</div>
-        <button class="s7-workspace-trigger" type="button" data-workspace-trigger aria-haspopup="menu"><span>⌘</span><span data-label>${esc(t.workspace)}</span></button>
+        <div class="s7-title-group"><div class="s7-title">${esc(state.title)}</div><span class="s7-chat-context">${esc(t.online)} <span aria-hidden="true">·</span> Chat</span></div>
+        <button class="s7-workspace-trigger" type="button" data-workspace-trigger aria-haspopup="menu"><span aria-hidden="true">▦</span><span data-label>${esc(t.workspace)}</span></button>
         <button class="s7-model-trigger" type="button" data-model-trigger aria-haspopup="listbox" aria-expanded="false"><span class="s7-model-dot"></span><span data-label>${esc(state.activeModel||t.chooseModel)}</span><span>⌄</span></button>
       </header>
 
       <section class="s7-chat" data-chat>
         <div class="s7-chat-inner">
-          ${state.messages.length?state.messages.map(m=>messageMarkup(m,t)).join(""):`<section class="s7-empty"><div><h1>${esc(t.emptyTitle)}</h1><p>${esc(t.emptyBody)}</p></div></section>`}
+          ${state.messages.length?state.messages.map(m=>messageMarkup(m,t)).join(""):`<section class="s7-empty"><div><div class="s7-empty-mark">7</div><div class="s7-eyebrow">SEVEN AI</div><h1>${esc(t.emptyTitle)}</h1><p>${esc(t.intro)}</p><div class="s7-starters"><button type="button" data-starter="${esc(t.tip1)}">${esc(t.tip1)} <span>↗</span></button><button type="button" data-starter="${esc(t.tip2)}">${esc(t.tip2)} <span>↗</span></button><button type="button" data-starter="${esc(t.tip3)}">${esc(t.tip3)} <span>↗</span></button></div></div></section>`}
         </div>
       </section>
 
       <footer class="s7-composer-wrap">
         <form class="s7-composer" data-composer>
-          <button class="s7-icon-btn" type="button" data-attach aria-label="Attach">＋</button>
+          <button class="s7-icon-btn s7-attach" type="button" data-attach aria-label="${esc(t.attach)}">＋</button>
           <textarea rows="1" data-input dir="auto" placeholder="${esc(t.message)}"></textarea>
-          <button class="s7-send" type="submit" data-send aria-label="Send">↑</button>
-        </form>
+          <button class="s7-send" type="submit" data-send aria-label="${esc(t.send)}">↑</button>
+        </form><div class="s7-composer-meta"><span><i class="s7-ready-dot"></i> Seven <span class="s7-composer-meta-sub">${esc(t.online)}</span></span><span>${esc(t.inputNote)}</span></div>
       </footer>
     </main>
 
@@ -133,9 +139,13 @@ export function renderShell(root,state){
     input.style.height=Math.min(Math.max(44,input.scrollHeight),Math.min(globalThis.innerHeight*.32,260))+"px";
   }
 
+  const controller=new AbortController();
+  const signal=controller.signal;
   root.addEventListener("click",async event=>{
     const target=event.target.closest?.("button,[data-room-id]");
     if(!target)return;
+    if(target.matches("[data-starter]")){input.value=target.dataset.starter;input.focus();resizeInput();return}
+    if(target.matches("[data-attach]")){root.dispatchEvent(new CustomEvent("seven:attach"));return}
     if(target.matches("[data-nav-toggle]")){setNav(!state.navOpen);return}
     if(target.matches("[data-backdrop]")){setNav(false);return}
     if(target.matches("[data-model-trigger]")){modelMenu.hidden?openModels(target):closeMenus();return}
@@ -145,7 +155,7 @@ export function renderShell(root,state){
     if(target.dataset.roomId){state.activeRoomId=target.dataset.roomId;setNav(false);root.dispatchEvent(new CustomEvent("seven:roomchange",{detail:{roomId:state.activeRoomId}}));return}
     if(target.matches("[data-new-chat]")){root.dispatchEvent(new CustomEvent("seven:newchat"));setNav(false);return}
     if(target.matches("[data-copy-message]")){const text=target.closest(".s7-message")?.querySelector(".s7-message-bubble")?.textContent||"";try{await navigator.clipboard.writeText(text)}catch{}return}
-  });
+  },{signal});
 
   root.querySelector("[data-composer]")?.addEventListener("submit",event=>{
     event.preventDefault();
@@ -154,13 +164,13 @@ export function renderShell(root,state){
     root.dispatchEvent(new CustomEvent("seven:send",{detail:{text}}));
     input.value="";
     resizeInput();
-  });
+  },{signal});
 
-  input?.addEventListener("input",resizeInput,{passive:true});
-  root.addEventListener("keydown",event=>{if(event.key==="Escape"){closeMenus();setNav(false)}});
+  input?.addEventListener("input",resizeInput,{passive:true,signal});
+  root.addEventListener("keydown",event=>{if(event.key==="Escape"){closeMenus();setNav(false)} if(event.key==="Enter"&&!event.shiftKey&&event.target===input){event.preventDefault();root.querySelector("[data-composer]")?.requestSubmit()}},{signal});
 
   resizeInput();
-  return {state,setNav,closeMenus,destroy(){root.innerHTML=""}};
+  return {state,setNav,closeMenus,destroy(){controller.abort();root.innerHTML=""}};
 }
 
 export function mountSevenShell(root,input={}){
