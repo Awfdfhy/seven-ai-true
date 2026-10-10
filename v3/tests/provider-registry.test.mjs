@@ -63,3 +63,10 @@ test("duplicate aliases and provider ids colliding with aliases are rejected",()
   assert.throws(()=>registry.register({id:"shared"},adapter("shared")),/conflicts with alias/);
   assert.equal(registry.get("shared").descriptor.id,"groq");
 });
+
+test("self-alias requires a registered provider",()=>{
+  const registry=createProviderRegistry();
+  assert.throws(()=>registry.alias("missing","missing"),/unknown provider/);
+  registry.register({id:"known"},{id:"known",async listModels(){return []},async generate(){return {}}});
+  assert.equal(registry.alias("KNOWN","known"),"known");
+});
