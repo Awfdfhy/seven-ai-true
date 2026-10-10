@@ -43,7 +43,7 @@
 .s7-rpg-event{padding:10px 10px 10px 18px;border-radius:11px;background:var(--s7-surface-raised);position:relative}
 .s7-rpg-event::before{content:"";position:absolute;inset-inline-start:8px;inset-block-start:16px;width:5px;height:5px;border-radius:50%;background:var(--s7-accent)}
 .s7-settings{display:grid;grid-template-columns:220px minmax(0,1fr);gap:var(--s7-space-3)}
-.s7-settings-nav{display:grid;gap:4px}
+.s7-settings-nav{display:grid;gap:4px;scrollbar-width:none}.s7-settings-nav::-webkit-scrollbar{display:none}
 .s7-settings-nav button{min-height:44px;border:0;border-radius:10px;background:transparent;color:var(--s7-text-muted);text-align:start;padding-inline:10px}
 .s7-settings-nav button[data-active="true"]{background:var(--s7-accent-soft);color:var(--s7-text)}
 .s7-setting-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding-block:13px;border-block-end:1px solid var(--s7-border)}
