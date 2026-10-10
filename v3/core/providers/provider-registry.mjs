@@ -28,8 +28,8 @@ export class ProviderRegistry{
 
   alias(alias,target){
     const a=normalizeProviderId(alias),t=normalizeProviderId(target);
-    if(a===t)return t;
     if(!this.#providers.has(t))throw new Error(`unknown provider: ${t}`);
+    if(a===t)return t;
     if(this.#providers.has(a)||this.#aliases.has(a))throw new Error(`provider alias already exists: ${a}`);
     this.#aliases.set(a,t);
     return t;
