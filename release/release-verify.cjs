@@ -713,7 +713,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       const page=await browser.newPage({viewport:{width:360,height:800}});
       await page.addInitScript(()=>{localStorage.setItem('seven_ui_language','ar');localStorage.setItem('user_name_asked','1');});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenRemake&&!!document.querySelector('.seven-shell-jump'));
+      await page.waitForFunction(()=>window.SevenRemake&&typeof roomPersistence!=='undefined'&&roomPersistence.status().ready&&!!document.querySelector('.seven-shell-jump'));
       await page.evaluate(()=>{
         const chat=document.getElementById('chat');
         chat.innerHTML=Array.from({length:32},(_,i)=>'<div class="message assistant"><div class="bubble"><p>رسالة طويلة '+i+' '.repeat(12)+'</p><p>'+('نص '.repeat(40))+'</p></div></div>').join('');
