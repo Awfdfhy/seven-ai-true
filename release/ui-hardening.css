@@ -1,6 +1,6 @@
 /* Seven 2.4.2 UI Hardening */
 html,body{max-width:100%;overflow-x:hidden}
-#seven-app{--seven-ui-hardening-v242:1;box-sizing:border-box;min-width:0;max-width:100%;min-height:100%;overflow-x:clip}
+#seven-app{--seven-ui-hardening-v242:1;box-sizing:border-box;display:flex;flex:1 1 auto;width:100%;min-width:0;max-width:100%;min-height:100%;overflow-x:clip}
 #seven-app *{box-sizing:border-box}
 #seven-app .main,#seven-app #chat,#seven-app .input-area,#seven-app .composer,#seven-app .topbar{min-width:0;max-width:100%}
 #seven-app .main{overflow-x:clip}
@@ -97,7 +97,7 @@ html[dir="rtl"] #seven-app .sidebar.collapsed:not(.open):not(.active){transform:
 #seven-app .topbar #roomTitle,#seven-app .topbar .title{flex:1 1 0!important;max-width:none!important;min-width:36px!important}
 #seven-app .topbar .seven-shell-model-chip{flex:0 1 92px!important;max-width:92px!important;min-width:58px!important;padding-inline:6px!important}
 #seven-app .topbar .menu-toggle,#seven-app .topbar>.icon-btn{flex:0 0 38px!important;width:38px!important;min-width:38px!important;padding-inline:0!important}
-#seven-app .seven-shell-model-menu:not([hidden]){display:block!important;position:fixed!important;inset-inline:8px!important;left:auto!important;right:auto!important;width:auto!important;max-width:none!important;z-index:10060!important}
+#seven-app .seven-shell-model-menu:not([hidden]){display:block!important;position:fixed!important;inset-inline:8px!important;width:auto!important;max-width:none!important;z-index:10060!important}
 }
 @media(max-width:420px){
 #seven-app .topbar #persistenceStatus{display:none!important}

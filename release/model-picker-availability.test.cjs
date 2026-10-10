@@ -27,3 +27,8 @@ assert.equal(select.options[0].value,'llm7::a','eligible ranking order is unchan
 const shell=fs.readFileSync(__dirname+'/workspaces/seven-shell.js','utf8');
 assert.match(shell,/b.disabled=opt.disabled===true/,'canonical menu must preserve disabled availability');
 console.log('model picker availability: PASS (cooldown, Arabic, context limit, recovery, canonical disabled state)');
+
+const css=fs.readFileSync(__dirname+'/ui-hardening.css','utf8');
+const menuRule=css.match(/#seven-app \.seven-shell-model-menu:not\(\[hidden\]\)\{([^}]+)\}/);
+assert.ok(menuRule);assert.match(menuRule[1],/inset-inline:8px!important/);assert.doesNotMatch(menuRule[1],/(?:left|right):auto!important/,'physical auto offsets must not cancel logical menu insets');
+assert.match(css,/#seven-app\{[^}]*display:flex;[^}]*width:100%/,'the actual Seven wrapper must fill the mobile viewport');

@@ -647,6 +647,17 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       });
       assert.ok(state.options>1);assert.equal(state.disabled,true);assert.equal(state.bounded,true);
       assert.match(state.labels,/Cooling down|تهدئة مؤقتة/);
+      for(const width of [320,412]){
+        await page.setViewportSize({width,height:818});
+        await page.evaluate(()=>{document.documentElement.dir='rtl';document.getElementById('seven-app').dir='rtl';});
+        const geometry=await page.evaluate(()=>{
+          const menu=document.querySelector('.seven-shell-model-menu').getBoundingClientRect(),app=document.getElementById('seven-app').getBoundingClientRect(),main=document.querySelector('.main').getBoundingClientRect();
+          return{bounded:menu.left>=0&&menu.right<=innerWidth&&menu.top>=0&&menu.bottom<=innerHeight,appFillsWidth:Math.abs(app.left)<1&&Math.abs(app.width-innerWidth)<1,mainFillsWidth:Math.abs(main.left)<1&&Math.abs(main.width-innerWidth)<1};
+        });
+        assert.equal(geometry.bounded,true,'picker stays inside RTL WebView width '+width);
+        assert.equal(geometry.appFillsWidth,true,'Seven root must occupy the phone width');
+        assert.equal(geometry.mainFillsWidth,true,'a closed sidebar must not reserve a mobile gutter');
+      }
       await page.evaluate(()=>{
         document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
         computeHealthSignalV3=window.__sevenOriginalPickerHealth;populateFreeModelSelect();SevenShell.sync();
