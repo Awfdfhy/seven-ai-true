@@ -176,8 +176,9 @@ public class SevenVisualEvidenceTest {
       try(ActivityScenario<MainActivity> reducedScenario=ActivityScenario.launch(MainActivity.class)){
         WebView reducedWebView=webView(reducedScenario);
         waitFor(reducedWebView,"Boolean(window.SevenPerformance&&SevenPerformance.state.ready&&window.SevenTheme&&window.SevenMotion&&SevenMotion.state.ready&&document.getElementById('userInput'))");
-        js(reducedWebView,"(()=>{document.documentElement.lang='en';document.documentElement.dir='ltr';document.body.dir='ltr';SevenTheme.setPreference('night');return true})()");
-        waitFor(reducedWebView,"document.documentElement.dir==='ltr'&&document.documentElement.dataset.sevenTheme==='night'");
+        js(reducedWebView,"(()=>{SevenTheme.setPreference('night');const sidebar=document.querySelector('.sidebar');sidebar?.classList.remove('open','active');sidebar?.classList.add('collapsed');document.body.classList.remove('sidebar-open');document.documentElement.dataset.sevenShellSidebar='closed';const app=document.getElementById('seven-app');if(app)app.dataset.sevenShellSidebar='closed';return true})()");
+        waitFor(reducedWebView,"document.documentElement.dataset.sevenTheme==='night'&&document.documentElement.dir===document.getElementById('seven-app').dir");
+        waitFor(reducedWebView,"(()=>{const r=document.querySelector('.sidebar').getBoundingClientRect();return document.documentElement.dir==='rtl'?r.left>=innerWidth-2:r.right<=2})()");
         waitFor(reducedWebView,"Boolean(window.__sevenAndroidMotion&&__sevenAndroidMotion.source==='ANDROID_GLOBAL_ANIMATION_SCALES'&&__sevenAndroidMotion.reducedMotion===true&&window.SevenPerformance&&SevenPerformance.state.reducedMotion===true&&document.documentElement.dataset.sevenReducedMotion==='1'&&window.SevenMotion&&SevenMotion.allow('ambient')===false)");
         Thread.sleep(120);shot(reducedWebView,"reduced-motion");
       }
