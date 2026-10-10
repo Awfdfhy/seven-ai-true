@@ -48,6 +48,7 @@ async function* parseSse(response,{provider,model}){
   yield createProviderEvent("start",{provider,model});
   const reader=response.body.getReader(),decoder=new TextDecoder();
   let buffer="",done=false,finishReason=null;
+  try{
   while(!done){
     const part=await reader.read();
     done=part.done;
@@ -72,6 +73,12 @@ async function* parseSse(response,{provider,model}){
       if(packet.usage)yield createProviderEvent("usage",{provider,model,usage:packet.usage});
       if(choice.finish_reason!=null)finishReason=choice.finish_reason;
     }
+  }
+  }catch(error){
+    yield createProviderEvent("error",{provider,model,error:normalizeProviderError(error,provider)});
+    return;
+  }finally{
+    reader.releaseLock();
   }
   yield createProviderEvent("complete",{provider,model,finishReason:finishReason||"stop"});
 }
@@ -111,7 +118,8 @@ export function createOpenAICompatibleAdapter(options={}){
     async listModels(context={}){
       const response=await fetchImpl(endpoint(options.modelsPath||"/models"),{
         method:"GET",
-        headers:headers(context)
+        headers:headers(context),
+        signal:context.signal
       });
       const body=await readJson(response);
       const list=Array.isArray(body?.data)?body.data:(Array.isArray(body?.models)?body.models:[]);
