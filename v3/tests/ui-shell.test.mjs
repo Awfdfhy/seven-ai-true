@@ -40,3 +40,17 @@ test("core v3 surfaces exist exactly once in renderer",()=>{
     assert.ok(js.includes(marker),marker);
   }
 });
+
+function hexToRgb(hex){const h=hex.replace("#","");return [0,2,4].map(i=>parseInt(h.slice(i,i+2),16))}
+function luminance(hex){const [r,g,b]=hexToRgb(hex).map(v=>{const s=v/255;return s<=.03928?s/12.92:((s+.055)/1.055)**2.4});return .2126*r+.7152*g+.0722*b}
+function contrast(a,b){const x=luminance(a),y=luminance(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05)}
+test("dark theme text contrast meets WCAG AA baseline",()=>{
+  assert.ok(contrast("#F7F9FC","#090C12")>=4.5);
+  assert.ok(contrast("#AAB4C5","#090C12")>=4.5);
+  assert.ok(contrast("#F7F9FC","#111722")>=4.5);
+});
+test("chat iconography is vector-based and avoids legacy text glyph controls",()=>{
+  assert.match(js,/function icon\(/);
+  assert.match(js,/class="s7-icon"/);
+  for(const glyph of ["☰","⌕","✎","▦","⧉"])assert.equal(js.includes(glyph),false,glyph);
+});
