@@ -12,6 +12,7 @@ async function shot(name,url,viewport,{fullPage=false}={}){
   const context=await browser.newContext({viewport,deviceScaleFactor:1});
   const page=await context.newPage();
   await page.goto(url,{waitUntil:"networkidle"});
+  await page.waitForSelector(".s7-app, .s7-workspace");
   await page.screenshot({path:path.join(out,name+".png"),fullPage});
   await context.close();
 }
@@ -20,6 +21,9 @@ const base=process.env.SEVEN_V3_UI_URL||"http://127.0.0.1:4173";
 await shot("chat-desktop",base+"/preview.html",{width:1440,height:900});
 await shot("chat-mobile",base+"/preview.html",{width:390,height:844});
 await shot("chat-compact",base+"/preview.html",{width:320,height:720});
+await shot("chat-arabic-mobile",base+"/preview.html?rtl=1",{width:390,height:844});
+await shot("chat-empty-desktop",base+"/preview.html?empty=1",{width:1440,height:900});
+await shot("chat-empty-mobile",base+"/preview.html?empty=1",{width:390,height:844});
 
 for(const name of ["settings","coding","selfdev","research","rpg"]){
   await shot(name+"-desktop",base+"/surface.html?name="+name,{width:1280,height:800});
