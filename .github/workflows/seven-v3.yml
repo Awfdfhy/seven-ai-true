@@ -1,0 +1,28 @@
+name: Seven v3 foundation
+
+on:
+  push:
+    branches:
+      - "v3/**"
+    paths:
+      - "v3/**"
+      - ".github/workflows/seven-v3.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Run Seven v3 tests
+        working-directory: v3
+        run: npm test
