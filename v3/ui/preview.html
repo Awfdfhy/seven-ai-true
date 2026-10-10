@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en" data-s7-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Seven v3 UI Preview</title>
+  <link rel="stylesheet" href="./tokens.css">
+  <link rel="stylesheet" href="./shell.css">
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module">
+    import {mountSevenShell} from "./app-shell.mjs";
+    mountSevenShell(document.getElementById("app"),{
+      title:"Seven v3",
+      activeRoomId:"r1",
+      activeModel:"GPT-OSS 120B",
+      rooms:[
+        {id:"r1",title:"Seven v3 architecture"},
+        {id:"r2",title:"RPG world notes"},
+        {id:"r3",title:"Coding session"}
+      ],
+      models:[
+        {id:"GPT-OSS 120B",label:"GPT-OSS 120B"},
+        {id:"Qwen 3.6 27B",label:"Qwen 3.6 27B"},
+        {id:"Kimi K3",label:"Kimi K3"}
+      ],
+      messages:[
+        {role:"user",content:"Can you review the new architecture?"},
+        {role:"assistant",content:"Yes. The provider layer is now isolated from the product UI, so Seven can evolve without coupling model SDKs to workspaces."}
+      ]
+    });
+  </script>
+</body>
+</html>
