@@ -1,0 +1,29 @@
+name: Seven RPG Security Audit
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'release/rc-*'
+    paths:
+      - 'release/workspaces/rpg-state.js'
+      - 'release/rpg-security-regression.test.cjs'
+      - 'package.json'
+      - '.github/workflows/rpg-security-audit.yml'
+permissions:
+  contents: read
+jobs:
+  rpg-runtime-security:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify RPG adversarial event boundaries
+        run: node release/rpg-security-regression.test.cjs
+      - name: Resolve production dependency tree without executing package scripts
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Reject high and critical production dependency advisories
+        run: |
+          npm audit --omit=dev --audit-level=high
