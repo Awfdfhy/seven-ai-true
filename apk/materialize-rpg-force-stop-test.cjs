@@ -36,6 +36,7 @@ public class RpgForceStopTest {
     return value.get();
   }
   private void awaitRuntime(WebView view) throws Exception {
+    evaluate(view,"(()=>{const open=()=>window.SevenWorkspaces?.open?.('rpg').catch(()=>{});if(window.SevenWorkspaces){open();return true}let s=document.createElement('script');s.src='./workspaces/hub.js';s.onload=open;document.head.appendChild(s);return true})()");
     for(int i=0;i<100;i++) {
       if("true".equals(evaluate(view,"Boolean(window.SevenRpgState&&window.SevenRpgSession&&window.SevenRpgLiveIntegration&&window.SevenRuntime)")))return;
       Thread.sleep(200);
