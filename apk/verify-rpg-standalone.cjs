@@ -8,6 +8,7 @@ const config = JSON.parse(fs.readFileSync(path.join(root, 'capacitor.config.json
 assert.equal(config.appId, 'ai.seven.rpg', 'Standalone APK must not reuse Seven AI package ID');
 assert.equal(config.appName, 'Seven RPG', 'Android launcher identity must be Seven RPG');
 const html = fs.readFileSync(path.join(root, 'www/index.html'), 'utf8');
+assert.ok(html.includes('<title>Seven RPG</title>'), 'Standalone HTML must identify as Seven RPG before boot');
 assert.ok(html.includes('id="seven-rpg-standalone-entry"'), 'Dedicated RPG entrypoint not wired');
 assert.ok(html.includes('seven-rpg-standalone-style'), 'RPG-only navigation not wired');
 const js = fs.readFileSync(path.join(root, 'www/rpg-standalone-entry.js'), 'utf8');
