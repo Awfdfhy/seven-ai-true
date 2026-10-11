@@ -40,6 +40,8 @@ if(profile.appId==='ai.seven.rpg'){
   let page=fs.readFileSync(index,'utf8');
   if(!page.includes('</body>')||!page.includes('SEVEN_FINAL_RELEASE_LAYER_V1'))throw new Error('RPG standalone source invalid');
   if(page.includes('seven-rpg-standalone-entry'))throw new Error('duplicate RPG standalone entrypoint');
+  if(!page.includes('<title>Seven AI</title>'))throw new Error('expected base HTML title missing');
+  page=page.replace('<title>Seven AI</title>','<title>Seven RPG</title>');
   const css='<style id="seven-rpg-standalone-style">html[data-seven-standalone-profile="rpg"] [data-seven-shell-workspace]:not([data-seven-shell-workspace="rpg"]),html[data-seven-standalone-profile="rpg"] [data-seven-github-selfdev],html[data-seven-standalone-profile="rpg"] .seven-ws-choice:not([data-ws="rpg"]),html[data-seven-standalone-profile="rpg"] [data-rpg-exit]{display:none!important}</style>';
   page=page.replace('</body>',css+'<script id="seven-rpg-standalone-entry" src="./rpg-standalone-entry.js"></script></body>');
   fs.copyFileSync(src,path.join(WWW,'rpg-standalone-entry.js'));
