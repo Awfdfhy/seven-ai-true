@@ -7,6 +7,7 @@ on:
     paths:
       - 'apk/rpg-live-llm-acceptance.cjs'
       - '.github/workflows/rpg-live-canon.yml'
+      - '.github/workflows/android-apk.yml'
       - 'release/workspaces/rpg-state.js'
       - 'release/workspaces/rpg-context.js'
 permissions:
