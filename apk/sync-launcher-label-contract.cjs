@@ -47,10 +47,16 @@ for (const target of targets) {
   let touched = false;
   for (const [oldText, newText] of target.replacements) {
     if (source.includes(newText)) continue;
-    if (!source.includes(oldText)) {
+    // Current Seven AI captures already contain the previous launcher label
+    // ("Seven 2.4.3"), not the original "Seven" placeholder. Match either
+    // exact known anchor; never rewrite arbitrary regular expressions.
+    const plainLabelAnchor=oldText.includes('query:"Seven"')||oldText.includes('"input","text","Seven"');
+    const legacyText=oldText.replace('Seven',plainLabelAnchor?'Seven 2.4.3':'Seven 2\\\\.4\\\\.3');
+    const from=source.includes(oldText)?oldText:(source.includes(legacyText)?legacyText:null);
+    if (!from) {
       throw new Error(`${target.file} launcher label contract drifted; refusing blind rewrite`);
     }
-    source = source.replace(oldText, newText);
+    source = source.replace(from, newText);
     touched = true;
   }
   if (touched) {
