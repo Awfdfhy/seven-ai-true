@@ -42,7 +42,12 @@ public class SevenRpgStandaloneTest {
    // The standalone app must offer a no-import first-run flow, not just an RPG tab.
    assertEquals("true",js(view,"Boolean(document.querySelector('#seven-rpg-first-run') && document.querySelector('#seven-rpg-create-world'))"));
    assertEquals("true",js(view,"(()=>{document.querySelector('#seven-rpg-world-name').value='Test World';document.querySelector('#seven-rpg-create-world').click();return true})()"));
-   assertEquals("true",js(view,"Boolean(document.documentElement.dataset.sevenStandaloneWorldCreated==='1' && window.SevenRpgWorkspace.state.worldEngine && window.SevenRpgWorkspace.state.worldEngine.work.title==='Test World' && document.querySelector('#userInput').value.includes('Never invent dialogue'))"));
+   boolean created=false;
+   for(int i=0;i<50;i++) {
+     if("true".equals(js(view,"Boolean(document.documentElement.dataset.sevenStandaloneWorldCreated==='1' && window.SevenRpgWorkspace.state.worldEngine && window.SevenRpgWorkspace.state.worldEngine.work.title==='Test World' && document.querySelector('#userInput') && document.querySelector('#userInput').value.includes('Never invent dialogue'))"))){created=true;break;}
+     Thread.sleep(200);
+   }
+   assertTrue("World creation did not commit: "+js(view,"JSON.stringify({created:document.documentElement.dataset.sevenStandaloneWorldCreated,world:window.SevenRpgWorkspace?.state?.worldEngine?.work?.title,error:document.querySelector('#seven-rpg-first-run [role=status]')?.textContent,room:typeof currentRoom!=='undefined'?currentRoom:null,input:document.querySelector('#userInput')?.value?.slice(0,80)})"),created);
    // Activity recreation must rehydrate the same world, not show the first-run prompt.
    scenario.recreate();
    AtomicReference<WebView> recreated=new AtomicReference<>();
