@@ -3,7 +3,21 @@
   'use strict';
   if (!win || !doc) return;
   doc.documentElement.dataset.sevenStandaloneProfile = 'rpg';
-  doc.title = 'Seven RPG';
+  // The shared chat runtime may replace document.title when a room changes.
+  // Keep the Android RPG profile's actual window title stable.
+  function keepRpgTitle() {
+    if (doc.title !== 'Seven RPG') doc.title = 'Seven RPG';
+  }
+  keepRpgTitle();
+  var titleNode = doc.querySelector('head title');
+  if (titleNode && typeof win.MutationObserver === 'function') {
+    new win.MutationObserver(keepRpgTitle).observe(titleNode, {
+      childList: true,
+      characterData: true,
+      subtree: true
+    });
+  }
+  doc.addEventListener('seven:roomchange', keepRpgTitle);
   var busy = false;
   var ready = false;
   var tries = 0;
