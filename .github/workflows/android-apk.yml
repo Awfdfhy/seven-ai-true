@@ -156,10 +156,40 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Resolve RPG Live LLM provider
+        id: rpg-provider
+        env:
+          SEVEN_RPG_GROQ_KEY: ${{ secrets.GROQ_API_KEY }}
+          SEVEN_RPG_OPENROUTER_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          SEVEN_RPG_NVIDIA_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          SEVEN_RPG_MISTRAL_KEY: ${{ secrets.MISTRAL_API_KEY }}
+        run: |
+          if [ -n "$SEVEN_RPG_GROQ_KEY" ] || [ -n "$SEVEN_RPG_OPENROUTER_KEY" ] || [ -n "$SEVEN_RPG_NVIDIA_KEY" ] || [ -n "$SEVEN_RPG_MISTRAL_KEY" ]; then
+            echo "local=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "local=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install Ollama for real local RPG acceptance
+        if: steps.rpg-provider.outputs.local == 'true'
+        uses: ai-action/setup-ollama@v2
+
+      - name: Start local real AI and pull Qwen
+        if: steps.rpg-provider.outputs.local == 'true'
+        run: |
+          ollama serve > "$RUNNER_TEMP/ollama-rpg.log" 2>&1 &
+          for attempt in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:11434/api/version > /dev/null; then break; fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:11434/api/version > /dev/null
+          ollama pull qwen2.5:1.5b-instruct
+
       - name: Real RPG Live LLM + Canon acceptance
         env:
           SEVEN_RPG_GROQ_KEY: ${{ secrets.GROQ_API_KEY }}
           SEVEN_RPG_OPENROUTER_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           SEVEN_RPG_NVIDIA_KEY: ${{ secrets.NVIDIA_API_KEY }}
           SEVEN_RPG_MISTRAL_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          SEVEN_RPG_ALLOW_LOCAL_LLM: ${{ steps.rpg-provider.outputs.local }}
         run: node apk/rpg-live-llm-acceptance.cjs
