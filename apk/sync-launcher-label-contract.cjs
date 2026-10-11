@@ -51,7 +51,7 @@ for (const target of targets) {
     // ("Seven 2.4.3"), not the original "Seven" placeholder. Match either
     // exact known anchor; never rewrite arbitrary regular expressions.
     const plainLabelAnchor=oldText.includes('query:"Seven"')||oldText.includes('"input","text","Seven"');
-    const legacyText=oldText.replace('Seven',plainLabelAnchor?'Seven 2.4.3':'Seven 2\\\\.4\\\\.3');
+    const legacyText=oldText.replace('Seven',plainLabelAnchor?'Seven 2.4.3':'Seven 2\\.4\\.3');
     const from=source.includes(oldText)?oldText:(source.includes(legacyText)?legacyText:null);
     if (!from) {
       throw new Error(`${target.file} launcher label contract drifted; refusing blind rewrite`);
