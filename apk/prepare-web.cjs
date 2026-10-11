@@ -30,5 +30,21 @@ for(const name of ROOT_LAZY){
   if(!fs.existsSync(src))throw new Error('missing required lazy web runtime: '+name);
   fs.copyFileSync(src,dst);
 }
+// Standalone RPG is a DISTINCT Android application profile, not a renamed Seven AI APK.
+// Preserve the shared Chat/LLM runtime (required by RPG), while hiding non-RPG entry points.
+const profile=JSON.parse(fs.readFileSync(path.join(ROOT,'capacitor.config.json'),'utf8'));
+if(profile.appId==='ai.seven.rpg'){
+  const src=path.join(ROOT,'apk','rpg-standalone-entry.js');
+  const index=path.join(WWW,'index.html');
+  if(!fs.existsSync(src))throw new Error('RPG standalone entrypoint missing');
+  let page=fs.readFileSync(index,'utf8');
+  if(!page.includes('</body>')||!page.includes('SEVEN_FINAL_RELEASE_LAYER_V1'))throw new Error('RPG standalone source invalid');
+  if(page.includes('seven-rpg-standalone-entry'))throw new Error('duplicate RPG standalone entrypoint');
+  const css='<style id="seven-rpg-standalone-style">html[data-seven-standalone-profile="rpg"] [data-seven-shell-workspace]:not([data-seven-shell-workspace="rpg"]),html[data-seven-standalone-profile="rpg"] [data-seven-github-selfdev],html[data-seven-standalone-profile="rpg"] .seven-ws-choice:not([data-ws="rpg"]),html[data-seven-standalone-profile="rpg"] [data-rpg-exit]{display:none!important}</style>';
+  page=page.replace('</body>',css+'<script id="seven-rpg-standalone-entry" src="./rpg-standalone-entry.js"></script></body>');
+  fs.copyFileSync(src,path.join(WWW,'rpg-standalone-entry.js'));
+  fs.writeFileSync(index,page);
+  console.log('Seven RPG dedicated Android profile: PASS (ai.seven.rpg; boot in RPG; hide unrelated navigation)');
+}
 fs.writeFileSync(path.join(WWW,'seven-packaging.json'),JSON.stringify({format:'seven-android-web-payload',version:5,...gitIdentity(ROOT),files:inventory(WWW),lazyWorkspaces:true,adaptiveBrand:true,lazyRootAssets:ROOT_LAZY},null,2));
 console.log('android web payload: PASS (root lazy assets: '+ROOT_LAZY.join(', ')+')');
