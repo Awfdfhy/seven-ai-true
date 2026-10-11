@@ -36,12 +36,21 @@ public class RpgForceStopTest {
     return value.get();
   }
   private void awaitRuntime(WebView view) throws Exception {
-    evaluate(view,"(()=>{const open=()=>window.SevenWorkspaces?.open?.('rpg').catch(()=>{});if(window.SevenWorkspaces){open();return true}let s=document.createElement('script');s.src='./workspaces/hub.js';s.onload=open;document.head.appendChild(s);return true})()");
-    for(int i=0;i<100;i++) {
-      if("true".equals(evaluate(view,"Boolean(window.SevenRpgState&&window.SevenRpgSession&&window.SevenRpgLiveIntegration&&window.SevenRuntime)")))return;
-      Thread.sleep(200);
+    String lastStatus="initializing";
+    for(int i=0;i<160;i++) {
+      String result=evaluate(view,"Boolean(window.SevenRpgState&&window.SevenRpgSession&&window.SevenRpgLiveIntegration&&window.SevenRuntime)");
+      if("true".equals(result)) return;
+      // Android 14 sometimes resumes a WebView before the initial document is ready.
+      // Retry RPG workspace initialization rather than issuing one early open request.
+      if(i%8==0) {
+        lastStatus=evaluate(view,"(()=>{if(document.readyState!=='complete')return 'page-loading';if(window.SevenWorkspaces&&typeof window.SevenWorkspaces.open==='function'){try{Promise.resolve(window.SevenWorkspaces.open('rpg')).catch(()=>{});return 'opening-rpg'}catch(e){return 'open-error:'+String(e)}}if(!document.getElementById('seven-rpg-test-hub')){let s=document.createElement('script');s.id='seven-rpg-test-hub';s.src='./workspaces/hub.js';document.head.appendChild(s)}return 'loading-workspace-hub'})()");
+      }
+      Thread.sleep(500);
     }
-    fail("RPG runtime did not load");
+    fail("RPG runtime did not load after 80s; status="+lastStatus+
+      "; url="+evaluate(view,"location.href")+
+      "; document="+evaluate(view,"document.readyState")+
+      "; hub="+evaluate(view,"Boolean(window.SevenWorkspaces)"));
   }
   @Test public void seedRpgState() throws Exception {
     try(ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)) {
