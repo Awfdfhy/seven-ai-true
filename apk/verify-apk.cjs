@@ -32,12 +32,13 @@ assert.match(listing.stdout,/assets\/public\/workspaces\/remake\.css/);
 assert.match(listing.stdout,/assets\/public\/workspaces\/remake\.js/);
 assert.match(listing.stdout,/assets\/public\/workspaces\/intelligence\.js/);
 if(appId==='ai.seven.rpg'){
-  assert.match(listing.stdout,/assets\\/public\\/rpg-standalone-ui\\.css/);
-  assert.match(listing.stdout,/assets\\/public\\/rpg-standalone-entry\\.js/);
+  assert.ok(listing.stdout.includes('assets/public/rpg-standalone-ui.css'),'RPG redesign stylesheet missing');
+  assert.ok(listing.stdout.includes('assets/public/rpg-standalone-entry.js'),'RPG entrypoint missing');
   for(const name of ['coding.js','research.js','research-v2.js','generated-ui.js','generated-ui.css']){
     assert.ok(!listing.stdout.includes('assets/public/workspaces/'+name),'RPG APK contains unrelated workspace: '+name);
   }
-}else{assert.match(listing.stdout,/assets\/public\/workspaces\/research-v2\.js/);}
+}else{assert.ok(listing.stdout.includes('assets/public/workspaces/research-v2.js'));}
+
 assert.match(listing.stdout,/classes(?:\d*)?\.dex/);
 const packagedManifest=spawnSync('unzip',['-p',APK,'assets/public/seven-packaging.json'],{encoding:'utf8',maxBuffer:4*1024*1024});
 assert.equal(packagedManifest.status,0,'APK build provenance missing');
