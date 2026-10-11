@@ -2,7 +2,9 @@
 set -euo pipefail
 node apk/materialize-rpg-force-stop-test.cjs
 (cd android && ./gradlew --no-daemon :app:assembleDebugAndroidTest)
+adb install -r android/app/build/outputs/apk/debug/app-debug.apk
 adb install -r android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+adb shell pm path ai.seven.v243 | grep -Fq package:
 test_phase() {
   local phase="$1" log
   log="$(mktemp)"
