@@ -53,6 +53,12 @@ jobs:
       - name: Re-run Seven pre-APK release gate
         run: node all.cjs
 
+      - name: Real RPG Live LLM + Canon acceptance
+        env:
+          SEVEN_RPG_LIVE_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          SEVEN_RPG_LIVE_MODEL: llama-3.1-8b-instant
+        run: node apk/rpg-live-llm-acceptance.cjs
+
       - name: Generate native Android project
         env:
           SEVEN_EMBED_GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
