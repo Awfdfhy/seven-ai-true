@@ -52,9 +52,13 @@ if(profile.appId==='ai.seven.rpg'){
   // Do not overwrite valid selections; repair only stale/unavailable model ids.
   // Seven uses this catalog when the user opens Settings, before making a call.
   const stale='            document.getElementById("modelSelect").value = currentModel;';
-  const safe='            const rpgModels = document.getElementById("modelSelect");\\n            if ([...rpgModels.options].some(o => o.value === currentModel)) rpgModels.value = currentModel;\\n            else if (rpgModels.options.length) { rpgModels.selectedIndex = 0; onModelChange(); }';
+  const safe=[
+    '            const rpgModels = document.getElementById("modelSelect");',
+    '            if ([...rpgModels.options].some(o => o.value === currentModel)) rpgModels.value = currentModel;',
+    '            else if (rpgModels.options.length) { rpgModels.selectedIndex = 0; onModelChange(); }'
+  ].join('\\n');
   if(!page.includes(stale))throw new Error('RPG model picker guard anchor missing');
-  page=page.replace(stale,safe.replace(/\\\\n/g,'\\n'));
+  page=page.replace(stale,safe);
 
   // Non-RPG workspaces must not ship in the standalone APK. Shared chat/model
   // engines remain because RPG narration depends on them.
