@@ -39,6 +39,21 @@ public class SevenRpgStandaloneTest {
    }
    assertTrue("Dedicated RPG did not reach ready state. Actual: "+js(view,"JSON.stringify({profile:document.documentElement.dataset.sevenStandaloneProfile,ready:document.documentElement.dataset.sevenStandaloneReady,error:document.documentElement.dataset.sevenStandaloneError,workspace:window.SevenWorkspaces?SevenWorkspaces.active():null,bar:!!document.querySelector('.seven-rpg-chatbar')})"),ready);
    assertEquals("true",js(view,"document.title==='Seven RPG'"));
+   // The standalone app must offer a no-import first-run flow, not just an RPG tab.
+   assertEquals("true",js(view,"Boolean(document.querySelector('#seven-rpg-first-run') && document.querySelector('#seven-rpg-create-world'))"));
+   assertEquals("true",js(view,"(()=>{document.querySelector('#seven-rpg-world-name').value='Test World';document.querySelector('#seven-rpg-create-world').click();return true})()"));
+   assertEquals("true",js(view,"Boolean(document.documentElement.dataset.sevenStandaloneWorldCreated==='1' && window.SevenRpgWorkspace.state.worldEngine && window.SevenRpgWorkspace.state.worldEngine.work.title==='Test World' && document.querySelector('#userInput').value.includes('Never invent dialogue'))"));
+   // Activity recreation must rehydrate the same world, not show the first-run prompt.
+   scenario.recreate();
+   AtomicReference<WebView> recreated=new AtomicReference<>();
+   scenario.onActivity(a->recreated.set(a.getBridge().getWebView()));
+   WebView restored=recreated.get();assertNotNull(restored);
+   boolean persisted=false;
+   for(int i=0;i<160;i++){
+     if("true".equals(js(restored,"Boolean(document.documentElement.dataset.sevenStandaloneReady==='1' && SevenRpgWorkspace.state.worldEngine && SevenRpgWorkspace.state.worldEngine.work.title==='Test World' && !document.querySelector('#seven-rpg-first-run'))"))){persisted=true;break;}
+     Thread.sleep(250);
+   }
+   assertTrue("RPG first world was not restored after Activity recreation",persisted);
    assertEquals("true",js(view,"getComputedStyle(document.querySelector('[data-seven-shell-workspace=\\\"chat\\\"]')).display==='none'"));
   }
  }
