@@ -2,7 +2,9 @@
   "schemaVersion": 1,
   "domains": 30,
   "ready": 0,
-  "missing": [],
+  "missing": [
+    "D11_ANDROID_NATIVE"
+  ],
   "insufficient": [
     "D01_CHAT_CORE",
     "D02_MEMORY_CONTEXT",
@@ -50,7 +52,7 @@
     {
       "id": "D02_MEMORY_CONTEXT",
       "status": "INSUFFICIENT",
-      "urls": 129,
+      "urls": 125,
       "primaryTagged": 313,
       "target": 20,
       "owners": [
@@ -65,7 +67,7 @@
     {
       "id": "D03_TOOLS_CAPABILITY",
       "status": "INSUFFICIENT",
-      "urls": 133,
+      "urls": 129,
       "primaryTagged": 348,
       "target": 20,
       "owners": [
@@ -80,7 +82,7 @@
     {
       "id": "D04_CODING_SYSTEM",
       "status": "INSUFFICIENT",
-      "urls": 95,
+      "urls": 93,
       "primaryTagged": 116,
       "target": 12,
       "owners": [
@@ -113,7 +115,7 @@
     {
       "id": "D07_RESEARCH_WEB",
       "status": "INSUFFICIENT",
-      "urls": 92,
+      "urls": 90,
       "primaryTagged": 80,
       "target": 12,
       "owners": [
@@ -124,8 +126,8 @@
     {
       "id": "D08_MODEL_ROUTING",
       "status": "INSUFFICIENT",
-      "urls": 48,
-      "primaryTagged": 67,
+      "urls": 31,
+      "primaryTagged": 31,
       "target": 10,
       "owners": [
         "A05",
@@ -135,8 +137,8 @@
     {
       "id": "D09_DEEP_THINK",
       "status": "INSUFFICIENT",
-      "urls": 41,
-      "primaryTagged": 47,
+      "urls": 11,
+      "primaryTagged": 11,
       "target": 10,
       "owners": [
         "B04",
@@ -157,8 +159,8 @@
     {
       "id": "D11_ANDROID_NATIVE",
       "status": "INSUFFICIENT",
-      "urls": 32,
-      "primaryTagged": 46,
+      "urls": 12,
+      "primaryTagged": 12,
       "target": 10,
       "owners": [
         "A02",
@@ -168,7 +170,7 @@
     {
       "id": "D12_UI_DESIGN_SYSTEM",
       "status": "INSUFFICIENT",
-      "urls": 90,
+      "urls": 88,
       "primaryTagged": 122,
       "target": 10,
       "owners": [
@@ -179,8 +181,8 @@
     {
       "id": "D13_ARABIC_RTL_A11Y",
       "status": "INSUFFICIENT",
-      "urls": 30,
-      "primaryTagged": 61,
+      "urls": 21,
+      "primaryTagged": 38,
       "target": 8,
       "owners": [
         "A03",
@@ -223,8 +225,8 @@
     {
       "id": "D17_PERFORMANCE_CONCURRENCY",
       "status": "INSUFFICIENT",
-      "urls": 88,
-      "primaryTagged": 83,
+      "urls": 62,
+      "primaryTagged": 47,
       "target": 10,
       "owners": [
         "A09",
@@ -234,7 +236,7 @@
     {
       "id": "D18_TESTING_EVALS",
       "status": "INSUFFICIENT",
-      "urls": 95,
+      "urls": 93,
       "primaryTagged": 128,
       "target": 12,
       "owners": [
@@ -245,7 +247,7 @@
     {
       "id": "D19_AGENT_ORCHESTRATION",
       "status": "INSUFFICIENT",
-      "urls": 97,
+      "urls": 95,
       "primaryTagged": 148,
       "target": 10,
       "owners": [
@@ -256,7 +258,7 @@
     {
       "id": "D20_PRODUCT_QUALITY",
       "status": "INSUFFICIENT",
-      "urls": 90,
+      "urls": 88,
       "primaryTagged": 122,
       "target": 8,
       "owners": [
@@ -267,8 +269,8 @@
     {
       "id": "D21_OBSERVABILITY_WORLD_MODEL",
       "status": "INSUFFICIENT",
-      "urls": 99,
-      "primaryTagged": 100,
+      "urls": 69,
+      "primaryTagged": 64,
       "target": 8,
       "owners": [
         "A04",
@@ -300,8 +302,8 @@
     {
       "id": "D24_RELEASE_APK",
       "status": "INSUFFICIENT",
-      "urls": 103,
-      "primaryTagged": 100,
+      "urls": 89,
+      "primaryTagged": 77,
       "target": 8,
       "owners": [
         "A02",
@@ -333,7 +335,7 @@
     {
       "id": "D27_ERROR_RECOVERY_UX",
       "status": "INSUFFICIENT",
-      "urls": 90,
+      "urls": 88,
       "primaryTagged": 119,
       "target": 8,
       "owners": [
@@ -344,8 +346,8 @@
     {
       "id": "D28_LOCAL_INTELLIGENCE",
       "status": "INSUFFICIENT",
-      "urls": 48,
-      "primaryTagged": 67,
+      "urls": 31,
+      "primaryTagged": 31,
       "target": 8,
       "owners": [
         "A05",
@@ -366,7 +368,7 @@
     {
       "id": "D30_AUTONOMOUS_QUALITY",
       "status": "INSUFFICIENT",
-      "urls": 104,
+      "urls": 100,
       "primaryTagged": 212,
       "target": 12,
       "owners": [
