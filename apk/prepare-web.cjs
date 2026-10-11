@@ -45,6 +45,14 @@ if(profile.appId==='ai.seven.rpg'){
   const css='<style id="seven-rpg-standalone-style">html[data-seven-standalone-profile="rpg"] [data-seven-shell-workspace]:not([data-seven-shell-workspace="rpg"]),html[data-seven-standalone-profile="rpg"] [data-seven-github-selfdev],html[data-seven-standalone-profile="rpg"] .seven-ws-choice:not([data-ws="rpg"]),html[data-seven-standalone-profile="rpg"] [data-rpg-exit]{display:none!important}</style>';
   page=page.replace('</body>',css+'<script id="seven-rpg-standalone-entry" src="./rpg-standalone-entry.js"></script></body>');
   fs.copyFileSync(src,path.join(WWW,'rpg-standalone-entry.js'));
+  const skin=path.join(ROOT,'apk','rpg-standalone-ui.css');
+  if(!fs.existsSync(skin))throw new Error('Standalone RPG design missing');
+  fs.copyFileSync(skin,path.join(WWW,'rpg-standalone-ui.css'));
+  page=page.replace('</head>','<link rel="stylesheet" href="./rpg-standalone-ui.css"></head>');
+  // Non-RPG workspaces must not ship in the standalone APK. Shared chat/model
+  // engines remain because RPG narration depends on them.
+  const remove=['coding.js','research.js','research-v2.js','generated-ui.js','generated-ui.css'];
+  for(const name of remove)fs.rmSync(path.join(WWW,'workspaces',name),{force:true});
   fs.writeFileSync(index,page);
   console.log('Seven RPG dedicated Android profile: PASS (ai.seven.rpg; boot in RPG; hide unrelated navigation)');
 }
