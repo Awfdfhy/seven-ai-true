@@ -18,7 +18,8 @@
     });
   }
   doc.addEventListener('seven:roomchange', keepRpgTitle);
-  doc.addEventListener('seven:roomchange', function () { if (ready) starterPanel(); });
+  // Let the RPG workspace finish room hydration before checking whether a world exists.
+  doc.addEventListener('seven:roomchange', function () { if (ready) win.setTimeout(starterPanel, 0); });
   var busy = false;
   var ready = false;
   var tries = 0;
