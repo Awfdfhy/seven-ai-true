@@ -44,6 +44,12 @@ if(profile.appId==='ai.seven.rpg'){
   page=page.replace('<title>Seven AI</title>','<title>Seven RPG</title>');
   const css='<style id="seven-rpg-standalone-style">html[data-seven-standalone-profile="rpg"] [data-seven-shell-workspace]:not([data-seven-shell-workspace="rpg"]),html[data-seven-standalone-profile="rpg"] [data-seven-github-selfdev],html[data-seven-standalone-profile="rpg"] .seven-ws-choice:not([data-ws="rpg"]),html[data-seven-standalone-profile="rpg"] [data-rpg-exit]{display:none!important}</style>';
   page=page.replace('</body>',css+'<script id="seven-rpg-standalone-entry" src="./rpg-standalone-entry.js"></script></body>');
+  const runtimeSource=fs.readFileSync(path.join(ROOT,'seven_ai-final.html'),'utf8');
+  const runtimeStart=runtimeSource.indexOf('window.SevenRuntime = (() => {');
+  const runtimeEnd=runtimeSource.indexOf('        })();',runtimeStart);
+  if(runtimeStart<0||runtimeEnd<=runtimeStart)throw Error('RPG memory runtime source not found');
+  fs.writeFileSync(path.join(WWW,'rpg-memory-runtime.js'),runtimeSource.slice(runtimeStart,runtimeEnd+13));
+  page=page.replace('<script id="seven-rpg-standalone-entry"','<script src="./rpg-memory-runtime.js"></script><script id="seven-rpg-standalone-entry"');
   fs.copyFileSync(src,path.join(WWW,'rpg-standalone-entry.js'));
   const skin=path.join(ROOT,'apk','rpg-standalone-ui.css');
   if(!fs.existsSync(skin))throw new Error('Standalone RPG design missing');
