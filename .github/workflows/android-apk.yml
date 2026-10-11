@@ -93,7 +93,8 @@ jobs:
             adb shell mkdir -p /data/local/tmp/seven-visual
             rm -rf visual-evidence/android16
             mkdir -p visual-evidence/android16
-            seven_test_status=0; (cd android && ./gradlew --no-daemon :app:connectedDebugAndroidTest) || seven_test_status=$?; adb pull /data/local/tmp/seven-visual/. visual-evidence/android16/ || true; exit "$seven_test_status"
+            seven_test_status=0; (cd android && ./gradlew --no-daemon :app:connectedDebugAndroidTest) || seven_test_status=$?; adb pull /data/local/tmp/seven-visual/. visual-evidence/android16/ || true; if [ "$seven_test_status" -ne 0 ]; then exit "$seven_test_status"; fi
+            bash apk/run-rpg-force-stop.sh
 
       - name: Android 14 WebView UI regression test
         uses: reactivecircus/android-emulator-runner@v2.38.0
@@ -111,7 +112,8 @@ jobs:
             adb shell mkdir -p /data/local/tmp/seven-visual
             rm -rf visual-evidence/android14
             mkdir -p visual-evidence/android14
-            seven_test_status=0; (cd android && ./gradlew --no-daemon :app:connectedDebugAndroidTest) || seven_test_status=$?; adb pull /data/local/tmp/seven-visual/. visual-evidence/android14/ || true; exit "$seven_test_status"
+            seven_test_status=0; (cd android && ./gradlew --no-daemon :app:connectedDebugAndroidTest) || seven_test_status=$?; adb pull /data/local/tmp/seven-visual/. visual-evidence/android14/ || true; if [ "$seven_test_status" -ne 0 ]; then exit "$seven_test_status"; fi
+            bash apk/run-rpg-force-stop.sh
 
       - name: Upload Android UI visual evidence
         if: ${{ always() && hashFiles('visual-evidence/**') != '' }}
