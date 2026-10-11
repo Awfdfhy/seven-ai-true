@@ -1,9 +1,15 @@
 'use strict';
 const assert=require('node:assert/strict');
 const State=require('../release/workspaces/rpg-state.js');
-const key=process.env.SEVEN_RPG_LIVE_API_KEY;
-if(!key){console.error('BLOCKED: GROQ_API_KEY unavailable; cannot certify real LLM RPG acceptance');process.exit(2)}
-const model=process.env.SEVEN_RPG_LIVE_MODEL||'llama-3.1-8b-instant';
+const providers=[
+ {name:'Groq',key:process.env.SEVEN_RPG_GROQ_KEY,url:'https://api.groq.com/openai/v1/chat/completions',model:'llama-3.1-8b-instant'},
+ {name:'OpenRouter',key:process.env.SEVEN_RPG_OPENROUTER_KEY,url:'https://openrouter.ai/api/v1/chat/completions',model:'openai/gpt-oss-20b:free'},
+ {name:'NVIDIA',key:process.env.SEVEN_RPG_NVIDIA_KEY,url:'https://integrate.api.nvidia.com/v1/chat/completions',model:'meta/llama-3.1-8b-instruct'},
+ {name:'Mistral',key:process.env.SEVEN_RPG_MISTRAL_KEY,url:'https://api.mistral.ai/v1/chat/completions',model:'mistral-small-latest'}
+];
+const provider=providers.find(p=>p.key&&p.key.trim());
+if(!provider){console.error('BLOCKED: no live provider secret (GROQ_API_KEY, OPENROUTER_API_KEY, NVIDIA_API_KEY or MISTRAL_API_KEY)');process.exit(2)}
+const key=provider.key,model=process.env.SEVEN_RPG_LIVE_MODEL||provider.model;
 const seed=State.createState({
  sessionId:'live-rpg-acceptance',worldId:'valen',
  timeline:{tick:3},world:{locations:{palace:{name:'Palace'}}},
@@ -22,9 +28,9 @@ const prompt=[
  'The player Ali asks: "Aria, what do you think about the coming council?"'
 ].join(' ');
 async function run(){
- const response=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+ const response=await fetch(provider.url,{
   method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+key},
-  body:JSON.stringify({model,temperature:0,max_tokens:220,response_format:{type:'json_object'},messages:[{role:'system',content:prompt},{role:'user',content:'Answer as Aria only, in JSON.'}]}),
+  body:JSON.stringify({model,temperature:0,max_tokens:350,messages:[{role:'system',content:prompt},{role:'user',content:'Answer as Aria only, in JSON.'}]}),
   signal:AbortSignal.timeout(30000)
  });
  if(!response.ok)throw Error('Provider error HTTP '+response.status);
@@ -42,6 +48,6 @@ async function run(){
  assert.equal(bad.reason,'player-control');
  const rewrite=State.applyEvent(seed,{id:'llm-canon',type:'canon.set',source:'runtime',payload:{id:'ruler',entry:{level:'HARD',value:'Another ruler'}}});
  assert.equal(rewrite.reason,'hard-canon-conflict');
- console.log(JSON.stringify({gate:'RPG_LIVE_LLM_CANON',status:'PASS',model,provider:'Groq',playerAgency:'PASS',hardCanon:'PASS',knowledgeBoundary:'PASS'}));
+ console.log(JSON.stringify({gate:'RPG_LIVE_LLM_CANON',status:'PASS',model,provider:provider.name,playerAgency:'PASS',hardCanon:'PASS',knowledgeBoundary:'PASS'}));
 }
 run().catch(e=>{console.error('RPG_LIVE_LLM_CANON FAIL:',e.message);process.exitCode=1});
