@@ -49,6 +49,13 @@ if(profile.appId==='ai.seven.rpg'){
   if(!fs.existsSync(skin))throw new Error('Standalone RPG design missing');
   fs.copyFileSync(skin,path.join(WWW,'rpg-standalone-ui.css'));
   page=page.replace('</head>','<link rel="stylesheet" href="./rpg-standalone-ui.css"></head>');
+  // Do not overwrite valid selections; repair only stale/unavailable model ids.
+  // Seven uses this catalog when the user opens Settings, before making a call.
+  const stale='            document.getElementById("modelSelect").value = currentModel;';
+  const safe='            const rpgModels = document.getElementById("modelSelect");\\n            if ([...rpgModels.options].some(o => o.value === currentModel)) rpgModels.value = currentModel;\\n            else if (rpgModels.options.length) { rpgModels.selectedIndex = 0; onModelChange(); }';
+  if(!page.includes(stale))throw new Error('RPG model picker guard anchor missing');
+  page=page.replace(stale,safe.replace(/\\\\n/g,'\\n'));
+
   // Non-RPG workspaces must not ship in the standalone APK. Shared chat/model
   // engines remain because RPG narration depends on them.
   const remove=['coding.js','research.js','research-v2.js','generated-ui.js','generated-ui.css'];
