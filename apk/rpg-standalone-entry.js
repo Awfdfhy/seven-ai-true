@@ -110,6 +110,38 @@
     panel.append(heading, hint, worldName, premise, button, error);
     host.parentNode.insertBefore(panel, host);
   }
+  // Keep model selection reachable without exposing unrelated Seven AI workspaces.
+  function mountRpgModelControl() {
+    var bar = doc.querySelector('.seven-rpg-chat-actions');
+    if (!bar || doc.getElementById('seven-rpg-model-control')) return;
+    var button = doc.createElement('button');
+    button.type = 'button';
+    button.id = 'seven-rpg-model-control';
+    button.className = 'seven-rpg-mini';
+    button.textContent = '✧ Model';
+    button.setAttribute('aria-label', 'Choose RPG AI model');
+    button.addEventListener('click', function () {
+      if (typeof win.openSettings === 'function') win.openSettings();
+      else {
+        var modal = doc.getElementById('settingsModal');
+        if (modal) modal.style.display = 'flex';
+      }
+      var select = doc.getElementById('modelSelect');
+      if (select) {
+        if (!select.value && select.options.length) select.selectedIndex = 0;
+        var routing = doc.getElementById('routingModeSelect');
+        if (routing && routing.value === 'auto') {
+          // Automatic routing disables the preferred model picker by design.
+          // Switch UI to manual only when the user chooses model selection.
+          routing.value = 'manual';
+          routing.dispatchEvent(new Event('change', {bubbles:true}));
+        }
+        select.disabled = false;
+        select.focus();
+      }
+    });
+    bar.insertBefore(button, bar.firstChild);
+  }
   function boot() {
     if (busy || ready) return;
     var shell = win.SevenShellFinal;
@@ -125,6 +157,7 @@
         ready = true;
         doc.documentElement.dataset.sevenStandaloneReady = '1';
         starterPanel();
+        mountRpgModelControl();
       } else {
         busy = false;
         report('rpg-workspace-unavailable');
