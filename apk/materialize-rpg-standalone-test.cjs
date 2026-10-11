@@ -54,7 +54,7 @@ public class SevenRpgStandaloneTest {
      Thread.sleep(250);
    }
    assertTrue("RPG first world was not restored after Activity recreation",persisted);
-   assertEquals("true",js(view,"getComputedStyle(document.querySelector('[data-seven-shell-workspace=\\\"chat\\\"]')).display==='none'"));
+   assertEquals("true",js(restored,"getComputedStyle(document.querySelector('[data-seven-shell-workspace=\\\"chat\\\"]')).display==='none'"));
   }
  }
 }
