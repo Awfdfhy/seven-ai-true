@@ -1,0 +1,35 @@
+name: Seven RPG Live LLM Canon
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'release/rc-*'
+    paths:
+      - 'apk/rpg-live-llm-acceptance.cjs'
+      - '.github/workflows/rpg-live-canon.yml'
+      - 'release/workspaces/rpg-state.js'
+      - 'release/workspaces/rpg-context.js'
+permissions:
+  contents: read
+jobs:
+  live-rpg-canon:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate live provider credential availability
+        env:
+          SEVEN_RPG_LIVE_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: |
+          if [ -z "$SEVEN_RPG_LIVE_API_KEY" ]; then
+            echo "::error title=Missing GROQ_API_KEY::Live LLM acceptance requires GitHub Actions secret GROQ_API_KEY"
+            exit 2
+          fi
+      - name: Run actual Groq LLM plus Canon gate
+        env:
+          SEVEN_RPG_LIVE_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          SEVEN_RPG_LIVE_MODEL: llama-3.1-8b-instant
+        run: node apk/rpg-live-llm-acceptance.cjs
