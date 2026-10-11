@@ -8,7 +8,7 @@ test_phase() {
   log="$(mktemp)"
   adb shell am instrument -w -r -e class "ai.seven.v243.RpgForceStopTest#${phase}" \
     ai.seven.v243.test/androidx.test.runner.AndroidJUnitRunner | tee "$log"
-  if ! grep -Eq 'OK \\(1 test\\)|OK \\(1 test[s]?\\)' "$log"; then
+  if ! grep -Fq 'OK (1 test)' "$log"; then
     echo "RPG force-stop instrumentation phase failed: ${phase}" >&2
     rm -f "$log"; return 1
   fi
