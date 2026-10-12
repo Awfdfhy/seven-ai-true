@@ -18,7 +18,7 @@ while true; do
   stamp="$(date -u +%Y%m%dT%H%M%SZ)"
   logfile="$LOGDIR/$stamp.log"
   echo "[$stamp] Begin iteration" | tee -a "$LOGDIR/status.log"
-  prompt="Read $PLAN completely and follow its non-destructive policies. Inspect current RPG branch, GitHub Actions, then implement ONE highest-priority safely verifiable unfinished task. Run tests and record honest results. Make no unauthorized merges or deletions. If blocked, document why. Conclude this iteration with SHA, evidence, and next task."
+  prompt="Read $PLAN AND docs/seven-rpg/FEATURE_ROADMAP.md completely. Follow the roadmap priority IDs and non-destructive policies. Inspect current RPG branch, GitHub Actions, then implement ONE highest-priority safely verifiable unfinished task. Run tests and record honest results. Make no unauthorized merges or deletions. If blocked, document why. Conclude this iteration with SHA, evidence, and next task."
   if command -v timeout >/dev/null 2>&1; then
     timeout --signal=TERM --kill-after=30s 90m opencode run "$prompt" >"$logfile" 2>&1
     code=$?
