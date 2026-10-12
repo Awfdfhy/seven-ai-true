@@ -124,7 +124,7 @@
     panel.id='seven-rpg-world-panel';
     panel.hidden=true;
     panel.setAttribute('aria-label','RPG world information');
-    panel.innerHTML='<strong id="seven-rpg-world-heading"></strong><p id="seven-rpg-world-summary"></p><button type="button" id="seven-rpg-export-world">Export world backup · تصدير نسخة</button><p id="seven-rpg-world-backup-status" role="status"></p>';
+    panel.innerHTML='<strong id="seven-rpg-world-heading"></strong><p id="seven-rpg-world-summary"></p><button type="button" id="seven-rpg-export-world">Export world backup · تصدير نسخة</button><label for="seven-rpg-import-world">Import backup · استيراد عالم</label><input id="seven-rpg-import-world" aria-label="Import RPG world backup JSON" type="file" accept=".json,application/json"><p id="seven-rpg-world-backup-status" role="status"></p>';
     var host=doc.querySelector('.seven-rpg-chatbar');
     if(!host||!host.parentNode)return;
     host.parentNode.insertBefore(panel,host.nextSibling);
@@ -155,6 +155,26 @@
       }catch(err){
         doc.getElementById('seven-rpg-world-backup-status').textContent='Backup failed: '+String(err&&err.message||err);
       }
+    });
+    panel.querySelector('#seven-rpg-import-world').addEventListener('change',async function(event){
+      var file=event.target.files&&event.target.files[0],status=doc.getElementById('seven-rpg-world-backup-status');
+      event.target.value='';
+      if(!file)return;
+      if(file.size>2*1024*1024){status.textContent='Backup is too large (2 MB limit).';return;}
+      try{
+        var parsed=JSON.parse(await file.text());
+        if(!parsed||parsed.format!=='seven-rpg-world-backup'||parsed.version!==1||!parsed.data||!parsed.data.work)throw Error('Unsupported RPG backup format');
+        var work=parsed.data.work;
+        if(!work||typeof work!=='object'||typeof work.id!=='string'||typeof work.title!=='string'||!Array.isArray(work.beats)||work.title.length>120)throw Error('Invalid world details');
+        if(!win.confirm('Import "'+work.title.slice(0,80)+'"? This replaces the active RPG world in this chat. Export a backup first if needed.')){status.textContent='Import cancelled';return;}
+        var api=win.SevenRpgWorkspace;
+        if(!api||typeof api.loadWork!=='function')throw Error('RPG persistence unavailable');
+        api.loadWork(work);
+        if(parsed.data.canonPack&&typeof api.loadCanon==='function')api.loadCanon(parsed.data.canonPack);
+        status.textContent='World imported · تم استيراد العالم';
+        render();
+        starterPanel();
+      }catch(error){status.textContent='Import failed: '+String(error&&error.message||error);}
     });
     bar.insertBefore(button,bar.firstChild);
   }
