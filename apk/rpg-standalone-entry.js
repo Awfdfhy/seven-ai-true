@@ -158,12 +158,17 @@
         doc.getElementById('seven-rpg-world-backup-status').textContent='Backup failed: '+String(err&&err.message||err);
       }
     });
+    var importBusy=false;
     panel.querySelector('#seven-rpg-import-world').addEventListener('change',async function(event){
-      var file=event.target.files&&event.target.files[0],status=doc.getElementById('seven-rpg-world-backup-status');
-      event.target.value='';
-      if(!file)return;
+      var picker=event.target;
+      var file=picker.files&&picker.files[0],status=doc.getElementById('seven-rpg-world-backup-status');
+      picker.value='';
+      if(!file||importBusy)return;
       if(!file.size){status.textContent='Backup file is empty · ملف النسخة فارغ';return;}
       if(file.size>2*1024*1024){status.textContent='Backup is too large (2 MB limit).';return;}
+      importBusy=true;
+      picker.disabled=true;
+      status.textContent='Validating backup · جارٍ التحقق من النسخة';
       try{
         var parsed=JSON.parse(await file.text());
         if(!parsed||parsed.format!=='seven-rpg-world-backup'||parsed.version!==1||!parsed.data||!parsed.data.work)throw Error('Unsupported RPG backup format');
@@ -181,6 +186,7 @@
         render();
         starterPanel();
       }catch(error){status.textContent='Import failed: '+String(error&&error.message||error);}
+      finally{importBusy=false;picker.disabled=false;}
     });
     bar.insertBefore(button,bar.firstChild);
   }
