@@ -146,6 +146,9 @@
       try {
         var data=api&&api.snapshot&&api.snapshot();
         if(!data||!data.work)throw Error('No world available');
+        // The importer currently restores the world only, not canonPack.
+        // Never imply that a partial backup is a full recoverable game save.
+        if(data.canonPack && !win.confirm('This backup can restore the world only. Canon is included for reference but cannot be automatically restored. Export anyway?'))return;
         var blob=new Blob([JSON.stringify({format:'seven-rpg-world-backup',version:1,exportedAt:new Date().toISOString(),data:data},null,2)],{type:'application/json'});
         // Never offer an export which the paired importer cannot restore.
         if(blob.size>2*1024*1024)throw Error('World backup exceeds the 2 MB import limit; export was not created');
