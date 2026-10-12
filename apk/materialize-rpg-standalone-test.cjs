@@ -59,6 +59,15 @@ public class SevenRpgStandaloneTest {
    }
    assertTrue("World creation did not commit: "+js(view,"JSON.stringify({created:document.documentElement.dataset.sevenStandaloneWorldCreated,world:window.SevenRpgWorkspace?.state?.worldEngine?.work?.title,error:document.querySelector('#seven-rpg-first-run [role=status]')?.textContent,room:typeof currentRoom!=='undefined'?currentRoom:null,input:document.querySelector('#userInput')?.value?.slice(0,80)})"),created);
    assertJsTrue(view,"(()=>{document.querySelector('#seven-rpg-world-button').click();document.querySelector('#seven-rpg-world-button').click();return document.querySelector('#seven-rpg-export-world').disabled===false})()");
+   // Exercise the real file-input path instead of checking only that an importer exists.
+   assertJsTrue(view,"(()=>{window.__rpgBackupTest='pending';const api=SevenRpgWorkspace;const snapshot=api.snapshot();const originalTitle=snapshot.work.title;api.loadWork({...snapshot.work,title:'Temporary Import Target'});const picker=document.querySelector('#seven-rpg-import-world');const file=new File([JSON.stringify({format:'seven-rpg-world-backup',version:1,data:snapshot})],'world.json',{type:'application/json'});const transfer=new DataTransfer();transfer.items.add(file);Object.defineProperty(picker,'files',{configurable:true,value:transfer.files});window.__rpgBackupOldConfirm=window.confirm;window.confirm=()=>true;picker.dispatchEvent(new Event('change',{bubbles:true}));return true})()");
+   boolean imported=false;
+   for(int i=0;i<60;i++){
+    if("true".equals(js(view,"Boolean(window.SevenRpgWorkspace?.state?.worldEngine?.work?.title==='Test World' && document.querySelector('#seven-rpg-world-backup-status')?.textContent.includes('World imported'))"))){imported=true;break;}
+    Thread.sleep(250);
+   }
+   assertTrue("RPG backup import round-trip failed: "+js(view,"JSON.stringify({world:SevenRpgWorkspace?.state?.worldEngine?.work?.title,status:document.querySelector('#seven-rpg-world-backup-status')?.textContent})"),imported);
+   js(view,"(()=>{if(window.__rpgBackupOldConfirm)window.confirm=window.__rpgBackupOldConfirm;delete window.__rpgBackupOldConfirm;return true})()");
    // Activity recreation must rehydrate the same world, not show the first-run prompt.
    scenario.recreate();
    AtomicReference<WebView> recreated=new AtomicReference<>();
