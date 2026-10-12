@@ -147,6 +147,8 @@
         var data=api&&api.snapshot&&api.snapshot();
         if(!data||!data.work)throw Error('No world available');
         var blob=new Blob([JSON.stringify({format:'seven-rpg-world-backup',version:1,exportedAt:new Date().toISOString(),data:data},null,2)],{type:'application/json'});
+        // Never offer an export which the paired importer cannot restore.
+        if(blob.size>2*1024*1024)throw Error('World backup exceeds the 2 MB import limit; export was not created');
         var url=URL.createObjectURL(blob),link=doc.createElement('a');
         link.href=url;link.download='seven-rpg-world-backup.json';
         doc.body.appendChild(link);link.click();link.remove();
