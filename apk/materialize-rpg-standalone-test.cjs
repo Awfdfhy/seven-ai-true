@@ -26,6 +26,10 @@ public class SevenRpgStandaloneTest {
   assertTrue("RPG JavaScript timed out",done.await(15,TimeUnit.SECONDS));
   return value.get();
  }
+ private void assertJsTrue(WebView view, String expression) throws Exception {
+  String actual=js(view,expression);
+  assertEquals("RPG WebView assertion failed: "+expression+"; actual="+actual+"; diagnostics="+js(view,"JSON.stringify({profile:document.documentElement.dataset.sevenStandaloneProfile,ready:document.documentElement.dataset.sevenStandaloneReady,error:document.documentElement.dataset.sevenStandaloneError,workspace:window.SevenWorkspaces?SevenWorkspaces.active():null,firstRun:!!document.querySelector('#seven-rpg-first-run'),panelHidden:document.querySelector('#seven-rpg-world-panel')?.hidden,world:window.SevenRpgWorkspace?.state?.worldEngine?.work?.title})"),"true",actual);
+ }
  @Test public void launchesIntoRpgNotSevenAi() throws Exception {
   try(ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)){
    AtomicReference<WebView> reference=new AtomicReference<>();
@@ -38,23 +42,23 @@ public class SevenRpgStandaloneTest {
     Thread.sleep(250);
    }
    assertTrue("Dedicated RPG did not reach ready state. Actual: "+js(view,"JSON.stringify({profile:document.documentElement.dataset.sevenStandaloneProfile,ready:document.documentElement.dataset.sevenStandaloneReady,error:document.documentElement.dataset.sevenStandaloneError,workspace:window.SevenWorkspaces?SevenWorkspaces.active():null,bar:!!document.querySelector('.seven-rpg-chatbar')})"),ready);
-   assertEquals("true",js(view,"document.title==='Seven RPG'"));
+   assertJsTrue(view,"document.title==='Seven RPG'"));
    // Standalone features must remain accessible on the packaged Android UI.
-   assertEquals("true",js(view,"Boolean(document.querySelector('#seven-rpg-world-button') && document.querySelector('#seven-rpg-model-control'))"));
-   assertEquals("true",js(view,"(()=>{document.querySelector('#seven-rpg-world-button').click();return !!document.querySelector('#seven-rpg-import-world') && document.querySelector('#seven-rpg-import-world').accept.includes('json') && !document.querySelector('#seven-rpg-world-panel').hidden})()"));
-   assertEquals("true",js(view,"Boolean(document.querySelector('#seven-rpg-world-button') && document.querySelector('#seven-rpg-model-control') && document.querySelector('#seven-rpg-world-panel'))"));
-   assertEquals("true",js(view,"(()=>{document.querySelector('#seven-rpg-world-button').click();return document.querySelector('#seven-rpg-world-panel').hidden===false})()"));
-   assertEquals("true",js(view,"document.querySelector('#seven-rpg-export-world').disabled===true"));
+   assertJsTrue(view,"Boolean(document.querySelector('#seven-rpg-world-button') && document.querySelector('#seven-rpg-model-control'))"));
+   assertJsTrue(view,"(()=>{document.querySelector('#seven-rpg-world-button').click();return !!document.querySelector('#seven-rpg-import-world') && document.querySelector('#seven-rpg-import-world').accept.includes('json') && !document.querySelector('#seven-rpg-world-panel').hidden})()"));
+   assertJsTrue(view,"Boolean(document.querySelector('#seven-rpg-world-button') && document.querySelector('#seven-rpg-model-control') && document.querySelector('#seven-rpg-world-panel'))"));
+   assertJsTrue(view,"(()=>{document.querySelector('#seven-rpg-world-button').click();return document.querySelector('#seven-rpg-world-panel').hidden===false})()"));
+   assertJsTrue(view,"document.querySelector('#seven-rpg-export-world').disabled===true"));
    // The standalone app must offer a no-import first-run flow, not just an RPG tab.
-   assertEquals("true",js(view,"Boolean(document.querySelector('#seven-rpg-first-run') && document.querySelector('#seven-rpg-create-world'))"));
-   assertEquals("true",js(view,"(()=>{document.querySelector('#seven-rpg-world-name').value='Test World';document.querySelector('#seven-rpg-create-world').click();return true})()"));
+   assertJsTrue(view,"Boolean(document.querySelector('#seven-rpg-first-run') && document.querySelector('#seven-rpg-create-world'))"));
+   assertJsTrue(view,"(()=>{document.querySelector('#seven-rpg-world-name').value='Test World';document.querySelector('#seven-rpg-create-world').click();return true})()"));
    boolean created=false;
    for(int i=0;i<50;i++) {
      if("true".equals(js(view,"Boolean(document.documentElement.dataset.sevenStandaloneWorldCreated==='1' && window.SevenRpgWorkspace.state.worldEngine && window.SevenRpgWorkspace.state.worldEngine.work.title==='Test World' && document.querySelector('#userInput') && document.querySelector('#userInput').value.includes('Never invent dialogue'))"))){created=true;break;}
      Thread.sleep(200);
    }
    assertTrue("World creation did not commit: "+js(view,"JSON.stringify({created:document.documentElement.dataset.sevenStandaloneWorldCreated,world:window.SevenRpgWorkspace?.state?.worldEngine?.work?.title,error:document.querySelector('#seven-rpg-first-run [role=status]')?.textContent,room:typeof currentRoom!=='undefined'?currentRoom:null,input:document.querySelector('#userInput')?.value?.slice(0,80)})"),created);
-   assertEquals("true",js(view,"(()=>{document.querySelector('#seven-rpg-world-button').click();document.querySelector('#seven-rpg-world-button').click();return document.querySelector('#seven-rpg-export-world').disabled===false})()"));
+   assertJsTrue(view,"(()=>{document.querySelector('#seven-rpg-world-button').click();document.querySelector('#seven-rpg-world-button').click();return document.querySelector('#seven-rpg-export-world').disabled===false})()"));
    // Activity recreation must rehydrate the same world, not show the first-run prompt.
    scenario.recreate();
    AtomicReference<WebView> recreated=new AtomicReference<>();
@@ -66,7 +70,7 @@ public class SevenRpgStandaloneTest {
      Thread.sleep(250);
    }
    assertTrue("RPG first world was not restored after Activity recreation",persisted);
-   assertEquals("true",js(restored,"getComputedStyle(document.querySelector('[data-seven-shell-workspace=\\\"chat\\\"]')).display==='none'"));
+   assertJsTrue(restored,"getComputedStyle(document.querySelector('[data-seven-shell-workspace=\\\"chat\\\"]')).display==='none'"));
   }
  }
 }
