@@ -1,0 +1,25 @@
+name: Seven RPG Live Provider Acceptance
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-provider-canon:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6.1.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Verify actual provider inference and RPG canon boundaries
+        env:
+          SEVEN_RPG_GROQ_KEY: ${{ secrets.SEVEN_RPG_GROQ_KEY }}
+          SEVEN_RPG_OPENROUTER_KEY: ${{ secrets.SEVEN_RPG_OPENROUTER_KEY }}
+          SEVEN_RPG_NVIDIA_KEY: ${{ secrets.SEVEN_RPG_NVIDIA_KEY }}
+          SEVEN_RPG_MISTRAL_KEY: ${{ secrets.SEVEN_RPG_MISTRAL_KEY }}
+        run: node apk/rpg-live-llm-acceptance.cjs
