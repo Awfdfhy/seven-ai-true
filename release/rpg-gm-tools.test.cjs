@@ -177,9 +177,9 @@ console.log('  PASS');
 
 console.log('\n9. trackInitiative...');
 const init = gm.trackInitiative([
-  { name: 'Hero', hp: 100, maxHp: 100 },
-  { name: 'Goblin', hp: 30, maxHp: 30 },
-  { name: 'Villain', hp: 150, maxHp: 150 }
+  { id: 'p1', name: 'Hero', hp: 100, maxHp: 100, initiative: 10 },
+  { id: 'p2', name: 'Goblin', hp: 30, maxHp: 30, initiative: 5 },
+  { id: 'p3', name: 'Villain', hp: 150, maxHp: 150, initiative: 15 }
 ]);
 assert.equal(init.participants.length, 3);
 assert.ok(init.participants[0].initiative >= init.participants[1].initiative);
@@ -200,14 +200,18 @@ assert.equal(next3.current, 0);
 console.log('  PASS');
 
 console.log('\n11. applyDamage...');
-const dmg = gm.applyDamage(init, init.participants[1].id, 20);
-assert.equal(dmg.participants[1].hp, 10);
-const overDmg = gm.applyDamage(dmg, dmg.participants[1].id, 50);
-assert.equal(overDmg.participants[1].hp, 0);
+const goblinId = init.participants.find(p => p.name === 'Goblin').id;
+const dmg = gm.applyDamage(init, goblinId, 20);
+const goblinAfterDmg = dmg.participants.find(p => p.name === 'Goblin');
+assert.equal(goblinAfterDmg.hp, 10);
+const overDmg = gm.applyDamage(dmg, goblinId, 50);
+const goblinAfterOverDmg = overDmg.participants.find(p => p.name === 'Goblin');
+assert.equal(goblinAfterOverDmg.hp, 0);
 console.log('  PASS');
 
 console.log('\n12. addCondition...');
-const cond = gm.addCondition(init, init.participants[0].id, 'poisoned');
+const villainId = init.participants.find(p => p.name === 'Villain').id;
+const cond = gm.addCondition(init, villainId, 'poisoned');
 assert.ok(cond.participants[0].conditions.includes('poisoned'));
 const dupCond = gm.addCondition(cond, init.participants[0].id, 'poisoned');
 assert.equal(dupCond.participants[0].conditions.filter(c => c === 'poisoned').length, 1);
