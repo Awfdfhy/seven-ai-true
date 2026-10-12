@@ -410,6 +410,97 @@
       return { ok: true, campaign: next };
     }
 
+    function createBranch(input) {
+      const i = obj(input);
+      const sourceSessionId = text(i.sourceSessionId);
+      const branchSessionId = i.branchSessionId || stableId('session');
+      const sourceSession = sessions.get(sourceSessionId);
+      if (!sourceSession) return { ok: false, reason: 'source-session-not-found' };
+      const name = text(i.name) || `${sourceSession.name} (Branch)`;
+      const branchPointId = text(i.branchPointId) || sourceSession.currentCheckpointId;
+      const branchPointCp = branchPointId ? checkpoints.get(branchPointId) : null;
+      if (branchPointId && !branchPointCp) return { ok: false, reason: 'branch-point-not-found' };
+
+      const branchSession = {
+        id: branchSessionId,
+        campaignId: sourceSession.campaignId,
+        name,
+        description: text(i.description),
+        status: 'planned',
+        scheduledAt: null,
+        startedAt: null,
+        endedAt: null,
+        metadata: { ...sourceSession.metadata, branchOf: sourceSessionId, branchPoint: branchPointId },
+        createdAt: now(), updatedAt: now(), version: 1,
+        checkpointIds: [], currentCheckpointId: null,
+        participants: arr(sourceSession.participants),
+        timeline: { events: [], currentIndex: -1 },
+        statistics: { duration: 0, xpAwarded: 0, encounters: 0, checkpoints: 0 }
+      };
+
+      if (branchPointCp && branchPointCp.stateSnapshot) {
+        // Inherit state from branch point
+      }
+
+      sessions.set(branchSessionId, branchSession);
+      const campaign = campaigns.get(sourceSession.campaignId);
+      if (campaign) {
+        campaign.sessionIds.push(branchSessionId);
+        campaign.updatedAt = now();
+        campaign.version++;
+        campaigns.set(campaign.id, campaign);
+      }
+
+      return { ok: true, session: branchSession };
+    }
+
+    function getBranchTree(sessionId) {
+      const session = sessions.get(sessionId);
+      if (!session) return null;
+      const visited = new Set();
+      const branches = [];
+      function traverse(id, depth) {
+        if (visited.has(id)) return;
+        visited.add(id);
+        const s = sessions.get(id);
+        if (!s) return;
+        if (s.metadata?.branchOf) {
+          branches.push({ sessionId: id, branchOf: s.metadata.branchOf, branchPoint: s.metadata.branchPoint, depth, name: s.name });
+        }
+        for (const childId of Array.from(sessions.values()).filter(s => s.metadata?.branchOf === id).map(s => s.id)) {
+          traverse(childId, depth + 1);
+        }
+      }
+      traverse(sessionId, 0);
+      return branches;
+    }
+
+    function mergeBranch(input) {
+      const i = obj(input);
+      const targetSessionId = text(i.targetSessionId);
+      const sourceSessionId = text(i.sourceSessionId);
+      const strategy = i.strategy || 'timeline_merge';
+      const targetSession = sessions.get(targetSessionId);
+      const sourceSession = sessions.get(sourceSessionId);
+      if (!targetSession || !sourceSession) return { ok: false, reason: 'session-not-found' };
+      if (targetSession.campaignId !== sourceSession.campaignId) return { ok: false, reason: 'different-campaigns' };
+
+      const mergedTimeline = [...targetSession.timeline.events];
+      if (strategy === 'timeline_merge') {
+        for (const e of sourceSession.timeline.events) {
+          if (!targetSession.timeline.events.some(e => e.id === e.id)) {
+            mergedTimeline.push({ ...e, metadata: { ...e.metadata, mergedFrom: sourceSessionId } });
+          }
+        }
+        mergedTimeline.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+      }
+      targetSession.timeline.events = mergedTimeline;
+      targetSession.updatedAt = now();
+      targetSession.version++;
+      sessions.set(targetSessionId, targetSession);
+      return { ok: true, session: targetSession };
+    }
+
     return {
       CAMPAIGN_STATUS, SESSION_STATUS, CHECKPOINT_TYPES,
       createCampaign, getCampaign, getAllCampaigns, updateCampaign, deleteCampaign,
@@ -418,7 +509,8 @@
       addTimelineEvent, getTimeline, replaySession,
       exportSession, importSession,
       getCampaignStats, getSessionStats,
-      setOfflineMode
+      setOfflineMode,
+      createBranch, getBranchTree, mergeBranch
     };
   }
 

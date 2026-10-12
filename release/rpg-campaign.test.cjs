@@ -250,5 +250,45 @@ const online = mgr.setOfflineMode(c1.id, false);
 assert.equal(online.campaign.settings.offlineMode, false);
 console.log('  PASS');
 
+console.log('\n24. createBranch - session branching...');
+const branch = mgr.createBranch({
+  sourceSessionId: s1.session.id,
+  name: 'Branch: Dragon Path',
+  branchPointId: s1.session.currentCheckpointId
+});
+assert.equal(branch.ok, true);
+assert.ok(branch.session.id.startsWith('session-'));
+assert.equal(branch.session.name, 'Branch: Dragon Path');
+assert.equal(branch.session.metadata.branchOf, s1.session.id);
+assert.ok(branch.session.metadata.branchPoint);
+console.log('  PASS');
+
+console.log('\n25. getBranchTree...');
+const tree = mgr.getBranchTree(s1.session.id);
+assert.ok(Array.isArray(tree));
+assert.ok(tree.length >= 1);
+assert.equal(tree[0].branchOf, s1.session.id);
+console.log('  PASS');
+
+console.log('\n26. mergeBranch - timeline merge...');
+const merge = mgr.mergeBranch({
+  targetSessionId: s1.session.id,
+  sourceSessionId: branch.session.id,
+  strategy: 'timeline_merge'
+});
+assert.equal(merge.ok, true);
+const merged = mgr.getSession(s1.session.id);
+assert.ok(merged.timeline.events.length >= 3);
+console.log('  PASS');
+
+console.log('\n27. mergeBranch - different campaigns...');
+const cOther = mgr.createCampaign({ name: 'Other Campaign', worldId: 'other' });
+const sOther = mgr.createSession({ campaignId: cOther.id, name: 'Other Session', allowMultiple: true });
+const badMerge = mgr.mergeBranch({ targetSessionId: s1.session.id, sourceSessionId: sOther.session.id });
+assert.equal(badMerge.ok, false);
+assert.equal(badMerge.reason, 'different-campaigns');
+console.log('  PASS');
+
 console.log('\n✅ All RPG Campaign/Session Manager tests passed!');
 console.log('\nCoverage: RPG-02-08 to RPG-02-15 (Campaign/Session Management)');
+console.log('Coverage: RPG-02-11 (Session Branching)');
