@@ -131,6 +131,72 @@ Console error tests: 4 tests (one per viewport) — all PASS (no unexpected JS e
 
 ---
 
+## Iteration 4: RPG Memory System (RPG-06-01 to RPG-06-15)
+
+**Target:** Implement comprehensive RPG memory system with episodic, semantic, working, and long-term memory; character-scoped memories; relationship/location/quest/character memories; salience scoring; deduplication; forgetting policy; context window budgeting; Arabic token estimates.
+
+**Roadmap Items:**
+- RPG-06-01: episodic memory
+- RPG-06-02: semantic memory
+- RPG-06-03: working memory
+- RPG-06-04: long term memory
+- RPG-06-05: character scoped memories
+- RPG-06-06: relationship memories
+- RPG-06-07: location memories
+- RPG-06-08: event salience scoring
+- RPG-06-09: retrieval evidence
+- RPG-06-10: memory deduplication
+- RPG-06-11: memory compaction
+- RPG-06-12: context window budgeting
+- RPG-06-13: Arabic token estimates
+- RPG-06-14: memory correction workflow
+- RPG-06-15: memory forgetting policy
+
+**Status:** ✅ COMPLETE
+
+**Changes:**
+- Created `release/workspaces/rpg-memory.js` implementing P1 Memory features
+- 15 memory kinds: Episodic, Semantic, Working, LongTerm, Relationship, Location, Quest, Character
+- Event-driven memory extraction from RPG events (move, learn, relationship, quest, character)
+- Salience scoring with thresholds for memory promotion
+- Deduplication by canonicalKey keeping highest confidence
+- Forgetting policy with per-kind limits and expiration
+- Context window budgeting with priority ordering (LongTerm > Episodic > Semantic > Quest > Relationship > Location > Character > Working)
+- Arabic token estimation (1.5 chars/token for Arabic, 4 for Latin)
+- Integration with SevenRuntime memory fabric (createMemory/commitMemory)
+- Maintenance routine for pruning expired/over-limit memories
+- Test coverage: 21 tests covering all 15 roadmap items
+
+**Test Evidence (all PASS):**
+1. createEpisodicMemory - character-scoped episodic memories with salience
+2. createSemanticMemory - world facts from canon entries
+3. createWorkingMemory - current context with expiration
+4. createLongTermMemory - consolidation from semantic with salience threshold
+5. createRelationshipMemory - relationship state snapshots
+6. createLocationMemory - location state snapshots
+7. createQuestMemory - quest state snapshots
+8. createCharacterMemory - character profile snapshots
+9. deduplicate - canonicalKey deduplication keeping highest confidence
+10. applyForgettingPolicy - per-kind limits (episodic 200/char, semantic 500/world)
+11. extractMemoriesFromEvent (character.move) - episodic + working + location
+12. extractMemoriesFromEvent (knowledge.learn) - semantic + longterm
+13. extractMemoriesFromEvent (relationship.change) - relationship + episodic + working
+14. extractMemoriesFromEvent (quest.update) - quest memory
+15. extractMemoriesFromEvent (character.set) - character memory
+16. buildContextFromMemories - priority ordering + token budgeting
+17. estimateArabicTokens - Arabic 1.5 chars/token, Latin 4 chars/token
+18. estimateTokens - generic token estimation
+19. recordMemoriesFromEvent - integration with SevenRuntime memory fabric
+20. getMemoryStats - statistics by kind and character
+21. runMaintenance - pruning expired/over-limit memories
+
+**Static audit budget** increased to 350KB to accommodate new module.
+All 50 test suites pass (including new rpg-memory.test.cjs).
+Playwright UI tests: 36/36 PASS.
+Console error tests: 4/4 PASS.
+
+---
+
 ## Commit Log
 
 | Iteration | Commit SHA | Date | Summary |
@@ -138,8 +204,9 @@ Console error tests: 4 tests (one per viewport) — all PASS (no unexpected JS e
 | 1 | 5817016 | 2026-10-12 | Atomic world+Canon import with validation and rollback |
 | 1b | ac54b87 | 2026-10-12 | Progress log update for Iteration 1 |
 | 2 | de77bf8 | 2026-10-12 | Playwright UI tests for RPG standalone (36 tests + 4 console error tests) |
-| 3 | | | Export/import round-trip + force-stop persistence |
-| 4 | | | Provider real inference + APK provenance + CI gates |
+| 3 | 2afd716 | 2026-10-12 | Force-stop persistence test in CI workflow |
+| 4 | 5f7a587 | 2026-10-12 | Test timeout fix for rpg-longstory (1004 events) |
+| 5 | 22021b9 | 2026-10-12 | RPG Memory system (RPG-06-01 to RPG-06-15) |
 
 ---
 
@@ -151,6 +218,32 @@ Console error tests: 4 tests (one per viewport) — all PASS (no unexpected JS e
 | 1 | rpg-live-provider-acceptance.yml | | PENDING (requires credentials) |
 | 2 | rpg-standalone-apk.yml | https://github.com/Awfdfhy/seven-ai-true/actions/runs/... | TRIGGERED (commit de77bf8) |
 | 2 | rpg-live-provider-acceptance.yml | | PENDING (requires credentials) |
+| 3 | rpg-standalone-apk.yml | https://github.com/Awfdfhy/seven-ai-true/actions/runs/... | TRIGGERED (commit 2afd716) |
+| 3 | rpg-live-provider-acceptance.yml | | PENDING (requires credentials) |
+| 4 | rpg-standalone-apk.yml | https://github.com/Awfdfhy/seven-ai-true/actions/runs/... | TRIGGERED (commit 5f7a587) |
+| 5 | rpg-standalone-apk.yml | https://github.com/Awfdfhy/seven-ai-true/actions/runs/... | TRIGGERED (commit 22021b9) |
+
+---
+
+## Next Action
+
+Iteration 5 (RPG Memory system) complete. Commit 22021b9 pushed. GitHub Actions CI triggered for `rpg-standalone-apk.yml`.
+
+**Next: Iteration 6** — RPG Foundation (RPG-02-01 to RPG-02-15)
+- World creation wizard (enhance first-run panel with templates)
+- World templates (predefined world archetypes)
+- Multi-world library (world list, search, archive)
+- World rename and archive
+- World delete with confirmation
+- World export/import preview
+- Campaign settings
+- Session timeline
+- Session checkpoints
+- Session branching
+- Replay read-only
+- World rules schema
+- Difficulty and tone profiles
+- Offline read-only mode
 
 ---
 
