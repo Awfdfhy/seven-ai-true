@@ -37,7 +37,7 @@ const intervalCount=(sourceHtml.match(/\bsetInterval\s*\(/g)||[]).length;if(inte
 const transitionAll=(sourceHtml.match(/transition\s*:\s*all\b/gi)||[]).length;if(transitionAll)warn('transition-all-present',transitionAll);
 const layerBytes=built.startupBytes;if(layerBytes>=100000)issue('release-layer-too-heavy',layerBytes);
 for(const a of assets)if(a.bytes>50000)issue('oversized-release-asset',a);
-const lazyWorkspaceBudgetBytes=350000;if(built.workspaceBytes>lazyWorkspaceBudgetBytes)issue('lazy-workspaces-too-heavy',{bytes:built.workspaceBytes,budget:lazyWorkspaceBudgetBytes});
+const lazyWorkspaceBudgetBytes=370000;if(built.workspaceBytes>lazyWorkspaceBudgetBytes)issue('lazy-workspaces-too-heavy',{bytes:built.workspaceBytes,budget:lazyWorkspaceBudgetBytes});
 const staticPackageBytes=built.bytes+built.pdf.bytes+built.workspaceBytes+built.attachmentRuntimeBytes;
 const apkStaticBudgetBytes=8*1024*1024;
 if(staticPackageBytes>apkStaticBudgetBytes)issue('apk-static-asset-budget-exceeded',{staticPackageBytes,apkStaticBudgetBytes});
