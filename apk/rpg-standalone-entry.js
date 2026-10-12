@@ -146,9 +146,7 @@
       try {
         var data=api&&api.snapshot&&api.snapshot();
         if(!data||!data.work)throw Error('No world available');
-        // The importer currently restores the world only, not canonPack.
-        // Never imply that a partial backup is a full recoverable game save.
-        if(data.canonPack && !win.confirm('This backup can restore the world only. Canon is included for reference but cannot be automatically restored. Export anyway?'))return;
+        // Atomic export: includes both world and canonPack for atomic restore via loadSnapshot
         var blob=new Blob([JSON.stringify({format:'seven-rpg-world-backup',version:1,exportedAt:new Date().toISOString(),data:data},null,2)],{type:'application/json'});
         // Never offer an export which the paired importer cannot restore.
         if(blob.size>2*1024*1024)throw Error('World backup exceeds the 2 MB import limit; export was not created');
@@ -156,7 +154,7 @@
         link.href=url;link.download='seven-rpg-world-backup.json';
         doc.body.appendChild(link);link.click();link.remove();
         win.setTimeout(function(){URL.revokeObjectURL(url)},3000);
-        doc.getElementById('seven-rpg-world-backup-status').textContent='Backup exported · تم تصدير النسخة';
+        doc.getElementById('seven-rpg-world-backup-status').textContent='Backup exported (world + canon) · تم تصدير النسخة';
       }catch(err){
         doc.getElementById('seven-rpg-world-backup-status').textContent='Backup failed: '+String(err&&err.message||err);
       }
@@ -180,12 +178,21 @@
         if(!win.confirm('Import "'+work.title.slice(0,80)+'"? This replaces the active RPG world in this chat. Export a backup first if needed.')){status.textContent='Import cancelled';return;}
         var api=win.SevenRpgWorkspace;
         if(!api||typeof api.loadWork!=='function')throw Error('RPG persistence unavailable');
-        api.loadWork(work);
-        // Canon import is a separate transaction; never silently restore half
-        // of a multi-part snapshot after a successful world commit.
-        status.textContent=parsed.data.canonPack
-          ? 'World imported. Canon backup retained in JSON; restore canon separately. · تم استيراد العالم فقط'
-          : 'World imported · تم استيراد العالم';
+        
+        // Atomic import: if backup contains both world and canonPack, load both atomically
+        if(parsed.data.canonPack && typeof api.loadSnapshot==='function'){
+          var worldSession=parsed.data.worldSession||{};
+          var canonSession=parsed.data.canonSession||{};
+          api.loadSnapshot(work, parsed.data.canonPack, {world:worldSession, canon:canonSession});
+          status.textContent='World and Canon imported atomically · تم استيراد العالم والكانون معاً';
+        }else{
+          api.loadWork(work);
+          // Canon import is a separate transaction; never silently restore half
+          // of a multi-part snapshot after a successful world commit.
+          status.textContent=parsed.data.canonPack
+            ? 'World imported. Canon backup retained in JSON; restore canon separately. · تم استيراد العالم فقط'
+            : 'World imported · تم استيراد العالم';
+        }
         render();
         starterPanel();
       }catch(error){status.textContent='Import failed: '+String(error&&error.message||error);}

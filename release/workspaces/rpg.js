@@ -30,6 +30,29 @@ function aura(){const a=S.canonEngine&&S.canonSession?S.canonEngine.audit(S.cano
 function snapshot(){return clone({work:S.worldEngine?S.worldEngine.work:null,worldSession:S.worldSession,canonPack:S.canonEngine?S.canonEngine.pack:null,canonSession:S.canonSession})}
 function loadWork(pack,opts){if(!r.SevenWorld||typeof r.SevenWorld.createEngine!=='function')throw Error('SevenWorld runtime unavailable');const engine=r.SevenWorld.createEngine(pack),session=engine.createSession(opts||{}),snap=candidateSnapshot(engine,session,S.canonEngine,S.canonSession),saved=syncCandidate(snap,'load-world');if(!saved.ok)throw Error('RPG_PERSIST:'+saved.reason);S.worldEngine=engine;S.worldSession=session;renderStatus();return snapshot()}
 function loadCanon(pack,opts){if(!r.SevenCanon||typeof r.SevenCanon.createEngine!=='function')throw Error('SevenCanon runtime unavailable');const engine=r.SevenCanon.createEngine(pack),session=engine.createSession(opts||{}),snap=candidateSnapshot(S.worldEngine,S.worldSession,engine,session),saved=syncCandidate(snap,'load-canon');if(!saved.ok)throw Error('RPG_PERSIST:'+saved.reason);S.canonEngine=engine;S.canonSession=session;renderStatus();return snapshot()}
+function loadSnapshot(worldPack,canonPack,opts){
+  opts=opts||{};const worldOpts=opts.world||{};const canonOpts=opts.canon||{};
+  if(!r.SevenWorld||typeof r.SevenWorld.createEngine!=='function')throw Error('SevenWorld runtime unavailable');
+  if(!r.SevenCanon||typeof r.SevenCanon.createEngine!=='function')throw Error('SevenCanon runtime unavailable');
+  let worldEngine=null,worldSession=null,canonEngine=null,canonSession=null;
+  try{
+    worldEngine=r.SevenWorld.createEngine(worldPack);
+    worldSession=worldEngine.createSession(worldOpts);
+  }catch(e){
+    throw Error('World pack validation failed: '+(e&&e.message||e));
+  }
+  try{
+    canonEngine=r.SevenCanon.createEngine(canonPack);
+    canonSession=canonEngine.createSession(canonOpts);
+  }catch(e){
+    throw Error('Canon pack validation failed: '+(e&&e.message||e));
+  }
+  const snap=candidateSnapshot(worldEngine,worldSession,canonEngine,canonSession);
+  const saved=syncCandidate(snap,'load-snapshot');
+  if(!saved.ok)throw Error('RPG_PERSIST:'+saved.reason);
+  S.worldEngine=worldEngine;S.worldSession=worldSession;S.canonEngine=canonEngine;S.canonSession=canonSession;
+  renderStatus();return snapshot();
+}
 function currentContract(){return S.worldEngine&&S.worldSession?S.worldEngine.sceneContract(S.worldSession):null}
 function beatById(id){const beats=S.worldEngine&&S.worldEngine.work&&Array.isArray(S.worldEngine.work.beats)?S.worldEngine.work.beats:[];return beats.find(x=>x&&x.id===id)||null}
 function commitVerifiedBeat(input){input=input||{};if(input.verified!==true)return{status:'BLOCKED',reason:'verification-required',session:S.worldSession};if(!S.worldEngine||!S.worldSession)return{status:'BLOCKED',reason:'world-not-loaded'};const beat=beatById(input.beatId),out=S.worldEngine.commitBeat(S.worldSession,{beatId:input.beatId,allowBranch:input.allowBranch===true,branchId:input.branchId,playerAction:input.playerAction,playerActionSource:input.playerActionSource,id:input.id});if(out.status==='BLOCKED'||!out.session)return out;const saved=syncCandidate(candidateSnapshot(S.worldEngine,out.session,S.canonEngine,S.canonSession),'verified-beat');if(!saved.ok)return{status:'BLOCKED',reason:saved.reason,session:S.worldSession};S.worldSession=out.session;if(beat&&beat.titleBoundary===true&&(beat.titleName||beat.title))autoTitle({kind:beat.titleKind||'episode',name:beat.titleName||beat.title,number:beat.titleNumber,boundary:true,confidence:1,source:'verified-beat'});renderStatus();return out}
@@ -66,5 +89,5 @@ function roomChanged(){S.worldEngine=null;S.worldSession=null;S.canonEngine=null
 function mount(root){S.root=root||null;ensureStyle();roomChanged();buildBar();observeChat();renderStatus();d.addEventListener('seven:themechange',themeSync);d.addEventListener('seven:roomchange',roomChanged);S.titleHandler=titleEvent;d.addEventListener('seven:rpg-title-candidate',S.titleHandler);return S}
 function themeSync(){const img=S.bar&&S.bar.querySelector('.seven-rpg-logo');if(img)img.src=logo()}
 function unmount(){S.observer&&S.observer.disconnect();S.observer=null;d.removeEventListener('seven:themechange',themeSync);d.removeEventListener('seven:roomchange',roomChanged);if(S.titleHandler)d.removeEventListener('seven:rpg-title-candidate',S.titleHandler);S.titleHandler=null;S.bar&&S.bar.remove();S.bar=null;S.root=null;d.querySelectorAll('.seven-rpg-copy').forEach(x=>x.remove());d.querySelectorAll('.seven-rpg-copy-host').forEach(x=>x.classList.remove('seven-rpg-copy-host'))}
-r.SevenRpgWorkspace={version:S.version,state:S,mount,unmount,loadWork,loadCanon,currentContract,commitVerifiedBeat,applyVerifiedDelta,recordTitle,autoTitle,snapshot,contextProjection};
+r.SevenRpgWorkspace={version:S.version,state:S,mount,unmount,loadWork,loadCanon,loadSnapshot,currentContract,commitVerifiedBeat,applyVerifiedDelta,recordTitle,autoTitle,snapshot,contextProjection};
 })(typeof globalThis!='undefined'?globalThis:this);
