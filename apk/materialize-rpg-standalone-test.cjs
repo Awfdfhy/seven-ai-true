@@ -47,7 +47,7 @@ public class SevenRpgStandaloneTest {
    assertJsTrue(view,"Boolean(document.querySelector('#seven-rpg-world-button') && document.querySelector('#seven-rpg-model-control'))");
    assertJsTrue(view,"(()=>{document.querySelector('#seven-rpg-world-button').click();return !!document.querySelector('#seven-rpg-import-world') && document.querySelector('#seven-rpg-import-world').accept.includes('json') && !document.querySelector('#seven-rpg-world-panel').hidden})()");
    assertJsTrue(view,"Boolean(document.querySelector('#seven-rpg-world-button') && document.querySelector('#seven-rpg-model-control') && document.querySelector('#seven-rpg-world-panel'))");
-   assertJsTrue(view,"(()=>{document.querySelector('#seven-rpg-world-button').click();return document.querySelector('#seven-rpg-world-panel').hidden===false})()");
+   assertJsTrue(view,"(()=>{document.querySelector('#seven-rpg-world-button').click();if(!document.querySelector('#seven-rpg-world-panel').hidden)return false;document.querySelector('#seven-rpg-world-button').click();return document.querySelector('#seven-rpg-world-panel').hidden===false})()");
    assertJsTrue(view,"document.querySelector('#seven-rpg-export-world').disabled===true");
    // The standalone app must offer a no-import first-run flow, not just an RPG tab.
    assertJsTrue(view,"Boolean(document.querySelector('#seven-rpg-first-run') && document.querySelector('#seven-rpg-create-world'))");
