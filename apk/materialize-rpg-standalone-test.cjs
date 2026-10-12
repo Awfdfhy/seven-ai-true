@@ -39,6 +39,9 @@ public class SevenRpgStandaloneTest {
    }
    assertTrue("Dedicated RPG did not reach ready state. Actual: "+js(view,"JSON.stringify({profile:document.documentElement.dataset.sevenStandaloneProfile,ready:document.documentElement.dataset.sevenStandaloneReady,error:document.documentElement.dataset.sevenStandaloneError,workspace:window.SevenWorkspaces?SevenWorkspaces.active():null,bar:!!document.querySelector('.seven-rpg-chatbar')})"),ready);
    assertEquals("true",js(view,"document.title==='Seven RPG'"));
+   assertEquals("true",js(view,"Boolean(document.querySelector('#seven-rpg-world-button') && document.querySelector('#seven-rpg-model-control') && document.querySelector('#seven-rpg-world-panel'))"));
+   assertEquals("true",js(view,"(()=>{document.querySelector('#seven-rpg-world-button').click();return document.querySelector('#seven-rpg-world-panel').hidden===false})()"));
+   assertEquals("true",js(view,"document.querySelector('#seven-rpg-export-world').disabled===true"));
    // The standalone app must offer a no-import first-run flow, not just an RPG tab.
    assertEquals("true",js(view,"Boolean(document.querySelector('#seven-rpg-first-run') && document.querySelector('#seven-rpg-create-world'))"));
    assertEquals("true",js(view,"(()=>{document.querySelector('#seven-rpg-world-name').value='Test World';document.querySelector('#seven-rpg-create-world').click();return true})()"));
