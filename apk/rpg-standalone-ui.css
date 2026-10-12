@@ -42,3 +42,11 @@ html[data-seven-standalone-profile="rpg"] #seven-rpg-world-button,
 html[data-seven-standalone-profile="rpg"] #seven-rpg-model-control{min-height:42px;padding-inline:11px;white-space:nowrap;cursor:pointer}
 html[data-seven-standalone-profile="rpg"] #seven-rpg-world-button:focus-visible,
 html[data-seven-standalone-profile="rpg"] #seven-rpg-model-control:focus-visible{outline:3px solid #a78bfa;outline-offset:2px}
+
+/* Validated world backup importer and mobile accessibility */
+html[data-seven-standalone-profile="rpg"] #seven-rpg-world-panel label[for="seven-rpg-import-world"]{font-size:.84rem;font-weight:600;color:var(--rpg-text)}
+html[data-seven-standalone-profile="rpg"] #seven-rpg-import-world{width:100%;min-width:0;padding:10px;background:var(--rpg-panel2);color:var(--rpg-text);border:1px solid var(--rpg-line);border-radius:12px;font:inherit;font-size:.87rem}
+html[data-seven-standalone-profile="rpg"] #seven-rpg-import-world::file-selector-button{padding:8px 10px;border-radius:9px;background:#48416e;color:#fff;border:0;margin-inline-end:12px}
+html[data-seven-standalone-profile="rpg"] #seven-rpg-import-world:focus-visible{outline:3px solid var(--rpg-accent);outline-offset:2px}
+html[data-seven-standalone-profile="rpg"] .seven-rpg-chat-actions{flex-wrap:wrap;gap:6px}
+@media (prefers-reduced-motion:reduce){html[data-seven-standalone-profile="rpg"] *,html[data-seven-standalone-profile="rpg"] *::before,html[data-seven-standalone-profile="rpg"] *::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
