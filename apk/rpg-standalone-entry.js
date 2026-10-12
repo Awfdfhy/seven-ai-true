@@ -162,12 +162,13 @@
       var file=event.target.files&&event.target.files[0],status=doc.getElementById('seven-rpg-world-backup-status');
       event.target.value='';
       if(!file)return;
+      if(!file.size){status.textContent='Backup file is empty · ملف النسخة فارغ';return;}
       if(file.size>2*1024*1024){status.textContent='Backup is too large (2 MB limit).';return;}
       try{
         var parsed=JSON.parse(await file.text());
         if(!parsed||parsed.format!=='seven-rpg-world-backup'||parsed.version!==1||!parsed.data||!parsed.data.work)throw Error('Unsupported RPG backup format');
         var work=parsed.data.work;
-        if(!work||typeof work!=='object'||typeof work.id!=='string'||typeof work.title!=='string'||!Array.isArray(work.beats)||work.title.length>120)throw Error('Invalid world details');
+        if(!work||typeof work!=='object'||typeof work.id!=='string'||typeof work.title!=='string'||!work.id.trim()||work.id.length>160||!work.title.trim()||!Array.isArray(work.beats)||work.title.length>120||work.beats.length>10000|| (work.sources!==undefined&&!Array.isArray(work.sources)))throw Error('Invalid world details');
         if(!win.confirm('Import "'+work.title.slice(0,80)+'"? This replaces the active RPG world in this chat. Export a backup first if needed.')){status.textContent='Import cancelled';return;}
         var api=win.SevenRpgWorkspace;
         if(!api||typeof api.loadWork!=='function')throw Error('RPG persistence unavailable');
