@@ -170,8 +170,11 @@
         var api=win.SevenRpgWorkspace;
         if(!api||typeof api.loadWork!=='function')throw Error('RPG persistence unavailable');
         api.loadWork(work);
-        if(parsed.data.canonPack&&typeof api.loadCanon==='function')api.loadCanon(parsed.data.canonPack);
-        status.textContent='World imported · تم استيراد العالم';
+        // Canon import is a separate transaction; never silently restore half
+        // of a multi-part snapshot after a successful world commit.
+        status.textContent=parsed.data.canonPack
+          ? 'World imported. Canon backup retained in JSON; restore canon separately. · تم استيراد العالم فقط'
+          : 'World imported · تم استيراد العالم';
         render();
         starterPanel();
       }catch(error){status.textContent='Import failed: '+String(error&&error.message||error);}
