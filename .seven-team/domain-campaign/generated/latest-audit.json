@@ -2,7 +2,9 @@
   "schemaVersion": 1,
   "domains": 30,
   "ready": 0,
-  "missing": [],
+  "missing": [
+    "D09_DEEP_THINK"
+  ],
   "insufficient": [
     "D01_CHAT_CORE",
     "D02_MEMORY_CONTEXT",
@@ -40,7 +42,7 @@
       "id": "D01_CHAT_CORE",
       "status": "INSUFFICIENT",
       "urls": 69,
-      "primaryTagged": 86,
+      "primaryTagged": 64,
       "target": 10,
       "owners": [
         "B01",
@@ -50,7 +52,7 @@
     {
       "id": "D02_MEMORY_CONTEXT",
       "status": "INSUFFICIENT",
-      "urls": 136,
+      "urls": 138,
       "primaryTagged": 339,
       "target": 20,
       "owners": [
@@ -65,7 +67,7 @@
     {
       "id": "D03_TOOLS_CAPABILITY",
       "status": "INSUFFICIENT",
-      "urls": 129,
+      "urls": 131,
       "primaryTagged": 348,
       "target": 20,
       "owners": [
@@ -124,8 +126,8 @@
     {
       "id": "D08_MODEL_ROUTING",
       "status": "INSUFFICIENT",
-      "urls": 48,
-      "primaryTagged": 67,
+      "urls": 31,
+      "primaryTagged": 31,
       "target": 10,
       "owners": [
         "A05",
@@ -135,8 +137,8 @@
     {
       "id": "D09_DEEP_THINK",
       "status": "INSUFFICIENT",
-      "urls": 41,
-      "primaryTagged": 47,
+      "urls": 10,
+      "primaryTagged": 10,
       "target": 10,
       "owners": [
         "B04",
@@ -201,7 +203,7 @@
     {
       "id": "D15_PERSISTENCE_RECOVERY",
       "status": "INSUFFICIENT",
-      "urls": 70,
+      "urls": 72,
       "primaryTagged": 88,
       "target": 10,
       "owners": [
@@ -223,8 +225,8 @@
     {
       "id": "D17_PERFORMANCE_CONCURRENCY",
       "status": "INSUFFICIENT",
-      "urls": 88,
-      "primaryTagged": 83,
+      "urls": 64,
+      "primaryTagged": 47,
       "target": 10,
       "owners": [
         "A09",
@@ -267,8 +269,8 @@
     {
       "id": "D21_OBSERVABILITY_WORLD_MODEL",
       "status": "INSUFFICIENT",
-      "urls": 99,
-      "primaryTagged": 100,
+      "urls": 69,
+      "primaryTagged": 64,
       "target": 8,
       "owners": [
         "A04",
@@ -311,8 +313,8 @@
     {
       "id": "D25_HISTORY_ROOMS",
       "status": "INSUFFICIENT",
-      "urls": 42,
-      "primaryTagged": 63,
+      "urls": 39,
+      "primaryTagged": 41,
       "target": 8,
       "owners": [
         "B01",
@@ -344,8 +346,8 @@
     {
       "id": "D28_LOCAL_INTELLIGENCE",
       "status": "INSUFFICIENT",
-      "urls": 48,
-      "primaryTagged": 67,
+      "urls": 31,
+      "primaryTagged": 31,
       "target": 8,
       "owners": [
         "A05",
