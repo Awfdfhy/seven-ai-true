@@ -71,6 +71,7 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: |
             (cd android && ./gradlew --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=ai.seven.rpg.SevenRpgStandaloneTest)
+            bash apk/run-rpg-force-stop.sh
       - name: Android 16 dedicated RPG startup smoke
         uses: reactivecircus/android-emulator-runner@v2.38.0
         with:
@@ -82,6 +83,7 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: |
             (cd android && ./gradlew --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=ai.seven.rpg.SevenRpgStandaloneTest)
+            bash apk/run-rpg-force-stop.sh
       - name: Upload RPG instrumentation diagnostics
         if: always()
         uses: actions/upload-artifact@v7
