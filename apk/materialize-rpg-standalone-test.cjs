@@ -39,6 +39,9 @@ public class SevenRpgStandaloneTest {
    }
    assertTrue("Dedicated RPG did not reach ready state. Actual: "+js(view,"JSON.stringify({profile:document.documentElement.dataset.sevenStandaloneProfile,ready:document.documentElement.dataset.sevenStandaloneReady,error:document.documentElement.dataset.sevenStandaloneError,workspace:window.SevenWorkspaces?SevenWorkspaces.active():null,bar:!!document.querySelector('.seven-rpg-chatbar')})"),ready);
    assertEquals("true",js(view,"document.title==='Seven RPG'"));
+   // Standalone features must remain accessible on the packaged Android UI.
+   assertEquals("true",js(view,"Boolean(document.querySelector('#seven-rpg-world-button') && document.querySelector('#seven-rpg-model-control'))"));
+   assertEquals("true",js(view,"(()=>{document.querySelector('#seven-rpg-world-button').click();return !!document.querySelector('#seven-rpg-import-world') && document.querySelector('#seven-rpg-import-world').accept.includes('json') && !document.querySelector('#seven-rpg-world-panel').hidden})()"));
    assertEquals("true",js(view,"Boolean(document.querySelector('#seven-rpg-world-button') && document.querySelector('#seven-rpg-model-control') && document.querySelector('#seven-rpg-world-panel'))"));
    assertEquals("true",js(view,"(()=>{document.querySelector('#seven-rpg-world-button').click();return document.querySelector('#seven-rpg-world-panel').hidden===false})()"));
    assertEquals("true",js(view,"document.querySelector('#seven-rpg-export-world').disabled===true"));
