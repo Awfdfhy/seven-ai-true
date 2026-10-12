@@ -246,6 +246,13 @@
       if (workspaces && workspaces.active() === 'rpg' && win.SevenRpgWorkspace) {
         ready = true;
         doc.documentElement.dataset.sevenStandaloneReady = '1';
+        // Close sidebar on mobile to avoid intercepting clicks
+        var side = doc.querySelector('.sidebar');
+        if (side) {
+          side.classList.remove('open', 'active');
+          if (doc.body) doc.body.classList.remove('sidebar-open');
+          doc.documentElement.dataset.sevenShellSidebar = 'closed';
+        }
         starterPanel();
         mountRpgModelControl();
         mountWorldPanel();
