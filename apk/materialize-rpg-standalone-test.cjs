@@ -68,6 +68,14 @@ public class SevenRpgStandaloneTest {
    }
    assertTrue("RPG backup import round-trip failed: "+js(view,"JSON.stringify({world:SevenRpgWorkspace?.state?.worldEngine?.work?.title,status:document.querySelector('#seven-rpg-world-backup-status')?.textContent})"),imported);
    js(view,"(()=>{if(window.__rpgBackupOldConfirm)window.confirm=window.__rpgBackupOldConfirm;delete window.__rpgBackupOldConfirm;return true})()");
+   // A malformed backup must fail without modifying the restored world.
+   assertJsTrue(view,"(()=>{const picker=document.querySelector('#seven-rpg-import-world');const file=new File(['{invalid-json'],'broken.json',{type:'application/json'});const dt=new DataTransfer();dt.items.add(file);Object.defineProperty(picker,'files',{configurable:true,value:dt.files});picker.dispatchEvent(new Event('change',{bubbles:true}));return true})()");
+   boolean rejected=false;
+   for(int i=0;i<40;i++){
+    if("true".equals(js(view,"Boolean(document.querySelector('#seven-rpg-world-backup-status')?.textContent.startsWith('Import failed:') && SevenRpgWorkspace?.state?.worldEngine?.work?.title==='Test World')"))){rejected=true;break;}
+    Thread.sleep(250);
+   }
+   assertTrue("Invalid backup was not safely rejected: "+js(view,"JSON.stringify({title:SevenRpgWorkspace?.state?.worldEngine?.work?.title,status:document.querySelector('#seven-rpg-world-backup-status')?.textContent})"),rejected);
    // Activity recreation must rehydrate the same world, not show the first-run prompt.
    scenario.recreate();
    AtomicReference<WebView> recreated=new AtomicReference<>();
