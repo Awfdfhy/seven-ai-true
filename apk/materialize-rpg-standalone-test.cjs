@@ -51,6 +51,7 @@ public class SevenRpgStandaloneTest {
      Thread.sleep(200);
    }
    assertTrue("World creation did not commit: "+js(view,"JSON.stringify({created:document.documentElement.dataset.sevenStandaloneWorldCreated,world:window.SevenRpgWorkspace?.state?.worldEngine?.work?.title,error:document.querySelector('#seven-rpg-first-run [role=status]')?.textContent,room:typeof currentRoom!=='undefined'?currentRoom:null,input:document.querySelector('#userInput')?.value?.slice(0,80)})"),created);
+   assertEquals("true",js(view,"(()=>{document.querySelector('#seven-rpg-world-button').click();document.querySelector('#seven-rpg-world-button').click();return document.querySelector('#seven-rpg-export-world').disabled===false})()"));
    // Activity recreation must rehydrate the same world, not show the first-run prompt.
    scenario.recreate();
    AtomicReference<WebView> recreated=new AtomicReference<>();
