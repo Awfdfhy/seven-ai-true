@@ -110,6 +110,54 @@
     panel.append(heading, hint, worldName, premise, button, error);
     host.parentNode.insertBefore(panel, host);
   }
+  // RPG-only world inspection and portable local backup; never modify canonical state.
+  function mountWorldPanel() {
+    var bar=doc.querySelector('.seven-rpg-chat-actions');
+    if(!bar||doc.getElementById('seven-rpg-world-button'))return;
+    var button=doc.createElement('button');
+    button.type='button';button.id='seven-rpg-world-button';
+    button.className='seven-rpg-mini';
+    button.textContent='◈ World · العالم';
+    button.setAttribute('aria-expanded','false');
+    button.setAttribute('aria-controls','seven-rpg-world-panel');
+    var panel=doc.createElement('section');
+    panel.id='seven-rpg-world-panel';
+    panel.hidden=true;
+    panel.setAttribute('aria-label','RPG world information');
+    panel.innerHTML='<strong id="seven-rpg-world-heading"></strong><p id="seven-rpg-world-summary"></p><button type="button" id="seven-rpg-export-world">Export world backup · تصدير نسخة</button><p id="seven-rpg-world-backup-status" role="status"></p>';
+    var host=doc.querySelector('.seven-rpg-chatbar');
+    if(!host||!host.parentNode)return;
+    host.parentNode.insertBefore(panel,host.nextSibling);
+    function render() {
+      var api=win.SevenRpgWorkspace;
+      var state=api&&api.state;
+      var work=state&&state.worldEngine&&state.worldEngine.work;
+      doc.getElementById('seven-rpg-world-heading').textContent=work?String(work.title||'Unnamed World'):'No active world · لا يوجد عالم';
+      doc.getElementById('seven-rpg-world-summary').textContent=work?'World ID: '+String(work.id||'local')+' · Player actions remain under your control.':'Create a world first to enable backup.';
+      doc.getElementById('seven-rpg-export-world').disabled=!work;
+    }
+    button.addEventListener('click',function(){
+      panel.hidden=!panel.hidden;
+      button.setAttribute('aria-expanded',String(!panel.hidden));
+      if(!panel.hidden)render();
+    });
+    panel.querySelector('#seven-rpg-export-world').addEventListener('click',function(){
+      var api=win.SevenRpgWorkspace;
+      try {
+        var data=api&&api.snapshot&&api.snapshot();
+        if(!data||!data.work)throw Error('No world available');
+        var blob=new Blob([JSON.stringify({format:'seven-rpg-world-backup',version:1,exportedAt:new Date().toISOString(),data:data},null,2)],{type:'application/json'});
+        var url=URL.createObjectURL(blob),link=doc.createElement('a');
+        link.href=url;link.download='seven-rpg-world-backup.json';
+        doc.body.appendChild(link);link.click();link.remove();
+        win.setTimeout(function(){URL.revokeObjectURL(url)},3000);
+        doc.getElementById('seven-rpg-world-backup-status').textContent='Backup exported · تم تصدير النسخة';
+      }catch(err){
+        doc.getElementById('seven-rpg-world-backup-status').textContent='Backup failed: '+String(err&&err.message||err);
+      }
+    });
+    bar.insertBefore(button,bar.firstChild);
+  }
   // Keep model selection reachable without exposing unrelated Seven AI workspaces.
   function mountRpgModelControl() {
     var bar = doc.querySelector('.seven-rpg-chat-actions');
@@ -158,6 +206,7 @@
         doc.documentElement.dataset.sevenStandaloneReady = '1';
         starterPanel();
         mountRpgModelControl();
+        mountWorldPanel();
       } else {
         busy = false;
         report('rpg-workspace-unavailable');
