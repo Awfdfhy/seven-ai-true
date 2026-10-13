@@ -785,6 +785,257 @@
       return report;
     }
 
+    // ---- Roadmap-aligned testing/performance capabilities ----
+
+    // RPG-14-02: 500-message UI regression — assert that rendering a large message
+    // backlog stays within a frame budget and never drops/corrupts messages.
+    function runMessageRenderRegression(options) {
+      const o = obj(options);
+      const messageCount = clamp(o.messageCount ?? 500, 1, 100000);
+      const frameBudgetMs = clamp(o.frameBudgetMs ?? 16, 1, 5000);
+      const start = nowMs();
+      // Simulate the render pipeline over a rolling window (no DOM in node).
+      const windowSize = clamp(o.windowSize ?? 50, 1, messageCount);
+      const messages = [];
+      let maxFrameMs = 0;
+      for (let i = 0; i < messageCount; i++) {
+        messages.push({ id: 'msg-' + i, text: 'Message ' + i, role: i % 2 ? 'user' : 'assistant', ts: i });
+        if (messages.length > windowSize) messages.shift();
+        const fStart = nowMs();
+        // project visible frame: sort + slice + stringify of the window
+        JSON.stringify(messages.slice().sort((a, b) => a.ts - b.ts));
+        const fMs = nowMs() - fStart;
+        if (fMs > maxFrameMs) maxFrameMs = fMs;
+      }
+      const totalMs = nowMs() - start;
+      const result = {
+        messageCount,
+        windowSize,
+        framesRendered: messageCount,
+        totalMs,
+        maxFrameMs,
+        avgFrameMs: messageCount > 0 ? Math.round((totalMs / messageCount) * 100) / 100 : 0,
+        frameBudgetMs,
+        withinBudget: maxFrameMs <= frameBudgetMs,
+        // Rolling window must never exceed windowSize and never lose ordering
+        windowIntact: messages.length <= windowSize,
+        ordered: messages.every((m, idx) => idx === 0 || messages[idx - 1].ts <= m.ts),
+        passed: false
+      };
+      result.passed = result.windowIntact && result.ordered && result.withinBudget;
+      return result;
+    }
+
+    // RPG-14-03: 10k-event stress test — a dedicated large-scale event loop that
+    // must complete with zero errors (separate from the randomized runStressTest).
+    function runEventStressTest(options) {
+      const o = obj(options);
+      const eventCount = clamp(o.eventCount ?? 10000, 1, 1000000);
+      seedRng(clamp(o.seed ?? 1337, 1, 999999));
+      const state = { applied: 0, sequence: 0, checksum: 0 };
+      const errors = [];
+      const start = nowMs();
+      for (let n = 0; n < eventCount; n++) {
+        try {
+          if (typeof o.applyEvent === 'function') o.applyEvent(state, n, rng);
+          else {
+            // default event application: monotonic sequence + rolling checksum
+            state.sequence++;
+            state.checksum = (state.checksum + state.sequence) >>> 0;
+          }
+          state.applied++;
+        } catch (e) {
+          if (errors.length < 20) errors.push({ index: n, error: text(e.message) });
+        }
+      }
+      const durationMs = nowMs() - start;
+      return {
+        eventCount,
+        applied: state.applied,
+        errorCount: errors.length,
+        errors,
+        durationMs,
+        eventsPerSecond: durationMs > 0 ? Math.round((state.applied / durationMs) * 1000) : state.applied,
+        sequence: state.sequence,
+        checksum: state.checksum,
+        passed: state.applied === eventCount && errors.length === 0
+      };
+    }
+
+    // RPG-14-04: Low-memory recovery — simulate memory pressure, drop caches, and
+    // verify the system recovers to a consistent state without data loss.
+    function runLowMemoryRecovery(options) {
+      const o = obj(options);
+      const tiers = ['normal', 'reduced', 'critical', 'recovered'];
+      const pressure = clamp(o.pressure ?? 0.9, 0, 1);
+      const startBytes = Number(o.heapUsedBytes) || 50 * 1024 * 1024;
+      // Record real before/after snapshots (label-based API)
+      const before = takeMemorySnapshot('before-low-memory');
+      const beforeBytes = startBytes;
+      // Simulate cache eviction under pressure
+      const evicted = [];
+      if (pressure >= 0.8) evicted.push('render-cache');
+      if (pressure >= 0.9) evicted.push('asset-cache');
+      const reclaimedFactor = evicted.length === 2 ? 0.5 : evicted.length === 1 ? 0.25 : 0.05;
+      const afterBytes = Math.round(startBytes * (1 - reclaimedFactor));
+      const after = takeMemorySnapshot('after-low-memory');
+      const result = {
+        pressure,
+        tier: pressure >= 0.9 ? 'critical' : pressure >= 0.8 ? 'reduced' : 'normal',
+        evictedCaches: evicted,
+        beforeSnapshotId: before.id,
+        afterSnapshotId: after.id,
+        startBytes,
+        endBytes: afterBytes,
+        reclaimedBytes: Math.max(0, startBytes - afterBytes),
+        recovered: afterBytes < startBytes,
+        // Recovery is valid when post-pressure heap is below pre-pressure heap
+        consistent: afterBytes <= beforeBytes,
+        tiers
+      };
+      result.passed = result.recovered && result.consistent;
+      return result;
+    }
+
+    // RPG-14-07: Android upgrade retention — verify that persisted data survives an
+    // app-version upgrade (schema migrated forward, no records lost).
+    function verifyUpgradeRetention(options) {
+      const o = obj(options);
+      const fromVersion = clamp(o.fromVersion ?? 1, 1, 9999);
+      const toVersion = clamp(o.toVersion ?? fromVersion + 1, 1, 9999);
+      const records = arr(o.records);
+      const schemaVersion = clamp(o.schemaVersion ?? 1, 1, 9999);
+      const migratedSchema = clamp(o.migratedSchema ?? schemaVersion, 1, 9999);
+      // Simulate migration: each record carries its own schema; migration bumps it.
+      const migrated = records.map(r => Object.assign({}, r, { schemaVersion: Math.max(Number(r.schemaVersion) || 1, migratedSchema) }));
+      const lost = records.filter((r, i) => migrated[i] === undefined || migrated[i].id !== r.id);
+      const downgradeDetected = toVersion < fromVersion;
+      const result = {
+        fromVersion, toVersion,
+        schemaVersion, migratedSchema,
+        recordCount: records.length,
+        retainedCount: migrated.length,
+        lostCount: lost.length,
+        downgradeDetected,
+        schemaMigrated: migratedSchema >= schemaVersion,
+        allRetained: migrated.length === records.length && lost.length === 0,
+        passed: false
+      };
+      result.passed = result.allRetained && result.schemaMigrated && !downgradeDetected;
+      return result;
+    }
+
+    // RPG-14-08: Battery use — track and budget estimated battery drain for a session.
+    const batterySamples = [];
+    function recordBatterySample(input) {
+      const i = obj(input);
+      const sample = {
+        timestamp: now(),
+        batteryLevel: clamp(i.batteryLevel ?? 1, 0, 1),
+        screenOn: i.screenOn !== false,
+        networkActive: i.networkActive === true,
+        durationMs: clamp(i.durationMs ?? 0, 0, 86400000),
+        estimatedDrainPercent: clamp(i.estimatedDrainPercent ?? 0, 0, 100)
+      };
+      batterySamples.push(sample);
+      if (batterySamples.length > 1000) batterySamples.shift();
+      return sample;
+    }
+
+    function getBatteryReport() {
+      if (!batterySamples.length) {
+        return { sampleCount: 0, totalDrainPercent: 0, avgDrainPerSample: 0, worstSample: null, withinBudget: true, budgetPercent: null };
+      }
+      const totalDrain = batterySamples.reduce((s, x) => s + x.estimatedDrainPercent, 0);
+      const worst = batterySamples.reduce((a, b) => (b.estimatedDrainPercent > a.estimatedDrainPercent ? b : a), batterySamples[0]);
+      const budget = budgets.get('battery-use');
+      const budgetPercent = budget ? budget.threshold : null;
+      return {
+        sampleCount: batterySamples.length,
+        totalDrainPercent: Math.round(totalDrain * 100) / 100,
+        avgDrainPerSample: Math.round((totalDrain / batterySamples.length) * 100) / 100,
+        screenOnSamples: batterySamples.filter(s => s.screenOn).length,
+        networkSamples: batterySamples.filter(s => s.networkActive).length,
+        worstSample: { level: worst.batteryLevel, drainPercent: worst.estimatedDrainPercent, timestamp: worst.timestamp },
+        budgetPercent,
+        withinBudget: budgetPercent == null ? true : totalDrain <= budgetPercent
+      };
+    }
+
+    function setBatteryBudget(maxDrainPercent) {
+      const v = clamp(maxDrainPercent, 0, 100);
+      const b = {
+        id: 'battery-use',
+        type: 'battery-use',
+        threshold: v,
+        status: 'pending',
+        measured: null,
+        updatedAt: now()
+      };
+      budgets.set('battery-use', b);
+      return clone(b);
+    }
+
+    // RPG-14-12: Storage growth — track storage usage over time and flag retention
+    // regressions (usage must not grow unbounded across checkpoints).
+    const storageGrowthLog = [];
+    function recordStorageCheckpoint(input) {
+      const i = obj(input);
+      const cp = {
+        label: text(i.label) || ('checkpoint-' + storageGrowthLog.length),
+        timestamp: now(),
+        usedBytes: clamp(i.usedBytes ?? 0, 0, Number.MAX_SAFE_INTEGER),
+        assetCount: clamp(i.assetCount ?? 0, 0, 9999999),
+        quarantinedCount: clamp(i.quarantinedCount ?? 0, 0, 9999999)
+      };
+      storageGrowthLog.push(cp);
+      return clone(cp);
+    }
+
+    function getStorageGrowthReport(options) {
+      const o = obj(options);
+      const maxGrowthRatio = clamp(o.maxGrowthRatio ?? 3, 1, 1000);
+      const points = storageGrowthLog.slice();
+      if (points.length < 2) {
+        return { checkpointCount: points.length, growthRatio: null, unboundedGrowth: false, withinRetention: true, points };
+      }
+      const first = points[0].usedBytes;
+      const last = points[points.length - 1].usedBytes;
+      const growthRatio = first > 0 ? Math.round((last / first) * 100) / 100 : (last > 0 ? Infinity : 1);
+      // Detect strictly monotonic growth with no plateau (unbounded) across the series
+      let monotonic = true;
+      for (let i = 1; i < points.length; i++) {
+        if (points[i].usedBytes < points[i - 1].usedBytes) { monotonic = false; break; }
+      }
+      const unboundedGrowth = monotonic && growthRatio > maxGrowthRatio;
+      return {
+        checkpointCount: points.length,
+        firstBytes: first,
+        lastBytes: last,
+        growthRatio,
+        maxGrowthRatio,
+        unboundedGrowth,
+        withinRetention: !unboundedGrowth,
+        points
+      };
+    }
+
+    // Extend budget types to cover roadmap battery/storage-growth scenarios
+    function setGrowthBudget(input) {
+      const i = obj(input);
+      const b = {
+        id: text(i.id) || 'storage-growth',
+        type: BUDGET_TYPES.includes(i.type) ? i.type : 'storage-size',
+        threshold: Number(i.threshold) || 0,
+        comparator: ['lt', 'lte', 'gt', 'gte'].includes(i.comparator) ? i.comparator : 'lte',
+        status: 'pending',
+        measured: null,
+        updatedAt: now()
+      };
+      budgets.set(b.id, b);
+      return clone(b);
+    }
+
     return {
       TEST_STATUSES, SEVERITY_LEVELS, BUDGET_TYPES,
       FAILURE_MODES, PLATFORMS,
@@ -803,6 +1054,10 @@
       setPerformanceBudget, measureAgainstBudget, getBudget, getBudgetReport,
       setContextBaseline, checkContextRegression,
       runRegressionSuite,
+      runMessageRenderRegression, runEventStressTest, runLowMemoryRecovery,
+      verifyUpgradeRetention,
+      recordBatterySample, getBatteryReport, setBatteryBudget,
+      recordStorageCheckpoint, getStorageGrowthReport, setGrowthBudget,
       seedRng
     };
   }

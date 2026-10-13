@@ -228,11 +228,109 @@
 
     function stableId(prefix) { return prefix + '-' + String(++idCounter).padStart(6, '0'); }
 
+    // RPG-15-05: Canon policy editor — lets a GM configure the rules that govern
+    // how canon entries are created, promoted, resolved and exposed (spoilers).
+    const DEFAULT_CANON_POLICY = Object.freeze({
+      // Minimum authority tier required to write HARD canon
+      hardCanonMinAuthority: 'gm',
+      // Auto-promote SOFT -> ACTIVE after N corroborating entries
+      autoPromoteAfterCorrobations: 3,
+      // Whether conflicting HARD canon blocks the write (immutable hard canon)
+      hardCanonImmutable: true,
+      // Default conflict-resolution strategy: 'newest' | 'highest-authority' | 'manual'
+      conflictResolution: 'manual',
+      // Spoiler boundary: entries tagged beyond this tier are hidden from players
+      spoilerBoundary: 'chapter-3',
+      // Whether players may propose canon changes (creates a canon request)
+      allowPlayerProposals: true,
+      // Provenance required before an entry is considered trusted
+      requireProvenance: false
+    });
+
+    let canonPolicy = Object.assign({}, DEFAULT_CANON_POLICY);
+
+    const POLICY_FIELDS = Object.freeze(Object.keys(DEFAULT_CANON_POLICY));
+
+    function getCanonPolicy() {
+      return Object.assign({}, canonPolicy);
+    }
+
+    function getPolicySchema() {
+      return {
+        type: 'object',
+        fields: {
+          hardCanonMinAuthority: { type: 'string', enum: ['player', 'gm', 'system'], default: DEFAULT_CANON_POLICY.hardCanonMinAuthority },
+          autoPromoteAfterCorrobations: { type: 'integer', minimum: 1, maximum: 10, default: DEFAULT_CANON_POLICY.autoPromoteAfterCorrobations },
+          hardCanonImmutable: { type: 'boolean', default: DEFAULT_CANON_POLICY.hardCanonImmutable },
+          conflictResolution: { type: 'string', enum: ['newest', 'highest-authority', 'manual'], default: DEFAULT_CANON_POLICY.conflictResolution },
+          spoilerBoundary: { type: 'string', default: DEFAULT_CANON_POLICY.spoilerBoundary },
+          allowPlayerProposals: { type: 'boolean', default: DEFAULT_CANON_POLICY.allowPlayerProposals },
+          requireProvenance: { type: 'boolean', default: DEFAULT_CANON_POLICY.requireProvenance }
+        }
+      };
+    }
+
+    // Validate + apply a partial policy update. Rejects unknown fields and
+    // out-of-range/incorrect-typed values so a policy can never be corrupted.
+    function setCanonPolicy(update) {
+      const u = update && typeof update === 'object' && !Array.isArray(update) ? update : {};
+      const errors = [];
+      const changes = {};
+      for (const key of Object.keys(u)) {
+        if (!POLICY_FIELDS.includes(key)) { errors.push({ field: key, message: 'unknown-policy-field' }); continue; }
+        const value = u[key];
+        const current = canonPolicy[key];
+        if (typeof current === 'boolean') {
+          if (typeof value !== 'boolean') { errors.push({ field: key, message: 'expected-boolean' }); continue; }
+        } else if (typeof current === 'number') {
+          const n = Number(value);
+          if (!Number.isFinite(n) || n < 1 || n > 10) { errors.push({ field: key, message: 'expected-integer-1-10' }); continue; }
+        } else if (key === 'hardCanonMinAuthority') {
+          if (!['player', 'gm', 'system'].includes(value)) { errors.push({ field: key, message: 'expected-authority-tier' }); continue; }
+        } else if (key === 'conflictResolution') {
+          if (!['newest', 'highest-authority', 'manual'].includes(value)) { errors.push({ field: key, message: 'expected-resolution-strategy' }); continue; }
+        } else {
+          if (typeof value !== 'string') { errors.push({ field: key, message: 'expected-string' }); continue; }
+        }
+        if (value !== current) { changes[key] = { from: current, to: value }; canonPolicy[key] = typeof current === 'number' ? Number(value) : value; }
+      }
+      if (errors.length) return { ok: false, reason: 'invalid-policy', errors };
+      return { ok: true, policy: Object.assign({}, canonPolicy), changes };
+    }
+
+    function resetCanonPolicy() {
+      canonPolicy = Object.assign({}, DEFAULT_CANON_POLICY);
+      return { ok: true, policy: Object.assign({}, canonPolicy) };
+    }
+
+    // Apply the policy to a proposed canon write: returns whether it's allowed
+    // and, if not, the policy rule that blocked it.
+    function evaluateCanonPolicy(proposal) {
+      const p = proposal && typeof proposal === 'object' ? proposal : {};
+      const level = CANON_LEVELS.includes(p.level) ? p.level : 'SOFT';
+      const authority = p.authority || 'player';
+      if (level === 'HARD') {
+        const tiers = { player: 0, gm: 1, system: 2 };
+        const required = tiers[canonPolicy.hardCanonMinAuthority];
+        if ((tiers[authority] || 0) < required) {
+          return { allowed: false, blockedBy: 'hardCanonMinAuthority', required: canonPolicy.hardCanonMinAuthority, level, authority };
+        }
+      }
+      if (canonPolicy.requireProvenance && !p.provenance) {
+        return { allowed: false, blockedBy: 'requireProvenance', level, authority };
+      }
+      if (level !== 'HARD' && authority === 'player' && !canonPolicy.allowPlayerProposals) {
+        return { allowed: false, blockedBy: 'allowPlayerProposals', level, authority };
+      }
+      return { allowed: true, policy: Object.assign({}, canonPolicy), level, authority };
+    }
+
     return {
       CANON_LEVELS, CONFLICT_SEVERITY, PROVENANCE_TYPES,
       createEntry, getEntry, getAllEntries, updateEntry, deleteEntry, getHistory,
       checkConflict, getConflicts, resolveConflict, suggestResolution,
-      getProvenance, addProvenance, auditCanon
+      getProvenance, addProvenance, auditCanon,
+      getCanonPolicy, getPolicySchema, setCanonPolicy, resetCanonPolicy, evaluateCanonPolicy
     };
   }
 

@@ -765,6 +765,272 @@
       };
     }
 
+    // ---- Roadmap-aligned asset capabilities ----
+
+    // RPG-12-02: World illustrations — opt-in only. Illustrations are NEVER generated
+    // unless the user explicitly opts in; opting out clears any generated set.
+    const illustrationState = {
+      optedIn: false,
+      style: 'painterly',
+      generatedAt: null,
+      assets: []
+    };
+
+    function setIllustrationOptIn(enabled, options) {
+      const opt = obj(options);
+      illustrationState.optedIn = enabled === true || enabled === 'true';
+      if (opt.style) illustrationState.style = text(opt.style) || illustrationState.style;
+      if (!illustrationState.optedIn) {
+        illustrationState.assets = [];
+        illustrationState.generatedAt = null;
+      }
+      return { ok: true, optedIn: illustrationState.optedIn, style: illustrationState.style };
+    }
+
+    function getIllustrationOptIn() {
+      return { optedIn: illustrationState.optedIn, style: illustrationState.style, count: illustrationState.assets.length };
+    }
+
+    // Only produces illustration descriptors when opted in; otherwise refuses.
+    function generateWorldIllustration(input) {
+      if (!illustrationState.optedIn) return { ok: false, reason: 'illustrations-not-opted-in' };
+      const i = obj(input);
+      const id = i.id || stableId('illus', nextId());
+      const rec = {
+        id,
+        scene: text(i.scene) || 'unnamed',
+        prompt: text(i.prompt) || ('Illustration of ' + (text(i.scene) || 'scene')),
+        style: illustrationState.style,
+        createdAt: now()
+      };
+      illustrationState.assets.push(rec);
+      illustrationState.generatedAt = now();
+      return { ok: true, illustration: clone(rec) };
+    }
+
+    function listWorldIllustrations() {
+      return illustrationState.optedIn ? clone(illustrationState.assets) : [];
+    }
+
+    // RPG-12-09: Content filters — block/disallow assets flagged by category or tag
+    // so mature/NSFW media is filtered out of what the app will surface.
+    const contentFilterState = {
+      enabled: true,
+      blockedCategories: ['mature', 'nsfw', 'explicit'],
+      blockedTags: ['mature', 'nsfw', 'explicit', 'gore'],
+      allowOverrides: false
+    };
+
+    function setContentFilter(config) {
+      const c = obj(config);
+      if (typeof c.enabled === 'boolean') contentFilterState.enabled = c.enabled;
+      if (Array.isArray(c.blockedCategories)) contentFilterState.blockedCategories = uniq(c.blockedCategories);
+      if (Array.isArray(c.blockedTags)) contentFilterState.blockedTags = uniq(c.blockedTags);
+      if (typeof c.allowOverrides === 'boolean') contentFilterState.allowOverrides = c.allowOverrides;
+      return { ok: true, filter: clone(contentFilterState) };
+    }
+
+    function getContentFilter() {
+      return clone(contentFilterState);
+    }
+
+    // Returns true when an asset passes the active content filter.
+    function passesContentFilter(asset) {
+      const a = obj(asset);
+      if (!contentFilterState.enabled) return true;
+      const cat = text(a.category).toLowerCase();
+      if (contentFilterState.blockedCategories.some(b => cat === String(b).toLowerCase())) return false;
+      const tags = arr(a.tags).map(t => String(t).toLowerCase());
+      if (tags.some(t => contentFilterState.blockedTags.some(b => String(b).toLowerCase() === t))) return false;
+      return true;
+    }
+
+    // Filtered listing — the app-visible asset list, respecting content filters.
+    function listFilteredAssets(filter) {
+      return listAssets(filter).filter(passesContentFilter);
+    }
+
+    function isAssetBlocked(id) {
+      const a = assets.get(id);
+      if (!a) return { ok: false, reason: 'asset-not-found' };
+      return { ok: true, blocked: !passesContentFilter(a) };
+    }
+
+    // RPG-12-10: Asset backup manifests — a verifiable inventory of assets that
+    // is included with world backups so assets can be restored/verified.
+    function createAssetBackupManifest(options) {
+      const o = obj(options);
+      const includeAll = o.includeAll === true;
+      const list = includeAll ? Array.from(assets.values()) : listFilteredAssets();
+      const entries = list.map(a => ({
+        id: a.id, name: a.name, type: a.type, mimeType: a.mimeType,
+        sizeBytes: a.sizeBytes, sha: assetChecksum(a), tags: a.tags.slice()
+      }));
+      const manifest = {
+        format: 'seven-rpg-asset-manifest',
+        version: 1,
+        createdAt: now(),
+        assetCount: entries.length,
+        totalBytes: entries.reduce((s, e) => s + e.sizeBytes, 0),
+        entries
+      };
+      manifest.checksum = fnv1a32(JSON.stringify(entries));
+      return manifest;
+    }
+
+    function verifyAssetBackupManifest(manifest) {
+      const m = obj(manifest);
+      if (m.format !== 'seven-rpg-asset-manifest') return { valid: false, reason: 'unsupported-manifest' };
+      if (!Array.isArray(m.entries)) return { valid: false, reason: 'missing-entries' };
+      const recomputed = fnv1a32(JSON.stringify(m.entries));
+      if (m.checksum && m.checksum !== recomputed) return { valid: false, reason: 'checksum-mismatch' };
+      const missing = m.entries.filter(e => !assets.has(e.id)).map(e => e.id);
+      return { valid: missing.length === 0, missingAssets: missing, checked: m.entries.length };
+    }
+
+    // RPG-12-11: Placeholder fallback — when a real asset is missing or filtered,
+    // hand back a safe placeholder instead of a broken/blank surface.
+    const PLACEHOLDER_KINDS = Object.freeze(['portrait', 'background', 'icon', 'generic']);
+    function getPlaceholder(kind, context) {
+      const k = PLACEHOLDER_KINDS.includes(kind) ? kind : 'generic';
+      const c = obj(context);
+      return {
+        isPlaceholder: true,
+        kind: k,
+        label: text(c.label) || defaultPlaceholderLabel(k),
+        colorSeed: text(c.seed) || text(c.label) || k,
+        reason: text(c.reason) || 'missing-asset',
+        width: clamp(c.width ?? 0, 0, 99999),
+        height: clamp(c.height ?? 0, 0, 99999)
+      };
+    }
+
+    function defaultPlaceholderLabel(kind) {
+      return { portrait: 'No portrait', background: 'No background', icon: 'No icon', generic: 'Unavailable' }[kind];
+    }
+
+    // Resolve an asset id to the real asset, or a placeholder if absent/filtered.
+    function resolveAssetOrPlaceholder(id, kind, context) {
+      const a = assets.get(id);
+      if (!a) return getPlaceholder(kind, Object.assign({ reason: 'asset-not-found' }, context));
+      if (!passesContentFilter(a)) return getPlaceholder(kind, Object.assign({ reason: 'blocked-by-content-filter' }, context));
+      return Object.assign({ isPlaceholder: false }, clone(a));
+    }
+
+    // RPG-12-12: Copyright-safe sourcing — only assets with an approved license
+    // and required provenance are considered safe to ship.
+    const APPROVED_LICENSES = Object.freeze([
+      'cc0', 'public-domain', 'public domain', 'cc-by', 'cc by', 'cc-by-sa', 'cc by-sa',
+      'mit', 'apache-2.0', 'royalty-free', 'original', 'owned'
+    ]);
+    const REQUIRED_PROVENANCE = Object.freeze(['license', 'author']);
+
+    function evaluateSourcing(asset) {
+      const a = obj(asset);
+      const license = text(a.license).toLowerCase();
+      const author = text(a.author);
+      const missing = REQUIRED_PROVENANCE.filter(field => !text(a[field]));
+      const licenseApproved = APPROVED_LICENSES.some(l => license === l);
+      const safe = licenseApproved && missing.length === 0;
+      let reason = null;
+      if (missing.length) reason = 'missing-provenance:' + missing.join(',');
+      else if (!licenseApproved) reason = 'unapproved-license';
+      return { safe, license: text(a.license), licenseApproved, author, missing, reason };
+    }
+
+    function registerSafeAsset(input) {
+      const i = obj(input);
+      const verdict = evaluateSourcing(i);
+      if (!verdict.safe) return { ok: false, reason: verdict.reason, verdict };
+      const asset = registerAsset(i);
+      asset.sourcing = { safe: true, license: verdict.license, author: verdict.author, checkedAt: now() };
+      assets.set(asset.id, asset);
+      return { ok: true, asset: clone(asset), verdict };
+    }
+
+    function listSafeAssets() {
+      return Array.from(assets.values()).filter(a => evaluateSourcing(a).safe);
+    }
+
+    function getCopyrightReport() {
+      const all = Array.from(assets.values());
+      const safe = all.filter(a => evaluateSourcing(a).safe);
+      const unsafe = all.filter(a => !evaluateSourcing(a).safe);
+      return {
+        total: all.length,
+        safeCount: safe.length,
+        unsafeCount: unsafe.length,
+        unsafeIds: unsafe.map(a => a.id),
+        approvedLicenses: APPROVED_LICENSES.slice()
+      };
+    }
+
+    // RPG-12-04: Image attachment — attach an image asset to an owner entity
+    // (character, scene, quest, etc.) so the entity can render its picture.
+    const attachments = new Map(); // ownerKey -> [{assetId, role, attachedAt}]
+
+    function ownerKey(ownerType, ownerId) {
+      return text(ownerType) + ':' + text(ownerId);
+    }
+
+    function attachImage(input) {
+      const i = obj(input);
+      const ownerType = text(i.ownerType);
+      const ownerId = text(i.ownerId);
+      const assetId = text(i.assetId);
+      if (!ownerType || !ownerId) return { ok: false, reason: 'missing-owner' };
+      const asset = assets.get(assetId);
+      if (!asset) return { ok: false, reason: 'asset-not-found' };
+      if (!['image', 'portrait', 'background', 'icon', 'texture'].includes(asset.type)) {
+        return { ok: false, reason: 'not-an-image-asset' };
+      }
+      const role = text(i.role) || 'primary';
+      const key = ownerKey(ownerType, ownerId);
+      const list = attachments.get(key) || [];
+      // One primary image per role; replace existing
+      const existingIdx = list.findIndex(a => a.role === role);
+      const record = { assetId, role, ownerType, ownerId, attachedAt: now() };
+      if (existingIdx >= 0) list[existingIdx] = record;
+      else list.push(record);
+      attachments.set(key, list);
+      return { ok: true, attachment: clone(record), total: list.length };
+    }
+
+    function detachImage(ownerType, ownerId, role) {
+      const key = ownerKey(ownerType, ownerId);
+      const list = attachments.get(key) || [];
+      const r = text(role) || 'primary';
+      const next = list.filter(a => a.role !== r);
+      if (next.length === 0) attachments.delete(key);
+      else attachments.set(key, next);
+      return { ok: true, removed: list.length - next.length };
+    }
+
+    function getAttachedImages(ownerType, ownerId) {
+      const list = attachments.get(ownerKey(ownerType, ownerId)) || [];
+      return list.map(a => Object.assign({}, a, { asset: clone(assets.get(a.assetId)) || null }));
+    }
+
+    function getPrimaryImage(ownerType, ownerId) {
+      const list = getAttachedImages(ownerType, ownerId);
+      return list.find(a => a.role === 'primary') || list[0] || null;
+    }
+
+    // Small deterministic checksum for manifest entries
+    function fnv1a32(str) {
+      let h = 0x811c9dc5;
+      const s = String(str);
+      for (let i = 0; i < s.length; i++) {
+        h ^= s.charCodeAt(i);
+        h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+      }
+      return ('00000000' + h.toString(16)).slice(-8);
+    }
+
+    function assetChecksum(a) {
+      return fnv1a32([a.id, a.name, a.type, a.mimeType, a.sizeBytes].join('|'));
+    }
+
     return {
       ASSET_TYPES, AUDIO_TYPES, PORTRAIT_STYLES, MUSIC_MOODS,
       PALETTE_THEMES, ICON_STYLES, FONT_CATEGORIES,
@@ -785,7 +1051,13 @@
       setAltText, getAltText,
       setAudioDescription, getAudioDescription,
       setCaption, getCaption,
-      getAccessibilityMediaReport
+      getAccessibilityMediaReport,
+      setIllustrationOptIn, getIllustrationOptIn, generateWorldIllustration, listWorldIllustrations,
+      setContentFilter, getContentFilter, passesContentFilter, listFilteredAssets, isAssetBlocked,
+      createAssetBackupManifest, verifyAssetBackupManifest,
+      getPlaceholder, resolveAssetOrPlaceholder,
+      evaluateSourcing, registerSafeAsset, listSafeAssets, getCopyrightReport,
+      attachImage, detachImage, getAttachedImages, getPrimaryImage
     };
   }
 

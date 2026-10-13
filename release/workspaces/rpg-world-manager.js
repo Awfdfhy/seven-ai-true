@@ -292,6 +292,197 @@
       return updateWorld(worldId, { tone: toneId, ...profile });
     }
 
+    // ---- Roadmap-aligned foundation capabilities ----
+
+    // RPG-02-05: World delete with confirmation — destructive deletes require an
+    // explicit confirmation token first; deleting without confirming is refused.
+    const pendingDeletes = new Map();
+
+    function requestDeleteWorld(id) {
+      const world = worlds.get(id);
+      if (!world) return { ok: false, reason: 'not-found' };
+      const token = stableId('del');
+      pendingDeletes.set(id, {
+        token,
+        worldId: id,
+        worldName: world.name,
+        createdAt: now(),
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString()
+      });
+      return {
+        ok: true,
+        requiresConfirmation: true,
+        token,
+        worldId: id,
+        worldName: world.name,
+        // The confirmation prompt the UI must show before proceeding
+        confirmation: {
+          message: 'Delete world "' + world.name + '"? This cannot be undone.',
+          confirmLabel: 'Delete',
+          cancelLabel: 'Cancel',
+          destructive: true
+        }
+      };
+    }
+
+    function confirmDeleteWorld(id, token) {
+      const pending = pendingDeletes.get(id);
+      if (!pending) return { ok: false, reason: 'no-pending-delete' };
+      if (pending.token !== token) return { ok: false, reason: 'invalid-token' };
+      if (pending.expiresAt < new Date().toISOString()) {
+        pendingDeletes.delete(id);
+        return { ok: false, reason: 'confirmation-expired' };
+      }
+      const world = worlds.get(id);
+      if (!world) { pendingDeletes.delete(id); return { ok: false, reason: 'not-found' }; }
+      worlds.delete(id);
+      pendingDeletes.delete(id);
+      return { ok: true, deleted: true, worldId: id, worldName: world.name };
+    }
+
+    function cancelDeleteWorld(id) {
+      return { ok: pendingDeletes.delete(id) };
+    }
+
+    function getPendingDeletes() {
+      return Array.from(pendingDeletes.values()).map(p => ({
+        worldId: p.worldId, worldName: p.worldName, token: p.token, expiresAt: p.expiresAt
+      }));
+    }
+
+    // RPG-02-06: World export preview — show what an export will contain BEFORE exporting.
+    function previewWorldExport(id) {
+      const world = worlds.get(id);
+      if (!world) return { ok: false, reason: 'not-found' };
+      const locations = Object.keys(world.worldState.locations || {});
+      const characters = Object.keys(world.characters || {});
+      const quests = Object.keys(world.quests || {});
+      const factions = Object.keys(world.factions || {});
+      const preview = {
+        ok: true,
+        worldId: id,
+        worldName: world.name,
+        format: 'seven-rpg-world-export',
+        version: world.version || 1,
+        contents: {
+          locations: locations.length,
+          characters: characters.length,
+          quests: quests.length,
+          factions: factions.length,
+          rules: (world.rules || []).length,
+          canon: Object.keys(world.canon || {}).length
+        },
+        includes: ['world', 'rules', 'canon', 'characters', 'quests'],
+        excludes: ['provider-secrets', 'session-cache'],
+        estimatedBytes: JSON.stringify(world).length,
+        checksumPreview: null
+      };
+      // Estimated size + a preview checksum over the identity fields
+      preview.estimatedBytes = Buffer.byteLength(JSON.stringify(world), 'utf8');
+      preview.checksumPreview = stableChecksum(JSON.stringify([world.id, world.name, world.version]));
+      return preview;
+    }
+
+    // RPG-02-07: World import preview — validate + summarize an incoming world
+    // BEFORE committing the import, including conflict detection.
+    function previewWorldImport(data) {
+      const i = obj(data);
+      if (!i.id || !i.name) return { ok: false, reason: 'invalid-world-data' };
+      const existing = worlds.get(i.id);
+      const locations = Object.keys((i.worldState && i.worldState.locations) || {});
+      const characters = Object.keys(i.characters || {});
+      const quests = Object.keys(i.quests || {});
+      return {
+        ok: true,
+        valid: true,
+        worldId: i.id,
+        worldName: i.name,
+        conflict: existing ? {
+          exists: true,
+          strategy: 'overwrite' // caller chooses; preview reports the default
+        } : { exists: false, strategy: 'create' },
+        contents: {
+          locations: locations.length,
+          characters: characters.length,
+          quests: quests.length,
+          rules: Array.isArray(i.rules) ? i.rules.length : 0
+        },
+        templateId: i.templateId || 'custom',
+        difficulty: i.difficulty || 'normal',
+        tone: i.tone || 'heroic',
+        estimatedBytes: Buffer.byteLength(JSON.stringify(i), 'utf8'),
+        warnings: existing ? ['World already exists; import will overwrite it.'] : []
+      };
+    }
+
+    // RPG-02-13: World rules schema — a declarative JSON-Schema-like description of
+    // the world rules structure so rules can be validated/exported interchangeably.
+    const WORLD_RULES_SCHEMA = Object.freeze({
+      $schema: 'https://seven-rpg/schemas/world-rules-v1.json',
+      type: 'object',
+      required: ['rules'],
+      properties: {
+        rules: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: ['id', 'type', 'scope'],
+            properties: {
+              id: { type: 'string', minLength: 1 },
+              type: { type: 'string', enum: ['physics', 'technology', 'magic', 'social', 'economy', 'combat'] },
+              scope: { type: 'string', enum: ['global', 'region', 'location', 'character'] },
+              description: { type: 'string' },
+              condition: { type: 'object' },
+              effect: { type: 'object' },
+              priority: { type: 'integer', minimum: 0 },
+              enabled: { type: 'boolean' }
+            },
+            additionalProperties: true
+          }
+        },
+        difficulty: { type: 'string', enum: ['easy', 'normal', 'hard', 'deadly'] },
+        tone: { type: 'string' }
+      },
+      additionalProperties: true
+    });
+
+    function getWorldRulesSchema() {
+      return clone(WORLD_RULES_SCHEMA);
+    }
+
+    // Validate a world's rules against the declarative schema.
+    function validateWorldRulesSchema(worldId) {
+      const world = worlds.get(worldId);
+      if (!world) return { valid: false, reason: 'not-found', errors: [] };
+      const rules = Array.isArray(world.rules) ? world.rules : [];
+      const errors = [];
+      const allowedTypes = WORLD_RULES_SCHEMA.properties.rules.items.properties.type.enum;
+      const allowedScopes = WORLD_RULES_SCHEMA.properties.rules.items.properties.scope.enum;
+      for (let idx = 0; idx < rules.length; idx++) {
+        const r = obj(rules[idx]);
+        if (!text(r.id)) errors.push({ index: idx, field: 'id', message: 'required' });
+        if (!allowedTypes.includes(r.type)) errors.push({ index: idx, field: 'type', message: 'must be one of ' + allowedTypes.join('|') });
+        if (!allowedScopes.includes(r.scope)) errors.push({ index: idx, field: 'scope', message: 'must be one of ' + allowedScopes.join('|') });
+      }
+      return {
+        valid: errors.length === 0,
+        ruleCount: rules.length,
+        errors,
+        schema: WORLD_RULES_SCHEMA.$schema
+      };
+    }
+
+    // Stable 8-hex checksum helper (FNV-1a)
+    function stableChecksum(str) {
+      let h = 0x811c9dc5;
+      const s = String(str);
+      for (let i = 0; i < s.length; i++) {
+        h ^= s.charCodeAt(i);
+        h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+      }
+      return ('00000000' + h.toString(16)).slice(-8);
+    }
+
     return {
       WORLD_TEMPLATES, DIFFICULTY_PROFILES, TONE_PROFILES,
       createWorld, createFromTemplate, getWorld, getAllWorlds,
@@ -299,7 +490,10 @@
       exportWorld, importWorld, getWorldSummary, getWorldStats,
       registerTemplate, getTemplate, getAllTemplates,
       getDifficultyProfile, getToneProfile,
-      setWorldDifficulty, setWorldTone
+      setWorldDifficulty, setWorldTone,
+      requestDeleteWorld, confirmDeleteWorld, cancelDeleteWorld, getPendingDeletes,
+      previewWorldExport, previewWorldImport,
+      getWorldRulesSchema, validateWorldRulesSchema
     };
   }
 

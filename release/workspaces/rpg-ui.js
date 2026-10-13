@@ -22,6 +22,8 @@
   const SOUND_EVENTS = Object.freeze(['dialogue', 'choice', 'combat-hit', 'combat-miss', 'level-up', 'quest-complete', 'discovery', 'ambient', 'ui-click', 'notification']);
   const ACCESSIBILITY_MODES = Object.freeze(['default', 'high-contrast', 'large-text', 'reduced-motion', 'screen-reader']);
   const ANIMATION_SPEEDS = Object.freeze(['off', 'reduced', 'normal', 'enhanced']);
+  // Locales that render right-to-left (drives RTL layout + text direction)
+  const RTL_LANGUAGES = Object.freeze(['ar', 'he', 'fa', 'ur', 'ps', 'sd', 'yi', 'dv', 'ckb']);
 
   function createUiManager(stateApi) {
     if (!stateApi || typeof stateApi.createState !== 'function') throw Error('SevenRpgState-compatible stateApi required');
@@ -49,6 +51,7 @@
       modalOpen: false,
       modalContent: null,
       loading: false,
+      orientation: 'landscape',
       lastUpdated: now()
     };
 
@@ -62,14 +65,104 @@
       return { ok: true, old, new: mode, sidebarOpen: uiState.sidebarOpen };
     }
 
+    // RPG-11-03: Landscape/portrait orientation (drives responsive CSS + panel density)
+    const ORIENTATIONS = Object.freeze(['landscape', 'portrait']);
+    function setOrientation(orientation) {
+      if (!ORIENTATIONS.includes(orientation)) return { ok: false, reason: 'invalid-orientation' };
+      const old = uiState.orientation;
+      uiState.orientation = orientation;
+      // Portrait collapses the sidebar to preserve vertical space
+      if (orientation === 'portrait' && (uiState.layout === 'desktop' || uiState.layout === 'wide')) {
+        uiState.sidebarOpen = false;
+      }
+      uiState.lastUpdated = now();
+      return { ok: true, old, new: orientation, sidebarOpen: uiState.sidebarOpen };
+    }
+
     function getLayout() {
       return {
         mode: uiState.layout,
+        orientation: uiState.orientation,
         sidebarOpen: uiState.sidebarOpen,
         breakpoints: { mobile: 0, tablet: 600, desktop: 900, wide: 1200 },
         isMobile: uiState.layout === 'mobile',
-        isTouch: uiState.layout === 'mobile' || uiState.layout === 'tablet'
+        isTouch: uiState.layout === 'mobile' || uiState.layout === 'tablet',
+        isLandscape: uiState.orientation === 'landscape',
+        isPortrait: uiState.orientation === 'portrait'
       };
+    }
+
+    // RPG-11-07: Keyboard focus management (roving focus + modal focus trap)
+    const focusState = { order: [], index: 0, trapped: false, trapStack: [] };
+    function setFocusOrder(ids) {
+      const list = arr(ids).filter(id => typeof id === 'string' && id.trim()).map(id => id.trim());
+      focusState.order = list;
+      focusState.index = 0;
+      return { ok: true, count: list.length, order: list.slice() };
+    }
+
+    function focusNext() {
+      if (!focusState.order.length) return { ok: false, reason: 'no-focus-order' };
+      focusState.index = (focusState.index + 1) % focusState.order.length;
+      return { ok: true, focused: focusState.order[focusState.index], index: focusState.index };
+    }
+
+    function focusPrev() {
+      if (!focusState.order.length) return { ok: false, reason: 'no-focus-order' };
+      focusState.index = (focusState.index - 1 + focusState.order.length) % focusState.order.length;
+      return { ok: true, focused: focusState.order[focusState.index], index: focusState.index };
+    }
+
+    function focusElement(id) {
+      const idx = focusState.order.indexOf(id);
+      if (idx === -1) return { ok: false, reason: 'element-not-in-order' };
+      focusState.index = idx;
+      return { ok: true, focused: id, index: idx };
+    }
+
+    // Trap focus to a set of ids (used while a modal is open); returns the active trap
+    function trapFocus(ids) {
+      const list = arr(ids).filter(id => typeof id === 'string' && id.trim()).map(id => id.trim());
+      if (!list.length) return { ok: false, reason: 'empty-trap' };
+      const trap = { ids: list, index: 0, createdAt: now() };
+      focusState.trapStack.push(trap);
+      focusState.trapped = true;
+      return { ok: true, trapped: true, ids: list.slice(), depth: focusState.trapStack.length };
+    }
+
+    function releaseFocusTrap() {
+      const released = focusState.trapStack.pop();
+      focusState.trapped = focusState.trapStack.length > 0;
+      return { ok: !!released, released: released ? released.ids.slice() : null, trapped: focusState.trapped };
+    }
+
+    function getFocusState() {
+      return {
+        order: focusState.order.slice(),
+        index: focusState.index,
+        focused: focusState.order[focusState.index] || null,
+        trapped: focusState.trapped,
+        depth: focusState.trapStack.length
+      };
+    }
+
+    // RPG-11-08: Screen reader labels (aria-label registry for controls)
+    const srLabels = new Map();
+    function setScreenReaderLabel(key, label) {
+      const k = text(key);
+      if (!k) return { ok: false, reason: 'missing-key' };
+      const value = text(label);
+      if (!value) { srLabels.delete(k); return { ok: true, removed: true, key: k }; }
+      srLabels.set(k, value);
+      return { ok: true, key: k, label: value };
+    }
+
+    function getScreenReaderLabel(key) {
+      return srLabels.get(text(key)) || null;
+    }
+
+    function listScreenReaderLabels() {
+      return Array.from(srLabels.entries()).map(([key, label]) => ({ key, label }));
     }
 
     // RPG-11-02: Arabic RTL support
@@ -82,8 +175,10 @@
     function setLanguage(lang) {
       const l = text(lang) || 'en';
       uiState.language = l;
-      // Arabic triggers RTL
-      if (l === 'ar' || l === 'he' || l === 'fa' || l === 'ur') uiState.rtl = true;
+      // Derive text direction from the locale: RTL languages flip the UI to RTL,
+      // and switching back to an LTR locale must restore LTR (otherwise the app
+      // stays stuck in RTL after a user leaves Arabic).
+      uiState.rtl = RTL_LANGUAGES.includes(l);
       uiState.lastUpdated = now();
       return { ok: true, language: l, rtl: uiState.rtl };
     }
@@ -710,19 +805,21 @@
     function getAnimationConfig() {
       const speed = text(uiState.animationSpeed) || settings.display.animationSpeed;
       const configs = {
-        off: { enabled: false, duration: 0, easing: 'linear', transitions: false, particles: false },
-        reduced: { enabled: true, duration: 100, easing: 'ease-out', transitions: true, particles: false },
-        normal: { enabled: true, duration: 250, easing: 'ease-in-out', transitions: true, particles: true },
-        enhanced: { enabled: true, duration: 500, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', transitions: true, particles: true }
+        off: { enabled: false, duration: 0, easing: 'linear', transitions: false, particles: false, reduceMotion: true },
+        reduced: { enabled: true, duration: 100, easing: 'ease-out', transitions: true, particles: false, reduceMotion: true },
+        normal: { enabled: true, duration: 250, easing: 'ease-in-out', transitions: true, particles: true, reduceMotion: false },
+        enhanced: { enabled: true, duration: 500, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', transitions: true, particles: true, reduceMotion: false }
       };
-      return configs[speed] || configs.normal;
+      const config = configs[speed] || configs.normal;
+      return Object.assign({ speed }, config);
     }
 
     function setAnimationSpeed(speed) {
       if (!ANIMATION_SPEEDS.includes(speed)) return { ok: false, reason: 'invalid-speed' };
       uiState.animationSpeed = speed;
       settings.display.animationSpeed = speed;
-      settings.display.reduceMotion = speed === 'off';
+      // Both 'off' and 'reduced' honor a reduced-motion preference.
+      settings.display.reduceMotion = speed === 'off' || speed === 'reduced';
       return { ok: true, speed, config: getAnimationConfig() };
     }
 
@@ -816,6 +913,211 @@
       return { theme: uiState.theme, resolved: uiState.theme === 'auto' ? 'dark' : uiState.theme };
     }
 
+    // RPG-11-11: Custom typography (user-configurable app font family + scale)
+    const customTypography = {
+      fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+      headingFontFamily: 'inherit',
+      fontScale: 1, // multiplier applied to base sizes
+      baseSizePx: 16,
+      monospace: 'ui-monospace, "Cascadia Code", monospace',
+      allowUserFonts: true
+    };
+
+    function setCustomTypography(input) {
+      const i = obj(input);
+      const errors = [];
+      if (i.fontFamily !== undefined) {
+        const v = text(i.fontFamily);
+        if (!v) errors.push({ field: 'fontFamily', message: 'empty' });
+        else customTypography.fontFamily = v;
+      }
+      if (i.headingFontFamily !== undefined) customTypography.headingFontFamily = text(i.headingFontFamily) || 'inherit';
+      if (i.monospace !== undefined) customTypography.monospace = text(i.monospace) || customTypography.monospace;
+      if (i.fontScale !== undefined) {
+        const n = Number(i.fontScale);
+        if (!Number.isFinite(n) || n < 0.5 || n > 3) errors.push({ field: 'fontScale', message: 'must be 0.5..3' });
+        else customTypography.fontScale = n;
+      }
+      if (i.baseSizePx !== undefined) {
+        const n = Number(i.baseSizePx);
+        if (!Number.isFinite(n) || n < 10 || n > 32) errors.push({ field: 'baseSizePx', message: 'must be 10..32' });
+        else customTypography.baseSizePx = n;
+      }
+      if (typeof i.allowUserFonts === 'boolean') customTypography.allowUserFonts = i.allowUserFonts;
+      if (errors.length) return { ok: false, reason: 'invalid-typography', errors };
+      return { ok: true, typography: clone(customTypography) };
+    }
+
+    function getCustomTypography() {
+      const t = clone(customTypography);
+      t.scaledBasePx = Math.round(customTypography.baseSizePx * customTypography.fontScale);
+      return t;
+    }
+
+    // RPG-11-12: Story typography (prose rendering presets for narrative text)
+    const STORY_TYPOGRAPHY_PRESETS = Object.freeze({
+      classic: { fontFamily: 'serif', fontSize: 18, lineHeight: 1.7, paragraphSpacing: 12, italicizeThoughts: true, dropCaps: false },
+      modern: { fontFamily: 'sans-serif', fontSize: 16, lineHeight: 1.6, paragraphSpacing: 10, italicizeThoughts: true, dropCaps: false },
+      immersive: { fontFamily: 'serif', fontSize: 20, lineHeight: 1.85, paragraphSpacing: 16, italicizeThoughts: true, dropCaps: true },
+      compact: { fontFamily: 'sans-serif', fontSize: 14, lineHeight: 1.45, paragraphSpacing: 6, italicizeThoughts: false, dropCaps: false }
+    });
+    let storyTypography = Object.assign({ preset: 'classic' }, clone(STORY_TYPOGRAPHY_PRESETS.classic));
+
+    function setStoryTypography(input) {
+      const i = obj(input);
+      if (i.preset) {
+        const p = STORY_TYPOGRAPHY_PRESETS[i.preset];
+        if (!p) return { ok: false, reason: 'invalid-preset' };
+        storyTypography = Object.assign({ preset: i.preset }, clone(p));
+      }
+      // Allow safe per-field overrides on top of the preset
+      if (i.fontSize !== undefined) storyTypography.fontSize = clamp(i.fontSize, 12, 32);
+      if (i.lineHeight !== undefined) storyTypography.lineHeight = clamp(i.lineHeight, 1, 2.5);
+      if (i.paragraphSpacing !== undefined) storyTypography.paragraphSpacing = clamp(i.paragraphSpacing, 0, 40);
+      if (typeof i.italicizeThoughts === 'boolean') storyTypography.italicizeThoughts = i.italicizeThoughts;
+      if (typeof i.dropCaps === 'boolean') storyTypography.dropCaps = i.dropCaps;
+      if (i.fontFamily) storyTypography.fontFamily = text(i.fontFamily) || storyTypography.fontFamily;
+      return { ok: true, typography: clone(storyTypography) };
+    }
+
+    function getStoryTypography() {
+      return clone(storyTypography);
+    }
+
+    function listStoryTypographyPresets() {
+      return Object.keys(STORY_TYPOGRAPHY_PRESETS).map(name => ({ preset: name, config: clone(STORY_TYPOGRAPHY_PRESETS[name]) }));
+    }
+
+    // RPG-11-14: World dashboard (aggregate overview used by the world dashboard screen)
+    function renderWorldDashboard(input) {
+      const i = obj(input);
+      const stats = obj(i.stats);
+      const quests = arr(i.quests);
+      const characters = arr(i.characters);
+      const locations = arr(i.locations);
+      return {
+        worldId: text(i.worldId),
+        title: text(i.title) || 'World Dashboard',
+        summary: {
+          characterCount: characters.length,
+          activeCharacters: characters.filter(c => c.status === 'active' || c.control === 'player').length,
+          locationCount: locations.length,
+          questCount: quests.length,
+          activeQuests: quests.filter(q => q.status === 'active').length,
+          completedQuests: quests.filter(q => q.status === 'completed').length
+        },
+        stats: {
+          sessions: Number(stats.sessions) || 0,
+          events: Number(stats.events) || 0,
+          playtimeMinutes: Number(stats.playtimeMinutes) || 0,
+          canonEntries: Number(stats.canonEntries) || 0
+        },
+        sections: ['overview', 'characters', 'quests', 'locations', 'canon', 'timeline'],
+        updatedAt: now()
+      };
+    }
+
+    // RPG-11-15: Contextual command palette (searchable command registry, Ctrl/Cmd-K)
+    const commandRegistry = new Map();
+    function registerCommand(input) {
+      const i = obj(input);
+      const id = text(i.id) || stableId('cmd', nextId());
+      if (!text(i.title)) return { ok: false, reason: 'missing-title' };
+      const command = {
+        id,
+        title: text(i.title),
+        category: text(i.category) || 'general',
+        keywords: uniq(arr(i.keywords)),
+        shortcut: text(i.shortcut) || null,
+        context: text(i.context) || 'global',
+        enabled: i.enabled !== false,
+        run: typeof i.run === 'function' ? i.run : null
+      };
+      commandRegistry.set(id, command);
+      return { ok: true, id, command: Object.assign({}, command, { run: command.run ? '[fn]' : null }) };
+    }
+
+    function unregisterCommand(id) {
+      if (!commandRegistry.has(id)) return { ok: false, reason: 'command-not-found' };
+      commandRegistry.delete(id);
+      return { ok: true, id };
+    }
+
+    // Contextual search: only commands visible in the current context (a command's
+    // own context or 'global') are eligible; matches are ranked by relevance.
+    function queryCommands(input) {
+      const i = obj(input);
+      const q = text(i.query).toLowerCase();
+      const context = text(i.context) || 'global';
+      const candidates = Array.from(commandRegistry.values()).filter(c => c.enabled);
+      const scored = candidates.map(c => {
+        // Contextual visibility: world-only commands stay hidden during combat, etc.
+        const inContext = c.context === context || c.context === 'global';
+        if (!inContext) return null;
+        let score = c.context === context ? 2 : 1;
+        if (q) {
+          const hay = (c.title + ' ' + c.category + ' ' + c.keywords.join(' ')).toLowerCase();
+          if (!hay.includes(q)) return null;
+          if (c.title.toLowerCase().includes(q)) score += 10;
+          if (c.keywords.some(k => k.toLowerCase().includes(q))) score += 5;
+        }
+        return { command: c, score };
+      }).filter(Boolean);
+      scored.sort((a, b) => b.score - a.score || a.command.title.localeCompare(b.command.title));
+      const limit = Number(i.limit) > 0 ? Number(i.limit) : 20;
+      return scored.slice(0, limit).map(s => ({
+        id: s.command.id,
+        title: s.command.title,
+        category: s.command.category,
+        shortcut: s.command.shortcut,
+        context: s.command.context,
+        score: s.score
+      }));
+    }
+
+    function runCommand(id, payload) {
+      const c = commandRegistry.get(id);
+      if (!c) return { ok: false, reason: 'command-not-found' };
+      if (!c.enabled) return { ok: false, reason: 'command-disabled' };
+      if (!c.run) return { ok: true, id, dryRun: true, payload: clone(payload) };
+      const result = c.run(payload);
+      return { ok: true, id, result: result === undefined ? null : clone(result) };
+    }
+
+    function listCommands() {
+      return Array.from(commandRegistry.values()).map(c => ({
+        id: c.id, title: c.title, category: c.category,
+        shortcut: c.shortcut, context: c.context, enabled: c.enabled
+      }));
+    }
+
+    // RPG-11-16: Loading / offline state projection
+    function setLoading(loading, label) {
+      uiState.loading = loading === true;
+      uiState.loadingLabel = uiState.loading ? (text(label) || 'Loading…') : null;
+      uiState.lastUpdated = now();
+      return { ok: true, loading: uiState.loading, label: uiState.loadingLabel };
+    }
+
+    function setConnectionState(state) {
+      const valid = ['online', 'offline', 'reconnecting', 'degraded'];
+      if (!valid.includes(state)) return { ok: false, reason: 'invalid-state' };
+      uiState.connectionState = state;
+      uiState.lastUpdated = now();
+      return { ok: true, connectionState: state, offline: state === 'offline' };
+    }
+
+    function getLoadingState() {
+      return {
+        loading: uiState.loading === true,
+        label: uiState.loadingLabel || null,
+        connectionState: uiState.connectionState || 'online',
+        offline: (uiState.connectionState || 'online') === 'offline',
+        // A user-facing status string for loading/offline indicators
+        status: uiState.loading ? 'loading' : ((uiState.connectionState || 'online') === 'offline' ? 'offline' : 'ready')
+      };
+    }
+
     // Modal
     function openModal(content) {
       uiState.modalOpen = true;
@@ -834,10 +1136,60 @@
       return clone(uiState);
     }
 
+    // RPG-11-01: RPG-only app shell (declares the standalone shell contract:
+    // the shell exposes ONLY RPG surfaces and hides every non-RPG workspace)
+    const APP_SHELL = Object.freeze({
+      name: 'Seven RPG',
+      mode: 'standalone',
+      surfaces: ['world', 'session', 'story', 'characters', 'canon', 'settings'],
+      hiddenWorkspaces: 'all-non-rpg',
+      entry: 'rpg-standalone-entry'
+    });
+    function getAppShell() {
+      return clone(APP_SHELL);
+    }
+
+    // Returns only the surfaces the RPG shell exposes (contract for "RPG-only")
+    function getShellSurfaces() {
+      return APP_SHELL.surfaces.slice();
+    }
+
+    // RPG-11-13: Character cards (compact visual card for a character roster)
+    function renderCharacterCard(input) {
+      const i = obj(input);
+      const stats = obj(i.stats);
+      const hp = Number(stats.hp), maxHp = Number(stats.maxHp) || (hp > 0 ? hp : 0);
+      const name = text(i.name) || 'Unknown';
+      return {
+        id: text(i.id) || stableId('ccard', nextId()),
+        name,
+        portrait: text(i.portrait) || null,
+        subtitle: text(i.subtitle),
+        level: Number(i.level) || 1,
+        className: text(i.className) || text(i.klass) || 'Adventurer',
+        status: text(i.status) || 'active',
+        hp, maxHp,
+        hpPercent: maxHp > 0 ? Math.max(0, Math.min(100, Math.round((hp / maxHp) * 100))) : 0,
+        attributes: Object.keys(stats).reduce((acc, k) => {
+          if (k !== 'hp' && k !== 'maxHp') acc[k] = stats[k];
+          return acc;
+        }, {}),
+        tags: uniq(arr(i.tags)),
+        accentColor: text(i.accentColor) || null,
+        createdAt: now()
+      };
+    }
+
+    function getCharacterCard(id) {
+      // Character cards are stateless projections; re-render by id is not stored.
+      return null;
+    }
+
     return {
       LAYOUT_MODES, THEMES, DICE_TYPES, PANEL_TYPES,
       NOTIFICATION_LEVELS, SOUND_EVENTS, ACCESSIBILITY_MODES, ANIMATION_SPEEDS,
-      setLayout, getLayout,
+      ORIENTATIONS, STORY_TYPOGRAPHY_PRESETS,
+      setLayout, getLayout, setOrientation,
       setRtl, setLanguage, getTextDirection, getLocalizedText,
       createSceneCard, getSceneCard, updateSceneCard,
       renderTurnOrder,
@@ -845,6 +1197,7 @@
       createChoicesPanel, selectChoice, getChoicesPanel,
       rollDice, getDiceHistory,
       renderCharacterSheet,
+      renderCharacterCard,
       renderInventoryGrid,
       renderMapViewer, panMap, zoomMap,
       renderJournalView,
@@ -855,6 +1208,14 @@
       setSoundSetting, getSoundSetting, toggleMute, getEffectiveVolume,
       notify, getNotifications, markNotificationRead,
       setTheme, getTheme,
+      setStoryTypography, getStoryTypography, listStoryTypographyPresets,
+      setCustomTypography, getCustomTypography,
+      renderWorldDashboard,
+      registerCommand, unregisterCommand, queryCommands, runCommand, listCommands,
+      setFocusOrder, focusNext, focusPrev, focusElement, trapFocus, releaseFocusTrap, getFocusState,
+      setScreenReaderLabel, getScreenReaderLabel, listScreenReaderLabels,
+      setLoading, setConnectionState, getLoadingState,
+      getAppShell, getShellSurfaces,
       openModal, closeModal,
       getUiState
     };
