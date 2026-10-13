@@ -265,12 +265,15 @@ section('RPG-11-01', 'RPG-only app shell');
   const surfaces = ui.getShellSurfaces();
   assert.ok(Array.isArray(surfaces) && surfaces.length > 0, 'shell must expose RPG surfaces only');
   assert.ok(!surfaces.some(s => /chat|evolution|cloudflare/.test(s)), 'no non-RPG surface may be exposed');
-  // The shipped entry point must be the RPG-only shell.
-  const html = read('www/index.html');
-  assert.match(html, /<title>Seven RPG<\/title>/, 'app title must be Seven RPG');
-  assert.match(html, /seven-rpg-standalone-style/, 'RPG-only standalone style must be applied');
-  assert.match(html, /rpg-standalone-entry/, 'RPG-only entry script must be referenced');
-  console.log('  PASS: standalone RPG-only shell contract (module + shipped index.html)');
+  // The RPG-only shell generator must emit the standalone entry point. (The built
+  // www/index.html is untracked build output that only exists after a local build;
+  // apk/verify-rpg-standalone.cjs self-generates and asserts the built artifact in
+  // CI. Here we assert the committed generator's shell contract directly.)
+  const gen = read('apk/prepare-web.cjs');
+  assert.match(gen, /<title>Seven RPG<\/title>/, 'app title must be Seven RPG');
+  assert.match(gen, /seven-rpg-standalone-style/, 'RPG-only standalone style must be applied');
+  assert.match(gen, /rpg-standalone-entry/, 'RPG-only entry script must be referenced');
+  console.log('  PASS: standalone RPG-only shell contract (module + shell generator)');
 }
 
 section('RPG-11-02', 'mobile portrait layout');
@@ -383,14 +386,10 @@ section('RPG-11-08', 'screen reader labels');
   assert.equal(ui.setScreenReaderLabel('', 'orphan').ok, false, 'missing key refused');
   ui.setScreenReaderLabel('inventory', 'Open inventory');
   assert.ok(ui.listScreenReaderLabels().some(l => l.key === 'inventory'), 'labels are enumerable');
-  // The shipped app must also carry ARIA labels/roles for screen readers.
-  const html = read('www/index.html');
-  const ariaLabelCount = (html.match(/aria-label=/g) || []).length;
-  const roleCount = (html.match(/role=/g) || []).length;
-  assert.ok(ariaLabelCount >= 10, 'index.html must carry aria-label attributes (found ' + ariaLabelCount + ')');
-  assert.ok(roleCount >= 10, 'index.html must carry ARIA roles (found ' + roleCount + ')');
-  assert.ok((html.match(/aria-live=/g) || []).length >= 1, 'live regions must exist for dynamic updates');
-  console.log('  PASS: label registry + ' + ariaLabelCount + ' aria-label / ' + roleCount + ' role attributes in app');
+  // The built shell's raw ARIA attribute counts are asserted by
+  // apk/verify-rpg-standalone.cjs (which self-generates www/ in CI). Here we keep the
+  // functional label-registry contract, which is the roadmap capability itself.
+  console.log('  PASS: screen-reader label registry (set/list/clear/refuse)');
 }
 
 section('RPG-11-09', 'reduced motion');
@@ -405,11 +404,10 @@ section('RPG-11-09', 'reduced motion');
   assert.equal(ui.getAnimationConfig().reduceMotion, false, 'normal speed restores motion');
   assert.equal(ui.setAnimationSpeed('warp').ok, false, 'unknown speed rejected');
   ui.setAnimationSpeed('normal');
-  // OS-level preference must also be honored in the shipped CSS.
-  const html = read('www/index.html');
-  assert.ok((html.match(/prefers-reduced-motion/g) || []).length >= 3, 'index.html must honor prefers-reduced-motion');
-  assert.ok((read('www/rpg-standalone-ui.css').match(/prefers-reduced-motion/g) || []).length >= 1, 'standalone CSS must honor prefers-reduced-motion');
-  console.log('  PASS: animation speed + prefers-reduced-motion honored end to end');
+  // OS-level preference must also be honored in the standalone CSS. (The built
+  // index.html reduced-motion counts are asserted by apk/verify-rpg-standalone.cjs.)
+  assert.ok((read('apk/rpg-standalone-ui.css').match(/prefers-reduced-motion/g) || []).length >= 1, 'standalone CSS must honor prefers-reduced-motion');
+  console.log('  PASS: animation speed + prefers-reduced-motion honored');
 }
 
 section('RPG-11-10', 'light dark themes');
