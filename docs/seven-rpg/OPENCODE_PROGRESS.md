@@ -218,6 +218,7 @@ Console error tests: 4/4 PASS.
 | 14 | 405fec5 | 2026-10-12 | Canon Continuity (RPG-03-01 to RPG-03-15) |
 | 15 | caeca21 | 2026-10-13 | Character System (RPG-04-01 to RPG-04-15) |
 | 16 | 4a9163c | 2026-10-13 | Narration System (RPG-05-01 to RPG-05-15) |
+| 17 | 8b2703c | 2026-10-13 | LLM Runtime System (RPG-07-01 to RPG-07-15) |
 
 ---
 
@@ -380,26 +381,76 @@ Console error tests: 4/4 PASS.
 
 ---
 
+## Iteration 17: LLM Runtime System (RPG-07-01 to RPG-07-15)
+
+**Target:** Implement comprehensive LLM Runtime with provider status, model picker, fallback consent, streaming, retry, timeouts, rate limiting, context injection, structured parsing, JSON recovery, injection defenses, local models, usage tracking, and inference readiness.
+
+**Status:** ✅ COMPLETE
+
+**Changes:**
+- Created `release/workspaces/rpg-llm-runtime.js` implementing all 15 P1 LLM Runtime features
+- Provider registration with health tracking, circuit breaker (3 failures = open), and status management
+- Model config persistence with temperature, maxTokens, topP, penalties, and response format
+- Fallback configuration requiring explicit consent with 5 modes (never/on-error/on-timeout/on-rate-limit/always)
+- Streaming generation with chunk tracking, token counting, and completion status
+- Stream cancellation with partial content preservation
+- Retry configuration with 4 strategies (none/exponential/fixed/immediate) and idempotency keys
+- Timeout configuration with connect/read/total limits and timeout checking
+- Rate limiting with per-minute windows, request counting, and retry-after calculation
+- Context injection with token budgeting and source tracking (world/canon/memory/character/scene/history/rules)
+- Structured response parser supporting JSON, text, markdown, and structured formats
+- JSON recovery with code fence stripping, substring extraction, and trailing comma fixes
+- Prompt injection detection with 10 patterns and severity levels (none/medium/high)
+- Input sanitization with pattern removal and hard block for high-severity injections
+- Local model registration with GGUF format, context length, and enable/disable toggle
+- Usage logging with per-request tokens, cost, latency, and aggregate statistics
+- Arabic-aware token estimation (1.5 tokens/char for Arabic, 0.25 for Latin)
+- Inference readiness check (BLOCKED without actual provider credentials)
+
+**Test Evidence (all 27 tests PASS):**
+1-5. Provider registration, status updates, circuit breaker, model configs
+6-8. Fallback consent, shouldFallback, revocation
+9-11. Streaming, chunk appending, completion, cancellation, active streams
+12-13. Retry config, exponential delay calculation, canRetry
+14. Timeout config, read/total timeout detection
+15-16. Rate limit check, request recording, status
+17. Context building with token budgeting
+18-19. Structured response parsing, JSON recovery (3 recovery methods)
+20. Injection detection (10 patterns), sanitization (remove/block)
+21-22. Local model registration, listing, toggle
+23-24. Usage recording, stats aggregation, recent usage
+25. Inference readiness check
+26. Arabic token estimation
+27. Edge cases (null returns, invalid IDs, reason codes)
+
+**Static audit budget:** within 500KB
+**All 57 test suites passing.**
+
+**Commit:** `8b2703c` pushed to `rpg/standalone-20261011`
+
+---
+
 ## Next Action
 
-Iteration 16 (Narration System) complete. Commit 4a9163c pushed. GitHub Actions CI triggered for `rpg-standalone-apk.yml`.
+Iteration 17 (LLM Runtime System) complete. Commit 8b2703c pushed.
 
-**Next: Iteration 17** — LLM Runtime (RPG-07-01 to RPG-07-15)
-- Provider status
-- Model picker persistence
-- Fallback with explicit consent
-- Streaming generation
-- Cancel streaming
-- Retry idempotency
-- Timeouts
-- Rate limit UX
-- Context injection contract
-- Structured response parser
-- Invalid JSON recovery
-- Prompt injection defenses
-- Local model support optional
-- Usage and token transparency
-- Real inference acceptance
+**Next: Iteration 18** — Progression (RPG-08-01 to RPG-08-16)
+- Optional rulesets
+- Character levels
+- Experience
+- Skill checks
+- Skill tree
+- Abilities
+- Cooldowns
+- Status conditions
+- Quest journal
+- Achievements
+- Milestones
+- Titles
+- Inventory
+- Equipment
+- Loot and rewards
+- Crafting
 
 ---
 
