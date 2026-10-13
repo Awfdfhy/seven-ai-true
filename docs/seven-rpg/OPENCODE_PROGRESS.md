@@ -227,6 +227,7 @@ Console error tests: 4/4 PASS.
 | 23 | edff354 | 2026-10-13 | Assets/Media System (RPG-12-01 to RPG-12-15) |
 | 24 | 3197761 | 2026-10-13 | Testing/Performance System (RPG-14-01 to RPG-14-15) |
 | 25 | a21e8f0 | 2026-10-13 | Machine-readable 227-task roadmap ledger |
+| 26 | 5ba8c89 | 2026-10-13 | Replay read-only (RPG-02-12) |
 
 ---
 
@@ -701,6 +702,38 @@ Iteration 17 (LLM Runtime System) complete. Commit 8b2703c pushed.
 
 ---
 
+## Iteration 26: Replay Read-Only (RPG-02-12)
+
+**Target:** Implement read-only replay of a session so a player can watch past events unfold without the ability to mutate live state — satisfying the P1 "replay read only" roadmap item.
+
+**Status:** ✅ COMPLETE
+
+**Changes:**
+- Extended `release/workspaces/rpg-player-tools.js` with replay read-only system (RPG-02-12)
+- `createReplaySession`: build replay from initial state + event list; always `readOnly=true`
+- `getReplayState(replayId, uptoIndex)`: replay events via `stateApi.applyEvent` to reconstruct state at any point; returns a deep read-only clone; reports applied/rejected counts without failing on individual rejected events
+- `stepReplay` / `seekReplay`: move playback cursor with status transitions (ready/playing/paused/finished)
+- `mutateReplayState`: read-only guard that always rejects mutations with reason `read-only`
+- `appendReplayEvent` / `getReplaySession` / `deleteReplay`: supporting management
+- Final state validated via `stateApi.validateState`
+
+**Design notes:**
+- Replay state is reconstructed from `initialState` + sequential `applyEvent` calls; each `applyEvent` re-normalizes via `createState`, so only schema-preserved world keys (e.g. `flags`) survive across events — tests use `world.flags.currentLocation`
+- Rejected events are collected (index, eventId, reason) rather than aborting the whole replay
+
+**Test Evidence (player-tools now 34 tests, all PASS; new tests 30–34):**
+30. createReplaySession + getReplayState (3 events applied, tick 5→20, world flag set, valid)
+31. getReplayState partial uptoIndex (1 event, tick 15)
+32. stepReplay + seekReplay (cursor + status transitions)
+33. mutateReplayState read-only guard (always rejects)
+34. Replay edge cases (null returns, invalid IDs, reason codes, delete)
+
+**Ledger updated:** RPG-02-12 → VERIFIED. Now **150 VERIFIED, 60 IMPLEMENTED, 8 BLOCKED, 9 TODO**.
+
+**Commit:** `5ba8c89` pushed to `rpg/standalone-20261011`
+
+---
+
 **Iteration 19 Status:** ✅ COMPLETE. Commit f7ae56c pushed.
 
 **Iteration 20 Status:** ✅ COMPLETE. Commit 73d8052 pushed.
@@ -715,22 +748,14 @@ Iteration 17 (LLM Runtime System) complete. Commit 8b2703c pushed.
 
 **Iteration 25 Status:** ✅ COMPLETE. Commit a21e8f0 pushed. Machine-readable 227-task ledger created.
 
+**Iteration 26 Status:** ✅ COMPLETE. Commit 5ba8c89 pushed. Replay read-only (RPG-02-12) implemented.
+
 **Ledger Summary (ROADMAP_LEDGER.json):**
-- 149 VERIFIED, 60 IMPLEMENTED, 8 BLOCKED, 10 TODO (of 227)
-- Remaining TODO: RPG-02-12 (P1 replay read-only), RPG-15-02/03/08/10/11/12/13/14/15 (P3 advanced)
+- 150 VERIFIED, 60 IMPLEMENTED, 8 BLOCKED, 9 TODO (of 227)
+- Remaining TODO: RPG-15-02/03/08/10/11/12/13/14/15 (P3 advanced)
 - BLOCKED: RPG-01-09/10/11/12/13/14/15 (P0, need hardware/credentials/CI), RPG-07-15 (P1, needs API creds)
 
-**Next: Iteration 26** — Remaining TODO items (prioritize P1 RPG-02-12 replay read-only, then P3 RPG-15 items)
-- RPG-02-12: replay read-only session playback
-- RPG-15-02: co-op architecture research (design doc only)
-- RPG-15-03: modular plugins sandboxed
-- RPG-15-08: scenario packs
-- RPG-15-10: emergent rumors
-- RPG-15-11: NPC offscreen simulation
-- RPG-15-12: dynamic quest graph
-- RPG-15-13: world history atlas
-- RPG-15-14: campaign analytics
-- RPG-15-15: localized narrator voices optional
+**Next: Iteration 27** — P3 advanced features (RPG-15-02/03/08/10/11/12/13/14/15)
 
 ---
 
