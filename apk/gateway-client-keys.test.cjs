@@ -37,6 +37,15 @@ const parsedB64Lines = parseGatewayClientKeys(b64Lines);
 assert.equal(parsedB64Lines.groq, 'fixture-groq-key');
 assert.equal(parsedB64Lines.mistral, 'fixture-mistral-key');
 
+// 2d. JWT-like: dot-separated base64url segments; payload segment holds the keys
+function b64url(s) { return Buffer.from(s).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+const jwt = [b64url('{"alg":"HS256","typ":"JWT"}'), b64url(JSON.stringify({ groq: 'fixture-groq-key', openrouter: 'fixture-openrouter-key', nvidia: 'fixture-nvidia-key', mistral: 'fixture-mistral-key' })), b64url('opaque-signature-bytes')].join('.');
+const parsedJwt = parseGatewayClientKeys(jwt);
+assert.equal(parsedJwt.groq, 'fixture-groq-key');
+assert.equal(parsedJwt.openrouter, 'fixture-openrouter-key');
+assert.equal(parsedJwt.nvidia, 'fixture-nvidia-key');
+assert.equal(parsedJwt.mistral, 'fixture-mistral-key');
+
 // 3. Empty / invalid / non-string input yields {}
 assert.deepEqual(parseGatewayClientKeys(''), {});
 assert.deepEqual(parseGatewayClientKeys(undefined), {});

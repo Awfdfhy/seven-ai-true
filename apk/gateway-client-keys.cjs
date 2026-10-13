@@ -41,17 +41,39 @@ function lookupProviderKey(obj, provider) {
 // Returns {} for empty/invalid input. Never logs values.
 function parseGatewayClientKeys(raw) {
   if (typeof raw !== 'string' || raw.trim() === '') return {};
-  return extractFromString(raw) || extractFromString(maybeBase64Decode(raw.trim())) || {};
+  const seen = new Set();
+  // Recursively unwrap until provider keys are found: direct JSON/lines, then
+  // JWT-style dot-separated base64url segments, then whole-string base64.
+  function attempt(s) {
+    if (typeof s !== 'string') return null;
+    s = s.trim();
+    if (!s || seen.has(s)) return null;
+    seen.add(s);
+    const direct = extractFromString(s);
+    if (direct) return direct;
+    if (s.indexOf('.') !== -1) {
+      for (const seg of s.split('.')) {
+        if (!/^[A-Za-z0-9_-]+$/.test(seg)) continue;
+        const r = attempt(maybeBase64Decode(seg));
+        if (r) return r;
+      }
+    }
+    return attempt(maybeBase64Decode(s));
+  }
+  return attempt(raw) || {};
 }
 
-// Base64-decode only when the string is unambiguously base64-shaped; otherwise null.
+// Base64/base64url-decode only when the string is unambiguously base64-shaped;
+// otherwise null. Pads to a multiple of 4 so unpadded base64url (JWT segments)
+// decode too. Rejects binary noise.
 function maybeBase64Decode(s) {
-  if (typeof s !== 'string' || s.length === 0 || s.length % 4 !== 0) return null;
+  if (typeof s !== 'string' || s.length === 0) return null;
   if (!/^[A-Za-z0-9+/=_-]+$/.test(s)) return null;
   try {
-    const std = s.replace(/_/g, '/').replace(/-/g, '+'); // base64url -> base64
-    const decoded = Buffer.from(std, 'base64').toString('utf8');
-    // Only accept the decode if it produced plausible structured text, not binary noise.
+    const std = s.replace(/_/g, '/').replace(/-/g, '+').replace(/=+$/, '');
+    const padded = std + '='.repeat((4 - std.length % 4) % 4);
+    const decoded = Buffer.from(padded, 'base64').toString('utf8');
+    if (decoded.length === 0) return null;
     if (/[\u0000-\u0008\u000e-\u001f]/.test(decoded)) return null;
     return decoded;
   } catch (_) { return null; }

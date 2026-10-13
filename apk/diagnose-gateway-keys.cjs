@@ -42,6 +42,8 @@ if (json && typeof json === 'object' && !Array.isArray(json)) {
   const nonEmpty = lines.filter(l => l.trim() !== '');
   console.log('gateway_keys.lineCount=' + nonEmpty.length);
   const trimmed = raw.trim();
+  const dots = (trimmed.match(/\./g) || []).length;
+  console.log('gateway_keys.dots=' + dots);
   const delims = {
     comma: (trimmed.match(/,/g) || []).length,
     semicolon: (trimmed.match(/;/g) || []).length,
@@ -51,6 +53,25 @@ if (json && typeof json === 'object' && !Array.isArray(json)) {
     equals: (trimmed.match(/=/g) || []).length
   };
   console.log('gateway_keys.delims=' + JSON.stringify(delims));
+  if (dots >= 1) {
+    const segs = trimmed.split('.');
+    console.log('gateway_keys.segments=' + segs.length);
+    segs.forEach((seg, i) => {
+      const b64url = /^[A-Za-z0-9_-]+$/.test(seg);
+      console.log('gateway_keys.seg[' + i + '].len=' + seg.length + ' base64url=' + b64url);
+      if (b64url) {
+        try {
+          const d = Buffer.from(seg.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
+          let dj = null; try { dj = JSON.parse(d); } catch (_) {}
+          if (dj && typeof dj === 'object' && !Array.isArray(dj)) {
+            console.log('gateway_keys.seg[' + i + '].decoded=json-object keys=' + JSON.stringify(Object.keys(dj)));
+          } else {
+            console.log('gateway_keys.seg[' + i + '].decodedIs=' + (dj ? ('json-' + typeof dj) : (/[\u0000-\u0008\u000e-\u001f]/.test(d) ? 'binary' : 'text')) + ' .len=' + d.length);
+          }
+        } catch (_) {}
+      }
+    });
+  }
   const base64ish = /^[A-Za-z0-9+/=_-]+$/.test(trimmed) && trimmed.length % 4 === 0;
   console.log('gateway_keys.base64like=' + base64ish);
   if (base64ish) {
