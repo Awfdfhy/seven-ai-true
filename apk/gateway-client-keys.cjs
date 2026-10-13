@@ -10,7 +10,7 @@
 // returns them to the caller for in-memory use. Fixture-based unit tests use
 // non-secret placeholder values; the real secret is injected only in CI.
 
-const PROVIDER_KEYS = Object.freeze(['groq', 'openrouter', 'nvidia', 'mistral']);
+const PROVIDER_KEYS = Object.freeze(['groq', 'openrouter', 'nvidia', 'mistral', 'google']);
 
 // Normalizes any provider-name variant (groq / GROQ / groq_api_key / groqApiKey)
 // to one of the four canonical provider ids, or null.
@@ -19,6 +19,7 @@ function normalizeProvider(name) {
   if (n === 'groq' || n === 'groqapikey' || n === 'groqapi') return 'groq';
   if (n === 'openrouter' || n === 'openrouterapikey' || n === 'openrouterapi') return 'openrouter';
   if (n === 'nvidia' || n === 'nvidiaapikey' || n === 'nvidiaapi' || n === 'nvidianim') return 'nvidia';
+  if (n === 'google' || n === 'gemini' || n === 'googleapikey' || n === 'geminiapikey') return 'google';
   if (n === 'mistral' || n === 'mistralapikey' || n === 'mistralapi') return 'mistral';
   return null;
 }
@@ -115,6 +116,7 @@ function toRuntimeEnv(parsed) {
   if (parsed.openrouter) env.SEVEN_RPG_OPENROUTER_KEY = parsed.openrouter;
   if (parsed.nvidia) env.SEVEN_RPG_NVIDIA_KEY = parsed.nvidia;
   if (parsed.mistral) env.SEVEN_RPG_MISTRAL_KEY = parsed.mistral;
+  if (parsed.google) env.SEVEN_RPG_GOOGLE_KEY = parsed.google;
   return env;
 }
 
