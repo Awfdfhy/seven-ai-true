@@ -219,6 +219,7 @@ Console error tests: 4/4 PASS.
 | 15 | caeca21 | 2026-10-13 | Character System (RPG-04-01 to RPG-04-15) |
 | 16 | 4a9163c | 2026-10-13 | Narration System (RPG-05-01 to RPG-05-15) |
 | 17 | 8b2703c | 2026-10-13 | LLM Runtime System (RPG-07-01 to RPG-07-15) |
+| 18 | d56cb26 | 2026-10-13 | Progression System (RPG-08-01 to RPG-08-16) |
 
 ---
 
@@ -434,7 +435,7 @@ Console error tests: 4/4 PASS.
 
 Iteration 17 (LLM Runtime System) complete. Commit 8b2703c pushed.
 
-**Next: Iteration 18** — Progression (RPG-08-01 to RPG-08-16)
+**Next: Iteration 18** — Progression (RPG-08-01 to RPG-08-16) ✅ COMPLETE
 - Optional rulesets
 - Character levels
 - Experience
@@ -451,6 +452,25 @@ Iteration 17 (LLM Runtime System) complete. Commit 8b2703c pushed.
 - Equipment
 - Loot and rewards
 - Crafting
+
+**Iteration 18 Status:** ✅ COMPLETE. Commit d56cb26 pushed.
+
+**Next: Iteration 19** — World Simulation (RPG-09-01 to RPG-09-15)
+- Locations directory
+- Interactive world map
+- Travel ledger
+- Weather fiction state
+- Calendar
+- Day night cycle
+- NPC schedules
+- Economy ledger
+- Shops and barter
+- Politics
+- Factions
+- Kingdoms
+- Diplomacy
+- Territory influence
+- Persistent consequences
 
 ---
 
