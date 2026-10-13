@@ -802,6 +802,19 @@ Iteration 17 (LLM Runtime System) complete. Commit 8b2703c pushed.
 
 ---
 
+## CI Verification Status (pre-existing infra failure — NOT a code regression)
+
+**Diagnosed 2026-10-13 across SHAs `a21e8f0` → `ee8f463`.**
+
+- Both `test` (seven-tests.yml) and `standalone-android` (android-apk.yml) jobs run `node all.cjs`; both are `failure` on every recent SHA, including ones predating today's work (`f7ae56c`, `4a9163c`, …). This is a **pre-existing CI-vs-local discrepancy**, not introduced by the RPG iterations.
+- **Root-cause evidence:** the `Run node all.cjs` step starts and completes in the **same second** (<1s) on CI. It never reaches any suite. Meanwhile a clean clone of the exact SHA (`00628b0`), with CI's exact install steps (`npm install --no-save playwright pdfjs-dist@4.10.38` + `npx playwright install --only-shell chromium`), runs `node all.cjs` to **EXITCODE=0 in 328s (~5.5 min)** locally — identical to the main tree. So the code is green; the CI job is dying at process start on `ubuntu-latest`.
+- **Contributing signals:** CI annotation shows `Node.js 20 is deprecated … forced to run on Node.js 24` for `actions/checkout@v4` / `setup-node@v4`; the job has `timeout-minutes: 10` (~2× the local 5.5-min runtime, so a slow runner could also cross it). CI logs are inaccessible (no `gh`, no `GH_TOKEN`; run-log API returns 403).
+- **Ruled out:** case-sensitive `require()` path mismatches (checked 526 files — none), missing tracked dirs (all present), missing env deps in my tests (rpg-advanced/test files use no `process.env`), and code regressions (clean-clone repro passes).
+- **Action taken:** repaired one *genuine* flaky test race (`long-chat jump control` scroll listener, commit `ee8f463`) so it no longer intermittently fails — this was a real fix, not a weaken. **Did not** weaken any assertion or bypass the CI gate to force green.
+- **Unblock path (needs maintainer/infra, not code):** install/auth `gh` or set `GH_TOKEN` to read the exact CI failure line; and/or pin `actions/*` to Node-24-compatible majors + confirm the runner isn't hitting the deprecation/resource issue. Per the OPERATION INFINITY directive, all CI-dependent roadmap items (RPG-01-12/13/14/15, RPG-07-15) stay **BLOCKED** until CI is genuinely green on an exact SHA.
+
+---
+
 ## Next Action
 
 ## Next Action
