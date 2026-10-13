@@ -121,7 +121,7 @@ const ledger = {
       // Research-only roadmap item; deliverable is an architecture document, not code/tests.
       status = 'VERIFIED';
       evidence = {
-        commit: 'pending-push',
+        commit: '03e63c7',
         researchDoc: 'docs/seven-rpg/COOP_ARCHITECTURE_RESEARCH.md',
         basis: 'research-deliverable-grounded-in-shipped-primitives'
       };

@@ -1,16 +1,15 @@
 {
   "format": "seven-rpg-roadmap-ledger",
   "version": 1,
-  "generatedAt": "2026-10-13T06:30:54.888Z",
+  "generatedAt": "2026-10-13T07:49:01.191Z",
   "repository": "Awfdfhy/seven-ai-true",
   "branch": "rpg/standalone-20261011",
   "totalItems": 227,
   "summary": {
     "byStatus": {
-      "VERIFIED": 158,
+      "VERIFIED": 159,
       "IMPLEMENTED": 60,
-      "BLOCKED": 8,
-      "TODO": 1
+      "BLOCKED": 8
     },
     "byPriority": {
       "P0": 15,
@@ -2565,8 +2564,12 @@
       "priority": "P3",
       "domain": "Advanced Future",
       "feature": "co-op architecture research only",
-      "status": "TODO",
-      "evidence": null
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "03e63c7",
+        "researchDoc": "docs/seven-rpg/COOP_ARCHITECTURE_RESEARCH.md",
+        "basis": "research-deliverable-grounded-in-shipped-primitives"
+      }
     },
     {
       "id": "RPG-15-03",
