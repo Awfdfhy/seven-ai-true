@@ -35,15 +35,34 @@ function lookupProviderKey(obj, provider) {
 
 // Parses the raw GATEWAY_CLIENT_KEYS secret value into
 // { groq?, openrouter?, nvidia?, mistral? }. Accepts:
-//   - a JSON object keyed by provider name (case-insensitive), or
-//   - newline-separated "PROVIDER=key" / "provider:key" pairs.
+//   - a JSON object keyed by provider name (case-insensitive),
+//   - the same but base64-encoded, or
+//   - newline-separated "PROVIDER=key" / "provider:key" pairs (raw or base64).
 // Returns {} for empty/invalid input. Never logs values.
 function parseGatewayClientKeys(raw) {
   if (typeof raw !== 'string' || raw.trim() === '') return {};
+  return extractFromString(raw) || extractFromString(maybeBase64Decode(raw.trim())) || {};
+}
+
+// Base64-decode only when the string is unambiguously base64-shaped; otherwise null.
+function maybeBase64Decode(s) {
+  if (typeof s !== 'string' || s.length === 0 || s.length % 4 !== 0) return null;
+  if (!/^[A-Za-z0-9+/=_-]+$/.test(s)) return null;
+  try {
+    const std = s.replace(/_/g, '/').replace(/-/g, '+'); // base64url -> base64
+    const decoded = Buffer.from(std, 'base64').toString('utf8');
+    // Only accept the decode if it produced plausible structured text, not binary noise.
+    if (/[\u0000-\u0008\u000e-\u001f]/.test(decoded)) return null;
+    return decoded;
+  } catch (_) { return null; }
+}
+
+function extractFromString(input) {
+  if (typeof input !== 'string' || input.trim() === '') return null;
 
   let parsed = null;
   try {
-    const candidate = JSON.parse(raw);
+    const candidate = JSON.parse(input);
     if (candidate && typeof candidate === 'object' && !Array.isArray(candidate)) parsed = candidate;
   } catch (_) { /* not JSON — try the line format below */ }
 
@@ -53,16 +72,17 @@ function parseGatewayClientKeys(raw) {
       const value = lookupProviderKey(parsed, provider);
       if (typeof value === 'string' && value.trim()) out[provider] = value.trim();
     }
-    return out;
+  } else {
+    for (const line of input.split(/\r?\n/)) {
+      const m = line.match(/^\s*([A-Za-z0-9_-]+)\s*[:=]\s*(.+?)\s*$/);
+      if (!m) continue;
+      const provider = normalizeProvider(m[1]);
+      if (provider && m[2]) out[provider] = m[2].trim();
+    }
   }
-
-  for (const line of raw.split(/\r?\n/)) {
-    const m = line.match(/^\s*([A-Za-z0-9_-]+)\s*[:=]\s*(.+?)\s*$/);
-    if (!m) continue;
-    const provider = normalizeProvider(m[1]);
-    if (provider && m[2]) out[provider] = m[2].trim();
-  }
-  return out;
+  // Return null when no providers found so the '||' fallback chain in
+  // parseGatewayClientKeys can try the base64-decoded form.
+  return Object.keys(out).length ? out : null;
 }
 
 // Maps parsed provider keys onto the SEVEN_RPG_*_KEY env var names the

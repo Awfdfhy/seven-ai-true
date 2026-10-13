@@ -23,6 +23,20 @@ const parsedNl = parseGatewayClientKeys('groq=fixture-groq-key\nopenrouter:fixtu
 assert.equal(parsedNl.groq, 'fixture-groq-key');
 assert.equal(parsedNl.openrouter, 'fixture-openrouter-key');
 
+// 2b. base64-encoded JSON (the likely opaque-secret form)
+const b64Json = Buffer.from(JSON.stringify({ groq: 'fixture-groq-key', openrouter: 'fixture-openrouter-key', nvidia: 'fixture-nvidia-key', mistral: 'fixture-mistral-key' })).toString('base64');
+const parsedB64 = parseGatewayClientKeys(b64Json);
+assert.equal(parsedB64.groq, 'fixture-groq-key');
+assert.equal(parsedB64.openrouter, 'fixture-openrouter-key');
+assert.equal(parsedB64.nvidia, 'fixture-nvidia-key');
+assert.equal(parsedB64.mistral, 'fixture-mistral-key');
+
+// 2c. base64-encoded PROVIDER=key lines
+const b64Lines = Buffer.from('groq=fixture-groq-key\nmistral=fixture-mistral-key').toString('base64');
+const parsedB64Lines = parseGatewayClientKeys(b64Lines);
+assert.equal(parsedB64Lines.groq, 'fixture-groq-key');
+assert.equal(parsedB64Lines.mistral, 'fixture-mistral-key');
+
 // 3. Empty / invalid / non-string input yields {}
 assert.deepEqual(parseGatewayClientKeys(''), {});
 assert.deepEqual(parseGatewayClientKeys(undefined), {});
