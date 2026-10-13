@@ -11,8 +11,11 @@ function getTimeout(file){
 }
 for(const file of files){
   const timeout=getTimeout(file);
+  console.log('running: '+file);
   const result=spawnSync(process.execPath,[path.join(__dirname,file)],{stdio:'inherit',timeout});
-  if(result.error) console.error(result.error);
+  if(result.error) console.error('spawn error ('+file+'):',result.error);
+  if(result.signal) console.error('killed by signal '+result.signal+' ('+file+')');
+  if(result.status!==0) console.error('FAILED: '+file+' (status '+result.status+', signal '+result.signal+')');
   if(result.error || result.status!==0) process.exit(result.status || 1);
 }
 console.log('all test suites: PASS ('+files.length+' suites)');
