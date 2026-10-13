@@ -1,16 +1,16 @@
 {
   "format": "seven-rpg-roadmap-ledger",
   "version": 1,
-  "generatedAt": "2026-10-13T06:18:31.840Z",
+  "generatedAt": "2026-10-13T06:30:54.888Z",
   "repository": "Awfdfhy/seven-ai-true",
   "branch": "rpg/standalone-20261011",
   "totalItems": 227,
   "summary": {
     "byStatus": {
-      "VERIFIED": 150,
+      "VERIFIED": 158,
       "IMPLEMENTED": 60,
       "BLOCKED": 8,
-      "TODO": 9
+      "TODO": 1
     },
     "byPriority": {
       "P0": 15,
@@ -2555,7 +2555,7 @@
       "feature": "multi-character parties",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "af6e6a7..9a6a6e7",
+        "commit": "af6e6a7..5ba8c89",
         "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2573,8 +2573,12 @@
       "priority": "P3",
       "domain": "Advanced Future",
       "feature": "modular plugins sandboxed",
-      "status": "TODO",
-      "evidence": null
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "af6e6a7..5ba8c89",
+        "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
     },
     {
       "id": "RPG-15-04",
@@ -2583,7 +2587,7 @@
       "feature": "custom world rule editor",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "af6e6a7..9a6a6e7",
+        "commit": "af6e6a7..5ba8c89",
         "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2595,7 +2599,7 @@
       "feature": "canon policy editor",
       "status": "IMPLEMENTED",
       "evidence": {
-        "commit": "af6e6a7..9a6a6e7",
+        "commit": "af6e6a7..5ba8c89",
         "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
         "basis": "module-implements-capability"
       }
@@ -2607,7 +2611,7 @@
       "feature": "story generator templates",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "af6e6a7..9a6a6e7",
+        "commit": "af6e6a7..5ba8c89",
         "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2619,7 +2623,7 @@
       "feature": "GM tools",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "af6e6a7..9a6a6e7",
+        "commit": "af6e6a7..5ba8c89",
         "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2629,8 +2633,12 @@
       "priority": "P3",
       "domain": "Advanced Future",
       "feature": "scenario packs",
-      "status": "TODO",
-      "evidence": null
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "af6e6a7..5ba8c89",
+        "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
     },
     {
       "id": "RPG-15-09",
@@ -2639,7 +2647,7 @@
       "feature": "event scheduler",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "af6e6a7..9a6a6e7",
+        "commit": "af6e6a7..5ba8c89",
         "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2649,48 +2657,72 @@
       "priority": "P3",
       "domain": "Advanced Future",
       "feature": "emergent rumors",
-      "status": "TODO",
-      "evidence": null
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "af6e6a7..5ba8c89",
+        "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
     },
     {
       "id": "RPG-15-11",
       "priority": "P3",
       "domain": "Advanced Future",
       "feature": "NPC offscreen simulation",
-      "status": "TODO",
-      "evidence": null
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "af6e6a7..5ba8c89",
+        "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
     },
     {
       "id": "RPG-15-12",
       "priority": "P3",
       "domain": "Advanced Future",
       "feature": "dynamic quest graph",
-      "status": "TODO",
-      "evidence": null
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "af6e6a7..5ba8c89",
+        "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
     },
     {
       "id": "RPG-15-13",
       "priority": "P3",
       "domain": "Advanced Future",
       "feature": "world history atlas",
-      "status": "TODO",
-      "evidence": null
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "af6e6a7..5ba8c89",
+        "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
     },
     {
       "id": "RPG-15-14",
       "priority": "P3",
       "domain": "Advanced Future",
       "feature": "campaign analytics",
-      "status": "TODO",
-      "evidence": null
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "af6e6a7..5ba8c89",
+        "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
     },
     {
       "id": "RPG-15-15",
       "priority": "P3",
       "domain": "Advanced Future",
       "feature": "localized narrator voices optional",
-      "status": "TODO",
-      "evidence": null
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "af6e6a7..5ba8c89",
+        "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
     }
   ]
 }

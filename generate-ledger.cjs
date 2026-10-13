@@ -36,7 +36,7 @@ const domainInfo = {
   'RPG-12': { commit: 'edff354', test: 'release/rpg-assets.test.cjs' },
   'RPG-13': { commit: '7e94a70', test: 'release/rpg-player-tools.test.cjs' },
   'RPG-14': { commit: '3197761', test: 'release/rpg-testing.test.cjs' },
-  'RPG-15': { commit: 'af6e6a7..9a6a6e7', test: 'release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs' }
+  'RPG-15': { commit: 'af6e6a7..5ba8c89', test: 'release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs' }
 };
 
 // Explicitly referenced + feature-matched VERIFIED items (purpose-built to roadmap)
@@ -72,8 +72,9 @@ const verified = new Set([
   // RPG-13: player tools (all purpose-built)
   'RPG-13-01','RPG-13-02','RPG-13-03','RPG-13-04','RPG-13-05','RPG-13-06','RPG-13-07','RPG-13-08',
   'RPG-13-09','RPG-13-10','RPG-13-11','RPG-13-12','RPG-13-13','RPG-13-14','RPG-13-15',
-  // RPG-15: party, world rules editor, story gen, GM tools, scheduler
-  'RPG-15-01','RPG-15-04','RPG-15-06','RPG-15-07','RPG-15-09'
+  // RPG-15: party, world rules editor, story gen, GM tools, scheduler, + advanced P3 (plugins, packs, rumors, NPC sim, quest graph, atlas, analytics, voices)
+  'RPG-15-01','RPG-15-03','RPG-15-04','RPG-15-06','RPG-15-07','RPG-15-08','RPG-15-09',
+  'RPG-15-10','RPG-15-11','RPG-15-12','RPG-15-13','RPG-15-14','RPG-15-15'
 ]);
 
 // Module exists but feature labels differ from roadmap (UI/Assets/Testing)
