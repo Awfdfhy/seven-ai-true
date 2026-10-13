@@ -38,7 +38,7 @@ public class RpgForceStopTest {
   private void awaitRuntime(WebView view) throws Exception {
     String lastStatus="initializing";
     for(int i=0;i<160;i++) {
-      String result=evaluate(view,"Boolean(window.SevenRpgState&&window.SevenRpgSession&&window.SevenRpgLiveIntegration&&window.SevenRuntime)");
+      String result=evaluate(view,"Boolean(window.SevenRpgState&&window.SevenRpgSession&&window.SevenRpgLiveIntegration&&window.SevenRuntime&&window.SevenRpgDurableReady)");
       if("true".equals(result)) return;
       // Android 14 sometimes resumes a WebView before the initial document is ready.
       // Retry RPG workspace initialization rather than issuing one early open request.
