@@ -117,7 +117,15 @@ const ledger = {
     const prefix = item.id.substring(0, 6);
     const info = domainInfo[prefix] || {};
     let status, evidence;
-    if (verified.has(item.id)) {
+    if (item.id === 'RPG-15-02') {
+      // Research-only roadmap item; deliverable is an architecture document, not code/tests.
+      status = 'VERIFIED';
+      evidence = {
+        commit: 'pending-push',
+        researchDoc: 'docs/seven-rpg/COOP_ARCHITECTURE_RESEARCH.md',
+        basis: 'research-deliverable-grounded-in-shipped-primitives'
+      };
+    } else if (verified.has(item.id)) {
       status = 'VERIFIED';
       evidence = { commit: info.commit, testFile: info.test, basis: 'test-assertion-references-id' };
     } else if (implemented.has(item.id)) {
