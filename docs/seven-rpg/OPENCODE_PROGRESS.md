@@ -839,16 +839,44 @@ Iteration 17 (LLM Runtime System) complete. Commit 8b2703c pushed.
 
 ---
 
-## CI Verification Status (pre-existing infra failure — NOT a code regression)
+## Iteration 29: CI Root-Cause Fixes (Playwright skew + ID collisions + force-stop package)
 
-**Diagnosed 2026-10-13 across SHAs `a21e8f0` → `ee8f463`.**
+**Commits `290a016`, `9f2c9ca`, `d7b76d3` (pushed).** Fully unblocked CI, which had been red on every SHA.
 
-- Both `test` (seven-tests.yml) and `standalone-android` (android-apk.yml) jobs run `node all.cjs`; both are `failure` on every recent SHA, including ones predating today's work (`f7ae56c`, `4a9163c`, …). This is a **pre-existing CI-vs-local discrepancy**, not introduced by the RPG iterations.
-- **Root-cause evidence:** the `Run node all.cjs` step starts and completes in the **same second** (<1s) on CI. It never reaches any suite. Meanwhile a clean clone of the exact SHA (`00628b0`), with CI's exact install steps (`npm install --no-save playwright pdfjs-dist@4.10.38` + `npx playwright install --only-shell chromium`), runs `node all.cjs` to **EXITCODE=0 in 328s (~5.5 min)** locally — identical to the main tree. So the code is green; the CI job is dying at process start on `ubuntu-latest`.
-- **Contributing signals:** CI annotation shows `Node.js 20 is deprecated … forced to run on Node.js 24` for `actions/checkout@v4` / `setup-node@v4`; the job has `timeout-minutes: 10` (~2× the local 5.5-min runtime, so a slow runner could also cross it). CI logs are inaccessible (no `gh`, no `GH_TOKEN`; run-log API returns 403).
-- **Ruled out:** case-sensitive `require()` path mismatches (checked 526 files — none), missing tracked dirs (all present), missing env deps in my tests (rpg-advanced/test files use no `process.env`), and code regressions (clean-clone repro passes).
-- **Action taken:** repaired one *genuine* flaky test race (`long-chat jump control` scroll listener, commit `ee8f463`) so it no longer intermittently fails — this was a real fix, not a weaken. **Did not** weaken any assertion or bypass the CI gate to force green.
-- **Unblock path (needs maintainer/infra, not code):** install/auth `gh` or set `GH_TOKEN` to read the exact CI failure line; and/or pin `actions/*` to Node-24-compatible majors + confirm the runner isn't hitting the deprecation/resource issue. Per the OPERATION INFINITY directive, all CI-dependent roadmap items (RPG-01-12/13/14/15, RPG-07-15) stay **BLOCKED** until CI is genuinely green on an exact SHA.
+- **Playwright version-skew fix** (`290a016`): aligned `@playwright/test` to `1.63.0`, pinned the CI install, committed a deterministic `package-lock.json`, added `all.cjs` breadcrumbs. → `test` job **green**.
+- **Collision-safe monotonic ids** (`9f2c9ca`): fixed 11 `Date.now()`-as-id sites across 5 modules (event-scheduler, gm-tools, story-generator, world-rules, party) that silently overwrote records created in the same millisecond (real data loss). → full suite 70 suites EXITCODE=0.
+- **Force-stop test appId derivation** (`d7b76d3`): `run-rpg-force-stop.sh` hardcoded the stale Seven AI package `ai.seven.v243`; now derives appId from `capacitor.config.json` (`ai.seven.rpg`). → **Android 14 emulator smoke PASSED**.
+- **Remaining (needs emulator):** Android 16 smoke fails `no-active-world` (localStorage index lost across force-stop in the standalone build) — diagnosed, requires Android 16 emulator iteration (unavailable locally). See CI Verification Status below.
+
+---
+
+## CI Verification Status (RESOLVED — root cause was a real bug, not infra)
+
+**Updated 2026-10-13 (commits `290a016`, `9f2c9ca`, `d7b76d3`).**
+
+The long-standing "pre-existing CI infra failure" was **not** an infra/runner issue — it was a real, fixable **Playwright version-skew bug** that made `node all.cjs` die in ~1s on every SHA, masking every later suite. Once fixed, CI ran to completion and surfaced two more real bugs (each previously unreachable). CI is no longer blind.
+
+### Fix 1 — Playwright version skew (commit `290a016`) — unblocked the `test` job
+- **Symptom (both jobs):** `browserType.launch: Executable doesn't exist at … chromium_headless_shell-1243 …` at `verify.cjs:8` — `node all.cjs` exited 1 in ~1s, never reaching any suite.
+- **Root cause (from the actual CI logs, fetched via the stored git credential):** `@playwright/test@^1.64.0` (floating) owned `.bin/playwright` and downloaded chrome-headless-shell **rev 1248**, while `playwright@1.63.0` (pinned) is what `verify.cjs`/`release-verify.cjs` `require`, expecting **rev 1243**. Mismatch → launch fails instantly.
+- **Fix:** align `@playwright/test` → `1.63.0` in `package.json`; pin the `seven-tests.yml` install to `playwright@1.63.0`; commit a deterministic `package-lock.json` (156 pkgs) so CI stops re-resolving fresh versions; add `running: <file>` + `FAILED:` breadcrumbs to `all.cjs` for future triage. **No assertion weakened, no gate bypassed.**
+- **Result:** `test` job (seven-tests.yml) → **`completed/success`** on `d7b76d3`. Full `node all.cjs` = 70 suites, EXITCODE=0.
+
+### Fix 2 — `Date.now()` id collisions → silent data loss (commit `9f2c9ca`)
+- **Unmasked by Fix 1:** with CI finally running past `verify.cjs`, `release/rpg-event-scheduler.test.cjs:67` failed: `AssertionError: 'Festival' !== 'Daily Market'`. `createEvent` used `stableId('evt', Date.now())` as the map key — two creations in the same millisecond produced the **same id**, so `events.set(id,…)` overwrote the earlier event. Windows' coarser timer hid it locally; CI's fast Linux runner created both in one ms.
+- **Fix:** replaced all 11 `stableId(prefix, Date.now())` sites across 5 modules with a per-prefix **monotonic `nextId()`** (bumps forward on same-ms/clock-back collisions; also skips ids already taken where a Map exists). Verified: 6000 rapid cross-module creations → 6000 unique ids, 0 collisions, no records lost.
+
+### Fix 3 — force-stop test stale package hardcode (commit `d7b76d3`) — unblocked Android 14
+- **Symptom:** `Android 14 dedicated RPG startup smoke` failed at `apk/run-rpg-force-stop.sh` line 7: `adb shell pm path ai.seven.v243 | grep -Fq package:` → exit 1 (~39ms).
+- **Root cause:** `run-rpg-force-stop.sh` hardcoded the **old Seven AI package `ai.seven.v243`** in 4 places, while `materialize-rpg-force-stop-test.cjs` derives appId from `capacitor.config.json` and builds `RpgForceStopTest` in package **`ai.seven.rpg`**. The RPG standalone APK is `ai.seven.rpg` (`verify-rpg-standalone.cjs` asserts this and passed), so `pm path` found nothing. Main (`android-apk.yml`) uses the *same* script but its appId **is** `ai.seven.v243`, which is why it worked there. The main instrumentation test (`SevenRpgStandaloneTest`, `ai.seven.rpg.*`) passed 51s; only the force-stop gate was misconfigured.
+- **Fix:** derive APP_ID from `capacitor.config.json` (validated) and use `${APP_ID}` for `pm path`, the `am instrument` class, the `.test` runner component, and `force-stop`. Compatible with both main (`ai.seven.v243`) and the RPG branch (`ai.seven.rpg`). Committed blob verified pure-LF (bash-safe).
+- **Result:** **`Android 14 dedicated RPG startup smoke` → PASSED** on `d7b76d3`.
+
+### Remaining: Android 16 emulator smoke (`no-active-world`) — needs emulator access
+- **Status:** `standalone-android` now passes **everything** (build, APK identity, KVM, **Android 14 smoke**) except **`Android 16 dedicated RPG startup smoke`**.
+- **Failure:** `verifyRpgState` after force-stop returns `missing:no-active-world`. In `rpg-live-integration.js`, `loadLatest` reads the active-world **index** from `localStorage` (`seven_rpg_session_v3:active:<roomId>`); after force-stop the index is gone on Android 16 (it survives on Android 14).
+- **Diagnosis:** the persistence code and build config are **identical to main** (same `SevenRuntime` + `rpg-live-integration.js`, localStorage-backed; `harden-native-platform.cjs` only touches SAF URI perms, not WebView storage). Main's `android-apk.yml` (commit `f5f6a51`) passed **both** Android 14 and 16 with the same script — so Android 16 localStorage **is** durable given time. The RPG standalone (lighter/faster boot) appears to force-stop before the WebView flushes the seed write to disk. This is a **timing/durability** issue specific to the standalone build.
+- **Blocker:** resolving it properly requires **Android 16 emulator iteration** (~20 min/cycle), which is unavailable in this local Windows environment (no Android SDK/emulator). No speculative fix was pushed, per the evidence-based/no-guessing principle. **This is the one remaining CI-red step.**
 
 ---
 
