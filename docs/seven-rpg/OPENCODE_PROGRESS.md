@@ -220,6 +220,7 @@ Console error tests: 4/4 PASS.
 | 16 | 4a9163c | 2026-10-13 | Narration System (RPG-05-01 to RPG-05-15) |
 | 17 | 8b2703c | 2026-10-13 | LLM Runtime System (RPG-07-01 to RPG-07-15) |
 | 18 | d56cb26 | 2026-10-13 | Progression System (RPG-08-01 to RPG-08-16) |
+| 19 | f7ae56c | 2026-10-13 | World Simulation System (RPG-09-01 to RPG-09-15) |
 
 ---
 
@@ -455,22 +456,24 @@ Iteration 17 (LLM Runtime System) complete. Commit 8b2703c pushed.
 
 **Iteration 18 Status:** ✅ COMPLETE. Commit d56cb26 pushed.
 
-**Next: Iteration 19** — World Simulation (RPG-09-01 to RPG-09-15)
-- Locations directory
-- Interactive world map
-- Travel ledger
-- Weather fiction state
-- Calendar
-- Day night cycle
-- NPC schedules
-- Economy ledger
-- Shops and barter
-- Politics
-- Factions
-- Kingdoms
-- Diplomacy
-- Territory influence
-- Persistent consequences
+**Iteration 19 Status:** ✅ COMPLETE. Commit f7ae56c pushed.
+
+**Next: Iteration 20** — Combat (RPG-10-01 to RPG-10-15)
+- Optional turn based combat
+- Combat narration
+- Initiative
+- Turn order UI
+- Action points
+- Health and resources
+- Skill resolution
+- Status effects
+- Enemy intent
+- Combat log
+- Retreat and surrender
+- Nonviolent alternatives
+- Balance profiles
+- Difficulty modifiers
+- Deterministic replays
 
 ---
 
