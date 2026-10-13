@@ -228,6 +228,7 @@ Console error tests: 4/4 PASS.
 | 24 | 3197761 | 2026-10-13 | Testing/Performance System (RPG-14-01 to RPG-14-15) |
 | 25 | a21e8f0 | 2026-10-13 | Machine-readable 227-task roadmap ledger |
 | 26 | 5ba8c89 | 2026-10-13 | Replay read-only (RPG-02-12) |
+| 27 | 00628b0 | 2026-10-13 | Advanced Features System (RPG-15-03/08/10/11/12/13/14/15) |
 
 ---
 
@@ -734,6 +735,45 @@ Iteration 17 (LLM Runtime System) complete. Commit 8b2703c pushed.
 
 ---
 
+## Iteration 27: Advanced Features System (RPG-15-03/08/10/11/12/13/14/15)
+
+**Target:** Implement the P3 advanced-future features that are code-implementable, closing out every roadmap item that does not require external hardware, credentials, or CI infrastructure.
+
+**Status:** ✅ COMPLETE
+
+**Changes:**
+- Created `release/workspaces/rpg-advanced.js` implementing 8 P3 features
+- RPG-15-03 modular plugins sandboxed: capability grants (`read-state`, `write-state`, `emit-event`, `register-command`, `ui-panel`, `network`), per-plugin resource limits (maxEvents/maxStateWrites/timeoutMs), `sandboxCall` enforces both capability and limit, tracks usage + violations
+- RPG-15-08 scenario packs: create/install/uninstall, content summary (locations/characters/quests/items/encounters), list by type/tag/installed
+- RPG-15-10 emergent rumors: `seedRumor` (veracity/spreadRate/sensitivity), `spreadRumor` (deterministic seeded RNG), `believeRumor`, `resolveRumor` (confirmed/debunked/forgotten), state machine seeded→spreading→fading
+- RPG-15-11 NPC offscreen simulation: `simulateNpcOffscreen` follows per-tick schedules, otherwise idle/wander near home; produces activity timeline, unique locations, and offscreen memory; deterministic per seed
+- RPG-15-12 dynamic quest graph: quest nodes (objective/decision/branch/gate/completion), `linkQuestNodes`, `evaluateQuestGraph` returns available/locked/completed + allComplete
+- RPG-15-13 world history atlas: entries with epoch/category/significance/spoiler, `getAtlas` filters, `getTimelineChronology` groups by epoch, `linkAtlasEntries`
+- RPG-15-14 campaign analytics: `recordAnalytics`, `getAnalyticsSummary` (byType/session/world counts), `getEngagementMetrics` (turns/choices/combats/travels, engagement score)
+- RPG-15-15 localized narrator voices optional: voice catalog, `findVoices` by language/locale/engine, `getNarratorVoice` picks highest-quality available, `setVoiceAvailability` fallback
+
+**Design notes:**
+- All randomness flows through a module-local seeded LCG (`seedRng`/`rng`) so NPC offscreen sim and rumor spread are reproducible in tests
+- Plugin sandbox is a deny-by-default capability check plus hard resource ceilings; violations increment a counter rather than throwing, so a misbehaving plugin is quarantined without crashing the host
+
+**Test Evidence (`rpg-advanced.test.cjs` — 17 tests, all PASS):**
+1–3. Plugin register/capability/sandbox denial/limit-exceeded/violations/list/unregister
+4–5. Scenario pack create/install/content-summary/list/uninstall
+6–7. Rumor seed/spread/believe/resolve + filters
+8–9. NPC offscreen sim with schedules + determinism (identical inputs → identical timeline)
+10. Quest graph link + evaluate (available/locked/allComplete)
+11–12. Atlas add/filter/chronology + entry links
+13–14. Analytics record/summary/engagement metrics
+15–16. Voice register/find/narrator-pick/availability fallback
+17. Edge cases (null returns, invalid IDs, reason codes)
+
+**Full suite:** PASS (`node all.cjs` exit 0). Workspace budget 684457/720000.
+**Ledger updated:** RPG-15-03/08/10/11/12/13/14/15 → VERIFIED. Now **158 VERIFIED, 60 IMPLEMENTED, 8 BLOCKED, 1 TODO**.
+
+**Commit:** `00628b0` pushed to `rpg/standalone-20261011`
+
+---
+
 **Iteration 19 Status:** ✅ COMPLETE. Commit f7ae56c pushed.
 
 **Iteration 20 Status:** ✅ COMPLETE. Commit 73d8052 pushed.
@@ -750,12 +790,15 @@ Iteration 17 (LLM Runtime System) complete. Commit 8b2703c pushed.
 
 **Iteration 26 Status:** ✅ COMPLETE. Commit 5ba8c89 pushed. Replay read-only (RPG-02-12) implemented.
 
-**Ledger Summary (ROADMAP_LEDGER.json):**
-- 150 VERIFIED, 60 IMPLEMENTED, 8 BLOCKED, 9 TODO (of 227)
-- Remaining TODO: RPG-15-02/03/08/10/11/12/13/14/15 (P3 advanced)
-- BLOCKED: RPG-01-09/10/11/12/13/14/15 (P0, need hardware/credentials/CI), RPG-07-15 (P1, needs API creds)
+**Iteration 27 Status:** ✅ COMPLETE. Commit 00628b0 pushed. Advanced Features System (RPG-15-03/08/10/11/12/13/14/15) implemented.
 
-**Next: Iteration 27** — P3 advanced features (RPG-15-02/03/08/10/11/12/13/14/15)
+**Ledger Summary (ROADMAP_LEDGER.json):**
+- 158 VERIFIED, 60 IMPLEMENTED, 8 BLOCKED, 1 TODO (of 227)
+- Remaining TODO: RPG-15-02 (P3 co-op architecture research only — design-doc scope, no code)
+- BLOCKED: RPG-01-09/10/11/12/13/14/15 (P0, need hardware/credentials/CI), RPG-07-15 (P1, needs API creds)
+- All implementable roadmap items (218/227) are now VERIFIED or IMPLEMENTED; the remaining gap is 1 design-only item + 8 external-dependency items.
+
+**Next: Iteration 28** — RPG-15-02 co-op architecture research design doc (final TODO), then BLOCKED-item verification once hardware/credentials are available.
 
 ---
 
