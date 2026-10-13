@@ -11,6 +11,7 @@ const providers=[
  {name:'Groq',key:process.env.SEVEN_RPG_GROQ_KEY,url:'https://api.groq.com/openai/v1/chat/completions',model:'llama-3.1-8b-instant'},
  {name:'OpenRouter',key:process.env.SEVEN_RPG_OPENROUTER_KEY,url:'https://openrouter.ai/api/v1/chat/completions',model:'openai/gpt-oss-20b:free'},
  {name:'NVIDIA',key:process.env.SEVEN_RPG_NVIDIA_KEY,url:'https://integrate.api.nvidia.com/v1/chat/completions',model:'meta/llama-3.1-8b-instruct'},
+ {name:'Google Gemini',key:process.env.SEVEN_RPG_GOOGLE_KEY,url:'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',model:'gemini-2.5-flash'},
  {name:'Mistral',key:process.env.SEVEN_RPG_MISTRAL_KEY,url:'https://api.mistral.ai/v1/chat/completions',model:'mistral-small-latest'}
 ];
 const cloud=providers.find(p=>p.key&&p.key.trim());
