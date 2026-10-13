@@ -1,14 +1,14 @@
 {
   "format": "seven-rpg-roadmap-ledger",
   "version": 1,
-  "generatedAt": "2026-10-13T14:28:10.995Z",
+  "generatedAt": "2026-10-13T14:48:08.753Z",
   "repository": "Awfdfhy/seven-ai-true",
   "branch": "rpg/standalone-20261011",
   "totalItems": 227,
   "summary": {
     "byStatus": {
-      "VERIFIED": 219,
-      "BLOCKED": 8
+      "VERIFIED": 222,
+      "BLOCKED": 5
     },
     "byPriority": {
       "P0": 15,
@@ -149,9 +149,13 @@
       "priority": "P0",
       "domain": "Release Integrity",
       "feature": "Android 14 smoke",
-      "status": "BLOCKED",
+      "status": "VERIFIED",
       "evidence": {
-        "reason": "Requires external credentials/hardware/CI"
+        "commit": "f2efa0f",
+        "workflowRun": 38413683285,
+        "workflowJob": "standalone-android",
+        "testFile": "apk/run-rpg-force-stop.sh",
+        "basis": "emulator-android-14-api34-force-stop-recovery-pass"
       }
     },
     {
@@ -159,9 +163,13 @@
       "priority": "P0",
       "domain": "Release Integrity",
       "feature": "Android 16 smoke",
-      "status": "BLOCKED",
+      "status": "VERIFIED",
       "evidence": {
-        "reason": "Requires external credentials/hardware/CI"
+        "commit": "f2efa0f",
+        "workflowRun": 38413683285,
+        "workflowJob": "standalone-android",
+        "testFile": "apk/run-rpg-force-stop.sh",
+        "basis": "emulator-android-16-api36-force-stop-recovery-pass"
       }
     },
     {
@@ -179,9 +187,13 @@
       "priority": "P0",
       "domain": "Release Integrity",
       "feature": "CI artifact release gate",
-      "status": "BLOCKED",
+      "status": "VERIFIED",
       "evidence": {
-        "reason": "Requires external credentials/hardware/CI"
+        "commit": "f2efa0f",
+        "workflowRun": 38413683285,
+        "workflowJob": "standalone-android",
+        "testFile": ".github/workflows/rpg-standalone-apk.yml",
+        "basis": "artifact-upload-gated-on-full-green-pipeline"
       }
     },
     {

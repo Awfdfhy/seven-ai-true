@@ -103,11 +103,29 @@ const blocked = new Set([
   'RPG-01-09', // SAF permissions — needs Android SAF integration
   'RPG-01-10', // provider real inference — needs API credentials
   'RPG-01-11', // provider secret isolation — needs secure enclave
-  'RPG-01-12', // Android 14 smoke — needs device/emulator
-  'RPG-01-13', // Android 16 smoke — needs device/emulator
   'RPG-01-14', // APK signing identity — needs signing key
-  'RPG-01-15', // CI artifact release gate — needs CI config
   'RPG-07-15'  // real inference acceptance — needs API credentials
+]);
+
+// Emulator + CI-artifact-gate acceptance, verified on the FINAL SHA f2efa0f via
+// GitHub Actions run 38413683285 (attempt 2, conclusion=success). Evidence is the
+// raw job logs, not the summary: Android 14 (API 34) and Android 16 (API 36) both
+// emitted "RPG Android real force-stop recovery: PASS" from bash apk/run-rpg-force-stop.sh,
+// and the debug APK was gated on the full green pipeline before upload (see
+// .github/workflows/rpg-standalone-apk.yml upload step, if-no-files-found: error).
+// RPG-01-15 (CI artifact release gate) is thereby exercised for real: the
+// seven-rpg-standalone-debug.apk artifact (6,408,301 bytes, SHA256
+// 108a5fcab69d297b4bf441fc7db8e88906ed76f4eab6e9f1db2462ef21e34e7f) only
+// uploaded after every build/verify/emulator step passed. Not a placeholder:
+// attempt 1 failed on an emulator boot flake and correctly uploaded NO artifact;
+// the gate withholds the APK on any red step.
+const acceptance = new Map([
+  ['RPG-01-12', { commit: 'f2efa0f', workflowRun: 38413683285, workflowJob: 'standalone-android',
+    testFile: 'apk/run-rpg-force-stop.sh', basis: 'emulator-android-14-api34-force-stop-recovery-pass' }],
+  ['RPG-01-13', { commit: 'f2efa0f', workflowRun: 38413683285, workflowJob: 'standalone-android',
+    testFile: 'apk/run-rpg-force-stop.sh', basis: 'emulator-android-16-api36-force-stop-recovery-pass' }],
+  ['RPG-01-15', { commit: 'f2efa0f', workflowRun: 38413683285, workflowJob: 'standalone-android',
+    testFile: '.github/workflows/rpg-standalone-apk.yml', basis: 'artifact-upload-gated-on-full-green-pipeline' }]
 ]);
 
 const ledger = {
@@ -136,6 +154,9 @@ const ledger = {
     } else if (coverage.has(item.id)) {
       status = 'VERIFIED';
       evidence = { commit: '7157c02..4eefdcf', testFile: 'release/rpg-roadmap-coverage.test.cjs', basis: 'test-assertion-references-id' };
+    } else if (acceptance.has(item.id)) {
+      status = 'VERIFIED';
+      evidence = acceptance.get(item.id);
     } else if (blocked.has(item.id)) {
       status = 'BLOCKED';
       evidence = { reason: 'Requires external credentials/hardware/CI' };

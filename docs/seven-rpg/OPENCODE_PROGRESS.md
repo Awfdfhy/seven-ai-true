@@ -980,3 +980,48 @@ keep the functional label-registry/animation assertions and read the committed
 `apk/rpg-standalone-ui.css` (the built-shell raw ARIA/reduced-motion counts are
 already asserted by `apk/verify-rpg-standalone.cjs`, which self-generates www/ in
 CI). Verified by running the coverage test with www/ hidden (CI simulation): 60/60 PASS.
+
+## 2026-10-13 - Android 14/16 + CI artifact gate verified on FINAL SHA (ledger 222/227)
+
+Ledger moved **219 -> 222 VERIFIED / 5 BLOCKED / 0 TODO (97.8%)**. The three items
+promoted here were closed with **raw CI job-log evidence on the final SHA `f2efa0f`**,
+not from the run summary alone. Workflow run `38413683285` (attempt 2, conclusion=success).
+
+### RPG-01-12 - Android 14 smoke (P0) -> VERIFIED
+`standalone-android` job, emulator API 34. `bash apk/run-rpg-force-stop.sh` emitted
+`RPG Android real force-stop recovery: PASS` (log 14:41:56). This is the real
+force-stop (SIGKILL) durability gate, not a launch-only smoke.
+
+### RPG-01-13 - Android 16 smoke (P0) -> VERIFIED
+Same job, emulator API 36. `bash apk/run-rpg-force-stop.sh` emitted
+`RPG Android real force-stop recovery: PASS` (log 14:44:45). Confirms the IndexedDB
+durable-layer fix (commit `9164730`) holds on Android 16's WebView.
+
+### RPG-01-15 - CI artifact release gate (P0) -> VERIFIED
+`.github/workflows/rpg-standalone-apk.yml` uploads `seven-rpg-standalone-debug.apk`
+with `if-no-files-found: error` **only after** the full pipeline (all 72 test suites ->
+APK build+verify -> Android 14+16 emulator smokes) is green. Exercised for real on this
+run: attempt 1 failed on an emulator boot flake and correctly uploaded **no** artifact;
+attempt 2 went green and uploaded `seven-rpg-standalone-debug.apk` (6,408,301 bytes,
+SHA256 `108a5fcab69d297b4bf441fc7db8e88906ed76f4eab6e9f1db2462ef21e34e7f`,
+artifact ID `11824656476`). The gate withholds the APK on any red step.
+
+### Independent re-verification of the whole branch (not just this milestone)
+- Full local suite: `node all.cjs` -> **72/72 PASS**, EXIT=0, 4m36s. Includes the
+  previously load-flaky `release-verify.cjs` -> `PASS (24 checks)` and
+  `rpg-roadmap-coverage.test.cjs` -> `PASS (60 canonical IDs exercised)`. No `FAILED:`.
+- CI `test` job on `f2efa0f` (run `38413693054`): **completed/success**, all 72 suites
+  on a fresh runner (authoritative committed-only run, no untracked build output).
+- Ledger integrity: `node release/rpg-ledger.test.cjs` -> **PASS** (222/0/5/0;
+  P0=15, P1=90, P2=107, P3=15). Every VERIFIED item's cited evidence file exists.
+- Git tree clean of tracked changes at HEAD `f2efa0f` before this promotion commit.
+
+### Remaining BLOCKED (5) - exact external dependency each (unchanged, genuinely external)
+- RPG-01-09 SAF permissions: needs a real device/emulator SAF document-picker grant.
+- RPG-01-10 provider real inference / RPG-07-15 live acceptance: need provider API credentials.
+- RPG-01-11 provider secret isolation: needs a hardware-backed secret store (secure enclave).
+- RPG-01-14 APK signing identity: needs a real release signing key (current artifact is debug-signed).
+
+These 5 cannot be honestly closed without live credentials / hardware / a signing key;
+marking them VERIFIED would be fabricated progress. No APK READY is claimed: the artifact
+is debug-signed, so release signing (RPG-01-14) remains open.
