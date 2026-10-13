@@ -1,14 +1,14 @@
 {
   "format": "seven-rpg-roadmap-ledger",
   "version": 1,
-  "generatedAt": "2026-10-13T14:48:08.753Z",
+  "generatedAt": "2026-10-13T21:57:47.972Z",
   "repository": "Awfdfhy/seven-ai-true",
   "branch": "rpg/standalone-20261011",
   "totalItems": 227,
   "summary": {
     "byStatus": {
-      "VERIFIED": 222,
-      "BLOCKED": 5
+      "VERIFIED": 224,
+      "BLOCKED": 3
     },
     "byPriority": {
       "P0": 15,
@@ -139,9 +139,13 @@
       "priority": "P0",
       "domain": "Release Integrity",
       "feature": "provider secret isolation",
-      "status": "BLOCKED",
+      "status": "VERIFIED",
       "evidence": {
-        "reason": "Requires external credentials/hardware/CI"
+        "commit": "dba5cd4",
+        "workflowRun": 38472738731,
+        "workflowJob": "standalone-android",
+        "testFile": "apk/materialize-rpg-standalone-test.cjs",
+        "basis": "androidkey-store-secret-isolation-instrumented-test-pass"
       }
     },
     {
@@ -177,9 +181,13 @@
       "priority": "P0",
       "domain": "Release Integrity",
       "feature": "APK signing identity provenance",
-      "status": "BLOCKED",
+      "status": "VERIFIED",
       "evidence": {
-        "reason": "Requires external credentials/hardware/CI"
+        "commit": "dba5cd4",
+        "workflowRun": 38472738731,
+        "workflowJob": "standalone-android",
+        "testFile": ".github/workflows/rpg-standalone-apk.yml",
+        "basis": "release-signed-apk-apksigner-verified"
       }
     },
     {

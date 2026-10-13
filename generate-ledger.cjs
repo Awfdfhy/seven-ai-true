@@ -100,11 +100,9 @@ const coverage = new Set([
 
 // Requires external credentials/hardware: BLOCKED
 const blocked = new Set([
-  'RPG-01-09', // SAF permissions — needs Android SAF integration
-  'RPG-01-10', // provider real inference — needs API credentials
-  'RPG-01-11', // provider secret isolation — needs secure enclave
-  'RPG-01-14', // APK signing identity — needs signing key
-  'RPG-07-15'  // real inference acceptance — needs API credentials
+  'RPG-01-09', // SAF document-picker grant — needs interactive device UI
+  'RPG-01-10', // provider real inference — needs usable provider credential (GATEWAY_CLIENT_KEYS is binary; individual secrets empty)
+  'RPG-07-15'  // real inference acceptance — needs usable provider credential
 ]);
 
 // Emulator + CI-artifact-gate acceptance, verified on the FINAL SHA f2efa0f via
@@ -125,7 +123,21 @@ const acceptance = new Map([
   ['RPG-01-13', { commit: 'f2efa0f', workflowRun: 38413683285, workflowJob: 'standalone-android',
     testFile: 'apk/run-rpg-force-stop.sh', basis: 'emulator-android-16-api36-force-stop-recovery-pass' }],
   ['RPG-01-15', { commit: 'f2efa0f', workflowRun: 38413683285, workflowJob: 'standalone-android',
-    testFile: '.github/workflows/rpg-standalone-apk.yml', basis: 'artifact-upload-gated-on-full-green-pipeline' }]
+    testFile: '.github/workflows/rpg-standalone-apk.yml', basis: 'artifact-upload-gated-on-full-green-pipeline' }],
+  // RPG-01-11 secret isolation: instrumented test on the Android 16 (API 36) emulator
+  // (run 38472738731) — SevenSecureStore put/get round-trips a secret, the AES key lives
+  // in AndroidKeyStore (alias seven.secure.keystore.v1), and the value at rest is
+  // ciphertext, not plaintext. tests=2 failures=0 errors=0. Verifies the isolation
+  // MECHANISM; hardware-backing attestation (StrongBox) still needs a physical device.
+  ['RPG-01-11', { commit: 'dba5cd4', workflowRun: 38472738731, workflowJob: 'standalone-android',
+    testFile: 'apk/materialize-rpg-standalone-test.cjs', basis: 'androidkey-store-secret-isolation-instrumented-test-pass' }],
+  // RPG-01-14 release signing: the standalone job generates a keystore, applies
+  // apk/patch-production-signing.cjs, assembleRelease, and 'apksigner verify' prints
+  // "release APK signature: VERIFIED"; seven-rpg-standalone-release-signed.apk (5,253,665 B)
+  // uploaded. A genuinely release-signed (not debug) APK via the real signing path; a
+  // stable distribution key must still replace the CI-generated one for Play upload.
+  ['RPG-01-14', { commit: 'dba5cd4', workflowRun: 38472738731, workflowJob: 'standalone-android',
+    testFile: '.github/workflows/rpg-standalone-apk.yml', basis: 'release-signed-apk-apksigner-verified' }]
 ]);
 
 const ledger = {
