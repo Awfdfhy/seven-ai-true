@@ -276,10 +276,17 @@ console.log('  PASS');
 console.log('\n25. checkInferenceReadiness...');
 llm.updateProviderStatus('openai', 'available');
 llm.checkProviderHealth('openai');
+// Credential gate: before any API key is set, readiness must be false.
+const noCred = llm.checkInferenceReadiness();
+assert.equal(noCred.ready, false, 'readiness must be false without credentials');
+assert.equal(noCred.blockedReason, 'no-credentials');
+// After a credential is loaded, readiness becomes true.
+llm.setApiKey('openai', 'sk-unit-test-credential');
 const readiness = llm.checkInferenceReadiness();
 assert.equal(readiness.ready, true);
 assert.ok(readiness.availableProviders.includes('openai'));
 assert.equal(readiness.hasDefaultConfig, true);
+assert.equal(readiness.hasCredentials, true);
 console.log('  PASS');
 
 console.log('\n26. estimateTokens...');

@@ -123,7 +123,7 @@
       const template = templateId ? templates.get(templateId) : null;
 
       let worldData = {
-        id, name, templateId: templateId || null,
+        id, name, description: text(i.description) || '', templateId: templateId || null,
         createdAt: now(), updatedAt: now(), version: 1,
         status: 'draft',
         locations: {}, characters: {}, factions: {}, quests: {},
@@ -283,13 +283,16 @@
     function setWorldDifficulty(worldId, difficultyId) {
       const profile = DIFFICULTY_PROFILES[difficultyId];
       if (!profile) return { ok: false, reason: 'invalid-difficulty' };
-      return updateWorld(worldId, { difficulty: difficultyId, ...profile });
+      // Strip identity fields so the profile label never clobbers the world's own name/description.
+      const { name, description, ...profileFields } = profile;
+      return updateWorld(worldId, { difficulty: difficultyId, ...profileFields });
     }
 
     function setWorldTone(worldId, toneId) {
       const profile = TONE_PROFILES[toneId];
       if (!profile) return { ok: false, reason: 'invalid-tone' };
-      return updateWorld(worldId, { tone: toneId, ...profile });
+      const { name, description, ...profileFields } = profile;
+      return updateWorld(worldId, { tone: toneId, ...profileFields });
     }
 
     // ---- Roadmap-aligned foundation capabilities ----

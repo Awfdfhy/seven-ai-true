@@ -378,6 +378,18 @@ const badLoot = prog.generateLoot('nonexistent-table');
 assert.equal(badLoot.ok, false);
 console.log('  PASS');
 
+console.log('\n27. getMilestones - RPG-08-11...');
+prog.createAchievement({ id: 'ms1', name: 'Level 5', category: 'milestone', rarity: 'rare' });
+prog.createAchievement({ id: 'ms2', name: 'Level 10', category: 'milestone', rarity: 'epic' });
+prog.createAchievement({ id: 'ach1', name: 'First Blood', category: 'combat', rarity: 'common' });
+const milestones = prog.getMilestones();
+assert.ok(Array.isArray(milestones));
+assert.equal(milestones.length, 2);
+assert.ok(milestones.some(m => m.id === 'ms1'));
+assert.ok(milestones.some(m => m.id === 'ms2'));
+assert.ok(!milestones.some(m => m.id === 'ach1'), 'non-milestone achievements must be excluded');
+console.log('  PASS');
+
 console.log('\n✅ All RPG Progression System tests passed!');
 console.log('\nCoverage:');
 console.log('  RPG-08-01 (optional rulesets): createRuleset, updateRuleset, listRulesets');

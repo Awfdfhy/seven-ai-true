@@ -158,6 +158,69 @@ assert.ok(typeof audit.valid === 'boolean');
 assert.ok(Array.isArray(audit.issues));
 console.log('  PASS');
 
+console.log('\n3b. place links + timeline links + spoiler boundaries (RPG-03-08/09/10)...');
+const placeE = canon.createEntry({ id: 'place1', level: 'SOFT', value: 'Capital', entityIds: ['capital'], tags: ['place'] });
+assert.ok(placeE.entityIds.includes('capital'));
+canon.createEntry({ id: 'early', level: 'SOFT', value: 'E', availableAtTick: 1 });
+canon.createEntry({ id: 'late', level: 'SOFT', value: 'L', public: false, availableAtTick: 99 });
+assert.ok(canon.getAllEntries({ availableBefore: 50 }).some(e => e.id === 'early'));
+assert.ok(!canon.getAllEntries({ availableBefore: 50 }).some(e => e.id === 'late'));
+assert.ok(!canon.getAllEntries({ public: true }).some(e => e.id === 'late'));
+console.log('  PASS');
+
+console.log('\n17. getDiff - canon diff viewer (RPG-03-06)...');
+const diffLog = canon.getDiff('fact3');
+assert.equal(diffLog.ok, true);
+assert.ok(diffLog.log.length >= 2);
+assert.ok(diffLog.log.some(l => l.action === 'create'));
+assert.ok(diffLog.log.some(l => l.action === 'update'));
+assert.ok(diffLog.log.some(l => l.changes && typeof l.changes === 'object'));
+console.log('  PASS');
+
+console.log('\n18. diffEntries - field-level diff...');
+const dChanges = canon.diffEntries({ value: 'a', tags: ['x'] }, { value: 'b', tags: ['x', 'y'] });
+assert.equal(dChanges.value.from, 'a');
+assert.equal(dChanges.value.to, 'b');
+assert.ok(dChanges.tags);
+console.log('  PASS');
+
+console.log('\n19. mergePreview - canon merge preview (RPG-03-13)...');
+canon.createEntry({ id: 'mA', level: 'SOFT', value: 'Alpha', tags: ['t1'] });
+canon.createEntry({ id: 'mB', level: 'SOFT', value: 'Beta', tags: ['t1'] });
+const mp = canon.mergePreview('mA', 'mB');
+assert.equal(mp.ok, true);
+assert.ok(mp.conflictCount > 0);
+assert.equal(mp.canMerge, false);
+assert.ok(mp.changes.value);
+canon.createEntry({ id: 'mC', level: 'SOFT', value: 'Same', tags: ['t1'] });
+canon.createEntry({ id: 'mD', level: 'SOFT', value: 'Same', tags: ['t1'] });
+assert.equal(canon.mergePreview('mC', 'mD').canMerge, true);
+console.log('  PASS');
+
+console.log('\n20. restoreEntry - canon recovery (RPG-03-15)...');
+assert.equal(canon.getEntry('fact3').status, 'deleted');
+const restored = canon.restoreEntry('fact3', 'gm');
+assert.equal(restored.ok, true);
+assert.equal(restored.entry.status, 'active');
+assert.equal(canon.getEntry('fact3').status, 'active');
+assert.equal(canon.restoreEntry('fact3', 'gm').reason, 'not-deleted');
+console.log('  PASS');
+
+console.log('\n21. exportCanon + importCanon - canon import mapping (RPG-03-12)...');
+const pack = canon.exportCanon();
+assert.equal(pack.format, 'seven-rpg-canon');
+assert.ok(pack.count >= 1);
+const canon2 = Canon.createCanonContinuity(State);
+const imp = canon2.importCanon(pack, 'gm');
+assert.equal(imp.ok, true);
+assert.ok(imp.imported >= 1);
+assert.equal(canon2.getEntry('fact1').value, 'Aldren is king');
+assert.equal(canon2.getEntry('fact1').provenance.source, 'import');
+const impBad = canon2.importCanon({ format: 'seven-rpg-canon', entries: [{ tags: [] }, { value: 'ok' }] }, 'gm');
+assert.equal(impBad.skipped, 1);
+assert.equal(impBad.imported, 1);
+console.log('  PASS');
+
 console.log('\n✅ All RPG Canon Continuity tests passed!');
 console.log('\nCoverage:');
 console.log('  RPG-03-01 (canon authority tiers): CANON_LEVELS enum with HARD/ACTIVE/SOFT/RUMOR');

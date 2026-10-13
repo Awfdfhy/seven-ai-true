@@ -199,5 +199,18 @@ assert.equal(toneSet.world.tone, 'horror');
 assert.ok(toneSet.world.narrativeWeight || toneSet.world.narrativeWeight === undefined);
 console.log('  PASS');
 
+console.log('\n27. setWorldDifficulty/setWorldTone must NOT clobber world name/description...');
+const w27 = mgr.createWorld({ id: 'w27', name: 'My Adventure World', description: 'A custom tale' });
+assert.equal(w27.name, 'My Adventure World');
+assert.equal(w27.description, 'A custom tale', 'createWorld must accept description');
+mgr.setWorldDifficulty(w27.id, 'hard');
+mgr.setWorldTone(w27.id, 'gritty');
+const w27after = mgr.getWorld(w27.id);
+assert.equal(w27after.name, 'My Adventure World', 'difficulty/tone profile must not overwrite world name');
+assert.equal(w27after.description, 'A custom tale', 'difficulty/tone profile must not overwrite world description');
+assert.equal(w27after.difficulty, 'hard');
+assert.equal(w27after.tone, 'gritty');
+console.log('  PASS');
+
 console.log('\n✅ All RPG World Manager tests passed!');
 console.log('\nCoverage: RPG-02-01 to RPG-02-15 (World Management)');

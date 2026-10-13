@@ -325,12 +325,107 @@
       return { allowed: true, policy: Object.assign({}, canonPolicy), level, authority };
     }
 
+    // RPG-03-06: canon diff viewer — per-version change log reconstructed from history.
+    function getDiff(id) {
+      const entry = entries.get(id);
+      if (!entry) return { ok: false, reason: 'not-found' };
+      const hist = history.get(id) || [];
+      const log = hist.map((h, idx) => ({
+        version: idx + 1,
+        action: h.action,
+        author: h.author || 'system',
+        timestamp: h.timestamp,
+        changes: h.diff === undefined ? null : clone(h.diff)
+      }));
+      return { ok: true, id, currentVersion: entry.version || 1, log };
+    }
+
+    // Field-level diff between two canon entry shapes (used by merge preview + import mapping).
+    function diffEntries(a, b) {
+      const A = obj(a), B = obj(b);
+      const keys = Array.from(new Set([...Object.keys(A), ...Object.keys(B)]));
+      const changes = {};
+      for (const k of keys) {
+        const av = JSON.stringify(A[k]);
+        const bv = JSON.stringify(B[k]);
+        if (av !== bv) {
+          changes[k] = { from: A[k] === undefined ? null : clone(A[k]), to: B[k] === undefined ? null : clone(B[k]) };
+        }
+      }
+      return changes;
+    }
+
+    // RPG-03-13: canon merge preview — shows what merging two entries would produce,
+    // flagging conflicting fields, without mutating either entry.
+    function mergePreview(entryAId, entryBId) {
+      const a = entries.get(entryAId), b = entries.get(entryBId);
+      if (!a || !b) return { ok: false, reason: 'not-found' };
+      const changes = diffEntries(a, b);
+      const conflicts = Object.keys(changes).filter(k => k !== 'id' && k !== 'version' && k !== 'updatedAt' && k !== 'createdAt');
+      return {
+        ok: true,
+        a: { id: a.id, level: a.level }, b: { id: b.id, level: b.level },
+        changes, conflictCount: conflicts.length, conflicts,
+        canMerge: conflicts.length === 0
+      };
+    }
+
+    // RPG-03-15: canon recovery — restore a soft-deleted entry to active.
+    function restoreEntry(id, author) {
+      const entry = entries.get(id);
+      if (!entry) return { ok: false, reason: 'not-found' };
+      if (entry.status !== 'deleted') return { ok: false, reason: 'not-deleted' };
+      const next = clone(entry);
+      next.status = 'active';
+      next.updatedAt = now();
+      next.version = (entry.version || 1) + 1;
+      entries.set(id, next);
+      const historyArr = history.get(id) || [];
+      historyArr.push({ action: 'restore', timestamp: now(), author: text(author) });
+      history.set(id, historyArr);
+      return { ok: true, entry: next };
+    }
+
+    // RPG-03-12: canon export — serialize all active entries to a portable pack.
+    function exportCanon() {
+      const all = Array.from(entries.values()).filter(e => e.status === 'active');
+      return { format: 'seven-rpg-canon', version: 1, exportedAt: now(), count: all.length, entries: all.map(clone) };
+    }
+
+    // RPG-03-12: canon import — load entries from a pack with validation + id/provenance mapping.
+    function importCanon(data, author) {
+      const d = obj(data);
+      const list = Array.isArray(d.entries) ? d.entries : [];
+      if (d.format && d.format !== 'seven-rpg-canon') return { ok: false, reason: 'invalid-format' };
+      let imported = 0, skipped = 0; const errors = [];
+      for (const raw of list) {
+        const i = obj(raw);
+        if (!i.value || typeof i.value !== 'string') { skipped++; errors.push({ id: i.id || '?', reason: 'missing-value' }); continue; }
+        const id = i.id || stableId('canon');
+        const level = CANON_LEVELS.includes(i.level) ? i.level : 'SOFT';
+        const entry = {
+          id, level, value: i.value, entityIds: uniq(i.entityIds), tags: uniq(i.tags),
+          public: i.public === true,
+          availableAtTick: Number.isFinite(i.availableAtTick) ? i.availableAtTick : 0,
+          confidence: Math.max(0, Math.min(1, Number(i.confidence) || 1)),
+          sourceEventId: text(i.sourceEventId), supersedes: uniq(i.supersedes),
+          status: 'active', createdAt: now(), updatedAt: now(), version: 1,
+          provenance: { source: 'import', author: text(author), timestamp: now(), originalId: i.id }
+        };
+        entries.set(id, entry);
+        history.set(id, [{ action: 'import', timestamp: now(), author: text(author), diff: entry }]);
+        imported++;
+      }
+      return { ok: true, imported, skipped, errors };
+    }
+
     return {
       CANON_LEVELS, CONFLICT_SEVERITY, PROVENANCE_TYPES,
       createEntry, getEntry, getAllEntries, updateEntry, deleteEntry, getHistory,
       checkConflict, getConflicts, resolveConflict, suggestResolution,
       getProvenance, addProvenance, auditCanon,
-      getCanonPolicy, getPolicySchema, setCanonPolicy, resetCanonPolicy, evaluateCanonPolicy
+      getCanonPolicy, getPolicySchema, setCanonPolicy, resetCanonPolicy, evaluateCanonPolicy,
+      getDiff, diffEntries, mergePreview, restoreEntry, exportCanon, importCanon
     };
   }
 

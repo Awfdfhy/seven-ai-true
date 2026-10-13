@@ -257,6 +257,17 @@ charMgr.updateReputation(char1, 10000);
 assert.equal(char1.reputation.score, 1000);
 console.log('  PASS');
 
+console.log('\n16. exportCharacter/importCharacter round-trip preserves relationships...');
+const c16 = charMgr.createCharacter({ id: 'c16', name: 'RelTest', type: 'npc' });
+charMgr.setRelationship(c16, 'hero', { trust: 0.8, type: 'ally' });
+const charExport = charMgr.exportCharacter(c16);
+assert.equal(typeof charExport.relationships, 'object');
+assert.ok(charExport.relationships.hero, 'exported relationships must be a plain object with hero entry');
+assert.equal(charExport.relationships.hero.trust, 0.8);
+const charImported = charMgr.importCharacter(charExport);
+assert.equal(charImported.relationships.get('hero').trust, 0.8, 'imported character must restore relationships Map');
+console.log('  PASS');
+
 console.log('\n✅ All RPG Character System tests passed!');
 console.log('\nCoverage:');
 console.log('  RPG-04-01 (character sheets): createCharacter with full data');

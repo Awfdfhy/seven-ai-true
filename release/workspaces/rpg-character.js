@@ -77,7 +77,10 @@
         secrets, beliefs, knowledge, history, promises,
         injuries, status, loyalties, opinions, voice, control,
         createdAt: now(), updatedAt: now(), version: 1,
-        traits: [], drives: [], relationships: new Map(),
+        traits: [], drives: [],
+        relationships: (i.relationships && typeof i.relationships === 'object' && !Array.isArray(i.relationships))
+          ? new Map(Object.entries(i.relationships).map(([k, v]) => [k, obj(v)]))
+          : new Map(),
         reputation: { level: 'unknown', score: 0, factions: {}, titles: [] },
         factionAffinities: {},
         knowledgeBoundaries: {},
@@ -371,7 +374,10 @@
     }
 
     function exportCharacter(character) {
-      return clone(character);
+      const c = clone(character);
+      // Serialize the relationships Map to a plain object so export/import round-trips preserve it.
+      c.relationships = Object.fromEntries(character.relationships);
+      return c;
     }
 
     function importCharacter(data, options) {

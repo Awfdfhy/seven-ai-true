@@ -620,13 +620,27 @@
         p.status === 'available' && !p.health.circuitOpen && p.models.length > 0
       );
       const hasDefaultConfig = Array.from(modelConfigs.values()).some(c => c.isDefault);
+      const hasCredentials = Array.from(providers.values()).some(p => typeof p.apiKey === 'string' && p.apiKey.length > 0);
+      const ready = availableProviders.length > 0 && hasDefaultConfig && hasCredentials;
       return {
-        ready: availableProviders.length > 0 && hasDefaultConfig,
+        ready,
         availableProviders: availableProviders.map(p => p.id),
-        hasDefaultConfig,
+        hasDefaultConfig, hasCredentials,
         blockedReason: availableProviders.length === 0 ? 'no-available-providers' :
-                       !hasDefaultConfig ? 'no-default-model-config' : null
+                       !hasDefaultConfig ? 'no-default-model-config' :
+                       !hasCredentials ? 'no-credentials' : null
       };
+    }
+
+    // Set an API key for a provider. Stored in memory only; never persisted in plain text.
+    function setApiKey(providerId, key) {
+      const provider = providers.get(providerId);
+      if (!provider) return { ok: false, reason: 'provider-not-found' };
+      const k = text(key);
+      if (!k) return { ok: false, reason: 'invalid-key' };
+      provider.apiKey = k;
+      provider.updatedAt = now();
+      return { ok: true, providerId };
     }
 
     // Token estimation
@@ -655,7 +669,7 @@
       detectInjection, sanitizeInput,
       registerLocalModel, getLocalModel, listLocalModels, toggleLocalModel,
       recordUsage, getUsageStats, getRecentUsage,
-      checkInferenceReadiness, estimateTokens
+      checkInferenceReadiness, estimateTokens, setApiKey
     };
   }
 
