@@ -229,6 +229,7 @@ Console error tests: 4/4 PASS.
 | 25 | a21e8f0 | 2026-10-13 | Machine-readable 227-task roadmap ledger |
 | 26 | 5ba8c89 | 2026-10-13 | Replay read-only (RPG-02-12) |
 | 27 | 00628b0 | 2026-10-13 | Advanced Features System (RPG-15-03/08/10/11/12/13/14/15) |
+| 28 | 77ef225 | 2026-10-13 | Co-op Architecture Research (RPG-15-02) — 0 TODO remaining |
 
 ---
 
@@ -774,6 +775,38 @@ Iteration 17 (LLM Runtime System) complete. Commit 8b2703c pushed.
 
 ---
 
+## Iteration 28: Co-op Architecture Research (RPG-15-02)
+
+**Target:** Resolve the final P3 TODO item — "co-op architecture research only." The roadmap scopes this as research/architecture, so the deliverable is a grounded design document, not code.
+
+**Status:** ✅ COMPLETE
+
+**Changes:**
+- Created `docs/seven-rpg/COOP_ARCHITECTURE_RESEARCH.md` — a phased, host-authoritative co-op design grounded in primitives that already ship and are tested on this branch:
+  - Event-sourced `applyEvent` (only mutation path; increments `revision`, tags provenance)
+  - Optimistic concurrency via `persistedRevision` / `stale-session` conflict (built-in conflict detector)
+  - `CONTROL_MODE.SHARED` + the existing `shared-control-consent` gate
+  - `CANON_LEVEL` authority ranking (HARD canon cannot be rewritten unilaterally)
+  - `canCharacterKnow` knowledge isolation → per-player fog-of-war
+  - Replay read-only (RPG-02-12) → free spectate mode
+- Design rejects CRDT/last-writer-wins (narrative state is not commutative, would rewrite HARD canon) and required-hosted-server (violates offline promise). Recommends: **P1** hot-seat co-op (seat map + turn token + consent, no state-machine change), **P2** host-authoritative intent sync with reject-and-rebase, **P3** optional relay that degrades to spectate when absent.
+- Explicitly documented: no shipped guarantee is relaxed; core insight is that co-op is a session/transport layer over an already-convergent, canon-authoritative, conflict-detecting event core.
+
+**Ledger tooling hardening** (`release/rpg-ledger.test.cjs`, exposed by reaching 0-TODO):
+- Missing status buckets now default to 0 (a status with zero items omits its key, which made the old sum `NaN`)
+- VERIFIED items now require `evidence.testFile` **or** `evidence.researchDoc` (a research-only item legitimately has no test suite — never neither)
+
+**Test Evidence:**
+- `rpg-ledger.test.cjs` — all 6 tests PASS (format, count=227, summary consistency, structure incl. researchDoc evidence, ID uniqueness, priority coverage)
+- **Full suite:** PASS (`node all.cjs` → exit 0, 70 suites)
+- **Ledger updated:** RPG-15-02 → VERIFIED. Now **159 VERIFIED, 60 IMPLEMENTED, 8 BLOCKED, 0 TODO**.
+
+**Commits:** `03e63c7` (research doc + ledger-test hardening), `77ef225` (regenerate ledger with real SHA) — both pushed to `rpg/standalone-20261011`.
+
+**Milestone:** All 227 roadmap items are now resolved — **0 TODO remaining**. The 8 BLOCKED items are all external-dependency (Android hardware/emulator, APK signing identity, live provider credentials, CI), not implementable within this repo alone.
+
+---
+
 **Iteration 19 Status:** ✅ COMPLETE. Commit f7ae56c pushed.
 
 **Iteration 20 Status:** ✅ COMPLETE. Commit 73d8052 pushed.
@@ -792,13 +825,17 @@ Iteration 17 (LLM Runtime System) complete. Commit 8b2703c pushed.
 
 **Iteration 27 Status:** ✅ COMPLETE. Commit 00628b0 pushed. Advanced Features System (RPG-15-03/08/10/11/12/13/14/15) implemented.
 
-**Ledger Summary (ROADMAP_LEDGER.json):**
-- 158 VERIFIED, 60 IMPLEMENTED, 8 BLOCKED, 1 TODO (of 227)
-- Remaining TODO: RPG-15-02 (P3 co-op architecture research only — design-doc scope, no code)
-- BLOCKED: RPG-01-09/10/11/12/13/14/15 (P0, need hardware/credentials/CI), RPG-07-15 (P1, needs API creds)
-- All implementable roadmap items (218/227) are now VERIFIED or IMPLEMENTED; the remaining gap is 1 design-only item + 8 external-dependency items.
+**Iteration 28 Status:** ✅ COMPLETE. Commit 77ef225 pushed. Co-op architecture research (RPG-15-02) delivered. **All implementable roadmap items are now resolved — 0 TODO remaining.**
 
-**Next: Iteration 28** — RPG-15-02 co-op architecture research design doc (final TODO), then BLOCKED-item verification once hardware/credentials are available.
+**Ledger Summary (ROADMAP_LEDGER.json):**
+- 159 VERIFIED, 60 IMPLEMENTED, 8 BLOCKED, **0 TODO** (of 227)
+- Remaining TODO: **none** — the final P3 item RPG-15-02 (co-op architecture research) is VERIFIED via research deliverable `docs/seven-rpg/COOP_ARCHITECTURE_RESEARCH.md` (commit `03e63c7`).
+- BLOCKED (all external-dependency, not implementable in this repo alone): RPG-01-09/10/11/12/13/14/15 (P0 — need hardware/emulator/signing/CI), RPG-07-15 (P1 — needs live API credentials).
+- 219/227 items are VERIFIED or IMPLEMENTED; the last 8 are BLOCKED pending hardware/credentials/CI.
+
+**Next: Iteration 29+** — No TODO items remain. Work is gated on external dependencies:
+- **CI verification** on an exact SHA (currently a pre-existing infra failure, see below — not a code regression).
+- **BLOCKED-item verification** once Android hardware/emulator, APK signing identity, and live provider credentials are available.
 
 ---
 
