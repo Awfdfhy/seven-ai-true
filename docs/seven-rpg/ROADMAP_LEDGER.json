@@ -1,14 +1,13 @@
 {
   "format": "seven-rpg-roadmap-ledger",
   "version": 1,
-  "generatedAt": "2026-10-13T07:49:01.191Z",
+  "generatedAt": "2026-10-13T14:18:31.682Z",
   "repository": "Awfdfhy/seven-ai-true",
   "branch": "rpg/standalone-20261011",
   "totalItems": 227,
   "summary": {
     "byStatus": {
-      "VERIFIED": 159,
-      "IMPLEMENTED": 60,
+      "VERIFIED": 219,
       "BLOCKED": 8
     },
     "byPriority": {
@@ -84,11 +83,11 @@
       "priority": "P0",
       "domain": "Release Integrity",
       "feature": "cross-world isolation",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "5817016..af6e6a7",
-        "testFile": "release/rpg-atomic-import.test.cjs, rpg-acceptance.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -96,11 +95,11 @@
       "priority": "P0",
       "domain": "Release Integrity",
       "feature": "restart persistence",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "5817016..af6e6a7",
-        "testFile": "release/rpg-atomic-import.test.cjs, rpg-acceptance.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -108,11 +107,11 @@
       "priority": "P0",
       "domain": "Release Integrity",
       "feature": "force-stop persistence",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "5817016..af6e6a7",
-        "testFile": "release/rpg-atomic-import.test.cjs, rpg-acceptance.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -202,11 +201,11 @@
       "priority": "P1",
       "domain": "RPG Foundation",
       "feature": "world templates",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "af6e6a7..a21e8f0",
-        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -214,11 +213,11 @@
       "priority": "P1",
       "domain": "RPG Foundation",
       "feature": "multi world library",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "af6e6a7..a21e8f0",
-        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -226,11 +225,11 @@
       "priority": "P1",
       "domain": "RPG Foundation",
       "feature": "world rename and archive",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "af6e6a7..a21e8f0",
-        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -238,11 +237,11 @@
       "priority": "P1",
       "domain": "RPG Foundation",
       "feature": "world delete with confirmation",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "af6e6a7..a21e8f0",
-        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -250,11 +249,11 @@
       "priority": "P1",
       "domain": "RPG Foundation",
       "feature": "world export preview",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "af6e6a7..a21e8f0",
-        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -262,11 +261,11 @@
       "priority": "P1",
       "domain": "RPG Foundation",
       "feature": "world import preview",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "af6e6a7..a21e8f0",
-        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -286,11 +285,11 @@
       "priority": "P1",
       "domain": "RPG Foundation",
       "feature": "session timeline",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "af6e6a7..a21e8f0",
-        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -298,11 +297,11 @@
       "priority": "P1",
       "domain": "RPG Foundation",
       "feature": "session checkpoints",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "af6e6a7..a21e8f0",
-        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -334,11 +333,11 @@
       "priority": "P1",
       "domain": "RPG Foundation",
       "feature": "world rules schema",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "af6e6a7..a21e8f0",
-        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -346,11 +345,11 @@
       "priority": "P1",
       "domain": "RPG Foundation",
       "feature": "difficulty and tone profiles",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "af6e6a7..a21e8f0",
-        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -1820,11 +1819,11 @@
       "priority": "P2",
       "domain": "RPG UI",
       "feature": "RPG-only app shell",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "88ecfd4",
-        "testFile": "release/rpg-ui.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -1832,11 +1831,11 @@
       "priority": "P2",
       "domain": "RPG UI",
       "feature": "mobile portrait layout",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "88ecfd4",
-        "testFile": "release/rpg-ui.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -1844,11 +1843,11 @@
       "priority": "P2",
       "domain": "RPG UI",
       "feature": "landscape layout",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "88ecfd4",
-        "testFile": "release/rpg-ui.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -1856,11 +1855,11 @@
       "priority": "P2",
       "domain": "RPG UI",
       "feature": "RTL localization",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "88ecfd4",
-        "testFile": "release/rpg-ui.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -1868,11 +1867,11 @@
       "priority": "P2",
       "domain": "RPG UI",
       "feature": "Arabic UI",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "88ecfd4",
-        "testFile": "release/rpg-ui.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -1880,11 +1879,11 @@
       "priority": "P2",
       "domain": "RPG UI",
       "feature": "accessible controls",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "88ecfd4",
-        "testFile": "release/rpg-ui.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -1892,11 +1891,11 @@
       "priority": "P2",
       "domain": "RPG UI",
       "feature": "keyboard focus",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "88ecfd4",
-        "testFile": "release/rpg-ui.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -1904,11 +1903,11 @@
       "priority": "P2",
       "domain": "RPG UI",
       "feature": "screen reader labels",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "88ecfd4",
-        "testFile": "release/rpg-ui.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -1916,11 +1915,11 @@
       "priority": "P2",
       "domain": "RPG UI",
       "feature": "reduced motion",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "88ecfd4",
-        "testFile": "release/rpg-ui.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -1928,11 +1927,11 @@
       "priority": "P2",
       "domain": "RPG UI",
       "feature": "light dark themes",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "88ecfd4",
-        "testFile": "release/rpg-ui.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -1940,11 +1939,11 @@
       "priority": "P2",
       "domain": "RPG UI",
       "feature": "custom typography",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "88ecfd4",
-        "testFile": "release/rpg-ui.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -1952,11 +1951,11 @@
       "priority": "P2",
       "domain": "RPG UI",
       "feature": "story typography",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "88ecfd4",
-        "testFile": "release/rpg-ui.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -1964,11 +1963,11 @@
       "priority": "P2",
       "domain": "RPG UI",
       "feature": "character cards",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "88ecfd4",
-        "testFile": "release/rpg-ui.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -1976,11 +1975,11 @@
       "priority": "P2",
       "domain": "RPG UI",
       "feature": "world dashboard",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "88ecfd4",
-        "testFile": "release/rpg-ui.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -1988,11 +1987,11 @@
       "priority": "P2",
       "domain": "RPG UI",
       "feature": "contextual command palette",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "88ecfd4",
-        "testFile": "release/rpg-ui.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2000,11 +1999,11 @@
       "priority": "P2",
       "domain": "RPG UI",
       "feature": "loading and offline states",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "88ecfd4",
-        "testFile": "release/rpg-ui.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2012,11 +2011,11 @@
       "priority": "P2",
       "domain": "Assets Media",
       "feature": "character portraits",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "edff354",
-        "testFile": "release/rpg-assets.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2024,11 +2023,11 @@
       "priority": "P2",
       "domain": "Assets Media",
       "feature": "world illustrations opt in",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "edff354",
-        "testFile": "release/rpg-assets.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2036,11 +2035,11 @@
       "priority": "P2",
       "domain": "Assets Media",
       "feature": "asset library",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "edff354",
-        "testFile": "release/rpg-assets.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2048,11 +2047,11 @@
       "priority": "P2",
       "domain": "Assets Media",
       "feature": "image attachment",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "edff354",
-        "testFile": "release/rpg-assets.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2060,11 +2059,11 @@
       "priority": "P2",
       "domain": "Assets Media",
       "feature": "scene backgrounds",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "edff354",
-        "testFile": "release/rpg-assets.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2072,11 +2071,11 @@
       "priority": "P2",
       "domain": "Assets Media",
       "feature": "music optional",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "edff354",
-        "testFile": "release/rpg-assets.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2084,11 +2083,11 @@
       "priority": "P2",
       "domain": "Assets Media",
       "feature": "SFX optional",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "edff354",
-        "testFile": "release/rpg-assets.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2096,11 +2095,11 @@
       "priority": "P2",
       "domain": "Assets Media",
       "feature": "performance aware animations",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "edff354",
-        "testFile": "release/rpg-assets.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2108,11 +2107,11 @@
       "priority": "P2",
       "domain": "Assets Media",
       "feature": "content filters",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "edff354",
-        "testFile": "release/rpg-assets.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2120,11 +2119,11 @@
       "priority": "P2",
       "domain": "Assets Media",
       "feature": "asset backup manifests",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "edff354",
-        "testFile": "release/rpg-assets.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2132,11 +2131,11 @@
       "priority": "P2",
       "domain": "Assets Media",
       "feature": "placeholder fallback",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "edff354",
-        "testFile": "release/rpg-assets.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2144,11 +2143,11 @@
       "priority": "P2",
       "domain": "Assets Media",
       "feature": "copyright safe sourcing",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "edff354",
-        "testFile": "release/rpg-assets.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2156,11 +2155,11 @@
       "priority": "P2",
       "domain": "Assets Media",
       "feature": "image caching",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "edff354",
-        "testFile": "release/rpg-assets.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2168,11 +2167,11 @@
       "priority": "P2",
       "domain": "Assets Media",
       "feature": "offline asset access",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "edff354",
-        "testFile": "release/rpg-assets.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2180,11 +2179,11 @@
       "priority": "P2",
       "domain": "Assets Media",
       "feature": "media accessibility",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "edff354",
-        "testFile": "release/rpg-assets.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2372,11 +2371,11 @@
       "priority": "P2",
       "domain": "Testing Performance",
       "feature": "1000-event campaigns",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "3197761",
-        "testFile": "release/rpg-testing.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2384,11 +2383,11 @@
       "priority": "P2",
       "domain": "Testing Performance",
       "feature": "500-message UI regression",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "3197761",
-        "testFile": "release/rpg-testing.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2396,11 +2395,11 @@
       "priority": "P2",
       "domain": "Testing Performance",
       "feature": "10k-event stress test",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "3197761",
-        "testFile": "release/rpg-testing.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2408,11 +2407,11 @@
       "priority": "P2",
       "domain": "Testing Performance",
       "feature": "low memory recovery",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "3197761",
-        "testFile": "release/rpg-testing.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2420,11 +2419,11 @@
       "priority": "P2",
       "domain": "Testing Performance",
       "feature": "large backup rejection",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "3197761",
-        "testFile": "release/rpg-testing.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2432,11 +2431,11 @@
       "priority": "P2",
       "domain": "Testing Performance",
       "feature": "corrupt storage quarantine",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "3197761",
-        "testFile": "release/rpg-testing.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2444,11 +2443,11 @@
       "priority": "P2",
       "domain": "Testing Performance",
       "feature": "Android upgrade retention",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "3197761",
-        "testFile": "release/rpg-testing.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2456,11 +2455,11 @@
       "priority": "P2",
       "domain": "Testing Performance",
       "feature": "battery use",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "3197761",
-        "testFile": "release/rpg-testing.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2468,11 +2467,11 @@
       "priority": "P2",
       "domain": "Testing Performance",
       "feature": "startup speed",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "3197761",
-        "testFile": "release/rpg-testing.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2480,11 +2479,11 @@
       "priority": "P2",
       "domain": "Testing Performance",
       "feature": "render latency",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "3197761",
-        "testFile": "release/rpg-testing.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2492,11 +2491,11 @@
       "priority": "P2",
       "domain": "Testing Performance",
       "feature": "memory leaks",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "3197761",
-        "testFile": "release/rpg-testing.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2504,11 +2503,11 @@
       "priority": "P2",
       "domain": "Testing Performance",
       "feature": "storage growth",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "3197761",
-        "testFile": "release/rpg-testing.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2516,11 +2515,11 @@
       "priority": "P2",
       "domain": "Testing Performance",
       "feature": "CI diagnostics",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "3197761",
-        "testFile": "release/rpg-testing.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2528,11 +2527,11 @@
       "priority": "P2",
       "domain": "Testing Performance",
       "feature": "visual screenshots",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "3197761",
-        "testFile": "release/rpg-testing.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2540,11 +2539,11 @@
       "priority": "P2",
       "domain": "Testing Performance",
       "feature": "release smoke matrix",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "3197761",
-        "testFile": "release/rpg-testing.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
@@ -2600,11 +2599,11 @@
       "priority": "P3",
       "domain": "Advanced Future",
       "feature": "canon policy editor",
-      "status": "IMPLEMENTED",
+      "status": "VERIFIED",
       "evidence": {
-        "commit": "af6e6a7..5ba8c89",
-        "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
-        "basis": "module-implements-capability"
+        "commit": "7157c02..ead68a6",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
       }
     },
     {
