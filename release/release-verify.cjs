@@ -55,12 +55,16 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
   const origin='http://127.0.0.1:'+server.address().port;
   const browser=await chromium.launch({headless:true});
   const results=[];
+  // waitForFunction with a generous timeout: the default 30s is too tight for a
+  // cold/loaded CI runner to hydrate runtime globals or theme. Applied only to
+  // waitForFunction (not a global page timeout) so layout/timing tests are untouched.
+  async function wf(page,fn,extra){return page.waitForFunction(fn,null,Object.assign({timeout:90000},extra||{}));}
   async function test(name,fn){await fn();results.push({name,status:'PASS'});console.log('PASS',name)}
   try{
     await test('release boots',async()=>{
       const page=await browser.newPage();
       await page.goto(origin,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenRuntime&&window.SevenControl&&window.SevenBridge&&window.SevenExecution&&window.SevenBetaUI&&window.SevenRemake&&window.SevenIntelligence);
+      await wf(page,()=>window.SevenRuntime&&window.SevenControl&&window.SevenBridge&&window.SevenExecution&&window.SevenBetaUI&&window.SevenRemake&&window.SevenIntelligence);
       assert.equal(await page.evaluate(()=>document.documentElement.dataset.sevenControl),'v4.3');
       assert.equal(await page.evaluate(()=>!!window.SevenAttachmentLoader),true);
       assert.equal(await page.evaluate(()=>!!document.querySelector('#seven-app[data-seven-remake="1"]')),true);
@@ -71,9 +75,9 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       const page=await browser.newPage({viewport:{width:390,height:844}});
       await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');localStorage.setItem('user_name','Seven Tester');});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenRemake&&window.SevenTheme&&document.getElementById('seven-app'));
+      await wf(page,()=>window.SevenRemake&&window.SevenTheme&&document.getElementById('seven-app'));
       await page.evaluate(()=>SevenTheme.setPreference('day'));
-      await page.waitForFunction(()=>document.documentElement.dataset.sevenTheme==='day');
+      await wf(page,()=>document.documentElement.dataset.sevenTheme==='day');
       const dayBefore=await page.evaluate(()=>({root:getComputedStyle(document.getElementById('seven-app')).getPropertyValue('--s-bg').trim(),main:getComputedStyle(document.querySelector('.main')).backgroundColor,composer:getComputedStyle(document.querySelector('.composer')).backgroundColor}));
       assert.equal(dayBefore.root,'#f5f7f5');
       const autoDark=await page.evaluate(()=>{
@@ -84,10 +88,10 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       });
       assert.deepEqual(autoDark,{resolved:'night',applied:'night'});
       await page.evaluate(()=>SevenTheme.setPreference('night'));
-      await page.waitForFunction(()=>document.documentElement.dataset.sevenTheme==='night');
+      await wf(page,()=>document.documentElement.dataset.sevenTheme==='night');
       // Theme state flips synchronously, while composer/background colors animate.
       // Gate the settled visual state rather than sampling the first transition frame.
-      await page.waitForFunction(()=>{
+      await wf(page,()=>{
         const main=document.querySelector('.main'),composer=document.querySelector('.composer');
         return !!main&&!!composer&&getComputedStyle(main).backgroundColor==='rgb(17, 24, 21)'&&getComputedStyle(composer).backgroundColor==='rgb(17, 24, 21)';
       },null,{timeout:2500});
@@ -117,7 +121,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       assert.notEqual(night.main,dayBefore.main);
       assert.match(night.text,/rgb\((?:237, 245, 240|238, 246, 241)\)/);
       await page.evaluate(()=>SevenTheme.setPreference('day'));
-      await page.waitForFunction(()=>document.documentElement.dataset.sevenTheme==='day');
+      await wf(page,()=>document.documentElement.dataset.sevenTheme==='day');
       assert.equal(await page.evaluate(()=>getComputedStyle(document.getElementById('seven-app')).getPropertyValue('--s-bg').trim()),'#f5f7f5');
       await page.evaluate(()=>{document.documentElement.dir='rtl';document.body.dir='rtl';const s=document.querySelector('.sidebar');s.classList.remove('open','active');document.body.classList.remove('sidebar-open');document.documentElement.dataset.sevenShellSidebar='closed';});
       await page.waitForTimeout(380);
@@ -136,7 +140,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       const page=await browser.newPage({viewport:{width:390,height:844}});
       await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');localStorage.setItem('user_name','Seven Tester');});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenRemake&&document.getElementById('settingsModal'));
+      await wf(page,()=>window.SevenRemake&&document.getElementById('settingsModal'));
       const state=await page.evaluate(()=>{openSettings();const sec=document.getElementById('providersSection');sec.open=true;const visible=[...sec.querySelectorAll('input,textarea,select')].filter(el=>{const cs=getComputedStyle(el),b=el.getBoundingClientRect();return!el.hidden&&cs.display!=='none'&&cs.visibility!=='hidden'&&b.width>0&&b.height>0});return{visible:visible.map(x=>x.id),kilo:isFreeProviderConfigured('kilo'),llm7:isFreeProviderConfigured('llm7'),route:hasAnyConfiguredFreeProvider(),text:sec.innerText}}); 
       assert.deepEqual(state.visible,[]);assert.equal(state.kilo,true);assert.equal(state.llm7,true);assert.equal(state.route,true);assert.ok(/never need to paste an API key|لن تحتاج إلى لصق مفتاح API/i.test(state.text));
       await page.close();
@@ -145,7 +149,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       const page=await browser.newPage({viewport:{width:320,height:800}});
       await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');localStorage.setItem('user_name','Seven Tester');});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenRemake&&document.getElementById('settingsModal'));
+      await wf(page,()=>window.SevenRemake&&document.getElementById('settingsModal'));
       const state=await page.evaluate(()=>{
         openSettings();
         const panel=id=>document.getElementById(id)?.closest('[role="tabpanel"]')?.id||null;
@@ -179,7 +183,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       const page=await browser.newPage({viewport:{width:320,height:800}});
       await page.addInitScript(()=>{localStorage.setItem('seven_ui_language','ar');localStorage.setItem('user_name_asked','1');});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenRemake&&document.getElementById('settingsModal'));
+      await wf(page,()=>window.SevenRemake&&document.getElementById('settingsModal'));
       const state=await page.evaluate(()=>{
         openSettings();
         const texts=[...document.querySelectorAll('#settingsModal [role="tab"],#settingsModal summary,#settingsModal label,#settingsModal .settings-helper,#settingsModal .route-status-title,#settingsModal .route-state-badge')].map(x=>x.textContent.trim()).filter(Boolean);
@@ -200,9 +204,9 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       const page=await browser.newPage({viewport:{width:360,height:800}});
       await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenRemake&&typeof SevenRemake.searchSettings==='function');
+      await wf(page,()=>window.SevenRemake&&typeof SevenRemake.searchSettings==='function');
       await page.evaluate(()=>SevenRemake.searchSettings());
-      await page.waitForFunction(()=>!!document.querySelector('.s-modal .s-dialog'));
+      await wf(page,()=>!!document.querySelector('.s-modal .s-dialog'));
       const state=await page.evaluate(()=>{const modal=document.querySelector('.s-modal');const fields=[...modal.querySelectorAll('input[type="password"],[id*="key" i],[name*="key" i]')];const engine=modal.querySelector('#s-search-engine');return{keyFields:fields.map(x=>x.id||x.name||x.tagName),options:engine?[...engine.options].map(o=>o.value):[],text:modal.innerText,box:(()=>{const r=modal.querySelector('.s-dialog').getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,w:innerWidth,h:innerHeight}})()}}); 
       assert.deepEqual(state.keyFields,[]);
       assert.equal(state.options.includes('brave'),false);
@@ -215,12 +219,12 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       const page=await context.newPage();
       await page.addInitScript(()=>{localStorage.setItem('seven_intelligence_preferences_v1',JSON.stringify({engine:'brave',depth:'balanced',maxQueries:3,readPages:true}));localStorage.setItem('user_name_asked','1');});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenIntelligence&&typeof SevenIntelligence.settings==='function');
+      await wf(page,()=>window.SevenIntelligence&&typeof SevenIntelligence.settings==='function');
       const state=await page.evaluate(()=>SevenIntelligence.settings());
       assert.equal(state.engine,'auto');
-      await page.waitForFunction(()=>window.SevenRemake&&typeof SevenRemake.searchSettings==='function');
+      await wf(page,()=>window.SevenRemake&&typeof SevenRemake.searchSettings==='function');
       await page.evaluate(()=>SevenRemake.searchSettings());
-      await page.waitForFunction(()=>!!document.querySelector('.s-modal .s-dialog'));
+      await wf(page,()=>!!document.querySelector('.s-modal .s-dialog'));
       const ui=await page.evaluate(()=>({options:[...document.querySelectorAll('#s-search-engine option')].map(o=>o.value),keyFields:[...document.querySelectorAll('.s-modal input[type="password"],.s-modal [id*="key" i]')].length}));
       assert.equal(ui.options.includes('brave'),false);assert.equal(ui.keyFields,0);
       await context.close();
@@ -231,7 +235,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
         const page=await browser.newPage({viewport:{width,height}});
         await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');localStorage.setItem('user_name','Seven Tester');});
         await page.goto(origin,{waitUntil:'domcontentloaded'});
-        await page.waitForFunction(()=>window.SevenRemake&&window.SevenTheme&&document.getElementById('seven-app'));
+        await wf(page,()=>window.SevenRemake&&window.SevenTheme&&document.getElementById('seven-app'));
         await page.evaluate(({dir,theme})=>{document.documentElement.dir=dir;document.body.dir=dir;SevenTheme.setPreference(theme);document.querySelector('.sidebar')?.classList.add('collapsed');},{dir,theme});
         await page.waitForTimeout(360);
         const base=await page.evaluate(()=>{const q=s=>document.querySelector(s)?.getBoundingClientRect();const main=q('.main'),composer=q('.composer'),top=q('.topbar');return{doc:document.documentElement.scrollWidth<=innerWidth+2,main:!!main&&main.left>=-2&&main.right<=innerWidth+2,composer:!!composer&&composer.left>=-2&&composer.right<=innerWidth+2&&composer.bottom<=innerHeight+2,top:!!top&&top.left>=-2&&top.right<=innerWidth+2,theme:document.documentElement.dataset.sevenTheme,bg:getComputedStyle(document.getElementById('seven-app')).getPropertyValue('--s-bg').trim()}}); 
@@ -247,7 +251,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
         const page=await browser.newPage({viewport:{width,height}});
         await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');localStorage.setItem('seven_ui_language','ar');});
         await page.goto(origin,{waitUntil:'domcontentloaded'});
-        await page.waitForFunction(()=>window.SevenRemake&&window.SevenTheme);
+        await wf(page,()=>window.SevenRemake&&window.SevenTheme);
         await page.evaluate(()=>{document.documentElement.style.fontSize='150%';SevenTheme.setPreference('night');document.querySelector('.sidebar')?.classList.add('collapsed');});
         await page.waitForTimeout(120);
         let state=await page.evaluate(()=>{
@@ -263,23 +267,23 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
         await page.evaluate(()=>closeSettings());
 
         await page.evaluate(()=>SevenRemake.modeDialog());
-        await page.waitForFunction(()=>!!document.querySelector('#seven-app > .s-modal .s-dialog'));
+        await wf(page,()=>!!document.querySelector('#seven-app > .s-modal .s-dialog'));
         state=await page.evaluate(()=>{const e=document.querySelector('.s-dialog'),r=e.getBoundingClientRect();return{overflow:e.scrollWidth<=e.clientWidth+1,bounded:r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2}});
         assert.deepEqual(state,{overflow:true,bounded:true});
         await page.evaluate(()=>SevenRemake.closeDialog());
 
         await page.evaluate(()=>SevenRemake.searchSettings());
-        await page.waitForFunction(()=>!!document.querySelector('#seven-app > .s-modal .s-dialog'));
+        await wf(page,()=>!!document.querySelector('#seven-app > .s-modal .s-dialog'));
         state=await page.evaluate(()=>{const e=document.querySelector('.s-dialog'),r=e.getBoundingClientRect();return{overflow:e.scrollWidth<=e.clientWidth+1,bounded:r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2,scrollable:e.scrollHeight>=e.clientHeight}});
         assert.equal(state.overflow,true);assert.equal(state.bounded,true);
         await page.evaluate(()=>SevenRemake.closeDialog());
 
         await page.evaluate(()=>SevenRemake.openWorkspace('coding'));
-        await page.waitForFunction(()=>document.documentElement.dataset.sevenWorkspace==='coding',null,{timeout:10000});
+        await wf(page,()=>document.documentElement.dataset.sevenWorkspace==='coding',null,{timeout:10000});
         state=await page.evaluate(()=>{const e=document.querySelector('.seven-workspace-root'),r=e.getBoundingClientRect();return{doc:document.documentElement.scrollWidth<=innerWidth+2,bounded:r.left>=-2&&r.right<=innerWidth+2,scroll:e.scrollWidth<=Math.max(e.clientWidth+2,innerWidth+2)}});
         assert.deepEqual(state,{doc:true,bounded:true,scroll:true});
         await page.evaluate(()=>{SevenWorkspaces.close();SevenWorkspaces.openLauncher();});
-        await page.waitForFunction(()=>!!document.querySelector('.seven-ws-picker'));
+        await wf(page,()=>!!document.querySelector('.seven-ws-picker'));
         state=await page.evaluate(()=>{const e=document.querySelector('.seven-ws-picker'),r=e.getBoundingClientRect();return{overflow:e.scrollWidth<=e.clientWidth+1,bounded:r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2}});
         assert.deepEqual(state,{overflow:true,bounded:true});
         await page.close();
@@ -289,7 +293,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       const context=await browser.newContext({viewport:{width:390,height:844}});
       const page=await context.newPage();
       await page.goto(origin,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenRemake&&typeof roomPersistence!=='undefined'&&roomPersistence.status().ready);
+      await wf(page,()=>window.SevenRemake&&typeof roomPersistence!=='undefined'&&roomPersistence.status().ready);
       await page.waitForTimeout(120);
       const state=await page.evaluate(()=>({nameModal:!!document.getElementById('nameModal'),nameInput:!!document.getElementById('nameInput'),rooms:Object.keys(rooms).length,current:currentRoom,title:document.getElementById('roomTitle').textContent.trim()}));
       assert.equal(state.nameModal,false);assert.equal(state.nameInput,false);assert.equal(state.rooms,0);assert.equal(state.current,'');assert.ok(/new chat/i.test(state.title));
@@ -299,7 +303,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       const page=await browser.newPage({viewport:{width:320,height:800}});
       await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenRemake&&document.getElementById('settingsModal'));
+      await wf(page,()=>window.SevenRemake&&document.getElementById('settingsModal'));
       const state=await page.evaluate(()=>{openSettings();document.querySelectorAll('#settingsModal details').forEach(d=>d.open=true);const m=document.querySelector('#settingsModal .modal-content'),r=m.getBoundingClientRect();return{overflow:m.scrollWidth<=m.clientWidth+1,left:r.left,right:r.right,top:r.top,bottom:r.bottom,w:innerWidth,h:innerHeight,sections:[...document.querySelectorAll('#settingsModal details')].length}});
       assert.ok(state.sections>=2);assert.equal(state.overflow,true);assert.ok(state.left>=-2&&state.right<=state.w+2&&state.top>=-2&&state.bottom<=state.h+2,JSON.stringify(state));
       await page.close();
@@ -308,7 +312,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       const page=await browser.newPage({viewport:{width:320,height:800}});
       await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenRemake&&document.getElementById('chat'));
+      await wf(page,()=>window.SevenRemake&&document.getElementById('chat'));
       const state=await page.evaluate(()=>{const long='x'.repeat(500);addMessage('assistant','https://example.com/'+long+'\n\n```js\nconst value="'+long+'";\n```');const chat=document.getElementById('chat'),pre=chat.querySelector('pre'),bubble=chat.querySelector('.message:last-child .bubble');return{doc:document.documentElement.scrollWidth<=innerWidth+2,chat:chat.scrollWidth<=chat.clientWidth+2,pre:!pre||pre.getBoundingClientRect().right<=innerWidth+2,bubble:!bubble||bubble.getBoundingClientRect().right<=innerWidth+2}});
       assert.deepEqual(state,{doc:true,chat:true,pre:true,bubble:true});
       await page.close();
@@ -317,7 +321,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       const page=await browser.newPage({viewport:{width:360,height:800}});
       await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenRemake&&window.SevenTheme);
+      await wf(page,()=>window.SevenRemake&&window.SevenTheme);
       await page.evaluate(()=>{document.documentElement.dir='rtl';document.body.dir='rtl';SevenTheme.setPreference('night');});
       for(const kind of ['coding','research','rpg']){
         await page.evaluate(k=>window.SevenRemake.openWorkspace(k),kind);
@@ -332,14 +336,14 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       const page=await browser.newPage({viewport:{width:390,height:844}});
       await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenRemake&&typeof roomPersistence!=='undefined'&&roomPersistence.status().ready);
+      await wf(page,()=>window.SevenRemake&&typeof roomPersistence!=='undefined'&&roomPersistence.status().ready);
       const roomId='rpg-live-release-e2e';
       await page.evaluate(async rid=>{
         if(!rooms[rid]){rooms[rid]=createEmptyRoom();roomTitles[rid]='RPG Live Release E2E';}
         currentRoom=rid;await saveRooms();updateRoomTitle();renderChatHistory();updateRoomListUI();
         await SevenRemake.openWorkspace('rpg');
       },roomId);
-      await page.waitForFunction(()=>window.SevenRpgWorkspace&&window.SevenRpgLiveIntegration&&document.documentElement.dataset.sevenWorkspace==='rpg',null,{timeout:10000});
+      await wf(page,()=>window.SevenRpgWorkspace&&window.SevenRpgLiveIntegration&&document.documentElement.dataset.sevenWorkspace==='rpg',null,{timeout:10000});
       let state=await page.evaluate(rid=>{
         SevenRpgWorkspace.loadWork({id:'rpg-live-world',title:'RPG Live World',continuity:'test',sources:[{id:'src',authority:'A0'}],beats:[{id:'b1',sourceRefs:['src']}]});
         const projection=SevenRpgWorkspace.contextProjection({roomId:rid,maxChars:8000});
@@ -353,7 +357,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
         SevenWorkspaces.close();const other=rid+'-empty';rooms[other]=createEmptyRoom();roomTitles[other]='Empty RPG';currentRoom=other;await saveRooms();
         updateRoomTitle();renderChatHistory();updateRoomListUI();await SevenRemake.openWorkspace('rpg');
       },roomId);
-      await page.waitForFunction(()=>document.documentElement.dataset.sevenWorkspace==='rpg');
+      await wf(page,()=>document.documentElement.dataset.sevenWorkspace==='rpg');
       const isolated=await page.evaluate(()=>({work:SevenRpgWorkspace.snapshot().work,canon:SevenRpgWorkspace.snapshot().canonPack,context:SevenRpgWorkspace.contextProjection()}));
       assert.equal(isolated.work,null);assert.equal(isolated.canon,null);assert.equal(isolated.context,null);
       await page.evaluate(async rid=>{
@@ -361,9 +365,9 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
         updateRoomTitle();renderChatHistory();updateRoomListUI();await SevenRemake.openWorkspace('rpg');
       },roomId);
       await page.reload({waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenRemake&&typeof roomPersistence!=='undefined'&&roomPersistence.status().ready);
+      await wf(page,()=>window.SevenRemake&&typeof roomPersistence!=='undefined'&&roomPersistence.status().ready);
       await page.evaluate(async rid=>{currentRoom=rid;updateRoomTitle();renderChatHistory();updateRoomListUI();await SevenRemake.openWorkspace('rpg')},roomId);
-      await page.waitForFunction(()=>window.SevenRpgWorkspace&&document.documentElement.dataset.sevenWorkspace==='rpg'&&document.querySelector('[data-rpg-world-name]')?.textContent.trim()==='RPG Live World',null,{timeout:10000});
+      await wf(page,()=>window.SevenRpgWorkspace&&document.documentElement.dataset.sevenWorkspace==='rpg'&&document.querySelector('[data-rpg-world-name]')?.textContent.trim()==='RPG Live World',null,{timeout:10000});
       state=await page.evaluate(rid=>{const p=SevenRpgWorkspace.contextProjection({roomId:rid,maxChars:8000}),src=collectContextSources(rooms[rid],'continue',null,{roomId:rid}).find(x=>x.kind==='rpg');return{worldId:p?.worldId,revision:p?.revision,source:!!src&&src.content.includes('rpg-live-world'),title:document.querySelector('[data-rpg-world-name]')?.textContent.trim()}},roomId);
       assert.equal(state.worldId,before.worldId);assert.equal(state.revision,before.revision);assert.equal(state.source,true);assert.equal(state.title,'RPG Live World');
       await page.evaluate(async rid=>{
@@ -378,28 +382,28 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       const page=await browser.newPage({viewport:{width:360,height:800}});
       await page.addInitScript(()=>{localStorage.setItem('seven_ui_language','ar');localStorage.setItem('user_name_asked','1');});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenRemake&&window.SevenTheme&&document.documentElement.lang==='ar'&&document.documentElement.dir==='rtl');
+      await wf(page,()=>window.SevenRemake&&window.SevenTheme&&document.documentElement.lang==='ar'&&document.documentElement.dir==='rtl');
       await page.evaluate(()=>{SevenTheme.setPreference('night');return SevenRemake.openWorkspace('coding')});
-      await page.waitForFunction(()=>document.documentElement.dataset.sevenWorkspace==='coding'&&document.querySelector('.seven-workspace-root h1')?.textContent.includes('البرمجة'),null,{timeout:10000});
+      await wf(page,()=>document.documentElement.dataset.sevenWorkspace==='coding'&&document.querySelector('.seven-workspace-root h1')?.textContent.includes('البرمجة'),null,{timeout:10000});
       let state=await page.evaluate(()=>({h1:document.querySelector('.seven-workspace-root h1')?.textContent.trim(),importText:document.querySelector('[data-code-import]')?.textContent.trim(),placeholder:document.querySelector('[data-code-task]')?.placeholder,retry:document.querySelector('[data-code-retry]')?.textContent.trim(),stop:document.querySelector('[data-code-stop]')?.textContent.trim(),run:document.querySelector('[data-code-run]')?.textContent.trim(),empty:document.querySelector('[data-code-files]')?.textContent.trim(),output:document.querySelector('[data-code-output]')?.textContent.trim(),doc:document.documentElement.scrollWidth<=innerWidth+2}));
       assert.match(state.h1,/البرمجة/);assert.equal(state.importText,'استيراد ملفات');assert.match(state.placeholder,/صف/);assert.equal(state.retry,'إعادة المحاولة');assert.equal(state.stop,'إيقاف');assert.equal(state.run,'تشغيل عبر Seven');assert.match(state.empty,/لم تُضف ملفات مشروع/);assert.match(state.output,/أحدث إجابة حقيقية/);assert.equal(state.doc,true);
 
       await page.evaluate(()=>SevenRemake.openWorkspace('research'));
-      await page.waitForFunction(()=>document.documentElement.dataset.sevenWorkspace==='research'&&document.querySelector('.seven-workspace-root h1')?.textContent.trim()==='تتبّع الدليل.',null,{timeout:10000});
+      await wf(page,()=>document.documentElement.dataset.sevenWorkspace==='research'&&document.querySelector('.seven-workspace-root h1')?.textContent.trim()==='تتبّع الدليل.',null,{timeout:10000});
       state=await page.evaluate(()=>({h1:document.querySelector('.seven-workspace-root h1')?.textContent.trim(),importText:document.querySelector('[data-research-import]')?.textContent.trim(),runText:document.querySelector('[data-research-run]')?.textContent.trim(),placeholder:document.querySelector('[data-research-task]')?.placeholder,doc:document.documentElement.scrollWidth<=innerWidth+2}));
       assert.equal(state.h1,'تتبّع الدليل.');assert.equal(state.importText,'استيراد حزمة');assert.equal(state.runText,'بحث موسع');assert.match(state.placeholder,/ماذا تريد/);assert.equal(state.doc,true);
 
       await page.evaluate(()=>SevenRemake.openWorkspace('rpg'));
-      await page.waitForFunction(()=>document.documentElement.dataset.sevenWorkspace==='rpg'&&!!document.querySelector('.seven-rpg-chatbar'),null,{timeout:10000});
+      await wf(page,()=>document.documentElement.dataset.sevenWorkspace==='rpg'&&!!document.querySelector('.seven-rpg-chatbar'),null,{timeout:10000});
       state=await page.evaluate(()=>({world:document.querySelector('[data-rpg-world-name]')?.textContent.trim(),mode:document.querySelector('[data-rpg-state]')?.textContent.trim(),titles:document.querySelector('[data-rpg-title-toggle]')?.textContent.trim(),exit:document.querySelector('[data-rpg-exit]')?.textContent.trim(),aria:document.querySelector('.seven-rpg-chatbar')?.getAttribute('aria-label'),doc:document.documentElement.scrollWidth<=innerWidth+2}));
       assert.equal(state.world,'RPG حر');assert.equal(state.mode,'وضع المحادثة');assert.equal(state.titles,'العناوين');assert.equal(state.exit,'الخروج من RPG');assert.equal(state.aria,'عناصر تحكم RPG');assert.equal(state.doc,true);
       await page.evaluate(()=>addMessage('assistant','اختبار نسخ RPG'));
-      await page.waitForFunction(()=>!!document.querySelector('#chat .seven-rpg-copy'),null,{timeout:5000});
+      await wf(page,()=>!!document.querySelector('#chat .seven-rpg-copy'),null,{timeout:5000});
       state=await page.evaluate(()=>{const b=document.querySelector('#chat .seven-rpg-copy');return{text:b?.textContent.trim(),aria:b?.getAttribute('aria-label'),title:b?.title}});
       assert.match(state.text,/نسخ/);assert.equal(state.aria,'نسخ الرسالة');assert.equal(state.title,'نسخ');
 
       await page.evaluate(()=>{SevenWorkspaces.close();SevenWorkspaces.openLauncher();});
-      await page.waitForFunction(()=>document.querySelector('#seven-ws-launcher-title')?.textContent.trim()==='اختر مساحة عمل',null,{timeout:10000});
+      await wf(page,()=>document.querySelector('#seven-ws-launcher-title')?.textContent.trim()==='اختر مساحة عمل',null,{timeout:10000});
       state=await page.evaluate(()=>{const launcher=document.querySelector('.seven-ws-launcher'),p=document.querySelector('.seven-ws-picker'),r=p.getBoundingClientRect(),cs=getComputedStyle(p);return{title:document.querySelector('#seven-ws-launcher-title').textContent.trim(),close:document.querySelector('[data-ws-close]')?.getAttribute('aria-label'),coding:document.querySelector('[data-ws="coding"] strong')?.textContent.trim(),research:document.querySelector('[data-ws="research"] strong')?.textContent.trim(),parent:launcher.parentElement?.id,bg:cs.backgroundColor,border:cs.borderStyle,bounded:r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2}});
       assert.equal(state.title,'اختر مساحة عمل');assert.equal(state.close,'إغلاق');assert.match(state.coding,/البرمجة/);assert.equal(state.research,'البحث');assert.equal(state.parent,'seven-app');assert.notEqual(state.bg,'rgba(0, 0, 0, 0)');assert.equal(state.border,'solid');assert.equal(state.bounded,true);
       await page.close();
@@ -408,11 +412,11 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       const page=await browser.newPage({viewport:{width:320,height:800}});
       await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenRemake&&window.SevenTheme&&typeof SevenRemake.modeDialog==='function'&&typeof SevenRemake.depthDialog==='function');
+      await wf(page,()=>window.SevenRemake&&window.SevenTheme&&typeof SevenRemake.modeDialog==='function'&&typeof SevenRemake.depthDialog==='function');
       await page.evaluate(()=>{document.documentElement.dir='rtl';document.body.dir='rtl';SevenTheme.setPreference('night');});
       for(const name of ['modeDialog','depthDialog']){
         await page.evaluate(n=>SevenRemake[n](),name);
-        await page.waitForFunction(()=>!!document.querySelector('.s-modal .s-dialog'));
+        await wf(page,()=>!!document.querySelector('.s-modal .s-dialog'));
         const state=await page.evaluate(()=>{const m=document.querySelector('.s-modal'),d=m.querySelector('.s-dialog'),r=d.getBoundingClientRect();const controls=[...d.querySelectorAll('button,input,select,textarea')].filter(x=>{const b=x.getBoundingClientRect(),s=getComputedStyle(x);return !x.hidden&&s.display!=='none'&&s.visibility!=='hidden'&&b.width>0&&b.height>0});return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,w:innerWidth,h:innerHeight,overflow:d.scrollWidth<=d.clientWidth+1,controls:controls.length,theme:document.documentElement.dataset.sevenTheme,dir:document.documentElement.dir}}); 
         assert.equal(state.overflow,true,name+' overflow');
         assert.ok(state.left>=-2&&state.right<=state.w+2&&state.top>=-2&&state.bottom<=state.h+2,name+' clipped: '+JSON.stringify(state));
@@ -426,9 +430,9 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       const page=await browser.newPage({viewport:{width:320,height:800}});
       await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenRemake&&window.SevenTheme);
+      await wf(page,()=>window.SevenRemake&&window.SevenTheme);
       await page.evaluate(()=>{SevenTheme.setPreference('night');SevenRemake.modeDialog();});
-      await page.waitForFunction(()=>!!document.querySelector('#seven-app > .s-modal .s-dialog'));
+      await wf(page,()=>!!document.querySelector('#seven-app > .s-modal .s-dialog'));
       const state=await page.evaluate(()=>{
         const root=document.getElementById('seven-app'),modal=root.querySelector(':scope > .s-modal'),dialog=modal.querySelector('.s-dialog');
         const siblings=[...root.children].filter(x=>x!==modal);
@@ -450,7 +454,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       const page=await browser.newPage({viewport:{width:360,height:800}});
       await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenRemake&&window.SevenTheme&&document.querySelector('.seven-shell-model-chip')&&document.querySelector('.seven-shell-workspace-chip'));
+      await wf(page,()=>window.SevenRemake&&window.SevenTheme&&document.querySelector('.seven-shell-model-chip')&&document.querySelector('.seven-shell-workspace-chip'));
       await page.evaluate(()=>SevenTheme.setPreference('night'));
       await page.click('.seven-shell-model-chip');
       await page.waitForTimeout(60);
@@ -464,9 +468,9 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       // exposes workspace navigation in the mobile shell. Exercise the picker
       // through the same public workspace runtime instead of clicking hidden UI.
       await page.evaluate(()=>SevenRemake.openWorkspace('coding'));
-      await page.waitForFunction(()=>window.SevenWorkspaces&&document.documentElement.dataset.sevenWorkspace==='coding',null,{timeout:10000});
+      await wf(page,()=>window.SevenWorkspaces&&document.documentElement.dataset.sevenWorkspace==='coding',null,{timeout:10000});
       await page.evaluate(()=>{SevenWorkspaces.close();SevenWorkspaces.openLauncher();});
-      await page.waitForFunction(()=>!!document.querySelector('.seven-ws-launcher'),null,{timeout:10000});
+      await wf(page,()=>!!document.querySelector('.seven-ws-launcher'),null,{timeout:10000});
       const picker=await page.evaluate(()=>{const e=document.querySelector('.seven-ws-picker'),r=e?.getBoundingClientRect();return!!r&&r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2});
       assert.equal(picker,true);
       await page.close();
@@ -475,12 +479,12 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       const page=await browser.newPage({viewport:{width:320,height:800}});
       await page.addInitScript(()=>{localStorage.setItem('seven_ui_language','ar');localStorage.setItem('user_name_asked','1');});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenRemake&&window.SevenTheme&&document.documentElement.lang==='ar');
+      await wf(page,()=>window.SevenRemake&&window.SevenTheme&&document.documentElement.lang==='ar');
       await page.evaluate(()=>SevenTheme.setPreference('day'));
       await page.addScriptTag({content:fs.readFileSync(path.join(dist,'github-self-dev.js'),'utf8')});
-      await page.waitForFunction(()=>!!window.SevenGitHubSelfDev);
+      await wf(page,()=>!!window.SevenGitHubSelfDev);
       await page.evaluate(()=>SevenGitHubSelfDev.openPanel());
-      await page.waitForFunction(()=>!!document.querySelector('#seven-app > #seven-github-selfdev .seven-gh-panel'));
+      await wf(page,()=>!!document.querySelector('#seven-app > #seven-github-selfdev .seven-gh-panel'));
       const state=await page.evaluate(()=>{
         const app=document.getElementById('seven-app'),back=document.getElementById('seven-github-selfdev'),p=back.querySelector('.seven-gh-panel'),r=p.getBoundingClientRect(),cs=getComputedStyle(p);
         const siblings=[...app.children].filter(x=>x!==back);
@@ -515,9 +519,9 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       const page=await browser.newPage({viewport:{width:390,height:844}});
       await page.addInitScript(()=>{localStorage.setItem('seven_ui_language','ar');localStorage.setItem('user_name_asked','1');});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenShell&&window.SevenShellFinal&&window.SevenUiPolish&&document.documentElement.lang==='ar');
+      await wf(page,()=>window.SevenShell&&window.SevenShellFinal&&window.SevenUiPolish&&document.documentElement.lang==='ar');
       await page.evaluate(()=>{SevenUiPolish.sync();SevenShell.sync();SevenShellFinal.sync();});
-      await page.waitForFunction(()=>document.querySelector('#seven-room-search')?.placeholder==='بحث المحادثات'&&document.querySelector('.seven-shell-primary-nav'));
+      await wf(page,()=>document.querySelector('#seven-room-search')?.placeholder==='بحث المحادثات'&&document.querySelector('.seven-shell-primary-nav'));
       const state=await page.evaluate(()=>{
         const search=document.querySelector('#seven-room-search');
         const modelPanel=document.querySelector('.seven-model-panel');
@@ -549,7 +553,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
     await test('settings expose no manual credential entry points',async()=>{
       const page=await browser.newPage({viewport:{width:390,height:844}});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenRemake&&document.getElementById('settingsModal'));
+      await wf(page,()=>window.SevenRemake&&document.getElementById('settingsModal'));
       const state=await page.evaluate(()=>{openSettings();const root=document.getElementById('settingsModal');const credentialInputs=[...root.querySelectorAll('input')].filter(x=>x.type==='password'||/api.?key|credential|access.?token|auth.?token|llm7.?token|gateway.?key|brave.?key/i.test((x.id||'')+' '+(x.name||'')+' '+(x.placeholder||'')));return{count:credentialInputs.length,text:root.innerText,automatic:!!document.getElementById('automaticProviderCard')}}); 
       assert.equal(state.count,0);
       assert.equal(state.automatic,true);
@@ -560,7 +564,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       const page=await browser.newPage({viewport:{width:360,height:800}});
       await page.addInitScript(()=>{localStorage.setItem('seven_ui_language','ar');localStorage.setItem('user_name_asked','1');});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenRemake&&!!document.querySelector('.seven-shell-jump'));
+      await wf(page,()=>window.SevenRemake&&!!document.querySelector('.seven-shell-jump'));
       await page.evaluate(()=>{
         const chat=document.getElementById('chat');
         chat.innerHTML=Array.from({length:32},(_,i)=>'<div class="message assistant"><div class="bubble"><p>رسالة طويلة '+i+' '.repeat(12)+'</p><p>'+('نص '.repeat(40))+'</p></div></div>').join('');
@@ -569,7 +573,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       // ensureJump() binds the scroll listener on requestAnimationFrame; a scroll fired in the
       // same frame the listener is (re)bound is dropped. Re-dispatch until .show is applied so
       // the assertion below still verifies the real toggle semantics rather than a lost event.
-      await page.waitForFunction(()=>{
+      await wf(page,()=>{
         const chat=document.getElementById('chat');
         const jump=document.querySelector('.seven-shell-jump');
         if(!chat||!jump)return false;
@@ -587,11 +591,11 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       const page=await browser.newPage({viewport:{width:320,height:800}});
       await page.addInitScript(()=>{localStorage.setItem('seven_ui_language','ar');localStorage.setItem('user_name_asked','1');});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenRemake&&window.SevenTheme&&window.SevenAttachmentLoader);
+      await wf(page,()=>window.SevenRemake&&window.SevenTheme&&window.SevenAttachmentLoader);
       await page.evaluate(async()=>{SevenTheme.setPreference('night');await SevenAttachmentLoader.load();});
-      await page.waitForFunction(()=>window.SevenAttachments&&!!document.querySelector('[data-seven-attach-trigger]'));
+      await wf(page,()=>window.SevenAttachments&&!!document.querySelector('[data-seven-attach-trigger]'));
       await page.click('[data-seven-attach-trigger]');
-      await page.waitForFunction(()=>{const m=document.querySelector('.seven-attach-menu');return m&&!m.hidden});
+      await wf(page,()=>{const m=document.querySelector('.seven-attach-menu');return m&&!m.hidden});
       const state=await page.evaluate(()=>{
         const m=document.querySelector('.seven-attach-menu'),r=m.getBoundingClientRect(),cs=getComputedStyle(m),composer=document.querySelector('.composer');
         composer.classList.add('seven-drag-active');
@@ -616,13 +620,13 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');localStorage.setItem('user_name','Seven Tester');localStorage.setItem('user-name','Seven Tester');});
       const requested=[];page.on('request',r=>{if(r.url().includes('/workspaces/'))requested.push(r.url())});
       await page.goto(origin,{waitUntil:'domcontentloaded'});
-      await page.waitForFunction(()=>window.SevenBetaUI?.state.ready&&window.SevenRemake&&typeof window.SevenRemake.openWorkspace==='function');
+      await wf(page,()=>window.SevenBetaUI?.state.ready&&window.SevenRemake&&typeof window.SevenRemake.openWorkspace==='function');
       const specialistBefore=requested.filter(u=>!deferredShell.has(path.posix.basename(new URL(u).pathname)));
       assert.deepEqual(specialistBefore,[],'specialist workspaces must remain unloaded before workspace intent: '+JSON.stringify(specialistBefore));
       assert.equal(await page.evaluate(()=>!!window.SevenWorkspaces),false);
       assert.equal(await page.evaluate(()=>!!window.SevenAttachments),false);
       await page.evaluate(()=>window.SevenRemake.openWorkspace('coding'));
-      await page.waitForFunction(()=>window.SevenWorkspaces&&document.querySelector('.seven-workspace-root'),null,{timeout:10000});
+      await wf(page,()=>window.SevenWorkspaces&&document.querySelector('.seven-workspace-root'),null,{timeout:10000});
       const specialistAfter=requested.filter(u=>!deferredShell.has(path.posix.basename(new URL(u).pathname)));
       assert.ok(specialistAfter.some(u=>u.endsWith('/workspaces/hub.js')),'workspace hub did not lazy-load after intent: '+JSON.stringify(specialistAfter));
       await page.close();
