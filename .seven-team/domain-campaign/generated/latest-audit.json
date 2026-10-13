@@ -1,8 +1,10 @@
 {
   "schemaVersion": 1,
   "domains": 30,
-  "ready": 0,
-  "missing": [],
+  "ready": 1,
+  "missing": [
+    "D25_HISTORY_ROOMS"
+  ],
   "insufficient": [
     "D01_CHAT_CORE",
     "D02_MEMORY_CONTEXT",
@@ -12,7 +14,6 @@
     "D06_RPG_WORLD",
     "D07_RESEARCH_WEB",
     "D08_MODEL_ROUTING",
-    "D09_DEEP_THINK",
     "D10_FILES_MULTIMODAL",
     "D11_ANDROID_NATIVE",
     "D12_UI_DESIGN_SYSTEM",
@@ -40,7 +41,7 @@
       "id": "D01_CHAT_CORE",
       "status": "INSUFFICIENT",
       "urls": 69,
-      "primaryTagged": 86,
+      "primaryTagged": 64,
       "target": 10,
       "owners": [
         "B01",
@@ -65,8 +66,8 @@
     {
       "id": "D03_TOOLS_CAPABILITY",
       "status": "INSUFFICIENT",
-      "urls": 129,
-      "primaryTagged": 348,
+      "urls": 122,
+      "primaryTagged": 272,
       "target": 20,
       "owners": [
         "A04",
@@ -80,8 +81,8 @@
     {
       "id": "D04_CODING_SYSTEM",
       "status": "INSUFFICIENT",
-      "urls": 93,
-      "primaryTagged": 116,
+      "urls": 89,
+      "primaryTagged": 77,
       "target": 12,
       "owners": [
         "B06",
@@ -91,8 +92,8 @@
     {
       "id": "D05_SELF_DEVELOPMENT",
       "status": "INSUFFICIENT",
-      "urls": 43,
-      "primaryTagged": 90,
+      "urls": 41,
+      "primaryTagged": 51,
       "target": 12,
       "owners": [
         "B06",
@@ -134,9 +135,9 @@
     },
     {
       "id": "D09_DEEP_THINK",
-      "status": "INSUFFICIENT",
+      "status": "READY",
       "urls": 41,
-      "primaryTagged": 47,
+      "primaryTagged": 53,
       "target": 10,
       "owners": [
         "B04",
@@ -146,8 +147,8 @@
     {
       "id": "D10_FILES_MULTIMODAL",
       "status": "INSUFFICIENT",
-      "urls": 44,
-      "primaryTagged": 60,
+      "urls": 15,
+      "primaryTagged": 19,
       "target": 8,
       "owners": [
         "B02",
@@ -190,8 +191,8 @@
     {
       "id": "D14_SECURITY_PRIVACY",
       "status": "INSUFFICIENT",
-      "urls": 67,
-      "primaryTagged": 92,
+      "urls": 41,
+      "primaryTagged": 51,
       "target": 12,
       "owners": [
         "A07",
@@ -212,8 +213,8 @@
     {
       "id": "D16_NETWORK_RESILIENCE",
       "status": "INSUFFICIENT",
-      "urls": 57,
-      "primaryTagged": 66,
+      "urls": 31,
+      "primaryTagged": 31,
       "target": 8,
       "owners": [
         "B07",
@@ -278,8 +279,8 @@
     {
       "id": "D22_PROTOCOLS_INTEROP",
       "status": "INSUFFICIENT",
-      "urls": 79,
-      "primaryTagged": 103,
+      "urls": 69,
+      "primaryTagged": 64,
       "target": 10,
       "owners": [
         "A04",
@@ -311,8 +312,8 @@
     {
       "id": "D25_HISTORY_ROOMS",
       "status": "INSUFFICIENT",
-      "urls": 13,
-      "primaryTagged": 22,
+      "urls": 10,
+      "primaryTagged": 10,
       "target": 8,
       "owners": [
         "B01",
@@ -333,8 +334,8 @@
     {
       "id": "D27_ERROR_RECOVERY_UX",
       "status": "INSUFFICIENT",
-      "urls": 88,
-      "primaryTagged": 119,
+      "urls": 82,
+      "primaryTagged": 84,
       "target": 8,
       "owners": [
         "B07",
