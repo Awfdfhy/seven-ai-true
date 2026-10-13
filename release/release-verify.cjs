@@ -565,9 +565,17 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
         const chat=document.getElementById('chat');
         chat.innerHTML=Array.from({length:32},(_,i)=>'<div class="message assistant"><div class="bubble"><p>رسالة طويلة '+i+' '.repeat(12)+'</p><p>'+('نص '.repeat(40))+'</p></div></div>').join('');
         chat.scrollTop=0;
-        chat.dispatchEvent(new Event('scroll'));
       });
-      await page.waitForFunction(()=>document.querySelector('.seven-shell-jump')?.classList.contains('show'));
+      // ensureJump() binds the scroll listener on requestAnimationFrame; a scroll fired in the
+      // same frame the listener is (re)bound is dropped. Re-dispatch until .show is applied so
+      // the assertion below still verifies the real toggle semantics rather than a lost event.
+      await page.waitForFunction(()=>{
+        const chat=document.getElementById('chat');
+        const jump=document.querySelector('.seven-shell-jump');
+        if(!chat||!jump)return false;
+        if(!jump.classList.contains('show'))chat.dispatchEvent(new Event('scroll'));
+        return jump.classList.contains('show');
+      });
       const state=await page.evaluate(()=>{
         const b=document.querySelector('.seven-shell-jump'),r=b.getBoundingClientRect(),cs=getComputedStyle(b);
         return{parent:b.parentElement?.id,aria:b.getAttribute('aria-label'),bg:cs.backgroundColor,border:cs.borderStyle,bounded:r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2};
