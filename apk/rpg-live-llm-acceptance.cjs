@@ -2,6 +2,11 @@
 const assert=require('node:assert/strict');
 const State=require('../release/workspaces/rpg-state.js');
 const Context=require('../release/workspaces/rpg-context.js');
+const { parseGatewayClientKeys, toRuntimeEnv }=require('./gateway-client-keys.cjs');
+// Load credentials from the bundled GATEWAY_CLIENT_KEYS secret (never logged).
+// Values act as a secure fallback for the per-provider SEVEN_RPG_*_KEY env vars.
+const gatewayEnv=toRuntimeEnv(parseGatewayClientKeys(process.env.GATEWAY_CLIENT_KEYS));
+for (const [k,v] of Object.entries(gatewayEnv)) { if (!process.env[k]) process.env[k]=v; }
 const providers=[
  {name:'Groq',key:process.env.SEVEN_RPG_GROQ_KEY,url:'https://api.groq.com/openai/v1/chat/completions',model:'llama-3.1-8b-instant'},
  {name:'OpenRouter',key:process.env.SEVEN_RPG_OPENROUTER_KEY,url:'https://openrouter.ai/api/v1/chat/completions',model:'openai/gpt-oss-20b:free'},

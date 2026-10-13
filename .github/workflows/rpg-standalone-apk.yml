@@ -84,6 +84,21 @@ jobs:
           script: |
             (cd android && ./gradlew --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=ai.seven.rpg.SevenRpgStandaloneTest)
             bash apk/run-rpg-force-stop.sh
+      - name: Resolve RPG Live LLM provider
+        id: rpg-live-provider
+        env:
+          GATEWAY_CLIENT_KEYS: ${{ secrets.GATEWAY_CLIENT_KEYS }}
+        run: |
+          if [ -n "$GATEWAY_CLIENT_KEYS" ]; then
+            echo "cloud=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "cloud=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Real RPG Live LLM + Canon acceptance
+        if: steps.rpg-live-provider.outputs.cloud == 'true'
+        env:
+          GATEWAY_CLIENT_KEYS: ${{ secrets.GATEWAY_CLIENT_KEYS }}
+        run: node apk/rpg-live-llm-acceptance.cjs
       - name: Upload RPG instrumentation diagnostics
         if: always()
         uses: actions/upload-artifact@v7
