@@ -11,6 +11,7 @@ import static org.junit.Assert.*;
 import android.webkit.WebView;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -89,6 +90,21 @@ public class SevenRpgStandaloneTest {
    assertTrue("RPG first world was not restored after Activity recreation",persisted);
    assertJsTrue(restored,"getComputedStyle(document.querySelector('[data-seven-shell-workspace=\\\"chat\\\"]')).display==='none'");
   }
+ }
+ @Test public void androidKeystoreSecretIsolation() throws Exception {
+  android.content.Context ctx=InstrumentationRegistry.getInstrumentation().getTargetContext();
+  SevenSecureStore store=new SevenSecureStore(ctx);
+  store.clear();
+  store.put("provider_token","secret-value-123");
+  assertEquals("secret-value-123",store.get("provider_token"));
+  assertTrue(store.keys().contains("provider_token"));
+  java.security.KeyStore ks=java.security.KeyStore.getInstance("AndroidKeyStore");
+  ks.load(null);
+  assertTrue("keystore key must exist",ks.containsAlias("seven.secure.keystore.v1"));
+  String raw=ctx.getSharedPreferences("seven.secure.v1",android.content.Context.MODE_PRIVATE).getString("provider_token","");
+  assertFalse("stored value must be ciphertext not plaintext",raw.contains("secret-value-123"));
+  store.remove("provider_token");
+  assertNull("removed secret must be gone",store.get("provider_token"));
  }
 }
 `;
