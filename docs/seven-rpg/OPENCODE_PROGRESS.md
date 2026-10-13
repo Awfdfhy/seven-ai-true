@@ -217,6 +217,7 @@ Console error tests: 4/4 PASS.
 | 13 | 56cb656 | 2026-10-12 | Event Scheduler (RPG-15-09) |
 | 14 | 405fec5 | 2026-10-12 | Canon Continuity (RPG-03-01 to RPG-03-15) |
 | 15 | caeca21 | 2026-10-13 | Character System (RPG-04-01 to RPG-04-15) |
+| 16 | 4a9163c | 2026-10-13 | Narration System (RPG-05-01 to RPG-05-15) |
 
 ---
 
@@ -309,26 +310,96 @@ Console error tests: 4/4 PASS.
 
 ---
 
+## Iteration 16: Narration System (RPG-05-01 to RPG-05-15)
+
+**Target:** Implement comprehensive Narration System with narrator/dialogue styling, speaker attribution, player agency lock, scene cards, chapters, arcs, objectives, pacing, recap, choices, dialogue variants, NPC initiative, consequences, foreshadowing, and tone consistency.
+
+**Roadmap Items:**
+- RPG-05-01: narrator vs dialogue styling
+- RPG-05-02: character speaker attribution
+- RPG-05-03: player agency hard lock
+- RPG-05-04: scene cards
+- RPG-05-05: chapter titles
+- RPG-05-06: episode arcs
+- RPG-05-07: scene objectives
+- RPG-05-08: pacing controls
+- RPG-05-09: recap on return
+- RPG-05-10: story choices optional
+- RPG-05-11: dialogue variants
+- RPG-05-12: NPC initiative
+- RPG-05-13: narrative consequences
+- RPG-05-14: foreshadowing tracker
+- RPG-05-15: tone consistency
+
+**Status:** ✅ COMPLETE
+
+**Changes:**
+- Created `release/workspaces/rpg-narration.js` implementing all 15 P1 Narration features
+- Narration entry creation with 6 styles (descriptive, terse, poetic, journal, dramatic, minimal)
+- Speaker attribution linking character voice data to dialogue entries
+- Player agency hard lock with GM override, reason tracking, and action assertion
+- Scene cards with location, weather, characters, objectives, tone, pacing, and entry history
+- Chapter management with titles, subtitles, ordering, and arc linking
+- Episode arc tracking with planned chapters, themes, and progress percentage
+- Scene objective management (add, complete, get) with optional flag
+- Pacing controls with 5 modes (slow, normal, fast, climax, downtime) and recommendations
+- Recap generation summarizing recent scenes, chapters, and active arcs
+- Story choice system with 5 types (dialogue, action, moral, tactical, exploration), required flag, and resolution
+- Dialogue variant system with tag-based selection and weight scoring
+- NPC initiative tracking with ordering and threshold-based action decisions
+- Narrative consequence system with 5 types (immediate, delayed, persistent, reversible, irreversible)
+- Foreshadowing tracker with importance scoring, resolution, and unresolved query
+- Tone consistency monitoring with dominance ratio calculation and history
+
+**Test Evidence (all 20 tests PASS):**
+1. createNarrationEntry - narrator styling
+2. createNarrationEntry - character dialogue
+3. attributeSpeaker - characterMap lookup
+4. Player agency - lock/unlock/assert
+5. createScene - scene card with objectives
+6. updateScene - start scene status
+7. addSceneEntry - narration entries
+8. createChapter + getChapters - ordered retrieval
+9. createArc + getArcProgress - progress tracking
+10. addSceneObjective / completeSceneObjective
+11. setScenePacing / getPacingRecommendation
+12. generateRecap - scenes, chapters, arcs summary
+13. createChoice / resolveChoice - moral choice resolution
+14. createDialogueVariant / selectDialogueVariant - tag matching
+15. setNpcInitiative / getNpcInitiativeOrder / shouldNpcAct
+16. createConsequence / applyConsequence - double-apply prevention
+17. addForeshadowing / resolveForeshadowing
+18. recordTone / getToneConsistency - dominance check
+19. getToneHistory - recent tone entries
+20. Edge cases - null returns, invalid IDs, reason codes
+
+**Static audit budget:** 385KB / 500KB
+**All 57 test suites passing.**
+
+**Commit:** `4a9163c` pushed to `rpg/standalone-20261011`
+
+---
+
 ## Next Action
 
-Iteration 15 (Character System) complete. Commit caeca21 pushed. GitHub Actions CI triggered for `rpg-standalone-apk.yml`.
+Iteration 16 (Narration System) complete. Commit 4a9163c pushed. GitHub Actions CI triggered for `rpg-standalone-apk.yml`.
 
-**Next: Iteration 16** — Narration (RPG-05-01 to RPG-05-15)
-- Narrator vs dialogue styling
-- Character speaker attribution
-- Player agency hard lock
-- Scene cards
-- Chapter titles
-- Episode arcs
-- Scene objectives
-- Pacing controls
-- Recap on return
-- Story choices optional
-- Dialogue variants
-- NPC initiative
-- Narrative consequences
-- Foreshadowing tracker
-- Tone consistency
+**Next: Iteration 17** — LLM Runtime (RPG-07-01 to RPG-07-15)
+- Provider status
+- Model picker persistence
+- Fallback with explicit consent
+- Streaming generation
+- Cancel streaming
+- Retry idempotency
+- Timeouts
+- Rate limit UX
+- Context injection contract
+- Structured response parser
+- Invalid JSON recovery
+- Prompt injection defenses
+- Local model support optional
+- Usage and token transparency
+- Real inference acceptance
 
 ---
 
