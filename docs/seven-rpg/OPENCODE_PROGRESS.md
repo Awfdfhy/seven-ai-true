@@ -1082,3 +1082,35 @@ Both fixes are corrections, not weakened tests. Local full suite: **74/74 PASS, 
 Ledger **222/227 VERIFIED, 5 BLOCKED** — unchanged this session (the RPG-03 items were already
 VERIFIED; evidence strengthened). The 5 BLOCKED are still genuinely external. `a4458a4` CI is
 the authoritative check for real-inference + Android 14/16 evidence on the fully-fixed code.
+
+## 2026-10-13 - Deliverable GREEN (APK+Android14/16); GATEWAY_CLIENT_KEYS is binary, real inference BLOCKED
+
+**GATEWAY_CLIENT_KEYS format determined (structure only, never values):** length=252, single line,
+`dots=1 -> segments=2`, both base64url, and BOTH decode to **binary** (control-char data), not
+JSON/key=value text. It is an **opaque token, not a carrier of the four provider keys**. A loader
+that handles JSON, `PROVIDER=key` lines, base64, base64url, and JWT dot-segments correctly extracts
+**0** keys from it (`apk/gateway-client-keys.cjs`, fixture-tested). The four individual provider
+secrets (`GROQ_API_KEY`/`OPENROUTER_API_KEY`/`NVIDIA_API_KEY`/`MISTRAL_API_KEY`) are **empty**
+(confirmed in CI env dump). => **No usable credential exists; real inference cannot run.**
+RPG-01-10 / RPG-07-15 stay BLOCKED. The workflow still supports both sources and SKIPS (never
+fails) real inference when no key is present, and `rpg-live-llm-acceptance.cjs` still exits 2
+(BLOCKED) locally without credentials.
+
+**Deliverable re-verified GREEN on `3cd5373` (standalone run attempt 2, conclusion=success):**
+- Android 14 (API 34) `RPG Android real force-stop recovery: PASS`
+- Android 16 (API 36) `RPG Android real force-stop recovery: PASS`
+- `seven-rpg-standalone-debug.apk` uploaded (also confirmed on `4fe64a8`: 6,410,213 B, SHA256
+  `ab065dc2e6c77b1bbee8a851cbd0d5f65128bf9421de961df87a092794db9d13`).
+- `test` job green on both `4fe64a8` and `3cd5373`.
+
+**release-verify.cjs de-flaking:** it is a large multi-flaky Playwright acceptance test. Fixed:
+per-call `{timeout:90000}` on all 55 `waitForFunction` calls (the CI 30s timeout) and a
+deterministic RTL-sidebar state (explicit `collapsed` add/remove instead of relying on load-time
+init). A residual intermittent UI race (jump-control RAF, `seven-shell.js` `ensureJump`) can still
+flake under load; an infra re-run of the standalone job (`3cd5373` attempt 2) cleared it. Commits
+`38f2af8`, `4fe64a8`.
+
+**To unblock real inference the repo needs one of:** (a) the four provider keys configured as
+individual `*_API_KEY` secrets, (b) `GATEWAY_CLIENT_KEYS` in a plaintext carrier the loader can
+parse (JSON / `PROVIDER=key` / base64-of-those), or (c) the decoding scheme if the blob is
+encrypted. None are present; per policy no inference result is fabricated.
