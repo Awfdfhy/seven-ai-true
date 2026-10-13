@@ -39,7 +39,7 @@
     {
       "id": "D01_CHAT_CORE",
       "status": "INSUFFICIENT",
-      "urls": 69,
+      "urls": 71,
       "primaryTagged": 86,
       "target": 10,
       "owners": [
@@ -50,8 +50,8 @@
     {
       "id": "D02_MEMORY_CONTEXT",
       "status": "INSUFFICIENT",
-      "urls": 138,
-      "primaryTagged": 339,
+      "urls": 121,
+      "primaryTagged": 262,
       "target": 20,
       "owners": [
         "A06",
@@ -65,8 +65,8 @@
     {
       "id": "D03_TOOLS_CAPABILITY",
       "status": "INSUFFICIENT",
-      "urls": 131,
-      "primaryTagged": 348,
+      "urls": 112,
+      "primaryTagged": 271,
       "target": 20,
       "owners": [
         "A04",
@@ -80,8 +80,8 @@
     {
       "id": "D04_CODING_SYSTEM",
       "status": "INSUFFICIENT",
-      "urls": 93,
-      "primaryTagged": 116,
+      "urls": 28,
+      "primaryTagged": 39,
       "target": 12,
       "owners": [
         "B06",
@@ -113,8 +113,8 @@
     {
       "id": "D07_RESEARCH_WEB",
       "status": "INSUFFICIENT",
-      "urls": 92,
-      "primaryTagged": 80,
+      "urls": 6,
+      "primaryTagged": 3,
       "target": 12,
       "owners": [
         "B03",
@@ -146,7 +146,7 @@
     {
       "id": "D10_FILES_MULTIMODAL",
       "status": "INSUFFICIENT",
-      "urls": 46,
+      "urls": 44,
       "primaryTagged": 60,
       "target": 8,
       "owners": [
@@ -157,7 +157,7 @@
     {
       "id": "D11_ANDROID_NATIVE",
       "status": "INSUFFICIENT",
-      "urls": 34,
+      "urls": 32,
       "primaryTagged": 46,
       "target": 10,
       "owners": [
@@ -179,7 +179,7 @@
     {
       "id": "D13_ARABIC_RTL_A11Y",
       "status": "INSUFFICIENT",
-      "urls": 34,
+      "urls": 30,
       "primaryTagged": 61,
       "target": 8,
       "owners": [
@@ -234,8 +234,8 @@
     {
       "id": "D18_TESTING_EVALS",
       "status": "INSUFFICIENT",
-      "urls": 95,
-      "primaryTagged": 128,
+      "urls": 43,
+      "primaryTagged": 51,
       "target": 12,
       "owners": [
         "A08",
@@ -300,8 +300,8 @@
     {
       "id": "D24_RELEASE_APK",
       "status": "INSUFFICIENT",
-      "urls": 99,
-      "primaryTagged": 100,
+      "urls": 23,
+      "primaryTagged": 23,
       "target": 8,
       "owners": [
         "A02",
@@ -311,7 +311,7 @@
     {
       "id": "D25_HISTORY_ROOMS",
       "status": "INSUFFICIENT",
-      "urls": 42,
+      "urls": 44,
       "primaryTagged": 63,
       "target": 8,
       "owners": [
@@ -366,8 +366,8 @@
     {
       "id": "D30_AUTONOMOUS_QUALITY",
       "status": "INSUFFICIENT",
-      "urls": 102,
-      "primaryTagged": 212,
+      "urls": 93,
+      "primaryTagged": 135,
       "target": 12,
       "owners": [
         "A08",
