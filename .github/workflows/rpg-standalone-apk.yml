@@ -92,10 +92,14 @@ jobs:
         id: rpg-live-provider
         env:
           GATEWAY_CLIENT_KEYS: ${{ secrets.GATEWAY_CLIENT_KEYS }}
+          SEVEN_RPG_GROQ_KEY: ${{ secrets.GROQ_API_KEY }}
+          SEVEN_RPG_OPENROUTER_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          SEVEN_RPG_NVIDIA_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          SEVEN_RPG_MISTRAL_KEY: ${{ secrets.MISTRAL_API_KEY }}
         run: |
-          # cloud=true only when the loader extracts >=1 usable provider key. A secret
-          # whose format the loader cannot parse is skipped (never a build failure).
-          if node -e "const {parseGatewayClientKeys}=require('./apk/gateway-client-keys.cjs');const k=parseGatewayClientKeys(process.env.GATEWAY_CLIENT_KEYS||'');process.exit(Object.keys(k).length>0?0:3)"; then
+          # cloud=true when ANY credential source yields a usable provider key:
+          # either GATEWAY_CLIENT_KEYS parses, or an individual provider secret is set.
+          if node -e "const {parseGatewayClientKeys}=require('./apk/gateway-client-keys.cjs');const gk=parseGatewayClientKeys(process.env.GATEWAY_CLIENT_KEYS||'');const hasIndividual=['groq','openrouter','nvidia','mistral'].some(p=>(process.env['SEVEN_RPG_'+p.toUpperCase()+'_KEY']||'').trim());process.exit((Object.keys(gk).length>0||hasIndividual)?0:3)"; then
             echo "cloud=true" >> "$GITHUB_OUTPUT"
           else
             echo "cloud=false" >> "$GITHUB_OUTPUT"
@@ -104,6 +108,10 @@ jobs:
         if: steps.rpg-live-provider.outputs.cloud == 'true'
         env:
           GATEWAY_CLIENT_KEYS: ${{ secrets.GATEWAY_CLIENT_KEYS }}
+          SEVEN_RPG_GROQ_KEY: ${{ secrets.GROQ_API_KEY }}
+          SEVEN_RPG_OPENROUTER_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          SEVEN_RPG_NVIDIA_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          SEVEN_RPG_MISTRAL_KEY: ${{ secrets.MISTRAL_API_KEY }}
         run: node apk/rpg-live-llm-acceptance.cjs
       - name: Upload RPG instrumentation diagnostics
         if: always()
