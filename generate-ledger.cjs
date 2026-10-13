@@ -82,7 +82,7 @@ const verified = new Set([
 // not asserted under the canonical ID). The coverage test closes that gap: it
 // cites every one of these canonical IDs and exercises the roadmap-named
 // capability with real assertions (60/60 PASS). Evidence commit range
-// 7157c02..ead68a6 spans the feature modules + the CI-safe coverage test.
+// 7157c02..4eefdcf spans the feature modules + the CI-safe coverage test.
 const coverage = new Set([
   'RPG-11-01','RPG-11-02','RPG-11-03','RPG-11-04','RPG-11-05','RPG-11-06','RPG-11-07','RPG-11-08',
   'RPG-11-09','RPG-11-10','RPG-11-11','RPG-11-12','RPG-11-13','RPG-11-14','RPG-11-15','RPG-11-16',
@@ -135,7 +135,7 @@ const ledger = {
       evidence = { commit: info.commit, testFile: info.test, basis: 'test-assertion-references-id' };
     } else if (coverage.has(item.id)) {
       status = 'VERIFIED';
-      evidence = { commit: '7157c02..ead68a6', testFile: 'release/rpg-roadmap-coverage.test.cjs', basis: 'test-assertion-references-id' };
+      evidence = { commit: '7157c02..4eefdcf', testFile: 'release/rpg-roadmap-coverage.test.cjs', basis: 'test-assertion-references-id' };
     } else if (blocked.has(item.id)) {
       status = 'BLOCKED';
       evidence = { reason: 'Requires external credentials/hardware/CI' };

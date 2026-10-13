@@ -1,7 +1,7 @@
 {
   "format": "seven-rpg-roadmap-ledger",
   "version": 1,
-  "generatedAt": "2026-10-13T14:18:31.682Z",
+  "generatedAt": "2026-10-13T14:28:10.995Z",
   "repository": "Awfdfhy/seven-ai-true",
   "branch": "rpg/standalone-20261011",
   "totalItems": 227,
@@ -85,7 +85,7 @@
       "feature": "cross-world isolation",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -97,7 +97,7 @@
       "feature": "restart persistence",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -109,7 +109,7 @@
       "feature": "force-stop persistence",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -203,7 +203,7 @@
       "feature": "world templates",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -215,7 +215,7 @@
       "feature": "multi world library",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -227,7 +227,7 @@
       "feature": "world rename and archive",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -239,7 +239,7 @@
       "feature": "world delete with confirmation",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -251,7 +251,7 @@
       "feature": "world export preview",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -263,7 +263,7 @@
       "feature": "world import preview",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -287,7 +287,7 @@
       "feature": "session timeline",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -299,7 +299,7 @@
       "feature": "session checkpoints",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -335,7 +335,7 @@
       "feature": "world rules schema",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -347,7 +347,7 @@
       "feature": "difficulty and tone profiles",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -1821,7 +1821,7 @@
       "feature": "RPG-only app shell",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -1833,7 +1833,7 @@
       "feature": "mobile portrait layout",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -1845,7 +1845,7 @@
       "feature": "landscape layout",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -1857,7 +1857,7 @@
       "feature": "RTL localization",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -1869,7 +1869,7 @@
       "feature": "Arabic UI",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -1881,7 +1881,7 @@
       "feature": "accessible controls",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -1893,7 +1893,7 @@
       "feature": "keyboard focus",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -1905,7 +1905,7 @@
       "feature": "screen reader labels",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -1917,7 +1917,7 @@
       "feature": "reduced motion",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -1929,7 +1929,7 @@
       "feature": "light dark themes",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -1941,7 +1941,7 @@
       "feature": "custom typography",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -1953,7 +1953,7 @@
       "feature": "story typography",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -1965,7 +1965,7 @@
       "feature": "character cards",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -1977,7 +1977,7 @@
       "feature": "world dashboard",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -1989,7 +1989,7 @@
       "feature": "contextual command palette",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2001,7 +2001,7 @@
       "feature": "loading and offline states",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2013,7 +2013,7 @@
       "feature": "character portraits",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2025,7 +2025,7 @@
       "feature": "world illustrations opt in",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2037,7 +2037,7 @@
       "feature": "asset library",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2049,7 +2049,7 @@
       "feature": "image attachment",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2061,7 +2061,7 @@
       "feature": "scene backgrounds",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2073,7 +2073,7 @@
       "feature": "music optional",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2085,7 +2085,7 @@
       "feature": "SFX optional",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2097,7 +2097,7 @@
       "feature": "performance aware animations",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2109,7 +2109,7 @@
       "feature": "content filters",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2121,7 +2121,7 @@
       "feature": "asset backup manifests",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2133,7 +2133,7 @@
       "feature": "placeholder fallback",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2145,7 +2145,7 @@
       "feature": "copyright safe sourcing",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2157,7 +2157,7 @@
       "feature": "image caching",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2169,7 +2169,7 @@
       "feature": "offline asset access",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2181,7 +2181,7 @@
       "feature": "media accessibility",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2373,7 +2373,7 @@
       "feature": "1000-event campaigns",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2385,7 +2385,7 @@
       "feature": "500-message UI regression",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2397,7 +2397,7 @@
       "feature": "10k-event stress test",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2409,7 +2409,7 @@
       "feature": "low memory recovery",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2421,7 +2421,7 @@
       "feature": "large backup rejection",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2433,7 +2433,7 @@
       "feature": "corrupt storage quarantine",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2445,7 +2445,7 @@
       "feature": "Android upgrade retention",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2457,7 +2457,7 @@
       "feature": "battery use",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2469,7 +2469,7 @@
       "feature": "startup speed",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2481,7 +2481,7 @@
       "feature": "render latency",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2493,7 +2493,7 @@
       "feature": "memory leaks",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2505,7 +2505,7 @@
       "feature": "storage growth",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2517,7 +2517,7 @@
       "feature": "CI diagnostics",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2529,7 +2529,7 @@
       "feature": "visual screenshots",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2541,7 +2541,7 @@
       "feature": "release smoke matrix",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
@@ -2601,7 +2601,7 @@
       "feature": "canon policy editor",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "7157c02..ead68a6",
+        "commit": "7157c02..4eefdcf",
         "testFile": "release/rpg-roadmap-coverage.test.cjs",
         "basis": "test-assertion-references-id"
       }
