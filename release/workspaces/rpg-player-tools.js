@@ -599,6 +599,101 @@
       return { ok: true, cleared };
     }
 
+    // RPG-02-12: Replay read-only
+    const replays = new Map();
+
+    function createReplaySession(input) {
+      const i = obj(input);
+      const id = i.id || stableId('replay', nextId());
+      const replay = {
+        id,
+        sessionId: text(i.sessionId),
+        initialState: clone(i.initialState) || null,
+        events: arr(i.events).map(e => clone(e)),
+        readOnly: true,
+        cursor: 0,
+        status: 'ready', // ready, playing, paused, finished
+        speed: clamp(i.speed ?? 1, 0.25, 4),
+        createdAt: now(),
+        metadata: obj(i.metadata)
+      };
+      replays.set(id, replay);
+      return clone(replay);
+    }
+
+    function getReplaySession(replayId) {
+      const replay = replays.get(replayId);
+      return replay ? clone(replay) : null;
+    }
+
+    function appendReplayEvent(replayId, event) {
+      const replay = replays.get(replayId);
+      if (!replay) return { ok: false, reason: 'replay-not-found' };
+      replay.events.push(clone(event));
+      return { ok: true, eventCount: replay.events.length };
+    }
+
+    function getReplayState(replayId, uptoIndex) {
+      const replay = replays.get(replayId);
+      if (!replay) return { ok: false, reason: 'replay-not-found' };
+      if (!replay.initialState) return { ok: false, reason: 'missing-initial-state' };
+      const limit = uptoIndex == null ? replay.events.length : clamp(uptoIndex, 0, replay.events.length);
+      let state = stateApi.createState(replay.initialState);
+      const applied = [];
+      const rejected = [];
+      for (let n = 0; n < limit; n++) {
+        const event = replay.events[n];
+        const out = stateApi.applyEvent(state, event);
+        if (out && out.ok === true) {
+          state = out.state;
+          applied.push({ index: n, eventId: event && event.id || null, record: out.record || null });
+        } else {
+          rejected.push({ index: n, eventId: event && event.id || null, reason: out && out.reason || 'unknown' });
+        }
+      }
+      const validation = stateApi.validateState ? stateApi.validateState(state) : { valid: true };
+      return {
+        ok: true,
+        readOnly: true,
+        state: clone(state),
+        appliedCount: applied.length,
+        rejectedCount: rejected.length,
+        applied,
+        rejected,
+        cursor: limit,
+        totalEvents: replay.events.length,
+        valid: validation.valid !== false
+      };
+    }
+
+    function stepReplay(replayId, steps) {
+      const replay = replays.get(replayId);
+      if (!replay) return { ok: false, reason: 'replay-not-found' };
+      const inc = steps == null ? 1 : clamp(Math.trunc(steps), 1, replay.events.length);
+      replay.cursor = clamp(replay.cursor + inc, 0, replay.events.length);
+      replay.status = replay.cursor >= replay.events.length ? 'finished' : 'playing';
+      return { ok: true, cursor: replay.cursor, status: replay.status, totalEvents: replay.events.length };
+    }
+
+    function seekReplay(replayId, index) {
+      const replay = replays.get(replayId);
+      if (!replay) return { ok: false, reason: 'replay-not-found' };
+      replay.cursor = clamp(Math.trunc(index), 0, replay.events.length);
+      replay.status = replay.cursor >= replay.events.length ? 'finished' : replay.cursor > 0 ? 'paused' : 'ready';
+      return { ok: true, cursor: replay.cursor, status: replay.status };
+    }
+
+    function mutateReplayState(replayId) {
+      const replay = replays.get(replayId);
+      if (!replay) return { ok: false, reason: 'replay-not-found' };
+      return { ok: false, reason: 'read-only', message: 'Replay sessions are read-only; mutations are not permitted' };
+    }
+
+    function deleteReplay(replayId) {
+      const existed = replays.delete(replayId);
+      return existed ? { ok: true } : { ok: false, reason: 'replay-not-found' };
+    }
+
     return {
       SLOT_TYPES, BOOKMARK_TYPES, NOTE_CATEGORIES,
       GLOSSARY_CATEGORIES, UNDO_TYPES,
@@ -616,7 +711,9 @@
       getRelationshipOverview, getStrongestRelationships,
       getTimeline, getTimelineSummary,
       compareSessions,
-      recordUndoableAction, undoAction, commitAction, getUndoableActions, clearUndoHistory
+      recordUndoableAction, undoAction, commitAction, getUndoableActions, clearUndoHistory,
+      createReplaySession, getReplaySession, appendReplayEvent, getReplayState,
+      stepReplay, seekReplay, mutateReplayState, deleteReplay
     };
   }
 

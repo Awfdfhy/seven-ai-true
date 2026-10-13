@@ -1,16 +1,16 @@
 {
   "format": "seven-rpg-roadmap-ledger",
   "version": 1,
-  "generatedAt": "2026-10-13T06:02:24.555Z",
+  "generatedAt": "2026-10-13T06:18:31.840Z",
   "repository": "Awfdfhy/seven-ai-true",
   "branch": "rpg/standalone-20261011",
   "totalItems": 227,
   "summary": {
     "byStatus": {
-      "VERIFIED": 149,
+      "VERIFIED": 150,
       "IMPLEMENTED": 60,
       "BLOCKED": 8,
-      "TODO": 10
+      "TODO": 9
     },
     "byPriority": {
       "P0": 15,
@@ -193,8 +193,8 @@
       "feature": "world creation wizard",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "af6e6a7",
-        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs",
+        "commit": "af6e6a7..a21e8f0",
+        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
         "basis": "test-assertion-references-id"
       }
     },
@@ -205,8 +205,8 @@
       "feature": "world templates",
       "status": "IMPLEMENTED",
       "evidence": {
-        "commit": "af6e6a7",
-        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs",
+        "commit": "af6e6a7..a21e8f0",
+        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
         "basis": "module-implements-capability"
       }
     },
@@ -217,8 +217,8 @@
       "feature": "multi world library",
       "status": "IMPLEMENTED",
       "evidence": {
-        "commit": "af6e6a7",
-        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs",
+        "commit": "af6e6a7..a21e8f0",
+        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
         "basis": "module-implements-capability"
       }
     },
@@ -229,8 +229,8 @@
       "feature": "world rename and archive",
       "status": "IMPLEMENTED",
       "evidence": {
-        "commit": "af6e6a7",
-        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs",
+        "commit": "af6e6a7..a21e8f0",
+        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
         "basis": "module-implements-capability"
       }
     },
@@ -241,8 +241,8 @@
       "feature": "world delete with confirmation",
       "status": "IMPLEMENTED",
       "evidence": {
-        "commit": "af6e6a7",
-        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs",
+        "commit": "af6e6a7..a21e8f0",
+        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
         "basis": "module-implements-capability"
       }
     },
@@ -253,8 +253,8 @@
       "feature": "world export preview",
       "status": "IMPLEMENTED",
       "evidence": {
-        "commit": "af6e6a7",
-        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs",
+        "commit": "af6e6a7..a21e8f0",
+        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
         "basis": "module-implements-capability"
       }
     },
@@ -265,8 +265,8 @@
       "feature": "world import preview",
       "status": "IMPLEMENTED",
       "evidence": {
-        "commit": "af6e6a7",
-        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs",
+        "commit": "af6e6a7..a21e8f0",
+        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
         "basis": "module-implements-capability"
       }
     },
@@ -277,8 +277,8 @@
       "feature": "campaign settings",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "af6e6a7",
-        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs",
+        "commit": "af6e6a7..a21e8f0",
+        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
         "basis": "test-assertion-references-id"
       }
     },
@@ -289,8 +289,8 @@
       "feature": "session timeline",
       "status": "IMPLEMENTED",
       "evidence": {
-        "commit": "af6e6a7",
-        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs",
+        "commit": "af6e6a7..a21e8f0",
+        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
         "basis": "module-implements-capability"
       }
     },
@@ -301,8 +301,8 @@
       "feature": "session checkpoints",
       "status": "IMPLEMENTED",
       "evidence": {
-        "commit": "af6e6a7",
-        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs",
+        "commit": "af6e6a7..a21e8f0",
+        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
         "basis": "module-implements-capability"
       }
     },
@@ -313,8 +313,8 @@
       "feature": "session branching",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "af6e6a7",
-        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs",
+        "commit": "af6e6a7..a21e8f0",
+        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
         "basis": "test-assertion-references-id"
       }
     },
@@ -323,8 +323,12 @@
       "priority": "P1",
       "domain": "RPG Foundation",
       "feature": "replay read only",
-      "status": "TODO",
-      "evidence": null
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "af6e6a7..a21e8f0",
+        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
+        "basis": "test-assertion-references-id"
+      }
     },
     {
       "id": "RPG-02-13",
@@ -333,8 +337,8 @@
       "feature": "world rules schema",
       "status": "IMPLEMENTED",
       "evidence": {
-        "commit": "af6e6a7",
-        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs",
+        "commit": "af6e6a7..a21e8f0",
+        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
         "basis": "module-implements-capability"
       }
     },
@@ -345,8 +349,8 @@
       "feature": "difficulty and tone profiles",
       "status": "IMPLEMENTED",
       "evidence": {
-        "commit": "af6e6a7",
-        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs",
+        "commit": "af6e6a7..a21e8f0",
+        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
         "basis": "module-implements-capability"
       }
     },
@@ -357,8 +361,8 @@
       "feature": "offline read only",
       "status": "VERIFIED",
       "evidence": {
-        "commit": "af6e6a7",
-        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs",
+        "commit": "af6e6a7..a21e8f0",
+        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
         "basis": "test-assertion-references-id"
       }
     },

@@ -326,6 +326,79 @@ const badStatus = pt.respondToCanonRequest('creq1', 'invalid-status', 'test');
 assert.equal(badStatus.ok, false);
 console.log('  PASS');
 
+console.log('\n30. createReplaySession + getReplayState (RPG-02-12)...');
+const replayEvents = [
+  { id: 'e1', type: 'time.advance', payload: { by: 10 } },
+  { id: 'e2', type: 'world.set', payload: { path: 'flags.currentLocation', value: 'forest' } },
+  { id: 'e3', type: 'time.advance', payload: { by: 5 } }
+];
+const replay1 = pt.createReplaySession({
+  id: 'replay1', sessionId: 'session1', initialState: seed,
+  events: replayEvents, speed: 2
+});
+assert.equal(replay1.readOnly, true);
+assert.equal(replay1.events.length, 3);
+assert.equal(replay1.cursor, 0);
+assert.equal(replay1.status, 'ready');
+assert.equal(replay1.speed, 2);
+const replayState = pt.getReplayState('replay1');
+assert.equal(replayState.ok, true);
+assert.equal(replayState.readOnly, true);
+assert.equal(replayState.appliedCount, 3);
+assert.equal(replayState.rejectedCount, 0);
+assert.equal(replayState.cursor, 3);
+assert.equal(replayState.totalEvents, 3);
+assert.equal(replayState.state.timeline.tick, 20); // 5 + 10 + 5
+assert.equal(replayState.state.world.flags.currentLocation, 'forest');
+assert.equal(replayState.valid, true);
+console.log('  PASS');
+
+console.log('\n31. getReplayState partial (uptoIndex)...');
+const partialState = pt.getReplayState('replay1', 1);
+assert.equal(partialState.ok, true);
+assert.equal(partialState.appliedCount, 1);
+assert.equal(partialState.cursor, 1);
+assert.equal(partialState.state.timeline.tick, 15); // 5 + 10 only
+console.log('  PASS');
+
+console.log('\n32. stepReplay + seekReplay...');
+const step1 = pt.stepReplay('replay1');
+assert.equal(step1.ok, true);
+assert.equal(step1.cursor, 1);
+assert.equal(step1.status, 'playing');
+const step2 = pt.stepReplay('replay1', 2);
+assert.equal(step2.cursor, 3);
+assert.equal(step2.status, 'finished');
+const seek = pt.seekReplay('replay1', 0);
+assert.equal(seek.cursor, 0);
+assert.equal(seek.status, 'ready');
+console.log('  PASS');
+
+console.log('\n33. mutateReplayState read-only guard...');
+const mutate = pt.mutateReplayState('replay1');
+assert.equal(mutate.ok, false);
+assert.equal(mutate.reason, 'read-only');
+assert.ok(mutate.message.includes('read-only'));
+console.log('  PASS');
+
+console.log('\n34. Replay edge cases...');
+assert.equal(pt.getReplaySession('nonexistent'), null);
+const badReplayState = pt.getReplayState('nonexistent');
+assert.equal(badReplayState.ok, false);
+const badStep = pt.stepReplay('nonexistent');
+assert.equal(badStep.ok, false);
+const badSeek = pt.seekReplay('nonexistent', 0);
+assert.equal(badSeek.ok, false);
+const badMutate = pt.mutateReplayState('nonexistent');
+assert.equal(badMutate.ok, false);
+const appendToMissing = pt.appendReplayEvent('nonexistent', {});
+assert.equal(appendToMissing.ok, false);
+const delReplay = pt.deleteReplay('replay1');
+assert.equal(delReplay.ok, true);
+const delAgain = pt.deleteReplay('replay1');
+assert.equal(delAgain.ok, false);
+console.log('  PASS');
+
 console.log('\n✅ All RPG Player Tools System tests passed!');
 console.log('\nCoverage:');
 console.log('  RPG-13-01 (save slots): createSaveSlot, listSaveSlots, updateSaveSlot, deleteSaveSlot');
@@ -343,3 +416,4 @@ console.log('  RPG-13-12 (relationship viewer): getRelationshipOverview, getStro
 console.log('  RPG-13-13 (timeline explorer): getTimeline with filters, getTimelineSummary');
 console.log('  RPG-13-14 (session comparison): compareSessions with overlap calculation');
 console.log('  RPG-13-15 (undo uncommitted action): recordUndoableAction, undoAction, commitAction');
+console.log('  RPG-02-12 (replay read-only): createReplaySession, getReplayState, stepReplay, seekReplay, mutateReplayState guard');

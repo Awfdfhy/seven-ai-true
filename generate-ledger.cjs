@@ -23,7 +23,7 @@ if (items.length !== 227) { console.error(`Expected 227, got ${items.length}`); 
 // Domain -> commit + test file mapping
 const domainInfo = {
   'RPG-01': { commit: '5817016..af6e6a7', test: 'release/rpg-atomic-import.test.cjs, rpg-acceptance.test.cjs' },
-  'RPG-02': { commit: 'af6e6a7', test: 'release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs' },
+  'RPG-02': { commit: 'af6e6a7..a21e8f0', test: 'release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)' },
   'RPG-03': { commit: 'c1d3b76', test: 'release/rpg-canon-continuity.test.cjs' },
   'RPG-04': { commit: '510e8bd', test: 'release/rpg-character.test.cjs' },
   'RPG-05': { commit: '4a9163c', test: 'release/rpg-narration.test.cjs' },
@@ -43,8 +43,8 @@ const domainInfo = {
 const verified = new Set([
   // RPG-01: backup atomic/rollback/schema/checksum tested in early iterations
   'RPG-01-01','RPG-01-02','RPG-01-03','RPG-01-04','RPG-01-05',
-  // RPG-02: world creation, campaign settings, session branching, offline read
-  'RPG-02-01','RPG-02-08','RPG-02-11','RPG-02-15',
+  // RPG-02: world creation, campaign settings, session branching, offline read, replay read-only
+  'RPG-02-01','RPG-02-08','RPG-02-11','RPG-02-12','RPG-02-15',
   // RPG-03: canon continuity (all purpose-built)
   'RPG-03-01','RPG-03-02','RPG-03-03','RPG-03-04','RPG-03-05','RPG-03-06','RPG-03-07','RPG-03-08',
   'RPG-03-09','RPG-03-10','RPG-03-11','RPG-03-12','RPG-03-13','RPG-03-14','RPG-03-15',
