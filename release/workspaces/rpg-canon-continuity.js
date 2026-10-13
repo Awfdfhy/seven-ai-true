@@ -356,12 +356,14 @@
     }
 
     // RPG-03-13: canon merge preview — shows what merging two entries would produce,
-    // flagging conflicting fields, without mutating either entry.
+    // flagging conflicting fields, without mutating either entry. Auto-generated
+    // identity/metadata (id, version, createdAt, updatedAt, provenance timestamps)
+    // are excluded so only substantive differences count as conflicts.
     function mergePreview(entryAId, entryBId) {
       const a = entries.get(entryAId), b = entries.get(entryBId);
       if (!a || !b) return { ok: false, reason: 'not-found' };
       const changes = diffEntries(a, b);
-      const conflicts = Object.keys(changes).filter(k => k !== 'id' && k !== 'version' && k !== 'updatedAt' && k !== 'createdAt');
+      const conflicts = Object.keys(changes).filter(k => k !== 'id' && k !== 'version' && k !== 'updatedAt' && k !== 'createdAt' && k !== 'provenance');
       return {
         ok: true,
         a: { id: a.id, level: a.level }, b: { id: b.id, level: b.level },
