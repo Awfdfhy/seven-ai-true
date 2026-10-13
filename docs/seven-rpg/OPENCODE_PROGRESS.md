@@ -1025,3 +1025,60 @@ artifact ID `11824656476`). The gate withholds the APK on any red step.
 These 5 cannot be honestly closed without live credentials / hardware / a signing key;
 marking them VERIFIED would be fabricated progress. No APK READY is claimed: the artifact
 is debug-signed, so release signing (RPG-01-14) remains open.
+
+## 2026-10-13 - Regression-audit fixes + GATEWAY_CLIENT_KEYS + flake de-risking (ledger still 222/227)
+
+A background regression audit surfaced real bugs; a roadmap-revalidation audit surfaced
+false alarms (it missed `rpg-advanced.test.cjs`, so all 9 RPG-15 "NOT-COVERED" verdicts
+were wrong — those items are GENUINE). Independently verified every claim before acting.
+
+### 3 HIGH bugs fixed — commit `f6d9dc7` (full local suite PASS)
+1. **World identity clobbered**: `setWorldDifficulty`/`setWorldTone` spread the profile's
+   `name`/`description` onto the world, destroying its identity. Now stripped before merge;
+   `createWorld` also accepts `description`. Regression test added.
+2. **Character relationships lost on export**: `exportCharacter` used `JSON` clone, turning
+   the `relationships` Map into `{}`. Now serialized to a plain object and restored on import;
+   round-trip test added.
+3. **LLM readiness false-positive**: `checkInferenceReadiness` returned `ready:true` with zero
+   credentials. Added `setApiKey` (in-memory only, never persisted) + a `hasCredentials` gate;
+   readiness is `false` (`no-credentials`) until a key is loaded. Test added.
+
+### RPG-03 canon gaps closed with real functions + assertions (same commit)
+`getDiff` (diff viewer), `exportCanon`/`importCanon` (import mapping), `mergePreview`,
+`restoreEntry` (recovery); strengthened place/timeline/spoiler assertions (RPG-03-08/09/10).
+RPG-08-11 `getMilestones` now genuinely asserted (was comment-only).
+
+### GATEWAY_CLIENT_KEYS secure loader + real-inference acceptance — commit `ccb9686`
+- `apk/gateway-client-keys.cjs`: parses the bundled secret (JSON or `PROVIDER=key` lines,
+  case-insensitive) into the four provider keys (groq/openrouter/nvidia/mistral). NEVER logs
+  or persists values. Fixture unit test (non-secret placeholders) PASS.
+- `apk/rpg-live-llm-acceptance.cjs`: loads GATEWAY_CLIENT_KEYS as a secure fallback for the
+  per-provider `SEVEN_RPG_*_KEY` env vars; still exits 2 (BLOCKED) with no credentials.
+- `rpg-standalone-apk.yml`: a real LLM+Canon acceptance step that runs ONLY when
+  GATEWAY_CLIENT_KEYS is present (skips otherwise, so the debug pipeline is never blocked).
+- RPG-01-10 / RPG-07-15 remain BLOCKED until a GREEN CI run injects GATEWAY_CLIENT_KEYS and
+  `rpg-live-llm-acceptance.cjs` prints `RPG_LIVE_LLM_CANON ... realHttpInference:true`.
+
+### Production signing mechanism verified — commit `bfcfcad`
+`patch-production-signing.cjs` refactored to a pure `patchProductionGradleSigning(gradle)`
+(CLI behavior unchanged) + fixture test proving the `sevenRelease` upload-key config is
+prepared from the patch-android `sevenCi` baseline (property prelude, signingConfig, release
+preference + sevenCi fallback, preservation, loud failure without the prerequisite). This
+verifies the MECHANISM; a real production upload key is still external (RPG-01-14).
+
+### Two independent CI flakes root-caused and fixed (commits `5bea764`, `a4458a4`)
+CI `test` jobs failed on `ccb9686`/`bfcfcad`/`5bea764` — both were timing-sensitive
+assertions on fast runners, NOT product bugs:
+- **RPG-14-10 render latency** (`5bea764`): `Date.now()` (1ms) made a <1ms loop report
+  `avgFrameMs=0`, which a dead `|| mr.avgFrame` fallback wrongly rejected. Fixed with a
+  scoped `performance.now()` timer + asserting `Number.isFinite(avgFrameMs) && >= 0` (0 is a
+  valid fast render). Global `nowMs()` kept as `Date.now()` (line 344 needs epoch semantics).
+- **Canon mergePreview** (`a4458a4`): `provenance.timestamp` (auto `now()`) differed between
+  two `createEntry` calls under load, flipping `canMerge` to false. Excluded auto metadata
+  (id/version/timestamps/provenance) from merge conflicts. Verified 10/10 stable.
+Both fixes are corrections, not weakened tests. Local full suite: **74/74 PASS, 4m51s**.
+
+### State
+Ledger **222/227 VERIFIED, 5 BLOCKED** — unchanged this session (the RPG-03 items were already
+VERIFIED; evidence strengthened). The 5 BLOCKED are still genuinely external. `a4458a4` CI is
+the authoritative check for real-inference + Android 14/16 evidence on the fully-fixed code.
