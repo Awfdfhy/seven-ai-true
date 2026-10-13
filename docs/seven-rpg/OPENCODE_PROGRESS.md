@@ -226,6 +226,7 @@ Console error tests: 4/4 PASS.
 | 22 | 88ecfd4 | 2026-10-13 | RPG UI System (RPG-11-01 to RPG-11-16) |
 | 23 | edff354 | 2026-10-13 | Assets/Media System (RPG-12-01 to RPG-12-15) |
 | 24 | 3197761 | 2026-10-13 | Testing/Performance System (RPG-14-01 to RPG-14-15) |
+| 25 | a21e8f0 | 2026-10-13 | Machine-readable 227-task roadmap ledger |
 
 ---
 
@@ -669,6 +670,37 @@ Iteration 17 (LLM Runtime System) complete. Commit 8b2703c pushed.
 
 ---
 
+## Iteration 25: Machine-readable 227-task Roadmap Ledger
+
+**Target:** Create a machine-readable ledger enumerating all 227 roadmap items with id, priority, domain, feature, status, and evidence, satisfying the SEVEN RPG — OPERATION INFINITY directive for a durable, evidence-based tracking artifact.
+
+**Status:** ✅ COMPLETE
+
+**Changes:**
+- Created `docs/seven-rpg/ROADMAP_LEDGER.json` — enumerates all 227 roadmap items
+- Each item: id, priority (P0-P3), domain, feature, status (VERIFIED/IMPLEMENTED/BLOCKED/TODO), evidence (commit + testFile or reason)
+- VERIFIED (149): item explicitly referenced in module test assertions AND feature label matches roadmap
+- IMPLEMENTED (60): module provides the capability, module tests pass, but feature label may differ from roadmap wording (UI/Assets/Testing domains)
+- BLOCKED (8): requires external credentials, Android hardware/emulator, signing keys, or CI configuration
+- TODO (10): not yet implemented (1× P1 replay read-only, 9× P3 advanced features)
+- Summary: byStatus {VERIFIED:149, IMPLEMENTED:60, BLOCKED:8, TODO:10}, byPriority {P0:15, P1:90, P2:107, P3:15}
+- Created `generate-ledger.cjs` — reproducible generator parsing FEATURE_ROADMAP.md
+- Created `release/rpg-ledger.test.cjs` — validates ledger format, 227-item count, summary consistency, item structure, ID uniqueness, priority coverage
+
+**Test Evidence (all 6 ledger tests PASS):**
+1. Ledger format and metadata (format/version/repo/branch)
+2. Total item count = 227
+3. Summary consistency (byStatus/byPriority match items, sum = 227)
+4. Item structure (id regex, valid priority/status, domain, feature, evidence for VERIFIED/IMPLEMENTED/BLOCKED)
+5. ID uniqueness (227 unique ids)
+6. Priority coverage (P0=15, P1=90, P2=107, P3=15)
+
+**All 57 test suites passing (including new ledger test).**
+
+**Commit:** `a21e8f0` pushed to `rpg/standalone-20261011`
+
+---
+
 **Iteration 19 Status:** ✅ COMPLETE. Commit f7ae56c pushed.
 
 **Iteration 20 Status:** ✅ COMPLETE. Commit 73d8052 pushed.
@@ -681,9 +713,24 @@ Iteration 17 (LLM Runtime System) complete. Commit 8b2703c pushed.
 
 **Iteration 24 Status:** ✅ COMPLETE. Commit 3197761 pushed.
 
-**Next: Iteration 25** — Remaining P3 items (RPG-15-02, 03, 05, 08, 10–15) + machine-readable 227-task ledger
-- P3 remaining features from roadmap
-- Create machine-readable ledger (`docs/seven-rpg/ROADMAP_LEDGER.json`) enumerating all 227 items with status
+**Iteration 25 Status:** ✅ COMPLETE. Commit a21e8f0 pushed. Machine-readable 227-task ledger created.
+
+**Ledger Summary (ROADMAP_LEDGER.json):**
+- 149 VERIFIED, 60 IMPLEMENTED, 8 BLOCKED, 10 TODO (of 227)
+- Remaining TODO: RPG-02-12 (P1 replay read-only), RPG-15-02/03/08/10/11/12/13/14/15 (P3 advanced)
+- BLOCKED: RPG-01-09/10/11/12/13/14/15 (P0, need hardware/credentials/CI), RPG-07-15 (P1, needs API creds)
+
+**Next: Iteration 26** — Remaining TODO items (prioritize P1 RPG-02-12 replay read-only, then P3 RPG-15 items)
+- RPG-02-12: replay read-only session playback
+- RPG-15-02: co-op architecture research (design doc only)
+- RPG-15-03: modular plugins sandboxed
+- RPG-15-08: scenario packs
+- RPG-15-10: emergent rumors
+- RPG-15-11: NPC offscreen simulation
+- RPG-15-12: dynamic quest graph
+- RPG-15-13: world history atlas
+- RPG-15-14: campaign analytics
+- RPG-15-15: localized narrator voices optional
 
 ---
 
