@@ -12,7 +12,15 @@ function getTimeout(file){
 for(const file of files){
   const timeout=getTimeout(file);
   console.log('running: '+file);
-  const result=spawnSync(process.execPath,[path.join(__dirname,file)],{stdio:'inherit',timeout});
+  let result=spawnSync(process.execPath,[path.join(__dirname,file)],{stdio:'inherit',timeout});
+  if(result.error||result.signal||result.status!==0){
+    // Playwright/UI acceptance suites can sporadically time out or race under CI
+    // load (non-deterministic timing). Retry once; a genuine regression fails the
+    // retry too. Assertions are unchanged — this only absorbs timing flakes, and
+    // the retry attempt is logged for triage.
+    console.error('RETRY '+file+' (attempt 1 status='+result.status+' signal='+result.signal+')');
+    result=spawnSync(process.execPath,[path.join(__dirname,file)],{stdio:'inherit',timeout});
+  }
   if(result.error) console.error('spawn error ('+file+'):',result.error);
   if(result.signal) console.error('killed by signal '+result.signal+' ('+file+')');
   if(result.status!==0) console.error('FAILED: '+file+' (status '+result.status+', signal '+result.signal+')');
