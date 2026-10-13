@@ -793,7 +793,10 @@
       const o = obj(options);
       const messageCount = clamp(o.messageCount ?? 500, 1, 100000);
       const frameBudgetMs = clamp(o.frameBudgetMs ?? 16, 1, 5000);
-      const start = nowMs();
+      // High-resolution timer for sub-millisecond frame measurement (Date.now()
+      // rounds fast renders to 0 on optimistic hosts, hiding the measurement).
+      const hr = (typeof performance !== 'undefined' && typeof performance.now === 'function') ? () => performance.now() : () => nowMs();
+      const start = hr();
       // Simulate the render pipeline over a rolling window (no DOM in node).
       const windowSize = clamp(o.windowSize ?? 50, 1, messageCount);
       const messages = [];
@@ -801,13 +804,13 @@
       for (let i = 0; i < messageCount; i++) {
         messages.push({ id: 'msg-' + i, text: 'Message ' + i, role: i % 2 ? 'user' : 'assistant', ts: i });
         if (messages.length > windowSize) messages.shift();
-        const fStart = nowMs();
+        const fStart = hr();
         // project visible frame: sort + slice + stringify of the window
         JSON.stringify(messages.slice().sort((a, b) => a.ts - b.ts));
-        const fMs = nowMs() - fStart;
+        const fMs = hr() - fStart;
         if (fMs > maxFrameMs) maxFrameMs = fMs;
       }
-      const totalMs = nowMs() - start;
+      const totalMs = hr() - start;
       const result = {
         messageCount,
         windowSize,

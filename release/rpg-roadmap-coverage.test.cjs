@@ -852,7 +852,7 @@ section('RPG-14-10', 'render latency');
   const mr = Testing.createTestingManager(State).runMessageRenderRegression({ messageCount: 100 });
   assert.ok(Number.isFinite(mr.maxFrameMs), 'max frame latency measured');
   assert.ok(mr.maxFrameMs >= 0 && mr.maxFrameMs < 100, 'render latency bounded');
-  assert.ok(Number.isFinite(mr.avgFrameMs || mr.avgFrame), 'average latency measured');
+  assert.ok(Number.isFinite(mr.avgFrameMs) && mr.avgFrameMs >= 0, 'average latency measured');
   console.log('  PASS: render latency measured and bounded');
 }
 
