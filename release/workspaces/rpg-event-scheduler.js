@@ -23,10 +23,25 @@
 
     const events = new Map();
     const timers = new Map();
+    const lastIdNums = new Map();
+
+    // Collision-safe monotonic id generator. Date.now() alone repeats when two
+    // creations land in the same millisecond (or when the clock moves back),
+    // which silently overwrote the earlier record. Tracks the last numeric id
+    // per prefix and bumps forward so ids never repeat within this scheduler.
+    function nextId(prefix, isTaken) {
+      let n = Date.now();
+      const last = lastIdNums.get(prefix) || 0;
+      if (n <= last) n = last + 1;
+      let id = stableId(prefix, n);
+      if (typeof isTaken === 'function') { while (isTaken(id)) { n += 1; id = stableId(prefix, n); } }
+      lastIdNums.set(prefix, n);
+      return id;
+    }
 
     function createEvent(input) {
       const i = obj(input);
-      const id = i.id || stableId('evt', Date.now());
+      const id = i.id || nextId('evt', key => events.has(key));
       const type = EVENT_TYPES.includes(i.type) ? i.type : 'custom';
       const title = text(i.title);
       const description = text(i.description);
@@ -216,7 +231,7 @@
 
     function createSchedule(input) {
       const i = obj(input);
-      const id = i.id || stableId('sched', Date.now());
+      const id = i.id || nextId('sched');
       const name = text(i.name);
       const events = arr(i.events).map(e => createEvent(e));
       const timezone = text(i.timezone) || 'UTC';

@@ -28,9 +28,23 @@
   function createWorldRulesManager(stateApi) {
     if (!stateApi || typeof stateApi.createState !== 'function') throw Error('SevenRpgState-compatible stateApi required');
 
+    const lastIdNums = new Map();
+
+    // Collision-safe monotonic id: Date.now() repeats within the same
+    // millisecond, silently overwriting an existing record.
+    function nextId(prefix, isTaken) {
+      let n = Date.now();
+      const last = lastIdNums.get(prefix) || 0;
+      if (n <= last) n = last + 1;
+      let id = stableId(prefix, n);
+      if (typeof isTaken === 'function') { while (isTaken(id)) { n += 1; id = stableId(prefix, n); } }
+      lastIdNums.set(prefix, n);
+      return id;
+    }
+
     function createRule(input) {
       const i = obj(input);
-      const id = i.id || stableId('rule', Date.now());
+      const id = i.id || nextId('rule');
       const name = text(i.name) || 'Unnamed Rule';
       const type = RULE_TYPES.includes(i.type) ? i.type : 'custom';
       const scope = RULE_SCOPES.includes(i.scope) ? i.scope : 'global';
@@ -275,7 +289,7 @@
 
     function createRuleset(input) {
       const i = obj(input);
-      const id = i.id || stableId('ruleset', Date.now());
+      const id = i.id || nextId('ruleset');
       const name = text(i.name) || 'Unnamed Ruleset';
       const description = text(i.description);
       const rules = arr(i.rules).map(r => createRule(r));

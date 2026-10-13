@@ -37,10 +37,23 @@
     if (!stateApi || typeof stateApi.createState !== 'function') throw Error('SevenRpgState-compatible stateApi required');
 
     const templates = new Map();
+    const lastIdNums = new Map();
+
+    // Collision-safe monotonic id: Date.now() repeats within the same
+    // millisecond, silently overwriting an existing record.
+    function nextId(prefix, isTaken) {
+      let n = Date.now();
+      const last = lastIdNums.get(prefix) || 0;
+      if (n <= last) n = last + 1;
+      let id = stableId(prefix, n);
+      if (typeof isTaken === 'function') { while (isTaken(id)) { n += 1; id = stableId(prefix, n); } }
+      lastIdNums.set(prefix, n);
+      return id;
+    }
 
     function registerTemplate(template) {
       const t = obj(template);
-      if (!t.id) t.id = stableId('template', Date.now());
+      if (!t.id) t.id = nextId('template', key => templates.has(key));
       if (!t.name) t.name = 'Unnamed Template';
       if (!TEMPLATE_TYPES.includes(t.type)) t.type = 'scene';
       if (!t.weight) t.weight = 1;
@@ -274,7 +287,7 @@
       return {
         ok: true,
         scene: {
-          id: stableId('scene', Date.now()),
+          id: nextId('scene'),
           content: rendered.output,
           templateId,
           pacing: pickRandom(SCENE_PACING),

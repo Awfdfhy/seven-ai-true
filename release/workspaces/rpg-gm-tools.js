@@ -24,6 +24,21 @@
     const timelines = new Map();
     const npcs = new Map();
     let gmState = { sessionId: null, worldId: null, lastUpdated: now() };
+    const lastIdNums = new Map();
+
+    // Collision-safe monotonic id: Date.now() alone repeats within the same
+    // millisecond (or when the clock moves back), which silently overwrote the
+    // earlier record stored under that id. Tracks the last numeric id per
+    // prefix so auto-generated ids never repeat inside this manager.
+    function nextId(prefix, isTaken) {
+      let n = Date.now();
+      const last = lastIdNums.get(prefix) || 0;
+      if (n <= last) n = last + 1;
+      let id = stableId(prefix, n);
+      if (typeof isTaken === 'function') { while (isTaken(id)) { n += 1; id = stableId(prefix, n); } }
+      lastIdNums.set(prefix, n);
+      return id;
+    }
 
     function setSession(sessionId, worldId) {
       gmState.sessionId = sessionId;
@@ -33,7 +48,7 @@
 
     function createNote(input) {
       const i = obj(input);
-      const id = i.id || stableId('note', Date.now());
+      const id = i.id || nextId('note', key => notes.has(key));
       const type = NOTE_TYPES.includes(i.type) ? i.type : 'general';
       const visibility = VISIBILITY.includes(i.visibility) ? i.visibility : 'gm-only';
       const tags = uniq(i.tags);
@@ -88,7 +103,7 @@
 
     function createTimelineEvent(input) {
       const i = obj(input);
-      const id = i.id || stableId('event', Date.now());
+      const id = i.id || nextId('event');
       const timelineId = i.timelineId || 'main';
       const timestamp = i.timestamp || now();
       const type = text(i.type) || 'event';
@@ -122,7 +137,7 @@
 
     function registerNpc(input) {
       const i = obj(input);
-      const id = i.id || stableId('npc', Date.now());
+      const id = i.id || nextId('npc', key => npcs.has(key));
       const name = text(i.name);
       const role = text(i.role);
       const location = text(i.location);
@@ -220,7 +235,7 @@
       }
 
       return {
-        sessionId: stableId('session', Date.now()),
+        sessionId: nextId('session'),
         plannedDuration: duration,
         focus,
         hooks,

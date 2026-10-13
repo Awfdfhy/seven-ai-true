@@ -20,9 +20,23 @@
   function createPartyManager(stateApi) {
     if (!stateApi || typeof stateApi.createState !== 'function') throw Error('SevenRpgState-compatible stateApi required');
 
+    const lastIdNums = new Map();
+
+    // Collision-safe monotonic id: Date.now() repeats within the same
+    // millisecond, which could hand two created records the same id.
+    function nextId(prefix, isTaken) {
+      let n = Date.now();
+      const last = lastIdNums.get(prefix) || 0;
+      if (n <= last) n = last + 1;
+      let id = stableId(prefix, n);
+      if (typeof isTaken === 'function') { while (isTaken(id)) { n += 1; id = stableId(prefix, n); } }
+      lastIdNums.set(prefix, n);
+      return id;
+    }
+
     function createParty(input) {
       const i = obj(input);
-      const id = i.id || stableId('party', Date.now());
+      const id = i.id || nextId('party');
       const name = text(i.name) || 'Unnamed Party';
       const memberIds = uniq(i.memberIds);
       const formation = PARTY_FORMATION.includes(i.formation) ? i.formation : 'standard';
