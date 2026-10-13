@@ -84,12 +84,18 @@ jobs:
           script: |
             (cd android && ./gradlew --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=ai.seven.rpg.SevenRpgStandaloneTest)
             bash apk/run-rpg-force-stop.sh
+      - name: Diagnose GATEWAY_CLIENT_KEYS format
+        env:
+          GATEWAY_CLIENT_KEYS: ${{ secrets.GATEWAY_CLIENT_KEYS }}
+        run: node apk/diagnose-gateway-keys.cjs
       - name: Resolve RPG Live LLM provider
         id: rpg-live-provider
         env:
           GATEWAY_CLIENT_KEYS: ${{ secrets.GATEWAY_CLIENT_KEYS }}
         run: |
-          if [ -n "$GATEWAY_CLIENT_KEYS" ]; then
+          # cloud=true only when the loader extracts >=1 usable provider key. A secret
+          # whose format the loader cannot parse is skipped (never a build failure).
+          if node -e "const {parseGatewayClientKeys}=require('./apk/gateway-client-keys.cjs');const k=parseGatewayClientKeys(process.env.GATEWAY_CLIENT_KEYS||'');process.exit(Object.keys(k).length>0?0:3)"; then
             echo "cloud=true" >> "$GITHUB_OUTPUT"
           else
             echo "cloud=false" >> "$GITHUB_OUTPUT"
