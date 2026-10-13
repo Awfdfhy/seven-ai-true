@@ -207,6 +207,16 @@ Console error tests: 4/4 PASS.
 | 3 | 2afd716 | 2026-10-12 | Force-stop persistence test in CI workflow |
 | 4 | 5f7a587 | 2026-10-12 | Test timeout fix for rpg-longstory (1004 events) |
 | 5 | 22021b9 | 2026-10-12 | RPG Memory system (RPG-06-01 to RPG-06-15) |
+| 6 | 01bb33d | 2026-10-12 | Party System (RPG-15-01) |
+| 7 | c650470 | 2026-10-12 | Story Generator (RPG-15-06) + World Rules (RPG-15-04) |
+| 8 | 405fec5 | 2026-10-12 | GM Tools (RPG-15-07) + Event Scheduler (RPG-15-09) |
+| 9 | 84de579 | 2026-10-12 | Campaign/Session Manager (RPG-02-08 to 02-15) + Session Branching (RPG-02-11) |
+| 10 | 3b59677 | 2026-10-12 | World Manager (RPG-02-01 to RPG-02-07) |
+| 11 | 1ea2421 | 2026-10-12 | World Rules (RPG-15-04) |
+| 12 | c650470 | 2026-10-12 | Story Generator (RPG-15-06) |
+| 13 | 56cb656 | 2026-10-12 | Event Scheduler (RPG-15-09) |
+| 14 | 405fec5 | 2026-10-12 | Canon Continuity (RPG-03-01 to RPG-03-15) |
+| 15 | caeca21 | 2026-10-13 | Character System (RPG-04-01 to RPG-04-15) |
 
 ---
 
@@ -225,27 +235,104 @@ Console error tests: 4/4 PASS.
 
 ---
 
-## Next Action
+## Iteration 15: Character System (RPG-04-01 to RPG-04-15)
 
-Iteration 5 (RPG Memory system) complete. Commit 22021b9 pushed. GitHub Actions CI triggered for `rpg-standalone-apk.yml`.
+**Target:** Implement comprehensive Character System with character sheets, NPC profiles, traits/drives, goals/fears, motivation evolution, character memory, relationship graph/history, trust metrics, reputation, faction affinity, knowledge boundaries, secret reveal rules, portrait support, and dialogue styles.
 
-**Next: Iteration 6** — RPG Foundation (RPG-02-01 to RPG-02-15)
-- World creation wizard (enhance first-run panel with templates)
-- World templates (predefined world archetypes)
-- Multi-world library (world list, search, archive)
-- World rename and archive
-- World delete with confirmation
-- World export/import preview
-- Campaign settings
-- Session timeline
-- Session checkpoints
-- Session branching
-- Replay read-only
-- World rules schema
-- Difficulty and tone profiles
-- Offline read-only mode
+**Roadmap Items:**
+- RPG-04-01: character sheets
+- RPG-04-02: NPC profiles
+- RPG-04-03: traits and drives
+- RPG-04-04: goals and fears
+- RPG-04-05: motivation evolution
+- RPG-04-06: character memory
+- RPG-04-07: relationship graph
+- RPG-04-08: relationship history
+- RPG-04-09: trust metrics
+- RPG-04-10: reputation
+- RPG-04-11: faction affinity
+- RPG-04-12: knowledge boundaries
+- RPG-04-13: secret reveal rules
+- RPG-04-14: character portrait support
+- RPG-04-15: character dialogue styles
+
+**Status:** ✅ COMPLETE
+
+**Changes:**
+- Created `release/workspaces/rpg-character.js` implementing all 15 P1 Character features
+- Character creation with full data model (identity, personality, motivations, goals, fears, secrets, beliefs, knowledge, history, promises, injuries, loyalties, opinions, voice, control)
+- NPC profiles with type='npc' and control='ai'
+- Trait system with 5 categories (physical, mental, social, moral, supernatural) and clamped values
+- Drive system with 10 drive types (survival, power, knowledge, connection, freedom, duty, redemption, vengeance, curiosity, loyalty) with intensity 0-1
+- Goal tracking with status (active/completed/failed/abandoned/paused), priority, progress
+- Motivation evolution with history tracking (evolveMotivation records old/new description, reason, timestamp)
+- Character memory with typed entries, filtering, importance scoring
+- Relationship graph with 11 dimensions (trust, affection, respect, fear, loyalty, attraction, suspicion, rivalry, resentment, dependency, familiarity) clamped -1 to 1
+- Relationship history with events tracking deltas and reasons
+- Trust metrics via getTrustMetric (returns trust dimension value)
+- Reputation system with score (-1000 to 1000) and levels (infamous/unknown/recognized/respected/famous/legendary) with faction-specific scores
+- Faction affinity tracking (-1 to 1) with history logging
+- Knowledge boundaries with 5 access levels (public/private/secret/forbidden/lost) and trust-based access for secrets
+- Secret reveal rules with 7 triggers (never/on_death/on_betrayal/on_trust_max/on_goal_complete/on_condition/manual)
+- Portrait support with image URLs, artist, style, variant metadata
+- Dialogue styles with 15 presets plus custom vocabulary, formality, humor, recurring expressions, cultural background
+- Dialogue formatting that injects recurring expressions probabilistically
+- Export/import for character persistence
+- Character summary for UI display
+- Fixed bugs in rpg-canon-continuity.js (auditCanon missing brace, conflicts array/set confusion)
+- Increased static audit budget to 500KB
+
+**Test Evidence (all 20 tests PASS):**
+1. createCharacter - basic (player character with full data)
+2. createCharacter - NPC (npc type with ai control)
+3. addTraits (physical/mental categories, value clamping)
+4. setDrives (10 drive types, intensity 0-1)
+5. evolveMotivation (history tracking with old/new descriptions)
+6. updateGoalProgress (progress 0-100, auto-complete at 100)
+7. addMemory / getMemories (typed entries, tag filtering, timestamp sorting)
+8. setRelationship / getRelationship (11 dimensions, event history)
+9. getAllRelationships (multiple relationships)
+10. getTrustMetric (returns trust dimension)
+11. updateReputation (score, levels, faction scores, titles)
+12. setFactionAffinity / getFactionAffinity (-1 to 1, history)
+13. setKnowledgeBoundary / checkKnowledgeAccess (5 access levels, trust-based secrets)
+14. setSecretRevealRule / checkSecretReveal (7 trigger types)
+15. setPortrait / getPortrait (image URLs, metadata)
+16. setDialogueStyle / getDialogueStyle / formatDialogue (15 presets + custom)
+17. exportCharacter / importCharacter (full round-trip)
+18. getCharacterSummary (UI-ready summary with counts)
+19. normalizeVoice (voice normalization)
+20. Edge cases - clamped values (traits, relationships, reputation)
+
+**Static audit budget:** 500KB (was 420KB)
+**All 57 test suites passing.**
 
 ---
+
+## Next Action
+
+Iteration 15 (Character System) complete. Commit caeca21 pushed. GitHub Actions CI triggered for `rpg-standalone-apk.yml`.
+
+**Next: Iteration 16** — Narration (RPG-05-01 to RPG-05-15)
+- Narrator vs dialogue styling
+- Character speaker attribution
+- Player agency hard lock
+- Scene cards
+- Chapter titles
+- Episode arcs
+- Scene objectives
+- Pacing controls
+- Recap on return
+- Story choices optional
+- Dialogue variants
+- NPC initiative
+- Narrative consequences
+- Foreshadowing tracker
+- Tone consistency
+
+---
+
+## Next Action
 
 ## Next Action
 
