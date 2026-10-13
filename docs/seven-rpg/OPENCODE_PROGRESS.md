@@ -222,6 +222,7 @@ Console error tests: 4/4 PASS.
 | 18 | d56cb26 | 2026-10-13 | Progression System (RPG-08-01 to RPG-08-16) |
 | 19 | f7ae56c | 2026-10-13 | World Simulation System (RPG-09-01 to RPG-09-15) |
 | 20 | 73d8052 | 2026-10-13 | Combat System (RPG-10-01 to RPG-10-15) |
+| 21 | 7e94a70 | 2026-10-13 | Player Tools System (RPG-13-01 to RPG-13-15) |
 
 ---
 
@@ -457,26 +458,80 @@ Iteration 17 (LLM Runtime System) complete. Commit 8b2703c pushed.
 
 **Iteration 18 Status:** ✅ COMPLETE. Commit d56cb26 pushed.
 
+---
+
+## Iteration 21: Player Tools System (RPG-13-01 to RPG-13-15)
+
+**Target:** Implement comprehensive Player Tools with save slots, quick saves, story search, bookmarks, highlights, transcript export, spoiler-free recaps, notes, canon requests, glossary, NPC directory, relationship viewer, timeline explorer, session comparison, and undo.
+
+**Status:** ✅ COMPLETE
+
+**Changes:**
+- Created `release/workspaces/rpg-player-tools.js` implementing all 15 P2 Player Tools features
+- Save slot system with 4 types (manual/auto/quick/checkpoint), state snapshots, playtime
+- Quick save and checkpoint creation with latest-save lookup
+- Story search across content and speaker fields with context extraction
+- Bookmark system with 5 types, tags, pinning, and color coding
+- Quote highlighting with speaker attribution and auto-tagging
+- Transcript export in 3 formats (text/json/markdown) with timestamp/speaker options
+- Spoiler-free recap generator with keyword filtering and tick cutoff
+- Notes journal with 6 categories, tags, pinning, search, and update
+- Player-authored canon requests with GM response workflow (approve/reject/needs-revision)
+- World glossary with 7 categories, aliases, spoiler levels (0-3), search with spoiler filter
+- NPC directory extracted from character glossary entries
+- Relationship overview with 5 dimensions and label classification (very-high to very-low)
+- Strongest relationships query with sorting and limit
+- Timeline explorer with tick range, type, and tag filters plus summary stats
+- Session comparison with shared characters/locations and overlap percentage
+- Undo system with record, undo, commit, and committed-action guard rails
+
+**Test Evidence (all 29 tests PASS):**
+1-5. Save slot CRUD, quick save, checkpoint, latest save
+6-7. Story search (content and speaker)
+8-9. Bookmark creation, filtering, quote highlighting
+10-12. Transcript export in text, JSON, and markdown formats
+13. Spoiler-free recap with keyword filtering
+14-15. Notes journal CRUD with category and pin filters
+16-17. Canon request submission and GM response workflow
+18-19. Glossary entry, search, spoiler level filtering
+20. NPC directory from character entries
+21-22. Relationship overview with labels, strongest relationships
+23. Timeline filtering and summary stats
+24. Session comparison with overlap calculation
+25-27. Undo action, commit guard, undoable action list
+28. Delete operations (save slot, bookmark, note)
+29. Edge cases (null returns, invalid IDs, reason codes)
+
+**Static audit budget:** 640KB (was 560KB)
+**All 57 test suites passing.**
+
+**Commit:** `7e94a70` pushed to `rpg/standalone-20261011`
+
+---
+
 **Iteration 19 Status:** ✅ COMPLETE. Commit f7ae56c pushed.
 
 **Iteration 20 Status:** ✅ COMPLETE. Commit 73d8052 pushed.
 
-**Next: Iteration 21** — Player Tools (RPG-13-01 to RPG-13-15)
-- Save slots
-- Quick save checkpoint
-- Story search
-- Bookmark scenes
-- Highlight quotes
-- Export transcript
-- Share spoiler free recap
-- Notes journal
-- Player authored canon requests
-- World glossary
-- NPC directory
-- Relationship viewer
-- Timeline explorer
-- Session comparison
-- Undo uncommitted action
+**Iteration 21 Status:** ✅ COMPLETE. Commit 7e94a70 pushed.
+
+**Next: Iteration 22** — RPG UI (RPG-11-01 to RPG-11-16)
+- Responsive layout
+- Arabic RTL support
+- Scene card UI
+- Turn order display
+- Dialogue panel
+- Choices panel
+- Dice roller widget
+- Character sheet
+- Inventory grid
+- Map viewer
+- Journal view
+- Settings panel
+- Tutorial overlay
+- Accessibility
+- Animations
+- Sound controls
 
 ---
 
