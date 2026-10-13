@@ -55,6 +55,38 @@ jobs:
         run: |
           npm run android:verify
           node apk/verify-rpg-standalone.cjs
+      - name: Generate release signing keystore (CI evidence identity)
+        run: |
+          # Ephemeral CI-only keystore proves the RELEASE-SIGNING path (assembleRelease +
+          # apksigner verify), i.e. a genuinely release-signed APK, not debug. This is NOT a
+          # real distribution identity; a stable upload key must be provided as a secret for
+          # production. Password is generated + masked; no credential is committed.
+          REL_PASS="$(openssl rand -hex 24)"
+          echo "::add-mask::$REL_PASS"
+          keytool -genkeypair -v -keystore "$RUNNER_TEMP/seven-release.keystore" -alias sevenrelease -keyalg RSA -keysize 2048 -validity 10000 -storepass "$REL_PASS" -keypass "$REL_PASS" -dname "CN=Seven RPG Release, O=Seven, C=SA"
+          echo "REL_PASS=$REL_PASS" >> "$GITHUB_ENV"
+      - name: Prepare production upload-key signing config
+        run: node apk/patch-production-signing.cjs
+      - name: Build release-signed RPG APK
+        working-directory: android
+        run: ./gradlew --no-daemon assembleRelease -PsevenReleaseKeystore="$RUNNER_TEMP/seven-release.keystore" -PsevenReleaseStorePass="$REL_PASS" -PsevenReleaseKeyAlias=sevenrelease -PsevenReleaseKeyPass="$REL_PASS"
+      - name: Verify release APK signature and identity
+        run: |
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          test -f "$APK" || { echo "release APK missing"; exit 1; }
+          APKSIGNER="$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort | tail -1)"
+          "$APKSIGNER" verify --print-certs "$APK" > "$RUNNER_TEMP/release-apk-certs.txt"
+          "$APKSIGNER" verify "$APK"
+          echo "release APK signature: VERIFIED"
+          grep -i "Signer #1 certificate DN" "$RUNNER_TEMP/release-apk-certs.txt" | head -1
+      - name: Upload release-signed RPG APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: seven-rpg-standalone-release-signed.apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          archive: false
+          if-no-files-found: error
+          retention-days: 14
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
