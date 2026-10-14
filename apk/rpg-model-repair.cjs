@@ -88,6 +88,19 @@ function patchRpgModelRuntime(html) {
   result=replaceOne(result,
     '                renderFreeModelFabricStatus("Refresh failed safely: " + sanitizeDiscoveredText(e && e.message, "unknown error"));',
     '                renderFreeModelFabricStatus("Refresh failed safely: " + sanitizeDiscoveredText(e && e.message, "unknown error"));\n                throw e;');
+  // Credentials are provisioned locally in the Android Keystore, not in the APK.
+  result=replaceOne(result,
+    '        function getFreeProviderCredential(providerId) {\n            switch (providerId) {',
+    '        function getFreeProviderCredential(providerId) {\n            const nativeKeys=window.__SEVEN_RPG_NATIVE_KEYS;\n            if(nativeKeys && typeof nativeKeys[providerId]==="string" && nativeKeys[providerId]) return nativeKeys[providerId];\n            switch (providerId) {');
+  result=replaceOne(result,
+    '                    "Authorization": "Bearer " + GROQ_API_KEY',
+    '                    "Authorization": "Bearer " + getFreeProviderCredential("groq")');
+  result=replaceOne(result,
+    '        function openSettings() {\n            document.getElementById("settingsModal").style.display = "flex";',
+    '        function openSettings() {\n            document.getElementById("settingsModal").style.display = "flex";\n            if(window.SevenRpgProviderKeys)window.SevenRpgProviderKeys.recheck();');
+  result=replaceOne(result,
+    '        function readProviderPrefsFromSettings() {\n            return automaticProviderPrefs();\n        }',
+    '        window.addEventListener("seven:rpg-credentials-ready",()=>{\n            freeProviderPrefs=automaticProviderPrefs();\n            populateFreeModelSelect(currentModel);\n            onRoutingModeChange();\n            renderFreeModelFabricStatus();\n        });\n\n        function readProviderPrefsFromSettings() {\n            return automaticProviderPrefs();\n        }');
   // Validate the draft BEFORE writing mode and preferences, avoiding half-saved invalid state.
   result=replaceOne(result,
     '        function saveSettings() {\n            freeProviderPrefs = automaticProviderPrefs();',

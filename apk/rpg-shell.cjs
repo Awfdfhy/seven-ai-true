@@ -46,7 +46,12 @@ const RPG_SHELL=`
   <div class="modal-content rpg-settings-panel">
     <div class="rpg-settings-heading"><div><small>STORY ENGINE</small><h2 id="rpg-settings-title">RPG AI · إعدادات الذكاء</h2></div><button type="button" class="rpg-settings-close" onclick="closeSettings()" aria-label="Close settings">✕</button></div>
     <div class="settings-core rpg-settings-fields">
-      <p class="rpg-settings-intro">Choose the narrator for this story. Only configured or anonymous free routes can be selected.</p>
+      <p class="rpg-settings-intro">A narrator needs a working free provider. Anonymous providers may reach their daily quota; connect your own provider key to continue reliably.</p>
+      <nav class="rpg-settings-tabs" aria-label="AI settings sections">
+        <button type="button" class="rpg-settings-tab" id="rpg-tab-narrator" aria-controls="rpg-narrator-panel" aria-selected="true">✦ Narrator · الراوي</button>
+        <button type="button" class="rpg-settings-tab" id="rpg-tab-connections" aria-controls="rpg-connections-panel" aria-selected="false">◈ Connect · الاتصال</button>
+      </nav>
+      <section id="rpg-narrator-panel" class="rpg-settings-section" aria-label="Narrator and model selection">
       <label for="routingModeSelect">Model routing · توجيه النموذج</label>
       <select id="routingModeSelect" onchange="onRoutingModeChange()"><option value="auto">Automatic free route</option><option value="manual">Choose a model</option></select>
       <p class="rpg-settings-hint rpg-mode-help" id="rpg-mode-help">Automatic selects a free route for the story.</p>
@@ -68,6 +73,21 @@ const RPG_SHELL=`
       <label id="maxTokensLabel" for="maxTokens">Max tokens</label><input type="number" id="maxTokens" value="65536" min="100" max="65536"><p id="maxTokensNote" class="rpg-settings-hint"></p>
       <label class="rpg-checkbox-row"><input type="checkbox" id="freeFallbackToggle"> Free-only fallback</label>
       </div></details>
+      </section>
+      <section id="rpg-connections-panel" class="rpg-settings-section" aria-label="Private provider connections" hidden>
+        <div class="rpg-provider-intro">
+          <strong>Connect a reliable narrator · ربط نموذج الراوي</strong>
+          <p>GitHub Actions secrets test the models in CI but are deliberately <em>not</em> embedded in your APK. Add a provider's personal API key here to use it inside Seven RPG.</p>
+          <p class="rpg-provider-security">On Android the key is encrypted by Android Keystore. It will not appear in conversation exports, logs or GitHub.</p>
+        </div>
+        <label for="rpg-key-provider">Provider · المزوّد</label>
+        <select id="rpg-key-provider"><option value="groq">Groq (GPT-OSS)</option><option value="openrouter">OpenRouter</option><option value="nvidia">NVIDIA NIM</option><option value="mistral">Mistral</option><option value="gemini">Google Gemini</option></select>
+        <label for="rpg-key-input">API key · مفتاح الاتصال</label>
+        <div class="rpg-private-key-row"><input id="rpg-key-input" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste your provider key" aria-label="Private API key"><button id="rpg-key-toggle" type="button" aria-label="Show or hide key">◉</button></div>
+        <div class="rpg-provider-actions"><button id="rpg-key-save" class="rpg-primary" type="button">Save on device</button><button id="rpg-key-remove" type="button">Remove</button></div>
+        <p id="rpg-provider-key-status" role="status" aria-live="polite">Checking Android secure storage…</p>
+        <div class="rpg-provider-note">No key? Try Automatic mode, but anonymous services can rate-limit without warning. A key does not guarantee an unlimited free quota.</div>
+      </section>
     </div>
     <div class="rpg-settings-footer"><button type="button" onclick="closeSettings()">Cancel</button><button type="button" class="rpg-primary" onclick="saveSettings()">Save settings · حفظ</button></div>
   </div>

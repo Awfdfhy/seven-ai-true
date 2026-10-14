@@ -62,6 +62,9 @@ if(profile.appId==='ai.seven.rpg'){
   page=patchRpgModelRuntime(page);
   page=page.replace('</body>','<script id="rpg-smart-controls" src="./rpg-smart-controls.js"></script></body>');
   fs.copyFileSync(path.join(ROOT,'apk','rpg-smart-controls.js'),path.join(WWW,'rpg-smart-controls.js'));
+  // Android Keystore bridge; the APK never embeds GitHub Actions LLM secrets.
+  page=page.replace('</body>','<script id="rpg-provider-keys" src="./rpg-provider-keys.js"></script></body>');
+  fs.copyFileSync(path.join(ROOT,'apk','rpg-provider-keys.js'),path.join(WWW,'rpg-provider-keys.js'));
 
   // Physically remove every unrelated Seven AI workspace and its UI CSS/JS
   // from the signed standalone package. No generic workspace launchers survive.
