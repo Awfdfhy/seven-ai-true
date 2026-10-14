@@ -9,7 +9,12 @@ function choose(){
   const world=win.SevenRpgWorkspace?.state?.worldEngine?.work;
   const title=String(world?.title||'Your untold story');
   const id=String(world?.id||title);
-  if(key!==id){key=id;let h=2166136261;for(let i=0;i<id.length;i++){h=Math.imul(h^id.charCodeAt(i),16777619)}index=(h>>>0)%scenes.length;}
+  if(key!==id){
+    key=id;
+    let h=2166136261;for(let i=0;i<id.length;i++){h=Math.imul(h^id.charCodeAt(i),16777619)}
+    let saved=null;try{const memory=JSON.parse(localStorage.getItem('seven-rpg-world-scenery-v1')||'{}');saved=memory[id];}catch(_){}
+    index=Number.isSafeInteger(saved)&&saved>=0?saved%scenes.length:(h>>>0)%scenes.length;
+  }
   const chosen=scenes[index];
   const filename=String(chosen?.file||'');
   if(!/^[a-z0-9-]+\.jpg$/.test(filename))return;
@@ -22,7 +27,14 @@ async function setup(){
   const button=el('rpg-art-cycle');
   if(button){button.hidden=true;button.addEventListener('click',()=>{
     if(!scenes.length)return;
-    index=(index+1)%scenes.length;choose();
+    index=(index+1)%scenes.length;
+    try{
+      const memory=JSON.parse(localStorage.getItem('seven-rpg-world-scenery-v1')||'{}');
+      memory[key]=index;
+      const ids=Object.keys(memory);while(ids.length>48)delete memory[ids.shift()];
+      localStorage.setItem('seven-rpg-world-scenery-v1',JSON.stringify(memory));
+    }catch(_){}
+    choose();
   });}
   try{
     const response=await fetch('./rpg-scenes/manifest.json');
@@ -36,6 +48,10 @@ async function setup(){
   }catch(_){doc.documentElement.dataset.rpgScenePack='unavailable';}
   doc.addEventListener('seven:roomchange',()=>win.setTimeout(choose,80));
   doc.addEventListener('seven:rpg-world-created',choose);
+  const roomTitle=el('roomTitle');
+  if(roomTitle&&win.MutationObserver){
+    new win.MutationObserver(()=>choose()).observe(roomTitle,{childList:true,characterData:true,subtree:true});
+  }
   win.addEventListener('pageshow',choose);
 }
 if(doc.readyState==='loading')doc.addEventListener('DOMContentLoaded',setup,{once:true});else setup();
