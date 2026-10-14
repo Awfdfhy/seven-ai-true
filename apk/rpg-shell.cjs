@@ -91,6 +91,12 @@ const RPG_SHELL=`
         <div class="rpg-private-key-row"><input id="rpg-key-input" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste your provider key" aria-label="Private API key"><button id="rpg-key-toggle" type="button" aria-label="Show or hide key">◉</button></div>
         <div class="rpg-provider-actions"><button id="rpg-key-save" class="rpg-primary" type="button">Save on device</button><button id="rpg-key-remove" type="button">Remove</button></div>
         <p id="rpg-provider-key-status" role="status" aria-live="polite">Checking Android secure storage…</p>
+        <details class="rpg-key-bundle-setup"><summary>إضافة عدة مفاتيح مرة واحدة <small>IMPORT KEY BUNDLE</small></summary>
+          <p>الصق JSON يتضمن أسماء المزوّدين، أو سلسلة المفاتيح التي تبدأ بـ sk-or-v1 وAQ. وnvapi- وgsk_. تحفظ المفاتيح محليًا على الجهاز.</p>
+          <label for="rpg-key-bundle">Private credential bundle</label>
+          <textarea id="rpg-key-bundle" autocomplete="off" autocapitalize="off" spellcheck="false" rows="3" placeholder="Paste credentials here, then import and erase"></textarea>
+          <button type="button" id="rpg-bundle-import">استيراد وحفظ آمن · Import securely</button>
+        </details>
         <div class="rpg-provider-note">No key? Try Automatic mode, but anonymous services can rate-limit without warning. A key does not guarantee an unlimited free quota.</div>
       </section>
     </div>
