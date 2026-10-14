@@ -1246,3 +1246,17 @@ html[data-seven-standalone-profile="rpg"] #rpg-bundle-import{
   padding:9px 13px;border-radius:11px;border:1px solid #cbb08cb3;
   background:linear-gradient(120deg,#66548b,#434f7f);color:#fff9ef;font-weight:740;
 }
+
+/* Bilingual composer priority: Arabic action label stays readable, English secondary. */
+html[data-seven-standalone-profile="rpg"] .rpg-composer-label>span:first-child{
+  color:#efd09b!important;font-size:.9rem!important;font-weight:820!important;
+  letter-spacing:0!important;line-height:1.35
+}
+html[data-seven-standalone-profile="rpg"] .rpg-composer-label>span:first-child small{
+  font-size:.58rem!important;color:#b3becd!important;font-weight:590!important;
+  letter-spacing:.14em!important
+}
+html[data-seven-standalone-profile="rpg"] .rpg-composer-label>.rpg-composer-tip{
+  font-size:.64rem!important;color:#adb9ca!important;letter-spacing:0!important;
+  font-weight:550!important
+}
