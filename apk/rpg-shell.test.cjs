@@ -23,5 +23,10 @@ for(const id of ['sidebar','roomList','roomTitle','chat','userInput','settingsMo
   assert.equal((result.match(new RegExp('id="'+id+'"','g'))||[]).length,1,'One RPG-owned '+id);
 }
 assert.ok(RPG_SHELL.includes('class="rpg-header"'));
+for(const id of ['rpg-library-search','rpg-library-count','rpg-library-empty','rpg-model-search','rpg-provider-filter','rpg-refresh-models','rpg-model-count','rpg-model-refresh-state']){
+  assert.ok(result.includes('id="'+id+'"'),'Missing RPG menu control '+id);
+}
+assert.ok(result.includes('class="rpg-story-tuning"'),'Missing collapsible narrator tuning section');
+assert.ok(result.includes('id="routingModeSelect"'),'RPG narrator routing must remain available');
 assert.throws(()=>removeLegacyUi(result),/already installed/);
 console.log('RPG exclusive shell replacement: PASS');

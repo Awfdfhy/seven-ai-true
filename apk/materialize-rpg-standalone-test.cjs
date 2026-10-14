@@ -46,6 +46,10 @@ public class SevenRpgStandaloneTest {
    assertJsTrue(view,"document.title==='Seven RPG'");
    // Standalone features must remain accessible on the packaged Android UI.
    assertJsTrue(view,"Boolean(document.querySelector('#seven-rpg-world-button') && document.querySelector('#seven-rpg-model-control'))");
+   assertJsTrue(view,"Boolean(document.querySelector('#rpg-library-search') && document.querySelector('#rpg-model-search') && document.querySelector('#rpg-refresh-models') && document.documentElement.dataset.rpgSmartControls==='ready')");
+   assertJsTrue(view,"(()=>{document.querySelector('#rpg-library-toggle').click();const drawer=document.querySelector('#sidebar');const search=document.querySelector('#rpg-library-search');if(drawer.hidden||!search)return false;search.value='no-exact-such-world';search.dispatchEvent(new Event('input',{bubbles:true}));const worked=!!document.querySelector('#rpg-library-count');document.querySelector('#rpg-library-close').click();return worked&&drawer.hidden})()");
+   assertJsTrue(view,"(()=>{document.querySelector('#rpg-settings-toggle').click();return document.querySelector('#settingsModal').style.display==='flex'&&document.querySelector('#modelSelect').options.length>0})()");
+   assertJsTrue(view,"(()=>{closeSettings();return document.getElementById('settingsModal').style.display==='none'})()");
    assertJsTrue(view,"(()=>{document.querySelector('#seven-rpg-world-button').click();return !!document.querySelector('#seven-rpg-import-world') && document.querySelector('#seven-rpg-import-world').accept.includes('json') && !document.querySelector('#seven-rpg-world-panel').hidden})()");
    assertJsTrue(view,"Boolean(document.querySelector('#seven-rpg-world-button') && document.querySelector('#seven-rpg-model-control') && document.querySelector('#seven-rpg-world-panel'))");
    assertJsTrue(view,"(()=>{document.querySelector('#seven-rpg-world-button').click();if(!document.querySelector('#seven-rpg-world-panel').hidden)return false;document.querySelector('#seven-rpg-world-button').click();return document.querySelector('#seven-rpg-world-panel').hidden===false})()");

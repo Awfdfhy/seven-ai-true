@@ -7,7 +7,7 @@ const RPG_SHELL=`
     <div class="rpg-identity"><span class="rpg-crest" aria-hidden="true">✦</span><img class="app-icon" src="./brand/seven-night-black.svg" alt="Seven RPG"><div><strong>SEVEN RPG</strong><small>THE STORY IS YOURS</small></div></div>
     <span id="roomTitle" class="rpg-chapter-title" aria-live="polite">New adventure</span>
     <div class="rpg-header-actions">
-      <button type="button" class="rpg-header-button" id="rpg-library-toggle" aria-expanded="false" aria-controls="sidebar" title="Adventures / العوالم">☷ <span>Worlds</span></button>
+      <button type="button" class="rpg-header-button" id="rpg-library-toggle" aria-expanded="false" aria-controls="sidebar" title="Adventures / العوالم">☰ <span>Worlds</span></button>
       <button type="button" class="rpg-header-button" id="rpg-settings-toggle" onclick="openSettings()" title="AI model / النموذج">⚙ <span>AI</span></button>
     </div>
   </header>
@@ -15,7 +15,13 @@ const RPG_SHELL=`
   <aside id="sidebar" class="rpg-library" aria-label="Saved RPG adventures" hidden>
     <div class="rpg-library-head"><div><small>YOUR CHRONICLES</small><h2>Adventures · العوالم</h2></div><button id="rpg-library-close" type="button" aria-label="Close adventures">✕</button></div>
     <button id="rpg-new-adventure" class="rpg-new-adventure" type="button">✦ New adventure · مغامرة جديدة</button>
+    <div class="rpg-library-tools">
+      <label for="rpg-library-search">Find a world · ابحث عن عالم</label>
+      <input id="rpg-library-search" type="search" autocomplete="off" enterkeyhint="search" placeholder="Search adventures…" aria-label="Search saved RPG adventures">
+      <p id="rpg-library-count" role="status" aria-live="polite">Your saved stories</p>
+    </div>
     <div id="roomList" class="rpg-room-list" aria-label="Saved RPG sessions"></div>
+    <p id="rpg-library-empty" class="rpg-library-empty" role="status" hidden>No adventures yet.</p>
   </aside>
   <main class="main rpg-main" id="seven-rpg-main">
     <div class="rpg-scene-heading"><span class="rpg-scene-glyph" aria-hidden="true">✧</span><span>YOUR WORLD · عالمك</span><span class="rpg-scene-rule" aria-hidden="true"></span><span class="rpg-scene-safety">You control your character</span></div>
@@ -40,17 +46,28 @@ const RPG_SHELL=`
   <div class="modal-content rpg-settings-panel">
     <div class="rpg-settings-heading"><div><small>STORY ENGINE</small><h2 id="rpg-settings-title">RPG AI · إعدادات الذكاء</h2></div><button type="button" class="rpg-settings-close" onclick="closeSettings()" aria-label="Close settings">✕</button></div>
     <div class="settings-core rpg-settings-fields">
+      <p class="rpg-settings-intro">Choose the narrator for this story. Only configured or anonymous free routes can be selected.</p>
       <label for="routingModeSelect">Model routing · توجيه النموذج</label>
       <select id="routingModeSelect" onchange="onRoutingModeChange()"><option value="auto">Automatic free route</option><option value="manual">Choose a model</option></select>
+      <p class="rpg-settings-hint rpg-mode-help" id="rpg-mode-help">Automatic selects a free route for the story.</p>
+      <div class="rpg-model-tools">
+        <label class="rpg-filter-field" for="rpg-model-search"><span>Find a model · بحث</span><input id="rpg-model-search" type="search" placeholder="Search name or provider…" autocomplete="off" aria-label="Search AI narrators"></label>
+        <label class="rpg-filter-field" for="rpg-provider-filter"><span>Provider · المزوّد</span><select id="rpg-provider-filter" aria-label="Filter narrator models by provider"><option value="all">All providers</option></select></label>
+      </div>
       <label for="modelSelect">Narrator model · نموذج الراوي</label>
       <select id="modelSelect" onchange="onModelChange()"></select>
+      <div class="rpg-model-toolbar"><span id="rpg-model-count" aria-live="polite">Loading models…</span><button type="button" id="rpg-refresh-models">⟳ Refresh models</button></div>
+      <p id="rpg-model-empty" class="rpg-model-empty" role="status" hidden>No matching narrator models. Clear the search or change provider.</p>
+      <p id="rpg-model-refresh-state" class="rpg-settings-hint" role="status" aria-live="polite">Listed routes can fail at runtime. Refresh to update availability.</p>
       <div class="route-status-card" id="routeStatusCard" data-state="ready" role="status" aria-live="polite"><div class="rpg-route-row"><span>Connection</span><span id="routeStateBadge">Ready</span></div><div id="freeModelStatus">Finding available models…</div></div>
+      <details class="rpg-story-tuning"><summary>Story tuning · إعدادات السرد <span>Creativity, reasoning, context</span></summary><div class="rpg-tuning-fields">
       <label for="temperatureRange">Creativity · الإبداع</label>
       <div class="rpg-range"><input type="range" id="temperatureRange" min="0" max="2" step="0.1" value="1" oninput="document.getElementById('tempValue').textContent=this.value"><output id="tempValue">1</output></div>
       <label for="reasoningEffort">Reasoning effort · مستوى التفكير</label>
       <select id="reasoningEffort"></select><p id="reasoningEffortNote" class="rpg-settings-hint"></p>
       <label id="maxTokensLabel" for="maxTokens">Max tokens</label><input type="number" id="maxTokens" value="65536" min="100" max="65536"><p id="maxTokensNote" class="rpg-settings-hint"></p>
       <label class="rpg-checkbox-row"><input type="checkbox" id="freeFallbackToggle"> Free-only fallback</label>
+      </div></details>
     </div>
     <div class="rpg-settings-footer"><button type="button" onclick="closeSettings()">Cancel</button><button type="button" class="rpg-primary" onclick="saveSettings()">Save settings · حفظ</button></div>
   </div>

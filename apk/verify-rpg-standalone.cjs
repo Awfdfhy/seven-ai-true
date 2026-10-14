@@ -15,6 +15,13 @@ assert.ok(!html.includes('<!-- Sidebar -->'), 'Legacy Seven AI interface was not
 assert.ok(!html.includes('id="seven-beta-ui-style"'), 'Legacy Seven AI styling still ships in the app');
 assert.ok(html.includes('class="rpg-header"') && html.includes('class="rpg-application"'), 'New RPG interface missing');
 assert.ok(html.includes('seven-rpg-standalone-style'), 'RPG-only navigation not wired');
+assert.ok(html.includes('id="rpg-smart-controls"'), 'RPG smart controls not wired');
+assert.ok(fs.existsSync(path.join(root,'www/rpg-smart-controls.js')), 'RPG smart controls not packaged');
+for(const id of ['rpg-library-search','rpg-model-search','rpg-provider-filter','rpg-refresh-models']){
+  assert.ok(html.includes('id="'+id+'"'), 'RPG navigation/model control missing: '+id);
+}
+assert.ok(html.includes('No available route — refresh or check provider access'), 'RPG model picker availability guard missing');
+assert.ok(!html.includes('const pool = ready.length ? ready : all;'), 'Unconfigured models must never become selectable');
 assert.ok(html.includes('rpg-memory-runtime.js'),'RPG state runtime bootstrap missing');
 const memoryScript=fs.readFileSync(path.join(root,'www/rpg-memory-runtime.js'),'utf8');
 assert.ok(memoryScript.includes('window.SevenRuntime = (() => {') && memoryScript.includes('commitMemory'),'RPG state runtime incomplete');

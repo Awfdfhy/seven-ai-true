@@ -249,7 +249,10 @@
     if (close) close.addEventListener('click', function () {setLibrary(false)});
     if (backdrop) backdrop.addEventListener('click', function () {setLibrary(false)});
     var list = doc.getElementById('roomList');
-    if (list) list.addEventListener('click', function () {setLibrary(false)});
+    if (list) list.addEventListener('click', function (event) {
+      // A delete/rename action inside the library must not dismiss the drawer.
+      if (event.target.closest('.room-item') && !event.target.closest('button')) setLibrary(false);
+    });
     var fresh = doc.getElementById('rpg-new-adventure');
     if (fresh) fresh.addEventListener('click', function () {
       setLibrary(false);
