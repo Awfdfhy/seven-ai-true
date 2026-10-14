@@ -61,10 +61,10 @@ const RPG_SHELL=`
       </div>
       <label for="modelSelect">Narrator model · نموذج الراوي</label>
       <select id="modelSelect" onchange="onModelChange()"></select>
-      <div class="rpg-model-toolbar"><span id="rpg-model-count" aria-live="polite">Loading models…</span><button type="button" id="rpg-refresh-models">⟳ Refresh models</button></div>
+      <div class="rpg-model-toolbar"><span id="rpg-model-count" aria-live="polite">Loading models…</span><div class="rpg-model-actions"><button type="button" id="rpg-refresh-models">⟳ Refresh</button><button type="button" id="rpg-test-narrator">▶ Test narrator</button></div></div>
       <div id="rpg-connect-prompt" class="rpg-connect-prompt" hidden><span>⚠ No working narrator is configured. Anonymous routes may be unavailable.</span><button type="button" id="rpg-connect-from-model">Connect a provider · ربط نموذج</button></div>
       <p id="rpg-model-empty" class="rpg-model-empty" role="status" hidden>No matching narrator models. Clear the search or change provider.</p>
-      <p id="rpg-model-refresh-state" class="rpg-settings-hint" role="status" aria-live="polite">Listed routes can fail at runtime. Refresh to update availability.</p>
+      <p id="rpg-model-refresh-state" class="rpg-settings-hint" role="status" aria-live="polite">Listed routes can fail at runtime. Refresh to update availability.</p><p id="rpg-model-test-state" class="rpg-settings-hint" role="status" aria-live="polite">Test sends a short request without any world data.</p>
       <div class="route-status-card" id="routeStatusCard" data-state="ready" role="status" aria-live="polite"><div class="rpg-route-row"><span>Connection</span><span id="routeStateBadge">Ready</span></div><div id="freeModelStatus">Finding available models…</div></div>
       <details class="rpg-story-tuning"><summary>Story tuning · إعدادات السرد <span>Creativity, reasoning, context</span></summary><div class="rpg-tuning-fields">
       <label for="temperatureRange">Creativity · الإبداع</label>
