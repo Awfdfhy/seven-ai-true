@@ -93,15 +93,17 @@
         // Do not send text automatically. The user controls their first action.
         var input = doc.getElementById('userInput');
         if (input && !input.value.trim()) {
-          input.value = 'We are beginning a new RPG story in "' + title + '". ' +
-            'Describe the opening scene and NPC actions, respecting established canon. ' +
-            'Never invent dialogue, decisions or actions for my player character.' +
-            (premise.value.trim() ? '\nOpening premise: ' + premise.value.trim() : '');
+          // Player-facing first turn: concise, readable and under player control.
+          // Narrator safety/canon lives in the RPG engine, not a giant pasted prompt.
+          var opening = premise.value.trim();
+          input.value = opening ? opening :
+            'Begin the opening scene. Describe the place and NPCs, while leaving my character’s actions to me.';
           input.dispatchEvent(new Event('input', {bubbles: true}));
         }
         panel.remove();
         if (input) input.focus();
         doc.documentElement.dataset.sevenStandaloneWorldCreated = '1';
+        doc.dispatchEvent(new Event('seven:rpg-world-created'));
       } catch (cause) {
         button.disabled = false;
         error.textContent = 'World was not saved: ' + (cause && cause.message || 'unknown error');
