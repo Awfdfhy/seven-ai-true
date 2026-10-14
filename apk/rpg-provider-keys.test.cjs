@@ -2,7 +2,8 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const script=fs.readFileSync(path.join(__dirname,'rpg-provider-keys.js'),'utf8');
-assert.ok(!/localStorage\s*(?:\.|\[)/.test(script),'Keys must never call localStorage');
+const executable=script.replace(/\/\*[\s\S]*?\*\//g,'').replace(/^\s*\/\/.*$/gm,'');
+assert.ok(!/localStorage\s*(?:\.|\[)/.test(executable),'Keys must never call localStorage');
 assert.ok(script.includes('secureSet')&&script.includes('secureGet')&&script.includes('secureRemove'),'Keystore must support save/load/revoke');
 function element(value=''){
  const node={value,type:'password',dataset:{},textContent:'',disabled:false,handlers:{}};
