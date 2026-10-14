@@ -1216,3 +1216,33 @@ html[data-seven-standalone-profile="rpg"].rpg-keyboard-open .rpg-composer{
 html[data-seven-standalone-profile="rpg"].rpg-keyboard-open .rpg-input-area{
   padding-block:3px max(5px,env(safe-area-inset-bottom))!important
 }
+
+/* Optional private credential bundle importer; no credentials embedded in the APK. */
+html[data-seven-standalone-profile="rpg"] .rpg-key-bundle-setup{
+  border-radius:13px;border:1px solid rgba(205,187,155,.43);background:#18243a;
+  padding:12px 14px;color:#ebdfd0;min-width:0
+}
+html[data-seven-standalone-profile="rpg"] .rpg-key-bundle-setup summary{
+  cursor:pointer;font-size:.87rem;font-weight:720;line-height:1.55;
+  list-style:none;display:flex;justify-content:space-between;gap:8px
+}
+html[data-seven-standalone-profile="rpg"] .rpg-key-bundle-setup summary:after{content:"⌄";font-size:1rem;color:#ddc79c}
+html[data-seven-standalone-profile="rpg"] .rpg-key-bundle-setup[open] summary:after{content:"⌃"}
+html[data-seven-standalone-profile="rpg"] .rpg-key-bundle-setup summary small{
+  font-size:.61rem;letter-spacing:.08em;font-weight:480;color:#b6becf;align-self:center
+}
+html[data-seven-standalone-profile="rpg"] .rpg-key-bundle-setup p{
+  font-size:.75rem;line-height:1.55;color:#bbc6d6;margin:10px 0
+}
+html[data-seven-standalone-profile="rpg"] .rpg-key-bundle-setup label{display:block;font-size:.73rem;color:#e5cfac;margin-bottom:7px}
+html[data-seven-standalone-profile="rpg"] #rpg-key-bundle{
+  display:block;width:100%;min-height:82px;max-height:170px;resize:vertical;
+  border:1px solid #697d98!important;border-radius:11px!important;
+  padding:12px!important;background:#0d182a!important;color:#f4ede7!important;
+  font-size:14px!important;line-height:1.5
+}
+html[data-seven-standalone-profile="rpg"] #rpg-bundle-import{
+  display:block;width:100%;min-height:46px;margin-top:9px;
+  padding:9px 13px;border-radius:11px;border:1px solid #cbb08cb3;
+  background:linear-gradient(120deg,#66548b,#434f7f);color:#fff9ef;font-weight:740;
+}
