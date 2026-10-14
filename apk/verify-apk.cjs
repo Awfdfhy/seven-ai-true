@@ -21,9 +21,14 @@ const DEFAULT_APK=path.join(ROOT,'android','app','build','outputs','apk','debug'
 const APK=path.resolve(process.env.SEVEN_APK_PATH||process.argv[2]||DEFAULT_APK);
 assert.ok(fs.existsSync(APK),`APK missing: ${APK}`);
 const bytes=fs.statSync(APK).size;
-assert.ok(bytes<30*1024*1024,`APK too large: ${bytes}`);
 const appId=JSON.parse(fs.readFileSync(path.join(ROOT,'capacitor.config.json'),'utf8')).appId;
 const rpgStandalone=appId==='ai.seven.rpg';
+// Visual Novel edition uses an intentionally shipped original offline scenery
+// library. Preserve the 30 MiB limit for the unrelated Seven AI profile.
+if(rpgStandalone){
+  assert.ok(bytes>=78*1024*1024,`RPG art edition unexpectedly small: ${bytes}`);
+  assert.ok(bytes<99*1024*1024,`RPG APK exceeds 90 MB edition budget: ${bytes}`);
+}else assert.ok(bytes<30*1024*1024,`APK too large: ${bytes}`);
 const binary=verifyBinary(APK,{packageName:appId,versionCode:EXPECTED_VERSION_CODE,versionName:EXPECTED_VERSION_NAME});
 const listing=spawnSync('unzip',['-l',APK],{encoding:'utf8'});
 assert.equal(listing.status,0,listing.stderr);
@@ -37,6 +42,8 @@ assert.match(listing.stdout,/assets\/public\/workspaces\/intelligence\.js/);
 if(appId==='ai.seven.rpg'){
   assert.ok(listing.stdout.includes('assets/public/rpg-standalone-ui.css'),'RPG redesign stylesheet missing');
   assert.ok(listing.stdout.includes('assets/public/rpg-standalone-entry.js'),'RPG entrypoint missing');
+  assert.ok(listing.stdout.includes('assets/public/rpg-scenes/manifest.json'),'Offline RPG art pack missing');
+  assert.ok(listing.stdout.includes('assets/public/rpg-scene-controller.js'),'RPG scene controller missing');
   for(const name of ['coding.js','research.js','research-v2.js','generated-ui.js','generated-ui.css','remake.js','remake.css','seven-shell.js','seven-shell-final.js']){
     assert.ok(!listing.stdout.includes('assets/public/workspaces/'+name),'RPG APK contains unrelated workspace: '+name);
   }
