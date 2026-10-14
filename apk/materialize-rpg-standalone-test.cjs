@@ -62,7 +62,7 @@ public class SevenRpgStandaloneTest {
    assertJsTrue(view,"(()=>{document.querySelector('#seven-rpg-world-name').value='Test World';document.querySelector('#seven-rpg-create-world').click();return true})()");
    boolean created=false;
    for(int i=0;i<50;i++) {
-     if("true".equals(js(view,"Boolean(document.documentElement.dataset.sevenStandaloneWorldCreated==='1' && window.SevenRpgWorkspace.state.worldEngine && window.SevenRpgWorkspace.state.worldEngine.work.title==='Test World' && document.querySelector('#userInput') && document.querySelector('#userInput').value.includes('Never invent dialogue'))"))){created=true;break;}
+     if("true".equals(js(view,"Boolean(document.documentElement.dataset.sevenStandaloneWorldCreated==='1' && window.SevenRpgWorkspace.state.worldEngine && window.SevenRpgWorkspace.state.worldEngine.work.title==='Test World' && document.querySelector('#userInput') && document.querySelector('#userInput').value.includes('opening scene'))"))){created=true;break;}
      Thread.sleep(200);
    }
    assertTrue("World creation did not commit: "+js(view,"JSON.stringify({created:document.documentElement.dataset.sevenStandaloneWorldCreated,world:window.SevenRpgWorkspace?.state?.worldEngine?.work?.title,error:document.querySelector('#seven-rpg-first-run [role=status]')?.textContent,room:typeof currentRoom!=='undefined'?currentRoom:null,input:document.querySelector('#userInput')?.value?.slice(0,80)})"),created);
