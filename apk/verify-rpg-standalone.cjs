@@ -19,6 +19,22 @@ assert.ok(html.includes('id="rpg-smart-controls"'), 'RPG smart controls not wire
 assert.ok(fs.existsSync(path.join(root,'www/rpg-smart-controls.js')), 'RPG smart controls not packaged');
 assert.ok(html.includes('id="rpg-provider-keys"'),'Android Keystore provider bridge missing from RPG APK');
 assert.ok(fs.existsSync(path.join(root,'www/rpg-provider-keys.js')),'Native provider onboarding script missing');
+assert.ok(html.includes('id="rpg-scene-vista"')&&html.includes('id="seven-rpg-scene-controller"'),'Illustrated scene stage missing');
+assert.ok(fs.existsSync(path.join(root,'www/rpg-scene-controller.js')),'Scenery controller absent');
+const sceneDir=path.join(root,'www','rpg-scenes');
+const sceneManifest=JSON.parse(fs.readFileSync(path.join(sceneDir,'manifest.json'),'utf8'));
+assert.equal(sceneManifest.schema,'seven-rpg-scene-pack.v1');
+assert.ok(sceneManifest.scenes.length>=14,'Too few unique illustrated world scenes');
+let artBytes=0;
+for(const scene of sceneManifest.scenes){
+  assert.match(scene.file,/^[a-z0-9-]+\.jpg$/,'Unexpected scene filename');
+  const file=path.join(sceneDir,scene.file);
+  assert.ok(fs.existsSync(file),'Missing art scene: '+scene.file);
+  const bytes=fs.statSync(file).size;
+  assert.equal(bytes,scene.bytes,'Scene size mismatch');
+  artBytes+=bytes;
+}
+assert.ok(artBytes>=78*1024*1024 && artBytes<94*1024*1024,'Illustrated asset pack is outside planned RPG size envelope: '+artBytes);
 assert.ok(html.includes('id="rpg-key-provider"') && html.includes('rpg-connections-panel'),'RPG provider-connection menu missing');
 for(const id of ['rpg-library-search','rpg-model-search','rpg-provider-filter','rpg-refresh-models']){
   assert.ok(html.includes('id="'+id+'"'), 'RPG navigation/model control missing: '+id);
