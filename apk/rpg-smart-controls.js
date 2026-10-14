@@ -5,7 +5,7 @@ if(!win||!doc)return;
 const $=s=>doc.querySelector(s);
 const byId=id=>doc.getElementById(id);
 const hidden=node=>!node||node.hidden||win.getComputedStyle(node).display==='none';
-let previousFocus=null,modelGroups=[],filterReady=false,refreshing=false;
+let previousFocus=null,modelGroups=[],filterReady=false,refreshing=false,testing=false;
 let draftModel=''; // Never change narrator preference just because the user searches the catalog.
 function selectable(root){
   if(!root)return[];
@@ -211,6 +211,22 @@ async function refreshModels(){
     if(trigger)trigger.disabled=false;
   }
 }
+async function testNarrator(){
+  if(testing)return;
+  testing=true;
+  const button=byId('rpg-test-narrator'),status=byId('rpg-model-test-state');
+  if(button)button.disabled=true;
+  if(status){status.dataset.state='pending';status.textContent='Sending a short test narration request…';}
+  try{
+    if(typeof win.SevenRpgCheckNarrator!=='function')throw Error('Model connection test is not available');
+    const result=await win.SevenRpgCheckNarrator();
+    if(!result?.ok)throw Error(result?.message||'No narrator route is available');
+    if(status){status.dataset.state='success';status.textContent='Connected: '+String(result.provider||'provider')+' · '+String(result.model||'model')+'. Real inference succeeded.';}
+    restoreModelFilters();
+  }catch(error){
+    if(status){status.dataset.state='error';status.textContent='Test failed: '+String(error?.message||'Provider unavailable').slice(0,190)+'. Connect a provider or try later.';}
+  }finally{testing=false;if(button)button.disabled=false;}
+}
 function wire(){
   const search=byId('rpg-library-search'),list=byId('roomList');
   if(search)search.addEventListener('input',updateLibrary);
@@ -231,6 +247,7 @@ function wire(){
   });
   const refresh=byId('rpg-refresh-models');
   if(refresh)refresh.addEventListener('click',refreshModels);
+  byId('rpg-test-narrator')?.addEventListener('click',testNarrator);
   const tabNarrator=byId('rpg-tab-narrator'),tabConnections=byId('rpg-tab-connections');
   tabNarrator?.addEventListener('click',()=>showSettingsTab('narrator'));
   tabConnections?.addEventListener('click',()=>showSettingsTab('connections'));
