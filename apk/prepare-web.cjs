@@ -5,7 +5,7 @@ const ROOT=path.resolve(__dirname,'..');
 const DIST=path.join(ROOT,'dist');
 const SRC=path.join(DIST,'seven_ai-release.html');
 const WWW=path.join(ROOT,'www');
-const ROOT_LAZY=['attachment-runtime.js','github-self-dev.js'];
+const ROOT_LAZY=JSON.parse(fs.readFileSync(path.join(ROOT,'capacitor.config.json'),'utf8')).appId==='ai.seven.rpg' ? ['attachment-runtime.js'] : ['attachment-runtime.js','github-self-dev.js'];
 
 function copyDir(src,dst){
   if(!fs.existsSync(src))return;
