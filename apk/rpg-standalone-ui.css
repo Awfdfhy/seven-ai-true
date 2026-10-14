@@ -1197,3 +1197,22 @@ html[data-seven-standalone-profile="rpg"] #seven-rpg-first-run{
 @media(prefers-reduced-motion:reduce){
   html[data-seven-standalone-profile="rpg"] .rpg-scene-vista:before{transform:none}
 }
+
+/* Keyboard-aware reading mode: no artwork or hub controls obscure the action field. */
+html[data-seven-standalone-profile="rpg"].rpg-keyboard-open .rpg-scene-vista,
+html[data-seven-standalone-profile="rpg"].rpg-keyboard-open .rpg-scene-heading,
+html[data-seven-standalone-profile="rpg"].rpg-keyboard-open .seven-rpg-chatbar{
+  display:none!important
+}
+html[data-seven-standalone-profile="rpg"].rpg-keyboard-open .rpg-header{
+  min-height:52px!important;padding-block:5px!important
+}
+html[data-seven-standalone-profile="rpg"].rpg-keyboard-open .rpg-transcript{
+  flex:1 1 0!important;scroll-padding-bottom:8px
+}
+html[data-seven-standalone-profile="rpg"].rpg-keyboard-open .rpg-composer{
+  padding:7px 11px!important
+}
+html[data-seven-standalone-profile="rpg"].rpg-keyboard-open .rpg-input-area{
+  padding-block:3px max(5px,env(safe-area-inset-bottom))!important
+}
