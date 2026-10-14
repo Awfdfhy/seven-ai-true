@@ -56,9 +56,10 @@ async function save(){
   try{
     await plugin.secureSet({key:'rpg.provider.'+p,value});
     keys[p]=value;
+    win.dispatchEvent(new CustomEvent('seven:rpg-provider-key-changed',{detail:{provider:p}}));
     if(input){input.value='';input.type='password';}
     announce();
-    status(p.toUpperCase()+' key saved securely. Select Narrator, refresh models, and choose Auto or Manual.');
+    status(p.toUpperCase()+' key saved securely. Open Narrator and tap Refresh, then Test narrator.');
   }catch(_){status('Secure save failed. Check Android storage and retry.',true);}
   finally{busy=false;if(btn)btn.disabled=false;}
 }
@@ -72,6 +73,7 @@ async function remove(){
   try{
     await plugin.secureRemove({key:'rpg.provider.'+p});
     delete keys[p];
+    win.dispatchEvent(new CustomEvent('seven:rpg-provider-key-changed',{detail:{provider:p}}));
     const input=el('rpg-key-input');if(input)input.value='';
     announce();
     status(p.toUpperCase()+' key removed from this device.');
