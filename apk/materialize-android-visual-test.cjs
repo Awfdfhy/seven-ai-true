@@ -159,8 +159,12 @@ public class SevenVisualEvidenceTest {
       try(ActivityScenario<MainActivity> reducedScenario=ActivityScenario.launch(MainActivity.class)){
         WebView reducedWebView=webView(reducedScenario);
         waitFor(reducedWebView,"Boolean(window.SevenPerformance&&SevenPerformance.state.ready&&window.SevenTheme&&window.SevenMotion&&SevenMotion.state.ready&&document.getElementById('userInput'))");
-        js(reducedWebView,"(()=>{document.documentElement.lang='en';document.documentElement.dir='ltr';document.body.dir='ltr';SevenTheme.setPreference('night');return true})()");
-        waitFor(reducedWebView,"document.documentElement.dir==='ltr'&&document.documentElement.dataset.sevenTheme==='night'");
+        // Let the canonical theme apply completely before changing document direction:
+        // Android 14 may re-apply persisted shell language during asynchronous theme work.
+        // Keep both LTR and night-theme assertions; do not loosen the visual gate.
+        theme(reducedWebView,"night");
+        js(reducedWebView,"(()=>{document.documentElement.lang='en';document.documentElement.dir='ltr';document.body.dir='ltr';return true})()");
+        waitFor(reducedWebView,"document.documentElement.lang==='en'&&document.documentElement.dir==='ltr'&&document.body.dir==='ltr'&&getComputedStyle(document.documentElement).direction==='ltr'&&document.documentElement.dataset.sevenTheme==='night'");
         waitFor(reducedWebView,"Boolean(window.__sevenAndroidMotion&&__sevenAndroidMotion.source==='ANDROID_GLOBAL_ANIMATION_SCALES'&&__sevenAndroidMotion.reducedMotion===true&&window.SevenPerformance&&SevenPerformance.state.reducedMotion===true&&document.documentElement.dataset.sevenReducedMotion==='1'&&window.SevenMotion&&SevenMotion.allow('ambient')===false)");
         Thread.sleep(120);shot("reduced-motion");
       }

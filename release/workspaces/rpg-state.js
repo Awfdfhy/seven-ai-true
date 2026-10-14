@@ -107,7 +107,24 @@ function ensureCharacterMutable(state,event,targetId){
   if(c.control===CONTROL_MODE.SHARED&&event.source!=='user'&&event.requiresPlayerConsent===true)return {ok:false,reason:'shared-control-consent'};
   return {ok:true,c};
 }
-function setNestedWorld(world,path,value){const parts=arr(path).length?path:String(path||'').split('.').filter(Boolean);if(!parts.length)return false;let cur=world;for(let i=0;i<parts.length-1;i++){const k=parts[i];if(!cur[k]||typeof cur[k]!=='object'||Array.isArray(cur[k]))cur[k]={};cur=cur[k];}cur[parts[parts.length-1]]=clone(value);return true;}
+function unsafeObjectKey(value){
+  const key=String(value);
+  return !key||key==='__proto__'||key==='prototype'||key==='constructor';
+}
+function setNestedWorld(world,path,value){
+  const raw=Array.isArray(path)?path:String(path||'').split('.').filter(Boolean);
+  if(!raw.length||raw.length>64)return false;
+  const parts=raw.map(String);
+  if(parts.some(k=>unsafeObjectKey(k)||k.length>256))return false;
+  let cur=world;
+  for(let i=0;i<parts.length-1;i++){
+    const k=parts[i];
+    if(!Object.prototype.hasOwnProperty.call(cur,k)||!cur[k]||typeof cur[k]!=='object'||Array.isArray(cur[k]))cur[k]={};
+    cur=cur[k];
+  }
+  cur[parts[parts.length-1]]=clone(value);
+  return true;
+}
 function applyEvent(state,eventInput){
   const base=createState(state),event=ensureEventId(base,eventInput||{}),p=obj(event.payload),type=text(event.type);
   if(!type)return block(state,event,'missing-event-type');
@@ -128,9 +145,9 @@ function applyEvent(state,eventInput){
   } else if(type==='character.set'){
     const id=text(p.characterId),guard=ensureCharacterMutable(next,event,id);if(!guard.ok)return block(state,event,guard.reason,{characterId:id});const allowed=['status','intent','age','appearance','personality','motivations','goals','fears','preferences','injuries','loyalties','opinions','voice'];for(const k of allowed)if(hasOwn(p.patch||{},k))guard.c[k]=k==='voice'?normalizeVoice(p.patch[k]):clone(p.patch[k]);guard.c.updatedTurn=next.turn+1;
   } else if(type==='knowledge.learn'){
-    const id=text(p.characterId),factId=text(p.factId),c=character(next,id),f=canonEntry(next,factId);if(!c)return block(state,event,'unknown-character');if(!f)return block(state,event,'unknown-fact');if(next.timeline.tick<f.availableAtTick&&!p.allowEarlyReveal)return block(state,event,'future-knowledge');c.knowledge[factId]={learnedAtTick:next.timeline.tick,sourceEventId:event.id,confidence:clamp(p.confidence??1,0,1),method:text(p.method)||'told'};c.updatedTurn=next.turn+1;
+    const id=text(p.characterId),factId=text(p.factId),c=character(next,id),f=canonEntry(next,factId);if(!c)return block(state,event,'unknown-character');if(!f)return block(state,event,'unknown-fact');if(next.timeline.tick<f.availableAtTick&&!(p.allowEarlyReveal===true&&event.source==='user'&&event.authority==='user-override'))return block(state,event,'future-knowledge');c.knowledge[factId]={learnedAtTick:next.timeline.tick,sourceEventId:event.id,confidence:clamp(p.confidence??1,0,1),method:text(p.method)||'told'};c.updatedTurn=next.turn+1;
   } else if(type==='belief.set'){
-    const id=text(p.characterId),c=character(next,id);if(!c)return block(state,event,'unknown-character');c.beliefs[text(p.factId)||text(p.key)]={value:clone(p.value),confidence:clamp(p.confidence??.5,0,1),sourceEventId:event.id,updatedAtTick:next.timeline.tick};c.updatedTurn=next.turn+1;
+    const id=text(p.characterId),c=character(next,id);if(!c)return block(state,event,'unknown-character');const beliefKey=text(p.factId)||text(p.key);if(unsafeObjectKey(beliefKey))return block(state,event,'invalid-belief-key');c.beliefs[beliefKey]={value:clone(p.value),confidence:clamp(p.confidence??.5,0,1),sourceEventId:event.id,updatedAtTick:next.timeline.tick};c.updatedTurn=next.turn+1;
   } else if(type==='relationship.change'){
     const a=text(p.a),b=text(p.b);if(!character(next,a)||!character(next,b))return block(state,event,'unknown-character');const key=pairKey(a,b),rel=normalizeRelationship(next.relationships[key]||{});for(const [k,v] of Object.entries(obj(p.delta)))if(RELATIONSHIP_DIMENSIONS.includes(k))rel[k]=clamp(rel[k]+Number(v||0),-1,1);rel.events.push({eventId:event.id,turn:next.turn+1,tick:next.timeline.tick,reason:text(p.reason),delta:clone(obj(p.delta))});rel.events=rel.events.slice(-128);next.relationships[key]=rel;
   } else if(type==='emotion.change'){
@@ -144,14 +161,14 @@ function applyEvent(state,eventInput){
   } else if(type==='ability.use'){
     const id=text(p.abilityId),a=next.abilities[id];if(!a)return block(state,event,'unknown-ability');if(a.forbidden&&!p.overrideForbidden)return block(state,event,'ability-forbidden');if(a.ownerIds.length&&text(p.characterId)&&!a.ownerIds.includes(text(p.characterId)))return block(state,event,'ability-owner-mismatch');if(a.lastUsedTurn!=null&&next.turn-a.lastUsedTurn<a.cooldownTurns)return block(state,event,'ability-cooldown',{readyAtTurn:a.lastUsedTurn+a.cooldownTurns});a.lastUsedTurn=next.turn;
   } else if(type==='canon.set'){
-    const id=text(p.id);if(!id)return block(state,event,'missing-canon-id');const candidate=normalizeCanonEntry(id,Object.assign({},p.entry||{}, {sourceEventId:event.id})),existing=canonEntry(next,id);
-    if(existing&&canonRank(candidate.level)<canonRank(existing.level)&&event.authority!=='user-override')return block(state,event,'canon-precedence',{existingLevel:existing.level,candidateLevel:candidate.level});
-    if(existing&&JSON.stringify(existing.value)!==JSON.stringify(candidate.value)&&canonRank(candidate.level)===canonRank(existing.level)&&candidate.level==='HARD'&&event.authority!=='user-override')return block(state,event,'hard-canon-conflict');
+    const id=text(p.id);if(!id)return block(state,event,'missing-canon-id');if(unsafeObjectKey(id))return block(state,event,'invalid-canon-id');const trustedOverride=event.source==='user'&&event.authority==='user-override';const candidate=normalizeCanonEntry(id,Object.assign({},p.entry||{}, {sourceEventId:event.id})),existing=canonEntry(next,id);
+    if(existing&&canonRank(candidate.level)<canonRank(existing.level)&&!trustedOverride)return block(state,event,'canon-precedence',{existingLevel:existing.level,candidateLevel:candidate.level});
+    if(existing&&JSON.stringify(existing.value)!==JSON.stringify(candidate.value)&&canonRank(candidate.level)===canonRank(existing.level)&&candidate.level==='HARD'&&!trustedOverride)return block(state,event,'hard-canon-conflict');
     next.canon.entries[id]=candidate;
   } else if(type==='world.set'){
     if(!setNestedWorld(next.world,p.path,p.value))return block(state,event,'invalid-world-path');
   } else if(type==='thread.update'){
-    const id=text(p.threadId);if(!id)return block(state,event,'missing-thread-id');next.openThreads[id]=Object.assign({},clone(next.openThreads[id]||{}),clone(p.patch||{}),{updatedTurn:next.turn+1});
+    const id=text(p.threadId);if(!id)return block(state,event,'missing-thread-id');if(unsafeObjectKey(id))return block(state,event,'invalid-thread-id');next.openThreads[id]=Object.assign({},clone(next.openThreads[id]||{}),clone(p.patch||{}),{updatedTurn:next.turn+1});
   } else return block(state,event,'unsupported-event-type',{type});
 
   next.timeline.events.push({eventId:event.id,type,tick:next.timeline.tick});if(next.timeline.events.length>4096)next.timeline.events=next.timeline.events.slice(-4096);

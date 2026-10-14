@@ -93,7 +93,8 @@ jobs:
             adb shell mkdir -p /data/local/tmp/seven-visual
             rm -rf visual-evidence/android16
             mkdir -p visual-evidence/android16
-            seven_test_status=0; (cd android && ./gradlew --no-daemon :app:connectedDebugAndroidTest) || seven_test_status=$?; adb pull /data/local/tmp/seven-visual/. visual-evidence/android16/ || true; exit "$seven_test_status"
+            seven_test_status=0; (cd android && ./gradlew --no-daemon :app:connectedDebugAndroidTest) || seven_test_status=$?; adb pull /data/local/tmp/seven-visual/. visual-evidence/android16/ || true; if [ "$seven_test_status" -ne 0 ]; then exit "$seven_test_status"; fi
+            bash apk/run-rpg-force-stop.sh
 
       - name: Android 14 WebView UI regression test
         uses: reactivecircus/android-emulator-runner@v2.38.0
@@ -111,7 +112,8 @@ jobs:
             adb shell mkdir -p /data/local/tmp/seven-visual
             rm -rf visual-evidence/android14
             mkdir -p visual-evidence/android14
-            seven_test_status=0; (cd android && ./gradlew --no-daemon :app:connectedDebugAndroidTest) || seven_test_status=$?; adb pull /data/local/tmp/seven-visual/. visual-evidence/android14/ || true; exit "$seven_test_status"
+            seven_test_status=0; (cd android && ./gradlew --no-daemon :app:connectedDebugAndroidTest) || seven_test_status=$?; adb pull /data/local/tmp/seven-visual/. visual-evidence/android14/ || true; if [ "$seven_test_status" -ne 0 ]; then exit "$seven_test_status"; fi
+            bash apk/run-rpg-force-stop.sh
 
       - name: Upload Android UI visual evidence
         if: ${{ always() && hashFiles('visual-evidence/**') != '' }}
@@ -153,3 +155,41 @@ jobs:
           path: dist/apk-verification.json
           if-no-files-found: error
           retention-days: 14
+
+      - name: Resolve RPG Live LLM provider
+        id: rpg-provider
+        env:
+          SEVEN_RPG_GROQ_KEY: ${{ secrets.GROQ_API_KEY }}
+          SEVEN_RPG_OPENROUTER_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          SEVEN_RPG_NVIDIA_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          SEVEN_RPG_MISTRAL_KEY: ${{ secrets.MISTRAL_API_KEY }}
+        run: |
+          if [ -n "$SEVEN_RPG_GROQ_KEY" ] || [ -n "$SEVEN_RPG_OPENROUTER_KEY" ] || [ -n "$SEVEN_RPG_NVIDIA_KEY" ] || [ -n "$SEVEN_RPG_MISTRAL_KEY" ]; then
+            echo "local=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "local=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install Ollama for real local RPG acceptance
+        if: steps.rpg-provider.outputs.local == 'true'
+        uses: ai-action/setup-ollama@v2
+
+      - name: Start local real AI and pull Qwen
+        if: steps.rpg-provider.outputs.local == 'true'
+        run: |
+          ollama serve > "$RUNNER_TEMP/ollama-rpg.log" 2>&1 &
+          for attempt in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:11434/api/version > /dev/null; then break; fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:11434/api/version > /dev/null
+          ollama pull qwen2.5:1.5b-instruct
+
+      - name: Real RPG Live LLM + Canon acceptance
+        env:
+          SEVEN_RPG_GROQ_KEY: ${{ secrets.GROQ_API_KEY }}
+          SEVEN_RPG_OPENROUTER_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          SEVEN_RPG_NVIDIA_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          SEVEN_RPG_MISTRAL_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          SEVEN_RPG_ALLOW_LOCAL_LLM: ${{ steps.rpg-provider.outputs.local }}
+        run: node apk/rpg-live-llm-acceptance.cjs
