@@ -105,6 +105,24 @@ function patchRpgModelRuntime(html) {
   result=replaceOne(result,
     '                roomTitles[roomId] = text.slice(0, 40) + (text.length > 40 ? "…" : "");',
     '                const worldName=window.SevenRpgWorkspace?.state?.worldEngine?.work?.title;\n                roomTitles[roomId] = typeof worldName==="string" && worldName.trim() ? worldName.trim().slice(0,80) : text.slice(0,40)+(text.length>40?"…":"");');
+  // Skip a provider's remaining routes after a 401/403/429 opens its circuit
+  // in this very turn. Previously three LLM7 models made identical exhausted calls.
+  result=replaceOne(result,
+    '                const model=route.candidates[i];\n                const started=Date.now();',
+    '                const model=route.candidates[i];\n                if(isFreeModelCoolingDown(model,Date.now()))continue;\n                const started=Date.now();');
+  result=replaceOne(result,
+    '            const err=new Error("All verified-free routes failed: "+attempts.map(a=>a.error).join(" • "));',
+    '            const uniqueErrors=[...new Set(attempts.map(a=>a.error))];\n            const err=new Error(uniqueErrors.length?"All verified-free routes failed: "+uniqueErrors.join(" • "):"All free models are cooling down. Connect a provider or retry later.");');
+  // Credential replacement invalidates only that provider's previous cooldown,
+  // never the other providers' health or the current RPG conversation.
+  result=replaceOne(result,
+    '        window.addEventListener("seven:rpg-credentials-ready",()=>{',
+    '        window.addEventListener("seven:rpg-provider-key-changed",event=>{\n            const provider=String(event?.detail?.provider||"");\n            if(!provider || !FREE_PROVIDER_REGISTRY[provider])return;\n            for(const key of Object.keys(freeModelHealth)){if(key.startsWith(provider+"\\n"))delete freeModelHealth[key];}\n            saveFreeModelHealth();\n        });\n        window.addEventListener("seven:rpg-credentials-ready",()=>{');
+  // A deliberate button sends a bounded, non-RPG connection probe and proves
+  // actual model inference. It does not share a story or export any credentials.
+  result=replaceOne(result,
+    '        // ---------- Model / Provider Fabric boundary (Tasks 4 + 146-150) ----------',
+    '        window.SevenRpgCheckNarrator=async function(){\n            try {\n                const result=await requestAI({messages:[{role:"system",content:"Connection self-test only. Reply with OK."},{role:"user",content:"OK"}],temperature:0,maxTokens:64,stream:false,timeoutMs:15000,requestDeadlineMs:30000,purpose:"connectivity"});\n                const route=result?._sevenRoute;\n                if(!route)throw Error("No successful provider route was returned");\n                return {ok:true,provider:route.provider,model:route.model};\n            }catch(error){\n                return {ok:false,code:String(error?.code||"PROVIDER_TEST_FAILED"),message:String(error?.message||"Request failed").slice(0,240)};\n            }\n        };\n\n        // ---------- Model / Provider Fabric boundary (Tasks 4 + 146-150) ----------');
   // Validate the draft BEFORE writing mode and preferences, avoiding half-saved invalid state.
   result=replaceOne(result,
     '        function saveSettings() {\n            freeProviderPrefs = automaticProviderPrefs();',
