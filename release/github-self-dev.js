@@ -7,7 +7,7 @@ const REPO="Awfdfhy/seven-ai-true";
 const REPO_API="/repos/"+REPO;
 const DEFAULT_BASE="main";
 const PROTECTED_PATHS=[
-  /^\.github\/workflows\//,
+  /^\.github\//,
   /^evolution\//,
   /^hardening\//,
   /^all\.cjs$/,

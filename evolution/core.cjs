@@ -16,7 +16,7 @@ function evaluate({ baseline = {}, candidate = {}, required = [] } = {}) {
   const baselineScore = score(baseline);
   const candidateScore = score(candidate);
   const testsPass = Number(candidate.tests || 0) === 1;
-  const pass = missing.length === 0 && testsPass && candidateScore >= baselineScore;
+  const pass = missing.length === 0 && testsPass && candidateScore > baselineScore;
   return {
     baselineScore,
     candidateScore,

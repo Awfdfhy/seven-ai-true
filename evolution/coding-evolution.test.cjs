@@ -4,6 +4,7 @@ const assert = require("assert/strict");
 const { createStateEnvelope } = require("./state-store.cjs");
 const { loadDurableEvolutionState } = require("./durable-engine.cjs");
 const { runCodingEvolution } = require("./coding-evolution.cjs");
+const { loadLearningArchive } = require("./learning-store.cjs");
 
 async function pass(name, fn) {
   await fn();
@@ -11,17 +12,20 @@ async function pass(name, fn) {
 }
 
 function storeAdapter() {
-  let committed = null;
-  let temp = null;
+  const committed = new Map();
+  const temp = new Map();
+  const slot = (key) => String(key || "seven-evolution-state");
   return {
-    async writeTemp({ envelope }) { temp = envelope; },
-    async commitTemp({ expectedChecksum }) {
-      if (!temp || temp.checksum !== expectedChecksum) throw new Error("temp mismatch");
-      committed = temp;
-      temp = null;
+    async writeTemp({ key, envelope }) { temp.set(slot(key), envelope); },
+    async commitTemp({ key, expectedChecksum }) {
+      const k = slot(key);
+      const pending = temp.get(k);
+      if (!pending || pending.checksum !== expectedChecksum) throw new Error("temp mismatch");
+      committed.set(k, pending);
+      temp.delete(k);
     },
-    async readCommitted() { return committed; },
-    seed(state) { committed = createStateEnvelope(state, { savedAt: "2026-09-13T01:00:00.000Z" }); }
+    async readCommitted({ key } = {}) { return committed.get(slot(key)) || null; },
+    seed(state, key = "seven-evolution-state") { committed.set(slot(key), createStateEnvelope(state, { savedAt: "2026-09-13T01:00:00.000Z" })); }
   };
 }
 
@@ -124,6 +128,29 @@ function baseInput({ agent = codingAgent(), evals = evalsAdapter(), promotion = 
     assert.equal(state.candidate.metadata.evalEvidenceId, "eval-evidence-1");
     assert.ok(promotion.calls.some((call) => call[0] === "applyCandidate"));
     assert.ok(agent.calls.some((call) => call[0] === "discardCandidate"));
+    const archive = await loadLearningArchive({ storeAdapter: store });
+    assert.equal(archive.verify().valid, true);
+    assert.equal(archive.list().length, 1);
+    assert.equal(archive.list()[0].outcome, "COMMITTED");
+    assert.equal(archive.list()[0].baselineSha, "aaaaaaa");
+    assert.equal(archive.list()[0].candidateSha, "bbbbbbb");
+    assert.equal(result.learningRecorded, true);
+  });
+
+  await pass("previously failed identical baseline hypothesis is blocked before Coding", async () => {
+    const store = storeAdapter();
+    const firstAgent = codingAgent();
+    const first = await runCodingEvolution(baseInput({
+      agent: firstAgent,
+      store,
+      evals: evalsAdapter(evalBundle({ shadowPassed: false }))
+    }));
+    assert.equal(first.outcome, "REJECTED");
+    const secondAgent = codingAgent();
+    const second = await runCodingEvolution(baseInput({ agent: secondAgent, store }));
+    assert.equal(second.outcome, "REJECTED_REPEAT_FAILURE");
+    assert.equal(second.stage, "LEARNING_GUARD");
+    assert.equal(secondAgent.calls.length, 0);
   });
 
   await pass("untrusted eval bundle is rejected before stable promotion", async () => {
@@ -186,13 +213,21 @@ function baseInput({ agent = codingAgent(), evals = evalsAdapter(), promotion = 
     assert.equal(agent.calls.some((call) => call[0] === "discardCandidate"), false);
   });
 
-  await pass("post-apply regression rolls back and cleans isolated workspace", async () => {
+  await pass("post-apply regression rolls back and archives rollback evidence", async () => {
     const agent = codingAgent();
+    const store = storeAdapter();
     const promotion = promotionAdapter({ ciPassed: false, regressionFree: false });
-    const result = await runCodingEvolution(baseInput({ agent, promotion }));
+    const result = await runCodingEvolution(baseInput({ agent, promotion, store }));
     assert.equal(result.outcome, "ROLLED_BACK");
     assert.ok(promotion.calls.some((call) => call[0] === "rollbackTo"));
     assert.ok(agent.calls.some((call) => call[0] === "discardCandidate"));
+    assert.equal(result.learningError, null);
+    assert.equal(result.learningRecorded, true);
+    const archive = await loadLearningArchive({ storeAdapter: store });
+    const record = archive.list()[0];
+    assert.equal(record.outcome, "ROLLED_BACK");
+    assert.equal(record.rollback.baselineSha, "aaaaaaa");
+    assert.equal(record.candidateSha, "bbbbbbb");
   });
 
   console.log("coding evolution integration test suite: PASS");
