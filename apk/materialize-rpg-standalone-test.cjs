@@ -46,6 +46,9 @@ public class SevenRpgStandaloneTest {
    assertJsTrue(view,"document.title==='Seven RPG'");
    // Standalone features must remain accessible on the packaged Android UI.
    assertJsTrue(view,"Boolean(document.querySelector('#seven-rpg-world-button') && document.querySelector('#seven-rpg-model-control'))");
+   assertJsTrue(view,"Boolean(document.querySelector('#rpg-scene-vista') && document.querySelector('#rpg-vista-world-title') && document.querySelector('#rpg-art-cycle'))");
+   assertJsTrue(view,"(()=>{const stage=document.querySelector('#rpg-scene-vista'),main=document.querySelector('#seven-rpg-main');return !!stage&&stage.getBoundingClientRect().width>100&&stage.getBoundingClientRect().right<=main.getBoundingClientRect().right+3})()");
+
    assertJsTrue(view,"Boolean(document.querySelector('#rpg-library-search') && document.querySelector('#rpg-model-search') && document.querySelector('#rpg-refresh-models') && document.documentElement.dataset.rpgSmartControls==='ready')");
    assertJsTrue(view,"Boolean(document.querySelector('#rpg-tab-connections') && document.querySelector('#rpg-provider-key-status') && window.SevenRpgProviderKeys && window.__SEVEN_RPG_NATIVE_KEYS)");
    assertJsTrue(view,"(()=>{document.querySelector('#rpg-settings-toggle').click();document.querySelector('#rpg-tab-connections').click();const section=document.querySelector('#rpg-connections-panel');const visible=!!section&&!section.hidden;document.querySelector('#rpg-tab-narrator').click();closeSettings();return visible&&document.querySelector('#rpg-connections-panel').hidden})()");
