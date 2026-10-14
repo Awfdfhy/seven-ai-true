@@ -106,6 +106,21 @@ jobs:
             (cd android && ./gradlew --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=ai.seven.rpg.SevenRpgStandaloneTest)
             bash apk/run-rpg-force-stop.sh
             ANDROID_API_LEVEL=34 bash apk/run-rpg-saf-picker-smoke.sh
+            # Actual Android-rendered evidence: scenery, world library and narrator.
+            mkdir -p dist/rpg-ui-evidence
+            adb shell am start -n ai.seven.rpg/.MainActivity >/dev/null 2>&1 || true
+            sleep 5
+            adb shell screencap -p /sdcard/Download/seven-rpg-main.png
+            adb pull /sdcard/Download/seven-rpg-main.png dist/rpg-ui-evidence/main-android14.png
+            adb shell input tap 980 145
+            sleep 2
+            adb shell screencap -p /sdcard/Download/seven-rpg-narrator.png
+            adb pull /sdcard/Download/seven-rpg-narrator.png dist/rpg-ui-evidence/narrator-android14.png
+            adb shell input keyevent 4
+            adb shell input tap 870 145
+            sleep 2
+            adb shell screencap -p /sdcard/Download/seven-rpg-worlds.png
+            adb pull /sdcard/Download/seven-rpg-worlds.png dist/rpg-ui-evidence/worlds-android14.png
       - name: Android 16 dedicated RPG startup smoke
         uses: reactivecircus/android-emulator-runner@v2.38.0
         with:
@@ -147,6 +162,14 @@ jobs:
           SEVEN_RPG_NVIDIA_KEY: ${{ secrets.NVIDIA_API_KEY }}
           SEVEN_RPG_MISTRAL_KEY: ${{ secrets.MISTRAL_API_KEY }}
         run: node apk/rpg-live-llm-acceptance.cjs
+      - name: Upload Android 14 RPG visual evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: seven-rpg-native-ui-screenshots
+          path: dist/rpg-ui-evidence/**
+          if-no-files-found: warn
+          retention-days: 14
       - name: Upload RPG instrumentation diagnostics
         if: always()
         uses: actions/upload-artifact@v7
