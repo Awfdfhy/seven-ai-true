@@ -50,3 +50,21 @@ html[data-seven-standalone-profile="rpg"] #seven-rpg-import-world::file-selector
 html[data-seven-standalone-profile="rpg"] #seven-rpg-import-world:focus-visible{outline:3px solid var(--rpg-accent);outline-offset:2px}
 html[data-seven-standalone-profile="rpg"] .seven-rpg-chat-actions{flex-wrap:wrap;gap:6px}
 @media (prefers-reduced-motion:reduce){html[data-seven-standalone-profile="rpg"] *,html[data-seven-standalone-profile="rpg"] *::before,html[data-seven-standalone-profile="rpg"] *::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+
+/* RPG-only shell boundary: retire legacy Seven AI workspace chrome in one pass.
+   Preserve #chat, .composer, settingsModal/modelSelect and RPG components:
+   they are still required by the RPG conversation and provider runtime. */
+html[data-seven-standalone-profile="rpg"] :is(
+  #sidebar, #topbar, #workspaceSwitcher, #workspacePicker,
+  #codingWorkspace, #selfDevelopmentWorkspace, #toolsWorkspace,
+  .coding-workspace, .self-development-workspace, .tools-workspace,
+  .seven-coding-workspace, .seven-selfdev-workspace,
+  [data-workspace="coding"], [data-workspace="self-development"],
+  [data-workspace="tools"], [data-seven-workspace="coding"],
+  [data-seven-workspace="self-development"], [data-seven-workspace="tools"]
+){display:none!important}
+html[data-seven-standalone-profile="rpg"] :is(
+  #sidebar, #topbar, .topbar, .sidebar, .seven-ws-launcher,
+  .seven-shell-primary-nav
+){pointer-events:none!important}
