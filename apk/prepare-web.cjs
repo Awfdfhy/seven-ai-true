@@ -69,8 +69,14 @@ if(profile.appId==='ai.seven.rpg'){
   // engines remain because RPG narration depends on them.
   const remove=['coding.js','research.js','research-v2.js','generated-ui.js','generated-ui.css'];
   for(const name of remove)fs.rmSync(path.join(WWW,'workspaces',name),{force:true});
+  // Physically exclude non-RPG standalone assets rather than only hiding UI.
+  // Keep the RPG hub and shared LLM/chat runtime until their dependencies are replaced.
+  fs.rmSync(path.join(WWW,'github-self-dev.js'),{force:true});
+  fs.rmSync(path.join(WWW,'workspaces','coding.css'),{force:true});
+  fs.rmSync(path.join(WWW,'workspaces','self-development.js'),{force:true});
+  fs.rmSync(path.join(WWW,'workspaces','self-development.css'),{force:true});
   fs.writeFileSync(index,page);
-  console.log('Seven RPG dedicated Android profile: PASS (ai.seven.rpg; boot in RPG; hide unrelated navigation)');
+  console.log('Seven RPG dedicated Android profile: PASS (ai.seven.rpg; boot in RPG; exclude legacy standalone assets)');
 }
 fs.writeFileSync(path.join(WWW,'seven-packaging.json'),JSON.stringify({format:'seven-android-web-payload',version:5,...gitIdentity(ROOT),files:inventory(WWW),lazyWorkspaces:true,adaptiveBrand:true,lazyRootAssets:ROOT_LAZY},null,2));
 console.log('android web payload: PASS (root lazy assets: '+ROOT_LAZY.join(', ')+')');
