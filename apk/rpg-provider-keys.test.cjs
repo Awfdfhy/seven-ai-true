@@ -10,7 +10,7 @@ function element(value=''){
  node.addEventListener=(event,cb)=>{node.handlers[event]=cb;};
  return node;
 }
-const nodes=Object.fromEntries(['rpg-key-provider','rpg-key-input','rpg-key-toggle','rpg-key-save','rpg-key-remove','rpg-provider-key-status'].map(n=>[n,element()]));
+const nodes=Object.fromEntries(['rpg-key-provider','rpg-key-input','rpg-key-toggle','rpg-key-save','rpg-key-remove','rpg-provider-key-status','rpg-key-bundle','rpg-bundle-import'].map(n=>[n,element()]));
 nodes['rpg-key-provider'].value='groq';
 const storage={'rpg.provider.groq':'initial-valid-test-key'};
 const plugin={
@@ -34,6 +34,15 @@ vm.runInNewContext(script,{window:win,document:doc,Event:class{constructor(type)
  await nodes['rpg-key-remove'].handlers.click();
  assert.equal(storage['rpg.provider.groq'],undefined,'Revoke must delete Android stored secret');
  assert.equal(win.__SEVEN_RPG_NATIVE_KEYS.groq,undefined,'Revoke must clear in-memory token');
+ nodes['rpg-key-bundle'].value=JSON.stringify({openrouter:'sample-openrouter-test-key',groq:'fresh-valid-groq-key'});
+ await nodes['rpg-bundle-import'].handlers.click();
+ assert.equal(storage['rpg.provider.openrouter'],'sample-openrouter-test-key','Bundle must import OpenRouter securely');
+ assert.equal(storage['rpg.provider.groq'],'fresh-valid-groq-key','Bundle must import Groq securely');
+ assert.equal(nodes['rpg-key-bundle'].value,'','Bundle must erase pasted secrets immediately');
+ nodes['rpg-key-bundle'].value='sk-or-v1-EXAMPLEKEY123AQ.SampleNvidiaNotReallynvapi-example-nvidia-token-gsk_ExampleGroq123';
+ await nodes['rpg-bundle-import'].handlers.click();
+ assert.equal(storage['rpg.provider.openrouter'],'sk-or-v1-EXAMPLEKEY123','Concatenated bundle must split at next provider marker');
+ assert.equal(storage['rpg.provider.groq'],'gsk_ExampleGroq123');
  assert.ok(events.filter(e=>e==='seven:rpg-credentials-ready').length>=3,'Runtime must be notified about credential changes');
  console.log('Seven RPG secure provider keys: PASS (Android Keystore hydration, save, revoke, no localStorage)');
 })().catch(e=>{console.error(e);process.exitCode=1;});
