@@ -65,6 +65,9 @@ if(profile.appId==='ai.seven.rpg'){
   // Android Keystore bridge; the APK never embeds GitHub Actions LLM secrets.
   page=page.replace('</body>','<script id="rpg-provider-keys" src="./rpg-provider-keys.js"></script></body>');
   fs.copyFileSync(path.join(ROOT,'apk','rpg-provider-keys.js'),path.join(WWW,'rpg-provider-keys.js'));
+  // A fully local illustrated Visual Novel canvas, separate from the story engine.
+  page=page.replace('</body>','<script id="seven-rpg-scene-controller" src="./rpg-scene-controller.js"></script></body>');
+  fs.copyFileSync(path.join(ROOT,'apk','rpg-scene-controller.js'),path.join(WWW,'rpg-scene-controller.js'));
 
   // Physically remove every unrelated Seven AI workspace and its UI CSS/JS
   // from the signed standalone package. No generic workspace launchers survive.
@@ -83,7 +86,10 @@ if(profile.appId==='ai.seven.rpg'){
     if(!fs.existsSync(path.join(workspaceDir,required)))throw Error('RPG runtime asset missing: '+required);
   }
   fs.writeFileSync(index,page);
-  console.log('Seven RPG standalone: native RPG shell, exclusive RPG hub and RPG-only assets: PASS');
+  require('node:child_process').execFileSync(process.execPath,[path.join(ROOT,'apk','build-rpg-scene-pack.cjs')],{
+    cwd:ROOT,stdio:'inherit',timeout:600000
+  });
+  console.log('Seven RPG standalone: illustrated RPG shell, offline scene library and RPG-only assets: PASS');
 }
 fs.writeFileSync(path.join(WWW,'seven-packaging.json'),JSON.stringify({format:'seven-android-web-payload',version:5,...gitIdentity(ROOT),files:inventory(WWW),lazyWorkspaces:true,adaptiveBrand:true,lazyRootAssets:ROOT_LAZY},null,2));
 console.log('android web payload: PASS (root lazy assets: '+ROOT_LAZY.join(', ')+')');
