@@ -136,6 +136,9 @@ function updateRouteHint(){
   if(filter)filter.disabled=auto;
   if(picker)picker.disabled=auto||picker.dataset.rpgAvailableCount==='0'||![...picker.options].some(o=>!o.disabled&&o.value);
   const count=Number(picker?.dataset.rpgAvailableCount||0);
+  const state=String(byId('routeStateBadge')?.textContent||'').toLowerCase();
+  const led=byId('rpg-ai-state');
+  if(led)led.dataset.state=count>0&&state!=='blocked'&&state!=='cooling down'?'ready':(state==='cooling down'?'cooldown':'blocked');
   const connect=byId('rpg-tab-connections');
   if(connect){connect.classList.toggle('rpg-attention',count===0);connect.title=count?'Connect more providers':'No usable narrator: connect your own provider';}
   const prompt=byId('rpg-connect-prompt');
@@ -183,8 +186,11 @@ function syncModalSoon(){
     if(hidden(modal))return;
     restoreModelFilters();
     // Do not open the software keyboard just because the user opened settings.
-    showSettingsTab('narrator');
-    const tab=byId('rpg-tab-narrator');if(tab)tab.focus({preventScroll:true});
+    const available=Number(byId('modelSelect')?.dataset.rpgAvailableCount||0);
+    const firstTab=available>0?'narrator':'connections';
+    showSettingsTab(firstTab);
+    const tab=byId(firstTab==='narrator'?'rpg-tab-narrator':'rpg-tab-connections');
+    if(tab)tab.focus({preventScroll:true});
   },0);
 }
 async function refreshModels(){
@@ -313,7 +319,32 @@ function wire(){
       else if(!hidden(drawer))trap(event,drawer);
     }
   });
-  // Keep scrollable panels reachable on compact keyboards without reshaping the game stage.
+  // Keep cinematic artwork above the fold until a keyboard actually appears.
+  // When Android resizes the viewport, protect the usable chat/composer area.
+  let baselineHeight=Math.max(win.innerHeight||0,doc.documentElement.clientHeight||0);
+  const actionInput=byId('userInput');
+  function keyboardLayout(){
+    const active=doc.activeElement;
+    const inputFocused=!!(actionInput&&active===actionInput);
+    const viewportHeight=win.visualViewport?.height||win.innerHeight||baselineHeight;
+    if(!inputFocused&&viewportHeight>baselineHeight)baselineHeight=viewportHeight;
+    const keyboardOpen=inputFocused&&viewportHeight<baselineHeight*0.81;
+    doc.documentElement.classList.toggle('rpg-keyboard-open',keyboardOpen);
+  }
+  function resizeComposer(){
+    if(!actionInput)return;
+    actionInput.style.height='auto';
+    actionInput.style.height=Math.max(47,Math.min(148,actionInput.scrollHeight))+'px';
+    keyboardLayout();
+  }
+  if(actionInput){
+    actionInput.addEventListener('input',resizeComposer);
+    actionInput.addEventListener('focus',keyboardLayout);
+    actionInput.addEventListener('blur',()=>win.setTimeout(keyboardLayout,130));
+    resizeComposer();
+  }
+  if(win.visualViewport)win.visualViewport.addEventListener('resize',keyboardLayout,{passive:true});
+  win.addEventListener('resize',keyboardLayout,{passive:true});
   doc.documentElement.dataset.rpgSmartControls='ready';
 }
 if(doc.readyState==='loading')doc.addEventListener('DOMContentLoaded',wire,{once:true});else wire();
