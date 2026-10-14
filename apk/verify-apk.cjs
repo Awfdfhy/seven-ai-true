@@ -69,7 +69,11 @@ assert.ok(!html.stdout.includes('cdnjs.cloudflare.com/ajax/libs/pdf.js'),'APK st
 assert.ok(html.stdout.includes('Seven 2.4.3 Zero-Key + UI Cleanup'),'2.4.3 UI cleanup marker missing from APK');
 assert.ok(html.stdout.includes('Seven 2.4.2 Zero-Key UX'),'zero-key marker missing from APK');
 assert.ok(!html.stdout.includes('id="apiKeyInput"')&&!html.stdout.includes('id="nvidiaApiKeyInput"')&&!html.stdout.includes('id="openrouterApiKeyInput"')&&!html.stdout.includes('id="geminiApiKeyInput"')&&!html.stdout.includes('id="llm7TokenInput"'),'APK still contains manual API-key fields');
-assert.ok(!/type=["']password["']/i.test(html.stdout),'APK still contains password credential inputs');
+if(rpgStandalone){
+  // RPG keys are entered exclusively into the app and encrypted by Android Keystore.
+  assert.ok(html.stdout.includes('id="rpg-key-input"')&&html.stdout.includes('id="rpg-provider-keys"'),'RPG Keystore credential entry missing');
+  assert.ok((html.stdout.match(/type=["']password["']/gi)||[]).length===1,'Unexpected additional password inputs in the RPG shell');
+}else assert.ok(!/type=["']password["']/i.test(html.stdout),'APK still contains password credential inputs');
 assert.ok(!html.stdout.includes('id="nameModal"')&&!html.stdout.includes('id="nameInput"'),'APK still contains legacy name capture UI');
 if(!rpgStandalone)assert.ok(html.stdout.includes('Automatic Providers')&&html.stdout.includes('Zero-Key routing'),'APK missing automatic provider UX');
 if(!rpgStandalone){
