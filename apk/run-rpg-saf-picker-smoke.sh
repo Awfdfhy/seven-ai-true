@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Exercise Android's real DocumentsUI SAF picker on an emulator, not a mocked file input.
 set -euo pipefail
-OUT="${RUNNER_TEMP:-/tmp}/seven-rpg-saf-${ANDROID_API_LEVEL:-unknown}"
+OUT="dist/saf-picker-${ANDROID_API_LEVEL:-unknown}"
 mkdir -p "$OUT"
 adb wait-for-device
 adb shell am start -a android.intent.action.OPEN_DOCUMENT -c android.intent.category.OPENABLE -t application/json > "$OUT/launch.txt"
