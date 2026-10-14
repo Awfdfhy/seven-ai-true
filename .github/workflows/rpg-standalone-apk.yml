@@ -105,7 +105,7 @@ jobs:
           script: |
             (cd android && ./gradlew --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=ai.seven.rpg.SevenRpgStandaloneTest)
             bash apk/run-rpg-force-stop.sh
-            bash apk/run-rpg-saf-picker-smoke.sh
+            ANDROID_API_LEVEL=34 bash apk/run-rpg-saf-picker-smoke.sh
       - name: Android 16 dedicated RPG startup smoke
         uses: reactivecircus/android-emulator-runner@v2.38.0
         with:
