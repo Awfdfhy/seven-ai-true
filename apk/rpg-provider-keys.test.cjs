@@ -21,7 +21,7 @@ const plugin={
 const events=[];
 const win={Capacitor:{Plugins:{SevenPlatform:plugin}},dispatchEvent:e=>events.push(e.type)};
 const doc={readyState:'complete',getElementById:id=>nodes[id]||null};
-vm.runInNewContext(script,{window:win,document:doc,Event:class{constructor(type){this.type=type;}},Promise,console});
+vm.runInNewContext(script,{window:win,document:doc,Event:class{constructor(type){this.type=type;}},CustomEvent:class{constructor(type,options){this.type=type;this.detail=options?.detail;}},Promise,console});
 (async()=>{
  await new Promise(setImmediate);
  assert.equal(win.__SEVEN_RPG_NATIVE_KEYS.groq,'initial-valid-test-key','Existing key must hydrate');
