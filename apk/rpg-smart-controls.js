@@ -6,6 +6,7 @@ const $=s=>doc.querySelector(s);
 const byId=id=>doc.getElementById(id);
 const hidden=node=>!node||node.hidden||win.getComputedStyle(node).display==='none';
 let previousFocus=null,modelGroups=[],filterReady=false,refreshing=false;
+let draftModel=''; // Never change narrator preference just because the user searches the catalog.
 function selectable(root){
   if(!root)return[];
   return [...root.querySelectorAll('button:not(:disabled),input:not(:disabled),textarea:not(:disabled),select:not(:disabled),a[href],[tabindex]:not([tabindex="-1"])')]
@@ -46,6 +47,8 @@ function readGroups(){
     }
   }
   filterReady=true;
+  const current=picker.selectedOptions[0];
+  if(current&&current.value&&!current.disabled&&!current.parentElement?.disabled)draftModel=current.value;
 }
 function providerFor(option){
   return option.dataset.provider || (option.value.includes('::')?option.value.split('::')[0]:'groq');
@@ -76,7 +79,8 @@ function filterModels(){
   if(!picker||!filterReady)return;
   const term=(input&&input.value||'').trim().toLocaleLowerCase();
   const provider=filter&&filter.value||'all';
-  const selected=picker.value;
+  const selected=draftModel || picker.value;
+  const isFiltered=!!term||provider!=='all';
   const fragment=doc.createDocumentFragment();
   let total=0,available=0;
   for(const group of modelGroups){
@@ -92,25 +96,29 @@ function filterModels(){
     });
     if(group.label)fragment.appendChild(target);
   }
-  if(!total){
-    const option=doc.createElement('option');
-    option.value='';option.disabled=true;option.textContent='No matching models';
-    fragment.appendChild(option);
+  const selectedMatches=modelGroups.some(g=>g.options.some(o=>o.value===selected&&!o.disabled&&!g.disabled));
+  const currentMatches=selectedMatches&&modelGroups.some(g=>g.options.some(o=>o.value===selected&&!o.disabled&&!g.disabled&&(provider==='all'||providerFor(o)===provider)&&(!term||(o.textContent+' '+o.value+' '+providerFor(o)).toLocaleLowerCase().includes(term))));
+  if(!total||!currentMatches&&isFiltered){
+    const placeholder=doc.createElement('option');
+    placeholder.value='';placeholder.disabled=true;
+    placeholder.textContent=total?'Choose a model from these results':'No matching models';
+    fragment.insertBefore(placeholder,fragment.firstChild);
   }
   picker.replaceChildren(fragment);
-  const keep=[...picker.options].find(option=>!option.disabled&&option.value===selected);
-  const first=[...picker.options].find(option=>!option.disabled&&option.value);
-  picker.value=keep?keep.value:(first?first.value:'');
+  const keep=[...picker.options].find(o=>o.value===selected&&!o.disabled&&!o.parentElement?.disabled);
+  const first=[...picker.options].find(o=>o.value&&!o.disabled&&!o.parentElement?.disabled);
+  // A search cannot silently replace the saved narrator with the first result.
+  picker.value=keep?keep.value:(!isFiltered&&first?first.value:'');
+  if(!isFiltered&&picker.value)draftModel=picker.value;
   const mode=byId('routingModeSelect');
   picker.disabled=(mode&&mode.value==='auto')||!available;
   updateModelCount(available,total);
-  if(picker.value&&picker.value!==selected&&typeof win.onModelChange==='function')win.onModelChange();
 }
 function restoreModelFilters(){
   const search=byId('rpg-model-search'),provider=byId('rpg-provider-filter');
   if(search)search.value='';
   if(provider)provider.value='all';
-  readGroups();
+  if(!filterReady)readGroups();
   updateProviderChoices();
   filterModels();
   updateRouteHint();
@@ -146,13 +154,15 @@ async function refreshModels(){
   if(status)status.textContent='Checking available routes…';
   try{
     if(typeof win.refreshFreeModelCatalogFromSettings!=='function')throw Error('Model refresh is not available');
-    await win.refreshFreeModelCatalogFromSettings();
+    const outcome=await win.refreshFreeModelCatalogFromSettings();
+    if(!outcome||outcome.ok!==true)throw Error('Model catalog refresh did not complete');
     const search=byId('rpg-model-search'),provider=byId('rpg-provider-filter');
     if(search)search.value='';
     if(provider)provider.value='all';
     readGroups();updateProviderChoices();filterModels();updateRouteHint();
     const count=Number(byId('modelSelect')?.dataset.rpgAvailableCount||0);
-    if(status)status.textContent=count?'Catalog refreshed. Runtime availability is checked when sending.':'No usable routes found. Retry later or check provider access.';
+    const errors=outcome.report?.errors?.length||0;
+    if(status)status.textContent=count?('Catalog refreshed ('+count+' ready routes'+(errors?', '+errors+' provider errors':'')+'). Connection is confirmed when you send.'):'No usable routes found. Retry later or check provider access.';
   }catch(error){
     if(status)status.textContent='Refresh failed: '+String(error&&error.message||'connection unavailable').slice(0,130);
   }finally{
@@ -168,7 +178,16 @@ function wire(){
   const modelSearch=byId('rpg-model-search'),provider=byId('rpg-provider-filter'),mode=byId('routingModeSelect');
   if(modelSearch)modelSearch.addEventListener('input',filterModels);
   if(provider)provider.addEventListener('change',filterModels);
-  if(mode)mode.addEventListener('change',updateRouteHint);
+  const picker=byId('modelSelect');
+  if(picker)picker.addEventListener('change',function(){if(picker.value)draftModel=picker.value;});
+  if(mode)mode.addEventListener('change',function(){
+    if(mode.value==='auto'){if(modelSearch)modelSearch.value='';if(provider)provider.value='all';filterModels();}
+    updateRouteHint();
+  });
+  // The transport owns the unfiltered catalog. Never cache a previously filtered copy.
+  doc.addEventListener('seven:rpg-model-catalog-updated',function(){
+    readGroups();updateProviderChoices();filterModels();updateRouteHint();
+  });
   const refresh=byId('rpg-refresh-models');
   if(refresh)refresh.addEventListener('click',refreshModels);
   const modal=byId('settingsModal');

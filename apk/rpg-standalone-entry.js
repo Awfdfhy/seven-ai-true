@@ -220,14 +220,17 @@
       if (select) {
         if (!select.value && select.options.length) select.selectedIndex = 0;
         var routing = doc.getElementById('routingModeSelect');
-        if (routing && routing.value === 'auto') {
+        var usableRoutes = Array.from(select.options).some(function (option) { return Boolean(option.value) && !option.disabled && !(option.parentElement && option.parentElement.disabled); });
+        if (usableRoutes && routing && routing.value === 'auto') {
           // Automatic routing disables the preferred model picker by design.
           // Switch UI to manual only when the user chooses model selection.
           routing.value = 'manual';
           routing.dispatchEvent(new Event('change', {bubbles:true}));
         }
-        select.disabled = false;
-        select.focus();
+        var usable = Array.from(select.options).some(function (option) { return Boolean(option.value) && !option.disabled && !(option.parentElement && option.parentElement.disabled); });
+        select.disabled = !usable;
+        if (usable) select.focus();
+        else { var refresh = doc.getElementById('rpg-refresh-models'); if (refresh) refresh.focus(); }
       }
     });
     bar.insertBefore(button, bar.firstChild);

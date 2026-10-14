@@ -57,6 +57,7 @@ function patchRpgModelRuntime(html) {
 '            const canPreserve=[...select.options].some(opt=>!opt.disabled&&opt.value===wanted);',
 '            select.value=canPreserve?wanted:(ranked.length?freeModelSelectionKey(ranked[0].model.provider,ranked[0].model.id):"");',
 '            select.dataset.rpgAvailableCount=String(ranked.length);',
+'            document.dispatchEvent(new CustomEvent("seven:rpg-model-catalog-updated",{detail:{available:ranked.length}}));',
 '            const counter=document.getElementById("rpg-model-count");',
 '            if(counter)counter.textContent=ranked.length+" selectable · "+unavailable.length+" unavailable";',
 '            if(!ranked.length){',
@@ -80,6 +81,13 @@ function patchRpgModelRuntime(html) {
   result=replaceOne(result,
     '            const selected = document.getElementById("modelSelect").value;\n            currentModel = isValidFreeModelSelection(selected) ? selected : DEFAULT_MODEL;',
     '            const modelPicker=document.getElementById("modelSelect");\n            const selected=modelPicker.value;\n            if(currentRoutingMode==="manual" && (!selected || !isValidFreeModelSelection(selected) || modelPicker.selectedOptions[0]?.disabled)){\n                renderFreeModelFabricStatus("Choose a configured model or switch to Automatic routing.");\n                modelPicker.focus();\n                return;\n            }\n            currentModel = selected && isValidFreeModelSelection(selected) ? selected : currentModel;');
+  // Propagate provider refresh failures instead of falsely telling the RPG menu it worked.
+  result=replaceOne(result,
+    '                renderFreeModelFabricStatus(`Refresh complete • ${report.catalogSize} verified-free models • ${report.providersChecked} managed providers checked • ${report.errors.length} provider errors`);',
+    '                renderFreeModelFabricStatus(`Refresh complete • ${report.catalogSize} verified-free models • ${report.providersChecked} managed providers checked • ${report.errors.length} provider errors`);\n                return {ok:true,report};');
+  result=replaceOne(result,
+    '                renderFreeModelFabricStatus("Refresh failed safely: " + sanitizeDiscoveredText(e && e.message, "unknown error"));',
+    '                renderFreeModelFabricStatus("Refresh failed safely: " + sanitizeDiscoveredText(e && e.message, "unknown error"));\n                throw e;');
   // Validate the draft BEFORE writing mode and preferences, avoiding half-saved invalid state.
   result=replaceOne(result,
     '        function saveSettings() {\n            freeProviderPrefs = automaticProviderPrefs();',
