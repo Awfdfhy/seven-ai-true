@@ -88,7 +88,7 @@ public class SevenRpgStandaloneTest {
      Thread.sleep(250);
    }
    assertTrue("RPG first world was not restored after Activity recreation",persisted);
-   assertJsTrue(restored,"getComputedStyle(document.querySelector('[data-seven-shell-workspace=\\\"chat\\\"]')).display==='none'");
+   assertJsTrue(restored,"Boolean(document.querySelector('.rpg-header') && document.querySelector('.rpg-application') && !document.querySelector('.topbar') && !document.querySelector('.sidebar') && !document.querySelector('[data-seven-shell-workspace]'))");
   }
  }
  @Test public void androidKeystoreSecretIsolation() throws Exception {

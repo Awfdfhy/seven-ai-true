@@ -232,27 +232,77 @@
     });
     bar.insertBefore(button, bar.firstChild);
   }
+  function mountRpgChrome() {
+    if (doc.documentElement.dataset.sevenRpgChromeReady === '1') return;
+    doc.documentElement.dataset.sevenRpgChromeReady = '1';
+    var drawer = doc.getElementById('sidebar');
+    var backdrop = doc.getElementById('sidebarBackdrop');
+    var toggle = doc.getElementById('rpg-library-toggle');
+    function setLibrary(open) {
+      if (!drawer || !backdrop || !toggle) return;
+      drawer.hidden = !open;
+      backdrop.hidden = !open;
+      toggle.setAttribute('aria-expanded', String(open));
+    }
+    if (toggle) toggle.addEventListener('click', function () {setLibrary(drawer.hidden)});
+    var close = doc.getElementById('rpg-library-close');
+    if (close) close.addEventListener('click', function () {setLibrary(false)});
+    if (backdrop) backdrop.addEventListener('click', function () {setLibrary(false)});
+    var list = doc.getElementById('roomList');
+    if (list) list.addEventListener('click', function () {setLibrary(false)});
+    var fresh = doc.getElementById('rpg-new-adventure');
+    if (fresh) fresh.addEventListener('click', function () {
+      setLibrary(false);
+      if (typeof win.createNewChat === 'function') win.createNewChat();
+      else report('new-adventure-unavailable');
+    });
+    doc.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && drawer && !drawer.hidden) {
+        setLibrary(false);
+        if (toggle) toggle.focus();
+      }
+    });
+    // The legacy provider transport emits a generic empty-chat placeholder.
+    // Rephrase it as RPG onboarding; no Seven AI empty state is presented.
+    var chat = doc.getElementById('chat');
+    function tuneEmpty() {
+      if (!chat) return;
+      var greeting = chat.querySelector('.empty-greeting');
+      var subtitle = chat.querySelector('.empty-sub');
+      if (greeting && greeting.textContent !== 'Every legend begins with a choice') greeting.textContent = 'Every legend begins with a choice';
+      if (subtitle && subtitle.textContent !== 'Create your world, then choose what your character does next.') subtitle.textContent = 'Create your world, then choose what your character does next.';
+    }
+    if (chat && typeof win.MutationObserver === 'function') {
+      new win.MutationObserver(tuneEmpty).observe(chat, {childList:true, subtree:true});
+      tuneEmpty();
+    }
+  }
+  function ensureHub() {
+    if (win.SevenWorkspaces && typeof win.SevenWorkspaces.open === 'function') return true;
+    if (!doc.getElementById('seven-rpg-hub-runtime')) {
+      var script = doc.createElement('script');
+      script.id = 'seven-rpg-hub-runtime';
+      script.src = './workspaces/hub.js';
+      script.onload = boot;
+      script.onerror = function () { report('rpg-hub-script-failed'); };
+      doc.head.appendChild(script);
+    }
+    return false;
+  }
   function boot() {
     if (busy || ready) return;
-    var shell = win.SevenShellFinal;
-    if (!shell || typeof shell.openWorkspace !== 'function') {
+    if (!ensureHub()) {
       if (++tries < 160) win.setTimeout(boot, 250);
-      else report('shell-unavailable');
+      else report('rpg-hub-unavailable');
       return;
     }
     busy = true;
-    Promise.resolve(shell.openWorkspace('rpg')).then(function () {
+    Promise.resolve(win.SevenWorkspaces.open('rpg')).then(function () {
       var workspaces = win.SevenWorkspaces;
       if (workspaces && workspaces.active() === 'rpg' && win.SevenRpgWorkspace) {
         ready = true;
         doc.documentElement.dataset.sevenStandaloneReady = '1';
-        // Close sidebar on mobile to avoid intercepting clicks
-        var side = doc.querySelector('.sidebar');
-        if (side) {
-          side.classList.remove('open', 'active');
-          if (doc.body) doc.body.classList.remove('sidebar-open');
-          doc.documentElement.dataset.sevenShellSidebar = 'closed';
-        }
+        mountRpgChrome();
         starterPanel();
         mountRpgModelControl();
         mountWorldPanel();
@@ -265,7 +315,6 @@
       report(error && error.message || 'rpg-start-error');
     });
   }
-  doc.addEventListener('seven:shellfinalready', boot);
   if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', boot, { once: true });
   else boot();
 })(typeof window !== 'undefined' ? window : null, typeof document !== 'undefined' ? document : null);

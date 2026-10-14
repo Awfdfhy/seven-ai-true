@@ -1,6 +1,7 @@
 const fs=require('fs');
 const path=require('path');
 const {inventory,gitIdentity}=require('./build-provenance.cjs');
+const {removeLegacyUi}=require('./rpg-shell.cjs');
 const ROOT=path.resolve(__dirname,'..');
 const DIST=path.join(ROOT,'dist');
 const SRC=path.join(DIST,'seven_ai-release.html');
@@ -42,8 +43,9 @@ if(profile.appId==='ai.seven.rpg'){
   if(page.includes('seven-rpg-standalone-entry'))throw new Error('duplicate RPG standalone entrypoint');
   if(!page.includes('<title>Seven AI</title>'))throw new Error('expected base HTML title missing');
   page=page.replace('<title>Seven AI</title>','<title>Seven RPG</title>');
-  const css='<style id="seven-rpg-standalone-style">html[data-seven-standalone-profile="rpg"] [data-seven-shell-workspace]:not([data-seven-shell-workspace="rpg"]),html[data-seven-standalone-profile="rpg"] [data-seven-github-selfdev],html[data-seven-standalone-profile="rpg"] .seven-ws-choice:not([data-ws="rpg"]),html[data-seven-standalone-profile="rpg"] [data-rpg-exit]{display:none!important}</style>';
-  page=page.replace('</body>',css+'<script id="seven-rpg-standalone-entry" src="./rpg-standalone-entry.js"></script></body>');
+  // Ship a newly authored RPG shell, not the old Seven AI UI with CSS hidden.
+  page=removeLegacyUi(page);
+  page=page.replace('</body>','<script id="seven-rpg-standalone-entry" src="./rpg-standalone-entry.js"></script></body>');
   const runtimeSource=fs.readFileSync(path.join(ROOT,'seven_ai-final.html'),'utf8');
   const runtimeStart=runtimeSource.indexOf('window.SevenRuntime = (() => {');
   const runtimeEnd=runtimeSource.indexOf('        })();',runtimeStart);
@@ -54,7 +56,7 @@ if(profile.appId==='ai.seven.rpg'){
   const skin=path.join(ROOT,'apk','rpg-standalone-ui.css');
   if(!fs.existsSync(skin))throw new Error('Standalone RPG design missing');
   fs.copyFileSync(skin,path.join(WWW,'rpg-standalone-ui.css'));
-  page=page.replace('</head>','<link rel="stylesheet" href="./rpg-standalone-ui.css"></head>');
+  page=page.replace('</head>','<link id="seven-rpg-standalone-style" rel="stylesheet" href="./rpg-standalone-ui.css"></head>');
   // Do not overwrite valid selections; repair only stale/unavailable model ids.
   // Seven uses this catalog when the user opens Settings, before making a call.
   const stale='            document.getElementById("modelSelect").value = currentModel;';
@@ -65,18 +67,24 @@ if(profile.appId==='ai.seven.rpg'){
   if(!page.includes(stale))throw new Error('RPG model picker guard anchor missing');
   page=page.replace(stale,safe);
 
-  // Non-RPG workspaces must not ship in the standalone APK. Shared chat/model
-  // engines remain because RPG narration depends on them.
-  const remove=['coding.js','research.js','research-v2.js','generated-ui.js','generated-ui.css'];
-  for(const name of remove)fs.rmSync(path.join(WWW,'workspaces',name),{force:true});
-  // Physically exclude non-RPG standalone assets rather than only hiding UI.
-  // Keep the RPG hub and shared LLM/chat runtime until their dependencies are replaced.
+  // Physically remove every unrelated Seven AI workspace and its UI CSS/JS
+  // from the signed standalone package. No generic workspace launchers survive.
+  const workspaceDir=path.join(WWW,'workspaces');
+  const keepWorkspace=name=>name==='hub.js'||name==='intelligence.js'||
+    name==='world-runtime.js'||name==='canon-simulator.js'||
+    name==='rtl.css'||/^rpg(?:[.-]|$)/i.test(name);
+  if(!fs.existsSync(workspaceDir))throw Error('RPG workspace assets missing');
+  for(const name of fs.readdirSync(workspaceDir)){
+    if(!keepWorkspace(name))fs.rmSync(path.join(workspaceDir,name),{recursive:true,force:true});
+  }
+  fs.copyFileSync(path.join(ROOT,'apk','rpg-hub.js'),path.join(workspaceDir,'hub.js'));
+  // Avoid lazy loading the self-development runtime from Seven AI.
   fs.rmSync(path.join(WWW,'github-self-dev.js'),{force:true});
-  fs.rmSync(path.join(WWW,'workspaces','coding.css'),{force:true});
-  fs.rmSync(path.join(WWW,'workspaces','self-development.js'),{force:true});
-  fs.rmSync(path.join(WWW,'workspaces','self-development.css'),{force:true});
+  for(const required of ['hub.js','rpg.js','rpg-state.js','rpg-session.js','rpg-live-integration.js','canon-simulator.js','world-runtime.js']){
+    if(!fs.existsSync(path.join(workspaceDir,required)))throw Error('RPG runtime asset missing: '+required);
+  }
   fs.writeFileSync(index,page);
-  console.log('Seven RPG dedicated Android profile: PASS (ai.seven.rpg; boot in RPG; exclude legacy standalone assets)');
+  console.log('Seven RPG standalone: native RPG shell, exclusive RPG hub and RPG-only assets: PASS');
 }
 fs.writeFileSync(path.join(WWW,'seven-packaging.json'),JSON.stringify({format:'seven-android-web-payload',version:5,...gitIdentity(ROOT),files:inventory(WWW),lazyWorkspaces:true,adaptiveBrand:true,lazyRootAssets:ROOT_LAZY},null,2));
 console.log('android web payload: PASS (root lazy assets: '+ROOT_LAZY.join(', ')+')');
