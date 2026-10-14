@@ -12,6 +12,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6.1.0
+        with:
+          ref: rpg/standalone-20261011
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
