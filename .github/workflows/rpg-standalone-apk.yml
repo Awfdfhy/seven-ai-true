@@ -156,6 +156,7 @@ jobs:
             android/app/build/reports/androidTests/**
             android/app/build/outputs/androidTest-results/**
             dist/apk-verification.json
+            dist/saf-picker-*/**
           if-no-files-found: warn
           retention-days: 7
       - name: Upload Seven RPG APK
