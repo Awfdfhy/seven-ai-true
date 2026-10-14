@@ -4,38 +4,42 @@ const RPG_SHELL=`
 <!-- SEVEN_RPG_NATIVE_SHELL_V1 -->
 <div id="seven-app" class="rpg-application">
   <header class="rpg-header" role="banner">
-    <div class="rpg-identity"><span class="rpg-crest" aria-hidden="true">✦</span><img class="app-icon" src="./brand/seven-night-black.svg" alt="Seven RPG"><div><strong>SEVEN RPG</strong><small>THE STORY IS YOURS</small></div></div>
+    <div class="rpg-identity"><span class="rpg-crest" aria-hidden="true">✧</span><img class="app-icon" src="./brand/seven-night-black.svg" alt="Seven RPG"><div><strong>SEVEN<span> / RPG</span></strong><small>CHRONICLES · حكايات</small></div></div>
     <span id="roomTitle" class="rpg-chapter-title" aria-live="polite">New adventure</span>
     <div class="rpg-header-actions">
-      <button type="button" class="rpg-header-button" id="rpg-library-toggle" aria-expanded="false" aria-controls="sidebar" title="Adventures / العوالم">☰ <span>Worlds</span></button>
-      <button type="button" class="rpg-header-button" id="rpg-settings-toggle" onclick="openSettings()" title="AI model / النموذج">⚙ <span>AI</span></button>
+      <button type="button" class="rpg-header-button" id="rpg-library-toggle" aria-expanded="false" aria-controls="sidebar" title="Your worlds · العوالم" aria-label="Open world library"><span class="rpg-control-icon" aria-hidden="true">☷</span><span>Worlds</span></button>
+      <button type="button" class="rpg-header-button" id="rpg-settings-toggle" onclick="openSettings()" title="Narrator connection · الراوي" aria-label="Open narrator settings"><span class="rpg-control-icon" aria-hidden="true">✧</span><span>AI</span><i id="rpg-ai-state" class="rpg-ai-state" aria-hidden="true" data-state="unknown"></i></button>
     </div>
   </header>
   <div id="sidebarBackdrop" class="rpg-library-backdrop" hidden></div>
   <aside id="sidebar" class="rpg-library" aria-label="Saved RPG adventures" hidden>
-    <div class="rpg-library-head"><div><small>YOUR CHRONICLES</small><h2>Adventures · العوالم</h2></div><button id="rpg-library-close" type="button" aria-label="Close adventures">✕</button></div>
-    <button id="rpg-new-adventure" class="rpg-new-adventure" type="button">✦ New adventure · مغامرة جديدة</button>
+    <div class="rpg-library-head"><div><small>THE WORLD LIBRARY · المكتبة</small><h2>محفوظاتك <span>· Your stories</span></h2></div><button id="rpg-library-close" type="button" aria-label="Close adventures">✕</button></div>
+    <button id="rpg-new-adventure" class="rpg-new-adventure" type="button"><span aria-hidden="true">＋</span> مغامرة جديدة <small>NEW ADVENTURE</small></button>
     <div class="rpg-library-tools">
-      <label for="rpg-library-search">Find a world · ابحث عن عالم</label>
-      <input id="rpg-library-search" type="search" autocomplete="off" enterkeyhint="search" placeholder="Search adventures…" aria-label="Search saved RPG adventures">
+      <label for="rpg-library-search">ابحث في العوالم <small>SEARCH YOUR STORIES</small></label>
+      <input id="rpg-library-search" type="search" autocomplete="off" enterkeyhint="search" placeholder="اسم العالم أو القصة…" aria-label="Search saved RPG adventures">
       <p id="rpg-library-count" role="status" aria-live="polite">Your saved stories</p>
     </div>
     <div id="roomList" class="rpg-room-list" aria-label="Saved RPG sessions"></div>
     <p id="rpg-library-empty" class="rpg-library-empty" role="status" hidden>No adventures yet.</p>
   </aside>
   <main class="main rpg-main" id="seven-rpg-main">
-    <div class="rpg-scene-heading"><span class="rpg-scene-glyph" aria-hidden="true">✧</span><span>YOUR WORLD · عالمك</span><span class="rpg-scene-rule" aria-hidden="true"></span><span class="rpg-scene-safety">You control your character</span></div>
+    <div class="rpg-scene-heading"><span class="rpg-scene-glyph" aria-hidden="true">✧</span><span>المشهد الحالي <small>THE SCENE</small></span><span class="rpg-scene-rule" aria-hidden="true"></span><span class="rpg-scene-safety">Your story. Your choices.</span></div>
+    <section class="rpg-scene-vista" id="rpg-scene-vista" aria-label="Illustrated world atmosphere">
+      <div class="rpg-scene-vista-content"><span class="rpg-vista-eyebrow">✦ SEVEN CHRONICLES</span><h2 id="rpg-vista-world-title">Your untold story</h2><span class="rpg-vista-quote">A world that remembers your choices.</span></div>
+      <div class="rpg-scene-vista-actions"><span id="rpg-scene-count" aria-hidden="true"></span><button type="button" id="rpg-art-cycle" hidden aria-label="Change world scenery" title="Change scenery · تغيير المشهد">✦ <span>SCENE</span></button></div>
+    </section>
     <div id="chat" class="rpg-transcript" role="log" aria-label="RPG story and dialogue" aria-live="polite" aria-relevant="additions"></div>
     <section class="seven-workspace-root rpg-engine-host" hidden aria-label="RPG state engine"></section>
     <div class="input-area rpg-input-area">
       <div class="composer rpg-composer">
-        <label for="userInput" class="rpg-composer-label">YOUR NEXT ACTION <span>دورك الآن</span></label>
-        <textarea id="userInput" rows="2" dir="auto" placeholder="What do you say or do? · ماذا تفعل؟" aria-label="Your RPG action"></textarea>
+        <label for="userInput" class="rpg-composer-label"><span>دورك الآن <small>YOUR TURN</small></span><span class="rpg-composer-tip">✦ Player agency</span></label>
+        <textarea id="userInput" rows="2" dir="auto" placeholder="ماذا تقول أو تفعل؟ · What happens next?" aria-label="Your RPG action"></textarea>
         <div class="composer-row">
-          <div class="composer-tools"><span class="rpg-player-agency">✦ Your actions are never written by the narrator.</span></div>
+          <div class="composer-tools"><span class="rpg-player-agency">✦ أنت وحدك تتحكم بشخصيتك</span></div>
           <div class="composer-send">
             <button type="button" class="stop" id="stopBtn" onclick="stopGeneration()" aria-label="Stop narration">■</button>
-            <button type="button" class="send" id="sendBtn" onclick="sendMessage()" aria-label="Send RPG action"><span aria-hidden="true">➤</span></button>
+            <button type="button" class="send" id="sendBtn" onclick="sendMessage()" aria-label="Send RPG action"><span aria-hidden="true">➜</span></button>
           </div>
         </div>
       </div>
@@ -44,24 +48,24 @@ const RPG_SHELL=`
 </div>
 <div class="modal rpg-settings" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="rpg-settings-title" onclick="if(event.target === this) closeSettings();">
   <div class="modal-content rpg-settings-panel">
-    <div class="rpg-settings-heading"><div><small>STORY ENGINE</small><h2 id="rpg-settings-title">RPG AI · إعدادات الذكاء</h2></div><button type="button" class="rpg-settings-close" onclick="closeSettings()" aria-label="Close settings">✕</button></div>
+    <div class="rpg-settings-heading"><div><small>NARRATOR STUDIO</small><h2 id="rpg-settings-title">الراوي <span>· AI Settings</span></h2></div><button type="button" class="rpg-settings-close" onclick="closeSettings()" aria-label="Close settings">✕</button></div>
     <div class="settings-core rpg-settings-fields">
-      <p class="rpg-settings-intro">A narrator needs a working free provider. Anonymous providers may reach their daily quota; connect your own provider key to continue reliably.</p>
+      <p class="rpg-settings-intro">خصص الراوي واتصل بالنموذج الذي تفضله. بعض الخدمات المجانية تتوقف عند نفاد حصتها. <span>Choose a narrator and connect a provider for reliable storytelling.</span></p>
       <nav class="rpg-settings-tabs" aria-label="AI settings sections">
-        <button type="button" class="rpg-settings-tab" id="rpg-tab-narrator" aria-controls="rpg-narrator-panel" aria-selected="true">✦ Narrator · الراوي</button>
-        <button type="button" class="rpg-settings-tab" id="rpg-tab-connections" aria-controls="rpg-connections-panel" aria-selected="false">◈ Connect · الاتصال</button>
+        <button type="button" class="rpg-settings-tab" id="rpg-tab-narrator" aria-controls="rpg-narrator-panel" aria-selected="true">✦ الراوي</button>
+        <button type="button" class="rpg-settings-tab" id="rpg-tab-connections" aria-controls="rpg-connections-panel" aria-selected="false">◈ الاتصال</button>
       </nav>
       <section id="rpg-narrator-panel" class="rpg-settings-section" aria-label="Narrator and model selection">
-      <label for="routingModeSelect">Model routing · توجيه النموذج</label>
-      <select id="routingModeSelect" onchange="onRoutingModeChange()"><option value="auto">Automatic free route</option><option value="manual">Choose a model</option></select>
+      <label for="routingModeSelect">طريقة اختيار النموذج <small>ROUTING</small></label>
+      <select id="routingModeSelect" onchange="onRoutingModeChange()"><option value="auto">ذكي · Automatic (free)</option><option value="manual">يدوي · Choose a model</option></select>
       <p class="rpg-settings-hint rpg-mode-help" id="rpg-mode-help">Automatic selects a free route for the story.</p>
       <div class="rpg-model-tools">
-        <label class="rpg-filter-field" for="rpg-model-search"><span>Find a model · بحث</span><input id="rpg-model-search" type="search" placeholder="Search name or provider…" autocomplete="off" aria-label="Search AI narrators"></label>
-        <label class="rpg-filter-field" for="rpg-provider-filter"><span>Provider · المزوّد</span><select id="rpg-provider-filter" aria-label="Filter narrator models by provider"><option value="all">All providers</option></select></label>
+        <label class="rpg-filter-field" for="rpg-model-search"><span>ابحث عن نموذج <small>SEARCH</small></span><input id="rpg-model-search" type="search" placeholder="Search name or provider…" autocomplete="off" aria-label="Search AI narrators"></label>
+        <label class="rpg-filter-field" for="rpg-provider-filter"><span>المزوّد <small>PROVIDER</small></span><select id="rpg-provider-filter" aria-label="Filter narrator models by provider"><option value="all">All providers</option></select></label>
       </div>
-      <label for="modelSelect">Narrator model · نموذج الراوي</label>
+      <label for="modelSelect">نموذج الراوي <small>NARRATOR MODEL</small></label>
       <select id="modelSelect" onchange="onModelChange()"></select>
-      <div class="rpg-model-toolbar"><span id="rpg-model-count" aria-live="polite">Loading models…</span><div class="rpg-model-actions"><button type="button" id="rpg-refresh-models">⟳ Refresh</button><button type="button" id="rpg-test-narrator">▶ Test narrator</button></div></div>
+      <div class="rpg-model-toolbar"><span id="rpg-model-count" aria-live="polite">Loading models…</span><div class="rpg-model-actions"><button type="button" id="rpg-refresh-models">⟳ تحديث</button><button type="button" id="rpg-test-narrator">▶ اختبار الراوي</button></div></div>
       <div id="rpg-connect-prompt" class="rpg-connect-prompt" hidden><span>⚠ No working narrator is configured. Anonymous routes may be unavailable.</span><button type="button" id="rpg-connect-from-model">Connect a provider · ربط نموذج</button></div>
       <p id="rpg-model-empty" class="rpg-model-empty" role="status" hidden>No matching narrator models. Clear the search or change provider.</p>
       <p id="rpg-model-refresh-state" class="rpg-settings-hint" role="status" aria-live="polite">Listed routes can fail at runtime. Refresh to update availability.</p><p id="rpg-model-test-state" class="rpg-settings-hint" role="status" aria-live="polite">Test sends a short request without any world data.</p>
@@ -90,7 +94,7 @@ const RPG_SHELL=`
         <div class="rpg-provider-note">No key? Try Automatic mode, but anonymous services can rate-limit without warning. A key does not guarantee an unlimited free quota.</div>
       </section>
     </div>
-    <div class="rpg-settings-footer"><button type="button" onclick="closeSettings()">Cancel</button><button type="button" class="rpg-primary" onclick="saveSettings()">Save settings · حفظ</button></div>
+    <div class="rpg-settings-footer"><button type="button" onclick="closeSettings()">إلغاء</button><button type="button" class="rpg-primary" onclick="saveSettings()">حفظ الإعدادات <span>✓</span></button></div>
   </div>
 </div>
 <!-- Legacy runtime contracts, not screens: required by shared LLM/room logic. -->
