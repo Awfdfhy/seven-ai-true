@@ -12,5 +12,7 @@ assert.ok(patched.includes('No usable narrator model selected'));
 assert.ok(!patched.includes('            document.getElementById("modelSelect").value = currentModel;'));
 assert.ok(patched.includes('currentModel = selected && isValidFreeModelSelection(selected) ? selected : currentModel;'));
 assert.ok(!patched.includes('            const pool = ready.length ? ready : all;'));
+assert.ok(patched.includes('autoWorldTitle'),'RPG autoprompt title migration absent');
+assert.ok(patched.includes('window.__SEVEN_RPG_NATIVE_KEYS'),'Android private model credentials not wired');
 assert.throws(()=>patchRpgModelRuntime('unsupported source'),/anchors missing/);
 console.log('Seven RPG model picker repair: PASS (usable routes, validation, preference integrity)');

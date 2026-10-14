@@ -70,7 +70,7 @@ function updateProviderChoices(){
 }
 function updateModelCount(available,total){
   const el=byId('rpg-model-count');
-  if(el)el.textContent=available+' selectable · '+total+' shown';
+  if(el)el.textContent=available?available+' ready · '+(total-available)+' unavailable': '0 ready · '+total+' unavailable';
   const empty=byId('rpg-model-empty');
   if(empty)empty.hidden=total!==0;
 }
@@ -138,6 +138,8 @@ function updateRouteHint(){
   const count=Number(picker?.dataset.rpgAvailableCount||0);
   const connect=byId('rpg-tab-connections');
   if(connect){connect.classList.toggle('rpg-attention',count===0);connect.title=count?'Connect more providers':'No usable narrator: connect your own provider';}
+  const prompt=byId('rpg-connect-prompt');
+  if(prompt)prompt.hidden=count>0;
 }
 function showSettingsTab(tab) {
   const connected=tab==='connections';
@@ -232,6 +234,7 @@ function wire(){
   const tabNarrator=byId('rpg-tab-narrator'),tabConnections=byId('rpg-tab-connections');
   tabNarrator?.addEventListener('click',()=>showSettingsTab('narrator'));
   tabConnections?.addEventListener('click',()=>showSettingsTab('connections'));
+  byId('rpg-connect-from-model')?.addEventListener('click',()=>showSettingsTab('connections'));
   [tabNarrator,tabConnections].forEach((tab,index,all)=>{
     tab?.addEventListener('keydown',event=>{
       if(event.key==='ArrowLeft'||event.key==='ArrowRight'){

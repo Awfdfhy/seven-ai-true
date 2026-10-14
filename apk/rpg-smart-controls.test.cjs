@@ -13,4 +13,6 @@ assert.ok(model.includes('return {ok:true,report};'),'Provider catalog refresh m
 assert.ok(model.includes('throw e;'),'Provider catalog refresh failures must reach the UI');
 assert.ok(model.includes('seven:rpg-model-catalog-updated'),'Transport must notify menu of fresh catalog');
 assert.ok(entry.includes('var usableRoutes'),'Model button must not select manual routing without usable providers');
+assert.ok(src.includes('rpg-connect-from-model'),'No-route screen needs a direct connection action');
+assert.ok(src.includes('rpg-narrator-unavailable'),'RPG must explain and recover from quota errors');
 console.log('Seven RPG menus: PASS (non-mutating search, catalog synchronization and refresh failures)');

@@ -702,3 +702,15 @@ html[data-seven-standalone-profile="rpg"] .rpg-narrator-unavailable details p{fo
   html[data-seven-standalone-profile="rpg"] .rpg-settings-footer button{flex:1;min-width:0;padding:9px}
   html[data-seven-standalone-profile="rpg"] .rpg-settings-tab{font-size:.74rem}
 }
+
+/* Model outage state: guided recovery instead of disabled, ambiguous controls. */
+html[data-seven-standalone-profile="rpg"] .rpg-connect-prompt:not([hidden]){
+  display:grid;gap:12px;padding:14px 15px;border-radius:13px;
+  background:#43362dba;border:1px solid #c29b63a6;color:#f4d99e;
+  font-size:.83rem;line-height:1.45
+}
+html[data-seven-standalone-profile="rpg"] .rpg-connect-prompt[hidden]{display:none!important}
+html[data-seven-standalone-profile="rpg"] .rpg-connect-prompt button{
+  min-height:46px;padding:10px 13px;border:1px solid #c6aeef;
+  border-radius:11px;background:#62479b;color:#fff;font-size:.85rem;font-weight:720
+}
