@@ -28,5 +28,7 @@ for(const id of ['rpg-library-search','rpg-library-count','rpg-library-empty','r
 }
 assert.ok(result.includes('class="rpg-story-tuning"'),'Missing collapsible narrator tuning section');
 assert.ok(result.includes('id="routingModeSelect"'),'RPG narrator routing must remain available');
+assert.ok(result.includes('id="rpg-connections-panel"'),'RPG must support native provider onboarding');
+assert.ok(result.includes('id="rpg-key-input"'),'Provider key input must be explicit and private');
 assert.throws(()=>removeLegacyUi(result),/already installed/);
 console.log('RPG exclusive shell replacement: PASS');

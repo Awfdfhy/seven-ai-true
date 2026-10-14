@@ -17,6 +17,9 @@ assert.ok(html.includes('class="rpg-header"') && html.includes('class="rpg-appli
 assert.ok(html.includes('seven-rpg-standalone-style'), 'RPG-only navigation not wired');
 assert.ok(html.includes('id="rpg-smart-controls"'), 'RPG smart controls not wired');
 assert.ok(fs.existsSync(path.join(root,'www/rpg-smart-controls.js')), 'RPG smart controls not packaged');
+assert.ok(html.includes('id="rpg-provider-keys"'),'Android Keystore provider bridge missing from RPG APK');
+assert.ok(fs.existsSync(path.join(root,'www/rpg-provider-keys.js')),'Native provider onboarding script missing');
+assert.ok(html.includes('id="rpg-key-provider"') && html.includes('rpg-connections-panel'),'RPG provider-connection menu missing');
 for(const id of ['rpg-library-search','rpg-model-search','rpg-provider-filter','rpg-refresh-models']){
   assert.ok(html.includes('id="'+id+'"'), 'RPG navigation/model control missing: '+id);
 }

@@ -101,6 +101,10 @@ function patchRpgModelRuntime(html) {
   result=replaceOne(result,
     '        function readProviderPrefsFromSettings() {\n            return automaticProviderPrefs();\n        }',
     '        window.addEventListener("seven:rpg-credentials-ready",()=>{\n            freeProviderPrefs=automaticProviderPrefs();\n            populateFreeModelSelect(currentModel);\n            onRoutingModeChange();\n            renderFreeModelFabricStatus();\n        });\n\n        function readProviderPrefsFromSettings() {\n            return automaticProviderPrefs();\n        }');
+  // Use the RPG world name in the saved adventure list, never the long onboarding prompt.
+  result=replaceOne(result,
+    '                roomTitles[roomId] = text.slice(0, 40) + (text.length > 40 ? "…" : "");',
+    '                const worldName=window.SevenRpgWorkspace?.state?.worldEngine?.work?.title;\n                roomTitles[roomId] = typeof worldName==="string" && worldName.trim() ? worldName.trim().slice(0,80) : text.slice(0,40)+(text.length>40?"…":"");');
   // Validate the draft BEFORE writing mode and preferences, avoiding half-saved invalid state.
   result=replaceOne(result,
     '        function saveSettings() {\n            freeProviderPrefs = automaticProviderPrefs();',

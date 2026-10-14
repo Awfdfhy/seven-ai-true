@@ -135,15 +135,54 @@ function updateRouteHint(){
   if(search)search.disabled=auto;
   if(filter)filter.disabled=auto;
   if(picker)picker.disabled=auto||picker.dataset.rpgAvailableCount==='0'||![...picker.options].some(o=>!o.disabled&&o.value);
+  const count=Number(picker?.dataset.rpgAvailableCount||0);
+  const connect=byId('rpg-tab-connections');
+  if(connect){connect.classList.toggle('rpg-attention',count===0);connect.title=count?'Connect more providers':'No usable narrator: connect your own provider';}
+}
+function showSettingsTab(tab) {
+  const connected=tab==='connections';
+  const narrator=byId('rpg-narrator-panel'),connections=byId('rpg-connections-panel');
+  if(narrator)narrator.hidden=connected;
+  if(connections)connections.hidden=!connected;
+  for(const [id,active] of [['rpg-tab-narrator',!connected],['rpg-tab-connections',connected]]){
+    const button=byId(id);if(!button)continue;
+    button.setAttribute('aria-selected',String(active));
+    button.tabIndex=active?0:-1;
+  }
+  const panel=byId('settingsModal')?.querySelector('.rpg-settings-panel');
+  if(panel)panel.scrollTop=0;
+}
+function showConnectionHelp() {
+  if(typeof win.openSettings==='function')win.openSettings();
+  showSettingsTab('connections');
+}
+function repairFailureMessages() {
+  const chat=byId('chat');if(!chat)return;
+  chat.querySelectorAll('.message.assistant .bubble,.message.system .bubble').forEach(bubble=>{
+    if(bubble.dataset.rpgRecoveryNotice==='1')return;
+    const text=bubble.textContent||'';
+    if(!/All verified-free routes failed|No automatic verified-free route can satisfy|Automatic free routes are temporarily unavailable/i.test(text))return;
+    bubble.dataset.rpgRecoveryNotice='1';
+    const notice=doc.createElement('div');notice.className='rpg-narrator-unavailable';
+    const title=doc.createElement('strong');title.textContent='Narrator unavailable · تعذر اتصال الراوي';
+    const copy=doc.createElement('p');
+    copy.textContent=/quota|rate limit/i.test(text)?
+      'The anonymous free narrator has reached its rate limit. Connect a provider key or try again after the cooldown.' :
+      'No available AI provider can answer this turn. Connect a provider in AI settings, then retry.';
+    const button=doc.createElement('button');button.type='button';button.textContent='Connect narrator · ربط نموذج';button.addEventListener('click',showConnectionHelp);
+    const details=doc.createElement('details');const summary=doc.createElement('summary');summary.textContent='Technical details';
+    const pre=doc.createElement('p');pre.textContent=text.slice(0,1800);details.append(summary,pre);
+    notice.append(title,copy,button,details);bubble.replaceChildren(notice);
+  });
 }
 function syncModalSoon(){
   win.setTimeout(()=>{
     const modal=byId('settingsModal');
     if(hidden(modal))return;
     restoreModelFilters();
-    const mode=byId('routingModeSelect');
-    const target=mode&&mode.value==='auto'?byId('routingModeSelect'):byId('rpg-model-search');
-    if(target)target.focus();
+    // Do not open the software keyboard just because the user opened settings.
+    showSettingsTab('narrator');
+    const tab=byId('rpg-tab-narrator');if(tab)tab.focus({preventScroll:true});
   },0);
 }
 async function refreshModels(){
@@ -190,6 +229,29 @@ function wire(){
   });
   const refresh=byId('rpg-refresh-models');
   if(refresh)refresh.addEventListener('click',refreshModels);
+  const tabNarrator=byId('rpg-tab-narrator'),tabConnections=byId('rpg-tab-connections');
+  tabNarrator?.addEventListener('click',()=>showSettingsTab('narrator'));
+  tabConnections?.addEventListener('click',()=>showSettingsTab('connections'));
+  [tabNarrator,tabConnections].forEach((tab,index,all)=>{
+    tab?.addEventListener('keydown',event=>{
+      if(event.key==='ArrowLeft'||event.key==='ArrowRight'){
+        event.preventDefault();
+        const target=all[event.key==='ArrowRight'?Math.min(index+1,1):Math.max(index-1,0)];
+        if(target){showSettingsTab(target===tabConnections?'connections':'narrator');target.focus();}
+      }
+    });
+  });
+  const status=byId('persistenceStatus');
+  if(status && typeof win.MutationObserver==='function'){
+    const update=()=>{const text=(status.textContent||'').toLowerCase();status.hidden=!/unavailable|failed|invalid|recovery|storage changed|blocked/.test(text);};
+    new win.MutationObserver(update).observe(status,{childList:true,characterData:true,subtree:true});
+    update();
+  }
+  const chat=byId('chat');
+  if(chat && typeof win.MutationObserver==='function'){
+    new win.MutationObserver(repairFailureMessages).observe(chat,{childList:true,subtree:true,characterData:true});
+    repairFailureMessages();
+  }
   const modal=byId('settingsModal');
   const toggle=byId('rpg-library-toggle'),modelButton=byId('rpg-settings-toggle');
   doc.addEventListener('click',event=>{
@@ -200,7 +262,8 @@ function wire(){
       syncModalSoon();
     }else if(target.closest('#rpg-library-toggle')){
       previousFocus=doc.activeElement;
-      win.setTimeout(()=>{if(!hidden(byId('sidebar')))search&&search.focus();},0);
+      // Focusing search immediately opened Gboard and obscured the adventures list.
+      win.setTimeout(()=>{if(!hidden(byId('sidebar'))){const close=byId('rpg-library-close');if(close)close.focus({preventScroll:true});}},0);
     }else if(target.closest('#rpg-library-close,#sidebarBackdrop,#rpg-new-adventure')){
       win.setTimeout(()=>{if(hidden(byId('sidebar'))&&toggle)toggle.focus();},0);
     }else if(target.closest('.rpg-settings-close,.rpg-settings-footer button')){
