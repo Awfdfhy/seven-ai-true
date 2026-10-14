@@ -10,6 +10,7 @@ for(const hook of ['seven:rpg-model-catalog-updated','draftModel','Select a mode
 }
 assert.ok(!src.includes('if(picker.value&&picker.value!==selected&&typeof win.onModelChange'), 'Filtering must never silently alter narration model');
 assert.ok(model.includes('return {ok:true,report};'),'Provider catalog refresh must return completion status');
+assert.ok(src.includes('function testNarrator()') && src.includes('rpg-test-narrator'),'Test narrator control must send an actual request');
 assert.ok(model.includes('throw e;'),'Provider catalog refresh failures must reach the UI');
 assert.ok(model.includes('seven:rpg-model-catalog-updated'),'Transport must notify menu of fresh catalog');
 assert.ok(entry.includes('var usableRoutes'),'Model button must not select manual routing without usable providers');
