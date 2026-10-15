@@ -3,7 +3,7 @@
 const { REQUIRED_METRICS, evaluateCandidate } = require("./gates.cjs");
 
 const PROTECTED_PATHS = Object.freeze([
-  ".github/workflows/",
+  ".github/",
   "evolution/",
   "all.cjs",
   "verify.cjs",

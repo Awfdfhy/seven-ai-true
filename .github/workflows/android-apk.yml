@@ -111,7 +111,8 @@ jobs:
             adb shell mkdir -p /data/local/tmp/seven-visual
             rm -rf visual-evidence/android14
             mkdir -p visual-evidence/android14
-            seven_test_status=0; (cd android && ./gradlew --no-daemon :app:connectedDebugAndroidTest) || seven_test_status=$?; adb pull /data/local/tmp/seven-visual/. visual-evidence/android14/ || true; exit "$seven_test_status"
+            seven_test_status=0; (cd android && ./gradlew --no-daemon :app:connectedDebugAndroidTest) || seven_test_status=$?; adb pull /data/local/tmp/seven-visual/. visual-evidence/android14/ || true; test "$seven_test_status" -eq 0
+            bash apk/run-android-rc-acceptance.sh
 
       - name: Upload Android UI visual evidence
         if: ${{ always() && hashFiles('visual-evidence/**') != '' }}

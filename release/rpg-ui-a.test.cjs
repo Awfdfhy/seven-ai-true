@@ -1,0 +1,25 @@
+const assert=require('assert/strict');
+const fs=require('fs');
+const path=require('path');
+const src=fs.readFileSync(path.join(__dirname,'workspaces','rpg.js'),'utf8');
+
+new Function(src);
+assert.ok(src.includes('data-rpg-story'),'story context trigger must exist');
+assert.ok(src.includes('data-rpg-scene'),'scene context surface must exist');
+assert.ok(src.includes('Advanced story tools'),'advanced RPG tooling must be progressively disclosed');
+assert.ok(src.includes("T('Persistent story','قصة مستمرة')"),'RPG status copy should be story-facing');
+assert.ok(src.includes('function latestState()'),'scene UI must read runtime-backed state');
+assert.ok(src.includes('q.participantIds'),'scene cast must be sourced from runtime scene participants');
+assert.ok(src.includes('function renderCharacterCard('),'runtime-backed character quick view must exist');
+const quick=src.slice(src.indexOf('function renderCharacterCard('),src.indexOf('function renderSceneContext()'));assert.ok(!quick.includes('.knowledge')&&!quick.includes('.relationships'),'quick character view must not expose hidden knowledge or relationship state');
+assert.ok(src.includes("i.name||i.displayName||i.title"),'character labels must come from existing identity data');
+assert.ok(src.includes('s.world.locations'),'scene location must be resolved from runtime world locations');
+assert.ok(!src.includes("data-rpg-title-toggle aria-expanded"),'legacy Titles-first trigger must not be primary RPG chrome');
+assert.ok(src.includes('flex-wrap:wrap'),'RPG context controls must wrap instead of overflowing narrow phones');
+assert.ok(src.includes('.seven-rpg-chatbar-main,.seven-rpg-brand,.seven-rpg-chat-actions,.seven-rpg-cast,.seven-rpg-pack-actions,.seven-rpg-character-head{display:flex'),'RPG story chrome groups must remain flex containers');
+assert.ok(src.includes('margin-inline-start'),'logical/RTL-aware inline layout must be present');
+assert.ok(src.includes('var(--seven-ui-touch-min,44px)'),'RPG controls must consume the canonical 44px touch floor');
+assert.ok(src.includes('var(--seven-ui-text-muted,var(--sb-m))'),'RPG muted text must consume the canonical semantic token');
+assert.ok(!src.includes('--seven-ui-muted'),'RPG must not fork a non-canonical muted token alias');
+assert.ok(src.includes('@media(prefers-reduced-motion:reduce)'),'reduced-motion handling must remain present');
+console.log('rpg ui a: PASS',JSON.stringify({storyContext:true,sceneRuntime:true,progressiveDisclosure:true,mobile:true,rtl:true}));

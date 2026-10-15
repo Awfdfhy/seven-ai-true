@@ -225,6 +225,46 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       assert.equal(ui.options.includes('brave'),false);assert.equal(ui.keyFields,0);
       await context.close();
     });
+    await test('room persistence fails closed when the recovery WAL cannot be staged',async()=>{
+      const context=await browser.newContext({viewport:{width:390,height:844}});
+      const page=await context.newPage();
+      await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');});
+      await page.goto(origin,{waitUntil:'domcontentloaded'});
+      await page.waitForFunction(()=>typeof roomPersistence!=='undefined'&&roomPersistence.status().ready);
+      const result=await page.evaluate(async()=>{
+        if(!currentRoom||!rooms[currentRoom]){createNewChat();await roomPersistence.flush();}
+        const base=roomPersistence.status(),roomId=currentRoom,oldTitle=roomTitles[roomId],marker='WAL stage must fail closed';
+        roomTitles[roomId]=marker;
+        const nativeSet=Storage.prototype.setItem;
+        Storage.prototype.setItem=function(key,value){
+          if(key==='seven_ai_room_wal_v1')throw new DOMException('injected WAL failure','QuotaExceededError');
+          return nativeSet.call(this,key,value);
+        };
+        let ok;
+        try{ok=await roomPersistence.save();}finally{Storage.prototype.setItem=nativeSet;}
+        const durable=await new Promise((resolve,reject)=>{
+          const req=indexedDB.open('seven_ai_canonical_v1');
+          req.onerror=()=>reject(req.error);
+          req.onsuccess=()=>{
+            const db=req.result,tx=db.transaction('state'),get=tx.objectStore('state').get('rooms');
+            get.onerror=()=>{db.close();reject(get.error)};
+            get.onsuccess=()=>{const rec=get.result;db.close();resolve({revision:rec.revision,title:rec.value.roomTitles[roomId]})};
+          };
+        });
+        return{ok,baseRevision:base.revision,status:roomPersistence.status(),oldTitle,marker,memoryTitle:roomTitles[roomId],durable,
+          wal:localStorage.getItem('seven_ai_room_wal_v1'),statusText:document.getElementById('persistenceStatus')?.textContent||''};
+      });
+      assert.equal(result.ok,false);
+      assert.equal(result.status.failed,true);
+      assert.equal(result.status.pending,0);
+      assert.equal(result.status.revision,result.baseRevision);
+      assert.equal(result.durable.revision,result.baseRevision);
+      assert.equal(result.durable.title,result.oldTitle);
+      assert.equal(result.memoryTitle,result.marker);
+      assert.equal(result.wal,null);
+      assert.match(result.statusText,/recovery journal unavailable/i);
+      await context.close();
+    });
     await test('responsive UI matrix stays bounded on phone widths themes and directions',async()=>{
       const sizes=[[320,800],[360,800],[390,844],[412,915]];
       for(const [width,height] of sizes)for(const dir of ['ltr','rtl'])for(const theme of ['day','night']){
@@ -234,8 +274,8 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
         await page.waitForFunction(()=>window.SevenRemake&&window.SevenTheme&&document.getElementById('seven-app'));
         await page.evaluate(({dir,theme})=>{document.documentElement.dir=dir;document.body.dir=dir;SevenTheme.setPreference(theme);document.querySelector('.sidebar')?.classList.add('collapsed');},{dir,theme});
         await page.waitForTimeout(360);
-        const base=await page.evaluate(()=>{const q=s=>document.querySelector(s)?.getBoundingClientRect();const main=q('.main'),composer=q('.composer'),top=q('.topbar');return{doc:document.documentElement.scrollWidth<=innerWidth+2,main:!!main&&main.left>=-2&&main.right<=innerWidth+2,composer:!!composer&&composer.left>=-2&&composer.right<=innerWidth+2&&composer.bottom<=innerHeight+2,top:!!top&&top.left>=-2&&top.right<=innerWidth+2,theme:document.documentElement.dataset.sevenTheme,bg:getComputedStyle(document.getElementById('seven-app')).getPropertyValue('--s-bg').trim()}}); 
-        assert.equal(base.doc,true,`document overflow at ${width} ${dir} ${theme}`);assert.equal(base.main,true);assert.equal(base.composer,true);assert.equal(base.top,true);assert.equal(base.theme,theme);if(theme==='night')assert.equal(base.bg,'#111815');
+        const base=await page.evaluate(()=>{const q=s=>document.querySelector(s)?.getBoundingClientRect();const main=q('.main'),composer=q('.composer'),top=q('.topbar'),status=document.getElementById('persistenceStatus'),sr=status?.getBoundingClientRect(),sc=status?getComputedStyle(status):null;return{doc:document.documentElement.scrollWidth<=innerWidth+2,main:!!main&&main.left>=-2&&main.right<=innerWidth+2,composer:!!composer&&composer.left>=-2&&composer.right<=innerWidth+2&&composer.bottom<=innerHeight+2,top:!!top&&top.left>=-2&&top.right<=innerWidth+2,persistence:!!sr&&status.parentElement?.classList.contains('topbar')&&sc.position!=='fixed'&&sr.left>=-2&&sr.right<=innerWidth+2&&sr.top>=-2&&sr.bottom<=innerHeight+2&&/IndexedDB|Opening|Saving|Recovered/.test(status.textContent),theme:document.documentElement.dataset.sevenTheme,bg:getComputedStyle(document.getElementById('seven-app')).getPropertyValue('--s-bg').trim()}}); 
+        assert.equal(base.doc,true,`document overflow at ${width} ${dir} ${theme}`);assert.equal(base.main,true);assert.equal(base.composer,true);assert.equal(base.top,true);assert.equal(base.persistence,true,`persistence status must stay in owned topbar at ${width} ${dir} ${theme}`);assert.equal(base.theme,theme);if(theme==='night')assert.equal(base.bg,'#111815');
         await page.evaluate(()=>openSettings());await page.waitForTimeout(40);
         const modal=await page.evaluate(()=>{const e=document.querySelector('#settingsModal .modal-content'),b=e.getBoundingClientRect();return{overflow:e.scrollWidth<=e.clientWidth+1,left:b.left,right:b.right,top:b.top,bottom:b.bottom,w:innerWidth,h:innerHeight}});
         assert.equal(modal.overflow,true);assert.ok(modal.left>=-2&&modal.right<=modal.w+2&&modal.top>=-2&&modal.bottom<=modal.h+2,`settings clipped: ${JSON.stringify(modal)}`);
@@ -252,10 +292,10 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
         await page.waitForTimeout(120);
         let state=await page.evaluate(()=>{
           const rect=s=>document.querySelector(s)?.getBoundingClientRect();
-          const top=rect('.topbar'),main=rect('.main'),composer=rect('.composer');
-          return{doc:document.documentElement.scrollWidth<=innerWidth+2,top:!!top&&top.left>=-2&&top.right<=innerWidth+2,main:!!main&&main.left>=-2&&main.right<=innerWidth+2,composer:!!composer&&composer.left>=-2&&composer.right<=innerWidth+2&&composer.bottom<=innerHeight+2};
+          const top=rect('.topbar'),main=rect('.main'),composer=rect('.composer'),persistence=rect('#persistenceStatus'),status=document.getElementById('persistenceStatus');
+          return{doc:document.documentElement.scrollWidth<=innerWidth+2,top:!!top&&top.left>=-2&&top.right<=innerWidth+2,main:!!main&&main.left>=-2&&main.right<=innerWidth+2,composer:!!composer&&composer.left>=-2&&composer.right<=innerWidth+2&&composer.bottom<=innerHeight+2,persistence:!!persistence&&status.parentElement?.classList.contains('topbar')&&getComputedStyle(status).position!=='fixed'&&persistence.left>=-2&&persistence.right<=innerWidth+2&&persistence.top>=-2&&persistence.bottom<=innerHeight+2};
         });
-        assert.deepEqual(state,{doc:true,top:true,main:true,composer:true},'base '+width+'x'+height+' '+JSON.stringify(state));
+        assert.deepEqual(state,{doc:true,top:true,main:true,composer:true,persistence:true},'base '+width+'x'+height+' '+JSON.stringify(state));
 
         await page.evaluate(()=>openSettings());
         state=await page.evaluate(()=>{const e=document.querySelector('#settingsModal .modal-content'),r=e.getBoundingClientRect();return{overflow:e.scrollWidth<=e.clientWidth+1,bounded:r.left>=-2&&r.right<=innerWidth+2&&r.top>=-2&&r.bottom<=innerHeight+2,scrollable:e.scrollHeight>=e.clientHeight}});
@@ -328,6 +368,54 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       await page.evaluate(()=>window.SevenWorkspaces?.close());
       await page.close();
     });
+    await test('RPG UI A visual matrix stays story-first across mobile RTL themes',async()=>{
+      const evidenceDir=path.join(dist,'rpg-ui-a-evidence');fs.mkdirSync(evidenceDir,{recursive:true});
+      const cases=[];
+      for(const width of [320,360,390,420])for(const dir of ['ltr','rtl'])for(const theme of ['day','night']){
+        const page=await browser.newPage({viewport:{width,height:844}});
+        await page.addInitScript(({dir})=>{localStorage.setItem('user_name_asked','1');localStorage.setItem('seven_ui_language',dir==='rtl'?'ar':'en');},{dir});
+        await page.goto(origin,{waitUntil:'domcontentloaded'});
+        await page.waitForFunction(()=>window.SevenRemake&&window.SevenTheme&&window.SevenWorkspaces);
+        await page.evaluate(({dir,theme})=>{document.documentElement.dir=dir;document.body.dir=dir;SevenTheme.setPreference(theme);},{dir,theme});
+        await page.evaluate(()=>SevenRemake.openWorkspace('rpg'));
+        await page.waitForFunction(()=>document.documentElement.dataset.sevenWorkspace==='rpg'&&!!document.querySelector('.seven-rpg-chatbar'),null,{timeout:10000});
+        let state=await page.evaluate(()=>{
+          const bar=document.querySelector('.seven-rpg-chatbar'),story=document.querySelector('[data-rpg-story]'),drawer=document.querySelector('[data-rpg-drawer]'),advanced=document.querySelector('.seven-rpg-advanced'),exit=document.querySelector('[data-rpg-exit]');
+          const br=bar.getBoundingClientRect(),sr=story.getBoundingClientRect(),er=exit.getBoundingClientRect();
+          return{doc:document.documentElement.scrollWidth<=innerWidth+2,bar:bar.scrollWidth<=bar.clientWidth+2,bounded:br.left>=-2&&br.right<=innerWidth+2,storyTouch:sr.width>=44&&sr.height>=44,exitTouch:er.width>=24&&er.height>=44,drawerHidden:drawer.hidden,advancedOpen:advanced.open,copy:!!document.querySelector('#chat .seven-rpg-copy'),dir:document.documentElement.dir,theme:document.documentElement.dataset.sevenTheme};
+        });
+        assert.equal(state.doc,true,JSON.stringify({width,dir,theme,state}));assert.equal(state.bar,true);assert.equal(state.bounded,true);assert.equal(state.storyTouch,true);assert.equal(state.exitTouch,true);assert.equal(state.drawerHidden,true);assert.equal(state.advancedOpen,false);assert.equal(state.copy,false);assert.equal(state.dir,dir);assert.equal(state.theme,theme);
+        await page.click('[data-rpg-story]');
+        state=await page.evaluate(()=>{const d=document.querySelector('[data-rpg-drawer]'),r=d.getBoundingClientRect(),a=document.querySelector('.seven-rpg-advanced');return{hidden:d.hidden,bounded:r.left>=-2&&r.right<=innerWidth+2,overflow:d.scrollWidth<=d.clientWidth+2,advancedOpen:a.open,scene:!!d.querySelector('[data-rpg-scene]')}});
+        assert.deepEqual(state,{hidden:false,bounded:true,overflow:true,advancedOpen:false,scene:true},JSON.stringify({width,dir,theme,state}));
+        const name=`rpg-a-${width}-${dir}-${theme}.png`;await page.screenshot({path:path.join(evidenceDir,name),fullPage:true});
+        cases.push({width,dir,theme,name});
+        await page.close();
+      }
+      fs.writeFileSync(path.join(evidenceDir,'manifest.json'),JSON.stringify({format:'seven-rpg-ui-a-evidence',version:1,cases},null,2));
+      assert.equal(cases.length,16);
+    });
+    await test('RPG UI A remains usable with large text landscape and keyboard-height viewport',async()=>{
+      const evidenceDir=path.join(dist,'rpg-ui-a-evidence');fs.mkdirSync(evidenceDir,{recursive:true});
+      const scenarios=[{width:390,height:844,name:'large-text',font:'150%'},{width:800,height:360,name:'landscape',font:'100%'},{width:390,height:430,name:'keyboard-height',font:'100%'}];
+      for(const sc of scenarios){
+        const page=await browser.newPage({viewport:{width:sc.width,height:sc.height}});
+        await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');localStorage.setItem('seven_ui_language','ar');});
+        await page.goto(origin,{waitUntil:'domcontentloaded'});
+        await page.waitForFunction(()=>window.SevenRemake&&window.SevenTheme&&window.SevenWorkspaces);
+        await page.evaluate(({font})=>{document.documentElement.dir='rtl';document.body.dir='rtl';document.documentElement.style.fontSize=font;SevenTheme.setPreference('night');},{font:sc.font});
+        await page.evaluate(()=>SevenRemake.openWorkspace('rpg'));
+        await page.waitForFunction(()=>document.documentElement.dataset.sevenWorkspace==='rpg'&&!!document.querySelector('.seven-rpg-chatbar'),null,{timeout:10000});
+        await page.click('[data-rpg-story]');
+        const state=await page.evaluate(()=>{
+          const bar=document.querySelector('.seven-rpg-chatbar'),drawer=document.querySelector('[data-rpg-drawer]'),composer=document.querySelector('.composer'),br=bar.getBoundingClientRect(),dr=drawer.getBoundingClientRect(),cr=composer&&composer.getBoundingClientRect();
+          return{doc:document.documentElement.scrollWidth<=innerWidth+2,bar:br.left>=-2&&br.right<=innerWidth+2,drawer:dr.left>=-2&&dr.right<=innerWidth+2,drawerOverflow:drawer.scrollWidth<=drawer.clientWidth+2,composer:!cr||(cr.left>=-2&&cr.right<=innerWidth+2&&cr.bottom<=innerHeight+2),advanced:document.querySelector('.seven-rpg-advanced')?.open===false};
+        });
+        assert.deepEqual(state,{doc:true,bar:true,drawer:true,drawerOverflow:true,composer:true,advanced:true},sc.name+' '+JSON.stringify(state));
+        await page.screenshot({path:path.join(evidenceDir,`rpg-a-${sc.name}-rtl-night.png`),fullPage:true});
+        await page.close();
+      }
+    });
     await test('live RPG workspace persists Memory and restores structured Context after reload',async()=>{
       const page=await browser.newPage({viewport:{width:390,height:844}});
       await page.addInitScript(()=>{localStorage.setItem('user_name_asked','1');});
@@ -342,13 +430,38 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       await page.waitForFunction(()=>window.SevenRpgWorkspace&&window.SevenRpgLiveIntegration&&document.documentElement.dataset.sevenWorkspace==='rpg',null,{timeout:10000});
       let state=await page.evaluate(rid=>{
         SevenRpgWorkspace.loadWork({id:'rpg-live-world',title:'RPG Live World',continuity:'test',sources:[{id:'src',authority:'A0'}],beats:[{id:'b1',sourceRefs:['src']}]});
+        const bridge=SevenRpgWorkspace.state.live,loaded=bridge.loadLatest(rid);
+        const seeded=SevenRpgState.createState({
+          sessionId:loaded.session.state.sessionId,worldId:'rpg-live-world',revision:loaded.session.state.revision,
+          timeline:{tick:10},world:{locations:{hall:{name:'Hall'},road:{name:'Road'}}},
+          characters:{hero:{control:'player',locationId:'hall'},aria:{control:'ai',locationId:'hall',knowledge:{secret:{learnedAtTick:5,sourceEventId:'tell-aria'}}},ren:{control:'ai',locationId:'hall'}},
+          canon:{entries:{public:{level:'HARD',value:'public fact',public:true,entityIds:['hall']},secret:{level:'HARD',value:'hidden fact',public:false,entityIds:['aria']}}},
+          scene:{id:'scene-1',locationId:'hall',participantIds:['aria','ren'],timeTick:10}
+        });
+        bridge.manager.persist({roomId:rid,worldId:'rpg-live-world',state:seeded,legacy:loaded.session.legacy,persistedRevision:loaded.session.persistedRevision},{force:true});
         const projection=SevenRpgWorkspace.contextProjection({roomId:rid,maxChars:8000});
+        SevenRpgWorkspace.setContextView('character','ren');
+        const renProjection=SevenRpgWorkspace.contextProjection({roomId:rid,maxChars:8000});
         const source=collectContextSources(rooms[rid],'continue',null,{roomId:rid}).find(x=>x.kind==='rpg');
+        SevenRpgWorkspace.setContextView('narrator');
+        const denied=SevenRpgWorkspace.commitStateEvents([{id:'browser-bad-player',type:'character.move',source:'runtime',actorId:'hero',payload:{characterId:'hero',toLocationId:'road'}}],{reason:'browser-player-agency'});
+        const afterDenied=bridge.loadLatest(rid);
         const memory=SevenRuntime.readMemory().objects.find(x=>x.type==='RpgStateSnapshot'&&x.scope==='rpg'&&x.content.includes(rid)&&x.content.includes('rpg-live-world'));
-        return{schema:projection?.schema,worldId:projection?.worldId,revision:projection?.revision,source:!!source&&source.content.includes('rpg-live-world'),memory:!!memory,title:document.querySelector('[data-rpg-world-name]')?.textContent.trim()};
+        return{schema:projection?.schema,access:projection?.access,worldId:projection?.worldId,revision:afterDenied.session.state.revision,source:!!source&&source.content.includes('"access":"character-local"'),renSecret:!!renProjection?.knownCanon?.some(x=>x.id==='secret'),renPublic:!!renProjection?.knownCanon?.some(x=>x.id==='public'),agencyBlocked:denied.ok===false&&denied.eventReason==='player-control'&&afterDenied.session.state.characters.hero.locationId==='hall',memory:!!memory,title:document.querySelector('[data-rpg-world-name]')?.textContent.trim()};
       },roomId);
-      assert.equal(state.schema,'seven-rpg-context');assert.equal(state.worldId,'rpg-live-world');assert.equal(state.source,true);assert.equal(state.memory,true);assert.equal(state.title,'RPG Live World');
+      assert.equal(state.schema,'seven-rpg-context');assert.equal(state.access,'world-truth');assert.equal(state.worldId,'rpg-live-world');assert.equal(state.source,true);assert.equal(state.renSecret,false);assert.equal(state.renPublic,true);assert.equal(state.agencyBlocked,true);assert.equal(state.memory,true);assert.equal(state.title,'RPG Live World');
       const before={worldId:state.worldId,revision:state.revision};
+      const autoRecovery=await page.evaluate(async rid=>{
+        const b=SevenRpgWorkspace.state.live,prev=b.loadLatest(rid),worldId=prev.session.worldId;
+        const candidate=b.manager.commitEvents(prev.session,[{id:'browser-interrupted',type:'world.set',source:'runtime',payload:{path:['flags','interrupted'],value:true}}]);
+        if(!candidate.ok)throw Error('fixture candidate failed');
+        const key='seven_rpg_session_v3:pending:'+encodeURIComponent(rid);
+        localStorage.setItem(key,JSON.stringify({version:1,status:'pending',roomId:rid,worldId,previous:prev.session,previousIndex:worldId,baseRevision:prev.session.state.revision,candidateRevision:candidate.session.state.revision}));
+        SevenWorkspaces.close();await SevenRemake.openWorkspace('rpg');
+        const restored=SevenRpgWorkspace.state.live.loadLatest(rid);
+        return{ok:restored.ok,revision:restored.session?.state?.revision,interrupted:restored.session?.state?.world?.flags?.interrupted,journal:localStorage.getItem(key)};
+      },roomId);
+      assert.equal(autoRecovery.ok,true);assert.equal(autoRecovery.revision,before.revision);assert.equal(autoRecovery.interrupted,undefined);assert.equal(autoRecovery.journal,null);
       await page.evaluate(async rid=>{
         SevenWorkspaces.close();const other=rid+'-empty';rooms[other]=createEmptyRoom();roomTitles[other]='Empty RPG';currentRoom=other;await saveRooms();
         updateRoomTitle();renderChatHistory();updateRoomListUI();await SevenRemake.openWorkspace('rpg');
@@ -364,7 +477,7 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       await page.waitForFunction(()=>window.SevenRemake&&typeof roomPersistence!=='undefined'&&roomPersistence.status().ready);
       await page.evaluate(async rid=>{currentRoom=rid;updateRoomTitle();renderChatHistory();updateRoomListUI();await SevenRemake.openWorkspace('rpg')},roomId);
       await page.waitForFunction(()=>window.SevenRpgWorkspace&&document.documentElement.dataset.sevenWorkspace==='rpg'&&document.querySelector('[data-rpg-world-name]')?.textContent.trim()==='RPG Live World',null,{timeout:10000});
-      state=await page.evaluate(rid=>{const p=SevenRpgWorkspace.contextProjection({roomId:rid,maxChars:8000}),src=collectContextSources(rooms[rid],'continue',null,{roomId:rid}).find(x=>x.kind==='rpg');return{worldId:p?.worldId,revision:p?.revision,source:!!src&&src.content.includes('rpg-live-world'),title:document.querySelector('[data-rpg-world-name]')?.textContent.trim()}},roomId);
+      state=await page.evaluate(rid=>{const p=SevenRpgWorkspace.contextProjection({roomId:rid,maxChars:8000}),live=SevenRpgWorkspace.state.live.loadLatest(rid),src=collectContextSources(rooms[rid],'continue',null,{roomId:rid}).find(x=>x.kind==='rpg');return{worldId:p?.worldId,revision:live.session?.state?.revision,source:!!src&&src.content.includes('rpg-live-world'),title:document.querySelector('[data-rpg-world-name]')?.textContent.trim()}},roomId);
       assert.equal(state.worldId,before.worldId);assert.equal(state.revision,before.revision);assert.equal(state.source,true);assert.equal(state.title,'RPG Live World');
       await page.evaluate(async rid=>{
         const bundle=SevenRuntime.readMemory();
@@ -391,12 +504,15 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
 
       await page.evaluate(()=>SevenRemake.openWorkspace('rpg'));
       await page.waitForFunction(()=>document.documentElement.dataset.sevenWorkspace==='rpg'&&!!document.querySelector('.seven-rpg-chatbar'),null,{timeout:10000});
-      state=await page.evaluate(()=>({world:document.querySelector('[data-rpg-world-name]')?.textContent.trim(),mode:document.querySelector('[data-rpg-state]')?.textContent.trim(),titles:document.querySelector('[data-rpg-title-toggle]')?.textContent.trim(),exit:document.querySelector('[data-rpg-exit]')?.textContent.trim(),aria:document.querySelector('.seven-rpg-chatbar')?.getAttribute('aria-label'),doc:document.documentElement.scrollWidth<=innerWidth+2}));
-      assert.equal(state.world,'RPG حر');assert.equal(state.mode,'وضع المحادثة');assert.equal(state.titles,'العناوين');assert.equal(state.exit,'الخروج من RPG');assert.equal(state.aria,'عناصر تحكم RPG');assert.equal(state.doc,true);
-      await page.evaluate(()=>addMessage('assistant','اختبار نسخ RPG'));
-      await page.waitForFunction(()=>!!document.querySelector('#chat .seven-rpg-copy'),null,{timeout:5000});
-      state=await page.evaluate(()=>{const b=document.querySelector('#chat .seven-rpg-copy');return{text:b?.textContent.trim(),aria:b?.getAttribute('aria-label'),title:b?.title}});
-      assert.match(state.text,/نسخ/);assert.equal(state.aria,'نسخ الرسالة');assert.equal(state.title,'نسخ');
+      state=await page.evaluate(()=>({world:document.querySelector('[data-rpg-world-name]')?.textContent.trim(),mode:document.querySelector('[data-rpg-state]')?.textContent.trim(),story:document.querySelector('[data-rpg-story]')?.textContent.trim(),exit:document.querySelector('[data-rpg-exit]')?.textContent.trim(),aria:document.querySelector('.seven-rpg-chatbar')?.getAttribute('aria-label'),drawerHidden:document.querySelector('[data-rpg-drawer]')?.hidden,advancedOpen:document.querySelector('.seven-rpg-advanced')?.open,doc:document.documentElement.scrollWidth<=innerWidth+2}));
+      assert.equal(state.world,'Seven RPG');assert.equal(state.mode,'قصة مستمرة');assert.equal(state.story,'القصة');assert.equal(state.exit,'خروج');assert.equal(state.aria,'سياق قصة RPG');assert.equal(state.drawerHidden,true);assert.equal(state.advancedOpen,false);assert.equal(state.doc,true);
+      await page.evaluate(()=>addMessage('assistant','اختبار سرد RPG'));
+      await page.waitForTimeout(50);
+      state=await page.evaluate(()=>({copy:!!document.querySelector('#chat .seven-rpg-copy'),doc:document.documentElement.scrollWidth<=innerWidth+2}));
+      assert.equal(state.copy,false,'RPG must not inject a permanent copy action into every story turn');assert.equal(state.doc,true);
+      await page.click('[data-rpg-story]');
+      state=await page.evaluate(()=>{const drawer=document.querySelector('[data-rpg-drawer]'),r=drawer?.getBoundingClientRect();return{hidden:drawer?.hidden,scene:!!document.querySelector('[data-rpg-scene]'),advancedOpen:document.querySelector('.seven-rpg-advanced')?.open,bounded:!!r&&r.left>=-2&&r.right<=innerWidth+2}});
+      assert.deepEqual(state,{hidden:false,scene:true,advancedOpen:false,bounded:true});
 
       await page.evaluate(()=>{SevenWorkspaces.close();SevenWorkspaces.openLauncher();});
       await page.waitForFunction(()=>document.querySelector('#seven-ws-launcher-title')?.textContent.trim()==='اختر مساحة عمل',null,{timeout:10000});
@@ -520,16 +636,15 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       await page.waitForFunction(()=>document.querySelector('#seven-room-search')?.placeholder==='بحث المحادثات'&&document.querySelector('.seven-shell-primary-nav'));
       const state=await page.evaluate(()=>{
         const search=document.querySelector('#seven-room-search');
-        const modelPanel=document.querySelector('.seven-model-panel');
-        const modelHead=document.querySelector('.seven-model-panel-head strong');
-        const modelClose=document.querySelector('[data-seven-model-close]');
+        const modelChip=document.querySelector('.seven-shell-model-chip');
+        const modelMenu=document.querySelector('.seven-shell-model-menu');
         const nav=[...document.querySelectorAll('.seven-shell-primary-nav .seven-shell-nav-btn')].map(x=>({text:x.textContent.trim(),aria:x.getAttribute('aria-label')||''}));
         return{
           searchPlaceholder:search?.placeholder,
           searchAria:search?.getAttribute('aria-label'),
-          modelAria:modelPanel?.getAttribute('aria-label'),
-          modelHead:modelHead?.textContent.trim(),
-          modelClose:modelClose?.getAttribute('aria-label'),
+          modelAria:modelChip?.getAttribute('aria-label'),
+          modelHasMenu:!!modelMenu,
+          modelMenuRole:modelMenu?.getAttribute('role'),
           nav,
           doc:document.documentElement.scrollWidth<=innerWidth+2
         };
@@ -539,8 +654,8 @@ const {patchFile,MODEL_ID}=require('./frontier-model-patch.cjs');
       await page.evaluate(()=>{SevenRemake.update();SevenUiPolish.sync();SevenRemake.update();});
       assert.deepEqual(await page.evaluate(()=>({placeholder:document.querySelector('#seven-room-search').placeholder,aria:document.querySelector('#seven-room-search').getAttribute('aria-label')})),{placeholder:'بحث المحادثات',aria:'بحث المحادثات'});
       assert.equal(state.modelAria,'اختيار النموذج');
-      assert.equal(state.modelHead,'النماذج');
-      assert.equal(state.modelClose,'إغلاق قائمة النماذج');
+      assert.equal(state.modelHasMenu,true);
+      assert.equal(state.modelMenuRole,'listbox');
       assert.ok(state.nav.some(x=>x.text.includes('محادثة جديدة')));
       assert.ok(state.nav.some(x=>x.text.includes('تطوير ذاتي')&&x.aria.includes('GitHub')));
       assert.equal(state.doc,true);

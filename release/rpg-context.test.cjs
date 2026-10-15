@@ -18,8 +18,8 @@ let s=State.createState({
   quests:{qa:{title:'A quest',status:'active',ownerIds:['a']},qb:{title:'B quest',status:'active',ownerIds:['b']}},
   scene:{id:'s',locationId:'hall',participantIds:['a','b','player'],purpose:'meeting',timeTick:20}
 });
-let a=Ctx.buildCharacterView(s,State,'a',{maxChars:10000});assert.equal(a.ok,true);
-let b=Ctx.buildCharacterView(s,State,'b',{maxChars:10000});assert.equal(b.ok,true);
+let a=Ctx.buildCharacterView(s,State,'a',{maxChars:10000});assert.equal(a.ok,true);assert.equal(a.view.access,'character-local');
+let b=Ctx.buildCharacterView(s,State,'b',{maxChars:10000});assert.equal(b.ok,true);assert.equal(b.view.access,'character-local');
 assert.ok(a.view.knownCanon.some(x=>x.id==='secret'));
 assert.ok(a.view.knownCanon.some(x=>x.id==='public'));
 assert.ok(!b.view.knownCanon.some(x=>x.id==='secret'));

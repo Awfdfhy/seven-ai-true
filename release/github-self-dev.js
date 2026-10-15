@@ -7,7 +7,7 @@ const REPO="Awfdfhy/seven-ai-true";
 const REPO_API="/repos/"+REPO;
 const DEFAULT_BASE="main";
 const PROTECTED_PATHS=[
-  /^\.github\/workflows\//,
+  /^\.github\//,
   /^evolution\//,
   /^hardening\//,
   /^all\.cjs$/,
@@ -348,59 +348,30 @@ async function dispatchWorkflow(workflow,ref){
 async function selfDevelop(task,options){
   task=String(task||"").trim();if(!task)throw new Error("Development task is empty.");
   if(S.busy)throw new Error("Seven is already running a development operation.");
+  // The shipped UI must never substitute its own edit/repair loop for Coding.
+  const bridge=r.SevenSelfDevelopment;
+  if(!bridge||bridge.contract!=="seven-self-development-public-coding-v1"||typeof bridge.runCodingEvolution!=="function"){
+    throw new Error("Self-Development is blocked: the public Coding and Trusted Eval production bridge is unavailable.");
+  }
   const opts=Object.assign({base:DEFAULT_BASE,maxRepairs:2,autoMerge:false,buildApk:false},options||{});
-  S.busy=true;S.last=null;S.log=[];setStage("start","Starting autonomous development: "+task);
-  let branch=null,lastCommit=null,summary="";
+  S.busy=true;S.last=null;S.log=[];setStage("start","Starting verified self-development: "+task);
   try{
     const state=await connectionState();if(!state.connected||!state.identity)throw new Error("Connect GitHub and install Seven Self Dev on "+REPO+" first.");
-    branch="seven-selfdev-"+Date.now().toString(36);
-    await createBranch(opts.base,branch);pushLog("Created branch "+branch+" from "+opts.base+".","ok");
-    const planning=await planFiles(task,branch);pushLog(planning.plan.plan||"Plan ready.","info");
-    let selected=planning.files;
-    let payload=await prepareImplementation(task,branch,selected,null);
-    summary=String(payload.summary||"Autonomous implementation");
-    let files=await materializeChanges(branch,normalizeChanges(payload));
-    setStage("commit","Creating atomic Git commit…");
-    lastCommit=await atomicCommit(branch,files,"Seven self-dev: "+task.slice(0,120));
-    pushLog("Committed "+lastCommit.sha.slice(0,12)+".","ok");
-    await dispatchWorkflow("seven-tests.yml",branch);
-    let run=await waitForRun(branch,lastCommit.sha);
-    let repairs=0;
-    while(run.conclusion!=="success"&&repairs<Number(opts.maxRepairs||0)){
-      repairs++;
-      const evidence=await failureEvidence(run);
-      pushLog("CI failed. Repair attempt "+repairs+" of "+opts.maxRepairs+".","warn");
-      const paths=[...new Set(selected.concat((String(evidence).match(/(?:[A-Za-z0-9_.-]+\/)+[A-Za-z0-9_.-]+\.(?:js|cjs|html|css|json|java|kt|md)/g)||[]).filter(p=>!protectedPath(p))))].slice(0,10);
-      payload=await prepareImplementation(task,branch,paths,evidence);
-      summary=String(payload.summary||summary);
-      files=await materializeChanges(branch,normalizeChanges(payload));
-      lastCommit=await atomicCommit(branch,files,"Seven self-dev repair "+repairs+": "+task.slice(0,100));
-      await dispatchWorkflow("seven-tests.yml",branch);
-      run=await waitForRun(branch,lastCommit.sha);
+    const result=await bridge.runCodingEvolution({task,options:opts});
+    const receipt=result&&result.coding&&result.coding.receipt;
+    if(!receipt||receipt.contract!=="seven-coding-integration-v1"||receipt.verdict!=="READY_FOR_INTEGRATION"||receipt.baseSha!==result.coding.baselineSha||receipt.resultSha!==result.coding.candidateSha){
+      throw new Error("Self-Development did not return an exact-SHA Verified Coding Receipt.");
     }
-    if(run.conclusion!=="success")throw new Error("CI did not pass after "+repairs+" repair attempt(s). Branch kept for inspection: "+branch);
-    pushLog("CI passed.","ok");
-    setStage("pr","Opening pull request…");
-    const pr=await openPullRequest(task,branch,opts.base,summary);
-    let merge=null;
-    if(opts.buildApk){
-      try{await dispatchWorkflow("android-apk.yml",branch);pushLog("Android APK workflow dispatched for "+branch+".","ok")}catch(e){pushLog("APK dispatch failed: "+e.message,"warn")}
+    if(result.outcome!=="COMMITTED"||result.learningRecorded!==true){
+      throw new Error("Self-Development was not accepted and archived: "+String(result.outcome||"unknown"));
     }
-    if(opts.autoMerge){
-      setStage("merge","Merging verified pull request…");
-      merge=await mergePullRequest(pr.number,lastCommit.sha);
-      if(!merge||!merge.merged)throw new Error("GitHub did not merge PR #"+pr.number+": "+(merge&&merge.message||"unknown reason"));
-      pushLog("Merged PR #"+pr.number+".","ok");
-    }
-    S.last={task,branch,base:opts.base,commit:lastCommit.sha,runId:run.id,prNumber:pr.number,prUrl:pr.html_url,merged:!!(merge&&merge.merged),summary};
-    setStage("done","Self-development run completed.");
-    return S.last;
+    S.last={task,commit:receipt.resultSha,baseSha:receipt.baseSha,outcome:result.outcome,receipt,learningRecorded:true};
+    setStage("done","Verified self-development completed.");return S.last;
   }catch(e){
-    setStage("error",e.message);
-    S.last={task,branch,commit:lastCommit&&lastCommit.sha||null,error:e.message};
-    throw e;
+    setStage("error",e.message);S.last={task,error:e.message};throw e;
   }finally{S.busy=false;render()}
 }
+
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
 function isArabic(){return /^ar\b/i.test(String(d.documentElement.lang||""))}
 function L(en,ar){return isArabic()?ar:en}
@@ -415,18 +386,19 @@ function closePanel(){
 function ensureStyle(){
   if($("#seven-github-selfdev-style"))return;
   const style=d.createElement("style");style.id="seven-github-selfdev-style";style.textContent=`
-  .seven-gh-backdrop{position:fixed;inset:0;z-index:10020;background:rgba(5,7,14,.68);display:flex;align-items:center;justify-content:center;padding:16px}
-  .seven-gh-panel{width:min(760px,100%);max-height:min(90dvh,860px);overflow:auto;border:1px solid var(--sb-b,#34334a);border-radius:20px;background:var(--sb-s,#171625);color:var(--sb-t,#f7f7fb);box-shadow:0 22px 70px rgba(0,0,0,.4)}
-  .seven-gh-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;border-bottom:1px solid var(--sb-b,#34334a);position:sticky;top:0;background:inherit;z-index:1}
-  .seven-gh-head h2{margin:0;font-size:1rem}.seven-gh-close{width:38px;height:38px;border-radius:12px;border:1px solid var(--sb-b,#34334a);background:var(--sb-s2,#222136);color:inherit}
-  .seven-gh-body{padding:16px;display:grid;gap:14px}.seven-gh-card{padding:13px;border:1px solid var(--sb-b,#34334a);border-radius:15px;background:var(--sb-s2,#222136)}
-  .seven-gh-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.seven-gh-row strong{font-size:.82rem}.seven-gh-muted{font-size:.72rem;color:var(--sb-m,#aaa8bd);line-height:1.5}
-  .seven-gh-btn{min-height:42px;padding:8px 12px;border-radius:11px;border:1px solid var(--sb-b,#34334a);background:var(--sb-s,#171625);color:inherit;font:inherit;font-weight:700}.seven-gh-btn.primary{background:linear-gradient(135deg,#6d5cff,#8e78ff);border:0}.seven-gh-btn:disabled{opacity:.55}
-  .seven-gh-code{font:700 1.15rem ui-monospace,monospace;letter-spacing:.08em;padding:9px 11px;border-radius:10px;background:#0f1020;user-select:all}
-  .seven-gh-task{width:100%;min-height:92px;resize:vertical;border:1px solid var(--sb-b,#34334a);border-radius:12px;background:var(--sb-s,#171625);color:inherit;padding:10px;font:inherit;box-sizing:border-box}
-  .seven-gh-log{max-height:210px;overflow:auto;display:grid;gap:5px;font:600 .68rem ui-monospace,monospace}.seven-gh-log div{padding:6px 8px;border-radius:8px;background:rgba(255,255,255,.035);white-space:pre-wrap;word-break:break-word}.seven-gh-log [data-kind=error]{color:#ff9ca6}.seven-gh-log [data-kind=ok]{color:#8fe3b3}.seven-gh-log [data-kind=warn]{color:#ffd78a}
+  .seven-gh-backdrop{position:fixed;inset:0;z-index:var(--seven-ui-z-modal,400);background:rgba(5,7,14,.68);display:flex;align-items:center;justify-content:center;padding:16px}
+  .seven-gh-panel{width:min(760px,100%);max-height:min(90dvh,860px);overflow:auto;border:1px solid var(--seven-ui-border,var(--sb-b,#34334a));border-radius:var(--seven-ui-radius-lg,20px);background:var(--seven-ui-surface-1,var(--sb-s,#171625));color:var(--seven-ui-text,var(--sb-t,#f7f7fb));box-shadow:0 22px 70px rgba(0,0,0,.4)}
+  .seven-gh-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;border-bottom:1px solid var(--seven-ui-border,var(--sb-b,#34334a));position:sticky;top:0;background:inherit;z-index:1}.seven-gh-head h2{margin:0;font-size:1rem}
+  .seven-gh-close{width:44px;height:44px;border-radius:12px;border:1px solid var(--seven-ui-border,var(--sb-b,#34334a));background:var(--seven-ui-surface-2,var(--sb-s2,#222136));color:inherit}
+  .seven-gh-body{padding:16px;display:grid;gap:12px}.seven-gh-card{padding:13px;border:1px solid var(--seven-ui-border,var(--sb-b,#34334a));border-radius:var(--seven-ui-radius-md,16px);background:var(--seven-ui-surface-2,var(--sb-s2,#222136))}
+  .seven-gh-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.seven-gh-row strong{font-size:.82rem}.seven-gh-muted{font-size:.72rem;color:var(--seven-ui-text-muted,var(--sb-m,#aaa8bd));line-height:1.5}
+  .seven-gh-flow{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}.seven-gh-flow span{padding:7px 5px;border-radius:9px;text-align:center;font-size:.64rem;background:var(--seven-ui-surface-1,var(--sb-s,#171625));color:var(--seven-ui-text-muted,var(--sb-m,#aaa8bd));border:1px solid var(--seven-ui-border,var(--sb-b,#34334a))}.seven-gh-flow span[data-active=true]{color:var(--seven-ui-text,var(--sb-t,#fff));border-color:var(--seven-ui-accent,var(--sb-a,#7567ff))}
+  .seven-gh-btn{min-height:44px;padding:8px 12px;border-radius:11px;border:1px solid var(--seven-ui-border,var(--sb-b,#34334a));background:var(--seven-ui-surface-1,var(--sb-s,#171625));color:inherit;font:inherit;font-weight:700}.seven-gh-btn.primary{background:var(--seven-ui-accent,var(--sb-a,#7567ff));color:#fff;border:0}.seven-gh-btn:disabled{opacity:.55}
+  .seven-gh-code{direction:ltr;unicode-bidi:isolate;font:700 1.15rem ui-monospace,monospace;letter-spacing:.08em;padding:9px 11px;border-radius:10px;background:#0f1020;user-select:all}
+  .seven-gh-task{width:100%;min-height:92px;resize:vertical;border:1px solid var(--seven-ui-border,var(--sb-b,#34334a));border-radius:12px;background:var(--seven-ui-surface-1,var(--sb-s,#171625));color:inherit;padding:10px;font:inherit;box-sizing:border-box}
+  .seven-gh-log{max-height:210px;overflow:auto;display:grid;gap:5px;font:600 .68rem ui-monospace,monospace;direction:ltr;text-align:left}.seven-gh-log div{padding:6px 8px;border-radius:8px;background:rgba(255,255,255,.035);white-space:pre-wrap;word-break:break-word}.seven-gh-log [data-kind=error]{color:#ff9ca6}.seven-gh-log [data-kind=ok]{color:#8fe3b3}.seven-gh-log [data-kind=warn]{color:#ffd78a}
   .seven-gh-nav{margin-top:6px}.seven-gh-switch{display:flex;gap:7px;align-items:center;font-size:.72rem}.seven-gh-switch input{width:auto}
-  @media(max-width:620px){.seven-gh-backdrop{padding:max(6px,env(safe-area-inset-top,0px)) max(6px,env(safe-area-inset-right,0px)) max(6px,env(safe-area-inset-bottom,0px)) max(6px,env(safe-area-inset-left,0px));align-items:flex-end}.seven-gh-panel{max-height:calc(var(--seven-visual-height,100dvh) - 12px);border-radius:18px 18px 10px 10px}.seven-gh-body{padding:12px}}
+  @media(max-width:620px){.seven-gh-backdrop{padding:max(6px,env(safe-area-inset-top,0px)) max(6px,env(safe-area-inset-right,0px)) max(6px,env(safe-area-inset-bottom,0px)) max(6px,env(safe-area-inset-left,0px));align-items:flex-end}.seven-gh-panel{max-height:calc(var(--seven-visual-height,100dvh) - 12px);border-radius:18px 18px 10px 10px}.seven-gh-body{padding:12px}.seven-gh-flow{grid-template-columns:repeat(3,minmax(0,1fr))}}
   @media(prefers-reduced-motion:reduce){.seven-gh-panel,.seven-gh-btn{transition:none!important;animation:none!important}}
   `;d.head.appendChild(style);
 }
@@ -453,29 +425,26 @@ function render(){
   const device=S.device?'<div class="seven-gh-card"><div class="seven-gh-muted">'+esc(L("Authorize this device on GitHub","اسمح لهذا الجهاز عبر GitHub"))+'</div><div class="seven-gh-row" style="margin-top:8px"><span class="seven-gh-code">'+esc(S.device.userCode)+'</span><button class="seven-gh-btn" data-gh-open>'+esc(L("Open GitHub","فتح GitHub"))+'</button></div><div class="seven-gh-muted" style="margin-top:8px">'+esc(L("Seven never asks you to paste the access token. GitHub sends authorization to the native app after you approve this code.","لن يطلب منك Seven لصق رمز الوصول. يرسل GitHub التفويض إلى التطبيق بعد موافقتك على هذا الرمز."))+'</div></div>':"";
   const logs=S.log.slice(-60).map(x=>'<div data-kind="'+esc(x.kind)+'">'+esc(x.message)+'</div>').join("");
   const last=S.last&&S.last.prUrl?'<div class="seven-gh-muted">PR #'+esc(S.last.prNumber)+' · '+esc(S.last.prUrl)+(S.last.merged?" · merged":"")+'</div>':"";
+  const stage=String(S.stage||'idle').toLowerCase();
+  const flow=[['task',L('Task','المهمة')],['planning',L('Plan','الخطة')],['executing',L('Changes','التغييرات')],['verifying',L('Verify','التحقق')],['committing',L('Commit','التثبيت')],['done',L('Result','النتيجة')]];
+  const activeIndex=Math.max(0,flow.findIndex(x=>stage===x[0]||(x[0]==='executing'&&['repairing','running'].includes(stage))));
   body.innerHTML=`
     <div class="seven-gh-card">
       <div class="seven-gh-row"><strong>${esc(L("Connection","الاتصال"))}</strong><span class="seven-gh-muted">${S.connected?esc(L("Connected","متصل"))+" · "+identity:esc(L("Disconnected","غير متصل"))}</span></div>
-      <div class="seven-gh-row" style="margin-top:10px">
-        <button class="seven-gh-btn primary" data-gh-connect ${S.busy?"disabled":""}>${esc(S.connected?L("Re-authorize","إعادة التفويض"):L("Connect GitHub","ربط GitHub"))}</button>
-        <button class="seven-gh-btn" data-gh-refresh>${esc(L("Check access","فحص الوصول"))}</button>
-        <button class="seven-gh-btn" data-gh-disconnect ${S.connected?"":"disabled"}>${esc(L("Disconnect","قطع الاتصال"))}</button>
-      </div>
+      <div class="seven-gh-row" style="margin-top:10px"><button class="seven-gh-btn primary" data-gh-connect ${S.busy?"disabled":""}>${esc(S.connected?L("Re-authorize","إعادة التفويض"):L("Connect GitHub","ربط GitHub"))}</button><button class="seven-gh-btn" data-gh-refresh>${esc(L("Check access","فحص الوصول"))}</button><button class="seven-gh-btn" data-gh-disconnect ${S.connected?"":"disabled"}>${esc(L("Disconnect","قطع الاتصال"))}</button></div>
     </div>
     ${device}
+    <div class="seven-gh-flow" aria-label="${esc(L("Development flow","مسار التطوير"))}">${flow.map((x,i)=>'<span data-active="'+(i<=activeIndex)+'">'+esc(x[1])+'</span>').join("")}</div>
     <div class="seven-gh-card">
-      <strong>${esc(L("Autonomous Development","التطوير الذاتي"))}</strong>
-      <div class="seven-gh-muted" style="margin:6px 0 10px">${esc(L("Seven creates an isolated branch, edits code, runs CI, reads failed job logs, repairs up to two times, and opens a pull request. Evaluators, CI definitions, credentials, and the GitHub authorization boundary are protected from autonomous edits.","ينشئ Seven فرعًا معزولًا ويعدل الكود ويشغّل CI ويقرأ سجلات الفشل ويجري محاولتي إصلاح بحد أقصى ثم يفتح Pull Request. تبقى الاختبارات وتعريفات CI وبيانات الاعتماد وحدود تفويض GitHub محمية من التعديل الذاتي."))}</div>
+      <strong>${esc(L("Task","المهمة"))}</strong>
+      <div class="seven-gh-muted" style="margin:6px 0 10px">${esc(L("Seven works on an isolated branch and commits only after verification. Protected paths and acceptance gates cannot be weakened.","يعمل Seven على فرع معزول ولا يثبت التغييرات إلا بعد التحقق. لا يمكن إضعاف المسارات المحمية أو بوابات القبول."))}</div>
       <textarea class="seven-gh-task" placeholder="${esc(L("Example: Improve long-context memory retrieval without weakening tests.","مثال: حسّن استرجاع الذاكرة طويلة السياق دون إضعاف الاختبارات."))}"></textarea>
-      <div class="seven-gh-row" style="margin-top:9px">
-        <label class="seven-gh-switch"><input type="checkbox" data-gh-auto-merge> ${esc(L("Auto-merge only after green CI","دمج تلقائي فقط بعد نجاح CI"))}</label>
-        <label class="seven-gh-switch"><input type="checkbox" data-gh-build-apk> ${esc(L("Build APK after green CI","بناء APK بعد نجاح CI"))}</label>
-      </div>
+      <div class="seven-gh-row" style="margin-top:9px"><label class="seven-gh-switch"><input type="checkbox" data-gh-auto-merge> ${esc(L("Auto-merge only after green CI","دمج تلقائي فقط بعد نجاح CI"))}</label><label class="seven-gh-switch"><input type="checkbox" data-gh-build-apk> ${esc(L("Build APK after green CI","بناء APK بعد نجاح CI"))}</label></div>
       <div class="seven-gh-row" style="margin-top:10px"><button class="seven-gh-btn primary" data-gh-run ${(!S.connected||S.busy)?"disabled":""}>${esc(S.busy?L("Working…","جارٍ العمل…"):L("Self Develop","تطوير ذاتي"))}</button><span class="seven-gh-muted">${esc(L("Stage","المرحلة"))}: ${esc(S.stage)}</span></div>
       ${last}
     </div>
-    <div class="seven-gh-card"><strong>${esc(L("Run log","سجل التشغيل"))}</strong><div class="seven-gh-log" style="margin-top:8px">${logs||'<div>'+esc(L("No development run yet.","لا توجد عملية تطوير بعد."))+'</div>'}</div></div>
-  `;
+    <details class="seven-gh-card"><summary><strong>${esc(L("Technical activity","النشاط التقني"))}</strong></summary><div class="seven-gh-log" style="margin-top:8px">${logs||'<div>'+esc(L("No development run yet.","لا توجد عملية تطوير بعد."))+'</div>'}</div></details>
+
   const q=sel=>body.querySelector(sel);
   q("[data-gh-connect]")?.addEventListener("click",()=>connect().catch(e=>pushLog(e.message,"error")));
   q("[data-gh-refresh]")?.addEventListener("click",()=>connectionState().catch(e=>pushLog(e.message,"error")));
