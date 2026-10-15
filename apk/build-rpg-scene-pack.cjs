@@ -96,18 +96,25 @@ async function render(theme,index){
 }
 async function build({dest=OUT}={}){
   fs.rmSync(dest,{recursive:true,force:true});fs.mkdirSync(dest,{recursive:true});
+  fs.mkdirSync(path.join(dest,'previews'),{recursive:true});
   let total=0;const manifest={schema:'seven-rpg-scene-pack.v1',generated:'deterministic-offline',width:W,height:H,scenes:[]};
   for(let i=0;i<THEMES.length;i++){
     const theme=THEMES[i],bytes=await render(theme,i),filename=theme[0]+'.jpg';
     fs.writeFileSync(path.join(dest,filename),bytes);total+=bytes.length;
-    manifest.scenes.push({name:theme[0],file:filename,bytes:bytes.length,kind:theme[7]});
+    // Android/WebView decodes small previews during ordinary chat. The 2560px
+    // illustrations are decoded only when players explicitly inspect artwork.
+    // Original offline assets remain available; thumbnails are real game data.
+    const preview=await sharp(bytes).resize(960,540,{fit:'cover'}).jpeg({quality:87,mozjpeg:true}).toBuffer();
+    fs.writeFileSync(path.join(dest,'previews',filename),preview);
+    total+=preview.length;
+    manifest.scenes.push({name:theme[0],file:filename,preview:'previews/'+filename,bytes:bytes.length,previewBytes:preview.length,kind:theme[7]});
     // Target ~90 MB final installable APK: a real usable offline scene library,
     // never a fake padding blob or unused random placeholder file.
-    if(total>=82_000_000)break;
+    if(total>=84_000_000)break;
   }
   manifest.totalBytes=total;manifest.count=manifest.scenes.length;
   fs.writeFileSync(path.join(dest,'manifest.json'),JSON.stringify(manifest,null,2));
-  if(total<78_000_000)throw new Error('RPG visual scene library unexpectedly small: '+total);
+  if(total<83_000_000)throw new Error('RPG visual scene library unexpectedly small: '+total);
   console.log('Seven RPG offline cinematic scene library: '+manifest.count+' scenes, '+(total/1e6).toFixed(1)+' MB');
   return manifest;
 }
