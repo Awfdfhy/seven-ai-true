@@ -1,6 +1,6 @@
 {
-  "appId": "ai.seven.v243",
-  "appName": "Seven 2.4.3",
+  "appId": "ai.seven.rpg",
+  "appName": "Seven RPG",
   "webDir": "www",
   "loggingBehavior": "none",
   "server": {

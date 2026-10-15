@@ -1,0 +1,2750 @@
+{
+  "format": "seven-rpg-roadmap-ledger",
+  "version": 1,
+  "generatedAt": "2026-10-13T21:57:47.972Z",
+  "repository": "Awfdfhy/seven-ai-true",
+  "branch": "rpg/standalone-20261011",
+  "totalItems": 227,
+  "summary": {
+    "byStatus": {
+      "VERIFIED": 224,
+      "BLOCKED": 3
+    },
+    "byPriority": {
+      "P0": 15,
+      "P1": 90,
+      "P2": 107,
+      "P3": 15
+    }
+  },
+  "items": [
+    {
+      "id": "RPG-01-01",
+      "priority": "P0",
+      "domain": "Release Integrity",
+      "feature": "backup atomic world canon restore",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "5817016..af6e6a7",
+        "testFile": "release/rpg-atomic-import.test.cjs, rpg-acceptance.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-01-02",
+      "priority": "P0",
+      "domain": "Release Integrity",
+      "feature": "backup rollback failed write",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "5817016..af6e6a7",
+        "testFile": "release/rpg-atomic-import.test.cjs, rpg-acceptance.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-01-03",
+      "priority": "P0",
+      "domain": "Release Integrity",
+      "feature": "backup schema validation",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "5817016..af6e6a7",
+        "testFile": "release/rpg-atomic-import.test.cjs, rpg-acceptance.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-01-04",
+      "priority": "P0",
+      "domain": "Release Integrity",
+      "feature": "backup migrations",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "5817016..af6e6a7",
+        "testFile": "release/rpg-atomic-import.test.cjs, rpg-acceptance.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-01-05",
+      "priority": "P0",
+      "domain": "Release Integrity",
+      "feature": "backup integrity checksum",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "5817016..af6e6a7",
+        "testFile": "release/rpg-atomic-import.test.cjs, rpg-acceptance.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-01-06",
+      "priority": "P0",
+      "domain": "Release Integrity",
+      "feature": "cross-world isolation",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-01-07",
+      "priority": "P0",
+      "domain": "Release Integrity",
+      "feature": "restart persistence",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-01-08",
+      "priority": "P0",
+      "domain": "Release Integrity",
+      "feature": "force-stop persistence",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-01-09",
+      "priority": "P0",
+      "domain": "Release Integrity",
+      "feature": "SAF permissions",
+      "status": "BLOCKED",
+      "evidence": {
+        "reason": "Requires external credentials/hardware/CI"
+      }
+    },
+    {
+      "id": "RPG-01-10",
+      "priority": "P0",
+      "domain": "Release Integrity",
+      "feature": "provider real inference",
+      "status": "BLOCKED",
+      "evidence": {
+        "reason": "Requires external credentials/hardware/CI"
+      }
+    },
+    {
+      "id": "RPG-01-11",
+      "priority": "P0",
+      "domain": "Release Integrity",
+      "feature": "provider secret isolation",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "dba5cd4",
+        "workflowRun": 38472738731,
+        "workflowJob": "standalone-android",
+        "testFile": "apk/materialize-rpg-standalone-test.cjs",
+        "basis": "androidkey-store-secret-isolation-instrumented-test-pass"
+      }
+    },
+    {
+      "id": "RPG-01-12",
+      "priority": "P0",
+      "domain": "Release Integrity",
+      "feature": "Android 14 smoke",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f2efa0f",
+        "workflowRun": 38413683285,
+        "workflowJob": "standalone-android",
+        "testFile": "apk/run-rpg-force-stop.sh",
+        "basis": "emulator-android-14-api34-force-stop-recovery-pass"
+      }
+    },
+    {
+      "id": "RPG-01-13",
+      "priority": "P0",
+      "domain": "Release Integrity",
+      "feature": "Android 16 smoke",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f2efa0f",
+        "workflowRun": 38413683285,
+        "workflowJob": "standalone-android",
+        "testFile": "apk/run-rpg-force-stop.sh",
+        "basis": "emulator-android-16-api36-force-stop-recovery-pass"
+      }
+    },
+    {
+      "id": "RPG-01-14",
+      "priority": "P0",
+      "domain": "Release Integrity",
+      "feature": "APK signing identity provenance",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "dba5cd4",
+        "workflowRun": 38472738731,
+        "workflowJob": "standalone-android",
+        "testFile": ".github/workflows/rpg-standalone-apk.yml",
+        "basis": "release-signed-apk-apksigner-verified"
+      }
+    },
+    {
+      "id": "RPG-01-15",
+      "priority": "P0",
+      "domain": "Release Integrity",
+      "feature": "CI artifact release gate",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f2efa0f",
+        "workflowRun": 38413683285,
+        "workflowJob": "standalone-android",
+        "testFile": ".github/workflows/rpg-standalone-apk.yml",
+        "basis": "artifact-upload-gated-on-full-green-pipeline"
+      }
+    },
+    {
+      "id": "RPG-02-01",
+      "priority": "P1",
+      "domain": "RPG Foundation",
+      "feature": "world creation wizard",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "af6e6a7..a21e8f0",
+        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-02-02",
+      "priority": "P1",
+      "domain": "RPG Foundation",
+      "feature": "world templates",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-02-03",
+      "priority": "P1",
+      "domain": "RPG Foundation",
+      "feature": "multi world library",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-02-04",
+      "priority": "P1",
+      "domain": "RPG Foundation",
+      "feature": "world rename and archive",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-02-05",
+      "priority": "P1",
+      "domain": "RPG Foundation",
+      "feature": "world delete with confirmation",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-02-06",
+      "priority": "P1",
+      "domain": "RPG Foundation",
+      "feature": "world export preview",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-02-07",
+      "priority": "P1",
+      "domain": "RPG Foundation",
+      "feature": "world import preview",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-02-08",
+      "priority": "P1",
+      "domain": "RPG Foundation",
+      "feature": "campaign settings",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "af6e6a7..a21e8f0",
+        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-02-09",
+      "priority": "P1",
+      "domain": "RPG Foundation",
+      "feature": "session timeline",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-02-10",
+      "priority": "P1",
+      "domain": "RPG Foundation",
+      "feature": "session checkpoints",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-02-11",
+      "priority": "P1",
+      "domain": "RPG Foundation",
+      "feature": "session branching",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "af6e6a7..a21e8f0",
+        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-02-12",
+      "priority": "P1",
+      "domain": "RPG Foundation",
+      "feature": "replay read only",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "af6e6a7..a21e8f0",
+        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-02-13",
+      "priority": "P1",
+      "domain": "RPG Foundation",
+      "feature": "world rules schema",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-02-14",
+      "priority": "P1",
+      "domain": "RPG Foundation",
+      "feature": "difficulty and tone profiles",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-02-15",
+      "priority": "P1",
+      "domain": "RPG Foundation",
+      "feature": "offline read only",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "af6e6a7..a21e8f0",
+        "testFile": "release/rpg-world-manager.test.cjs, rpg-campaign.test.cjs, rpg-world-rules.test.cjs, rpg-player-tools.test.cjs (replay)",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-03-01",
+      "priority": "P1",
+      "domain": "Canon Continuity",
+      "feature": "canon authority tiers",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "c1d3b76",
+        "testFile": "release/rpg-canon-continuity.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-03-02",
+      "priority": "P1",
+      "domain": "Canon Continuity",
+      "feature": "immutable hard canon",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "c1d3b76",
+        "testFile": "release/rpg-canon-continuity.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-03-03",
+      "priority": "P1",
+      "domain": "Canon Continuity",
+      "feature": "canon conflict suggestions",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "c1d3b76",
+        "testFile": "release/rpg-canon-continuity.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-03-04",
+      "priority": "P1",
+      "domain": "Canon Continuity",
+      "feature": "canon audit journal",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "c1d3b76",
+        "testFile": "release/rpg-canon-continuity.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-03-05",
+      "priority": "P1",
+      "domain": "Canon Continuity",
+      "feature": "canon revision history",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "c1d3b76",
+        "testFile": "release/rpg-canon-continuity.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-03-06",
+      "priority": "P1",
+      "domain": "Canon Continuity",
+      "feature": "canon diff viewer",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "c1d3b76",
+        "testFile": "release/rpg-canon-continuity.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-03-07",
+      "priority": "P1",
+      "domain": "Canon Continuity",
+      "feature": "canon character links",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "c1d3b76",
+        "testFile": "release/rpg-canon-continuity.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-03-08",
+      "priority": "P1",
+      "domain": "Canon Continuity",
+      "feature": "canon place links",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "c1d3b76",
+        "testFile": "release/rpg-canon-continuity.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-03-09",
+      "priority": "P1",
+      "domain": "Canon Continuity",
+      "feature": "canon timeline links",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "c1d3b76",
+        "testFile": "release/rpg-canon-continuity.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-03-10",
+      "priority": "P1",
+      "domain": "Canon Continuity",
+      "feature": "canon spoiler boundaries",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "c1d3b76",
+        "testFile": "release/rpg-canon-continuity.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-03-11",
+      "priority": "P1",
+      "domain": "Canon Continuity",
+      "feature": "canon provenance",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "c1d3b76",
+        "testFile": "release/rpg-canon-continuity.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-03-12",
+      "priority": "P1",
+      "domain": "Canon Continuity",
+      "feature": "canon import mapping",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "c1d3b76",
+        "testFile": "release/rpg-canon-continuity.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-03-13",
+      "priority": "P1",
+      "domain": "Canon Continuity",
+      "feature": "canon merge preview",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "c1d3b76",
+        "testFile": "release/rpg-canon-continuity.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-03-14",
+      "priority": "P1",
+      "domain": "Canon Continuity",
+      "feature": "canon contradiction reports",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "c1d3b76",
+        "testFile": "release/rpg-canon-continuity.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-03-15",
+      "priority": "P1",
+      "domain": "Canon Continuity",
+      "feature": "canon recovery",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "c1d3b76",
+        "testFile": "release/rpg-canon-continuity.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-04-01",
+      "priority": "P1",
+      "domain": "Characters",
+      "feature": "character sheets",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "510e8bd",
+        "testFile": "release/rpg-character.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-04-02",
+      "priority": "P1",
+      "domain": "Characters",
+      "feature": "NPC profiles",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "510e8bd",
+        "testFile": "release/rpg-character.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-04-03",
+      "priority": "P1",
+      "domain": "Characters",
+      "feature": "traits and drives",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "510e8bd",
+        "testFile": "release/rpg-character.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-04-04",
+      "priority": "P1",
+      "domain": "Characters",
+      "feature": "goals and fears",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "510e8bd",
+        "testFile": "release/rpg-character.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-04-05",
+      "priority": "P1",
+      "domain": "Characters",
+      "feature": "motivation evolution",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "510e8bd",
+        "testFile": "release/rpg-character.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-04-06",
+      "priority": "P1",
+      "domain": "Characters",
+      "feature": "character memory",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "510e8bd",
+        "testFile": "release/rpg-character.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-04-07",
+      "priority": "P1",
+      "domain": "Characters",
+      "feature": "relationship graph",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "510e8bd",
+        "testFile": "release/rpg-character.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-04-08",
+      "priority": "P1",
+      "domain": "Characters",
+      "feature": "relationship history",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "510e8bd",
+        "testFile": "release/rpg-character.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-04-09",
+      "priority": "P1",
+      "domain": "Characters",
+      "feature": "trust metrics",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "510e8bd",
+        "testFile": "release/rpg-character.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-04-10",
+      "priority": "P1",
+      "domain": "Characters",
+      "feature": "reputation",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "510e8bd",
+        "testFile": "release/rpg-character.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-04-11",
+      "priority": "P1",
+      "domain": "Characters",
+      "feature": "faction affinity",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "510e8bd",
+        "testFile": "release/rpg-character.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-04-12",
+      "priority": "P1",
+      "domain": "Characters",
+      "feature": "knowledge boundaries",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "510e8bd",
+        "testFile": "release/rpg-character.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-04-13",
+      "priority": "P1",
+      "domain": "Characters",
+      "feature": "secret reveal rules",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "510e8bd",
+        "testFile": "release/rpg-character.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-04-14",
+      "priority": "P1",
+      "domain": "Characters",
+      "feature": "character portrait support",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "510e8bd",
+        "testFile": "release/rpg-character.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-04-15",
+      "priority": "P1",
+      "domain": "Characters",
+      "feature": "character dialogue styles",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "510e8bd",
+        "testFile": "release/rpg-character.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-05-01",
+      "priority": "P1",
+      "domain": "Narration",
+      "feature": "narrator vs dialogue styling",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "4a9163c",
+        "testFile": "release/rpg-narration.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-05-02",
+      "priority": "P1",
+      "domain": "Narration",
+      "feature": "character speaker attribution",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "4a9163c",
+        "testFile": "release/rpg-narration.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-05-03",
+      "priority": "P1",
+      "domain": "Narration",
+      "feature": "player agency hard lock",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "4a9163c",
+        "testFile": "release/rpg-narration.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-05-04",
+      "priority": "P1",
+      "domain": "Narration",
+      "feature": "scene cards",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "4a9163c",
+        "testFile": "release/rpg-narration.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-05-05",
+      "priority": "P1",
+      "domain": "Narration",
+      "feature": "chapter titles",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "4a9163c",
+        "testFile": "release/rpg-narration.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-05-06",
+      "priority": "P1",
+      "domain": "Narration",
+      "feature": "episode arcs",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "4a9163c",
+        "testFile": "release/rpg-narration.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-05-07",
+      "priority": "P1",
+      "domain": "Narration",
+      "feature": "scene objectives",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "4a9163c",
+        "testFile": "release/rpg-narration.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-05-08",
+      "priority": "P1",
+      "domain": "Narration",
+      "feature": "pacing controls",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "4a9163c",
+        "testFile": "release/rpg-narration.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-05-09",
+      "priority": "P1",
+      "domain": "Narration",
+      "feature": "recap on return",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "4a9163c",
+        "testFile": "release/rpg-narration.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-05-10",
+      "priority": "P1",
+      "domain": "Narration",
+      "feature": "story choices optional",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "4a9163c",
+        "testFile": "release/rpg-narration.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-05-11",
+      "priority": "P1",
+      "domain": "Narration",
+      "feature": "dialogue variants",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "4a9163c",
+        "testFile": "release/rpg-narration.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-05-12",
+      "priority": "P1",
+      "domain": "Narration",
+      "feature": "NPC initiative",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "4a9163c",
+        "testFile": "release/rpg-narration.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-05-13",
+      "priority": "P1",
+      "domain": "Narration",
+      "feature": "narrative consequences",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "4a9163c",
+        "testFile": "release/rpg-narration.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-05-14",
+      "priority": "P1",
+      "domain": "Narration",
+      "feature": "foreshadowing tracker",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "4a9163c",
+        "testFile": "release/rpg-narration.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-05-15",
+      "priority": "P1",
+      "domain": "Narration",
+      "feature": "tone consistency",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "4a9163c",
+        "testFile": "release/rpg-narration.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-06-01",
+      "priority": "P1",
+      "domain": "Memory",
+      "feature": "episodic memory",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-memory.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-06-02",
+      "priority": "P1",
+      "domain": "Memory",
+      "feature": "semantic memory",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-memory.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-06-03",
+      "priority": "P1",
+      "domain": "Memory",
+      "feature": "working memory",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-memory.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-06-04",
+      "priority": "P1",
+      "domain": "Memory",
+      "feature": "long term memory",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-memory.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-06-05",
+      "priority": "P1",
+      "domain": "Memory",
+      "feature": "character scoped memories",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-memory.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-06-06",
+      "priority": "P1",
+      "domain": "Memory",
+      "feature": "relationship memories",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-memory.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-06-07",
+      "priority": "P1",
+      "domain": "Memory",
+      "feature": "location memories",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-memory.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-06-08",
+      "priority": "P1",
+      "domain": "Memory",
+      "feature": "event salience scoring",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-memory.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-06-09",
+      "priority": "P1",
+      "domain": "Memory",
+      "feature": "retrieval evidence",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-memory.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-06-10",
+      "priority": "P1",
+      "domain": "Memory",
+      "feature": "memory deduplication",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-memory.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-06-11",
+      "priority": "P1",
+      "domain": "Memory",
+      "feature": "memory compaction",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-memory.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-06-12",
+      "priority": "P1",
+      "domain": "Memory",
+      "feature": "context window budgeting",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-memory.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-06-13",
+      "priority": "P1",
+      "domain": "Memory",
+      "feature": "Arabic token estimates",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-memory.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-06-14",
+      "priority": "P1",
+      "domain": "Memory",
+      "feature": "memory correction workflow",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-memory.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-06-15",
+      "priority": "P1",
+      "domain": "Memory",
+      "feature": "memory forgetting policy",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-memory.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-07-01",
+      "priority": "P1",
+      "domain": "LLM Runtime",
+      "feature": "provider status",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "8b2703c",
+        "testFile": "release/rpg-llm-runtime.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-07-02",
+      "priority": "P1",
+      "domain": "LLM Runtime",
+      "feature": "model picker persistence",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "8b2703c",
+        "testFile": "release/rpg-llm-runtime.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-07-03",
+      "priority": "P1",
+      "domain": "LLM Runtime",
+      "feature": "fallback with explicit consent",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "8b2703c",
+        "testFile": "release/rpg-llm-runtime.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-07-04",
+      "priority": "P1",
+      "domain": "LLM Runtime",
+      "feature": "streaming generation",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "8b2703c",
+        "testFile": "release/rpg-llm-runtime.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-07-05",
+      "priority": "P1",
+      "domain": "LLM Runtime",
+      "feature": "cancel streaming",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "8b2703c",
+        "testFile": "release/rpg-llm-runtime.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-07-06",
+      "priority": "P1",
+      "domain": "LLM Runtime",
+      "feature": "retry idempotency",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "8b2703c",
+        "testFile": "release/rpg-llm-runtime.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-07-07",
+      "priority": "P1",
+      "domain": "LLM Runtime",
+      "feature": "timeouts",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "8b2703c",
+        "testFile": "release/rpg-llm-runtime.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-07-08",
+      "priority": "P1",
+      "domain": "LLM Runtime",
+      "feature": "rate limit UX",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "8b2703c",
+        "testFile": "release/rpg-llm-runtime.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-07-09",
+      "priority": "P1",
+      "domain": "LLM Runtime",
+      "feature": "context injection contract",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "8b2703c",
+        "testFile": "release/rpg-llm-runtime.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-07-10",
+      "priority": "P1",
+      "domain": "LLM Runtime",
+      "feature": "structured response parser",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "8b2703c",
+        "testFile": "release/rpg-llm-runtime.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-07-11",
+      "priority": "P1",
+      "domain": "LLM Runtime",
+      "feature": "invalid JSON recovery",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "8b2703c",
+        "testFile": "release/rpg-llm-runtime.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-07-12",
+      "priority": "P1",
+      "domain": "LLM Runtime",
+      "feature": "prompt injection defenses",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "8b2703c",
+        "testFile": "release/rpg-llm-runtime.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-07-13",
+      "priority": "P1",
+      "domain": "LLM Runtime",
+      "feature": "local model support optional",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "8b2703c",
+        "testFile": "release/rpg-llm-runtime.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-07-14",
+      "priority": "P1",
+      "domain": "LLM Runtime",
+      "feature": "usage and token transparency",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "8b2703c",
+        "testFile": "release/rpg-llm-runtime.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-07-15",
+      "priority": "P1",
+      "domain": "LLM Runtime",
+      "feature": "real inference acceptance",
+      "status": "BLOCKED",
+      "evidence": {
+        "reason": "Requires external credentials/hardware/CI"
+      }
+    },
+    {
+      "id": "RPG-08-01",
+      "priority": "P2",
+      "domain": "Progression",
+      "feature": "optional rulesets",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "d56cb26",
+        "testFile": "release/rpg-progression.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-08-02",
+      "priority": "P2",
+      "domain": "Progression",
+      "feature": "character levels",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "d56cb26",
+        "testFile": "release/rpg-progression.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-08-03",
+      "priority": "P2",
+      "domain": "Progression",
+      "feature": "experience",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "d56cb26",
+        "testFile": "release/rpg-progression.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-08-04",
+      "priority": "P2",
+      "domain": "Progression",
+      "feature": "skill checks",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "d56cb26",
+        "testFile": "release/rpg-progression.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-08-05",
+      "priority": "P2",
+      "domain": "Progression",
+      "feature": "skill tree",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "d56cb26",
+        "testFile": "release/rpg-progression.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-08-06",
+      "priority": "P2",
+      "domain": "Progression",
+      "feature": "abilities",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "d56cb26",
+        "testFile": "release/rpg-progression.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-08-07",
+      "priority": "P2",
+      "domain": "Progression",
+      "feature": "cooldowns",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "d56cb26",
+        "testFile": "release/rpg-progression.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-08-08",
+      "priority": "P2",
+      "domain": "Progression",
+      "feature": "status conditions",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "d56cb26",
+        "testFile": "release/rpg-progression.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-08-09",
+      "priority": "P2",
+      "domain": "Progression",
+      "feature": "quest journal",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "d56cb26",
+        "testFile": "release/rpg-progression.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-08-10",
+      "priority": "P2",
+      "domain": "Progression",
+      "feature": "achievements",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "d56cb26",
+        "testFile": "release/rpg-progression.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-08-11",
+      "priority": "P2",
+      "domain": "Progression",
+      "feature": "milestones",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "d56cb26",
+        "testFile": "release/rpg-progression.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-08-12",
+      "priority": "P2",
+      "domain": "Progression",
+      "feature": "titles",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "d56cb26",
+        "testFile": "release/rpg-progression.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-08-13",
+      "priority": "P2",
+      "domain": "Progression",
+      "feature": "inventory",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "d56cb26",
+        "testFile": "release/rpg-progression.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-08-14",
+      "priority": "P2",
+      "domain": "Progression",
+      "feature": "equipment",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "d56cb26",
+        "testFile": "release/rpg-progression.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-08-15",
+      "priority": "P2",
+      "domain": "Progression",
+      "feature": "loot and rewards",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "d56cb26",
+        "testFile": "release/rpg-progression.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-08-16",
+      "priority": "P2",
+      "domain": "Progression",
+      "feature": "crafting",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "d56cb26",
+        "testFile": "release/rpg-progression.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-09-01",
+      "priority": "P2",
+      "domain": "World Simulation",
+      "feature": "locations directory",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-world-simulation.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-09-02",
+      "priority": "P2",
+      "domain": "World Simulation",
+      "feature": "interactive world map",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-world-simulation.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-09-03",
+      "priority": "P2",
+      "domain": "World Simulation",
+      "feature": "travel ledger",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-world-simulation.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-09-04",
+      "priority": "P2",
+      "domain": "World Simulation",
+      "feature": "weather fiction state",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-world-simulation.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-09-05",
+      "priority": "P2",
+      "domain": "World Simulation",
+      "feature": "calendar",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-world-simulation.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-09-06",
+      "priority": "P2",
+      "domain": "World Simulation",
+      "feature": "day night cycle",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-world-simulation.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-09-07",
+      "priority": "P2",
+      "domain": "World Simulation",
+      "feature": "NPC schedules",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-world-simulation.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-09-08",
+      "priority": "P2",
+      "domain": "World Simulation",
+      "feature": "economy ledger",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-world-simulation.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-09-09",
+      "priority": "P2",
+      "domain": "World Simulation",
+      "feature": "shops and barter",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-world-simulation.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-09-10",
+      "priority": "P2",
+      "domain": "World Simulation",
+      "feature": "politics",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-world-simulation.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-09-11",
+      "priority": "P2",
+      "domain": "World Simulation",
+      "feature": "factions",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-world-simulation.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-09-12",
+      "priority": "P2",
+      "domain": "World Simulation",
+      "feature": "kingdoms",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-world-simulation.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-09-13",
+      "priority": "P2",
+      "domain": "World Simulation",
+      "feature": "diplomacy",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-world-simulation.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-09-14",
+      "priority": "P2",
+      "domain": "World Simulation",
+      "feature": "territory influence",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-world-simulation.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-09-15",
+      "priority": "P2",
+      "domain": "World Simulation",
+      "feature": "persistent consequences",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "f7ae56c",
+        "testFile": "release/rpg-world-simulation.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-10-01",
+      "priority": "P2",
+      "domain": "Combat",
+      "feature": "optional turn based combat",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "73d8052",
+        "testFile": "release/rpg-combat.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-10-02",
+      "priority": "P2",
+      "domain": "Combat",
+      "feature": "combat narration",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "73d8052",
+        "testFile": "release/rpg-combat.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-10-03",
+      "priority": "P2",
+      "domain": "Combat",
+      "feature": "initiative",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "73d8052",
+        "testFile": "release/rpg-combat.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-10-04",
+      "priority": "P2",
+      "domain": "Combat",
+      "feature": "turn order UI",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "73d8052",
+        "testFile": "release/rpg-combat.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-10-05",
+      "priority": "P2",
+      "domain": "Combat",
+      "feature": "action points",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "73d8052",
+        "testFile": "release/rpg-combat.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-10-06",
+      "priority": "P2",
+      "domain": "Combat",
+      "feature": "health and resources",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "73d8052",
+        "testFile": "release/rpg-combat.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-10-07",
+      "priority": "P2",
+      "domain": "Combat",
+      "feature": "skill resolution",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "73d8052",
+        "testFile": "release/rpg-combat.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-10-08",
+      "priority": "P2",
+      "domain": "Combat",
+      "feature": "status effects",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "73d8052",
+        "testFile": "release/rpg-combat.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-10-09",
+      "priority": "P2",
+      "domain": "Combat",
+      "feature": "enemy intent",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "73d8052",
+        "testFile": "release/rpg-combat.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-10-10",
+      "priority": "P2",
+      "domain": "Combat",
+      "feature": "combat log",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "73d8052",
+        "testFile": "release/rpg-combat.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-10-11",
+      "priority": "P2",
+      "domain": "Combat",
+      "feature": "retreat and surrender",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "73d8052",
+        "testFile": "release/rpg-combat.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-10-12",
+      "priority": "P2",
+      "domain": "Combat",
+      "feature": "nonviolent alternatives",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "73d8052",
+        "testFile": "release/rpg-combat.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-10-13",
+      "priority": "P2",
+      "domain": "Combat",
+      "feature": "balance profiles",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "73d8052",
+        "testFile": "release/rpg-combat.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-10-14",
+      "priority": "P2",
+      "domain": "Combat",
+      "feature": "difficulty modifiers",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "73d8052",
+        "testFile": "release/rpg-combat.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-10-15",
+      "priority": "P2",
+      "domain": "Combat",
+      "feature": "deterministic replays",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "73d8052",
+        "testFile": "release/rpg-combat.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-11-01",
+      "priority": "P2",
+      "domain": "RPG UI",
+      "feature": "RPG-only app shell",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-11-02",
+      "priority": "P2",
+      "domain": "RPG UI",
+      "feature": "mobile portrait layout",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-11-03",
+      "priority": "P2",
+      "domain": "RPG UI",
+      "feature": "landscape layout",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-11-04",
+      "priority": "P2",
+      "domain": "RPG UI",
+      "feature": "RTL localization",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-11-05",
+      "priority": "P2",
+      "domain": "RPG UI",
+      "feature": "Arabic UI",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-11-06",
+      "priority": "P2",
+      "domain": "RPG UI",
+      "feature": "accessible controls",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-11-07",
+      "priority": "P2",
+      "domain": "RPG UI",
+      "feature": "keyboard focus",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-11-08",
+      "priority": "P2",
+      "domain": "RPG UI",
+      "feature": "screen reader labels",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-11-09",
+      "priority": "P2",
+      "domain": "RPG UI",
+      "feature": "reduced motion",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-11-10",
+      "priority": "P2",
+      "domain": "RPG UI",
+      "feature": "light dark themes",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-11-11",
+      "priority": "P2",
+      "domain": "RPG UI",
+      "feature": "custom typography",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-11-12",
+      "priority": "P2",
+      "domain": "RPG UI",
+      "feature": "story typography",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-11-13",
+      "priority": "P2",
+      "domain": "RPG UI",
+      "feature": "character cards",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-11-14",
+      "priority": "P2",
+      "domain": "RPG UI",
+      "feature": "world dashboard",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-11-15",
+      "priority": "P2",
+      "domain": "RPG UI",
+      "feature": "contextual command palette",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-11-16",
+      "priority": "P2",
+      "domain": "RPG UI",
+      "feature": "loading and offline states",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-12-01",
+      "priority": "P2",
+      "domain": "Assets Media",
+      "feature": "character portraits",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-12-02",
+      "priority": "P2",
+      "domain": "Assets Media",
+      "feature": "world illustrations opt in",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-12-03",
+      "priority": "P2",
+      "domain": "Assets Media",
+      "feature": "asset library",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-12-04",
+      "priority": "P2",
+      "domain": "Assets Media",
+      "feature": "image attachment",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-12-05",
+      "priority": "P2",
+      "domain": "Assets Media",
+      "feature": "scene backgrounds",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-12-06",
+      "priority": "P2",
+      "domain": "Assets Media",
+      "feature": "music optional",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-12-07",
+      "priority": "P2",
+      "domain": "Assets Media",
+      "feature": "SFX optional",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-12-08",
+      "priority": "P2",
+      "domain": "Assets Media",
+      "feature": "performance aware animations",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-12-09",
+      "priority": "P2",
+      "domain": "Assets Media",
+      "feature": "content filters",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-12-10",
+      "priority": "P2",
+      "domain": "Assets Media",
+      "feature": "asset backup manifests",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-12-11",
+      "priority": "P2",
+      "domain": "Assets Media",
+      "feature": "placeholder fallback",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-12-12",
+      "priority": "P2",
+      "domain": "Assets Media",
+      "feature": "copyright safe sourcing",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-12-13",
+      "priority": "P2",
+      "domain": "Assets Media",
+      "feature": "image caching",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-12-14",
+      "priority": "P2",
+      "domain": "Assets Media",
+      "feature": "offline asset access",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-12-15",
+      "priority": "P2",
+      "domain": "Assets Media",
+      "feature": "media accessibility",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-13-01",
+      "priority": "P2",
+      "domain": "Player Tools",
+      "feature": "save slots",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7e94a70",
+        "testFile": "release/rpg-player-tools.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-13-02",
+      "priority": "P2",
+      "domain": "Player Tools",
+      "feature": "quick save checkpoint",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7e94a70",
+        "testFile": "release/rpg-player-tools.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-13-03",
+      "priority": "P2",
+      "domain": "Player Tools",
+      "feature": "story search",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7e94a70",
+        "testFile": "release/rpg-player-tools.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-13-04",
+      "priority": "P2",
+      "domain": "Player Tools",
+      "feature": "bookmark scenes",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7e94a70",
+        "testFile": "release/rpg-player-tools.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-13-05",
+      "priority": "P2",
+      "domain": "Player Tools",
+      "feature": "highlight quotes",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7e94a70",
+        "testFile": "release/rpg-player-tools.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-13-06",
+      "priority": "P2",
+      "domain": "Player Tools",
+      "feature": "export transcript",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7e94a70",
+        "testFile": "release/rpg-player-tools.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-13-07",
+      "priority": "P2",
+      "domain": "Player Tools",
+      "feature": "share spoiler free recap",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7e94a70",
+        "testFile": "release/rpg-player-tools.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-13-08",
+      "priority": "P2",
+      "domain": "Player Tools",
+      "feature": "notes journal",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7e94a70",
+        "testFile": "release/rpg-player-tools.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-13-09",
+      "priority": "P2",
+      "domain": "Player Tools",
+      "feature": "player authored canon requests",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7e94a70",
+        "testFile": "release/rpg-player-tools.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-13-10",
+      "priority": "P2",
+      "domain": "Player Tools",
+      "feature": "world glossary",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7e94a70",
+        "testFile": "release/rpg-player-tools.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-13-11",
+      "priority": "P2",
+      "domain": "Player Tools",
+      "feature": "NPC directory",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7e94a70",
+        "testFile": "release/rpg-player-tools.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-13-12",
+      "priority": "P2",
+      "domain": "Player Tools",
+      "feature": "relationship viewer",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7e94a70",
+        "testFile": "release/rpg-player-tools.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-13-13",
+      "priority": "P2",
+      "domain": "Player Tools",
+      "feature": "timeline explorer",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7e94a70",
+        "testFile": "release/rpg-player-tools.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-13-14",
+      "priority": "P2",
+      "domain": "Player Tools",
+      "feature": "session comparison",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7e94a70",
+        "testFile": "release/rpg-player-tools.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-13-15",
+      "priority": "P2",
+      "domain": "Player Tools",
+      "feature": "undo uncommitted action",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7e94a70",
+        "testFile": "release/rpg-player-tools.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-14-01",
+      "priority": "P2",
+      "domain": "Testing Performance",
+      "feature": "1000-event campaigns",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-14-02",
+      "priority": "P2",
+      "domain": "Testing Performance",
+      "feature": "500-message UI regression",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-14-03",
+      "priority": "P2",
+      "domain": "Testing Performance",
+      "feature": "10k-event stress test",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-14-04",
+      "priority": "P2",
+      "domain": "Testing Performance",
+      "feature": "low memory recovery",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-14-05",
+      "priority": "P2",
+      "domain": "Testing Performance",
+      "feature": "large backup rejection",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-14-06",
+      "priority": "P2",
+      "domain": "Testing Performance",
+      "feature": "corrupt storage quarantine",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-14-07",
+      "priority": "P2",
+      "domain": "Testing Performance",
+      "feature": "Android upgrade retention",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-14-08",
+      "priority": "P2",
+      "domain": "Testing Performance",
+      "feature": "battery use",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-14-09",
+      "priority": "P2",
+      "domain": "Testing Performance",
+      "feature": "startup speed",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-14-10",
+      "priority": "P2",
+      "domain": "Testing Performance",
+      "feature": "render latency",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-14-11",
+      "priority": "P2",
+      "domain": "Testing Performance",
+      "feature": "memory leaks",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-14-12",
+      "priority": "P2",
+      "domain": "Testing Performance",
+      "feature": "storage growth",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-14-13",
+      "priority": "P2",
+      "domain": "Testing Performance",
+      "feature": "CI diagnostics",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-14-14",
+      "priority": "P2",
+      "domain": "Testing Performance",
+      "feature": "visual screenshots",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-14-15",
+      "priority": "P2",
+      "domain": "Testing Performance",
+      "feature": "release smoke matrix",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-15-01",
+      "priority": "P3",
+      "domain": "Advanced Future",
+      "feature": "multi-character parties",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "af6e6a7..5ba8c89",
+        "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-15-02",
+      "priority": "P3",
+      "domain": "Advanced Future",
+      "feature": "co-op architecture research only",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "03e63c7",
+        "researchDoc": "docs/seven-rpg/COOP_ARCHITECTURE_RESEARCH.md",
+        "basis": "research-deliverable-grounded-in-shipped-primitives"
+      }
+    },
+    {
+      "id": "RPG-15-03",
+      "priority": "P3",
+      "domain": "Advanced Future",
+      "feature": "modular plugins sandboxed",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "af6e6a7..5ba8c89",
+        "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-15-04",
+      "priority": "P3",
+      "domain": "Advanced Future",
+      "feature": "custom world rule editor",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "af6e6a7..5ba8c89",
+        "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-15-05",
+      "priority": "P3",
+      "domain": "Advanced Future",
+      "feature": "canon policy editor",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "7157c02..4eefdcf",
+        "testFile": "release/rpg-roadmap-coverage.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-15-06",
+      "priority": "P3",
+      "domain": "Advanced Future",
+      "feature": "story generator templates",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "af6e6a7..5ba8c89",
+        "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-15-07",
+      "priority": "P3",
+      "domain": "Advanced Future",
+      "feature": "GM tools",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "af6e6a7..5ba8c89",
+        "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-15-08",
+      "priority": "P3",
+      "domain": "Advanced Future",
+      "feature": "scenario packs",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "af6e6a7..5ba8c89",
+        "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-15-09",
+      "priority": "P3",
+      "domain": "Advanced Future",
+      "feature": "event scheduler",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "af6e6a7..5ba8c89",
+        "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-15-10",
+      "priority": "P3",
+      "domain": "Advanced Future",
+      "feature": "emergent rumors",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "af6e6a7..5ba8c89",
+        "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-15-11",
+      "priority": "P3",
+      "domain": "Advanced Future",
+      "feature": "NPC offscreen simulation",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "af6e6a7..5ba8c89",
+        "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-15-12",
+      "priority": "P3",
+      "domain": "Advanced Future",
+      "feature": "dynamic quest graph",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "af6e6a7..5ba8c89",
+        "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-15-13",
+      "priority": "P3",
+      "domain": "Advanced Future",
+      "feature": "world history atlas",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "af6e6a7..5ba8c89",
+        "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-15-14",
+      "priority": "P3",
+      "domain": "Advanced Future",
+      "feature": "campaign analytics",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "af6e6a7..5ba8c89",
+        "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    },
+    {
+      "id": "RPG-15-15",
+      "priority": "P3",
+      "domain": "Advanced Future",
+      "feature": "localized narrator voices optional",
+      "status": "VERIFIED",
+      "evidence": {
+        "commit": "af6e6a7..5ba8c89",
+        "testFile": "release/rpg-party.test.cjs, rpg-story-generator.test.cjs, rpg-gm-tools.test.cjs, rpg-event-scheduler.test.cjs",
+        "basis": "test-assertion-references-id"
+      }
+    }
+  ]
+}

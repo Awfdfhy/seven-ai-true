@@ -29,7 +29,8 @@ function sessionKey(prefix,roomId,worldId){
 }
 function memoryStorage(){
   const m=new Map();
-  return {getItem:k=>m.has(k)?m.get(k):null,setItem:(k,v)=>{m.set(k,String(v));},removeItem:k=>{m.delete(k);},keys:()=>Array.from(m.keys())};
+  return {getItem:k=>m.has(k)?m.get(k):null,setItem:(k,v)=>{m.set(k,String(v));},removeItem:k=>{m.delete(k);},keys:()=>Array.from(m.keys()),
+    get length(){return m.size;},key:i=>{const a=Array.from(m.keys());return (i>=0&&i<a.length)?a[i]:null;}};
 }
 function createManager(options){
   const o=options&&typeof options==='object'?options:{};

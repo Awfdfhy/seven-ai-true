@@ -21,17 +21,34 @@ const DEFAULT_APK=path.join(ROOT,'android','app','build','outputs','apk','debug'
 const APK=path.resolve(process.env.SEVEN_APK_PATH||process.argv[2]||DEFAULT_APK);
 assert.ok(fs.existsSync(APK),`APK missing: ${APK}`);
 const bytes=fs.statSync(APK).size;
-assert.ok(bytes<30*1024*1024,`APK too large: ${bytes}`);
 const appId=JSON.parse(fs.readFileSync(path.join(ROOT,'capacitor.config.json'),'utf8')).appId;
+const rpgStandalone=appId==='ai.seven.rpg';
+// Visual Novel edition uses an intentionally shipped original offline scenery
+// library. Preserve the 30 MiB limit for the unrelated Seven AI profile.
+if(rpgStandalone){
+  assert.ok(bytes>=78*1024*1024,`RPG art edition unexpectedly small: ${bytes}`);
+  assert.ok(bytes<99*1024*1024,`RPG APK exceeds 90 MB edition budget: ${bytes}`);
+}else assert.ok(bytes<30*1024*1024,`APK too large: ${bytes}`);
 const binary=verifyBinary(APK,{packageName:appId,versionCode:EXPECTED_VERSION_CODE,versionName:EXPECTED_VERSION_NAME});
 const listing=spawnSync('unzip',['-l',APK],{encoding:'utf8'});
 assert.equal(listing.status,0,listing.stderr);
 assert.match(listing.stdout,/assets\/public\/index\.html/);
 assert.match(listing.stdout,/assets\/public\/vendor\/pdfjs\/pdf\.min\.mjs/);
-assert.match(listing.stdout,/assets\/public\/workspaces\/remake\.css/);
-assert.match(listing.stdout,/assets\/public\/workspaces\/remake\.js/);
+if(!rpgStandalone){
+  assert.match(listing.stdout,/assets\/public\/workspaces\/remake\.css/);
+  assert.match(listing.stdout,/assets\/public\/workspaces\/remake\.js/);
+}
 assert.match(listing.stdout,/assets\/public\/workspaces\/intelligence\.js/);
-assert.match(listing.stdout,/assets\/public\/workspaces\/research-v2\.js/);
+if(appId==='ai.seven.rpg'){
+  assert.ok(listing.stdout.includes('assets/public/rpg-standalone-ui.css'),'RPG redesign stylesheet missing');
+  assert.ok(listing.stdout.includes('assets/public/rpg-standalone-entry.js'),'RPG entrypoint missing');
+  assert.ok(listing.stdout.includes('assets/public/rpg-scenes/manifest.json'),'Offline RPG art pack missing');
+  assert.ok(listing.stdout.includes('assets/public/rpg-scene-controller.js'),'RPG scene controller missing');
+  for(const name of ['coding.js','research.js','research-v2.js','generated-ui.js','generated-ui.css','remake.js','remake.css','seven-shell.js','seven-shell-final.js']){
+    assert.ok(!listing.stdout.includes('assets/public/workspaces/'+name),'RPG APK contains unrelated workspace: '+name);
+  }
+}else{assert.ok(listing.stdout.includes('assets/public/workspaces/research-v2.js'));}
+
 assert.match(listing.stdout,/classes(?:\d*)?\.dex/);
 const packagedManifest=spawnSync('unzip',['-p',APK,'assets/public/seven-packaging.json'],{encoding:'utf8',maxBuffer:4*1024*1024});
 assert.equal(packagedManifest.status,0,'APK build provenance missing');
@@ -45,15 +62,28 @@ console.log('APK source provenance: '+provenance.sourceCommit+' / run '+(provena
 const html=spawnSync('unzip',['-p',APK,'assets/public/index.html'],{encoding:'utf8',maxBuffer:8*1024*1024});
 assert.equal(html.status,0,html.stderr);
 assert.ok(html.stdout.includes('SEVEN_FINAL_RELEASE_LAYER_V1'),'release marker missing from APK');
-assert.ok(html.stdout.includes('id="seven-app"')&&html.stdout.includes('data-seven-remake="1"'),'modern Seven UI root missing from APK');
-assert.ok(html.stdout.includes('./workspaces/remake.css')&&html.stdout.includes('./workspaces/remake.js')&&html.stdout.includes('./workspaces/intelligence.js'),'modern Seven UI wiring missing from APK');
+if(rpgStandalone){
+  assert.ok(html.stdout.includes('SEVEN_RPG_NATIVE_SHELL_V1'),'RPG-only shell missing from APK');
+  assert.ok(html.stdout.includes('class="rpg-header"'),'RPG header not packaged');
+  assert.ok(!html.stdout.includes('<!-- Sidebar -->'),'Legacy Seven AI shell still in RPG APK');
+  assert.ok(!html.stdout.includes('id="seven-beta-ui-style"'),'Legacy Seven AI CSS still in RPG APK');
+  assert.ok(!html.stdout.includes('./workspaces/remake.js'),'Legacy remake entry still loads in RPG');
+}else{
+  assert.ok(html.stdout.includes('id="seven-app"')&&html.stdout.includes('data-seven-remake="1"'),'modern Seven UI root missing from APK');
+  assert.ok(html.stdout.includes('./workspaces/remake.css')&&html.stdout.includes('./workspaces/remake.js')&&html.stdout.includes('./workspaces/intelligence.js'),'modern Seven UI wiring missing from APK');
+}
 assert.ok(!html.stdout.includes('cdnjs.cloudflare.com/ajax/libs/pdf.js'),'APK still references remote PDF runtime');
 assert.ok(html.stdout.includes('Seven 2.4.3 Zero-Key + UI Cleanup'),'2.4.3 UI cleanup marker missing from APK');
 assert.ok(html.stdout.includes('Seven 2.4.2 Zero-Key UX'),'zero-key marker missing from APK');
 assert.ok(!html.stdout.includes('id="apiKeyInput"')&&!html.stdout.includes('id="nvidiaApiKeyInput"')&&!html.stdout.includes('id="openrouterApiKeyInput"')&&!html.stdout.includes('id="geminiApiKeyInput"')&&!html.stdout.includes('id="llm7TokenInput"'),'APK still contains manual API-key fields');
-assert.ok(!/type=["']password["']/i.test(html.stdout),'APK still contains password credential inputs');
+if(rpgStandalone){
+  // RPG keys are entered exclusively into the app and encrypted by Android Keystore.
+  assert.ok(html.stdout.includes('id="rpg-key-input"')&&html.stdout.includes('id="rpg-provider-keys"'),'RPG Keystore credential entry missing');
+  assert.ok((html.stdout.match(/type=["']password["']/gi)||[]).length===1,'Unexpected additional password inputs in the RPG shell');
+}else assert.ok(!/type=["']password["']/i.test(html.stdout),'APK still contains password credential inputs');
 assert.ok(!html.stdout.includes('id="nameModal"')&&!html.stdout.includes('id="nameInput"'),'APK still contains legacy name capture UI');
-assert.ok(html.stdout.includes('Automatic Providers')&&html.stdout.includes('Zero-Key routing'),'APK missing automatic provider UX');
+if(!rpgStandalone)assert.ok(html.stdout.includes('Automatic Providers')&&html.stdout.includes('Zero-Key routing'),'APK missing automatic provider UX');
+if(!rpgStandalone){
 const bundledRemakeCss=spawnSync('unzip',['-p',APK,'assets/public/workspaces/remake.css'],{encoding:'utf8',maxBuffer:4*1024*1024});
 assert.equal(bundledRemakeCss.status,0,bundledRemakeCss.stderr);
 assert.ok(bundledRemakeCss.stdout.includes('--seven-ui-hardening-v242:1'),'APK missing bundled UI hardening layer');
@@ -63,6 +93,7 @@ assert.ok(!bundledRemakeJs.stdout.includes('s-brave-key'),'APK still contains ma
 assert.ok(!bundledRemakeJs.stdout.includes('Brave API key'),'APK still asks for a Brave API key');
 assert.ok(!bundledRemakeJs.stdout.includes('Enter API key'),'APK still contains manual API-key prompt');
 
+}
 fs.mkdirSync(path.join(ROOT,'dist'),{recursive:true});
 fs.writeFileSync(path.join(ROOT,'dist','apk-verification.json'),JSON.stringify({format:'seven-apk-verification',version:1,sourceCommit:provenance.sourceCommit,workflowRunId:provenance.workflowRunId,apkSha256:sha256(fs.readFileSync(APK)),bytes,webAssetCount:provenance.files.length,...binary},null,2));
 console.log(`apk package gate: PASS (${path.basename(APK)}, ${bytes} bytes, ${binary.packageName} ${binary.versionName}/${binary.versionCode}, signature verified)`);

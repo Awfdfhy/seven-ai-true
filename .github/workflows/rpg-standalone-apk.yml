@@ -1,0 +1,194 @@
+name: Seven RPG Standalone APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'rpg/standalone-*'
+    paths:
+      - 'apk/**'
+      - 'release/**'
+      - 'all.cjs'
+      - 'capacitor.config.json'
+      - 'package.json'
+      - '.github/workflows/rpg-standalone-apk.yml'
+
+concurrency:
+  group: seven-rpg-standalone-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  standalone-android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout RPG standalone branch
+        uses: actions/checkout@v6.1.0
+      - name: Node 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Java 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Chromium for prebuild regression
+        run: npx playwright install --with-deps --only-shell chromium
+      - name: Run Seven and RPG regression tests
+        run: node all.cjs
+      - name: Generate dedicated RPG Android app
+        run: npm run android:generate
+      - name: Generate native RPG startup test
+        run: node apk/materialize-rpg-standalone-test.cjs
+      - name: Generate real process-restart fixture
+        run: node apk/materialize-rpg-force-stop-test.cjs
+      - name: Verify dedicated RPG payload before build
+        run: node apk/verify-rpg-standalone.cjs
+      - name: Android build + static checks
+        working-directory: android
+        run: ./gradlew --no-daemon lintDebug testDebugUnitTest assembleDebug
+      - name: Verify APK packaging and dedicated RPG identity
+        run: |
+          npm run android:verify
+          node apk/verify-rpg-standalone.cjs
+      - name: Generate release signing keystore (CI evidence identity)
+        run: |
+          # Ephemeral CI-only keystore proves the RELEASE-SIGNING path (assembleRelease +
+          # apksigner verify), i.e. a genuinely release-signed APK, not debug. This is NOT a
+          # real distribution identity; a stable upload key must be provided as a secret for
+          # production. Password is generated + masked; no credential is committed.
+          REL_PASS="$(openssl rand -hex 24)"
+          echo "::add-mask::$REL_PASS"
+          keytool -genkeypair -v -keystore "$RUNNER_TEMP/seven-release.keystore" -alias sevenrelease -keyalg RSA -keysize 2048 -validity 10000 -storepass "$REL_PASS" -keypass "$REL_PASS" -dname "CN=Seven RPG Release, O=Seven, C=SA"
+          echo "REL_PASS=$REL_PASS" >> "$GITHUB_ENV"
+      - name: Prepare production upload-key signing config
+        run: node apk/patch-production-signing.cjs
+      - name: Build release-signed RPG APK
+        working-directory: android
+        run: ./gradlew --no-daemon assembleRelease -PsevenReleaseKeystore="$RUNNER_TEMP/seven-release.keystore" -PsevenReleaseStorePass="$REL_PASS" -PsevenReleaseKeyAlias=sevenrelease -PsevenReleaseKeyPass="$REL_PASS"
+      - name: Verify release APK signature and identity
+        run: |
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          test -f "$APK" || { echo "release APK missing"; exit 1; }
+          APKSIGNER="$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort | tail -1)"
+          "$APKSIGNER" verify --print-certs "$APK" > "$RUNNER_TEMP/release-apk-certs.txt"
+          "$APKSIGNER" verify "$APK"
+          echo "release APK signature: VERIFIED"
+          grep -i "Signer #1 certificate DN" "$RUNNER_TEMP/release-apk-certs.txt" | head -1
+      - name: Upload release-signed RPG APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: seven-rpg-standalone-release-signed.apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          archive: false
+          if-no-files-found: error
+          retention-days: 14
+      # Build instrumentation separately; run it on clean emulator-only CI machines
+      # rather than a JVM/Sharp/Gradle-heavy 90 MB art-pack build runner.
+      - name: Assemble Android device-test APK
+        working-directory: android
+        run: ./gradlew --no-daemon :app:assembleDebugAndroidTest
+      - name: Upload Android device test APKs
+        uses: actions/upload-artifact@v7
+        with:
+          name: seven-rpg-android-device-apks
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+          if-no-files-found: error
+          retention-days: 7
+      - name: Diagnose GATEWAY_CLIENT_KEYS format
+        env:
+          GATEWAY_CLIENT_KEYS: ${{ secrets.GATEWAY_CLIENT_KEYS }}
+        run: node apk/diagnose-gateway-keys.cjs
+      - name: Resolve RPG Live LLM provider
+        id: rpg-live-provider
+        env:
+          GATEWAY_CLIENT_KEYS: ${{ secrets.GATEWAY_CLIENT_KEYS }}
+          SEVEN_RPG_GROQ_KEY: ${{ secrets.GROQ_API_KEY }}
+          SEVEN_RPG_OPENROUTER_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          SEVEN_RPG_NVIDIA_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          SEVEN_RPG_MISTRAL_KEY: ${{ secrets.MISTRAL_API_KEY }}
+        run: |
+          # cloud=true when ANY credential source yields a usable provider key:
+          # either GATEWAY_CLIENT_KEYS parses, or an individual provider secret is set.
+          if node -e "const {parseGatewayClientKeys}=require('./apk/gateway-client-keys.cjs');const gk=parseGatewayClientKeys(process.env.GATEWAY_CLIENT_KEYS||'');const hasIndividual=['groq','openrouter','nvidia','mistral'].some(p=>(process.env['SEVEN_RPG_'+p.toUpperCase()+'_KEY']||'').trim());process.exit((Object.keys(gk).length>0||hasIndividual)?0:3)"; then
+            echo "cloud=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "cloud=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Real RPG Live LLM + Canon acceptance
+        if: steps.rpg-live-provider.outputs.cloud == 'true'
+        env:
+          GATEWAY_CLIENT_KEYS: ${{ secrets.GATEWAY_CLIENT_KEYS }}
+          SEVEN_RPG_GROQ_KEY: ${{ secrets.GROQ_API_KEY }}
+          SEVEN_RPG_OPENROUTER_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          SEVEN_RPG_NVIDIA_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          SEVEN_RPG_MISTRAL_KEY: ${{ secrets.MISTRAL_API_KEY }}
+        run: node apk/rpg-live-llm-acceptance.cjs
+      - name: Upload Seven RPG APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: seven-rpg-standalone-debug.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          archive: false
+          if-no-files-found: error
+          retention-days: 14
+
+  android-smoke:
+    name: Android ${{ matrix.api-level }} RPG device acceptance
+    needs: standalone-android
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - api-level: 34
+            image: google_apis
+            profile: pixel_2
+            gpu: swiftshader
+          - api-level: 36
+            image: default
+            profile: pixel_6
+            gpu: swiftshader_indirect
+    steps:
+      - name: Checkout RPG standalone branch
+        uses: actions/checkout@v6.1.0
+      - name: Download prebuilt Android app and native acceptance suite
+        uses: actions/download-artifact@v4
+        with:
+          name: seven-rpg-android-device-apks
+          path: dist/rpg-smoke-apks
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Android ${{ matrix.api-level }} native RPG startup, process-restart and SAF
+        uses: reactivecircus/android-emulator-runner@v2.38.0
+        env:
+          ANDROID_API_LEVEL: ${{ matrix.api-level }}
+        with:
+          api-level: ${{ matrix.api-level }}
+          arch: x86_64
+          target: ${{ matrix.image }}
+          profile: ${{ matrix.profile }}
+          disable-animations: true
+          emulator-options: -no-window -gpu ${{ matrix.gpu }} -memory 2048 -noaudio -no-boot-anim -no-snapshot -camera-back none
+          script: bash apk/run-rpg-device-smoke.sh
+      - name: Upload Android ${{ matrix.api-level }} smoke logs and native screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: seven-rpg-android-${{ matrix.api-level }}-device-evidence
+          path: dist/rpg-device-evidence/**
+          if-no-files-found: warn
+          retention-days: 14
