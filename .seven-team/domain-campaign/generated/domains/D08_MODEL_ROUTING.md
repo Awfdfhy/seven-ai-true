@@ -1,16 +1,8 @@
 # D08_MODEL_ROUTING — Model Routing / Provider Health / Fallback
 
-Research audit: READY
+Research audit: INSUFFICIENT
 
 DOMAIN_ID=D08_MODEL_ROUTING
-SOURCE_ANALYSIS=Harvested [SOURCE primary] LLMRouterBench (ACL'26) defines routing benchmark/unified framework; routing quality vs cost/latency tradeoffs. OTel gen-ai [SOURCE primary] gives semantic conventions for attributes (moved to gen-ai semconv repo) — useful for provider health/fallback telemetry. Minor harvested noise (GitHub boilerplate/opensearch) ignored. Limitations: no direct Seven integration details; freshness recent (2026). No disagreement evident. Gaps: concrete routing policy (static vs learned), circuit breakers, hedging, per-request budgets, multi-provider failover paths in Seven.
-CURRENT=Repo grep shows routing/provider/fallback/circuit breaker/retry surface in remake. Owners listed as A05,A09; A09 co-owner suggests performance/concurrency overlap (latency budgets, cancellation on failover). Seven must preserve ARCHITECTURE.md boundaries; no explicit policy file enumerated in quick scan — treat as unpinned contract. Current implementation unknown in detail from quick scan; need module inspection.
-TARGET=Deterministic model routing with: provider health scoring, fallback chains, retry with jitter, per-request latency/cost/token budgets, cancellation-aware failover, and OTel gen-ai attributes (gen_ai.*) for routing decisions. Policy-driven (configurable) not hard-coded; respects architecture ownership. Avoids pixel-level imitation; preserves Seven identity.
-NOW=Map exact routing/provider modules (owners A05,A09), list current fallback paths and health signals. Add latency budget enforcement at routing decision points (deadline-aware) and cancellation propagation on failover. Instrument routing with OTel gen-ai attrs (request model, route target, fallback reason, latency, error type) per harvested semconv [SOURCE primary].
-NEXT=Introduce circuit breaker + hedging with backpressure; track P95/P99 per provider; add deterministic replay for routing tests. Compare against LLMRouterBench principles [SOURCE primary] without copying; adapt to Seven constraints.
-LATER=Learned router with guardrails (canary, shadow traffic), cost-aware routing, offline fallback integration (D28). Validate with evals if available.
-TESTS=Unit: policy, budget, retry/jitter, cancellation on failover. Integration: multi-provider failure sequences deterministic. E2E: long chat with provider drop mid-stream. Adversarial: flakiness, retry storms, clock skew. Eval: routing correctness/latency/cost regression. Android: offline/failover on poor network.
-RISKS=Failover races (double-submission), leaking partial results, budget bypass, secret leakage in logs, cross-system coupling (routing vs bridge/kernel). Android network pressure. 
-FIRST_SLICE=Deadline-aware routing: enforce per-request latency budget and propagate cancellation on fallback; instrument minimal gen_ai routing attrs. Reviewable, testable, preserves ownership.
-KNOWN_UNKNOWNS=Exact module paths/contracts for routing/health/fallback in remake; whether policy is centralized or per-surface; cost tracking granularity. 
-DOMAIN_VERDICT=RESEARCH_INSUFFICIENT (need to enumerate concrete routing/provider modules and health signals)
+DOMAIN_VERDICT=RESEARCH_INSUFFICIENT
+CURRENT=No trustworthy plan block was produced in this cycle.
+KNOWN_UNKNOWNS=Research agent output missing or timed out.
