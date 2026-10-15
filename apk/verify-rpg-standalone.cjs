@@ -15,6 +15,9 @@ assert.ok(!html.includes('<!-- Sidebar -->'), 'Legacy Seven AI interface was not
 assert.ok(!html.includes('id="seven-beta-ui-style"'), 'Legacy Seven AI styling still ships in the app');
 assert.ok(html.includes('class="rpg-header"') && html.includes('class="rpg-application"'), 'New RPG interface missing');
 assert.ok(html.includes('seven-rpg-standalone-style'), 'RPG-only navigation not wired');
+assert.match(html,/<html\b[^>]*data-seven-standalone-profile="rpg"/i,'RPG profile must be present before the late JavaScript boot');
+assert.ok(html.includes('id="rpg-critical-paint"'),'Android WebView must have critical no-FOUC rules');
+assert.ok(html.includes('id="settingsModal" style="display:none"'),'Narrator settings must not flash open during WebView boot');
 assert.ok(html.includes('id="rpg-smart-controls"'), 'RPG smart controls not wired');
 assert.ok(fs.existsSync(path.join(root,'www/rpg-smart-controls.js')), 'RPG smart controls not packaged');
 assert.ok(html.includes('id="rpg-provider-keys"'),'Android Keystore provider bridge missing from RPG APK');
