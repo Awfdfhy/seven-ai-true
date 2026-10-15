@@ -146,11 +146,19 @@ jobs:
     name: Android ${{ matrix.api-level }} RPG device acceptance
     needs: standalone-android
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
-        api-level: [34, 36]
+        include:
+          - api-level: 34
+            image: google_apis
+            profile: pixel_2
+            gpu: swiftshader
+          - api-level: 36
+            image: default
+            profile: pixel_6
+            gpu: swiftshader_indirect
     steps:
       - name: Checkout RPG standalone branch
         uses: actions/checkout@v6.1.0
@@ -171,10 +179,10 @@ jobs:
         with:
           api-level: ${{ matrix.api-level }}
           arch: x86_64
-          target: default
-          profile: pixel_6
+          target: ${{ matrix.image }}
+          profile: ${{ matrix.profile }}
           disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -memory 2048 -noaudio -no-boot-anim -no-snapshot -camera-back none
+          emulator-options: -no-window -gpu ${{ matrix.gpu }} -memory 2048 -noaudio -no-boot-anim -no-snapshot -camera-back none
           script: bash apk/run-rpg-device-smoke.sh
       - name: Upload Android ${{ matrix.api-level }} smoke logs and native screenshots
         if: always()
