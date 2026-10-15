@@ -1,8 +1,16 @@
 # D17_PERFORMANCE_CONCURRENCY — Performance / Concurrency / Long Chat / Races
 
-Research audit: INSUFFICIENT
+Research audit: READY
 
 DOMAIN_ID=D17_PERFORMANCE_CONCURRENCY
-DOMAIN_VERDICT=RESEARCH_INSUFFICIENT
-CURRENT=No trustworthy plan block was produced in this cycle.
-KNOWN_UNKNOWNS=Research agent output missing or timed out.
+SOURCE_ANALYSIS=[SOURCE primary] Android Core App Quality sets baseline for responsiveness/stability (long tasks, ANRs, jank) — relevant for mobile. [SOURCE secondary] web.dev long-tasks-devtools explains diagnosing work-preventing tasks (TBT/INP context) — useful for web surfaces. [SOURCE primary] Streams API (MDN) defines backpressure, readable/writable streams, cancellation, chunked processing — directly applicable to long chats, streaming tokens, large I/O. Limitations: mobile/web platform guidance (not app internals), general; freshness current. No contradiction. Gaps: Seven’s internal concurrency model, cancellation semantics across threads, queues/workers, backpressure in chat streams, storage/network pressure handling, resource budgets.
+CURRENT=Repo grep strongly suggests performance/concurrency focus: latency, cancellation, long task/chat, races, backpressure, streams, queues/workers/pools, budgets/throttle/rate limits, pressure. A09 primary owner (with B09). This aligns with focus: long chats, storage/network pressure, resource budgets. Need to enumerate concrete modules (shell/tasks/storage/bridge/routing/kernel per ARCHITECTURE.md). 
+TARGET=Deterministic, race-free concurrency with: cancellation-first (propagate deadlines/cancel tokens), backpressure on streams (token/chat I/O, storage reads/writes), bounded queues/workers, per-surface budgets (CPU/time/memory/IO/network), isolation under pressure, and clear evidence of no regressions (deterministic tests). Android ergonomics per PI rubric.
+NOW=Inventory concurrency primitives: async/coroutines/workers, queues, mutexes/locks, cancellation tokens, stream implementations. Find long chat paths (streaming, aggregation, rendering) and map cancellation points. Measure/trace long tasks under load. Enforce deadlines on cross-module calls (routing, storage, network). Apply backpressure to streaming token paths.
+NEXT=Introduce budget guards (time/CPU/memory/IO) with throttling, pressure signals (storage/network), and structured concurrency (avoid fire-and-forget). Add deterministic stress tests for races (adversarial interleavings where feasible). Track latency histograms (P95/P99) and dropped frames/ANRs on Android surfaces.
+LATER=Adaptive concurrency (pool sizing under pressure), priority lanes (interactive vs background), quota enforcement, and blast-radius containment. 
+TESTS=Race detectors (where available), deterministic cancellation tests, backpressure tests (slow consumer), long chat soak (deterministic), storage pressure (disk full/slow), network pressure (throttled), Android ANR/jank probes. Adversarial: cancellation races, double-close, leaked tasks.
+RISKS=Data races/deadlocks, leaked resources (tasks/streams), cancellation leaks, priority inversion, memory bloat in long chats, storage corruption under pressure, Android Doze/foreground constraints. 
+FIRST_SLICE=Cancellability audit + backpressure for primary chat stream path: identify one streaming path, add explicit cancellation points and backpressure (bounded buffer, pause/resume). Add unit tests for cancel mid-stream and slow consumer. Reviewable and high impact.
+KNOWN_UNKNOWNS=Exact chat streaming implementation, concurrency primitive choices (threads/coroutines), existing backpressure, storage pressure signals, network pressure modeling, budget enforcement points.
+DOMAIN_VERDICT=RESEARCH_INSUFFICIENT (need concrete chat streaming + concurrency primitives inventory)
