@@ -44,6 +44,11 @@ public class SevenRpgStandaloneTest {
    }
    assertTrue("Dedicated RPG did not reach ready state. Actual: "+js(view,"JSON.stringify({profile:document.documentElement.dataset.sevenStandaloneProfile,ready:document.documentElement.dataset.sevenStandaloneReady,error:document.documentElement.dataset.sevenStandaloneError,workspace:window.SevenWorkspaces?SevenWorkspaces.active():null,bar:!!document.querySelector('.seven-rpg-chatbar')})"),ready);
    assertJsTrue(view,"document.title==='Seven RPG'");
+   // A functional DOM without the full stylesheet is NOT a usable RPG UI.
+   // Android previously captured a raw 900px launcher icon and exposed the
+   // hidden narrator settings while WebView assets were still loading.
+   assertJsTrue(view,"(()=>{const link=document.getElementById('seven-rpg-standalone-style'),head=document.querySelector('.rpg-header'),icon=document.querySelector('.rpg-identity .app-icon'),settings=document.getElementById('settingsModal'),scene=document.getElementById('rpg-scene-vista');return !!link&&!!link.sheet&&link.sheet.cssRules.length>60&&getComputedStyle(head).display==='flex'&&icon.getBoundingClientRect().width<=96&&getComputedStyle(settings).display==='none'&&scene.getBoundingClientRect().height>=110})()");
+
    // Standalone features must remain accessible on the packaged Android UI.
    assertJsTrue(view,"Boolean(document.querySelector('#seven-rpg-world-button') && document.querySelector('#seven-rpg-model-control'))");
    assertJsTrue(view,"Boolean(document.querySelector('#rpg-scene-vista') && document.querySelector('#rpg-vista-world-title') && document.querySelector('#rpg-art-cycle'))");
