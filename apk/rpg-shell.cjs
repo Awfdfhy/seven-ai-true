@@ -46,7 +46,7 @@ const RPG_SHELL=`
     </div>
   </main>
 </div>
-<div class="modal rpg-settings" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="rpg-settings-title" onclick="if(event.target === this) closeSettings();">
+<div class="modal rpg-settings" id="settingsModal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="rpg-settings-title" onclick="if(event.target === this) closeSettings();">
   <div class="modal-content rpg-settings-panel">
     <div class="rpg-settings-heading"><div><small>NARRATOR STUDIO</small><h2 id="rpg-settings-title">الراوي <span>· AI Settings</span></h2></div><button type="button" class="rpg-settings-close" onclick="closeSettings()" aria-label="Close settings">✕</button></div>
     <div class="settings-core rpg-settings-fields">
