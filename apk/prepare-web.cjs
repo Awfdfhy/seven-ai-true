@@ -46,6 +46,13 @@ if(profile.appId==='ai.seven.rpg'){
   page=page.replace('<title>Seven AI</title>','<title>Seven RPG</title>');
   // Ship a newly authored RPG shell, not the old Seven AI UI with CSS hidden.
   page=removeLegacyUi(page);
+  // RPG theme must be active during HTML parsing, not after the late JS entry.
+  // On older Android WebView a slow asset request otherwise exposes raw legacy
+  // settings and a full-size launcher icon during first paint.
+  page=page.replace(/<html\\b([^>]*)>/i,(original,attributes)=>
+    attributes.includes('data-seven-standalone-profile')?original:
+      '<html'+attributes+' data-seven-standalone-profile="rpg">');
+  if(!page.includes('data-seven-standalone-profile="rpg"'))throw Error('RPG initial paint profile not installed');
   page=page.replace('</body>','<script id="seven-rpg-standalone-entry" src="./rpg-standalone-entry.js"></script></body>');
   const runtimeSource=fs.readFileSync(path.join(ROOT,'seven_ai-final.html'),'utf8');
   const runtimeStart=runtimeSource.indexOf('window.SevenRuntime = (() => {');
@@ -57,7 +64,25 @@ if(profile.appId==='ai.seven.rpg'){
   const skin=path.join(ROOT,'apk','rpg-standalone-ui.css');
   if(!fs.existsSync(skin))throw new Error('Standalone RPG design missing');
   fs.copyFileSync(skin,path.join(WWW,'rpg-standalone-ui.css'));
-  page=page.replace('</head>','<link id="seven-rpg-standalone-style" rel="stylesheet" href="./rpg-standalone-ui.css"></head>');
+  // Minimal critical paint is inline so Android 14 never exposes the
+  // hidden settings modal or unbounded logo if external CSS is delayed.
+  const criticalPaint=[
+    'html[data-seven-standalone-profile="rpg"]{color-scheme:dark;background:#090b17;color:#f9f5ff}',
+    'html[data-seven-standalone-profile="rpg"] body{margin:0;background:#090b17;color:#f9f5ff;font-family:system-ui,sans-serif}',
+    'html[data-seven-standalone-profile="rpg"] .rpg-application{display:flex;flex-direction:column;min-height:100dvh;max-width:100vw;overflow:hidden}',
+    'html[data-seven-standalone-profile="rpg"] .rpg-header{display:flex;align-items:center;gap:12px;padding:12px;background:#171b2e}',
+    'html[data-seven-standalone-profile="rpg"] .rpg-identity{display:flex;gap:8px;align-items:center}',
+    'html[data-seven-standalone-profile="rpg"] .rpg-identity .app-icon{width:38px;height:38px;object-fit:contain}',
+    'html[data-seven-standalone-profile="rpg"] .rpg-main{display:flex;flex:1;flex-direction:column;min-width:0;overflow:hidden}',
+    'html[data-seven-standalone-profile="rpg"] .rpg-scene-vista{min-height:120px;background:linear-gradient(135deg,#19243e,#10172b);color:#f4e2c3;padding:14px}',
+    'html[data-seven-standalone-profile="rpg"] #chat{flex:1;min-height:0;overflow:auto}',
+    'html[data-seven-standalone-profile="rpg"] .rpg-composer{padding:12px;border-radius:16px;background:#1d233a}',
+    'html[data-seven-standalone-profile="rpg"] [hidden]{display:none!important}',
+    'html[data-seven-standalone-profile="rpg"] #settingsModal{display:none}',
+    'html[data-seven-standalone-profile="rpg"] .rpg-settings[style*="display: flex"]{display:flex}',
+    'html[data-seven-standalone-profile="rpg"] .rpg-header button{min-width:44px;min-height:44px;color:inherit;background:#2d3252;border:1px solid #78699e;border-radius:12px}'
+  ].join('');
+  page=page.replace('</head>','<style id="rpg-critical-paint">'+criticalPaint+'</style><link id="seven-rpg-standalone-style" rel="stylesheet" href="./rpg-standalone-ui.css"></head>');
   // Repair the free-model picker and persistent routing before packaging.
   page=patchRpgModelRuntime(page);
   page=page.replace('</body>','<script id="rpg-smart-controls" src="./rpg-smart-controls.js"></script></body>');
