@@ -49,7 +49,7 @@ if(profile.appId==='ai.seven.rpg'){
   // RPG theme must be active during HTML parsing, not after the late JS entry.
   // On older Android WebView a slow asset request otherwise exposes raw legacy
   // settings and a full-size launcher icon during first paint.
-  page=page.replace(/<html\\b([^>]*)>/i,(original,attributes)=>
+  page=page.replace(/<html\b([^>]*)>/i,(original,attributes)=>
     attributes.includes('data-seven-standalone-profile')?original:
       '<html'+attributes+' data-seven-standalone-profile="rpg">');
   if(!page.includes('data-seven-standalone-profile="rpg"'))throw Error('RPG initial paint profile not installed');
