@@ -4,8 +4,10 @@ set -euo pipefail
 : "${ANDROID_API_LEVEL:?Android API level must be provided}"
 APP_ID="ai.seven.rpg"
 TEST_ID="${APP_ID}.test/androidx.test.runner.AndroidJUnitRunner"
-APP_APK="dist/rpg-smoke-apks/app-debug.apk"
-TEST_APK="dist/rpg-smoke-apks/app-debug-androidTest.apk"
+# upload-artifact preserves the common parent directory when uploading two APKs.
+# Resolve the downloaded files by their exact basenames, independent of layout.
+APP_APK="$(find dist/rpg-smoke-apks -type f -name 'app-debug.apk' -print -quit)"
+TEST_APK="$(find dist/rpg-smoke-apks -type f -name 'app-debug-androidTest.apk' -print -quit)"
 OUT="dist/rpg-device-evidence/android-${ANDROID_API_LEVEL}"
 mkdir -p "$OUT"
 collect() {
