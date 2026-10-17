@@ -1,26 +1,8 @@
 # D11_ANDROID_NATIVE — Android / APK / Lifecycle / IME / Back / Insets
 
-Research audit: READY
+Research audit: INSUFFICIENT
 
 DOMAIN_ID=D11_ANDROID_NATIVE
-SOURCE_ANALYSIS=Harvested sources (core app quality, architecture recommendations, edge-to-edge, predictive back, Capacitor App/Keyboard) collectively stress: stable lifecycles (ViewModel/architecture recommendations), proper inset handling for edge-to-edge (system bars/cutouts), predictive back support aligned with Android guidelines, and plugin events for app state/keyboard. No major contradictions. Freshness: Android docs current (edge-to-edge, predictive back actively documented). Limitations: Capacitor docs are framework-specific (not Android platform internals); harvested list includes localized versions (ar/bn) but content is translations of same guidance. Some seed URLs are generic docs (manifest/opensearch) not substantive domain guidance. SOURCE_ANALYSIS evidence: [SOURCE primary] https://developer.android.com/docs/quality-guidelines/core-app-quality, [SOURCE primary] https://developer.android.com/topic/architecture/recommendations, [SOURCE primary] https://developer.android.com/design/ui/mobile/guides/layout-and-content/edge-to-edge, [SOURCE primary] https://developer.android.com/design/ui/mobile/guides/patterns/predictive-back, [SOURCE primary] https://capacitorjs.com/docs/apis/app, [SOURCE primary] https://capacitorjs.com/docs/apis/keyboard.
-
-CURRENT=Seven hybrid (Capacitor) Android platform. Inspect `android/` (Android project files: `app/src/main/AndroidManifest.xml`, `app/src/main/res/values/styles.xml`, `app/build.gradle`, `MainActivity.*`), `capacitor.config.*`, app source. Need to confirm: edge-to-edge enabled? window insets handled? predictive back configured (Android 13+ `android:enableOnBackInvokedCallback`)? Capacitor App/Keyboard plugins registered/used? Lifecycle events (pause/resume, deeplinks) wired? IME handling (adjustResize/adjustPan, keyboard events). Distinguish: browser evidence (web layout/keyboard), mock evidence (dev only), Android build evidence (compiled APK/platform config), installed-device evidence (real device behavior). Current state must be verified by inspecting actual files (not assumed). EVIDENCE LEVEL: file inspection required.
-
-TARGET=Capacitor Android meets Android quality guidelines for lifecycle stability, correct edge-to-edge inset handling (content draws under system bars without clipping critical UI), predictive back integrated where supported (with fallback), keyboard events handled without layout jumps, and app lifecycle/deeplinks behave correctly. Preserve architecture per `remake/ARCHITECTURE.md`. No duplicate owners for bridge/routing/kernel.
-
-NOW=Smallest high-value slice: inspect Android platform config (AndroidManifest, styles/themes, build.gradle, MainActivity) and Capacitor usage (App/Keyboard). Verify edge-to-edge setup, predictive back flag, soft keyboard mode, and whether app handles insets. Produce evidence list (files inspected). Do not edit.
-
-NEXT=Confirm lifecycle wiring (App plugin events, back navigation), IME behavior across forms, and inset consumption in web views (safe areas). Check target SDK/compile SDK alignment with predictive back requirements.
-
-LATER=Device testing on API levels (edge cases: cutouts, gesture nav vs 3-button, IME overlap), automated checks where possible. Consider Android core app quality checklist against app.
-
-TESTS=Deterministic: static checks on Android config (manifest flags, styles). E2E: navigation/back flows (with/without keyboard open). Android: build-time verification (assembleDebug) if available; lint checks. Adversarial: rapid rotate + keyboard open, IME transitions, back during transitions. Eval proof: document evidence level (Android build evidence vs installed-device). No weakening guards.
-
-RISKS=Changing Android config affects all users (edge-to-edge can clip UI if insets not handled). Predictive back behavior varies by API; incorrect flag can break back. Keyboard handling can regress on some OEMs. Cross-system: Capacitor bridge changes impact shell/kernel owners — must not duplicate owners. Security: manifest changes minimal; no secrets. Performance: minimal. RTL: insets/gestures interact with RTL layouts (overlap with D13).
-
-FIRST_SLICE=Inspect `android/app/src/main/AndroidManifest.xml`, `android/app/src/main/res/values/styles.xml`, `android/app/build.gradle`, `android/app/src/main/java/.../MainActivity.java` (or .kt), `capacitor.config.*`. Record: targetSdk/compileSdk, `android:windowSoftInputMode`, edge-to-edge related themes (e.g. `android:windowLayoutInDisplayCutoutMode`, `fitsSystemWindows`, `enableOnBackInvokedCallback`), and whether Capacitor plugins (App, Keyboard) used. Evidence: file paths + lines.
-
-KNOWN_UNKNOWNS=Installed-device evidence for predictive back/gestures, IME behavior on physical devices, and actual inset consumption in web CSS (safe-area-inset-*) — browser mock insufficient. Need Android build evidence (assembleDebug) and installed-device evidence to claim correctness. Also confirm API level support.
-
-DOMAIN_VERDICT=RESEARCH_INSUFFICIENT (need concrete file inspection results + Android build/installed-device evidence). Current repo inspection incomplete until specific files read.
+DOMAIN_VERDICT=RESEARCH_INSUFFICIENT
+CURRENT=No trustworthy plan block was produced in this cycle.
+KNOWN_UNKNOWNS=Research agent output missing or timed out.
