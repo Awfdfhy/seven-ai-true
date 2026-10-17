@@ -1,0 +1,9 @@
+# Local SQLite databases and scratch output. Never commit campaign state.
+data/
+test-output.txt
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# Installed only when TURSO_URL is set (remote backend).
+node_modules/
