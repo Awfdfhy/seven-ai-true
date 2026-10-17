@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "domains": 30,
-  "ready": 2,
+  "ready": 0,
   "missing": [],
   "insufficient": [
     "D01_CHAT_CORE",
@@ -14,6 +14,7 @@
     "D08_MODEL_ROUTING",
     "D09_DEEP_THINK",
     "D10_FILES_MULTIMODAL",
+    "D11_ANDROID_NATIVE",
     "D12_UI_DESIGN_SYSTEM",
     "D13_ARABIC_RTL_A11Y",
     "D14_SECURITY_PRIVACY",
@@ -26,6 +27,7 @@
     "D21_OBSERVABILITY_WORLD_MODEL",
     "D22_PROTOCOLS_INTEROP",
     "D23_IMPORT_EXPORT_BACKUP",
+    "D24_RELEASE_APK",
     "D25_HISTORY_ROOMS",
     "D26_SETTINGS_CONTROLS",
     "D27_ERROR_RECOVERY_UX",
@@ -37,7 +39,7 @@
     {
       "id": "D01_CHAT_CORE",
       "status": "INSUFFICIENT",
-      "urls": 71,
+      "urls": 69,
       "primaryTagged": 86,
       "target": 10,
       "owners": [
@@ -89,8 +91,8 @@
     {
       "id": "D05_SELF_DEVELOPMENT",
       "status": "INSUFFICIENT",
-      "urls": 28,
-      "primaryTagged": 39,
+      "urls": 43,
+      "primaryTagged": 90,
       "target": 12,
       "owners": [
         "B06",
@@ -122,8 +124,8 @@
     {
       "id": "D08_MODEL_ROUTING",
       "status": "INSUFFICIENT",
-      "urls": 31,
-      "primaryTagged": 31,
+      "urls": 48,
+      "primaryTagged": 67,
       "target": 10,
       "owners": [
         "A05",
@@ -133,8 +135,8 @@
     {
       "id": "D09_DEEP_THINK",
       "status": "INSUFFICIENT",
-      "urls": 11,
-      "primaryTagged": 11,
+      "urls": 41,
+      "primaryTagged": 47,
       "target": 10,
       "owners": [
         "B04",
@@ -154,9 +156,9 @@
     },
     {
       "id": "D11_ANDROID_NATIVE",
-      "status": "READY",
+      "status": "INSUFFICIENT",
       "urls": 30,
-      "primaryTagged": 62,
+      "primaryTagged": 46,
       "target": 10,
       "owners": [
         "A02",
@@ -188,8 +190,8 @@
     {
       "id": "D14_SECURITY_PRIVACY",
       "status": "INSUFFICIENT",
-      "urls": 40,
-      "primaryTagged": 41,
+      "urls": 67,
+      "primaryTagged": 92,
       "target": 12,
       "owners": [
         "A07",
@@ -221,8 +223,8 @@
     {
       "id": "D17_PERFORMANCE_CONCURRENCY",
       "status": "INSUFFICIENT",
-      "urls": 62,
-      "primaryTagged": 47,
+      "urls": 88,
+      "primaryTagged": 83,
       "target": 10,
       "owners": [
         "A09",
@@ -232,8 +234,8 @@
     {
       "id": "D18_TESTING_EVALS",
       "status": "INSUFFICIENT",
-      "urls": 89,
-      "primaryTagged": 77,
+      "urls": 93,
+      "primaryTagged": 128,
       "target": 12,
       "owners": [
         "A08",
@@ -265,8 +267,8 @@
     {
       "id": "D21_OBSERVABILITY_WORLD_MODEL",
       "status": "INSUFFICIENT",
-      "urls": 69,
-      "primaryTagged": 64,
+      "urls": 99,
+      "primaryTagged": 100,
       "target": 8,
       "owners": [
         "A04",
@@ -297,9 +299,9 @@
     },
     {
       "id": "D24_RELEASE_APK",
-      "status": "READY",
+      "status": "INSUFFICIENT",
       "urls": 99,
-      "primaryTagged": 116,
+      "primaryTagged": 100,
       "target": 8,
       "owners": [
         "A02",
@@ -309,7 +311,7 @@
     {
       "id": "D25_HISTORY_ROOMS",
       "status": "INSUFFICIENT",
-      "urls": 44,
+      "urls": 42,
       "primaryTagged": 63,
       "target": 8,
       "owners": [
@@ -342,8 +344,8 @@
     {
       "id": "D28_LOCAL_INTELLIGENCE",
       "status": "INSUFFICIENT",
-      "urls": 31,
-      "primaryTagged": 31,
+      "urls": 48,
+      "primaryTagged": 67,
       "target": 8,
       "owners": [
         "A05",
@@ -364,8 +366,8 @@
     {
       "id": "D30_AUTONOMOUS_QUALITY",
       "status": "INSUFFICIENT",
-      "urls": 99,
-      "primaryTagged": 161,
+      "urls": 100,
+      "primaryTagged": 212,
       "target": 12,
       "owners": [
         "A08",
