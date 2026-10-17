@@ -3,15 +3,20 @@
 /**
  * End-to-end smoke test against a RUNNING server.
  *
- *   node zpp/smoke.mjs [baseUrl]
+ *   node zpp/smoke.mjs [baseUrl] [apiKey]
  *
  * Complements the unit suite: those tests exercise the store directly, this one
  * exercises the real HTTP surface a client would use — ETag round-trip, the
  * 409 conflict path, the 422 engine-refusal path, and cold-replay integrity
  * over the wire.
+ *
+ * Pass an API key as the second argument, or set ZPP_API_KEY. Without one the
+ * auth assertions are reported as SKIP rather than silently passing, because a
+ * green smoke test that never tested authentication is worse than no smoke test.
  */
 
 const BASE = process.argv[2] || process.env.ZPP_URL || 'http://127.0.0.1:8787';
+const KEY = process.argv[3] || process.env.ZPP_API_KEY || '';
 
 const SEED = {
   sessionId: 'demo',
@@ -20,6 +25,7 @@ const SEED = {
 };
 
 let failures = 0;
+let skips = 0;
 
 function check(label, condition, detail) {
   const ok = Boolean(condition);
@@ -27,23 +33,42 @@ function check(label, condition, detail) {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${label}${detail === undefined ? '' : `  -> ${detail}`}`);
 }
 
+function skip(label, why) {
+  skips += 1;
+  console.log(`SKIP  ${label}  -> ${why}`);
+}
+
+function headers(extra = {}) {
+  const h = { 'Content-Type': 'application/json', ...extra };
+  if (KEY) h.Authorization = `Bearer ${KEY}`;
+  return h;
+}
+
 async function call(path, options = {}) {
-  const res = await fetch(BASE + path, {
-    ...options,
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }
-  });
+  const res = await fetch(BASE + path, { ...options, headers: headers(options.headers) });
   const body = await res.json().catch(() => null);
   return { status: res.status, etag: res.headers.get('etag'), body };
 }
 
-const post = (path, payload, headers) =>
-  call(path, { method: 'POST', body: JSON.stringify(payload), headers });
+const post = (path, payload, h) =>
+  call(path, { method: 'POST', body: JSON.stringify(payload), headers: h });
 
 async function main() {
   console.log(`ZPP smoke against ${BASE}\n`);
 
   const health = await call('/health');
-  check('health responds', health.status === 200 && health.body.ok, `driver=${health.body?.driver} engine=${health.body?.engineSchema} v${health.body?.engineVersion}`);
+  check('health responds', health.status === 200 && health.body.ok, `driver=${health.body?.driver} engine=${health.body?.engineSchema} v${health.body?.engineVersion} auth=${health.body?.auth}`);
+
+  if (health.body?.auth === 'required') {
+    if (!KEY) {
+      skip('authenticated write', 'server requires a key and none was supplied');
+    } else {
+      const probe = await call('/v1/streams');
+      check('API key is accepted', probe.status === 200, `status=${probe.status}`);
+    }
+  } else {
+    check('server is in dev auth mode', health.body?.auth === 'dev', health.body?.auth);
+  }
 
   const streamId = `smoke-${Date.now()}`;
 
@@ -99,7 +124,7 @@ async function main() {
   const missing = await call('/v1/streams/definitely-not-here');
   check('unknown stream -> 404', missing.status === 404, String(missing.status));
 
-  console.log(`\n${failures === 0 ? 'SMOKE PASS' : `SMOKE FAIL (${failures})`}`);
+  console.log(`\n${failures === 0 ? 'SMOKE PASS' : `SMOKE FAIL (${failures})`}${skips ? ` (${skips} skipped)` : ''}`);
   process.exit(failures === 0 ? 0 : 1);
 }
 

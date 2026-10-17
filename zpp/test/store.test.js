@@ -16,6 +16,7 @@ const assert = require('node:assert/strict');
 
 const { openDb } = require('../src/db');
 const { createStore } = require('../src/store');
+const { createAuth } = require('../src/auth');
 const { createApp } = require('../src/server');
 
 async function freshStore() {
@@ -351,8 +352,11 @@ test('health: reports driver and engine identity', async () => {
 
 async function withServer(fn) {
   const { store, db } = await freshStore();
+  // These tests exercise the store/HTTP contract, not authentication; auth has
+  // its own suite in auth.test.js. Dev mode keeps them focused on one concern.
+  const auth = createAuth(db, { mode: 'dev' });
   const server = await new Promise((resolve) => {
-    const s = require('node:http').createServer(createApp(store));
+    const s = require('node:http').createServer(createApp(store, auth));
     s.listen(0, () => resolve(s));
   });
   const base = `http://127.0.0.1:${server.address().port}`;

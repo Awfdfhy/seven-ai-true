@@ -9,8 +9,10 @@
   },
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node src/server.js",
-    "test": "node --test test/store.test.js"
+    "dev": "node bin/dev.cjs",
+    "mint-key": "node bin/mint-key.cjs",
+    "smoke": "node smoke.mjs",
+    "test": "node --test test/store.test.js test/auth.test.js"
   },
   "optionalDependencies": {
     "@libsql/client": "^0.15.0"
