@@ -1,10 +1,10 @@
 const fs=require('fs');
 const path=require('path');
-const {spawnSync}=require('child_process');
 const assert=require('assert/strict');
 const {gitIdentity,verifyPayload}=require('./build-provenance.cjs');
 const {sha256}=require('./build-provenance.cjs');
 const {verifyBinary}=require('./binary-verification.cjs');
+const zipRead=require('./zip-read.cjs');
 const ROOT=path.resolve(__dirname,'..');
 const PACKAGE=JSON.parse(fs.readFileSync(path.join(ROOT,'package.json'),'utf8'));
 const EXPECTED_VERSION_NAME=String(PACKAGE.version||'').trim();
@@ -24,51 +24,48 @@ const bytes=fs.statSync(APK).size;
 assert.ok(bytes<30*1024*1024,`APK too large: ${bytes}`);
 const appId=JSON.parse(fs.readFileSync(path.join(ROOT,'capacitor.config.json'),'utf8')).appId;
 const binary=verifyBinary(APK,{packageName:appId,versionCode:EXPECTED_VERSION_CODE,versionName:EXPECTED_VERSION_NAME});
-const listing=spawnSync('unzip',['-l',APK],{encoding:'utf8'});
-assert.equal(listing.status,0,listing.stderr);
-assert.match(listing.stdout,/assets\/public\/index\.html/);
-assert.match(listing.stdout,/assets\/public\/vendor\/pdfjs\/pdf\.min\.mjs/);
-assert.match(listing.stdout,/assets\/public\/workspaces\/remake\.css/);
-assert.match(listing.stdout,/assets\/public\/workspaces\/remake\.js/);
-assert.match(listing.stdout,/assets\/public\/workspaces\/intelligence\.js/);
+// Read the APK with the dependency-free reader instead of shelling out to `unzip`, which does not
+// exist on Windows. No shell is involved, so no argument escaping is possible.
+const archive=zipRead.open(APK);
+const listing=archive.listing();
+assert.match(listing,/assets\/public\/index\.html/);
+assert.match(listing,/assets\/public\/vendor\/pdfjs\/pdf\.min\.mjs/);
+assert.match(listing,/assets\/public\/workspaces\/remake\.css/);
+assert.match(listing,/assets\/public\/workspaces\/remake\.js/);
+assert.match(listing,/assets\/public\/workspaces\/intelligence\.js/);
 if(appId==='ai.seven.rpg'){
-  assert.ok(listing.stdout.includes('assets/public/rpg-standalone-ui.css'),'RPG redesign stylesheet missing');
-  assert.ok(listing.stdout.includes('assets/public/rpg-standalone-entry.js'),'RPG entrypoint missing');
+  assert.ok(listing.includes('assets/public/rpg-standalone-ui.css'),'RPG redesign stylesheet missing');
+  assert.ok(listing.includes('assets/public/rpg-standalone-entry.js'),'RPG entrypoint missing');
   for(const name of ['coding.js','research.js','research-v2.js','generated-ui.js','generated-ui.css']){
-    assert.ok(!listing.stdout.includes('assets/public/workspaces/'+name),'RPG APK contains unrelated workspace: '+name);
+    assert.ok(!listing.includes('assets/public/workspaces/'+name),'RPG APK contains unrelated workspace: '+name);
   }
-}else{assert.ok(listing.stdout.includes('assets/public/workspaces/research-v2.js'));}
+}else{assert.ok(listing.includes('assets/public/workspaces/research-v2.js'));}
 
-assert.match(listing.stdout,/classes(?:\d*)?\.dex/);
-const packagedManifest=spawnSync('unzip',['-p',APK,'assets/public/seven-packaging.json'],{encoding:'utf8',maxBuffer:4*1024*1024});
-assert.equal(packagedManifest.status,0,'APK build provenance missing');
-const provenance=JSON.parse(packagedManifest.stdout),identity=gitIdentity(ROOT);
+assert.match(listing,/classes(?:\d*)?\.dex/);
+const packagedManifest=archive.read('assets/public/seven-packaging.json');
+const provenance=JSON.parse(packagedManifest.toString('utf8')),identity=gitIdentity(ROOT);
 assert.equal(identity.sourceDirty,false,'APK verification requires committed source');
 verifyPayload(provenance,name=>{
-  const row=spawnSync('unzip',['-p',APK,'assets/public/'+name],{maxBuffer:16*1024*1024});
-  assert.equal(row.status,0,'APK payload missing: '+name);return row.stdout;
+  return archive.read('assets/public/'+name);
 },{sourceCommit:identity.sourceCommit});
 console.log('APK source provenance: '+provenance.sourceCommit+' / run '+(provenance.workflowRunId||'local'));
-const html=spawnSync('unzip',['-p',APK,'assets/public/index.html'],{encoding:'utf8',maxBuffer:8*1024*1024});
-assert.equal(html.status,0,html.stderr);
-assert.ok(html.stdout.includes('SEVEN_FINAL_RELEASE_LAYER_V1'),'release marker missing from APK');
-assert.ok(html.stdout.includes('id="seven-app"')&&html.stdout.includes('data-seven-remake="1"'),'modern Seven UI root missing from APK');
-assert.ok(html.stdout.includes('./workspaces/remake.css')&&html.stdout.includes('./workspaces/remake.js')&&html.stdout.includes('./workspaces/intelligence.js'),'modern Seven UI wiring missing from APK');
-assert.ok(!html.stdout.includes('cdnjs.cloudflare.com/ajax/libs/pdf.js'),'APK still references remote PDF runtime');
-assert.ok(html.stdout.includes('Seven 2.4.3 Zero-Key + UI Cleanup'),'2.4.3 UI cleanup marker missing from APK');
-assert.ok(html.stdout.includes('Seven 2.4.2 Zero-Key UX'),'zero-key marker missing from APK');
-assert.ok(!html.stdout.includes('id="apiKeyInput"')&&!html.stdout.includes('id="nvidiaApiKeyInput"')&&!html.stdout.includes('id="openrouterApiKeyInput"')&&!html.stdout.includes('id="geminiApiKeyInput"')&&!html.stdout.includes('id="llm7TokenInput"'),'APK still contains manual API-key fields');
-assert.ok(!/type=["']password["']/i.test(html.stdout),'APK still contains password credential inputs');
-assert.ok(!html.stdout.includes('id="nameModal"')&&!html.stdout.includes('id="nameInput"'),'APK still contains legacy name capture UI');
-assert.ok(html.stdout.includes('Automatic Providers')&&html.stdout.includes('Zero-Key routing'),'APK missing automatic provider UX');
-const bundledRemakeCss=spawnSync('unzip',['-p',APK,'assets/public/workspaces/remake.css'],{encoding:'utf8',maxBuffer:4*1024*1024});
-assert.equal(bundledRemakeCss.status,0,bundledRemakeCss.stderr);
-assert.ok(bundledRemakeCss.stdout.includes('--seven-ui-hardening-v242:1'),'APK missing bundled UI hardening layer');
-const bundledRemakeJs=spawnSync('unzip',['-p',APK,'assets/public/workspaces/remake.js'],{encoding:'utf8',maxBuffer:4*1024*1024});
-assert.equal(bundledRemakeJs.status,0,bundledRemakeJs.stderr);
-assert.ok(!bundledRemakeJs.stdout.includes('s-brave-key'),'APK still contains manual Brave key control');
-assert.ok(!bundledRemakeJs.stdout.includes('Brave API key'),'APK still asks for a Brave API key');
-assert.ok(!bundledRemakeJs.stdout.includes('Enter API key'),'APK still contains manual API-key prompt');
+const html=archive.read('assets/public/index.html').toString('utf8');
+assert.ok(html.includes('SEVEN_FINAL_RELEASE_LAYER_V1'),'release marker missing from APK');
+assert.ok(html.includes('id="seven-app"')&&html.includes('data-seven-remake="1"'),'modern Seven UI root missing from APK');
+assert.ok(html.includes('./workspaces/remake.css')&&html.includes('./workspaces/remake.js')&&html.includes('./workspaces/intelligence.js'),'modern Seven UI wiring missing from APK');
+assert.ok(!html.includes('cdnjs.cloudflare.com/ajax/libs/pdf.js'),'APK still references remote PDF runtime');
+assert.ok(html.includes('Seven 2.4.3 Zero-Key + UI Cleanup'),'2.4.3 UI cleanup marker missing from APK');
+assert.ok(html.includes('Seven 2.4.2 Zero-Key UX'),'zero-key marker missing from APK');
+assert.ok(!html.includes('id="apiKeyInput"')&&!html.includes('id="nvidiaApiKeyInput"')&&!html.includes('id="openrouterApiKeyInput"')&&!html.includes('id="geminiApiKeyInput"')&&!html.includes('id="llm7TokenInput"'),'APK still contains manual API-key fields');
+assert.ok(!/type=["']password["']/i.test(html),'APK still contains password credential inputs');
+assert.ok(!html.includes('id="nameModal"')&&!html.includes('id="nameInput"'),'APK still contains legacy name capture UI');
+assert.ok(html.includes('Automatic Providers')&&html.includes('Zero-Key routing'),'APK missing automatic provider UX');
+const bundledRemakeCss=archive.read('assets/public/workspaces/remake.css').toString('utf8');
+assert.ok(bundledRemakeCss.includes('--seven-ui-hardening-v242:1'),'APK missing bundled UI hardening layer');
+const bundledRemakeJs=archive.read('assets/public/workspaces/remake.js').toString('utf8');
+assert.ok(!bundledRemakeJs.includes('s-brave-key'),'APK still contains manual Brave key control');
+assert.ok(!bundledRemakeJs.includes('Brave API key'),'APK still asks for a Brave API key');
+assert.ok(!bundledRemakeJs.includes('Enter API key'),'APK still contains manual API-key prompt');
 
 fs.mkdirSync(path.join(ROOT,'dist'),{recursive:true});
 fs.writeFileSync(path.join(ROOT,'dist','apk-verification.json'),JSON.stringify({format:'seven-apk-verification',version:1,sourceCommit:provenance.sourceCommit,workflowRunId:provenance.workflowRunId,apkSha256:sha256(fs.readFileSync(APK)),bytes,webAssetCount:provenance.files.length,...binary},null,2));
