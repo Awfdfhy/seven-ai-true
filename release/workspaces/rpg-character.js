@@ -9,6 +9,28 @@
   function obj(v) { return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; }
   function arr(v) { return Array.isArray(v) ? v : []; }
   function text(v) { return typeof v === 'string' ? v.trim() : ''; }
+  function mapsToPlain(v) {
+    if (v instanceof Map) return { __map: Object.fromEntries([...v].map(([k, x]) => [k, mapsToPlain(x)])) };
+    if (Array.isArray(v)) return v.map(mapsToPlain);
+    if (v && typeof v === 'object') {
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = mapsToPlain(x);
+      return out;
+    }
+    return v;
+  }
+  function plainToMaps(v) {
+    if (Array.isArray(v)) return v.map(plainToMaps);
+    if (v && typeof v === 'object') {
+      if (Object.prototype.hasOwnProperty.call(v, '__map')) {
+        return new Map(Object.entries(v.__map).map(([k, x]) => [k, plainToMaps(x)]));
+      }
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = plainToMaps(x);
+      return out;
+    }
+    return v;
+  }
   function uniq(xs) { return Array.from(new Set(arr(xs).filter(x => typeof x === 'string' && x.trim()).map(x => x.trim()))); }
   function clamp(v, min, max) { v = Number(v); return Number.isFinite(v) ? Math.max(min, Math.min(max, v)) : min; }
   function stableId(prefix, n) { return prefix + '-' + String(n).padStart(6, '0'); }
@@ -448,8 +470,28 @@
       setDialogueStyle, getDialogueStyle, formatDialogue,
       exportCharacter, importCharacter,
       getCharacterSummary,
-      normalizeVoice
+      normalizeVoice,
+      exportState, importState
     };
+
+    function exportState() {
+      return {
+        version: 1,
+        counters: { id: idCounter },
+        portraits: clone(mapsToPlain(Object.fromEntries(portraits))),
+        dialogueStyles: clone(mapsToPlain(Object.fromEntries(dialogueStyles)))
+      };
+    }
+
+    function importState(data) {
+      const d = obj(data);
+      portraits.clear();
+      for (const [k, v] of Object.entries(obj(d.portraits))) portraits.set(k, plainToMaps(v));
+      dialogueStyles.clear();
+      for (const [k, v] of Object.entries(obj(d.dialogueStyles))) dialogueStyles.set(k, plainToMaps(v));
+      idCounter = Math.max(idCounter, Number(obj(d.counters).id || 0));
+      return { ok: true, restored: portraits.size + dialogueStyles.size };
+    }
   }
 
   return { createCharacterManager };

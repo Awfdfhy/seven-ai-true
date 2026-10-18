@@ -93,7 +93,7 @@ function copyDir(src,dst){
       if(e.name.endsWith('.css'))data=Buffer.from(compactCss(data.toString('utf8')));
       else if(e.name.endsWith('.js')){
         const rpg=require('./rpg-minifier.cjs');
-        data=Buffer.from(rpg.files.has(e.name)?rpg.minifyRpg(data.toString('utf8')):compactJs(data.toString('utf8')));
+        data=Buffer.from(rpg.shouldMinify(e.name)?rpg.minifyRpg(data.toString('utf8')):compactJs(data.toString('utf8')));
       }
       fs.writeFileSync(b,data);
       out.push({path:path.relative(DIST_DIR,b).replace(/\\/g,'/'),bytes:data.length,sha256:crypto.createHash('sha256').update(data).digest('hex')});
@@ -102,7 +102,9 @@ function copyDir(src,dst){
   return out;
 }
 function writeLazyRuntime(dst,name,source){
-  const data=Buffer.from(compactJs(source));
+  // canon-simulator.js / world-runtime.js ship in the same lazy workspace payload, so they get
+  // the same minifier as the copied workspace scripts rather than line-trimming alone.
+  const data=Buffer.from(require('./rpg-minifier.cjs').minifyRpg(source));
   const file=path.join(dst,name);fs.mkdirSync(dst,{recursive:true});fs.writeFileSync(file,data);
   return {path:path.relative(DIST_DIR,file).replace(/\\/g,'/'),bytes:data.length,sha256:crypto.createHash('sha256').update(data).digest('hex')};
 }

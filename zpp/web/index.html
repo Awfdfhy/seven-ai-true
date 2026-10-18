@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  ZPP console.
+
+  Static, zero-dependency, same-origin by default. Serve it next to the API:
+
+    node zpp/bin/serve-web.cjs        # or any static server
+
+  Two rules the rest of this file obeys without exception:
+    1. Nothing from the server is ever assigned to innerHTML. Every value that
+       arrives from the network goes through textContent or a typed setter, so a
+       stored payload cannot become script. See render() in app.js.
+    2. The API key is held in memory. Persisting it is an explicit, off-by-
+       default choice, because localStorage is readable by any script on the
+       origin and a bearer key there is a bearer key for the tenant.
+-->
+<title>ZPP console</title>
+<link rel="stylesheet" href="./app.css">
+</head>
+<body>
+<header class="bar">
+  <h1>ZPP console</h1>
+  <div class="bar-right">
+    <span id="conn" class="pill pill-off">not connected</span>
+    <span id="quota" class="quota" title="rate-limit budget left for this tenant"></span>
+  </div>
+</header>
+
+<section id="gate" class="gate">
+  <h2>Connect</h2>
+  <p class="muted">
+    This console needs an API key. Paste one, or mint a fresh one for a new
+    owner — the plaintext is shown once and never stored server-side.
+  </p>
+  <div class="row">
+    <input id="in-owner" type="text" placeholder="owner id (e.g. alice)" autocomplete="off" spellcheck="false">
+    <input id="in-key" type="password" placeholder="zpp_… (or leave blank to mint)" autocomplete="off" spellcheck="false">
+  </div>
+  <div class="row">
+    <input id="in-bootstrap" type="password" placeholder="bootstrap token (only if server requires one)" autocomplete="off" spellcheck="false">
+  </div>
+  <div class="row">
+    <button id="btn-use" type="button">Use this key</button>
+    <button id="btn-mint" type="button" class="ghost">Mint a new key</button>
+    <label class="check">
+      <input id="in-remember" type="checkbox"> remember on this device
+    </label>
+  </div>
+  <p id="gate-msg" class="msg" role="status" aria-live="polite"></p>
+</section>
+
+<main id="app" hidden>
+  <section class="col col-left">
+    <div class="col-head">
+      <h2>Streams</h2>
+      <button id="btn-refresh" type="button" class="ghost" title="Reload the list">refresh</button>
+    </div>
+    <ul id="streams" class="streams"></ul>
+    <form id="new-stream" class="new">
+      <input id="in-stream-id" type="text" placeholder="new stream id" autocomplete="off" spellcheck="false">
+      <button type="submit">create</button>
+    </form>
+  </section>
+
+  <section class="col col-right">
+    <div class="col-head">
+      <h2 id="cur-title">no stream selected</h2>
+      <div class="col-actions">
+        <span id="rev" class="pill pill-off">rev –</span>
+        <button id="btn-verify" type="button" class="ghost" title="Replay the log and compare against the snapshot">verify</button>
+        <button id="btn-rebuild" type="button" class="ghost" title="Regenerate the snapshot from seed + events">rebuild</button>
+      </div>
+    </div>
+
+    <form id="composer" class="composer">
+      <input id="in-type" type="text" placeholder="event type (e.g. world.set)" autocomplete="off" spellcheck="false">
+      <textarea id="in-payload" rows="3" placeholder='payload JSON, e.g. {"path":"weather.state","value":"rain"}' spellcheck="false"></textarea>
+      <button type="submit" id="btn-append">append</button>
+      <p class="muted small">
+        Sends <code>If-Match</code> with the revision you are looking at. If the log moved
+        underneath you the server answers <code>409</code> and nothing is written.
+      </p>
+    </form>
+
+    <div id="banner" class="banner" role="status" aria-live="polite" hidden></div>
+
+    <h3 class="sub">Event log</h3>
+    <ol id="events" class="events"></ol>
+
+    <details class="state">
+      <summary>projected state</summary>
+      <pre id="state"></pre>
+    </details>
+  </section>
+</main>
+
+<script src="./app.js"></script>
+</body>
+</html>

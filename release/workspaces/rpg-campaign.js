@@ -9,6 +9,28 @@
   function obj(v) { return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; }
   function arr(v) { return Array.isArray(v) ? v : []; }
   function text(v) { return typeof v === 'string' ? v.trim() : ''; }
+  function mapsToPlain(v) {
+    if (v instanceof Map) return { __map: Object.fromEntries([...v].map(([k, x]) => [k, mapsToPlain(x)])) };
+    if (Array.isArray(v)) return v.map(mapsToPlain);
+    if (v && typeof v === 'object') {
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = mapsToPlain(x);
+      return out;
+    }
+    return v;
+  }
+  function plainToMaps(v) {
+    if (Array.isArray(v)) return v.map(plainToMaps);
+    if (v && typeof v === 'object') {
+      if (Object.prototype.hasOwnProperty.call(v, '__map')) {
+        return new Map(Object.entries(v.__map).map(([k, x]) => [k, plainToMaps(x)]));
+      }
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = plainToMaps(x);
+      return out;
+    }
+    return v;
+  }
   function uniq(xs) { return Array.from(new Set(arr(xs).filter(x => typeof x === 'string' && x.trim()).map(x => x.trim()))); }
   let idCounter = 0;
   function nextId() { return ++idCounter; }
@@ -510,8 +532,31 @@
       exportSession, importSession,
       getCampaignStats, getSessionStats,
       setOfflineMode,
-      createBranch, getBranchTree, mergeBranch
+      createBranch, getBranchTree, mergeBranch,
+      exportState, importState
     };
+
+    function exportState() {
+      return {
+        version: 1,
+        counters: { id: idCounter },
+        campaigns: clone(mapsToPlain(Object.fromEntries(campaigns))),
+        sessions: clone(mapsToPlain(Object.fromEntries(sessions))),
+        checkpoints: clone(mapsToPlain(Object.fromEntries(checkpoints)))
+      };
+    }
+
+    function importState(data) {
+      const d = obj(data);
+      campaigns.clear();
+      for (const [k, v] of Object.entries(obj(d.campaigns))) campaigns.set(k, plainToMaps(v));
+      sessions.clear();
+      for (const [k, v] of Object.entries(obj(d.sessions))) sessions.set(k, plainToMaps(v));
+      checkpoints.clear();
+      for (const [k, v] of Object.entries(obj(d.checkpoints))) checkpoints.set(k, plainToMaps(v));
+      idCounter = Math.max(idCounter, Number(obj(d.counters).id || 0));
+      return { ok: true, restored: campaigns.size + sessions.size + checkpoints.size };
+    }
   }
 
   function stableId(prefix) { return prefix + '-' + String(nextId()).padStart(6, '0'); }

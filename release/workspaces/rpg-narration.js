@@ -13,6 +13,28 @@
   function clamp(v, min, max) { v = Number(v); return Number.isFinite(v) ? Math.max(min, Math.min(max, v)) : min; }
   function stableId(prefix, n) { return prefix + '-' + String(n).padStart(6, '0'); }
   function now() { return new Date().toISOString(); }
+  function mapsToPlain(v) {
+    if (v instanceof Map) return { __map: Object.fromEntries([...v].map(([k, x]) => [k, mapsToPlain(x)])) };
+    if (Array.isArray(v)) return v.map(mapsToPlain);
+    if (v && typeof v === 'object') {
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = mapsToPlain(x);
+      return out;
+    }
+    return v;
+  }
+  function plainToMaps(v) {
+    if (Array.isArray(v)) return v.map(plainToMaps);
+    if (v && typeof v === 'object') {
+      if (Object.prototype.hasOwnProperty.call(v, '__map')) {
+        return new Map(Object.entries(v.__map).map(([k, x]) => [k, plainToMaps(x)]));
+      }
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = plainToMaps(x);
+      return out;
+    }
+    return v;
+  }
 
   const SPEAKER_TYPES = Object.freeze(['narrator', 'player', 'npc', 'system', 'choice']);
   const NARRATION_STYLES = Object.freeze(['descriptive', 'terse', 'poetic', 'journal', 'dramatic', 'minimal']);
@@ -566,6 +588,54 @@
       return toneHistory.slice(-l);
     }
 
+    // Persistence seam (additive): serializes every closure-scoped Map plus the
+    // agency lock and tone history, and never moves the id counter backwards.
+    const DEFAULT_AGENCY_LOCK = clone(agencyLock);
+
+    function restoreMap(target, raw) {
+      const rebuilt = plainToMaps(obj(raw));
+      target.clear();
+      if (rebuilt instanceof Map) for (const [k, v] of rebuilt) target.set(k, v);
+      return target;
+    }
+
+    function replaceFields(target, source, fallback) {
+      for (const k of Object.keys(target)) delete target[k];
+      Object.assign(target, source || clone(fallback));
+    }
+
+    function exportState() {
+      return {
+        version: 1,
+        counters: { id: idCounter },
+        scenes: clone(mapsToPlain(scenes)),
+        chapters: clone(mapsToPlain(chapters)),
+        arcs: clone(mapsToPlain(arcs)),
+        consequences: clone(mapsToPlain(consequences)),
+        foreshadowing: clone(mapsToPlain(foreshadowing)),
+        dialogueVariants: clone(mapsToPlain(dialogueVariants)),
+        npcInitiatives: clone(mapsToPlain(npcInitiatives)),
+        state: clone({ agencyLock, toneHistory })
+      };
+    }
+
+    function importState(data) {
+      const d = obj(data);
+      restoreMap(scenes, d.scenes);
+      restoreMap(chapters, d.chapters);
+      restoreMap(arcs, d.arcs);
+      restoreMap(consequences, d.consequences);
+      restoreMap(foreshadowing, d.foreshadowing);
+      restoreMap(dialogueVariants, d.dialogueVariants);
+      restoreMap(npcInitiatives, d.npcInitiatives);
+      const st = plainToMaps(obj(d.state));
+      replaceFields(agencyLock, st.agencyLock, DEFAULT_AGENCY_LOCK);
+      toneHistory.length = 0;
+      for (const entry of arr(st.toneHistory)) toneHistory.push(entry);
+      idCounter = Math.max(idCounter, Number(obj(d.counters).id || 0));
+      return { ok: true, restored: scenes.size };
+    }
+
     return {
       SPEAKER_TYPES, NARRATION_STYLES, PACING_MODES,
       CONSEQUENCE_TYPES, CHOICE_TYPES, ARC_STATUSES,
@@ -583,7 +653,8 @@
       setNpcInitiative, getNpcInitiative, getNpcInitiativeOrder, shouldNpcAct,
       createConsequence, applyConsequence, getConsequences,
       addForeshadowing, resolveForeshadowing, getUnresolvedForeshadowing,
-      recordTone, getToneConsistency, getToneHistory
+      recordTone, getToneConsistency, getToneHistory,
+      exportState, importState
     };
   }
 

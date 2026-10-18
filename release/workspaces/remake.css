@@ -1,0 +1,299 @@
+/* Seven 2 — one visual system for the chat, workspaces, settings and tools. */
+#seven-app {--s-bg:#f5f7f5;--s-panel:#ffffff;--s-raised:#edf2ee;--s-text:#152c25;--s-muted:#52675d;--s-line:#d5dfd8;--s-accent:#006b50;--s-on:#ffffff;--s-soft:#e0f0e7;--s-danger:#a52f26;--s-shadow:0 18px 65px #102c241a;--s-radius:18px;color-scheme:light;--sb-bg:var(--s-bg);--sb-s:var(--s-panel);--sb-s2:var(--s-raised);--sb-t:var(--s-text);--sb-m:var(--s-muted);--sb-b:var(--s-line);--sb-a:var(--s-accent);--sb-a2:var(--s-accent);--sb-mode:var(--s-accent);--sb-mode2:var(--s-accent);--seven-shell-line:var(--s-line)}
+#seven-app[data-seven-theme="night"] {--s-bg:#111815;--s-panel:#19231e;--s-raised:#233029;--s-text:#eff6f0;--s-muted:#afc1b4;--s-line:#384a3e;--s-accent:#98e5bc;--s-on:#0c3522;--s-soft:#263f30;--s-danger:#ffb1a4;--s-shadow:0 18px 65px #0005;color-scheme:dark}
+#seven-app {--bg:var(--s-bg);--surface:var(--s-panel);--surface2:var(--s-raised);--text:var(--s-text);--muted:var(--s-muted);--accent:var(--s-accent);--border:var(--s-line);background:var(--s-bg)!important;color:var(--s-text)!important;font-family:system-ui,-apple-system,"Segoe UI",sans-serif!important;font-size:16px!important;line-height:1.65;overflow:hidden;margin:0}
+#seven-app * {box-sizing:border-box}
+#seven-app [hidden] {display:none!important}
+#seven-app button,#seven-app input,#seven-app textarea,#seven-app select {font:inherit;touch-action:manipulation}
+#seven-app button {min-height:48px;min-width:44px;cursor:pointer;transition:background .12s,color .12s;box-shadow:none}
+#seven-app button:focus-visible,#seven-app a:focus-visible,#seven-app input:focus-visible,#seven-app select:focus-visible,#seven-app textarea:focus-visible,#seven-app summary:focus-visible {outline:3px solid var(--s-accent)!important;outline-offset:3px}
+#seven-app button:disabled {opacity:.5;cursor:not-allowed}
+#seven-app a {color:var(--s-accent)}
+#seven-app .app {display:grid!important;grid-template-columns:272px minmax(0,1fr);height:var(--seven-shell-vh,100dvh)!important;overflow:hidden;background:var(--s-bg)!important;max-width:none;margin:0;padding:0}
+#seven-app .main {min-width:0;min-height:0;display:flex!important;flex-direction:column;height:100%!important;background:var(--s-bg)!important;overflow:hidden;position:relative;padding:0!important}
+#seven-app .topbar {position:relative!important;display:flex!important;align-items:center;gap:10px;padding:12px 24px!important;min-height:76px!important;background:var(--s-bg)!important;border:0!important;border-bottom:1px solid var(--s-line)!important;flex:none;box-shadow:none!important;backdrop-filter:none!important;contain:none}
+#seven-app .topbar:after,#seven-app .composer:after,#seven-app .message:before {display:none!important}
+#seven-app .topbar .title {flex:1;min-width:0;order:2;font-size:16px!important;font-weight:600!important;color:var(--s-text);letter-spacing:0!important;margin:0!important;text-overflow:ellipsis;white-space:nowrap;overflow:hidden}
+#seven-app .menu-toggle {order:1;background:transparent!important;color:var(--s-text)!important;border:0!important;width:48px!important;height:48px!important;border-radius:12px;display:none!important}
+#seven-app .topbar>.icon-btn {order:5;width:48px!important;height:48px!important;color:var(--s-text)!important;background:transparent!important;border:1px solid var(--s-line)!important;border-radius:14px!important}
+#seven-app .seven-shell-workspace-chip,#seven-app .seven-beta-status,#seven-app .seven-beta-badge {display:none!important}
+#seven-app .seven-shell-model-chip {order:3;display:flex!important;align-items:center;gap:6px;max-width:230px;min-width:0;min-height:44px;padding:8px 10px;border:0;border-radius:12px;background:var(--s-raised);color:var(--s-muted);font-size:12px;font-weight:500;overflow:hidden}
+#seven-app [data-seven-shell-model] {overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#seven-app .seven-shell-model-dot {width:6px;height:6px;border-radius:50%;background:var(--s-accent);flex:none}
+#seven-app .sidebar {position:relative!important;inset:auto!important;display:flex!important;flex-direction:column;width:272px!important;min-width:0;height:100%;background:var(--s-panel)!important;border:0!important;border-inline-end:1px solid var(--s-line)!important;padding:18px 10px 12px;overflow:hidden;transform:none!important;z-index:90;box-shadow:none!important;transition:transform .18s}
+#seven-app .sidebar-header {padding:4px 12px 20px;gap:10px;display:flex;align-items:center}
+#seven-app .app-icon {width:36px!important;height:36px!important;border-radius:11px!important;object-fit:contain}
+#seven-app .app-name {font-size:22px!important;font-weight:650!important;letter-spacing:-.6px!important;color:var(--s-text)}
+#seven-app .new-chat-btn {display:flex!important;align-items:center;gap:8px;background:var(--s-accent)!important;color:var(--s-on)!important;border:0!important;border-radius:14px!important;margin:0 4px 14px;padding:10px 14px;min-height:48px;font-size:14px!important}
+#seven-app .seven-shell-primary-nav {display:none!important}
+#seven-app .sidebar-section-label,#seven-app .seven-shell-section-label {color:var(--s-muted);font-size:12px;font-weight:600;padding:10px 12px 5px;letter-spacing:0;text-transform:none}
+#seven-app .seven-room-search-wrap {display:flex;align-items:center;gap:8px;margin:4px 4px 8px!important;padding:0 10px;border:1px solid var(--s-line);border-radius:12px!important;background:var(--s-bg)!important;flex:none}
+#seven-app #seven-room-search {width:100%;min-height:48px;border:0!important;background:transparent!important;color:var(--s-text);padding:8px 0!important;outline:0;min-width:0;font-size:14px}
+#seven-app .room-list {overflow:auto;flex:1;min-height:0;padding:0!important}
+#seven-app .room-item {display:flex;align-items:center;gap:6px;border:0!important;border-radius:12px!important;background:transparent!important;color:var(--s-text);margin:2px 0!important;min-height:52px!important;padding:4px 8px!important;font-size:14px!important;min-width:0}
+#seven-app .room-item.active {background:var(--s-soft)!important}
+#seven-app .room-item:before {display:none!important}
+#seven-app .room-item span {min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+#seven-app .room-item button {opacity:1!important;border:0;background:transparent!important;color:var(--s-muted)!important;min-height:44px;width:44px;border-radius:10px;padding:10px}
+#seven-app .sidebar-footer {border-top:1px solid var(--s-line);padding:10px 4px 0;display:grid;gap:4px;flex:none}
+#seven-app .sidebar-footer button {display:flex;align-items:center;gap:10px;border:0;border-radius:12px;background:transparent;color:var(--s-muted);padding:8px 10px;font-size:14px}
+#seven-app .seven-shell-backdrop {position:fixed;inset:0;z-index:80;background:#0007;border:0;backdrop-filter:none!important}
+#seven-app #sidebarBackdrop {display:none!important}
+#seven-app #chat {flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:28px max(18px,calc((100% - 860px)/2)) 28px!important;background:transparent!important;scroll-behavior:auto;display:block}
+#seven-app #chat .message {width:100%;max-width:860px;margin:0 auto 24px!important;padding:0!important;min-width:0;animation:none!important;transform:none!important;opacity:1!important}
+#seven-app .message.user {display:flex;flex-direction:column;align-items:flex-end}
+#seven-app .message.user .bubble {max-width:88%!important;background:var(--s-raised)!important;border:1px solid var(--s-line)!important;border-radius:18px 18px 5px 18px!important;padding:12px 16px!important;color:var(--s-text)!important;box-shadow:none!important}
+#seven-app[dir=rtl] .message.user .bubble {border-radius:18px 18px 18px 5px!important}
+#seven-app .message.assistant .bubble {background:transparent!important;border:0!important;padding:0!important;box-shadow:none!important;max-width:100%;color:var(--s-text)}
+#seven-app .message.system .bubble {font-size:13px!important;background:var(--s-raised)!important;color:var(--s-muted)!important;border:1px solid var(--s-line)!important;padding:10px 14px!important;border-radius:12px!important;text-align:start}
+#seven-app .bubble {font-size:16px!important;line-height:1.85!important;overflow-wrap:anywhere;unicode-bidi:plaintext;text-align:start}
+#seven-app .bubble p {margin:0 0 14px}
+#seven-app .bubble p:last-child {margin-bottom:0}
+#seven-app .bubble h3,#seven-app .bubble h4 {font-size:19px;line-height:1.5;margin:22px 0 10px;color:var(--s-text)}
+#seven-app .bubble ul,#seven-app .bubble ol {padding-inline-start:24px}
+#seven-app .bubble blockquote {border-inline-start:3px solid var(--s-accent);margin:12px 0;padding:8px 16px;color:var(--s-muted)}
+#seven-app pre {position:relative;direction:ltr;unicode-bidi:isolate;text-align:left;border:1px solid var(--s-line)!important;background:var(--s-raised)!important;border-radius:14px!important;padding:56px 16px 16px!important;overflow-x:auto;max-width:100%;font:14px/1.7 ui-monospace,SFMono-Regular,Consolas,monospace!important}
+#seven-app code {font-family:ui-monospace,SFMono-Regular,Consolas,monospace;direction:ltr;unicode-bidi:isolate}
+#seven-app .seven-table-wrap {overflow-x:auto;max-width:100%;margin:18px 0;border:1px solid var(--s-line);border-radius:14px}
+#seven-app .bubble table {border-collapse:collapse;width:100%;font-size:14px}
+#seven-app .bubble th,#seven-app .bubble td {border-bottom:1px solid var(--s-line);padding:12px;text-align:start;min-width:95px}
+#seven-app .bubble th {background:var(--s-raised);font-weight:600}
+#seven-app .seven-shell-message-actions {display:flex;gap:4px;margin-top:8px;opacity:1!important;flex-wrap:wrap}
+#seven-app .seven-shell-message-actions button,#seven-app .regenerate-btn,#seven-app .seven-rpg-copy {display:inline-flex!important;align-items:center;gap:6px;font-size:12px!important;font-weight:500;min-height:44px;padding:8px 10px;border:0!important;background:transparent!important;color:var(--s-muted)!important;border-radius:10px;line-height:1.3;margin:0}
+#seven-app .seven-shell-message-actions svg,#seven-app .seven-shell-code-copy svg {width:17px;height:17px;flex:none}
+#seven-app .seven-shell-code-copy {position:absolute;top:7px;inset-inline-end:8px;display:flex;align-items:center;gap:6px;min-height:40px;padding:8px 10px;border:1px solid var(--s-line);border-radius:9px;background:var(--s-panel)!important;color:var(--s-muted)!important;font-size:12px!important}
+#seven-app [data-reply-status=stopped]:after {content:'Stopped · partial answer';display:block;font-size:12px;color:var(--s-muted);margin-top:6px}
+#seven-app[lang=ar] [data-reply-status=stopped]:after {content:'تم الإيقاف · إجابة جزئية'}
+#seven-app .search-sources {border:1px solid var(--s-line)!important;border-radius:14px!important;background:var(--s-panel);margin:16px 0 0;padding:0 14px!important;font-size:13px;max-width:100%}
+#seven-app .search-sources summary {min-height:48px;padding:12px 0;cursor:pointer;font-weight:600;color:var(--s-accent)}
+#seven-app .search-sources ol {padding-inline-start:22px;margin:0 0 10px}
+#seven-app .search-sources li {padding:10px 0;border-top:1px solid var(--s-line);overflow-wrap:anywhere}
+#seven-app .search-sources small {display:block;color:var(--s-muted);margin:6px 0;font-size:12px}
+#seven-app .search-sources p {font-size:13px;line-height:1.7;margin:0;white-space:pre-wrap}
+#seven-app .seven-citation {font-size:12px;padding:2px 5px;border-radius:5px;background:var(--s-soft);text-decoration:none;white-space:nowrap;unicode-bidi:isolate}
+#seven-app .input-area {position:relative!important;inset:auto!important;flex:none;padding:8px max(14px,calc((100% - 900px)/2)) 12px!important;background:var(--s-bg)!important;z-index:30;border:0!important;width:auto!important}
+#seven-app .composer {width:100%!important;margin:0!important;padding:8px 12px 10px!important;position:relative!important;background:var(--s-panel)!important;border:1px solid var(--s-line)!important;border-radius:22px!important;box-shadow:0 3px 14px #00000005!important;contain:none}
+#seven-app .composer:focus-within {border-color:var(--s-accent)!important;box-shadow:0 0 0 2px color-mix(in srgb,var(--s-accent) 10%,transparent)!important}
+#seven-app #userInput {min-height:52px!important;max-height:180px!important;height:auto;border:0!important;padding:12px 4px!important;background:transparent!important;color:var(--s-text)!important;font-size:16px!important;line-height:1.6!important;resize:none;outline:0!important;width:100%;box-shadow:none!important}
+#seven-app textarea::placeholder,#seven-app input::placeholder {color:var(--s-muted);opacity:1}
+#seven-app .composer-row {display:flex;align-items:center;gap:8px;min-width:0}
+#seven-app .composer-tools {display:flex!important;flex:1;gap:4px!important;align-items:center;overflow:visible!important;min-width:0;flex-wrap:wrap!important}
+#seven-app .tool-btn {border:0!important;background:transparent!important;color:var(--s-muted)!important;border-radius:12px!important;min-height:44px;min-width:44px;padding:9px!important;font-size:13px!important}
+#seven-app .composer-tools>#deepThinkToggle,#seven-app .composer-tools>#searchToggle,#seven-app .seven-mode-picker {display:none!important}
+#seven-app .s-mode-trigger,#seven-app .s-depth-trigger {display:flex;align-items:center;gap:7px;min-height:44px;min-width:0;max-width:190px;background:var(--s-raised);color:var(--s-text);border:0;border-radius:12px;padding:8px 10px;font-size:13px}
+#seven-app .s-mode-trigger svg,#seven-app .s-depth-trigger svg {width:18px;height:18px;flex:none;display:block}
+#seven-app .s-depth-trigger {font-size:12px;background:transparent;color:var(--s-muted);border:1px solid var(--s-line)}
+#seven-app .composer-send {flex:none;display:flex;align-items:center;justify-content:center;align-self:center}
+#seven-app #sendBtn,#seven-app #stopBtn {width:48px!important;height:48px!important;min-height:48px!important;min-width:48px!important;border:0!important;border-radius:15px!important;align-items:center;justify-content:center;padding:0!important;box-shadow:none!important}
+#seven-app #sendBtn {background:var(--s-accent)!important;color:var(--s-on)!important}
+#seven-app #stopBtn {background:var(--s-text)!important;color:var(--s-bg)!important}
+#seven-app #stopBtn svg {width:18px;height:18px;display:block}
+#seven-app .s-composer-hint {color:var(--s-muted);font-size:11px;text-align:center;padding:7px 5px 0;line-height:1.5}
+#seven-app .s-dock {display:flex;justify-content:center;align-items:center;gap:8px;flex:none;border-top:1px solid var(--s-line);background:var(--s-panel);padding:6px max(12px,env(safe-area-inset-right)) max(7px,env(safe-area-inset-bottom));z-index:35}
+#seven-app .s-dock button {min-height:52px;min-width:60px;flex:1;max-width:180px;display:flex;justify-content:center;align-items:center;gap:9px;border:0;background:transparent;color:var(--s-muted);padding:8px;border-radius:13px;font-size:13px}
+#seven-app .s-dock button[aria-current=page] {background:var(--s-soft);color:var(--s-accent);font-weight:600}
+#seven-app .s-dock svg {width:20px;height:20px;flex:none}
+#seven-app .s-welcome {width:min(640px,100%);margin:clamp(10px,7vh,80px) auto 24px;text-align:start;padding:10px 6px}
+#seven-app .s-eyebrow {font-size:12px;font-weight:600;color:var(--s-accent);margin-bottom:12px;letter-spacing:.06em}
+#seven-app .s-welcome h1 {font-size:clamp(28px,4vw,40px);font-weight:600;letter-spacing:-1px;line-height:1.35;margin:0 0 12px}
+#seven-app .s-welcome p {font-size:15px;line-height:1.8;color:var(--s-muted);margin:0 0 26px;max-width:510px}
+#seven-app .s-suggestions {display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#seven-app .s-suggestions button {text-align:start;padding:16px;background:var(--s-panel);border:1px solid var(--s-line);border-radius:16px;display:flex;flex-direction:column;align-items:flex-start;gap:7px;color:var(--s-text);font-size:14px;line-height:1.5}
+#seven-app .s-suggestions button small {font-size:12px;color:var(--s-muted);font-weight:400}
+#seven-app .s-suggestions svg {width:22px;height:22px;color:var(--s-accent)}
+#seven-app .s-run {margin:0 0 8px;border:1px solid var(--s-line);border-radius:14px;background:var(--s-panel);font-size:12px;padding:0 12px}
+#seven-app .s-run summary {display:flex;align-items:center;gap:8px;min-height:46px;cursor:pointer;color:var(--s-muted);list-style:none}
+#seven-app .s-run summary:before {content:'';display:block;flex:none;width:7px;height:7px;border-radius:50%;background:var(--s-accent)}
+#seven-app .s-run time {margin-inline-start:auto;font-variant-numeric:tabular-nums;white-space:nowrap;font-size:11px}
+#seven-app .s-run ol {margin:0;padding:0 20px 12px;color:var(--s-muted)}
+#seven-app .s-run li {padding:4px 0}
+#seven-app .s-run .s-run-warning {color:var(--s-danger);margin:0 0 10px}
+#seven-app .s-modal {position:fixed;inset:0;background:#0006;z-index:12000;display:grid;place-items:center;padding:20px;backdrop-filter:blur(5px)}
+#seven-app .s-dialog {width:min(490px,100%);max-height:calc(var(--seven-shell-vh,100dvh) - 40px);overflow:auto;border:1px solid var(--s-line);border-radius:24px;background:var(--s-panel);color:var(--s-text);box-shadow:var(--s-shadow);padding:20px}
+#seven-app .s-dialog-head {display:flex;align-items:center;gap:12px;margin-bottom:14px}
+#seven-app .s-dialog h2 {font-size:21px;line-height:1.5;margin:0;flex:1}
+#seven-app .s-close {width:48px;height:48px;border:1px solid var(--s-line);border-radius:12px;background:var(--s-raised);color:var(--s-text);font-size:22px;flex:none}
+#seven-app .s-mode-option {width:100%;display:flex;align-items:center;gap:14px;border:1px solid var(--s-line);border-radius:15px;padding:15px;margin:8px 0;background:var(--s-bg);color:var(--s-text);text-align:start}
+#seven-app .s-mode-option>span {display:block;flex:1;min-width:0}
+#seven-app .s-mode-option svg {width:24px;height:24px;flex:none;color:var(--s-accent)}
+#seven-app .s-mode-option strong {display:block;font-size:15px;font-weight:600}
+#seven-app .s-mode-option small {display:block;font-size:12px;color:var(--s-muted);line-height:1.7;margin-top:3px}
+#seven-app .s-mode-option[aria-pressed=true] {border-color:var(--s-accent);background:var(--s-soft)}
+#seven-app .s-help {font-size:13px;color:var(--s-muted);line-height:1.8}
+#seven-app .s-field {display:block;margin:16px 0;font-size:14px;font-weight:500}
+#seven-app .s-field input,#seven-app .s-field select {display:block;margin-top:7px;width:100%;min-height:48px;border:1px solid var(--s-line);border-radius:12px;background:var(--s-bg);color:var(--s-text);padding:10px 12px;font-size:16px;font-weight:400}
+#seven-app .s-field.s-check {display:flex;align-items:center;gap:12px;min-height:48px}
+#seven-app .s-check input {width:20px;height:20px;min-height:20px;margin:0;accent-color:var(--s-accent);flex:none}
+#seven-app .s-primary {background:var(--s-accent)!important;color:var(--s-on)!important;border:0!important;border-radius:12px!important;padding:10px 18px;font-size:14px}
+#seven-app .s-action-row {display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+#seven-app .s-action-row button {border:1px solid var(--s-line);border-radius:12px;padding:9px 14px;background:var(--s-raised);color:var(--s-text);font-size:14px}
+#seven-app .modal {z-index:11000!important;background:#0007!important;padding:24px!important;backdrop-filter:blur(5px)!important;border-radius:0!important}
+#seven-app .modal-content {width:min(680px,100%)!important;max-height:calc(var(--seven-shell-vh,100dvh) - 48px)!important;overflow:auto!important;border:1px solid var(--s-line)!important;border-radius:24px!important;background:var(--s-panel)!important;color:var(--s-text)!important;padding:22px!important;box-shadow:var(--s-shadow)!important;backdrop-filter:none!important}
+#seven-app .modal-content h3 {font-size:22px;margin:0}
+#seven-app .s-settings-head {display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:12px}
+#seven-app .s-settings-tabs {display:flex;gap:6px;flex-wrap:wrap;padding:5px;background:var(--s-raised);border-radius:13px;margin-bottom:20px}
+#seven-app .s-settings-tabs button {flex:1;min-width:85px;border:0;border-radius:9px;padding:8px;font-size:13px;color:var(--s-muted);background:transparent}
+#seven-app .s-settings-tabs button[aria-selected=true] {background:var(--s-panel);color:var(--s-text)}
+#seven-app .modal-content label {font-size:14px;margin-bottom:8px;color:var(--s-text)}
+#seven-app .modal-content input:not([type=checkbox]):not([type=range]),#seven-app .modal-content select,#seven-app .modal-content textarea {min-height:48px;border:1px solid var(--s-line)!important;border-radius:12px!important;background:var(--s-bg)!important;color:var(--s-text)!important;padding:11px 12px!important;font-size:16px!important;width:100%;margin-bottom:16px}
+#seven-app .modal-content input[type=range] {width:100%;accent-color:var(--s-accent);min-height:36px}
+#seven-app .modal-content input[type=checkbox] {accent-color:var(--s-accent);width:20px!important;height:20px;flex:none}
+#seven-app .modal-buttons {position:sticky;bottom:-22px;background:var(--s-panel);border-top:1px solid var(--s-line);display:flex;gap:10px;padding:14px 0 4px;margin-top:22px;z-index:5}
+#seven-app .modal-buttons button,#seven-app .settings-row button {border:1px solid var(--s-line);border-radius:12px;padding:10px 14px;background:var(--s-raised);color:var(--s-text);font-size:14px;min-height:48px}
+#seven-app .modal-buttons .save {background:var(--s-accent)!important;color:var(--s-on)!important;border-color:var(--s-accent)}
+#seven-app .settings-row {display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+#seven-app .s-provider-settings {border:1px solid var(--s-line);border-radius:14px;padding:0 14px;margin:16px 0}
+#seven-app .s-provider-settings summary {min-height:52px;padding:13px 0;font-weight:500;cursor:pointer}
+#seven-app .s-provider-settings[open] summary {margin-bottom:12px;border-bottom:1px solid var(--s-line)}
+#seven-app .seven-model-native {position:absolute!important;width:1px!important;height:1px!important;min-height:0!important;clip-path:inset(50%);padding:0!important;overflow:hidden!important}
+#seven-app .seven-model-trigger {width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:start;border:1px solid var(--s-line)!important;border-radius:13px!important;background:var(--s-bg)!important;color:var(--s-text)!important;padding:12px!important}
+#seven-app .seven-model-trigger strong {font-size:14px;font-weight:600}
+#seven-app .seven-model-trigger small {display:block;color:var(--s-muted);font-size:12px}
+#seven-app .seven-model-panel,#seven-app .seven-shell-model-menu,#seven-app .seven-attach-menu {background:var(--s-panel)!important;color:var(--s-text)!important;border:1px solid var(--s-line)!important;border-radius:16px!important;box-shadow:var(--s-shadow)!important;padding:12px!important;z-index:12500!important;max-width:calc(100vw - 24px)!important;max-height:55dvh;overflow:auto}
+#seven-app .seven-model-panel {position:relative!important;inset:auto!important;width:100%;margin-top:10px}
+#seven-app .seven-model-panel-head {display:flex;align-items:center;justify-content:space-between;gap:8px}
+#seven-app .seven-model-panel button,#seven-app .seven-shell-model-menu button,#seven-app .seven-attach-menu button {min-height:48px;color:var(--s-text)!important;background:transparent!important;border:0!important;border-radius:10px;padding:10px!important;font-size:14px!important}
+#seven-app .seven-model-option {display:flex;align-items:center;text-align:start;width:100%;gap:8px}
+#seven-app .seven-model-provider {font-size:12px;color:var(--s-muted);padding:16px 8px 4px}
+#seven-app .seven-model-option.active {background:var(--s-soft)!important}
+#seven-app .seven-model-check {margin-inline-start:auto}
+#seven-app .seven-model-option:not(.active) .seven-model-check {opacity:0}
+#seven-app .seven-workspace-root {flex:1;min-height:0;overflow:auto!important;padding:24px clamp(14px,3vw,34px)!important;background:var(--s-bg)!important}
+#seven-app .seven-ws-shell {max-width:1120px;margin:auto;color:var(--s-text)}
+#seven-app .seven-ws-head {display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;margin-bottom:22px}
+#seven-app .seven-ws-head h1 {font-size:30px;line-height:1.35;font-weight:600;margin:4px 0 10px;letter-spacing:-.5px}
+#seven-app .seven-ws-head p {font-size:14px;line-height:1.8;color:var(--s-muted);max-width:580px}
+#seven-app .seven-ws-kicker {font-size:12px;color:var(--s-accent);letter-spacing:.03em}
+#seven-app .seven-ws-actions {display:flex;gap:8px;flex-wrap:wrap}
+#seven-app .seven-ws-btn,#seven-app .seven-ws-icon-btn,#seven-app .seven-ws-close {min-height:48px;border:1px solid var(--s-line)!important;border-radius:12px!important;background:var(--s-panel)!important;color:var(--s-text)!important;font-size:13px;padding:10px 14px}
+#seven-app .seven-ws-btn.primary {background:var(--s-accent)!important;color:var(--s-on)!important;border:0!important}
+#seven-app .seven-ws-card,#seven-app .seven-ws-task {border:1px solid var(--s-line)!important;border-radius:18px!important;background:var(--s-panel)!important;box-shadow:none!important;overflow:hidden;margin-bottom:16px}
+#seven-app .seven-ws-card-head {padding:14px 16px;border-color:var(--s-line)!important;font-size:14px;display:flex;gap:8px;justify-content:space-between;align-items:center}
+#seven-app .seven-ws-card-body {padding:16px;min-width:0}
+#seven-app .seven-ws-muted,#seven-app .seven-ws-empty {color:var(--s-muted);font-size:13px;line-height:1.8}
+#seven-app .seven-ws-banner {border:1px solid var(--s-line)!important;background:var(--s-raised)!important;color:var(--s-muted)!important;padding:12px 16px;border-radius:13px;font-size:13px;line-height:1.8;margin-bottom:18px}
+#seven-app .seven-ws-source,#seven-app .seven-ws-step,#seven-app .seven-ws-event,#seven-app .seven-ws-row {border-color:var(--s-line)!important;background:var(--s-bg)!important;color:var(--s-text);border-radius:11px;padding:12px;font-size:13px;overflow-wrap:anywhere}
+#seven-app .seven-ws-row[data-active=true] {background:var(--s-soft)!important}
+#seven-app .seven-ws-task {padding:14px}
+#seven-app .seven-ws-task textarea {width:100%;min-height:100px;border:0;background:transparent;color:var(--s-text);font-size:16px;padding:8px;resize:vertical}
+#seven-app .seven-ws-task-actions {display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+#seven-app .seven-ws-pill {border:1px solid var(--s-line);border-radius:6px;background:var(--s-raised);color:var(--s-muted);font-size:11px;padding:3px 7px}
+#seven-app .seven-ws-output {color:var(--s-text);font-size:15px;line-height:1.85;white-space:pre-wrap;overflow-wrap:anywhere;max-height:none}
+#seven-app .s-research-grid {display:grid;grid-template-columns:minmax(0,1.25fr) minmax(260px,.75fr);gap:18px}
+#seven-app .s-research-timeline {padding-inline-start:22px;margin:0;font-size:13px;color:var(--s-muted)}
+#seven-app .s-research-timeline li {padding:7px 0}
+#seven-app .s-research-sources article {padding:14px 0;border-bottom:1px solid var(--s-line)}
+#seven-app .s-research-sources article:last-child {border:0}
+#seven-app .s-research-sources a {font-size:14px;font-weight:600}
+#seven-app .s-research-sources small {display:block;font-size:12px;color:var(--s-muted);margin:7px 0}
+#seven-app .s-research-sources p {font-size:13px;line-height:1.8;margin:0}
+#seven-app .s-source-query {font-size:12px;color:var(--s-muted);padding:8px 10px;border:1px solid var(--s-line);border-radius:10px;margin:6px 0;overflow-wrap:anywhere}
+#seven-app .seven-rpg-chatbar {background:var(--s-panel)!important;border:0!important;border-top:1px solid var(--s-line)!important;color:var(--s-text)!important;box-shadow:none!important;padding:8px 16px!important;flex:none;position:relative!important}
+#seven-app .seven-rpg-chatbar button {border:1px solid var(--s-line)!important;background:var(--s-raised)!important;color:var(--s-text)!important;border-radius:10px;font-size:12px;min-height:44px}
+#seven-app .seven-rpg-drawer,#seven-app .seven-rpg-panel {background:var(--s-panel)!important;border:1px solid var(--s-line)!important;border-radius:18px;color:var(--s-text);max-height:65dvh;overflow:auto;box-shadow:var(--s-shadow)}
+#seven-app .seven-gh-panel {background:var(--s-panel)!important;color:var(--s-text)!important;border:1px solid var(--s-line)!important;border-radius:20px!important;box-shadow:var(--s-shadow)!important}
+#seven-app .seven-gh-panel input,#seven-app .seven-gh-panel textarea,#seven-app .seven-gh-panel select {background:var(--s-bg)!important;color:var(--s-text)!important;border:1px solid var(--s-line)!important;border-radius:12px;font-size:16px!important;min-height:48px}
+#seven-app .seven-gh-panel button {min-height:48px;border-radius:12px;background:var(--s-raised);color:var(--s-text);border:1px solid var(--s-line);font-size:13px}
+#seven-app .seven-shell-jump {position:absolute;inset-inline-end:20px;bottom:270px;width:44px;height:44px;display:grid;place-items:center;border:1px solid var(--s-line);border-radius:50%;background:var(--s-panel);color:var(--s-text);opacity:0;pointer-events:none;z-index:55}
+#seven-app .seven-shell-jump.show {opacity:1;pointer-events:auto}
+#seven-app .seven-ws-launcher {z-index:12000!important;background:#0007!important;backdrop-filter:blur(5px)!important}
+#seven-app .seven-ws-picker {background:var(--s-panel)!important;color:var(--s-text)!important;border:1px solid var(--s-line)!important;border-radius:24px!important;box-shadow:var(--s-shadow)!important;max-height:85dvh;overflow:auto}
+#seven-app .seven-ws-choice {background:var(--s-bg)!important;color:var(--s-text)!important;border:1px solid var(--s-line)!important;border-radius:15px!important;padding:18px!important;min-height:100px!important}
+#seven-app .seven-ws-choice span {color:var(--s-muted)!important;font-size:13px}
+@media(max-width:820px){#seven-app .app{display:block!important}#seven-app .sidebar{position:fixed!important;inset-block:0!important;inset-inline-start:0!important;width:min(88vw,310px)!important;transform:translateX(-105%)!important;height:var(--seven-shell-vh,100dvh)!important;box-shadow:var(--s-shadow)!important}#seven-app[dir=rtl] .sidebar{transform:translateX(105%)!important}#seven-app .sidebar.open,#seven-app .sidebar.active,#seven-app[data-seven-shell-sidebar=open] .sidebar{transform:translateX(0)!important}#seven-app .menu-toggle{display:flex!important;align-items:center;justify-content:center}#seven-app .topbar{padding:8px 10px!important;gap:6px;min-height:66px!important}#seven-app .topbar .title{font-size:14px!important}#seven-app .seven-shell-model-chip{max-width:32vw;font-size:11px;padding:8px;order:3}#seven-app #chat{padding:22px 16px 18px!important}#seven-app .s-dock{gap:3px;padding-top:5px}#seven-app .s-dock button{flex-direction:column;gap:3px;font-size:11px;padding:5px;min-height:53px}#seven-app .s-dock svg{width:19px;height:19px}#seven-app .s-research-grid{grid-template-columns:1fr}#seven-app .seven-ws-grid{grid-template-columns:1fr!important}#seven-app .seven-workspace-root{padding:20px 14px!important}#seven-app .seven-ws-head h1{font-size:27px}#seven-app .s-welcome{margin:20px auto}#seven-app .s-composer-hint{display:none}#seven-app .input-area{padding:8px 10px 10px!important}#seven-app .modal{padding:12px!important}#seven-app .modal-content{padding:18px!important;max-height:calc(var(--seven-shell-vh,100dvh) - 24px)!important}#seven-app .modal-buttons{bottom:-18px}#seven-app .s-modal{padding:12px;align-items:end}#seven-app .s-dialog{width:100%;max-height:calc(var(--seven-shell-vh,100dvh) - 24px);border-radius:22px;padding:18px}#seven-app .seven-attach-menu{position:fixed!important;inset-inline:12px!important;bottom:180px!important;width:auto!important;max-height:45dvh}#seven-app .seven-shell-jump{inset-inline-end:18px;bottom:245px}}
+@media(max-width:380px){#seven-app .s-suggestions{gap:8px}#seven-app .s-suggestions button{padding:13px;font-size:13px}#seven-app .s-depth-trigger{padding:8px;font-size:11px}#seven-app .composer{padding:7px 8px 8px!important}#seven-app .s-mode-trigger{font-size:12px;padding:8px}#seven-app .topbar .title{font-size:13px!important}#seven-app .seven-shell-model-chip{max-width:27vw}#seven-app .s-welcome h1{font-size:28px}}
+@media(max-height:550px){#seven-app .s-dock{display:none}#seven-app .s-welcome{margin:6px auto}#seven-app .topbar{min-height:54px!important;padding-block:3px!important}#seven-app #userInput{max-height:90px!important}#seven-app .s-run ol{max-height:100px;overflow:auto}}
+@media(prefers-reduced-motion:reduce){#seven-app *,#seven-app *:before,#seven-app *:after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+
+/* Seven current hardening authority */
+/* Seven 2.4.2 UI Hardening */
+html,body{max-width:100%;overflow-x:hidden}
+#seven-app{--seven-ui-hardening-v242:1;box-sizing:border-box;min-width:0;max-width:100%;min-height:100%;overflow-x:clip}
+#seven-app *{box-sizing:border-box}
+#seven-app .main,#seven-app #chat,#seven-app .input-area,#seven-app .composer,#seven-app .topbar{min-width:0;max-width:100%}
+#seven-app .main{overflow-x:clip}
+#seven-app #chat{overflow-x:hidden}
+#seven-app #roomTitle,#seven-app .title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#seven-app .message,#seven-app .bubble,#seven-app .markdown,#seven-app p,#seven-app li,#seven-app td,#seven-app th{min-width:0;max-width:100%;overflow-wrap:anywhere}
+#seven-app pre{max-width:100%;overflow:auto;overscroll-behavior-x:contain}
+#seven-app img,#seven-app video,#seven-app canvas,#seven-app svg{max-width:100%}
+#seven-app .composer{width:100%;overflow:hidden}
+#seven-app .composer-row{min-width:0}
+#seven-app .composer-tools{min-width:0;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none}
+#seven-app .composer-tools::-webkit-scrollbar{display:none}
+#seven-app .composer-send{flex:0 0 auto}
+#seven-app textarea,#seven-app input,#seven-app select,#seven-app button{max-width:100%}
+#settingsModal{padding:max(8px,env(safe-area-inset-top,0px)) max(8px,env(safe-area-inset-right,0px)) max(8px,env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+#settingsModal .modal-content{width:min(540px,100%);max-width:100%;max-height:calc(var(--seven-visual-height,100dvh) - 16px);overflow:auto;overscroll-behavior:contain}
+#settingsModal .settings-section,#settingsModal .settings-section-body,#settingsModal .settings-row{min-width:0}
+#settingsModal summary,#settingsModal button,.topbar button,.composer button,.seven-shell-nav-btn{touch-action:manipulation}
+.seven-shell-model-menu,.seven-ws-picker,[role="dialog"],.s-dialog{max-width:calc(100vw - 16px);max-height:calc(var(--seven-visual-height,100dvh) - 16px);overflow:auto}
+.s-modal{position:fixed!important;inset:0!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:max(8px,env(safe-area-inset-top,0px)) max(8px,env(safe-area-inset-right,0px)) max(8px,env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))!important;overflow:hidden!important}
+.s-modal .s-dialog{width:min(560px,100%)!important;max-width:100%!important;max-height:calc(var(--seven-visual-height,100dvh) - 16px)!important;overflow:auto!important;overscroll-behavior:contain}
+[dir="rtl"] #seven-app .bubble,[dir="rtl"] #seven-app .markdown{text-align:start}
+#seven-app[data-seven-theme="night"],html[data-seven-theme="night"] #seven-app{
+ --s-bg:#111815;--s-panel:#17211d;--s-panel-2:#1c2923;--s-text:#edf5f0;--s-muted:#a8b8af;--s-border:#33443b;--s-accent:#4ad8ad;
+ --bg:#111815;--surface:#17211d;--surface2:#1c2923;--text:#edf5f0;--muted:#a8b8af;--border:#33443b;--accent:#4ad8ad;
+ background:#111815!important;color:#edf5f0!important
+}
+html[data-seven-theme="night"] body{background:#111815!important;color:#edf5f0!important}
+html[data-seven-theme="night"] #seven-app .main,
+html[data-seven-theme="night"] #seven-app .topbar,
+html[data-seven-theme="night"] #seven-app .input-area,
+html[data-seven-theme="night"] #seven-app .composer,
+html[data-seven-theme="night"] #settingsModal .modal-content,
+html[data-seven-theme="night"] #settingsModal .settings-section,
+html[data-seven-theme="night"] .seven-shell-model-menu,
+html[data-seven-theme="night"] .seven-ws-picker{background:#111815!important;color:#edf5f0!important;border-color:#33443b!important}
+html[data-seven-theme="night"] #seven-app .s-modal .s-dialog{background:#111815!important;color:#edf5f0!important}
+html[data-seven-theme="night"] #seven-app input,
+html[data-seven-theme="night"] #seven-app select,
+html[data-seven-theme="night"] #seven-app textarea{background:#111815!important;color:#edf5f0!important;border-color:#33443b!important}
+@media(max-width:820px){
+ #seven-app .sidebar{position:fixed!important;top:0!important;bottom:0!important;width:min(86vw,320px)!important;max-width:calc(100vw - 44px)!important;z-index:10020!important;will-change:transform}
+ html[dir="ltr"] #seven-app .sidebar.collapsed:not(.open):not(.active){transform:translateX(-105%)!important}
+ html[dir="rtl"] #seven-app .sidebar.collapsed:not(.open):not(.active){transform:translateX(105%)!important}
+ #seven-app .sidebar.open,#seven-app .sidebar.active,#seven-app .sidebar:not(.collapsed),html[data-seven-shell-sidebar="open"] #seven-app .sidebar,#seven-app[data-seven-shell-sidebar="open"] .sidebar{transform:translateX(0)!important}
+ #seven-app .main{width:100%!important;margin-inline:0!important}
+ #seven-app .topbar{gap:8px;padding-inline:12px}
+ #seven-app .input-area{padding-inline:8px}
+ #seven-app .composer{border-radius:24px}
+}
+@media(max-width:420px){
+ #seven-app .composer{padding:10px}
+ #seven-app .composer-tools{gap:4px}
+ #seven-app .tool-btn{min-width:40px}
+ #settingsModal .modal-content{padding:14px}
+ #settingsModal .settings-section-body{padding:10px}
+}
+@media(max-width:340px){
+ #seven-app .topbar{padding-inline:8px}
+ #seven-app .composer{border-radius:20px}
+ #seven-app .composer-tools span{display:none}
+}
+@media(prefers-reduced-motion:reduce){#seven-app *,#settingsModal *{scroll-behavior:auto!important;transition-duration:.001ms!important;animation-duration:.001ms!important}}
+
+
+/* Seven 2.4.3 full-surface settings hardening */
+#settingsModal .s-settings-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;min-width:0;overflow:hidden}
+#settingsModal .s-settings-tabs button{min-width:0;white-space:normal;overflow-wrap:anywhere;line-height:1.25}
+#settingsModal [role="tabpanel"]{min-width:0;max-width:100%}
+#settingsModal [role="tabpanel"]>*{min-width:0;max-width:100%}
+#settingsModal .settings-core{display:contents}
+#settingsModal .settings-section{width:100%;max-width:100%;border:1px solid var(--s-line,var(--border,#d6ddd9));border-radius:14px;overflow:hidden;margin:12px 0}
+#settingsModal .settings-section>summary{display:flex;align-items:center;min-height:48px;padding:12px 14px;cursor:pointer;overflow-wrap:anywhere}
+#settingsModal .settings-section-body{padding:12px 14px}
+#settingsModal .settings-row>*{min-width:0;flex:1 1 150px}
+#settingsModal .modal-buttons{padding-bottom:max(4px,env(safe-area-inset-bottom,0px))}
+#settingsModal textarea{resize:vertical}
+#settingsModal #routeStatusCard,#settingsModal #automaticProviderCard{max-width:100%;overflow-wrap:anywhere}
+@media(max-width:420px){
+ #settingsModal .s-settings-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #settingsModal .s-settings-tabs button{min-height:42px}
+ #settingsModal .settings-row{display:grid;grid-template-columns:1fr}
+ #settingsModal .settings-row>*{width:100%}
+}
+@media(max-height:560px){
+ #settingsModal .modal-content{max-height:calc(var(--seven-visual-height,100dvh) - 8px)}
+ #settingsModal{padding:4px}
+}

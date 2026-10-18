@@ -9,6 +9,28 @@
   function obj(v) { return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; }
   function arr(v) { return Array.isArray(v) ? v : []; }
   function text(v) { return typeof v === 'string' ? v.trim() : ''; }
+  function mapsToPlain(v) {
+    if (v instanceof Map) return { __map: Object.fromEntries([...v].map(([k, x]) => [k, mapsToPlain(x)])) };
+    if (Array.isArray(v)) return v.map(mapsToPlain);
+    if (v && typeof v === 'object') {
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = mapsToPlain(x);
+      return out;
+    }
+    return v;
+  }
+  function plainToMaps(v) {
+    if (Array.isArray(v)) return v.map(plainToMaps);
+    if (v && typeof v === 'object') {
+      if (Object.prototype.hasOwnProperty.call(v, '__map')) {
+        return new Map(Object.entries(v.__map).map(([k, x]) => [k, plainToMaps(x)]));
+      }
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = plainToMaps(x);
+      return out;
+    }
+    return v;
+  }
   function uniq(xs) { return Array.from(new Set(arr(xs).filter(x => typeof x === 'string' && x.trim()).map(x => x.trim()))); }
   function stableId(prefix, n) { return prefix + '-' + String(n).padStart(6, '0'); }
   function now() { return new Date().toISOString(); }
@@ -190,8 +212,27 @@
       PARTY_ROLES, PARTY_FORMATION, MAX_PARTY_SIZE,
       createParty, validateParty, addMember, removeMember,
       setFormation, assignRole, shareResource, consumeResource,
-      addTactic, evaluateTactics, getPartyStats, canPartyAct
+      addTactic, evaluateTactics, getPartyStats, canPartyAct,
+      exportState, importState
     };
+
+    // `createParty` is a pure factory: parties are plain objects handed back to
+    // the caller and never retained by the manager, so `lastIdNums` (the id
+    // allocator's monotonic watermark, keyed by prefix) is the manager's only
+    // closure state. There is no `idCounter` to restore here.
+    function exportState() {
+      return {
+        version: 1,
+        lastIdNums: clone(mapsToPlain(Object.fromEntries(lastIdNums)))
+      };
+    }
+
+    function importState(data) {
+      const d = obj(data);
+      lastIdNums.clear();
+      for (const [k, v] of Object.entries(obj(d.lastIdNums))) lastIdNums.set(k, Number(v) || 0);
+      return { ok: true, restored: lastIdNums.size };
+    }
   }
 
   return { createPartyManager };

@@ -14,6 +14,67 @@
   function text(v) { return typeof v === 'string' ? v.trim() : ''; }
   function uniq(xs) { return Array.from(new Set(arr(xs).filter(x => typeof x === 'string' && x.trim()).map(x => x.trim()))); }
   function stableId(prefix) { return prefix + '-' + String(nextId()).padStart(6, '0'); }
+
+  // --- Import guardrails ----------------------------------------------------
+  // A world JSON is untrusted input: the player can hand the app any file they like. Two
+  // invariants must hold at this seam, not only in the file picker (rpg.js):
+  //   1. The shipped 2 MB pack ceiling is enforced here too, so a huge payload is refused
+  //      rather than cloned into the live world map.
+  //   2. Prototype-chain keys are refused outright, so a crafted payload can never be stored,
+  //      exported, or spread through a later merge.
+  // Both checks are deliberately pure and cheap; neither guesses at "safe" content.
+  const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
+  const MAX_ID_LENGTH = 240;
+  const MAX_IMPORT_DEPTH = 64;
+  const UNSAFE_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
+
+  function containsUnsafeKey(value, depth) {
+    const d = depth || 0;
+    if (d > MAX_IMPORT_DEPTH) return true; // pathological nesting is refused rather than walked
+    if (Array.isArray(value)) return value.some(v => containsUnsafeKey(v, d + 1));
+    if (value && typeof value === 'object') {
+      for (const k of Object.keys(value)) {
+        if (UNSAFE_KEYS.has(k)) return true;
+        if (containsUnsafeKey(value[k], d + 1)) return true;
+      }
+    }
+    return false;
+  }
+
+  // Byte counting must be browser-safe. Buffer is a Node global and does NOT exist in the
+  // WebView, so the previous Buffer.byteLength() call threw a ReferenceError on every device
+  // that opened the import preview. TextEncoder is the standards-based equivalent and is
+  // present in every target browser as well as in Node.
+  const UTF8_ENCODER = typeof TextEncoder === 'function' ? new TextEncoder() : null;
+  function utf8Bytes(str) {
+    if (typeof str !== 'string') return 0;
+    if (UTF8_ENCODER) return UTF8_ENCODER.encode(str).length;
+    let n = 0;
+    for (let i = 0; i < str.length; i++) {
+      const c = str.charCodeAt(i);
+      if (c < 0x80) n += 1;
+      else if (c < 0x800) n += 2;
+      else if (c >= 0xd800 && c <= 0xdbff && i + 1 < str.length) { n += 4; i++; }
+      else n += 3;
+    }
+    return n;
+  }
+
+  // One validator, shared by preview and import, so the confirmation dialog can never describe a
+  // payload that the import then refuses.
+  function validateImportPayload(data) {
+    const i = obj(data);
+    const id = text(i.id);
+    const name = text(i.name);
+    if (!id || !name || id.length > MAX_ID_LENGTH) return { ok: false, reason: 'invalid-world-data' };
+    if (containsUnsafeKey(i)) return { ok: false, reason: 'unsafe-world-data' };
+    let serialized = null;
+    try { serialized = JSON.stringify(i); } catch (e) { return { ok: false, reason: 'invalid-world-data' }; }
+    if (typeof serialized !== 'string') return { ok: false, reason: 'invalid-world-data' };
+    const bytes = utf8Bytes(serialized);
+    if (bytes > MAX_IMPORT_BYTES) return { ok: false, reason: 'world-too-large' };
+    return { ok: true, id, name, data: i, serialized, bytes };
+  }
   function now() { return new Date().toISOString(); }
   function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
@@ -220,11 +281,17 @@
 
     function importWorld(data, overwrite) {
       const i = obj(data);
-      if (!i.id || !i.name) return { ok: false, reason: 'invalid-world-data' };
-      if (worlds.has(i.id) && !overwrite) return { ok: false, reason: 'world-exists' };
-      const world = clone(i);
+      // Identity must be a real, bounded string: a numeric or object id becomes a Map key that no
+      // later lookup can match, which reads as "world vanished" to the player.
+      const v = validateImportPayload(data);
+      if (!v.ok) return { ok: false, reason: v.reason };
+      if (worlds.has(v.id) && !overwrite) return { ok: false, reason: 'world-exists' };
+      // Only now is anything written: every refusal above leaves the live world map untouched.
+      const world = JSON.parse(v.serialized);
+      world.id = v.id;
+      world.name = v.name;
       world.importedAt = now();
-      worlds.set(i.id, world);
+      worlds.set(v.id, world);
       return { ok: true, world };
     }
 
@@ -381,7 +448,7 @@
         checksumPreview: null
       };
       // Estimated size + a preview checksum over the identity fields
-      preview.estimatedBytes = Buffer.byteLength(JSON.stringify(world), 'utf8');
+      preview.estimatedBytes = utf8Bytes(JSON.stringify(world));
       preview.checksumPreview = stableChecksum(JSON.stringify([world.id, world.name, world.version]));
       return preview;
     }
@@ -389,17 +456,21 @@
     // RPG-02-07: World import preview — validate + summarize an incoming world
     // BEFORE committing the import, including conflict detection.
     function previewWorldImport(data) {
-      const i = obj(data);
-      if (!i.id || !i.name) return { ok: false, reason: 'invalid-world-data' };
-      const existing = worlds.get(i.id);
+      const v = validateImportPayload(data);
+      // The preview runs the exact same validation as the import, so it can never green-light a
+      // payload the import would then refuse -- the player sees the real reason up front instead of
+      // clicking through to a dead end.
+      if (!v.ok) return { ok: false, reason: v.reason, valid: false, warnings: ['This file cannot be imported: ' + v.reason + '.'] };
+      const i = v.data;
+      const existing = worlds.get(v.id);
       const locations = Object.keys((i.worldState && i.worldState.locations) || {});
       const characters = Object.keys(i.characters || {});
       const quests = Object.keys(i.quests || {});
       return {
         ok: true,
         valid: true,
-        worldId: i.id,
-        worldName: i.name,
+        worldId: v.id,
+        worldName: v.name,
         conflict: existing ? {
           exists: true,
           strategy: 'overwrite' // caller chooses; preview reports the default
@@ -413,7 +484,7 @@
         templateId: i.templateId || 'custom',
         difficulty: i.difficulty || 'normal',
         tone: i.tone || 'heroic',
-        estimatedBytes: Buffer.byteLength(JSON.stringify(i), 'utf8'),
+        estimatedBytes: v.bytes,
         warnings: existing ? ['World already exists; import will overwrite it.'] : []
       };
     }

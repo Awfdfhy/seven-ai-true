@@ -212,5 +212,72 @@ assert.equal(w27after.difficulty, 'hard');
 assert.equal(w27after.tone, 'gritty');
 console.log('  PASS');
 
+console.log('\n16. importWorld rejects hostile or oversized input...');
+// A world JSON is untrusted: the player can hand the app any file. The shipped 2 MB pack
+// ceiling must hold at the manager seam, not only in the file picker, and a crafted payload
+// must not be able to reach the prototype chain or become a Map key.
+const hostile = mgr.importWorld({ id: 'safe-1', name: 'Hostile', nested: JSON.parse('{"__proto__":{"polluted":"yes"}}') }, false);
+assert.equal(hostile.ok, false, 'prototype-polluting payload must be rejected');
+assert.equal(hostile.reason, 'unsafe-world-data');
+assert.equal({}.polluted, undefined, 'Object.prototype must be untouched');
+const ctor = mgr.importWorld({ id: 'safe-2', name: 'Ctor', nested: JSON.parse('{"constructor":{"prototype":{"x":1}}}') }, false);
+assert.equal(ctor.ok, false, 'constructor/prototype payload must be rejected');
+assert.equal({}.x, undefined, 'Object.prototype must be untouched');
+// Non-string / oversized identifiers are not valid world ids.
+assert.equal(mgr.importWorld({ id: 42, name: 'Numeric' }, false).reason, 'invalid-world-data');
+assert.equal(mgr.importWorld({ id: {}, name: 'Object' }, false).reason, 'invalid-world-data');
+assert.equal(mgr.importWorld({ id: 'x'.repeat(241), name: 'Long' }, false).reason, 'invalid-world-data');
+assert.equal(mgr.importWorld({ id: 'x'.repeat(240), name: 'MaxLength' }, false).ok, true, '240 chars is the accepted ceiling');
+// Oversized payload is refused at the seam rather than being silently accepted.
+const huge = { id: 'huge-1', name: 'Huge', blob: 'x'.repeat(2 * 1024 * 1024 + 1024) };
+const tooBig = mgr.importWorld(huge, false);
+assert.equal(tooBig.ok, false, 'payload over the 2 MB ceiling must be refused');
+assert.equal(tooBig.reason, 'world-too-large');
+assert.ok(!mgr.getWorld('huge-1'), 'a refused import must not be stored');
+// A rejected import must leave the pre-existing campaign untouched.
+mgr.createWorld({ id: 'keep-me', name: 'Keep Me' });
+const keepBefore = mgr.getWorld('keep-me').name;
+mgr.importWorld({ id: 'keep-me', name: 'Clobbered', nested: JSON.parse('{"__proto__":{"polluted":"yes"}}') }, true);
+assert.equal(mgr.getWorld('keep-me').name, keepBefore, 'a rejected import must not overwrite an existing world');
+console.log('  PASS');
+
+console.log('\n17. import preview is browser-safe and agrees with the import...');
+// Buffer is a Node global and does NOT exist in the Android WebView. The previous code called
+// Buffer.byteLength() on this path, so it threw a ReferenceError on every real device while the
+// Node suite stayed green. Simulate the browser by removing the global.
+{
+  const savedBuffer = globalThis.Buffer;
+  try {
+    delete globalThis.Buffer;
+    const p = mgr.previewWorldImport({ id: 'nobuffer-1', name: 'No Buffer', worldState: { locations: { a: {} } } });
+    assert.equal(p.ok, true, 'previewWorldImport must work without Buffer');
+    assert.equal(typeof p.estimatedBytes, 'number', 'estimatedBytes must still be computed');
+    assert.ok(p.estimatedBytes > 0);
+    assert.equal(mgr.importWorld({ id: 'nobuffer-2', name: 'Still Works' }, false).ok, true, 'importWorld must work without Buffer');
+  } finally { globalThis.Buffer = savedBuffer; }
+}
+// Preview and import share one validator: preview can never green-light a payload import refuses.
+{
+  const hostilePayload = { id: 'hp-1', name: 'Hostile', nested: JSON.parse('{"__proto__":{"x":1}}') };
+  const hostilePreview = mgr.previewWorldImport(hostilePayload);
+  assert.equal(hostilePreview.ok, false, 'preview must reject the same payload import rejects');
+  assert.equal(hostilePreview.valid, false);
+  assert.equal(hostilePreview.reason, 'unsafe-world-data');
+  assert.equal(hostilePreview.reason, mgr.importWorld(hostilePayload, false).reason, 'preview and import must agree on the reason');
+  const bigPreview = mgr.previewWorldImport(huge);
+  assert.equal(bigPreview.ok, false);
+  assert.equal(bigPreview.reason, 'world-too-large', 'preview must refuse the oversized payload with the same reason as import');
+  assert.equal(mgr.previewWorldImport({ name: 'no-id' }).reason, 'invalid-world-data');
+}
+// estimatedBytes must be true UTF-8 bytes, not UTF-16 code units, or non-ASCII worlds are
+// mis-measured and the 2 MB ceiling drifts.
+{
+  const arabicName = 'عالم عربي';
+  const arabic = mgr.previewWorldImport({ id: 'utf8-1', name: arabicName });
+  const expected = new TextEncoder().encode(JSON.stringify({ id: 'utf8-1', name: arabicName })).length;
+  assert.equal(arabic.estimatedBytes, expected, 'estimatedBytes must be UTF-8 bytes');
+}
+console.log('  PASS');
+
 console.log('\n✅ All RPG World Manager tests passed!');
 console.log('\nCoverage: RPG-02-01 to RPG-02-15 (World Management)');

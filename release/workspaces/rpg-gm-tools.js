@@ -14,6 +14,44 @@
   function now() { return new Date().toISOString(); }
   function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
+  // Persistence helpers. Maps (including Maps nested inside records) cannot
+  // survive JSON, so they are tagged with a __map wrapper on the way out and
+  // rebuilt on the way in.
+  function mapsToPlain(v) {
+    if (v instanceof Map) return { __map: Object.fromEntries([...v].map(([k, x]) => [k, mapsToPlain(x)])) };
+    if (Array.isArray(v)) return v.map(mapsToPlain);
+    if (v && typeof v === 'object') {
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = mapsToPlain(x);
+      return out;
+    }
+    return v;
+  }
+  function plainToMaps(v) {
+    if (Array.isArray(v)) return v.map(plainToMaps);
+    if (v && typeof v === 'object') {
+      if (Object.prototype.hasOwnProperty.call(v, '__map')) {
+        return new Map(Object.entries(v.__map).map(([k, x]) => [k, plainToMaps(x)]));
+      }
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = plainToMaps(x);
+      return out;
+    }
+    return v;
+  }
+  // Replaces every entry of a closure Map from an exported payload, accepting
+  // either the {__map:...} shape or a bare object. Returns the entry count.
+  function restoreMap(target, payload) {
+    target.clear();
+    const restored = plainToMaps(payload);
+    if (restored instanceof Map) {
+      for (const [k, v] of restored) target.set(k, v);
+    } else {
+      for (const [k, v] of Object.entries(restored)) target.set(k, v);
+    }
+    return target.size;
+  }
+
   const NOTE_TYPES = Object.freeze(['general', 'plot', 'npc', 'location', 'secret', 'timeline', 'rule', 'idea']);
   const VISIBILITY = Object.freeze(['gm-only', 'players', 'party', 'public']);
 
@@ -344,7 +382,48 @@
       return pickRandom(hooks);
     }
 
+    // Persistence seam: everything this manager keeps in closure scope. There is
+    // no sequential idCounter here - ids are Date.now()-based and the monotonic
+    // guard lives in the lastIdNums map - so counters.id carries the highest
+    // numeric id minted so far and is re-applied as a floor after restore.
+    function exportState() {
+      return {
+        version: 1,
+        counters: { id: Math.max(0, ...lastIdNums.values()) },
+        notes: clone(mapsToPlain(notes)),
+        timelines: clone(mapsToPlain(timelines)),
+        npcs: clone(mapsToPlain(npcs)),
+        lastIdNums: clone(mapsToPlain(lastIdNums)),
+        state: clone(mapsToPlain({ gmState }))
+      };
+    }
+
+    function importState(data) {
+      const d = obj(data);
+      // lastIdNums is the monotonic id guard, not user data: a stale snapshot
+      // must never lower it, so the live high-water mark per prefix is kept.
+      const liveIdNums = new Map(lastIdNums);
+      const restoredByKey = {
+        notes: restoreMap(notes, obj(d.notes)),
+        timelines: restoreMap(timelines, obj(d.timelines)),
+        npcs: restoreMap(npcs, obj(d.npcs)),
+        lastIdNums: restoreMap(lastIdNums, obj(d.lastIdNums))
+      };
+      const floor = Number(obj(d.counters).id || 0) || 0;
+      for (const prefix of new Set([...liveIdNums.keys(), ...lastIdNums.keys()])) {
+        lastIdNums.set(prefix, Math.max(Number(liveIdNums.get(prefix)) || 0, Number(lastIdNums.get(prefix)) || 0, floor));
+      }
+      const g = obj(obj(d.state).gmState);
+      gmState.sessionId = g.sessionId == null ? null : g.sessionId;
+      gmState.worldId = g.worldId == null ? null : g.worldId;
+      gmState.lastUpdated = text(g.lastUpdated) || now();
+      // lastIdNums is id bookkeeping, so it is not counted as restored data.
+      const restored = restoredByKey.notes + restoredByKey.timelines + restoredByKey.npcs;
+      return { ok: true, restored, restoredByKey };
+    }
+
     return {
+      exportState, importState,
       NOTE_TYPES, VISIBILITY,
       setSession, createNote, updateNote, deleteNote, getNote, getNotes,
       createTimelineEvent, getTimeline, getTimelineRange,

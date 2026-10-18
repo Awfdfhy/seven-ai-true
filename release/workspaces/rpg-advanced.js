@@ -14,6 +14,44 @@
   function stableId(prefix, n) { return prefix + '-' + String(n).padStart(6, '0'); }
   function now() { return new Date().toISOString(); }
 
+  // Persistence helpers. Maps (including Maps nested inside records) cannot
+  // survive JSON, so they are tagged with a __map wrapper on the way out and
+  // rebuilt on the way in.
+  function mapsToPlain(v) {
+    if (v instanceof Map) return { __map: Object.fromEntries([...v].map(([k, x]) => [k, mapsToPlain(x)])) };
+    if (Array.isArray(v)) return v.map(mapsToPlain);
+    if (v && typeof v === 'object') {
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = mapsToPlain(x);
+      return out;
+    }
+    return v;
+  }
+  function plainToMaps(v) {
+    if (Array.isArray(v)) return v.map(plainToMaps);
+    if (v && typeof v === 'object') {
+      if (Object.prototype.hasOwnProperty.call(v, '__map')) {
+        return new Map(Object.entries(v.__map).map(([k, x]) => [k, plainToMaps(x)]));
+      }
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = plainToMaps(x);
+      return out;
+    }
+    return v;
+  }
+  // Replaces every entry of a closure Map from an exported payload, accepting
+  // either the {__map:...} shape or a bare object. Returns the entry count.
+  function restoreMap(target, payload) {
+    target.clear();
+    const restored = plainToMaps(payload);
+    if (restored instanceof Map) {
+      for (const [k, v] of restored) target.set(k, v);
+    } else {
+      for (const [k, v] of Object.entries(restored)) target.set(k, v);
+    }
+    return target.size;
+  }
+
   const PLUGIN_CAPABILITIES = Object.freeze(['read-state', 'write-state', 'emit-event', 'register-command', 'ui-panel', 'network']);
   const RUMOR_TYPES = Object.freeze(['whisper', 'gossip', 'prophecy', 'rumor', 'legend', 'warning']);
   const RUMOR_STATES = Object.freeze(['seeded', 'spreading', 'fading', 'confirmed', 'debunked', 'forgotten']);
@@ -528,7 +566,44 @@
       return { ok: true, voice: clone(voice) };
     }
 
+    // Persistence seam: everything this manager keeps in closure scope.
+    function exportState() {
+      return {
+        version: 1,
+        counters: { id: idCounter },
+        plugins: clone(mapsToPlain(plugins)),
+        rumors: clone(mapsToPlain(rumors)),
+        scenarioPacks: clone(mapsToPlain(scenarioPacks)),
+        questNodes: clone(mapsToPlain(questNodes)),
+        atlasEntries: clone(mapsToPlain(atlasEntries)),
+        voiceCatalog: clone(mapsToPlain(voiceCatalog)),
+        state: clone(mapsToPlain({ analyticsEvents, rngState }))
+      };
+    }
+
+    function importState(data) {
+      const d = obj(data);
+      const restoredByKey = {
+        plugins: restoreMap(plugins, obj(d.plugins)),
+        rumors: restoreMap(rumors, obj(d.rumors)),
+        scenarioPacks: restoreMap(scenarioPacks, obj(d.scenarioPacks)),
+        questNodes: restoreMap(questNodes, obj(d.questNodes)),
+        atlasEntries: restoreMap(atlasEntries, obj(d.atlasEntries)),
+        voiceCatalog: restoreMap(voiceCatalog, obj(d.voiceCatalog))
+      };
+      const s = obj(d.state);
+      analyticsEvents.length = 0;
+      for (const e of arr(s.analyticsEvents)) analyticsEvents.push(e);
+      restoredByKey.analyticsEvents = analyticsEvents.length;
+      const restoredRng = Number(s.rngState);
+      rngState = Number.isFinite(restoredRng) ? restoredRng : 987654321;
+      idCounter = Math.max(idCounter, Number(obj(d.counters).id || 0));
+      const restored = Object.values(restoredByKey).reduce((sum, n) => sum + n, 0);
+      return { ok: true, restored, restoredByKey };
+    }
+
     return {
+      exportState, importState,
       PLUGIN_CAPABILITIES, RUMOR_TYPES, RUMOR_STATES, SCENARIO_TYPES,
       ATLAS_EPOCHS, VOICE_ENGINES,
       registerPlugin, hasCapability, sandboxCall, getPlugin, listPlugins, unregisterPlugin,

@@ -14,6 +14,28 @@
   function stableId(prefix, n) { return prefix + '-' + String(n).padStart(6, '0'); }
   function now() { return new Date().toISOString(); }
   function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+  function mapsToPlain(v) {
+    if (v instanceof Map) return { __map: Object.fromEntries([...v].map(([k, x]) => [k, mapsToPlain(x)])) };
+    if (Array.isArray(v)) return v.map(mapsToPlain);
+    if (v && typeof v === 'object') {
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = mapsToPlain(x);
+      return out;
+    }
+    return v;
+  }
+  function plainToMaps(v) {
+    if (Array.isArray(v)) return v.map(plainToMaps);
+    if (v && typeof v === 'object') {
+      if (Object.prototype.hasOwnProperty.call(v, '__map')) {
+        return new Map(Object.entries(v.__map).map(([k, x]) => [k, plainToMaps(x)]));
+      }
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = plainToMaps(x);
+      return out;
+    }
+    return v;
+  }
 
   const SKILL_CATEGORIES = Object.freeze(['combat', 'magic', 'social', 'exploration', 'crafting', 'knowledge', 'stealth']);
   const ABILITY_TYPES = Object.freeze(['active', 'passive', 'toggle', 'ultimate']);
@@ -783,6 +805,49 @@
         });
     }
 
+    // Persistence seam (additive): serializes every closure-scoped Map so a
+    // server can save/restore this manager, and never moves the id counter
+    // backwards so post-restore ids cannot collide with pre-restore ones.
+    function restoreMap(target, raw) {
+      const rebuilt = plainToMaps(obj(raw));
+      target.clear();
+      if (rebuilt instanceof Map) for (const [k, v] of rebuilt) target.set(k, v);
+      return target;
+    }
+
+    function exportState() {
+      return {
+        version: 1,
+        counters: { id: idCounter },
+        characters: clone(mapsToPlain(characters)),
+        skillTrees: clone(mapsToPlain(skillTrees)),
+        abilities: clone(mapsToPlain(abilities)),
+        statusEffects: clone(mapsToPlain(statusEffects)),
+        quests: clone(mapsToPlain(quests)),
+        achievements: clone(mapsToPlain(achievements)),
+        inventory: clone(mapsToPlain(inventory)),
+        craftingRecipes: clone(mapsToPlain(craftingRecipes)),
+        rulesets: clone(mapsToPlain(rulesets)),
+        titles: clone(mapsToPlain(titles))
+      };
+    }
+
+    function importState(data) {
+      const d = obj(data);
+      restoreMap(characters, d.characters);
+      restoreMap(skillTrees, d.skillTrees);
+      restoreMap(abilities, d.abilities);
+      restoreMap(statusEffects, d.statusEffects);
+      restoreMap(quests, d.quests);
+      restoreMap(achievements, d.achievements);
+      restoreMap(inventory, d.inventory);
+      restoreMap(craftingRecipes, d.craftingRecipes);
+      restoreMap(rulesets, d.rulesets);
+      restoreMap(titles, d.titles);
+      idCounter = Math.max(idCounter, Number(obj(d.counters).id || 0));
+      return { ok: true, restored: characters.size };
+    }
+
     return {
       SKILL_CATEGORIES, ABILITY_TYPES, COOLDOWN_TYPES, STATUS_CATEGORIES,
       QUEST_STATUSES, ACHIEVEMENT_RARITIES, ITEM_RARITIES, ITEM_TYPES,
@@ -800,7 +865,8 @@
       createItem, addToInventory, removeFromInventory, getInventory,
       equipItem, unequipItem, getEquipment,
       generateLoot, createLootTable,
-      createCraftingRecipe, craftItem, getAvailableRecipes
+      createCraftingRecipe, craftItem, getAvailableRecipes,
+      exportState, importState
     };
   }
 

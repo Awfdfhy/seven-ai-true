@@ -9,6 +9,28 @@
   function obj(v) { return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; }
   function arr(v) { return Array.isArray(v) ? v : []; }
   function text(v) { return typeof v === 'string' ? v.trim() : ''; }
+  function mapsToPlain(v) {
+    if (v instanceof Map) return { __map: Object.fromEntries([...v].map(([k, x]) => [k, mapsToPlain(x)])) };
+    if (Array.isArray(v)) return v.map(mapsToPlain);
+    if (v && typeof v === 'object') {
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = mapsToPlain(x);
+      return out;
+    }
+    return v;
+  }
+  function plainToMaps(v) {
+    if (Array.isArray(v)) return v.map(plainToMaps);
+    if (v && typeof v === 'object') {
+      if (Object.prototype.hasOwnProperty.call(v, '__map')) {
+        return new Map(Object.entries(v.__map).map(([k, x]) => [k, plainToMaps(x)]));
+      }
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = plainToMaps(x);
+      return out;
+    }
+    return v;
+  }
   function uniq(xs) { return Array.from(new Set(arr(xs).filter(x => typeof x === 'string' && x.trim()).map(x => x.trim()))); }
   let idCounter = 0;
   function nextId() { return ++idCounter; }
@@ -427,8 +449,38 @@
       checkConflict, getConflicts, resolveConflict, suggestResolution,
       getProvenance, addProvenance, auditCanon,
       getCanonPolicy, getPolicySchema, setCanonPolicy, resetCanonPolicy, evaluateCanonPolicy,
-      getDiff, diffEntries, mergePreview, restoreEntry, exportCanon, importCanon
+      getDiff, diffEntries, mergePreview, restoreEntry, exportCanon, importCanon,
+      exportState, importState
     };
+
+    function exportState() {
+      return {
+        version: 1,
+        counters: { id: idCounter },
+        entries: clone(mapsToPlain(Object.fromEntries(entries))),
+        conflicts: clone(mapsToPlain(Object.fromEntries(conflicts))),
+        history: clone(mapsToPlain(Object.fromEntries(history))),
+        provenance: clone(mapsToPlain(Object.fromEntries(provenance))),
+        state: { canonPolicy: clone(canonPolicy) }
+      };
+    }
+
+    function importState(data) {
+      const d = obj(data);
+      entries.clear();
+      for (const [k, v] of Object.entries(obj(d.entries))) entries.set(k, plainToMaps(v));
+      conflicts.clear();
+      for (const [k, v] of Object.entries(obj(d.conflicts))) conflicts.set(k, plainToMaps(v));
+      history.clear();
+      for (const [k, v] of Object.entries(obj(d.history))) history.set(k, plainToMaps(v));
+      provenance.clear();
+      for (const [k, v] of Object.entries(obj(d.provenance))) provenance.set(k, plainToMaps(v));
+      const restoredPolicy = obj(obj(d.state).canonPolicy);
+      if (Object.keys(restoredPolicy).length && setCanonPolicy(restoredPolicy).ok) { /* restored */ }
+      else resetCanonPolicy();
+      idCounter = Math.max(idCounter, Number(obj(d.counters).id || 0));
+      return { ok: true, restored: entries.size + conflicts.size + history.size + provenance.size };
+    }
   }
 
   return { createCanonContinuity };

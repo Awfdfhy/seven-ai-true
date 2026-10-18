@@ -9,6 +9,28 @@
   function obj(v) { return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; }
   function arr(v) { return Array.isArray(v) ? v : []; }
   function text(v) { return typeof v === 'string' ? v.trim() : ''; }
+  function mapsToPlain(v) {
+    if (v instanceof Map) return { __map: Object.fromEntries([...v].map(([k, x]) => [k, mapsToPlain(x)])) };
+    if (Array.isArray(v)) return v.map(mapsToPlain);
+    if (v && typeof v === 'object') {
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = mapsToPlain(x);
+      return out;
+    }
+    return v;
+  }
+  function plainToMaps(v) {
+    if (Array.isArray(v)) return v.map(plainToMaps);
+    if (v && typeof v === 'object') {
+      if (Object.prototype.hasOwnProperty.call(v, '__map')) {
+        return new Map(Object.entries(v.__map).map(([k, x]) => [k, plainToMaps(x)]));
+      }
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = plainToMaps(x);
+      return out;
+    }
+    return v;
+  }
   function uniq(xs) { return Array.from(new Set(arr(xs).filter(x => typeof x === 'string' && x.trim()).map(x => x.trim()))); }
   function stableId(prefix, n) { return prefix + '-' + String(n).padStart(6, '0'); }
   function now() { return new Date().toISOString(); }
@@ -302,8 +324,29 @@
       registerTemplate, getTemplate, getTemplatesByType, getTemplatesByTag,
       renderTemplate, generateStoryHook, generateEncounter,
       generatePlotTwist, generateNarrativeBeat, generateSceneCard,
-      generateDynamicVars
+      generateDynamicVars,
+      exportState, importState
     };
+
+    // Ids here are `prefix-Date.now()` watermarks rather than a sequential
+    // counter, so `lastIdNums` is the allocator state that must survive a
+    // restore for post-restore ids to stay collision-free.
+    function exportState() {
+      return {
+        version: 1,
+        templates: clone(mapsToPlain(Object.fromEntries(templates))),
+        lastIdNums: clone(mapsToPlain(Object.fromEntries(lastIdNums)))
+      };
+    }
+
+    function importState(data) {
+      const d = obj(data);
+      templates.clear();
+      for (const [k, v] of Object.entries(obj(d.templates))) templates.set(k, plainToMaps(v));
+      lastIdNums.clear();
+      for (const [k, v] of Object.entries(obj(d.lastIdNums))) lastIdNums.set(k, Number(v) || 0);
+      return { ok: true, restored: templates.size + lastIdNums.size };
+    }
   }
 
   return { createStoryGenerator };

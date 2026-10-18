@@ -315,6 +315,28 @@ const badRate = llm.checkRateLimit('nonexistent');
 assert.equal(badRate.allowed, false);
 console.log('  PASS');
 
+console.log('\n28. exportState must never emit provider credentials...');
+// setApiKey() documents that the key is "stored in memory only; never persisted in plain text".
+// exportState() is the persistence seam, so it must redact secrets -- otherwise a saved
+// campaign / world export carries a live provider credential (and importState revives it).
+const secretMarker = 'sk-export-redaction-must-not-leak';
+llm.setApiKey('openai', secretMarker);
+const exportedRuntime = llm.exportState();
+const exportedText = JSON.stringify(exportedRuntime);
+assert.ok(!exportedText.includes(secretMarker), 'exportState() leaked a provider API key');
+assert.ok(!/"apiKey"\s*:\s*"[^"]+"/.test(exportedText), 'exportState() emitted a non-empty apiKey');
+assert.equal(exportedRuntime.version, 1);
+// Non-secret provider fields must survive redaction so a restored session still knows its providers.
+const redactionCase = exportedRuntime.providers && exportedRuntime.providers.__map
+  && exportedRuntime.providers.__map['openai'];
+assert.ok(redactionCase && redactionCase.id === 'openai', 'provider identity must survive export');
+assert.ok(redactionCase && redactionCase.baseUrl === 'https://api.openai.com/v1', 'provider baseUrl must survive export');
+// Importing a redacted export must NOT resurrect a credential.
+llm.setApiKey('openai', 'sk-should-be-replaced');
+llm.importState(exportedRuntime);
+assert.ok(!llm.checkInferenceReadiness().hasCredentials, 'importState() must not restore a credential');
+console.log('  PASS');
+
 console.log('\n✅ All RPG LLM Runtime System tests passed!');
 console.log('\nCoverage:');
 console.log('  RPG-07-01 (provider status): registerProvider, updateProviderStatus, checkProviderHealth');
@@ -332,3 +354,4 @@ console.log('  RPG-07-12 (prompt injection defenses): detectInjection, sanitizeI
 console.log('  RPG-07-13 (local model support optional): registerLocalModel, listLocalModels, toggleLocalModel');
 console.log('  RPG-07-14 (usage and token transparency): recordUsage, getUsageStats, getRecentUsage');
 console.log('  RPG-07-15 (real inference acceptance): checkInferenceReadiness (BLOCKED without credentials)');
+console.log('  secret hygiene: exportState() redacts provider apiKey; importState() cannot revive it');

@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Build outputs (regenerate with: npm run build:web)
+dist/
+www/
+
+# Test + tool artifacts
+test-results/
+playwright-screenshots/
+zpp/test/artifacts/
+
+# Local scratch
+.gitcred_tmp

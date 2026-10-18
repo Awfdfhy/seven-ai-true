@@ -13,6 +13,28 @@
   function clamp(v, min, max) { v = Number(v); return Number.isFinite(v) ? Math.max(min, Math.min(max, v)) : min; }
   function stableId(prefix, n) { return prefix + '-' + String(n).padStart(6, '0'); }
   function now() { return new Date().toISOString(); }
+  function mapsToPlain(v) {
+    if (v instanceof Map) return { __map: Object.fromEntries([...v].map(([k, x]) => [k, mapsToPlain(x)])) };
+    if (Array.isArray(v)) return v.map(mapsToPlain);
+    if (v && typeof v === 'object') {
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = mapsToPlain(x);
+      return out;
+    }
+    return v;
+  }
+  function plainToMaps(v) {
+    if (Array.isArray(v)) return v.map(plainToMaps);
+    if (v && typeof v === 'object') {
+      if (Object.prototype.hasOwnProperty.call(v, '__map')) {
+        return new Map(Object.entries(v.__map).map(([k, x]) => [k, plainToMaps(x)]));
+      }
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = plainToMaps(x);
+      return out;
+    }
+    return v;
+  }
 
   const SLOT_TYPES = Object.freeze(['manual', 'auto', 'quick', 'checkpoint']);
   const BOOKMARK_TYPES = Object.freeze(['scene', 'quote', 'moment', 'location', 'character']);
@@ -694,6 +716,44 @@
       return existed ? { ok: true } : { ok: false, reason: 'replay-not-found' };
     }
 
+    // Persistence seam (additive): serializes every closure-scoped Map so a
+    // server can save/restore this manager, and never moves the id counter
+    // backwards so post-restore ids cannot collide with pre-restore ones.
+    function restoreMap(target, raw) {
+      const rebuilt = plainToMaps(obj(raw));
+      target.clear();
+      if (rebuilt instanceof Map) for (const [k, v] of rebuilt) target.set(k, v);
+      return target;
+    }
+
+    function exportState() {
+      return {
+        version: 1,
+        counters: { id: idCounter },
+        saveSlots: clone(mapsToPlain(saveSlots)),
+        bookmarks: clone(mapsToPlain(bookmarks)),
+        notes: clone(mapsToPlain(notes)),
+        glossary: clone(mapsToPlain(glossary)),
+        canonRequests: clone(mapsToPlain(canonRequests)),
+        undoStack: clone(mapsToPlain(undoStack)),
+        replays: clone(mapsToPlain(replays))
+      };
+    }
+
+    function importState(data) {
+      const d = obj(data);
+      restoreMap(saveSlots, d.saveSlots);
+      restoreMap(bookmarks, d.bookmarks);
+      restoreMap(notes, d.notes);
+      restoreMap(glossary, d.glossary);
+      restoreMap(canonRequests, d.canonRequests);
+      restoreMap(undoStack, d.undoStack);
+      restoreMap(replays, d.replays);
+      idCounter = Math.max(idCounter, Number(obj(d.counters).id || 0));
+      const restored = saveSlots.size + notes.size + bookmarks.size + glossary.size + canonRequests.size + undoStack.size + replays.size;
+      return { ok: true, restored };
+    }
+
     return {
       SLOT_TYPES, BOOKMARK_TYPES, NOTE_CATEGORIES,
       GLOSSARY_CATEGORIES, UNDO_TYPES,
@@ -713,7 +773,8 @@
       compareSessions,
       recordUndoableAction, undoAction, commitAction, getUndoableActions, clearUndoHistory,
       createReplaySession, getReplaySession, appendReplayEvent, getReplayState,
-      stepReplay, seekReplay, mutateReplayState, deleteReplay
+      stepReplay, seekReplay, mutateReplayState, deleteReplay,
+      exportState, importState
     };
   }
 

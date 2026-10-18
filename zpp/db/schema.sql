@@ -79,12 +79,17 @@ CREATE INDEX IF NOT EXISTS idx_streams_owner     ON streams (owner_id, updated_a
 -- `owner_id` is the tenant boundary. It is taken from the verified key, NEVER
 -- from the request body — a client that could name its own owner_id could read
 -- another tenant's campaigns.
+--
+-- `expires_at` is NULL for a key that never expires. Expiry is enforced in the
+-- lookup query (auth.js) rather than by a post-read comparison, so an expired
+-- key is indistinguishable from one that never existed.
 CREATE TABLE IF NOT EXISTS api_keys (
   key_hash     TEXT    PRIMARY KEY,
   owner_id     TEXT    NOT NULL,
   label        TEXT    NOT NULL DEFAULT '',
   created_at   TEXT    NOT NULL,
   last_used_at TEXT,
+  expires_at   TEXT,
   revoked_at   TEXT
 );
 

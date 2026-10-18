@@ -13,6 +13,28 @@
   function clamp(v, min, max) { v = Number(v); return Number.isFinite(v) ? Math.max(min, Math.min(max, v)) : min; }
   function stableId(prefix, n) { return prefix + '-' + String(n).padStart(6, '0'); }
   function now() { return new Date().toISOString(); }
+  function mapsToPlain(v) {
+    if (v instanceof Map) return { __map: Object.fromEntries([...v].map(([k, x]) => [k, mapsToPlain(x)])) };
+    if (Array.isArray(v)) return v.map(mapsToPlain);
+    if (v && typeof v === 'object') {
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = mapsToPlain(x);
+      return out;
+    }
+    return v;
+  }
+  function plainToMaps(v) {
+    if (Array.isArray(v)) return v.map(plainToMaps);
+    if (v && typeof v === 'object') {
+      if (Object.prototype.hasOwnProperty.call(v, '__map')) {
+        return new Map(Object.entries(v.__map).map(([k, x]) => [k, plainToMaps(x)]));
+      }
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = plainToMaps(x);
+      return out;
+    }
+    return v;
+  }
 
   const PROVIDER_STATUSES = Object.freeze(['available', 'unavailable', 'rate-limited', 'error', 'checking']);
   const FALLBACK_MODES = Object.freeze(['never', 'on-error', 'on-timeout', 'on-rate-limit', 'always']);
@@ -45,7 +67,7 @@
         defaultModel: text(i.defaultModel) || null,
         rateLimit: {
           requestsPerMinute: clamp(i.rateLimit?.requestsPerMinute || 60, 1, 10000),
-          tokensPerMinute: clamp(i.rateLimit?.tokensPerMinute || 100000, 100000000)
+          tokensPerMinute: clamp(i.rateLimit?.tokensPerMinute || 100000, 100000, 100000000)
         },
         health: {
           lastCheck: null,
@@ -653,6 +675,80 @@
       return Math.ceil(arabicChars * 1.5 + otherChars * 0.25);
     }
 
+    // Persistence seam (additive): serializes every closure-scoped Map plus the
+    // fallback config and usage log, and never moves the id counter backwards.
+    const DEFAULT_FALLBACK_CONFIG = clone(fallbackConfig);
+
+    // Secrets never belong in a save file. setApiKey() holds credentials in memory only, so the
+    // persistence seam must redact them: a campaign save or world export is a file a player can
+    // share, attach to a bug report, or upload, and a live provider key must not ride along.
+    const SECRET_FIELD_NAMES = ['apiKey', 'api_key', 'apikey', 'key', 'token', 'secret',
+      'password', 'authorization', 'accessToken', 'refreshToken', 'clientSecret', 'bearer'];
+    function redactSecrets(value, depth) {
+      const d = depth || 0;
+      if (d > 32) return null;
+      if (Array.isArray(value)) return value.map(v => redactSecrets(v, d + 1));
+      if (value && typeof value === 'object') {
+        const out = {};
+        for (const k of Object.keys(value)) {
+          if (SECRET_FIELD_NAMES.some(s => k.toLowerCase() === s.toLowerCase())) { out[k] = null; continue; }
+          out[k] = redactSecrets(value[k], d + 1);
+        }
+        return out;
+      }
+      return value;
+    }
+
+    function restoreMap(target, raw) {
+      const rebuilt = plainToMaps(obj(raw));
+      target.clear();
+      if (rebuilt instanceof Map) for (const [k, v] of rebuilt) target.set(k, v);
+      return target;
+    }
+
+    function replaceFields(target, source, fallback) {
+      for (const k of Object.keys(target)) delete target[k];
+      Object.assign(target, source || clone(fallback));
+    }
+
+    function exportState() {
+      return {
+        version: 1,
+        counters: { id: idCounter },
+        providers: redactSecrets(clone(mapsToPlain(providers))),
+        modelConfigs: clone(mapsToPlain(modelConfigs)),
+        requestLog: clone(mapsToPlain(requestLog)),
+        contextEntries: clone(mapsToPlain(contextEntries)),
+        activeStreams: clone(mapsToPlain(activeStreams)),
+        retryConfigs: clone(mapsToPlain(retryConfigs)),
+        timeouts: clone(mapsToPlain(timeouts)),
+        rateLimitState: clone(mapsToPlain(rateLimitState)),
+        localModels: clone(mapsToPlain(localModels)),
+        state: clone({ fallbackConfig, usageLog })
+      };
+    }
+
+    function importState(data) {
+      const d = obj(data);
+      // Defence in depth: a hand-edited or older save may still carry credential fields.
+      // Restore them redacted so import can never resurrect a secret from disk.
+      restoreMap(providers, redactSecrets(d.providers));
+      restoreMap(modelConfigs, d.modelConfigs);
+      restoreMap(requestLog, d.requestLog);
+      restoreMap(contextEntries, d.contextEntries);
+      restoreMap(activeStreams, d.activeStreams);
+      restoreMap(retryConfigs, d.retryConfigs);
+      restoreMap(timeouts, d.timeouts);
+      restoreMap(rateLimitState, d.rateLimitState);
+      restoreMap(localModels, d.localModels);
+      const st = plainToMaps(obj(d.state));
+      replaceFields(fallbackConfig, st.fallbackConfig, DEFAULT_FALLBACK_CONFIG);
+      usageLog.length = 0;
+      for (const record of arr(st.usageLog)) usageLog.push(record);
+      idCounter = Math.max(idCounter, Number(obj(d.counters).id || 0));
+      return { ok: true, restored: providers.size };
+    }
+
     return {
       PROVIDER_STATUSES, FALLBACK_MODES, RETRY_STRATEGIES,
       CONTEXT_SOURCES, RESPONSE_FORMATS, TOKEN_ESTIMATE_MODES,
@@ -669,7 +765,8 @@
       detectInjection, sanitizeInput,
       registerLocalModel, getLocalModel, listLocalModels, toggleLocalModel,
       recordUsage, getUsageStats, getRecentUsage,
-      checkInferenceReadiness, estimateTokens, setApiKey
+      checkInferenceReadiness, estimateTokens, setApiKey,
+      exportState, importState
     };
   }
 

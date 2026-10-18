@@ -13,6 +13,28 @@
   function clamp(v, min, max) { v = Number(v); return Number.isFinite(v) ? Math.max(min, Math.min(max, v)) : min; }
   function stableId(prefix, n) { return prefix + '-' + String(n).padStart(6, '0'); }
   function now() { return new Date().toISOString(); }
+  function mapsToPlain(v) {
+    if (v instanceof Map) return { __map: Object.fromEntries([...v].map(([k, x]) => [k, mapsToPlain(x)])) };
+    if (Array.isArray(v)) return v.map(mapsToPlain);
+    if (v && typeof v === 'object') {
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = mapsToPlain(x);
+      return out;
+    }
+    return v;
+  }
+  function plainToMaps(v) {
+    if (Array.isArray(v)) return v.map(plainToMaps);
+    if (v && typeof v === 'object') {
+      if (Object.prototype.hasOwnProperty.call(v, '__map')) {
+        return new Map(Object.entries(v.__map).map(([k, x]) => [k, plainToMaps(x)]));
+      }
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = plainToMaps(x);
+      return out;
+    }
+    return v;
+  }
 
   const ASSET_TYPES = Object.freeze(['image', 'audio', 'music', 'font', 'icon', 'texture', 'portrait', 'background', 'sprite', 'video']);
   const AUDIO_TYPES = Object.freeze(['ambient', 'music', 'sfx', 'voice', 'ui', 'nature', 'combat', 'interface']);
@@ -1031,6 +1053,77 @@
       return fnv1a32([a.id, a.name, a.type, a.mimeType, a.sizeBytes].join('|'));
     }
 
+    // Persistence seam (additive): lets a server save/restore this manager's
+    // closure-scoped state. Every Map is serialized, including the nested ones
+    // held by accessibilityMedia, and the id counter is never moved backwards.
+    const DEFAULT_STORAGE_STATE = clone(storageState);
+    const DEFAULT_VOICE_SETTINGS = clone(voiceSettings);
+    const DEFAULT_ILLUSTRATION_STATE = clone(illustrationState);
+    const DEFAULT_CONTENT_FILTER_STATE = clone(contentFilterState);
+
+    function restoreMap(target, raw) {
+      const rebuilt = plainToMaps(obj(raw));
+      target.clear();
+      if (rebuilt instanceof Map) for (const [k, v] of rebuilt) target.set(k, v);
+      return target;
+    }
+
+    function restoreNestedMaps(holder, raw) {
+      const rebuilt = plainToMaps(obj(raw));
+      for (const k of Object.keys(holder)) if (holder[k] instanceof Map) holder[k].clear();
+      if (!rebuilt || typeof rebuilt !== 'object' || rebuilt instanceof Map) return;
+      for (const [k, v] of Object.entries(rebuilt)) {
+        if (holder[k] instanceof Map && v instanceof Map) for (const [ik, iv] of v) holder[k].set(ik, iv);
+      }
+    }
+
+    function replaceFields(target, source, fallback) {
+      for (const k of Object.keys(target)) delete target[k];
+      Object.assign(target, source || clone(fallback));
+    }
+
+    function exportState() {
+      return {
+        version: 1,
+        counters: { id: idCounter },
+        assets: clone(mapsToPlain(assets)),
+        soundscapeTracks: clone(mapsToPlain(soundscapeTracks)),
+        musicMappings: clone(mapsToPlain(musicMappings)),
+        portraits: clone(mapsToPlain(portraits)),
+        palettes: clone(mapsToPlain(palettes)),
+        fontRegistry: clone(mapsToPlain(fontRegistry)),
+        cacheEntries: clone(mapsToPlain(cacheEntries)),
+        attachments: clone(mapsToPlain(attachments)),
+        accessibilityMedia: clone(mapsToPlain(accessibilityMedia)),
+        state: clone({
+          storageState,
+          voiceSettings,
+          illustrationState,
+          contentFilterState
+        })
+      };
+    }
+
+    function importState(data) {
+      const d = obj(data);
+      restoreMap(assets, d.assets);
+      restoreMap(soundscapeTracks, d.soundscapeTracks);
+      restoreMap(musicMappings, d.musicMappings);
+      restoreMap(portraits, d.portraits);
+      restoreMap(palettes, d.palettes);
+      restoreMap(fontRegistry, d.fontRegistry);
+      restoreMap(cacheEntries, d.cacheEntries);
+      restoreMap(attachments, d.attachments);
+      restoreNestedMaps(accessibilityMedia, d.accessibilityMedia);
+      const st = plainToMaps(obj(d.state));
+      replaceFields(storageState, st.storageState, DEFAULT_STORAGE_STATE);
+      replaceFields(voiceSettings, st.voiceSettings, DEFAULT_VOICE_SETTINGS);
+      replaceFields(illustrationState, st.illustrationState, DEFAULT_ILLUSTRATION_STATE);
+      replaceFields(contentFilterState, st.contentFilterState, DEFAULT_CONTENT_FILTER_STATE);
+      idCounter = Math.max(idCounter, Number(obj(d.counters).id || 0));
+      return { ok: true, restored: assets.size };
+    }
+
     return {
       ASSET_TYPES, AUDIO_TYPES, PORTRAIT_STYLES, MUSIC_MOODS,
       PALETTE_THEMES, ICON_STYLES, FONT_CATEGORIES,
@@ -1057,7 +1150,8 @@
       createAssetBackupManifest, verifyAssetBackupManifest,
       getPlaceholder, resolveAssetOrPlaceholder,
       evaluateSourcing, registerSafeAsset, listSafeAssets, getCopyrightReport,
-      attachImage, detachImage, getAttachedImages, getPrimaryImage
+      attachImage, detachImage, getAttachedImages, getPrimaryImage,
+      exportState, importState
     };
   }
 

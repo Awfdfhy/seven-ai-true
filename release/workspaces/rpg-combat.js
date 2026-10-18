@@ -15,6 +15,44 @@
   function now() { return new Date().toISOString(); }
   function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 
+  // Persistence helpers. Maps (including Maps nested inside records) cannot
+  // survive JSON, so they are tagged with a __map wrapper on the way out and
+  // rebuilt on the way in.
+  function mapsToPlain(v) {
+    if (v instanceof Map) return { __map: Object.fromEntries([...v].map(([k, x]) => [k, mapsToPlain(x)])) };
+    if (Array.isArray(v)) return v.map(mapsToPlain);
+    if (v && typeof v === 'object') {
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = mapsToPlain(x);
+      return out;
+    }
+    return v;
+  }
+  function plainToMaps(v) {
+    if (Array.isArray(v)) return v.map(plainToMaps);
+    if (v && typeof v === 'object') {
+      if (Object.prototype.hasOwnProperty.call(v, '__map')) {
+        return new Map(Object.entries(v.__map).map(([k, x]) => [k, plainToMaps(x)]));
+      }
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = plainToMaps(x);
+      return out;
+    }
+    return v;
+  }
+  // Replaces every entry of a closure Map from an exported payload, accepting
+  // either the {__map:...} shape or a bare object. Returns the entry count.
+  function restoreMap(target, payload) {
+    target.clear();
+    const restored = plainToMaps(payload);
+    if (restored instanceof Map) {
+      for (const [k, v] of restored) target.set(k, v);
+    } else {
+      for (const [k, v] of Object.entries(restored)) target.set(k, v);
+    }
+    return target.size;
+  }
+
   const COMBAT_STATUSES = Object.freeze(['active', 'paused', 'victory', 'defeat', 'retreat', 'surrender', 'fled']);
   const COMBATANT_TYPES = Object.freeze(['player', 'npc', 'ally', 'enemy', 'boss', 'summon']);
   const ACTION_TYPES = Object.freeze(['attack', 'defend', 'ability', 'item', 'move', 'wait', 'flee', 'surrender', 'grapple', 'cast']);
@@ -633,7 +671,38 @@
       return { ok: true, status };
     }
 
+    // Persistence seam: everything this manager keeps in closure scope.
+    function exportState() {
+      return {
+        version: 1,
+        counters: { id: idCounter },
+        encounters: clone(mapsToPlain(encounters)),
+        combatants: clone(mapsToPlain(combatants)),
+        combatLog: clone(mapsToPlain(combatLog)),
+        balanceProfiles: clone(mapsToPlain(balanceProfiles)),
+        combatEffects: clone(mapsToPlain(combatEffects)),
+        state: clone(mapsToPlain({ rngState }))
+      };
+    }
+
+    function importState(data) {
+      const d = obj(data);
+      const restoredByKey = {
+        encounters: restoreMap(encounters, obj(d.encounters)),
+        combatants: restoreMap(combatants, obj(d.combatants)),
+        combatLog: restoreMap(combatLog, obj(d.combatLog)),
+        balanceProfiles: restoreMap(balanceProfiles, obj(d.balanceProfiles)),
+        combatEffects: restoreMap(combatEffects, obj(d.combatEffects))
+      };
+      const restoredRng = obj(d.state).rngState;
+      rngState = (restoredRng == null || !Number.isFinite(Number(restoredRng))) ? null : Number(restoredRng);
+      idCounter = Math.max(idCounter, Number(obj(d.counters).id || 0));
+      const restored = Object.values(restoredByKey).reduce((sum, n) => sum + n, 0);
+      return { ok: true, restored, restoredByKey };
+    }
+
     return {
+      exportState, importState,
       COMBAT_STATUSES, COMBATANT_TYPES, ACTION_TYPES,
       DAMAGE_TYPES, INTENT_TYPES, DIFFICULTY_PROFILES,
       createEncounter, getEncounter, getActiveEncounters,

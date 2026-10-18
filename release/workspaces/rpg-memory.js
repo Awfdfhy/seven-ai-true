@@ -14,6 +14,44 @@
   function now() { return new Date().toISOString(); }
   function hash(s) { let h = 2166136261; for (const c of String(s)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return (h >>> 0).toString(16).slice(0, 12); }
 
+  // Persistence helpers. Maps (including Maps nested inside records) cannot
+  // survive JSON, so they are tagged with a __map wrapper on the way out and
+  // rebuilt on the way in.
+  function mapsToPlain(v) {
+    if (v instanceof Map) return { __map: Object.fromEntries([...v].map(([k, x]) => [k, mapsToPlain(x)])) };
+    if (Array.isArray(v)) return v.map(mapsToPlain);
+    if (v && typeof v === 'object') {
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = mapsToPlain(x);
+      return out;
+    }
+    return v;
+  }
+  function plainToMaps(v) {
+    if (Array.isArray(v)) return v.map(plainToMaps);
+    if (v && typeof v === 'object') {
+      if (Object.prototype.hasOwnProperty.call(v, '__map')) {
+        return new Map(Object.entries(v.__map).map(([k, x]) => [k, plainToMaps(x)]));
+      }
+      const out = {};
+      for (const [k, x] of Object.entries(v)) out[k] = plainToMaps(x);
+      return out;
+    }
+    return v;
+  }
+  // Replaces every entry of a closure Map from an exported payload, accepting
+  // either the {__map:...} shape or a bare object. Returns the entry count.
+  function restoreMap(target, payload) {
+    target.clear();
+    const restored = plainToMaps(payload);
+    if (restored instanceof Map) {
+      for (const [k, v] of restored) target.set(k, v);
+    } else {
+      for (const [k, v] of Object.entries(restored)) target.set(k, v);
+    }
+    return target.size;
+  }
+
   const MEMORY_KINDS = Object.freeze([
     'Episodic', 'Semantic', 'Working', 'LongTerm', 'Relationship', 'Location', 'Quest', 'Character'
   ]);
@@ -496,7 +534,31 @@
       return { pruned: currentIds.size - keepIds.size, remaining: keepIds.size };
     }
 
+    // Persistence seam: everything this manager keeps in closure scope. Its only
+    // non-Map closure variable is the event counter, which rides in counters.id
+    // like every other manager, so there is no separate `state` key here. Note
+    // the bulk of this manager's data lives in the injected runtime's memory
+    // store, which the seam deliberately does not touch.
+    function exportState() {
+      return {
+        version: 1,
+        counters: { id: eventCounter },
+        memoryStore: clone(mapsToPlain(memoryStore))
+      };
+    }
+
+    function importState(data) {
+      const d = obj(data);
+      const restoredByKey = {
+        memoryStore: restoreMap(memoryStore, obj(d.memoryStore))
+      };
+      eventCounter = Math.max(eventCounter, Number(obj(d.counters).id || 0));
+      const restored = Object.values(restoredByKey).reduce((sum, n) => sum + n, 0);
+      return { ok: true, restored, restoredByKey };
+    }
+
     return {
+      exportState, importState,
       MEMORY_KINDS,
       SALIENCE_THRESHOLDS,
       FORGETTING_POLICY,

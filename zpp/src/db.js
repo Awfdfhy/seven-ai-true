@@ -21,6 +21,41 @@ const path = require('node:path');
 const SCHEMA_PATH = path.join(__dirname, '..', 'db', 'schema.sql');
 
 /**
+ * Additive column migrations for databases created before a column existed.
+ *
+ * `CREATE TABLE IF NOT EXISTS` silently does nothing when the table is already
+ * there, so a schema.sql edit alone cannot reach an existing deployment — the
+ * column would be missing and every query touching it would fail. These run
+ * after the schema on every open.
+ *
+ * Each statement must be idempotent AND safe to fail on: the "already there"
+ * error is swallowed, any other error is rethrown. That is what lets the same
+ * list run against a fresh local file, an existing local file, and a remote
+ * Turso/D1 database with no version tracking.
+ */
+const MIGRATIONS = [
+  // Key expiry. See the api_keys comment in db/schema.sql.
+  'ALTER TABLE api_keys ADD COLUMN expires_at TEXT'
+];
+
+/** True for the errors that mean "this migration already ran". */
+function isAlreadyApplied(err) {
+  const msg = String((err && err.message) || '').toLowerCase();
+  return msg.includes('duplicate column') || msg.includes('already exists');
+}
+
+async function applyMigrations(driver) {
+  for (const sql of MIGRATIONS) {
+    try {
+      await driver.run(sql);
+    } catch (err) {
+      if (isAlreadyApplied(err)) continue;
+      throw new Error(`migration failed: ${sql}\n  ${(err && err.message) || err}`);
+    }
+  }
+}
+
+/**
  * SQLite has no boolean type and node:sqlite rejects JS booleans outright.
  * Normalising at the boundary keeps every call site free of `? 1 : 0` noise
  * and guarantees identical behaviour across backends.
@@ -208,7 +243,10 @@ async function openDb(config = {}) {
     driver = new LocalDriver(config.file || path.join(__dirname, '..', 'data', 'zpp.sqlite'));
   }
 
-  if (config.migrate !== false) driver.exec(fs.readFileSync(SCHEMA_PATH, 'utf8'));
+  if (config.migrate !== false) {
+    driver.exec(fs.readFileSync(SCHEMA_PATH, 'utf8'));
+    await applyMigrations(driver);
+  }
   return driver;
 }
 
@@ -237,4 +275,4 @@ function configFromEnv(env = process.env) {
   return { file: env.ZPP_DB_FILE || path.join(__dirname, '..', 'data', 'zpp.sqlite') };
 }
 
-module.exports = { openDb, configFromEnv, LocalDriver, RemoteDriver };
+module.exports = { openDb, configFromEnv, LocalDriver, RemoteDriver, MIGRATIONS, applyMigrations };
