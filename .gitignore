@@ -5,6 +5,12 @@ node_modules/
 dist/
 www/
 
+# Android project + derived brand assets (regenerate with: npm run android:generate).
+# android/ is fully recreated by apk/reset-android-dir.cjs + `cap add android`, and assets/ is
+# rendered by apk/prepare-assets.cjs from release/brand/. Both are derived, not source.
+android/
+assets/
+
 # Test + tool artifacts
 test-results/
 playwright-screenshots/
