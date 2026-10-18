@@ -1,16 +1,8 @@
 # D14_SECURITY_PRIVACY — Security / Credentials / Privacy / Agent Boundaries
 
-Research audit: READY
+Research audit: INSUFFICIENT
 
 DOMAIN_ID=D14_SECURITY_PRIVACY
-SOURCE_ANALYSIS=OWASP MASVS [SOURCE primary] sets mobile appsec baseline (secure storage, crypto, network, platform interaction). MCP 2026-07-28 [SOURCE primary] is protocol-level; security properties depend on implementation (not just protocol). OTel GenAI semconv [SOURCE primary] supports audit evidence (attributes for gen_ai). OWASP agentic guidance (cross-cutting with D03) reinforces trust boundaries, least privilege, excessive agency, secret handling. Limitations: MASVS is mobile-focused; need to map to web/Capacitor app. No single “secrets manager” prescribed. 
-CURRENT=Seven is Capacitor app (`capacitor.config.json`, `apk/`) with local runtime (`all.cjs`, `memory.cjs`). `.seven-team/autonomy/proof-policy*` exists (mandatory). No obvious credential/token storage code found in quick grep; Git self-dev safety not obvious from file list. Path policy/trust boundaries not explicit in reviewed files. Secrets exposure checks mentioned in Tools v1 plan. 
-TARGET=Secret non-leakage (no secrets in logs, code, bundles, telemetry), secure credential handling (if any), auth boundaries (LLM never auth), path policy (no traversal, scoped I/O), GitHub self-dev safety (no token leakage in scripts/CI/logs), trust boundaries enforced (Tools v1 ReferenceMonitor), Android secure storage per MASVS where credentials stored, audit evidence with identity. 
-NOW=Scan repo for secret patterns (tokens, keys, passwords, API keys, bearer, `ghp_`, `sk-`, env var dumps) in code/scripts/log artifacts (`*.cjs`, `*.js`, `*.ts`, `*.json`, `release/`, `plans/`, `eval/`, `cloudflare/`, `apk/` metadata). Read `.seven-team/autonomy/proof-policy*`, `.seven-team/tools-v1/*` (secrets exposure), `.seven-team/ownership.json`, `remake/ARCHITECTURE.md`, `SEVEN_AI_ARCHITECTURE_V4.md`. 
-NEXT=Define explicit trust boundaries (who can read/write secrets, what crosses trust boundary), path policy (allowlists, traversal prevention), GitHub self-dev safety checklist (scripts must not echo tokens, avoid `set -x` with secrets, redact in logs), secret exclusion rules for tools/memory (no secrets in tool args stored in memory logs without redaction; per Memory v2: secret exclusion required). 
-LATER=MASVS-aligned mobile controls if credentials stored on device (Android Keystore/EncryptedSharedPreferences), rotation guidance, runtime secret detection in logs, OTel GenAI semconv for audit events. 
-TESTS=Static checks (secret patterns), negative tests (path traversal), log redaction tests, boundary tests (LLM cannot override auth), Tools v1 approval/scope tests. 
-RISKS=Secret leakage via logs/telemetry/tool args; excessive agency (auth boundary bypass); path traversal in file I/O; Android insecure storage; GitHub self-dev scripts leaking tokens; memory persistence including secrets (Memory v2 must enforce secret exclusion). 
-FIRST_SLICE=Secrets inventory (evidence: files scanned, patterns, findings). Trust boundaries map (surfaces that touch secrets: config, tools, memory, network). Path policy draft. Git self-dev safety checklist. All with file refs. 
-KNOWN_UNKNOWNS=Any credentials/tokens currently in repo? Where are config values sourced (env vs files)? Android secret storage? Self-dev scripts (gh, release) behavior? Memory v2 secret exclusion implemented? 
-DOMAIN_VERDICT=READY_FOR_PLAN (harvested MASVS/MCP/OTel inform policy; repo scan needed to confirm no leakage and boundary implementation)
+DOMAIN_VERDICT=RESEARCH_INSUFFICIENT
+CURRENT=No trustworthy plan block was produced in this cycle.
+KNOWN_UNKNOWNS=Research agent output missing or timed out.
