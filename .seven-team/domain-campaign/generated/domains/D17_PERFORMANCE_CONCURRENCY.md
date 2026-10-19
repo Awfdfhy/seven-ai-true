@@ -1,8 +1,16 @@
 # D17_PERFORMANCE_CONCURRENCY — Performance / Concurrency / Long Chat / Races
 
-Research audit: INSUFFICIENT
+Research audit: READY
 
 DOMAIN_ID=D17_PERFORMANCE_CONCURRENCY
-DOMAIN_VERDICT=RESEARCH_INSUFFICIENT
-CURRENT=No trustworthy plan block was produced in this cycle.
-KNOWN_UNKNOWNS=Research agent output missing or timed out.
+SOURCE_ANALYSIS=Android Core App Quality guidelines (developer.android.com, primary), web.dev long-tasks DevTools article (secondary), MDN Streams API (primary). Harvest=READY, primary=7. Sources agree on: long tasks block interaction, tiered performance budgets, reduced-motion/respect user preferences, visibility-based suspension. Limitation: none give Seven-specific budgets; Android guidance is platform-general.
+CURRENT=`release/performance-runtime.js` boots tier detection, long-task observer (≥50ms/≥80ms thresholds → tier downgrade), idle scheduling, batchFrame, yieldIfNeeded, visibility suspension. `release/motion-runtime.js` batches RAF, suspends timers when hidden. Verified bugs (A09.md/B09.md): A09-001 stop button permanently broken (CRITICAL), A09-002 MutationObserver leak on room switch (HIGH), A09-003 attachment loader caches rejected promise (HIGH), A09-004 theme timer stale after sleep/wake (HIGH), A09-006 context budget overflow (MEDIUM), B09-001 attachment loader race (CRITICAL), B09-002 sendMessage double-wrap (HIGH), B09-003 stop/abort race (HIGH), B09-004 theme timer leak (HIGH), B09-006 control-bridge tier/budget race (MEDIUM). Full-DOM rebuild on every chat change in the HTML bundle (wave-01 A09 report).
+TARGET=Bounded latency, cancellation correctness, long-chat performance, no timer/observer/script leaks, deterministic performance budgets, tier-aware resource allocation. Long-chat append <32ms/frame, room switch <200ms, cold startup <1.2s, theme/RTL switch <250ms.
+NOW=Fix verified critical/high bugs: stop button (A09-001/B09-003), observer leak (A09-002), attachment loader promise race (A09-003/B09-001), theme timer sleep/wake (A09-004/B09-004), context budget overflow (A09-006), control-bridge tier/budget atomicity (B09-006). Add performance budget doc + CI gate.
+NEXT=Long-chat diff/preservation render (replace full rebuild), streaming batch verification (≤5 RAF frames), observer RAF budget (≤1 per frame), Android WebView performance evidence.
+LATER=Sustained long-chat p95 benchmarks, network pressure simulation, resource budget enforcement (memoryMb/toolCalls from control-runtime budgets), lazy-loader first-paint interaction.
+TESTS=tests/perf/chat-render.spec (500 msgs, <200ms, node reuse), tests/perf/streaming.spec (50 chunks, cancelledFrames===0, ≤5 RAF), tests/perf/observer.spec (≤1 RAF per frame under burst), timer/attachment race regression (3 generate/stop cycles, network fail→recover→load), 200-message context budget fit, control-bridge concurrency (10 parallel syncResources, final state consistent).
+RISKS=Timer leaks → UI flicker/incorrect theme; memory leaks in long chats → Android WebView OOM; stop/cancel races → data loss or generation not stoppable; control-bridge tier/budget corruption under concurrency; long-task observer downgrading tier mid-conversation without user notice.
+FIRST_SLICE=Fix A09-001 + A09-002 + A09-003 + A09-004 + A09-006 + B09-006 (atomic tier/budget); each with regression test.
+KNOWN_UNKNOWNS=No browser/Playwright execution available (verify.cjs browser suite INCONCLUSIVE); no Android WebView performance data; no baseline p95 measurements captured in CI.
+DOMAIN_VERDICT=READY_FOR_PLAN
