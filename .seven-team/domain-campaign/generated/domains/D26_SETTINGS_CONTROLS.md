@@ -1,16 +1,8 @@
 # D26_SETTINGS_CONTROLS — Settings / Model Controls / Progressive Disclosure
 
-Research audit: READY
+Research audit: INSUFFICIENT
 
 DOMAIN_ID=D26_SETTINGS_CONTROLS
-SOURCE_ANALYSIS=Android Core App Quality: quality affects installs/reviews/retention [SOURCE primary]. OpenAI ChatGPT release notes used as a release-notes reference point, not a settings spec [SOURCE primary: https://help.openai.com/en/articles/6825453-chatgpt-release-notes]. Limitations: no source defines Seven-specific settings categories, progressive-disclosure rules, or model-control semantics; settings guidance is generic app-quality, not a settings architecture.
-CURRENT=No settings domain exists in remake `ShellStore` — state covers workspace, sidebar/dialog, locale/direction, theme preference/effective, reduced motion, viewport/keyboard only [remake/src/ui/shell/shell-store.ts]. `App.tsx` exposes settings only as two inline buttons: theme cycle (auto/light/dark) and locale toggle (en/ar) [remake/src/ui/App.tsx]. No settings modal, no sections, no progressive disclosure, no model controls, no persistence of settings beyond theme/locale in ShellStore. Legacy `ui-hardening.css` contains `.s-settings-tabs`, `.settings-section`, `#settingsModal`, `.settings-row` styling [release/ui-hardening.css], implying a settings UI existed in legacy HTML but it is not ported to remake React. No settings contract in ARCHITECTURE.md; no settings tests.
-TARGET=A settings domain owned by ShellStore (single source of truth) with progressive disclosure: core (theme, locale, reduced motion) always visible; model controls and advanced routing behind a disclosure; settings persisted and restored across restart; matching Android core-app-quality principles for discoverability and clarity, and ARCHITECTURE.md persistence contract (atomic migration, recovery screen on failure).
-NOW=Add a `settings` slice to `ShellStore` (themePreference, locale, reducedMotion plus extensible model-control defaults) with validation and patch semantics matching existing ShellStore patterns; render a settings section in `App.tsx` behind a disclosure toggle; keep theme/locale controls but route them through settings state.
-NEXT=Port legacy settings CSS (`.s-settings-tabs`, `.settings-section`, `#settingsModal`) into remake `app.css`; add model-control settings (preferred model, mode, context budget) feeding the ModelRouter domain (D08, co-owned with A05); add settings persistence via StorageEngine (remake) with restart restore; add settings unit tests.
-LATER=Settings export/import as part of D23_IMPORT_EXPORT_BACKUP (co-owned B02/B08); Android Settings activity/native preference integration; progressive-disclosure usability testing with synthetic users.
-TESTS=Unit: ShellStore settings validation (invalid values throw SevenError), patch idempotency, settings persist/restore round-trip with in-memory repository; React test: settings disclosure toggles visibility without remounting shell owners; Android: settings WebView smoke (A02-owned, not claimed PASS without device gate).
-RISKS=Settings state becoming a second shell authority (violates ARCHITECTURE.md "one ShellStore"); model controls touching ModelRouter routing without D05/D08 coordination (A05 co-owner); settings persistence failure must fall to recovery screen, not silent degradation; no settings UX evidence yet — unproven until rendered and tested.
-FIRST_SLICE=Add `settings` to ShellStore with theme/locale/reducedMotion, render a disclosure-toggled settings section in `App.tsx`, and unit-test validation + round-trip persistence.
-KNOWN_UNKNOWNS=Whether model-control settings should be in ShellStore or a dedicated settings service (architecture doesn't specify); persistence adapter for settings (IndexedDB vs in-memory) not decided; Android settings surface not yet prototyped.
-DOMAIN_VERDICT=READY_FOR_PLAN
+DOMAIN_VERDICT=RESEARCH_INSUFFICIENT
+CURRENT=No trustworthy plan block was produced in this cycle.
+KNOWN_UNKNOWNS=Research agent output missing or timed out.
