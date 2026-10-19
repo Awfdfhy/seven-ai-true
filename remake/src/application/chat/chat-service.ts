@@ -6,10 +6,18 @@ import type { RoomRepository } from "../../storage/room-repository";
 export type ChatStreamContext = Readonly<{
   room: Room;
   signal: AbortSignal;
+  taskId?: string;
 }>;
 
 export interface ChatTransport {
   stream(context: ChatStreamContext): AsyncIterable<string>;
+}
+
+export interface UserMemoryObserver {
+  observeUserMessage(
+    input: Readonly<{ roomId: string; messageId: string; content: string; createdAt: number }>,
+    signal?: AbortSignal,
+  ): Promise<unknown>;
 }
 
 export type AssistantDraft = Readonly<{
@@ -51,6 +59,7 @@ export class ChatService {
   constructor(
     private readonly tasks: TaskManager,
     private readonly rooms: RoomRepository,
+    private readonly memory?: UserMemoryObserver,
   ) {
     if (
       !tasks ||
@@ -147,6 +156,22 @@ export class ChatService {
         });
         await this.rooms.put(withUser, signal);
 
+        const userMessage = withUser.messages[withUser.messages.length - 1];
+        if (userMessage?.role === "user" && this.memory) {
+          try {
+            await this.memory.observeUserMessage({
+              roomId,
+              messageId: userMessage.id,
+              content: userMessage.content,
+              createdAt: userMessage.createdAt,
+            }, signal);
+          } catch (error) {
+            if (signal.aborted) throw error;
+            // Long-term memory is recoverable auxiliary state. A memory write
+            // failure must never destroy the committed user turn or block chat.
+          }
+        }
+
         if (signal.aborted) {
           throw new DOMException("Aborted", "AbortError");
         }
@@ -155,6 +180,7 @@ export class ChatService {
         const output = stream({
           room: withUser,
           signal,
+          taskId,
         });
         if (
           !output ||

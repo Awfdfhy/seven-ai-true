@@ -553,6 +553,10 @@ export class TaskManager {
         return "Storage operation failed.";
       case "BRIDGE":
         return "Bridge operation failed.";
+      case "PERMISSION":
+        return "Permission denied.";
+      case "TOOL":
+        return "Tool operation failed.";
       case "VALIDATION":
         return "Task validation failed.";
       case "UNKNOWN":

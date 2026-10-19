@@ -3,26 +3,14 @@
 Research audit: READY
 
 DOMAIN_ID=D07_RESEARCH_WEB
-SOURCE_ANALYSIS=Harvested 4 sources; harvest marked INSUFFICIENT. Primary: BrowseComp PDF (openai.com). Secondary: Springer article + assets (client challenge). 
-Limitations: PDF only (content not fully harvested), Springer article blocked by client challenge in harvest. Missing key retrieval/citation practices, evidence standards. Need to fill gaps with authoritative sources: BrowseComp (benchmark details), evidence hierarchies (official specs first), citation requirements, retrieval evals (RAG, BEIR-like), provenance. 
-Gap: need to read BrowseComp details, evidence quality rubric enforcement, anti-hallucination (cite URLs, never invent). 
-
-CURRENT=Seven requires product intelligence + domain campaign with harvested URLs as evidence; aesthetic claims weak without runtime/screenshot evidence. Also must distinguish browser/mock/Android build/installed-device evidence. Research discipline: read index/quality rubric, inspect relevant packs.
-
-TARGET=Evidence-first research: prefer official specs/docs, primary papers, recognized benchmarks. Record URLs + exact lessons. Meet source targets. If insufficient, mark RESEARCH_INSUFFICIENT. Never invent sources. Provenance required.
-
-NOW=Fix harvest gap for D07: fetch BrowseComp page summary (not just PDF asset), evidence standards (citation, URL verification), retrieval benchmarks. Read .seven-team/product-intelligence/sources/OFFICIAL_SOURCE_MAP.json, quality rubric.
-
-NEXT=Research workflow: URL allowlist from OFFICIAL_SOURCE_MAP, harvest log with timestamps, credibility scoring, disagreement tracking, freshness checks.
-
-LATER=Automated citation validation, source staleness alerts, evidence graph.
-
-TESTS=Deterministic research checklist (all URLs verified, tags correct, gaps labeled). Contract: no invented evidence.
-
-RISKS=Sloppy citations, scope creep (over-crawling), marking sufficient when not. 
-
-FIRST_SLICE=Close D07 harvest gap: pull BrowseComp page (openai.com/index/browsecomp/) details + evidence rubric. Update research checklist. Smallest fix.
-
-KNOWN_UNKNOWNS=BrowseComp task details, exact evidence rubric text, retrieval corpus standards. Marked INSUFFICIENT in harvest.
-
-DOMAIN_VERDICT=RESEARCH_INSUFFICIENT (harvest incomplete for retrieval/citations; must fill gap before finalizing)
+SOURCE_ANALYSIS=Harvested evidence: [SOURCE primary] https://cdn.openai.com/pdf/5e10f4ab-d6f7-442e-9508-59515c65e35d/browsecomp.pdf (BrowseComp) is a concrete artifact (PDF) describing a browsing/reasoning benchmark. Its presence matters for citation discipline and verifiability. [SOURCE secondary] https://link.springer.com/article/10.1007/s42979-026-05134-x failed to render fully in harvest (client challenge/JS blocked) — content cannot be verified from harvest alone; freshness/claims unknown. Other harvested secondaries are font/CSS assets. Collectively sources point to verifiability (BrowseComp) and retrieval/evaluation literature (Springer) but harvested set is insufficient to validate exact Seven behavior. Disagreements/nuance not extractable from partial Springer load. Limitations: PDF is public but represents a benchmark/task framing (not a product UX spec); Springer partial load means we cannot cite specifics from it without fetching clean text.
+CURRENT=Seven implements `ResearchService` in `remake/src/application/research/research-service.ts` (creates research sessions, manages pending searches, records results, sets done/failed, streams progress). It tracks queries, results with metadata (url, title, snippet), and lifecycle. Evidence: file exists and defines concrete state (query, results array, status, startedAt, endedAt). No obvious citation schema (e.g. required citations array, citation IDs, source credibility), no retrieval provider abstraction that enforces provenance, no cache policy visible in inspected code. UI surface not inspected here but service is the core. Domain audit from campaign marked INSUFFICIENT overall.
+TARGET=Deterministic, evidence-first web research in Seven: retrieval must produce verifiable citations (URL, title, access timestamp, retrieval method) bound to results; cache respects staleness; failures are explicit (timeouts, blocked, partial). Align with BrowseComp-style verifiability expectations (can trace claim to source) without copying. Preserve Seven identity. No LLM-auth boundary for retrieval policy.
+NOW=Add minimal citation schema to research results (url, title, snippet, retrievedAt, sourceType, hash/id). Enforce that completed results include at least one citation when claim is external. Add retrieval failure taxonomy. Wire to existing `ResearchService` state without breaking current flow. Add unit test for citation requirement and timeout/partial cases.
+NEXT=Introduce retrieval cache with TTL and ETag/Last-Modified where available; provenance ledger (sessionId, query, sources). Consider allowlist for domains if policy requires; add source credibility flags (official/docs/primary vs secondary). Improve citation rendering path.
+LATER=Full retrieval provider abstraction (pluggable), evaluation hooks aligned to BrowseComp-style verification (answer-source match), prefetch policies, cost/latency metrics, Android offline behavior.
+TESTS=Unit: ResearchService state transitions, citation enforcement, error paths. Integration: retrieval timeout, partial results, redirect handling. Adversarial: SSRF guardrails (if external calls added), injection in snippets/URLs, malformed redirects. Eval: citation coverage (% results with verifiable source), answer-groundedness (can point to citation). Android: basic service lifecycle (background constraints) if wired.
+RISKS=Over-relying on external fetches (latency, SSRF, PII leakage in queries). Citation bloat. Cache staleness. Android network permissions/background. Cross-system: must not weaken security policies. Reference sources are benchmark literature (BrowseComp) — avoid turning product into eval-only.
+FIRST_SLICE=Extend `ResearchService` result shape to require citations; add validation that `done` state with non-empty external claims has citations. Add tests. Smallest change that materially improves evidence discipline.
+KNOWN_UNKNOWNS=No visible citation enforcement in current code; no cache/staleness policy; no retrieval provider interface; harvest gave partial Springer content (unreadable) so cannot cite its specifics; BrowseComp is benchmark (not UX spec). Need to confirm if ResearchService already persists citations elsewhere.
+DOMAIN_VERDICT=READY_FOR_PLAN

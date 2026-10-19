@@ -12,6 +12,7 @@ import {
 
 export interface MemoryRepository {
   listForRoom(roomId: string, signal?: AbortSignal): Promise<readonly MemoryRecord[]>;
+  listAll(signal?: AbortSignal): Promise<readonly MemoryRecord[]>;
   put(record: MemoryRecord, signal?: AbortSignal): Promise<void>;
   delete(memoryId: string, signal?: AbortSignal): Promise<void>;
   getSummary(roomId: string, signal?: AbortSignal): Promise<ContextSummary | null>;
@@ -182,6 +183,11 @@ export class InMemoryMemoryRepository implements MemoryRepository {
     return sortMemories(records);
   }
 
+  async listAll(signal?: AbortSignal): Promise<readonly MemoryRecord[]> {
+    throwIfAborted(signal);
+    return sortMemories([...this.records.values()].map(cloneMemoryRecord));
+  }
+
   async put(record: MemoryRecord, signal?: AbortSignal): Promise<void> {
     throwIfAborted(signal);
     if (!isMemoryRecord(record)) {
@@ -290,6 +296,19 @@ export class IndexedDbMemoryRepository implements MemoryRepository {
     for (const value of raw) {
       if (!isMemoryRecord(value)) throw this.storageError("Stored memory failed schema validation.");
       if (value.scope === "global" || value.roomId === id) records.push(cloneMemoryRecord(value));
+    }
+    return sortMemories(records);
+  }
+
+  async listAll(signal?: AbortSignal): Promise<readonly MemoryRecord[]> {
+    throwIfAborted(signal);
+    const raw = await this.read<unknown[]>("memories", (store) => store.getAll(undefined, this.limits.records + 1), signal);
+    throwIfAborted(signal);
+    if (raw.length > this.limits.records) throw capacityError();
+    const records: MemoryRecord[] = [];
+    for (const value of raw) {
+      if (!isMemoryRecord(value)) throw this.storageError("Stored memory failed schema validation.");
+      records.push(cloneMemoryRecord(value));
     }
     return sortMemories(records);
   }

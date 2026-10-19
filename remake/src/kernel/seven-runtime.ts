@@ -7,6 +7,31 @@ import { ThemeService, type ThemeScheduler } from "../ui/system/theme-service";
 import { AndroidBridgeClient } from "../platform/android/android-bridge";
 import { createCapacitorAndroidNativeTransport } from "../platform/android/capacitor-native-transport";
 import { AndroidPlatformService } from "../application/android/android-platform-service";
+import { IndexedDbRoomRepository } from "../storage/room-repository";
+import { ChatService } from "../application/chat/chat-service";
+import { ProviderChatTransport } from "../application/chat/provider-chat-transport";
+import { KiloAnonymousProviderAdapter } from "../providers/kilo-anonymous-adapter";
+import { IndexedDbMemoryFabricRepository } from "../storage/memory-fabric-repository";
+import { MemoryFabricService } from "../application/memory/memory-fabric-service";
+import { IndexedDbMemoryRepository } from "../storage/memory-repository";
+import { MemoryContextService } from "../application/context/memory-context-service";
+import { ProviderContextSummarizer } from "../context/provider-context-summarizer";
+import { MemoryLegacyMigrationService } from "../application/memory/memory-legacy-migration-service";
+import { ProviderMemoryQueryRewriter } from "../application/memory/memory-query-rewriter";
+import { MemoryRetrievalEngine } from "../application/memory/memory-retrieval";
+import { ToolRegistry } from "../application/tools/registry";
+import { registerBuiltinReadTools } from "../application/tools/builtins";
+import { InMemoryToolAuthoritySource } from "../application/tools/authority";
+import { IndexedDbToolExecutionLedger } from "../storage/tool-execution-ledger";
+import { ToolExecutor } from "../application/tools/executor";
+import { ToolDiscovery } from "../application/tools/discovery";
+import { ProviderToolPlanner } from "../application/tools/planner";
+import { DefaultReadToolCapabilityPolicy } from "../application/tools/read-capability-policy";
+import { ToolOrchestrator } from "../application/tools/orchestrator";
+import { OrchestratedReadToolContextSource } from "../application/tools/chat-tool-context";
+import { registerBuiltinMemoryMutationTools } from "../application/tools/mutation-builtins";
+import { LocalMemoryMutationProposer } from "../application/tools/memory-mutation-proposer";
+import { ToolApprovalCoordinator } from "../application/tools/approval-coordinator";
 
 export type SevenRuntime = Readonly<{
   taskManager: TaskManager;
@@ -15,6 +40,13 @@ export type SevenRuntime = Readonly<{
   diagnostics: DiagnosticsBuffer;
   kernel: AppKernel;
   android: AndroidPlatformService | null;
+  rooms: IndexedDbRoomRepository;
+  chat: ChatService;
+  chatTransport: ProviderChatTransport;
+  memory: MemoryFabricService;
+  toolRegistry: ToolRegistry;
+  toolOrchestrator: ToolOrchestrator;
+  toolApprovalCoordinator: ToolApprovalCoordinator;
 }>;
 
 export type SevenRuntimeOptions = Readonly<{
@@ -50,7 +82,150 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
     ? new AndroidPlatformService(taskManager, new AndroidBridgeClient(nativeTransport))
     : null;
 
+  const rooms = new IndexedDbRoomRepository();
+  const kilo = new KiloAnonymousProviderAdapter();
+  const memoryRepository = new IndexedDbMemoryFabricRepository();
+  const queryRewriter = new ProviderMemoryQueryRewriter(kilo, "kilo-auto/free");
+  const memory = new MemoryFabricService(memoryRepository, new MemoryRetrievalEngine(), queryRewriter);
+  const legacyMemoryRepository = new IndexedDbMemoryRepository({
+    databaseName: "seven-remake-memory",
+    maxRecords: 10_000,
+    maxSummaries: 10_000,
+  });
+  const legacyMigration = new MemoryLegacyMigrationService(
+    legacyMemoryRepository,
+    memoryRepository,
+  );
+  const chat = new ChatService(taskManager, rooms, memory);
+
+  const toolRegistry = new ToolRegistry();
+  registerBuiltinReadTools(toolRegistry, { memory, rooms });
+  registerBuiltinMemoryMutationTools(toolRegistry, memory);
+  const toolAuthority = new InMemoryToolAuthoritySource();
+  toolAuthority.setGrant({
+    grantId: "seven-local-read-tools",
+    capabilities: Object.freeze(["memory.read", "rooms.read"]),
+    scope: Object.freeze({}),
+    issuedAt: 0,
+    expiresAt: Number.MAX_SAFE_INTEGER,
+    source: "system",
+  });
+  toolAuthority.setGrant({
+    grantId: "seven-local-memory-mutations",
+    capabilities: Object.freeze(["memory.write", "memory.delete"]),
+    toolIds: Object.freeze(["memory.set_tier", "memory.forget"]),
+    scope: Object.freeze({}),
+    issuedAt: 0,
+    expiresAt: Number.MAX_SAFE_INTEGER,
+    source: "system",
+  });
+  const toolLedger = new IndexedDbToolExecutionLedger();
+  const toolExecutor = new ToolExecutor(
+    toolRegistry,
+    taskManager,
+    toolAuthority,
+    undefined,
+    {
+      record(event) {
+        diagnostics.record({
+          level: event.status === "failed" || event.status === "effect_unknown" ? "warn" : "info",
+          category: "tools",
+          name: "tool_execution",
+          attributes: {
+            toolId: event.toolId,
+            status: event.status,
+            effectStarted: event.effectStarted,
+          },
+        });
+      },
+    },
+    256,
+    toolLedger,
+  );
+  const toolDiscovery = new ToolDiscovery(toolRegistry);
+  const toolPlanner = new ProviderToolPlanner(kilo, "kilo-auto/free");
+  const toolOrchestrator = new ToolOrchestrator(
+    toolDiscovery,
+    toolPlanner,
+    toolExecutor,
+    new DefaultReadToolCapabilityPolicy(),
+  );
+  const toolContextSource = new OrchestratedReadToolContextSource(
+    toolOrchestrator,
+    toolRegistry,
+  );
+  const toolApprovalCoordinator = new ToolApprovalCoordinator(
+    new LocalMemoryMutationProposer(memory, toolRegistry),
+    toolRegistry,
+    toolExecutor,
+    toolAuthority,
+  );
+
+  const summaryRepository = new IndexedDbMemoryRepository({
+    databaseName: "seven-remake-context-summary-v2",
+    maxRecords: 1,
+    maxSummaries: 10_000,
+  });
+  const summarizer = new ProviderContextSummarizer(kilo, "kilo-auto/free", {
+    contextWindowTokens: 32_768,
+    maxChunks: 16,
+  });
+  const contextSource = new MemoryContextService(summaryRepository, summarizer, undefined, {
+    maxSummaryPasses: 8,
+  });
+  const chatTransport = new ProviderChatTransport(
+    kilo,
+    "kilo-auto/free",
+    "You are Seven, a precise and helpful AI assistant.",
+    memory,
+    contextSource,
+    32_768,
+    toolContextSource,
+  );
+
   const kernel = new AppKernel(diagnostics);
+  kernel.register({
+    id: "memory-legacy-migration",
+    async start(signal) {
+      try {
+        const result = await legacyMigration.migrate(signal);
+        diagnostics.record({
+          level: "info",
+          category: "memory",
+          name: "legacy_migration_complete",
+          attributes: {
+            scanned: result.scanned,
+            migrated: result.migrated,
+            skippedExisting: result.skippedExisting,
+          },
+        });
+      } catch (error) {
+        if (signal.aborted) throw error;
+        diagnostics.record({
+          level: "warn",
+          category: "memory",
+          name: "legacy_migration_failed",
+          attributes: {
+            errorType: error instanceof Error ? error.name : "unknown",
+          },
+        });
+        // Legacy migration is recovery work, not a startup dependency.
+        // Existing v1 data remains untouched and Seven may continue normally.
+      }
+    },
+    async stop() {
+      await legacyMemoryRepository.close();
+    },
+  });
+
+  kernel.register({
+    id: "tool-ledger",
+    async start() {},
+    async stop() {
+      await toolLedger.close();
+    },
+  });
+
   kernel.register({
     id: "theme",
     async start() {
@@ -68,5 +243,12 @@ export function createSevenRuntime(options: SevenRuntimeOptions = {}): SevenRunt
     diagnostics,
     kernel,
     android,
+    rooms,
+    chat,
+    chatTransport,
+    memory,
+    toolRegistry,
+    toolOrchestrator,
+    toolApprovalCoordinator,
   });
 }
