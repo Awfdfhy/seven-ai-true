@@ -1,16 +1,12 @@
 {
   "schemaVersion": 1,
   "domains": 30,
-  "ready": 0,
+  "ready": 9,
   "missing": [],
   "insufficient": [
     "D01_CHAT_CORE",
-    "D02_MEMORY_CONTEXT",
-    "D03_TOOLS_CAPABILITY",
-    "D04_CODING_SYSTEM",
     "D05_SELF_DEVELOPMENT",
     "D06_RPG_WORLD",
-    "D07_RESEARCH_WEB",
     "D08_MODEL_ROUTING",
     "D09_DEEP_THINK",
     "D10_FILES_MULTIMODAL",
@@ -19,21 +15,16 @@
     "D13_ARABIC_RTL_A11Y",
     "D14_SECURITY_PRIVACY",
     "D15_PERSISTENCE_RECOVERY",
-    "D16_NETWORK_RESILIENCE",
     "D17_PERFORMANCE_CONCURRENCY",
-    "D18_TESTING_EVALS",
     "D19_AGENT_ORCHESTRATION",
     "D20_PRODUCT_QUALITY",
     "D21_OBSERVABILITY_WORLD_MODEL",
     "D22_PROTOCOLS_INTEROP",
     "D23_IMPORT_EXPORT_BACKUP",
-    "D24_RELEASE_APK",
     "D25_HISTORY_ROOMS",
     "D26_SETTINGS_CONTROLS",
-    "D27_ERROR_RECOVERY_UX",
     "D28_LOCAL_INTELLIGENCE",
-    "D29_REAL_WORKS_CANON",
-    "D30_AUTONOMOUS_QUALITY"
+    "D29_REAL_WORKS_CANON"
   ],
   "results": [
     {
@@ -49,7 +40,7 @@
     },
     {
       "id": "D02_MEMORY_CONTEXT",
-      "status": "INSUFFICIENT",
+      "status": "READY",
       "urls": 136,
       "primaryTagged": 339,
       "target": 20,
@@ -64,9 +55,9 @@
     },
     {
       "id": "D03_TOOLS_CAPABILITY",
-      "status": "INSUFFICIENT",
+      "status": "READY",
       "urls": 129,
-      "primaryTagged": 348,
+      "primaryTagged": 418,
       "target": 20,
       "owners": [
         "A04",
@@ -79,9 +70,9 @@
     },
     {
       "id": "D04_CODING_SYSTEM",
-      "status": "INSUFFICIENT",
-      "urls": 93,
-      "primaryTagged": 116,
+      "status": "READY",
+      "urls": 89,
+      "primaryTagged": 77,
       "target": 12,
       "owners": [
         "B06",
@@ -91,8 +82,8 @@
     {
       "id": "D05_SELF_DEVELOPMENT",
       "status": "INSUFFICIENT",
-      "urls": 43,
-      "primaryTagged": 90,
+      "urls": 41,
+      "primaryTagged": 51,
       "target": 12,
       "owners": [
         "B06",
@@ -112,7 +103,7 @@
     },
     {
       "id": "D07_RESEARCH_WEB",
-      "status": "INSUFFICIENT",
+      "status": "READY",
       "urls": 90,
       "primaryTagged": 80,
       "target": 12,
@@ -124,8 +115,8 @@
     {
       "id": "D08_MODEL_ROUTING",
       "status": "INSUFFICIENT",
-      "urls": 48,
-      "primaryTagged": 67,
+      "urls": 31,
+      "primaryTagged": 31,
       "target": 10,
       "owners": [
         "A05",
@@ -135,8 +126,8 @@
     {
       "id": "D09_DEEP_THINK",
       "status": "INSUFFICIENT",
-      "urls": 41,
-      "primaryTagged": 47,
+      "urls": 11,
+      "primaryTagged": 11,
       "target": 10,
       "owners": [
         "B04",
@@ -146,7 +137,7 @@
     {
       "id": "D10_FILES_MULTIMODAL",
       "status": "INSUFFICIENT",
-      "urls": 44,
+      "urls": 45,
       "primaryTagged": 60,
       "target": 8,
       "owners": [
@@ -168,8 +159,8 @@
     {
       "id": "D12_UI_DESIGN_SYSTEM",
       "status": "INSUFFICIENT",
-      "urls": 88,
-      "primaryTagged": 122,
+      "urls": 82,
+      "primaryTagged": 84,
       "target": 10,
       "owners": [
         "A01",
@@ -179,8 +170,8 @@
     {
       "id": "D13_ARABIC_RTL_A11Y",
       "status": "INSUFFICIENT",
-      "urls": 30,
-      "primaryTagged": 61,
+      "urls": 25,
+      "primaryTagged": 23,
       "target": 8,
       "owners": [
         "A03",
@@ -211,9 +202,9 @@
     },
     {
       "id": "D16_NETWORK_RESILIENCE",
-      "status": "INSUFFICIENT",
+      "status": "READY",
       "urls": 57,
-      "primaryTagged": 66,
+      "primaryTagged": 136,
       "target": 8,
       "owners": [
         "B07",
@@ -223,8 +214,8 @@
     {
       "id": "D17_PERFORMANCE_CONCURRENCY",
       "status": "INSUFFICIENT",
-      "urls": 88,
-      "primaryTagged": 83,
+      "urls": 62,
+      "primaryTagged": 47,
       "target": 10,
       "owners": [
         "A09",
@@ -233,7 +224,7 @@
     },
     {
       "id": "D18_TESTING_EVALS",
-      "status": "INSUFFICIENT",
+      "status": "READY",
       "urls": 93,
       "primaryTagged": 128,
       "target": 12,
@@ -256,8 +247,8 @@
     {
       "id": "D20_PRODUCT_QUALITY",
       "status": "INSUFFICIENT",
-      "urls": 88,
-      "primaryTagged": 122,
+      "urls": 82,
+      "primaryTagged": 84,
       "target": 8,
       "owners": [
         "B10",
@@ -267,8 +258,8 @@
     {
       "id": "D21_OBSERVABILITY_WORLD_MODEL",
       "status": "INSUFFICIENT",
-      "urls": 99,
-      "primaryTagged": 100,
+      "urls": 69,
+      "primaryTagged": 64,
       "target": 8,
       "owners": [
         "A04",
@@ -278,8 +269,8 @@
     {
       "id": "D22_PROTOCOLS_INTEROP",
       "status": "INSUFFICIENT",
-      "urls": 79,
-      "primaryTagged": 103,
+      "urls": 69,
+      "primaryTagged": 64,
       "target": 10,
       "owners": [
         "A04",
@@ -289,7 +280,7 @@
     {
       "id": "D23_IMPORT_EXPORT_BACKUP",
       "status": "INSUFFICIENT",
-      "urls": 45,
+      "urls": 46,
       "primaryTagged": 60,
       "target": 6,
       "owners": [
@@ -299,7 +290,7 @@
     },
     {
       "id": "D24_RELEASE_APK",
-      "status": "INSUFFICIENT",
+      "status": "READY",
       "urls": 99,
       "primaryTagged": 100,
       "target": 8,
@@ -322,8 +313,8 @@
     {
       "id": "D26_SETTINGS_CONTROLS",
       "status": "INSUFFICIENT",
-      "urls": 43,
-      "primaryTagged": 69,
+      "urls": 31,
+      "primaryTagged": 31,
       "target": 6,
       "owners": [
         "A05",
@@ -332,9 +323,9 @@
     },
     {
       "id": "D27_ERROR_RECOVERY_UX",
-      "status": "INSUFFICIENT",
+      "status": "READY",
       "urls": 88,
-      "primaryTagged": 119,
+      "primaryTagged": 189,
       "target": 8,
       "owners": [
         "B07",
@@ -344,8 +335,8 @@
     {
       "id": "D28_LOCAL_INTELLIGENCE",
       "status": "INSUFFICIENT",
-      "urls": 48,
-      "primaryTagged": 67,
+      "urls": 31,
+      "primaryTagged": 31,
       "target": 8,
       "owners": [
         "A05",
@@ -365,7 +356,7 @@
     },
     {
       "id": "D30_AUTONOMOUS_QUALITY",
-      "status": "INSUFFICIENT",
+      "status": "READY",
       "urls": 100,
       "primaryTagged": 212,
       "target": 12,
