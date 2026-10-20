@@ -1,16 +1,8 @@
 # D11_ANDROID_NATIVE — Android / APK / Lifecycle / IME / Back / Insets
 
-Research audit: READY
+Research audit: INSUFFICIENT
 
 DOMAIN_ID=D11_ANDROID_NATIVE
-SOURCE_ANALYSIS=Harvested 12 primary sources (Android core app quality, architecture recommendations, edge-to-edge design, predictive back, Capacitor App/Keyboard APIs, localized versions). Key lessons: (1) Core app quality: support proper lifecycle, handle configuration changes, don't crash on interrupts, respect battery/network; (2) Architecture: lifecycle-aware components, separation of concerns, proper state handling; (3) Edge-to-edge: draw under system bars, handle insets (window insets API), support cutouts/display insets; (4) Predictive back: implement custom back navigation for Android 13+ predictive back gesture; (5) Capacitor: App plugin for lifecycle/events (foreground/background, deep links), Keyboard plugin for show/hide/height. Gaps: specific guidance on IME behavior in webviews/Cordova/Capacitor, handling keyboard insets with edge-to-edge, RTL + insets interactions not deeply covered.
-CURRENT=Capacitor configured (remake/capacitor.config.json) with appId ai.seven.remake.v3, webDir dist, androidScheme https, webContentsDebuggingEnabled false. Android platform code exists: remake/src/platform/android/android-bridge.ts, capacitor-native-transport.ts, mock-android-transport.ts, contracts.ts, application/android-platform-service.ts. ShellStore tracks viewportWidth/Height and keyboardVisible (shell-store.ts:98,140-152). Remake UI uses safe-area-inset in CSS (app.css padding with env(safe-area-inset-*), fixed elements use inset-inline/bottom). No obvious predictive back implementation or explicit edge-to-edge inset handling code visible in grep results; keyboard handling appears state-tracked in store.
-TARGET=Proper Android lifecycle integration via Capacitor App plugin (pause/resume, back button). Edge-to-edge support: use window insets (safe area) correctly, handle display cutouts, ensure content not obscured by system bars/navigation/IME. IME handling: track keyboard visibility/height, adjust layout when keyboard shows (avoid input being covered), handle IME action. Predictive back support for Android 13+ (if using custom navigation). Proper back navigation (don't exit app unexpectedly). Respect reduced motion/battery considerations.
-NOW=Verify Capacitor App/Keyboard plugin usage in android platform layer. Ensure viewport/keyboard state from native is propagated to ShellStore. Check safe-area handling is comprehensive. Review back button handling.
-NEXT=Implement/integrate predictive back if navigation is custom; improve keyboard inset handling (adjust composer position based on keyboard height); test edge-to-edge on cutout devices; ensure RTL works correctly with insets.
-LATER=Deep linking handling, app state restoration, handling process death, proper permissions.
-TESTS=Android-specific: lifecycle tests (mock transport), keyboard show/hide behavior, inset handling. Integration with Capacitor mocks. Adversarial: configuration changes, IME transitions, back gesture.
-RISKS=WebView/Capacitor abstraction may hide native behavior. Edge-to-edge requires Android API level considerations. Keyboard height varies by IME. Predictive back requires proper activity configuration. Must not break web/iOS behavior.
-FIRST_SLICE=Review android-bridge.ts and capacitor-native-transport.ts to understand how native events (keyboard, app state) flow to ShellStore; ensure keyboardVisible and viewport updates are wired correctly.
-KNOWN_UNKNOWNS=Actual native Android project files (not in repo root maybe in android/ folder not shown), whether predictive back is configured in AndroidManifest, exact Capacitor plugin versions.
-DOMAIN_VERDICT=READY_FOR_PLAN
+DOMAIN_VERDICT=RESEARCH_INSUFFICIENT
+CURRENT=No trustworthy plan block was produced in this cycle.
+KNOWN_UNKNOWNS=Research agent output missing or timed out.
