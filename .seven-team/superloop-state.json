@@ -1,22 +1,22 @@
 {
   "schemaVersion": 1,
   "enabled": true,
-  "lastCompletedCycle": 271,
-  "lastCompletedAt": "2026-10-20T11:33:38.331578+00:00",
+  "lastCompletedCycle": 272,
+  "lastCompletedAt": "2026-10-20T12:53:27.105948+00:00",
   "workBranch": "autoloop/seven-24h-work-v6",
   "productBranch": "seven-remake-v3",
-  "runId": "39398288757",
-  "runNumber": "467",
+  "runId": "39407453828",
+  "runNumber": "468",
   "summary": {
-    "cycle": 271,
+    "cycle": 272,
     "featureCandidates": 0,
     "featuresAccepted": 0,
     "fixCandidates": 0,
     "fixesAccepted": 0,
     "polishAccepted": false,
     "apkState": "BLOCKED_NO_PRODUCT_DELTA",
-    "productQualityVerdict": "CHANGES_REQUIRED or RC or PREMIUM_CANDIDATE or UNPROVEN",
-    "productQualityScore": "<0.0-10.0 or UNPROVEN>",
+    "productQualityVerdict": "UNPROVEN",
+    "productQualityScore": "UNPROVEN",
     "domainResearchReady": 0,
     "domainResearchTotal": 30,
     "domainResearchInsufficient": [
@@ -51,11 +51,11 @@
       "D29_REAL_WORKS_CANON",
       "D30_AUTONOMOUS_QUALITY"
     ],
-    "head": "fbda641202d46eb0b34354abff4cb579956c5fab",
+    "head": "9440f0e277288b3eb299daa18481c7ab8b02ced2",
     "autonomy": {
       "schemaVersion": 1,
-      "cycle": 271,
-      "sourceSha": "fbda641202d46eb0b34354abff4cb579956c5fab",
+      "cycle": 272,
+      "sourceSha": "9440f0e277288b3eb299daa18481c7ab8b02ced2",
       "proof": {
         "deterministicFinalGates": true,
         "apkBuilt": false,
@@ -65,8 +65,8 @@
         "constitutionRuntimeCoverage": "PARTIAL",
         "physicalDeviceEvidence": false
       },
-      "productQualityScore": "<0.0-10.0 or UNPROVEN>",
-      "productHardFails": "<integer>",
+      "productQualityScore": "UNPROVEN",
+      "productHardFails": "UNPROVEN",
       "trustStatus": "UNPROVEN_OR_BLOCKED",
       "championDecision": "HOLD_CHAMPION",
       "missingProof": [
