@@ -135,8 +135,13 @@ button { min-width: 44px; min-height: 44px; touch-action: manipulation; }
 .seven-room-list button[aria-current="page"], .seven-room-list button:hover { background: var(--seven-panel-2); }
 .seven-room-list span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .seven-room-list small { color: var(--seven-muted); }
-.seven-app[data-reduced-motion="true"] *, @media (prefers-reduced-motion: reduce) {
+.seven-app[data-reduced-motion="true"] * {
   scroll-behavior: auto !important; transition-duration: .001ms !important; animation-duration: .001ms !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .seven-app * {
+    scroll-behavior: auto !important; transition-duration: .001ms !important; animation-duration: .001ms !important;
+  }
 }
 @keyframes blink { 50% { opacity: 0; } }
 @media (max-width: 560px) {

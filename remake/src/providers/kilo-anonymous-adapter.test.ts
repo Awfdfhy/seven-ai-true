@@ -79,3 +79,4 @@ describe("KiloAnonymousProviderAdapter", () => {
     expect(requestHeaders.has("authorization")).toBe(false);
   });
 });
+

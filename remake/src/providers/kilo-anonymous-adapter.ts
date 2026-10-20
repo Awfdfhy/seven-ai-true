@@ -16,6 +16,23 @@ function retryableStatus(status: number): boolean {
   return status === 408 || status === 429 || status >= 500;
 }
 
+function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === "AbortError";
+}
+
+function toNetworkError(error: unknown): SevenError {
+  if (error instanceof SevenError) return error;
+  if (isAbortError(error)) {
+    return new SevenError({ code: "CANCELLED", message: "Request cancelled.", cause: error });
+  }
+  return new SevenError({
+    code: "NETWORK",
+    message: error instanceof Error ? error.message || "Network request failed." : "Network request failed.",
+    retryable: true,
+    cause: error,
+  });
+}
+
 function normalizeModel(raw: unknown): ModelDescriptor | null {
   if (!raw || typeof raw !== "object") return null;
   const item = raw as Record<string, unknown>;
@@ -47,14 +64,43 @@ function normalizeModel(raw: unknown): ModelDescriptor | null {
 export class KiloAnonymousProviderAdapter implements ProviderAdapter {
   readonly id = "kilo";
 
-  constructor(private readonly fetchImpl: FetchLike = fetch) {}
+  constructor(
+    private readonly fetchImpl: FetchLike = fetch,
+    private readonly maxRetries = 2,
+    private readonly retryDelayMs = 0,
+  ) {}
+
+  private async fetchWithRetry(url: string, init: RequestInit): Promise<Response> {
+    let attempt = 0;
+    while (true) {
+      try {
+        const response = await this.fetchImpl(url, init);
+        if (response.ok || !retryableStatus(response.status) || attempt >= this.maxRetries) {
+          return response;
+        }
+      } catch (error) {
+        if (isAbortError(error) || attempt >= this.maxRetries) {
+          throw toNetworkError(error);
+        }
+      }
+      attempt += 1;
+      if (this.retryDelayMs > 0) {
+        await new Promise(resolve => setTimeout(resolve, this.retryDelayMs));
+      }
+    }
+  }
 
   async listModels(signal: AbortSignal): Promise<readonly ModelDescriptor[]> {
-    const response = await this.fetchImpl(MODELS_URL, {
-      method: "GET",
-      headers: { Accept: "application/json" },
-      signal,
-    });
+    let response: Response;
+    try {
+      response = await this.fetchWithRetry(MODELS_URL, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+        signal,
+      });
+    } catch (error) {
+      throw toNetworkError(error);
+    }
     if (!response.ok) {
       throw new SevenError({
         code: "PROVIDER",
@@ -78,7 +124,9 @@ export class KiloAnonymousProviderAdapter implements ProviderAdapter {
       throw new SevenError({ code: "VALIDATION", message: "Kilo modelId must not be empty." });
     }
 
-    const response = await this.fetchImpl(CHAT_URL, {
+    let response: Response;
+    try {
+      response = await this.fetchWithRetry(CHAT_URL, {
       method: "POST",
       headers: {
         Accept: "text/event-stream, application/json",
@@ -91,7 +139,10 @@ export class KiloAnonymousProviderAdapter implements ProviderAdapter {
         ...(request.maxOutputTokens ? { max_tokens: request.maxOutputTokens } : {}),
       }),
       signal,
-    });
+      });
+    } catch (error) {
+      throw toNetworkError(error);
+    }
 
     if (!response.ok) {
       let detail = "";
