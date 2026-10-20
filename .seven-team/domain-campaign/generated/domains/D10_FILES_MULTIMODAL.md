@@ -1,8 +1,16 @@
 # D10_FILES_MULTIMODAL — Files / Attachments / PDFs / Multimodal
 
-Research audit: INSUFFICIENT
+Research audit: READY
 
 DOMAIN_ID=D10_FILES_MULTIMODAL
-DOMAIN_VERDICT=RESEARCH_INSUFFICIENT
-CURRENT=No trustworthy plan block was produced in this cycle.
-KNOWN_UNKNOWNS=Research agent output missing or timed out.
+SOURCE_ANALYSIS=Capacitor Filesystem docs describe a Node-like file API but do not by themselves provide Android SAF consent semantics; Android docs define SAF as the user-consented document/file picker model without system permissions; OWASP MASVS adds mobile storage/security expectations. Harvested evidence is current and primary, but mostly platform-level. Disagreement/limitation: Capacitor Filesystem and Android SAF are different permission/consent models; Seven must not treat Filesystem as a blanket file-access path. Evidence lacks Seven-specific UI/runtime and installed-artifact proof.
+CURRENT=Seven remake has a hardened attachment pipeline in remake/src/application/attachments/attachment-service.ts and remake/src/domain/attachments/index.ts: bytes→size guard→MIME sniff→parse→hash→durable attachment, 10MB bytes, 1M chars, 128 records/room, immutable schema-versioned records, single-flight PDF parser loader, cancellation checks, IndexedDB repository with schema validation. Supported MIME only text/plain and application/pdf. No Android/SAF bridge, no image/audio/video handling, no file picker, no grant persistence, no import/export/backup, no multimodal extraction beyond PDF text. Tests pass (259/259 at latest recorded run), but no Android installed-artifact evidence.
+TARGET=Keep attachment core as single owner; add consent-based SAF-backed document import/export boundary, declared-vs-detected MIME enforcement, grant lifecycle, size/type policy, extraction adapters behind deterministic validation, and no raw file access without user selection. Preserve immutable records and room scoping. Add portability: export/import attachment records and metadata with integrity checks.
+NOW=Document and test the existing attachment invariants as the canonical baseline; add a SAF adapter contract and tests for granted URI metadata, size/type rejection, and cancellation. Add import/export JSON bundle schema with hash verification and version migration.
+NEXT=Implement Android SAF picker bridge, grant persistence/revocation, image/text extraction adapters, export bundle, and release evidence ledger.
+LATER=Multimodal beyond text/PDF, OCR, cloud providers, encrypted backup, cross-device sync, large-file streaming.
+TESTS=Unit tests for sniff/hash/limits/cancellation; IndexedDB restore validation; SAF grant expiry/revocation tests; import/export round-trip and tamper tests; Android exact-build install/run tests; adversarial oversized/mismatched/corrupt files.
+RISKS=Security/privacy: broad storage permissions, leaked grants, untrusted MIME, path traversal, oversized memory; Android: SAF URI lifetime, WebView/Capacitor bridge assumptions; performance: parsing large PDFs; RTL: filename display; cross-system: duplicate file stores.
+FIRST_SLICE=SAF consent adapter interface + deterministic tests for selected document metadata and rejection paths, without changing existing attachment service.
+KNOWN_UNKNOWNS=No installed Android artifact evidence; no exact-build visual evidence; no SAF implementation yet; no import/export implementation.
+DOMAIN_VERDICT=READY_FOR_PLAN
