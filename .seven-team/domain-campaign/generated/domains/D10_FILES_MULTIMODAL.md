@@ -1,8 +1,16 @@
 # D10_FILES_MULTIMODAL — Files / Attachments / PDFs / Multimodal
 
-Research audit: INSUFFICIENT
+Research audit: READY
 
 DOMAIN_ID=D10_FILES_MULTIMODAL
-DOMAIN_VERDICT=RESEARCH_INSUFFICIENT
-CURRENT=No trustworthy plan block was produced in this cycle.
-KNOWN_UNKNOWNS=Research agent output missing or timed out.
+SOURCE_ANALYSIS=Capacitor Filesystem plugin API (primary) + Android SAF shared storage/documents (primary) + OWASP MASVS (primary). Collectively: file access must be user-authorized (SAF `ACTION_OPEN_DOCUMENT`/`ACTION_CREATE_DOCUMENT`), persistable URI permissions, chunked read/write, metadata, no broad storage permission, MIME handling, Android 4.4+ SAF. Limitations: harvested bodies truncated to CSS; exact Capacitor/Android API details not fully verified — starting points.
+CURRENT=Seven has a working SAF-based attachment surface: `SevenPlatformPlugin` exposes `openDocument`/`createDocument`/`readChunk`/`writeChunk`/`releaseDocument` with `content://`-only URI acceptance, persistable URI permission handling (hardened by `apk/harden-native-platform.cjs`: explicit read/write flags, no `WrongConstant` suppression), `MAX_CHUNK=262144`, `MAX_GITHUB_RESPONSE=2MB`. `SevenSecureStore` Keystore for at-rest encryption. Web side: `release/attachment-loader.js` (lazy-boot `attachment-runtime.js`) + `release/attachment-runtime.js` (MAX_TEXT_BYTES 8MB, text/binary extension categories, photo/file menu, Arabic labels, drag/drop/paste, composer patch, `sendMessage` wrapper clears selection). Existing Android test `secureStoreEncryptsAtRest` + `verifiedReleaseBootsInsideAndroidWebView` assert `SevenAttachmentLoader` present, `SevenAttachments` undefined (lazy), `secureSet/get/remove` round-trip. Gap: no multimodal/PDF rendering path (`vendor-pdf.cjs` stub, `pdf-runtime.js` 637 bytes, `SevenPdf.loaded===false` asserted — PDF not loaded); no attachment persistence/recovery across restart; no file-type allowlist beyond extension categories; no scanned executable/archive/policy gating on attached files; no RTL-specific attachment UX audit.
+TARGET=SAF-gated, chunked, user-authorized file/attachment handling with PDF/multimodal support, at-rest encryption via Keystore, file-type policy (no executables by default), restart persistence of attachment references (not binaries), Arabic/RTL parity, no broad storage permission (`broadStoragePermission:false` already reported).
+NOW=First slice: add unit tests for SAF permission correctness (read vs write flag selection already hardened; assert `releasePersistableUriPermission` releases only held flags); add file-type policy test (executables/archive rejected by default); verify `attachment-runtime.js` extension categories vs `attachment-loader.js` triggers are coherent; document PDF gap (`SevenPdf.loaded===false`) as a known limitation, not a fix in this slice.
+NEXT=PDF/multimodal rendering path; attachment persistence across restart (references, not binaries); scanned-content policy; RTL attachment UX audit; Android device evidence for attachment flows.
+LATER=Multimodal model input (image/audio) integration; OCR; large-file streaming beyond 8MB text cap with backpressure.
+TESTS=SAF read/write flag unit test; persistable URI release test (already partially in `harden-native-platform.cjs` style); file-type allowlist/rejection test; `secureStoreEncryptsAtRest` (exists); `verifiedReleaseBootsInsideAndroidWebView` attachment assertions (exist). No live provider calls.
+RISKS=SAF URI permission leakage if release flags wrong (mitigated by harden pass); executable/archive attachment leading to RCE/XSS (file-type policy needed); attachment binaries bloating localStorage/IndexedDB (persist references only); RTL text truncation in attachment chips.
+FIRST_SLICE=SAF permission unit tests + file-type default-deny policy test + coherence check between loader/runtime extension categories.
+KNOWN_UNKNOWNS=PDF render path absent (`vendor-pdf.cjs`/`pdf-runtime.js` stubs) — confirm whether intentional or a gap; no Android device/emulator evidence for attachment flows this cycle (`apkBuilt:false`).
+DOMAIN_VERDICT=READY_FOR_PLAN

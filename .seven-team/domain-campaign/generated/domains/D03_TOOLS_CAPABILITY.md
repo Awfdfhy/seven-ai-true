@@ -1,8 +1,16 @@
 # D03_TOOLS_CAPABILITY — Tool System / Capability Graph / Permissions
 
-Research audit: INSUFFICIENT
+Research audit: READY
 
 DOMAIN_ID=D03_TOOLS_CAPABILITY
-DOMAIN_VERDICT=RESEARCH_INSUFFICIENT
-CURRENT=No trustworthy plan block was produced in this cycle.
-KNOWN_UNKNOWNS=Research agent output missing or timed out.
+SOURCE_ANALYSIS=MCP spec 2026-07-28 /server/tools (primary) + MCP Tasks extension draft (primary) + MCP TS SDK v2 + migration support-2026-07-28 (primary) + OpenAI function calling + programmatic tool calling (primary) + BFCL V4 + ToolSandbox/τ-bench/AgentDojo/AgentDyn/Adaptive Eval papers + OWASP GenAI Top-10 2026 + LLM06 Excessive Agency (secondary). Collectively: tools must be capability-declared, schema-validated, scope/approval-bound, replayable, and the LLM must never be an authorization boundary. OWASP LLM06 warns against excessive agency — tool invocation must be gated by deterministic checks, not model discretion. Limitations: harvested bodies truncated to assets; exact MCP tool schema/approval text not fully readable — treat as starting points.
+CURRENT=No committed tool system found in the c265 worktree root (no `tools/`, `capability-graph/`, or permissions module). The closest trust boundary is the native `SevenPlatformPlugin` GitHub bridge (`githubApi` with `allowedGithubPath` blocklist, `GITHUB_METHOD` GET|POST|PUT|PATCH|DELETE) — effectively Seven's only "tool-like" execution surface today, and it is a blocklist not an allowlist (see D14). Self-dev exports raw primitives (`api`, `atomicCommit`, `mergePullRequest`, `dispatchWorkflow`) with no capability gate (F2). MCP 2026-07-28 tool semantics, Tasks extension, capability graph, schema validation, approval binding, idempotency, replay, and audit are NOT present. ReferenceMonitor/approval binding/idempotency/audit tests are not green (per Tool System v1 campaign preconditions).
+TARGET=Deterministic tool system: capability graph + schema validation + scope/approval/replay checks before any execution; LLM never an authorization boundary; every tool call passes deterministic schema/capability/scope/approval/replay. Align with MCP 2026-07-28 tool shape and OpenAI function-calling patterns. Owned jointly with A04 (architecture) + A07 (security); do not duplicate A04's runtime/store/bridge ownership.
+NOW=First slice: inventory existing "tool-like" surfaces (GitHub bridge `githubApi`, self-dev `atomicCommit`/`api`, attachment read/write chunks) and document them as the current capability surface; add a deterministic allowlist-based `allowedGithubPath` replacement (see D14 FIRST_SLICE) as the first concrete capability gate; add unit test asserting every native GitHub path/method is either explicitly allowed or explicitly rejected (default-deny). Do not build a full MCP server or capability graph in this slice.
+NEXT=Implement capability graph + schema validation for tools; approval binding + idempotency keys + replay log; ReferenceMonitor; ReferenceMonitor/approval/idempotency/audit tests green before connecting high-impact external tools (per campaign rule).
+LATER=MCP 2026-07-28 server/tools conformance; MCP Tasks extension; programmatic tool calling; benchmark against BFCL/ToolSandbox-style evals.
+TESTS=default-deny path/method matrix test; protected-path rejection test (shared with D14); replay/idempotency tests once capability gates exist; no live provider calls.
+RISKS=duplicate tool runtimes/bridges (one owner per subsystem rule); connecting high-impact external tools before ReferenceMonitor/approval/idempotency/audit are green; LLM-as-authz boundary (OWASP LLM06).
+FIRST_SLICE=inventory tool-like surfaces + default-deny `allowedGithubPath` allowlist + path/method matrix unit test.
+KNOWN_UNKNOWNS=no existing capability graph/permissions module found — confirm absence across `remake/`, `release/`, `apk/`; no MCP conformance test harness present.
+DOMAIN_VERDICT=READY_FOR_PLAN
