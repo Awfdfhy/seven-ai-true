@@ -1,16 +1,8 @@
 # D14_SECURITY_PRIVACY — Security / Credentials / Privacy / Agent Boundaries
 
-Research audit: READY
+Research audit: INSUFFICIENT
 
 DOMAIN_ID=D14_SECURITY_PRIVACY
-SOURCE_ANALYSIS=[SOURCE primary] https://mas.owasp.org/MASVS/ — MASVS covers key areas (STORAGE, CRYPTO, AUTH, NETWORK, PLATFORM, CODE, RESILIENCE). Relevant to Android/bridge. [SOURCE primary] https://modelcontextprotocol.io/specification/2026-07-28 — MCP security considerations (auth, capabilities, prompts/tools/resources safety). [SOURCE primary] https://opentelemetry.io/docs/specs/semconv/registry/attributes/gen-ai/ — GenAI telemetry attributes (moved) relevant to logging/observability redaction. [SOURCE secondary] OWASP Agentic Top 10 2026 and LLM06 Excessive Agency (as in D03). Harvested MASVS pages present. Limits: full MASVS mapping not extracted.
-CURRENT=Native Keystore token custody for GitHub token (`storeGithubToken`/`ensureGithubToken`, secure-store key `SAFE_KEY`) — F5. Native blocks repo-admin/secrets paths via `allowedGithubPath` (F3). JS protected paths advisory only, exported `window.SevenGitHubSelfDev` exposes `api/atomicCommit/mergePullRequest` without capability gate (F1/F2). Two divergent protect lists (F4). Credentials embedded in bundle + localStorage fallback (`CLOUDFLARE_API_TOKEN`, `SEARCH_GATEWAY_KEY`) — F6. Auto-merge/APK-dispatch persisted with no confirm (F8). Merge is squash + CI-gated but branch protection assumed (F9). Diagnostics redaction mentioned in AppKernel observability (remake/MILESTONES.md §11). SAF persistable permissions hardened (apk/harden-native-platform.cjs). No evidence of full secret scanning, DLP, or comprehensive redaction policy.
-TARGET=Defense in depth: enforce at enforcement point (native), default-deny, least privilege, capability-based access, no secret leakage in snapshots/logs/telemetry, action-time confirmations for destructive operations, secure storage, redaction, threat model alignment with MASVS and Agentic Top 10.
-NOW=Address highest-impact gaps from A07: native enforce app-protected paths, gate exported Self-Dev surfaces or make them unprivileged, add confirmation for merge/dispatch/auto-merge, harden credential storage (remove/guard bundle embedding where possible), unify protect lists with parity tests.
-NEXT=Secret redaction audit (logs/diagnostics/task snapshots), review telemetry attributes, add protection for other admin surfaces, consider secret scanning.
-LATER=Full MASVS mapping, runtime attestation where feasible, supply chain hardening, and Agentic Top 10 coverage verification.
-TESTS=Protected-path negative tests (web+native), bypass tests via exported API, confirmation UX tests, secret-leakage tests (snapshots/logs), Keystore round-trip, SAF grant tests, redaction tests.
-RISKS=XSS blast radius via exported surfaces; bundle embedding widens exposure; native changes risky; localStorage fallback insecure; assuming branch protection.
-FIRST_SLICE=Native enforce JS protected paths + action-time confirmation for merge/dispatch/auto-merge + tests (per A07 recommendation) — highest ROI.
-KNOWN_UNKNOWNS=Full list of all secrets in bundle, whether CI can build Android, branch protection state, complete redaction coverage.
-DOMAIN_VERDICT=READY_FOR_PLAN
+DOMAIN_VERDICT=RESEARCH_INSUFFICIENT
+CURRENT=No trustworthy plan block was produced in this cycle.
+KNOWN_UNKNOWNS=Research agent output missing or timed out.
