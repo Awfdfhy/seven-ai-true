@@ -80,7 +80,7 @@
     {
       "id": "D04_CODING_SYSTEM",
       "status": "INSUFFICIENT",
-      "urls": 96,
+      "urls": 94,
       "primaryTagged": 116,
       "target": 12,
       "owners": [
@@ -124,7 +124,7 @@
     {
       "id": "D08_MODEL_ROUTING",
       "status": "INSUFFICIENT",
-      "urls": 48,
+      "urls": 50,
       "primaryTagged": 67,
       "target": 10,
       "owners": [
@@ -157,7 +157,7 @@
     {
       "id": "D11_ANDROID_NATIVE",
       "status": "INSUFFICIENT",
-      "urls": 31,
+      "urls": 30,
       "primaryTagged": 46,
       "target": 10,
       "owners": [
@@ -212,7 +212,7 @@
     {
       "id": "D16_NETWORK_RESILIENCE",
       "status": "INSUFFICIENT",
-      "urls": 57,
+      "urls": 59,
       "primaryTagged": 66,
       "target": 8,
       "owners": [
@@ -223,7 +223,7 @@
     {
       "id": "D17_PERFORMANCE_CONCURRENCY",
       "status": "INSUFFICIENT",
-      "urls": 88,
+      "urls": 90,
       "primaryTagged": 83,
       "target": 10,
       "owners": [
@@ -234,7 +234,7 @@
     {
       "id": "D18_TESTING_EVALS",
       "status": "INSUFFICIENT",
-      "urls": 94,
+      "urls": 96,
       "primaryTagged": 128,
       "target": 12,
       "owners": [
@@ -245,7 +245,7 @@
     {
       "id": "D19_AGENT_ORCHESTRATION",
       "status": "INSUFFICIENT",
-      "urls": 98,
+      "urls": 96,
       "primaryTagged": 148,
       "target": 10,
       "owners": [
@@ -278,7 +278,7 @@
     {
       "id": "D22_PROTOCOLS_INTEROP",
       "status": "INSUFFICIENT",
-      "urls": 82,
+      "urls": 80,
       "primaryTagged": 103,
       "target": 10,
       "owners": [
@@ -300,7 +300,7 @@
     {
       "id": "D24_RELEASE_APK",
       "status": "INSUFFICIENT",
-      "urls": 101,
+      "urls": 100,
       "primaryTagged": 100,
       "target": 8,
       "owners": [
@@ -311,7 +311,7 @@
     {
       "id": "D25_HISTORY_ROOMS",
       "status": "INSUFFICIENT",
-      "urls": 42,
+      "urls": 44,
       "primaryTagged": 63,
       "target": 8,
       "owners": [
@@ -322,7 +322,7 @@
     {
       "id": "D26_SETTINGS_CONTROLS",
       "status": "INSUFFICIENT",
-      "urls": 43,
+      "urls": 45,
       "primaryTagged": 69,
       "target": 6,
       "owners": [
@@ -344,7 +344,7 @@
     {
       "id": "D28_LOCAL_INTELLIGENCE",
       "status": "INSUFFICIENT",
-      "urls": 48,
+      "urls": 50,
       "primaryTagged": 67,
       "target": 8,
       "owners": [
@@ -366,7 +366,7 @@
     {
       "id": "D30_AUTONOMOUS_QUALITY",
       "status": "INSUFFICIENT",
-      "urls": 101,
+      "urls": 103,
       "primaryTagged": 212,
       "target": 12,
       "owners": [
