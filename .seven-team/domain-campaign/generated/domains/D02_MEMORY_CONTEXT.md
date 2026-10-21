@@ -1,8 +1,16 @@
 # D02_MEMORY_CONTEXT — Long-Term Memory / Context Fabric
 
-Research audit: INSUFFICIENT
+Research audit: READY
 
 DOMAIN_ID=D02_MEMORY_CONTEXT
-DOMAIN_VERDICT=RESEARCH_INSUFFICIENT
-CURRENT=No trustworthy plan block was produced in this cycle.
-KNOWN_UNKNOWNS=Research agent output missing or timed out.
+SOURCE_ANALYSIS=Harvested 20 sources (11 primary). ArXiv papers (Mem0 2504.19413, Zep/Graphiti 2501.13956, LongMemEval 2410.10813, MemX 2603.16171, Memoria 2512.12686, TeleMem 2601.06037, context-driven retrieval 2609.03467, UTILMEM 2608.30508) converge on: (1) long-term memory must be structured (blocks/knowledge graph) not just raw history, (2) temporal validity (bi-temporal) matters for "what was true when", (3) retrieval must be context-driven not only user-query driven, (4) evidence utilization (UTILMEM) is a separate failure mode from recall. Letta/Zep/Mem0 docs show production patterns (memory blocks, episodes, facts, summaries). MDN IndexedDB confirms client-side structured storage exists. Gaps: local-first hardening, explicit "do not ask" retrieval, and utilization scoring are underrepresented in current Seven evals.
+CURRENT=Seven has `memory.cjs` (CLI/memory util) and `memory-results.json`. Evidence: `memory.cjs` reads/writes JSON-like memory state; `memory-results.json` exists at repo root. No obvious agent memory service (vector/graph/indexeddb/blocks) found in top-level files inspected. `remake/ARCHITECTURE.md` not fully read yet but memory appears lightweight/scripted rather than a long-term context fabric. Product intelligence corpus exists at `.seven-team/product-intelligence/` (must be read per rules) but implementation ownership of "memory/context fabric" not clearly visible from root scripts.
+TARGET=Local-first long-term memory with: (a) structured memory blocks (core/episodic/semantic/procedural), (b) temporal facts with valid_at/invalid_at, (c) context-driven retrieval (trigger on task/state change without user query), (d) evidence utilization tracking (did retrieved memory change answer/action), (e) deterministic eviction/compression, (f) client storage (IndexedDB) with clear ownership, (g) memory health metrics.
+NOW=Inventory memory ownership: trace `memory.cjs` usage, search for "memory", "context", "IndexedDB", "knowledgeGraph", "facts" across repo. Define minimal memory block schema + retrieval hooks. Add memory utilization metric to evals.
+NEXT=Add bi-temporal facts, episode ingestion, context-triggered recall, memory block UI/inspection, compression policy.
+LATER=Graphiti-style temporal KG, personalization without cross-session leakage, multimodal memory (TeleMem), local sync boundaries.
+TESTS=Deterministic unit tests for block CRUD/eviction. Integration test: context-driven retrieval fires without user query. E2E: memory persists across sessions. Eval: LongMemEval-style subset + UTILMEM-style utilization rate. Android: IndexedDB quota/constraints.
+RISKS=Privacy (PII in memory), cross-session leakage, stale facts, unbounded growth, retrieval pollution, over-reliance on history. Need explicit retention/forget/clear policies.
+FIRST_SLICE=Document memory ownership + schema in one place; add `memory.health` check + utilization counter; wire to existing `verify.cjs`/eval without changing architecture.
+KNOWN_UNKNOWNS=Is there an in-app memory service (not just `memory.cjs`)? IndexedDB usage? Memory block ownership? Need to read `remake/ARCHITECTURE.md` fully and search for memory implementation.
+DOMAIN_VERDICT=RESEARCH_INSUFFICIENT (need to read ARCHITECTURE, product-intel memory section, and grep for memory service; harvested evidence strong but Seven's actual fabric unknown)
