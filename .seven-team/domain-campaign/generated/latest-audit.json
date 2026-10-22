@@ -50,8 +50,8 @@
     {
       "id": "D02_MEMORY_CONTEXT",
       "status": "INSUFFICIENT",
-      "urls": 120,
-      "primaryTagged": 262,
+      "urls": 137,
+      "primaryTagged": 339,
       "target": 20,
       "owners": [
         "A06",
@@ -65,8 +65,8 @@
     {
       "id": "D03_TOOLS_CAPABILITY",
       "status": "INSUFFICIENT",
-      "urls": 115,
-      "primaryTagged": 271,
+      "urls": 130,
+      "primaryTagged": 348,
       "target": 20,
       "owners": [
         "A04",
@@ -80,8 +80,8 @@
     {
       "id": "D04_CODING_SYSTEM",
       "status": "INSUFFICIENT",
-      "urls": 29,
-      "primaryTagged": 39,
+      "urls": 94,
+      "primaryTagged": 116,
       "target": 12,
       "owners": [
         "B06",
@@ -113,8 +113,8 @@
     {
       "id": "D07_RESEARCH_WEB",
       "status": "INSUFFICIENT",
-      "urls": 6,
-      "primaryTagged": 3,
+      "urls": 91,
+      "primaryTagged": 80,
       "target": 12,
       "owners": [
         "B03",
@@ -212,7 +212,7 @@
     {
       "id": "D16_NETWORK_RESILIENCE",
       "status": "INSUFFICIENT",
-      "urls": 59,
+      "urls": 57,
       "primaryTagged": 66,
       "target": 8,
       "owners": [
@@ -234,8 +234,8 @@
     {
       "id": "D18_TESTING_EVALS",
       "status": "INSUFFICIENT",
-      "urls": 42,
-      "primaryTagged": 51,
+      "urls": 94,
+      "primaryTagged": 128,
       "target": 12,
       "owners": [
         "A08",
@@ -300,8 +300,8 @@
     {
       "id": "D24_RELEASE_APK",
       "status": "INSUFFICIENT",
-      "urls": 21,
-      "primaryTagged": 23,
+      "urls": 100,
+      "primaryTagged": 100,
       "target": 8,
       "owners": [
         "A02",
@@ -333,7 +333,7 @@
     {
       "id": "D27_ERROR_RECOVERY_UX",
       "status": "INSUFFICIENT",
-      "urls": 91,
+      "urls": 89,
       "primaryTagged": 119,
       "target": 8,
       "owners": [
@@ -366,8 +366,8 @@
     {
       "id": "D30_AUTONOMOUS_QUALITY",
       "status": "INSUFFICIENT",
-      "urls": 92,
-      "primaryTagged": 135,
+      "urls": 101,
+      "primaryTagged": 212,
       "target": 12,
       "owners": [
         "A08",
