@@ -1,8 +1,16 @@
 # D11_ANDROID_NATIVE — Android / APK / Lifecycle / IME / Back / Insets
 
-Research audit: INSUFFICIENT
+Research audit: READY
 
 DOMAIN_ID=D11_ANDROID_NATIVE
+SOURCE_ANALYSIS=Harvested 12 primary Android/Capacitor sources (core app quality, architecture, edge-to-edge, predictive back, App and Keyboard APIs, localized variants). They collectively say: (1) core app quality requires lifecycle-correct, inset-aware, accessibility-aware, and permission-correct behavior; (2) edge-to-edge requires drawing under system bars and handling insets/cutouts; (3) predictive back requires gesture/back handling that does not trap the user; (4) Capacitor App/Keyboard plugins are the bridge for foreground/background and IME events. Limitations: harvested notes are titles/summaries, not full page text; no Seven-specific installed evidence is in the harvested set; localized variants are duplicates. Freshness: all sources are current Android Developers / Capacitor docs.
+CURRENT=Seven Remake V3 ships a dedicated Capacitor package `ai.seven.remake.v3` (remake/capacitor.config.json) with `androidScheme=https`, cleartext=false, mixed content disabled, webContentsDebuggingEnabled=false. Native bridge is `remake/src/platform/android/capacitor-native-transport.ts` with phase7 tests. Legacy root package is separate (`ai.seven.v243`). Release status claims installed Android 14 (API 34) and Android 16 (API 36) gate PASS including payload SHA-256 identity and native bridge round-trip. Evidence is recorded in remake/MILESTONES.md and remake/FINAL_RELEASE_STATUS.md. What is not evidenced in-repo: actual edge-to-edge/inset handling, predictive-back behavior, IME/keyboard show-hide handling, RTL layout under insets, and lifecycle persistence behavior in the WebView app. The repo contains many apk/ scripts for visual capture and native patching, but no test asserts inset/IME/back behavior.
+TARGET=Edge-to-edge, inset-safe, IME-aware, predictive-back-safe WebView app with deterministic lifecycle handling (foreground/background resume, keyboard show/hide, back navigation), no trapped gestures, and preserved web payload identity. Android exact-build evidence must cover these behaviors on installed artifacts, not just browser tests.
+NOW=Create an evidence map listing which of the six harvested requirements (core quality, architecture, edge-to-edge, predictive back, App lifecycle, Keyboard IME) are actually implemented in Seven and which are UNPROVEN. Add tests for App/Keyboard event handling and inset CSS variables in the web layer.
+NEXT=Implement edge-to-edge viewport handling and safe-area insets in remake CSS; wire Capacitor App/Keyboard events into runtime (pause/resume, keyboard height); add predictive-back handling; add installed-device evidence for each.
+LATER=Per-device IME variants, foldable/tablet inset handling, accessibility audit on installed build, Play Core quality checklist automation.
+TESTS=Unit tests for App/Keyboard event wiring; CSS/inset regression snapshots; installed instrumentation verifying lifecycle/IME/back on API 34 and 36; payload identity unchanged.
+RISKS=Edge-to-edge without inset handling causes clipped UI; predictive back can trap users; IME resize can break chat input; lifecycle resume can lose draft state; no in-repo proof of any of these today.
+FIRST_SLICE=Add a documented D11 evidence matrix in the remake release docs marking each of the six requirements IMPLEMENTED/UNPROVEN, plus a minimal test that the Capacitor App/Keyboard plugins are referenced by the runtime.
+KNOWN_UNKNOWNS=Whether edge-to-edge, predictive back, IME, and lifecycle behaviors are actually implemented or only claimed by release status; no source-level evidence found in this inspection.
 DOMAIN_VERDICT=RESEARCH_INSUFFICIENT
-CURRENT=No trustworthy plan block was produced in this cycle.
-KNOWN_UNKNOWNS=Research agent output missing or timed out.

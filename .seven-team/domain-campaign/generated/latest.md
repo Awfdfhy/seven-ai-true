@@ -1,6 +1,6 @@
 # Seven Domain Roadmaps — cycle evidence
 
-Ready domains: 4/30
+Ready domains: 2/30
 Only READY domains may drive implementation.
 
 # D01_CHAT_CORE — Chat / Rooms / Composer / Streaming
@@ -15,20 +15,12 @@ KNOWN_UNKNOWNS=Research agent output missing or timed out.
 
 # D02_MEMORY_CONTEXT — Long-Term Memory / Context Fabric
 
-Research audit: READY
+Research audit: INSUFFICIENT
 
 DOMAIN_ID=D02_MEMORY_CONTEXT
-SOURCE_ANALYSIS=Harvested evidence emphasizes structured memory systems (Mem0, Zep/Graphiti, MemX/Memoria/TeleMem), temporal/provenance models, benchmark-driven evaluation (LongMemEval/LoCoMo/UTILMEM), and local-first storage via IndexedDB. Sources collectively favor durable, queryable memory with temporal validity and provenance over naive transcript replay. Disagreements: graph/temporal complexity vs local lexical/temporal baseline; benchmark claims are vendor-reported and not Seven-specific. Limitations: abstracts only for most papers; no direct code integration evidence; no Seven benchmark yet.
-CURRENT=Seven memory/context surfaces must be inspected in release/remake; no verified production memory fabric from this report. Evidence level is research-only.
-TARGET=Local-first memory/context fabric with deterministic persistence, temporal correction, provenance, abstention, restart recovery, secret exclusion, and benchmarked retrieval.
-NOW=Define storage schema and memory lifecycle contracts; audit existing IndexedDB/localStorage usage and persistence boundaries.
-NEXT=Implement incremental memory migration beside legacy memory; add restart-persistence and secret-exclusion tests; benchmark lexical/temporal baseline.
-LATER=Optional graph/vector upgrades only after measured benchmark wins.
-TESTS=Deterministic unit/integration tests for persistence/restart; benchmark comparisons; adversarial secret-injection tests; Android WebView storage tests.
-RISKS=Privacy leakage, stale memory, migration data loss, unbounded storage growth, concurrency races, Android WebView storage eviction.
-FIRST_SLICE=Versioned IndexedDB-backed memory records with provenance/timestamps and restart recovery.
-KNOWN_UNKNOWNS=Exact existing Seven memory implementation, current schema, Android exact-build storage behavior, benchmark baseline.
 DOMAIN_VERDICT=RESEARCH_INSUFFICIENT
+CURRENT=No trustworthy plan block was produced in this cycle.
+KNOWN_UNKNOWNS=Research agent output missing or timed out.
 
 
 # D03_TOOLS_CAPABILITY — Tool System / Capability Graph / Permissions
@@ -113,12 +105,20 @@ KNOWN_UNKNOWNS=Research agent output missing or timed out.
 
 # D11_ANDROID_NATIVE — Android / APK / Lifecycle / IME / Back / Insets
 
-Research audit: INSUFFICIENT
+Research audit: READY
 
 DOMAIN_ID=D11_ANDROID_NATIVE
+SOURCE_ANALYSIS=Harvested 12 primary Android/Capacitor sources (core app quality, architecture, edge-to-edge, predictive back, App and Keyboard APIs, localized variants). They collectively say: (1) core app quality requires lifecycle-correct, inset-aware, accessibility-aware, and permission-correct behavior; (2) edge-to-edge requires drawing under system bars and handling insets/cutouts; (3) predictive back requires gesture/back handling that does not trap the user; (4) Capacitor App/Keyboard plugins are the bridge for foreground/background and IME events. Limitations: harvested notes are titles/summaries, not full page text; no Seven-specific installed evidence is in the harvested set; localized variants are duplicates. Freshness: all sources are current Android Developers / Capacitor docs.
+CURRENT=Seven Remake V3 ships a dedicated Capacitor package `ai.seven.remake.v3` (remake/capacitor.config.json) with `androidScheme=https`, cleartext=false, mixed content disabled, webContentsDebuggingEnabled=false. Native bridge is `remake/src/platform/android/capacitor-native-transport.ts` with phase7 tests. Legacy root package is separate (`ai.seven.v243`). Release status claims installed Android 14 (API 34) and Android 16 (API 36) gate PASS including payload SHA-256 identity and native bridge round-trip. Evidence is recorded in remake/MILESTONES.md and remake/FINAL_RELEASE_STATUS.md. What is not evidenced in-repo: actual edge-to-edge/inset handling, predictive-back behavior, IME/keyboard show-hide handling, RTL layout under insets, and lifecycle persistence behavior in the WebView app. The repo contains many apk/ scripts for visual capture and native patching, but no test asserts inset/IME/back behavior.
+TARGET=Edge-to-edge, inset-safe, IME-aware, predictive-back-safe WebView app with deterministic lifecycle handling (foreground/background resume, keyboard show/hide, back navigation), no trapped gestures, and preserved web payload identity. Android exact-build evidence must cover these behaviors on installed artifacts, not just browser tests.
+NOW=Create an evidence map listing which of the six harvested requirements (core quality, architecture, edge-to-edge, predictive back, App lifecycle, Keyboard IME) are actually implemented in Seven and which are UNPROVEN. Add tests for App/Keyboard event handling and inset CSS variables in the web layer.
+NEXT=Implement edge-to-edge viewport handling and safe-area insets in remake CSS; wire Capacitor App/Keyboard events into runtime (pause/resume, keyboard height); add predictive-back handling; add installed-device evidence for each.
+LATER=Per-device IME variants, foldable/tablet inset handling, accessibility audit on installed build, Play Core quality checklist automation.
+TESTS=Unit tests for App/Keyboard event wiring; CSS/inset regression snapshots; installed instrumentation verifying lifecycle/IME/back on API 34 and 36; payload identity unchanged.
+RISKS=Edge-to-edge without inset handling causes clipped UI; predictive back can trap users; IME resize can break chat input; lifecycle resume can lose draft state; no in-repo proof of any of these today.
+FIRST_SLICE=Add a documented D11 evidence matrix in the remake release docs marking each of the six requirements IMPLEMENTED/UNPROVEN, plus a minimal test that the Capacitor App/Keyboard plugins are referenced by the runtime.
+KNOWN_UNKNOWNS=Whether edge-to-edge, predictive back, IME, and lifecycle behaviors are actually implemented or only claimed by release status; no source-level evidence found in this inspection.
 DOMAIN_VERDICT=RESEARCH_INSUFFICIENT
-CURRENT=No trustworthy plan block was produced in this cycle.
-KNOWN_UNKNOWNS=Research agent output missing or timed out.
 
 
 # D12_UI_DESIGN_SYSTEM — UI / Visual System / Motion / Responsive Design
@@ -153,20 +153,12 @@ KNOWN_UNKNOWNS=Research agent output missing or timed out.
 
 # D15_PERSISTENCE_RECOVERY — Persistence / Migration / Corruption / Recovery
 
-Research audit: READY
+Research audit: INSUFFICIENT
 
 DOMAIN_ID=D15_PERSISTENCE_RECOVERY
-SOURCE_ANALYSIS=Harvested evidence: IndexedDB for structured/larger client data, Web Storage for smaller key/value state, Android architecture recommends layered/data-source recovery. Sources agree on separating persistence concerns and robust lifecycle handling, but do not provide Seven-specific migration/corruption behavior. Limitations: generic docs; no corruption-recovery or migration test evidence.
-CURRENT=Seven persistence/recovery implementation must be inspected; no verified migration/corruption recovery proof in this report.
-TARGET=Robust persistence layer with schema versioning, migration, corruption detection, safe fallback, and recovery UX.
-NOW=Inventory all storage keys/databases, identify migration points and failure modes.
-NEXT=Add migration tests, corruption simulation, recovery fallback, and restart validation.
-LATER=Backup/restore and cross-device portability.
-TESTS=Corruption injection, migration rollback, restart recovery, Android lifecycle tests.
-RISKS=Data loss, silent corruption, version mismatch, WebView storage limits.
-FIRST_SLICE=Schema versioning + safe migration wrapper with deterministic tests.
-KNOWN_UNKNOWNS=Existing storage ownership, schema versions, failure telemetry.
 DOMAIN_VERDICT=RESEARCH_INSUFFICIENT
+CURRENT=No trustworthy plan block was produced in this cycle.
+KNOWN_UNKNOWNS=Research agent output missing or timed out.
 
 
 # D16_NETWORK_RESILIENCE — Network / Retry / Offline / Streaming Resilience
@@ -241,48 +233,40 @@ KNOWN_UNKNOWNS=Research agent output missing or timed out.
 
 # D23_IMPORT_EXPORT_BACKUP — Import / Export / Backup / Data Portability
 
-Research audit: READY
-
-DOMAIN_ID=D23_IMPORT_EXPORT_BACKUP
-SOURCE_ANALYSIS=Harvested evidence: Android SAF for user-controlled document access, IndexedDB for client-side structured data. Sources emphasize user control and privacy. Limitations: no Seven export/import implementation evidence; no format/version contract.
-CURRENT=No verified backup/import/export implementation in this report.
-TARGET=Versioned data export/import with validation, secret handling, and user-controlled file selection.
-NOW=Define export schema and identify sensitive data exclusions.
-NEXT=Implement deterministic export/import with validation and tests.
-LATER=Android SAF integration and cloud backup.
-TESTS=Round-trip export/import tests, malformed payload tests, secret-exclusion tests.
-RISKS=PII leakage, partial imports, format drift, Android permission/storage issues.
-FIRST_SLICE=JSON export/import with schema validation and tests.
-KNOWN_UNKNOWNS=Current data model, Android exact-build evidence.
-DOMAIN_VERDICT=RESEARCH_INSUFFICIENT
-
-
-# D24_RELEASE_APK — Release / APK Identity / Signing / Installed Evidence
-
 Research audit: INSUFFICIENT
 
-DOMAIN_ID=D24_RELEASE_APK
+DOMAIN_ID=D23_IMPORT_EXPORT_BACKUP
 DOMAIN_VERDICT=RESEARCH_INSUFFICIENT
 CURRENT=No trustworthy plan block was produced in this cycle.
 KNOWN_UNKNOWNS=Research agent output missing or timed out.
 
 
-# D25_HISTORY_ROOMS — Conversation History / Room Lifecycle / Search / Archive
+# D24_RELEASE_APK — Release / APK Identity / Signing / Installed Evidence
 
 Research audit: READY
 
-DOMAIN_ID=D25_HISTORY_ROOMS
-SOURCE_ANALYSIS=Harvested evidence: React state preservation/resetting and IndexedDB. Sources support preserving state across navigation and structured client persistence. Limitations: no Seven history/room implementation evidence; no lifecycle/search/archive tests.
-CURRENT=No verified history/room lifecycle implementation in this report.
-TARGET=Reliable conversation history/room lifecycle with archive/search and state preservation.
-NOW=Inventory room/history storage and lifecycle transitions.
-NEXT=Add state-preservation tests and archive/search behavior.
-LATER=Full-text search and cross-session room recovery.
-TESTS=Navigation state tests, archive/search tests, restart recovery tests.
-RISKS=State reset bugs, data duplication, storage growth, concurrency.
-FIRST_SLICE=Persistent room index with restart-safe state restoration.
-KNOWN_UNKNOWNS=Current room model, storage ownership, search implementation.
+DOMAIN_ID=D24_RELEASE_APK
+SOURCE_ANALYSIS=Harvested 10 primary sources (app signing, core app quality, localized duplicates). They say: app signing concepts and Play App Signing opt-in matter for release identity; core app quality guidelines influence installs/reviews/retention. Limitations: harvested notes are summaries; no Seven-specific signing evidence beyond release docs; duplicates dominate. Freshness: current Android Developers docs.
+CURRENT=Release docs (remake/FINAL_RELEASE_STATUS.md, remake/MILESTONES.md) claim COMPLETE: dedicated app id `ai.seven.remake.v3`, production `SevenRemakeNative` bridge, deterministic SHA-256 manifest embedded, installed package/version and every web-payload file verified, WebView boot smoke, native bridge round-trip, Android 14 and 16 gates PASS, artifact `Seven-Remake-V3.apk` with sha256 `aa75260a...`. In-repo evidence: apk/verify-apk.cjs, apk/remake-build-release-manifest.mjs, release/build-release.cjs, release/release-verify.cjs, capacitor.config.json. No actual APK file is present in the worktree (find returned none). No signing keystore or signing config visible. No installed-device test artifacts in repo.
+TARGET=Reproducible signed release APK with verifiable identity (package id, version, payload SHA-256) and installed-device evidence retained as artifacts, not just prose claims.
+NOW=Reconcile the claimed release evidence against in-repo artifacts: locate APK, signing config, keystore references, manifest, and gate logs; document gaps.
+NEXT=Run verify-apk and release-verify if tooling allows; capture exact outputs; require CI run IDs as evidence; add missing installed-device test artifacts to repo or release storage.
+LATER=Play App Signing opt-in, reproducible builds, SBOM, artifact attestation, automated release-gate dashboard.
+TESTS=apk/verify-apk.cjs, release/release-verify.cjs, release/static-audit.cjs, release/embedded-credentials.test.cjs; CI run evidence 37160934350 and 37160934367.
+RISKS=Release claims cannot be independently verified from this worktree: no APK file, no signing keystore, no installed-device artifacts. If CI evidence is unavailable, release state must be marked UNPROVEN. Risk of over-claiming release readiness.
+FIRST_SLICE=Produce a D24 evidence ledger mapping each claimed gate to an in-repo artifact or external CI run id, marking missing ones UNPROVEN.
+KNOWN_UNKNOWNS=Whether the APK actually exists and is signed; whether installed-device tests are reproducible from this repo; signing key ownership and rotation policy.
 DOMAIN_VERDICT=RESEARCH_INSUFFICIENT
+
+
+# D25_HISTORY_ROOMS — Conversation History / Room Lifecycle / Search / Archive
+
+Research audit: INSUFFICIENT
+
+DOMAIN_ID=D25_HISTORY_ROOMS
+DOMAIN_VERDICT=RESEARCH_INSUFFICIENT
+CURRENT=No trustworthy plan block was produced in this cycle.
+KNOWN_UNKNOWNS=Research agent output missing or timed out.
 
 
 # D26_SETTINGS_CONTROLS — Settings / Model Controls / Progressive Disclosure
