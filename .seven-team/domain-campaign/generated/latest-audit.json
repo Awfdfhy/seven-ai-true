@@ -65,7 +65,7 @@
     {
       "id": "D03_TOOLS_CAPABILITY",
       "status": "INSUFFICIENT",
-      "urls": 132,
+      "urls": 134,
       "primaryTagged": 348,
       "target": 20,
       "owners": [
@@ -102,7 +102,7 @@
     {
       "id": "D06_RPG_WORLD",
       "status": "INSUFFICIENT",
-      "urls": 38,
+      "urls": 40,
       "primaryTagged": 42,
       "target": 12,
       "owners": [
@@ -124,7 +124,7 @@
     {
       "id": "D08_MODEL_ROUTING",
       "status": "INSUFFICIENT",
-      "urls": 49,
+      "urls": 50,
       "primaryTagged": 67,
       "target": 10,
       "owners": [
@@ -135,7 +135,7 @@
     {
       "id": "D09_DEEP_THINK",
       "status": "INSUFFICIENT",
-      "urls": 42,
+      "urls": 41,
       "primaryTagged": 47,
       "target": 10,
       "owners": [
@@ -146,7 +146,7 @@
     {
       "id": "D10_FILES_MULTIMODAL",
       "status": "INSUFFICIENT",
-      "urls": 45,
+      "urls": 44,
       "primaryTagged": 60,
       "target": 8,
       "owners": [
@@ -157,7 +157,7 @@
     {
       "id": "D11_ANDROID_NATIVE",
       "status": "INSUFFICIENT",
-      "urls": 32,
+      "urls": 30,
       "primaryTagged": 46,
       "target": 10,
       "owners": [
@@ -190,7 +190,7 @@
     {
       "id": "D14_SECURITY_PRIVACY",
       "status": "INSUFFICIENT",
-      "urls": 69,
+      "urls": 70,
       "primaryTagged": 92,
       "target": 12,
       "owners": [
@@ -212,7 +212,7 @@
     {
       "id": "D16_NETWORK_RESILIENCE",
       "status": "INSUFFICIENT",
-      "urls": 57,
+      "urls": 61,
       "primaryTagged": 66,
       "target": 8,
       "owners": [
@@ -223,7 +223,7 @@
     {
       "id": "D17_PERFORMANCE_CONCURRENCY",
       "status": "INSUFFICIENT",
-      "urls": 89,
+      "urls": 88,
       "primaryTagged": 83,
       "target": 10,
       "owners": [
@@ -245,7 +245,7 @@
     {
       "id": "D19_AGENT_ORCHESTRATION",
       "status": "INSUFFICIENT",
-      "urls": 98,
+      "urls": 96,
       "primaryTagged": 148,
       "target": 10,
       "owners": [
@@ -267,7 +267,7 @@
     {
       "id": "D21_OBSERVABILITY_WORLD_MODEL",
       "status": "INSUFFICIENT",
-      "urls": 101,
+      "urls": 100,
       "primaryTagged": 100,
       "target": 8,
       "owners": [
@@ -278,7 +278,7 @@
     {
       "id": "D22_PROTOCOLS_INTEROP",
       "status": "INSUFFICIENT",
-      "urls": 82,
+      "urls": 80,
       "primaryTagged": 103,
       "target": 10,
       "owners": [
@@ -344,7 +344,7 @@
     {
       "id": "D28_LOCAL_INTELLIGENCE",
       "status": "INSUFFICIENT",
-      "urls": 49,
+      "urls": 50,
       "primaryTagged": 67,
       "target": 8,
       "owners": [
