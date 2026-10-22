@@ -50,7 +50,7 @@
     {
       "id": "D02_MEMORY_CONTEXT",
       "status": "INSUFFICIENT",
-      "urls": 137,
+      "urls": 139,
       "primaryTagged": 339,
       "target": 20,
       "owners": [
@@ -65,7 +65,7 @@
     {
       "id": "D03_TOOLS_CAPABILITY",
       "status": "INSUFFICIENT",
-      "urls": 130,
+      "urls": 132,
       "primaryTagged": 348,
       "target": 20,
       "owners": [
@@ -91,7 +91,7 @@
     {
       "id": "D05_SELF_DEVELOPMENT",
       "status": "INSUFFICIENT",
-      "urls": 44,
+      "urls": 46,
       "primaryTagged": 90,
       "target": 12,
       "owners": [
@@ -157,7 +157,7 @@
     {
       "id": "D11_ANDROID_NATIVE",
       "status": "INSUFFICIENT",
-      "urls": 30,
+      "urls": 32,
       "primaryTagged": 46,
       "target": 10,
       "owners": [
@@ -168,7 +168,7 @@
     {
       "id": "D12_UI_DESIGN_SYSTEM",
       "status": "INSUFFICIENT",
-      "urls": 89,
+      "urls": 91,
       "primaryTagged": 122,
       "target": 10,
       "owners": [
@@ -190,7 +190,7 @@
     {
       "id": "D14_SECURITY_PRIVACY",
       "status": "INSUFFICIENT",
-      "urls": 68,
+      "urls": 70,
       "primaryTagged": 92,
       "target": 12,
       "owners": [
@@ -201,7 +201,7 @@
     {
       "id": "D15_PERSISTENCE_RECOVERY",
       "status": "INSUFFICIENT",
-      "urls": 70,
+      "urls": 72,
       "primaryTagged": 88,
       "target": 10,
       "owners": [
@@ -223,7 +223,7 @@
     {
       "id": "D17_PERFORMANCE_CONCURRENCY",
       "status": "INSUFFICIENT",
-      "urls": 88,
+      "urls": 90,
       "primaryTagged": 83,
       "target": 10,
       "owners": [
@@ -234,7 +234,7 @@
     {
       "id": "D18_TESTING_EVALS",
       "status": "INSUFFICIENT",
-      "urls": 94,
+      "urls": 96,
       "primaryTagged": 128,
       "target": 12,
       "owners": [
@@ -245,7 +245,7 @@
     {
       "id": "D19_AGENT_ORCHESTRATION",
       "status": "INSUFFICIENT",
-      "urls": 96,
+      "urls": 98,
       "primaryTagged": 148,
       "target": 10,
       "owners": [
@@ -256,7 +256,7 @@
     {
       "id": "D20_PRODUCT_QUALITY",
       "status": "INSUFFICIENT",
-      "urls": 89,
+      "urls": 91,
       "primaryTagged": 122,
       "target": 8,
       "owners": [
@@ -300,7 +300,7 @@
     {
       "id": "D24_RELEASE_APK",
       "status": "INSUFFICIENT",
-      "urls": 100,
+      "urls": 102,
       "primaryTagged": 100,
       "target": 8,
       "owners": [
@@ -333,7 +333,7 @@
     {
       "id": "D27_ERROR_RECOVERY_UX",
       "status": "INSUFFICIENT",
-      "urls": 89,
+      "urls": 91,
       "primaryTagged": 119,
       "target": 8,
       "owners": [
@@ -366,7 +366,7 @@
     {
       "id": "D30_AUTONOMOUS_QUALITY",
       "status": "INSUFFICIENT",
-      "urls": 101,
+      "urls": 103,
       "primaryTagged": 212,
       "target": 12,
       "owners": [
