@@ -1,8 +1,16 @@
 # D17_PERFORMANCE_CONCURRENCY — Performance / Concurrency / Long Chat / Races
 
-Research audit: INSUFFICIENT
+Research audit: READY
 
 DOMAIN_ID=D17_PERFORMANCE_CONCURRENCY
-DOMAIN_VERDICT=RESEARCH_INSUFFICIENT
-CURRENT=No trustworthy plan block was produced in this cycle.
-KNOWN_UNKNOWNS=Research agent output missing or timed out.
+SOURCE_ANALYSIS=Harvested primary/secondary from Android core app quality, web.dev long tasks, MDN Streams. Common themes: avoid long JS tasks blocking main thread (INP/long tasks), respect Android lifecycle/foreground constraints, use streaming/transferable work and cancellation. Streams API (MDN) emphasizes backpressure/consumption; Android Core App Quality focuses on responsiveness, lifecycle, ANRs, and resource constraints. Evidence is solid for web/Android principles but lacks Seven-specific latency budgets, task metrics, and race proofs.
+CURRENT=TaskManager (`remake/src/core/task-manager.ts`) is the single owner of tasks with states (starting/running/cancelling/cancelled/succeeded/failed), AbortController per task, timeout/deadline sealing, cancellation sealing, exclusive owner reservation, listener snapshots, and completed retention cap (maxRetainedCompleted). ARCHITECTURE states: "All provider calls receive the TaskManager signal. Android/native operations use a bridge cancellation token mapped to the same taskId." Cancellation is explicit via sealCancellation/sealDeadline. No obvious global task queue priority/budget enforcement visible in TaskManager core; long chat/streaming pressure handling and race detection appear to rely on call sites. No evidence of task metrics (p50/p90/p99, queue time, cancellation latency) or long-task instrumentation in core inspected.
+TARGET=Deterministic cancellation with sub-second propagation, bounded concurrency per owner/room/global, backpressure for long chats/streams, explicit resource budgets (time/memory/bytes), protection against races (idempotency + cancellation sealing), Android lifecycle-aware cancellation, and measurable latency SLOs with regression tests.
+NOW=Instrument TaskManager transitions with structured metrics (start/end/cancel/timeout) and enforce a per-owner concurrency limit (in addition to exclusive ownership) with deterministic tests for race between cancel/finish/timeout.
+NEXT=Adopt streaming with backpressure (leveraging Streams API patterns), enforce deadline propagation to all async boundaries (storage/network/bridge), add long-task detection hooks and yield points, and map bridge cancellation tokens to taskId with timeout tests.
+LATER=Cooperative scheduling for large renders/workers, memory pressure hooks (long chats), adaptive timeouts, and cross-platform cancellation cancellation-proof harness.
+TESTS=Deterministic unit tests for TaskManager (cancel before start/after finish, double cancel, timeout, seal idempotency), race tests (concurrent run/cancel), Android bridge cancellation round-trip tests, long-chat streaming backpressure tests, and latency regression guards.
+RISKS=Over-broad cancellation can abort in-progress writes; deadline sealing must not drop committed results. Android bridge races between JS/native lifecycle. Long tasks on low-end devices. Exclusive ownership can create convoying if not bounded.
+FIRST_SLICE=Add per-owner max concurrent tasks + metrics counters to TaskManager with tests; ensure cancellation propagation is covered by existing task tests and add a race regression test.
+KNOWN_UNKNOWNS=Actual provider stream chunking/cancellation, storage transaction cancellation, bridge cancellation token lifecycle, and real long-chat memory usage.
+DOMAIN_VERDICT=READY_FOR_PLAN
