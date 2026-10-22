@@ -39,7 +39,7 @@
     {
       "id": "D01_CHAT_CORE",
       "status": "INSUFFICIENT",
-      "urls": 70,
+      "urls": 72,
       "primaryTagged": 86,
       "target": 10,
       "owners": [
@@ -50,7 +50,7 @@
     {
       "id": "D02_MEMORY_CONTEXT",
       "status": "INSUFFICIENT",
-      "urls": 137,
+      "urls": 139,
       "primaryTagged": 339,
       "target": 20,
       "owners": [
@@ -65,7 +65,7 @@
     {
       "id": "D03_TOOLS_CAPABILITY",
       "status": "INSUFFICIENT",
-      "urls": 130,
+      "urls": 132,
       "primaryTagged": 348,
       "target": 20,
       "owners": [
@@ -245,7 +245,7 @@
     {
       "id": "D19_AGENT_ORCHESTRATION",
       "status": "INSUFFICIENT",
-      "urls": 96,
+      "urls": 98,
       "primaryTagged": 148,
       "target": 10,
       "owners": [
@@ -267,7 +267,7 @@
     {
       "id": "D21_OBSERVABILITY_WORLD_MODEL",
       "status": "INSUFFICIENT",
-      "urls": 100,
+      "urls": 102,
       "primaryTagged": 100,
       "target": 8,
       "owners": [
@@ -278,7 +278,7 @@
     {
       "id": "D22_PROTOCOLS_INTEROP",
       "status": "INSUFFICIENT",
-      "urls": 80,
+      "urls": 82,
       "primaryTagged": 103,
       "target": 10,
       "owners": [
