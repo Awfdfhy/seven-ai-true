@@ -146,8 +146,8 @@
     {
       "id": "D10_FILES_MULTIMODAL",
       "status": "INSUFFICIENT",
-      "urls": 48,
-      "primaryTagged": 75,
+      "urls": 44,
+      "primaryTagged": 60,
       "target": 8,
       "owners": [
         "B02",
@@ -289,8 +289,8 @@
     {
       "id": "D23_IMPORT_EXPORT_BACKUP",
       "status": "INSUFFICIENT",
-      "urls": 49,
-      "primaryTagged": 75,
+      "urls": 45,
+      "primaryTagged": 60,
       "target": 6,
       "owners": [
         "B02",
