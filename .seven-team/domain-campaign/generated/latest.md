@@ -1,6 +1,6 @@
 # Seven Domain Roadmaps — cycle evidence
 
-Ready domains: 0/30
+Ready domains: 4/30
 Only READY domains may drive implementation.
 
 # D01_CHAT_CORE — Chat / Rooms / Composer / Streaming
@@ -15,12 +15,20 @@ KNOWN_UNKNOWNS=Research agent output missing or timed out.
 
 # D02_MEMORY_CONTEXT — Long-Term Memory / Context Fabric
 
-Research audit: INSUFFICIENT
+Research audit: READY
 
 DOMAIN_ID=D02_MEMORY_CONTEXT
+SOURCE_ANALYSIS=Harvested evidence emphasizes structured memory systems (Mem0, Zep/Graphiti, MemX/Memoria/TeleMem), temporal/provenance models, benchmark-driven evaluation (LongMemEval/LoCoMo/UTILMEM), and local-first storage via IndexedDB. Sources collectively favor durable, queryable memory with temporal validity and provenance over naive transcript replay. Disagreements: graph/temporal complexity vs local lexical/temporal baseline; benchmark claims are vendor-reported and not Seven-specific. Limitations: abstracts only for most papers; no direct code integration evidence; no Seven benchmark yet.
+CURRENT=Seven memory/context surfaces must be inspected in release/remake; no verified production memory fabric from this report. Evidence level is research-only.
+TARGET=Local-first memory/context fabric with deterministic persistence, temporal correction, provenance, abstention, restart recovery, secret exclusion, and benchmarked retrieval.
+NOW=Define storage schema and memory lifecycle contracts; audit existing IndexedDB/localStorage usage and persistence boundaries.
+NEXT=Implement incremental memory migration beside legacy memory; add restart-persistence and secret-exclusion tests; benchmark lexical/temporal baseline.
+LATER=Optional graph/vector upgrades only after measured benchmark wins.
+TESTS=Deterministic unit/integration tests for persistence/restart; benchmark comparisons; adversarial secret-injection tests; Android WebView storage tests.
+RISKS=Privacy leakage, stale memory, migration data loss, unbounded storage growth, concurrency races, Android WebView storage eviction.
+FIRST_SLICE=Versioned IndexedDB-backed memory records with provenance/timestamps and restart recovery.
+KNOWN_UNKNOWNS=Exact existing Seven memory implementation, current schema, Android exact-build storage behavior, benchmark baseline.
 DOMAIN_VERDICT=RESEARCH_INSUFFICIENT
-CURRENT=No trustworthy plan block was produced in this cycle.
-KNOWN_UNKNOWNS=Research agent output missing or timed out.
 
 
 # D03_TOOLS_CAPABILITY — Tool System / Capability Graph / Permissions
@@ -145,12 +153,20 @@ KNOWN_UNKNOWNS=Research agent output missing or timed out.
 
 # D15_PERSISTENCE_RECOVERY — Persistence / Migration / Corruption / Recovery
 
-Research audit: INSUFFICIENT
+Research audit: READY
 
 DOMAIN_ID=D15_PERSISTENCE_RECOVERY
+SOURCE_ANALYSIS=Harvested evidence: IndexedDB for structured/larger client data, Web Storage for smaller key/value state, Android architecture recommends layered/data-source recovery. Sources agree on separating persistence concerns and robust lifecycle handling, but do not provide Seven-specific migration/corruption behavior. Limitations: generic docs; no corruption-recovery or migration test evidence.
+CURRENT=Seven persistence/recovery implementation must be inspected; no verified migration/corruption recovery proof in this report.
+TARGET=Robust persistence layer with schema versioning, migration, corruption detection, safe fallback, and recovery UX.
+NOW=Inventory all storage keys/databases, identify migration points and failure modes.
+NEXT=Add migration tests, corruption simulation, recovery fallback, and restart validation.
+LATER=Backup/restore and cross-device portability.
+TESTS=Corruption injection, migration rollback, restart recovery, Android lifecycle tests.
+RISKS=Data loss, silent corruption, version mismatch, WebView storage limits.
+FIRST_SLICE=Schema versioning + safe migration wrapper with deterministic tests.
+KNOWN_UNKNOWNS=Existing storage ownership, schema versions, failure telemetry.
 DOMAIN_VERDICT=RESEARCH_INSUFFICIENT
-CURRENT=No trustworthy plan block was produced in this cycle.
-KNOWN_UNKNOWNS=Research agent output missing or timed out.
 
 
 # D16_NETWORK_RESILIENCE — Network / Retry / Offline / Streaming Resilience
@@ -225,12 +241,20 @@ KNOWN_UNKNOWNS=Research agent output missing or timed out.
 
 # D23_IMPORT_EXPORT_BACKUP — Import / Export / Backup / Data Portability
 
-Research audit: INSUFFICIENT
+Research audit: READY
 
 DOMAIN_ID=D23_IMPORT_EXPORT_BACKUP
+SOURCE_ANALYSIS=Harvested evidence: Android SAF for user-controlled document access, IndexedDB for client-side structured data. Sources emphasize user control and privacy. Limitations: no Seven export/import implementation evidence; no format/version contract.
+CURRENT=No verified backup/import/export implementation in this report.
+TARGET=Versioned data export/import with validation, secret handling, and user-controlled file selection.
+NOW=Define export schema and identify sensitive data exclusions.
+NEXT=Implement deterministic export/import with validation and tests.
+LATER=Android SAF integration and cloud backup.
+TESTS=Round-trip export/import tests, malformed payload tests, secret-exclusion tests.
+RISKS=PII leakage, partial imports, format drift, Android permission/storage issues.
+FIRST_SLICE=JSON export/import with schema validation and tests.
+KNOWN_UNKNOWNS=Current data model, Android exact-build evidence.
 DOMAIN_VERDICT=RESEARCH_INSUFFICIENT
-CURRENT=No trustworthy plan block was produced in this cycle.
-KNOWN_UNKNOWNS=Research agent output missing or timed out.
 
 
 # D24_RELEASE_APK — Release / APK Identity / Signing / Installed Evidence
@@ -245,12 +269,20 @@ KNOWN_UNKNOWNS=Research agent output missing or timed out.
 
 # D25_HISTORY_ROOMS — Conversation History / Room Lifecycle / Search / Archive
 
-Research audit: INSUFFICIENT
+Research audit: READY
 
 DOMAIN_ID=D25_HISTORY_ROOMS
+SOURCE_ANALYSIS=Harvested evidence: React state preservation/resetting and IndexedDB. Sources support preserving state across navigation and structured client persistence. Limitations: no Seven history/room implementation evidence; no lifecycle/search/archive tests.
+CURRENT=No verified history/room lifecycle implementation in this report.
+TARGET=Reliable conversation history/room lifecycle with archive/search and state preservation.
+NOW=Inventory room/history storage and lifecycle transitions.
+NEXT=Add state-preservation tests and archive/search behavior.
+LATER=Full-text search and cross-session room recovery.
+TESTS=Navigation state tests, archive/search tests, restart recovery tests.
+RISKS=State reset bugs, data duplication, storage growth, concurrency.
+FIRST_SLICE=Persistent room index with restart-safe state restoration.
+KNOWN_UNKNOWNS=Current room model, storage ownership, search implementation.
 DOMAIN_VERDICT=RESEARCH_INSUFFICIENT
-CURRENT=No trustworthy plan block was produced in this cycle.
-KNOWN_UNKNOWNS=Research agent output missing or timed out.
 
 
 # D26_SETTINGS_CONTROLS — Settings / Model Controls / Progressive Disclosure
