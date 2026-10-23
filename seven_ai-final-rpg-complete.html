@@ -1029,6 +1029,7 @@
         <button onclick="SevenRpgUI.showInventory()" data-tooltip="Inventory (I)">🎒</button>
         <button onclick="SevenRpgUI.showQuestLog()" data-tooltip="Quests (Q)">📜</button>
         <button onclick="SevenRpgUI.showMap()" data-tooltip="Map (M)">🗺️</button>
+        <button onclick="SevenRpgSounds.toggle(); updateSoundButton()" data-tooltip="Sound (S)" id="soundToggle">🔊</button>
     </div>
 
     <!-- Character Sheet Modal -->
@@ -1306,6 +1307,7 @@
             },
 
             showCharacterSheet(characterId = null) {
+                SevenRpgSounds.play('modal-open');
                 this.closeActiveModal();
                 this.activeModal = 'characterSheetModal';
                 this.activeCharacter = characterId;
@@ -1317,6 +1319,7 @@
             },
 
             showInventory() {
+                SevenRpgSounds.play('modal-open');
                 this.closeActiveModal();
                 this.activeModal = 'inventoryModal';
                 const modal = document.getElementById('inventoryModal');
@@ -1327,6 +1330,7 @@
             },
 
             showQuestLog() {
+                SevenRpgSounds.play('modal-open');
                 this.closeActiveModal();
                 this.activeModal = 'questLogModal';
                 const modal = document.getElementById('questLogModal');
@@ -1334,6 +1338,7 @@
             },
 
             showMap() {
+                SevenRpgSounds.play('modal-open');
                 this.closeActiveModal();
                 this.activeModal = 'mapModal';
                 const modal = document.getElementById('mapModal');
@@ -1342,6 +1347,7 @@
 
             closeActiveModal() {
                 if (this.activeModal) {
+                    SevenRpgSounds.play('modal-close');
                     const modal = document.getElementById(this.activeModal);
                     if (modal) modal.classList.remove('active');
                     this.activeModal = null;
@@ -1349,6 +1355,7 @@
             },
 
             switchTab(tabName) {
+                SevenRpgSounds.play('ui-click');
                 // Tab switching logic
                 const tabs = document.querySelectorAll('.tab');
                 tabs.forEach(tab => tab.classList.remove('active'));
@@ -1356,6 +1363,7 @@
             },
 
             filterInventory(category) {
+                SevenRpgSounds.play('ui-click');
                 const buttons = document.querySelectorAll('.inventory-filters .filter-btn');
                 buttons.forEach(btn => btn.classList.remove('active'));
                 event.target.classList.add('active');
@@ -1363,6 +1371,7 @@
             },
 
             filterQuests(status) {
+                SevenRpgSounds.play('ui-click');
                 const buttons = document.querySelectorAll('.quest-log .filter-btn');
                 buttons.forEach(btn => btn.classList.remove('active'));
                 event.target.classList.add('active');
@@ -1370,6 +1379,7 @@
             },
 
             showXPGain(amount, source) {
+                SevenRpgSounds.play('xp-gain');
                 const popup = document.createElement('div');
                 popup.className = 'xp-popup';
                 popup.textContent = `+${amount} XP`;
@@ -1378,6 +1388,7 @@
             },
 
             showLevelUp(newLevel) {
+                SevenRpgSounds.play('level-up');
                 // Create level up modal dynamically
                 const modal = document.createElement('div');
                 modal.className = 'modal active';
@@ -1398,6 +1409,7 @@
             },
 
             showAchievement(achievement) {
+                SevenRpgSounds.play('achievement');
                 const notification = document.createElement('div');
                 notification.className = 'achievement-notification';
                 notification.innerHTML = `
@@ -1496,9 +1508,15 @@
 
         // Initialize on page load
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => SevenRpgUI.init());
+            document.addEventListener('DOMContentLoaded', () => {
+                SevenRpgSounds.init();
+                SevenRpgUI.init();
+                updateSoundButton();
+            });
         } else {
+            SevenRpgSounds.init();
             SevenRpgUI.init();
+            updateSoundButton();
         }
 
         // ===== Demo Functions =====
