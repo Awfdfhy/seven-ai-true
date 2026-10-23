@@ -1,0 +1,613 @@
+{
+  "results": [
+    {
+      "name": "initial IDB migration and UI boot",
+      "status": "PASS"
+    },
+    {
+      "name": "auto context budget is bounded by the controller model window",
+      "status": "PASS"
+    },
+    {
+      "name": "composer IME composition blocks Enter send until composition ends",
+      "status": "PASS"
+    },
+    {
+      "name": "room commit/reload and untouched legacy keys",
+      "status": "PASS"
+    },
+    {
+      "name": "room switch cancels only the originating active generation",
+      "status": "PASS"
+    },
+    {
+      "name": "structured RPG context is room-scoped and absent from normal chat",
+      "status": "PASS"
+    },
+    {
+      "name": "room persistence stages WAL before async commit and clears it after commit",
+      "status": "PASS"
+    },
+    {
+      "name": "room persistence replays a newer crash WAL exactly once",
+      "status": "PASS"
+    },
+    {
+      "name": "queued snapshots maintain order",
+      "status": "PASS"
+    },
+    {
+      "name": "stale tab fails rather than overwrite",
+      "status": "PASS"
+    },
+    {
+      "name": "storage startup failure restores interactive recovery UI",
+      "status": "PASS"
+    },
+    {
+      "name": "atomic memory create update delete and history",
+      "status": "PASS"
+    },
+    {
+      "name": "failed memory write leaves state and ledger unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "memory metadata never grants action permission",
+      "status": "PASS"
+    },
+    {
+      "name": "corrupt bundle cannot be overwritten",
+      "status": "PASS"
+    },
+    {
+      "name": "legacy room migration preserves ID title text and original",
+      "status": "PASS"
+    },
+    {
+      "name": "room audit and state commit revisions agree",
+      "status": "PASS"
+    },
+    {
+      "name": "free-only model catalog and credential-free backup",
+      "status": "PASS"
+    },
+    {
+      "name": "awesome free api pack is zero-key by default",
+      "status": "PASS"
+    },
+    {
+      "name": "model intelligence v3 detects multi-intent requests with confidence",
+      "status": "PASS"
+    },
+    {
+      "name": "model intelligence v3 lowers confidence for ambiguous short requests",
+      "status": "PASS"
+    },
+    {
+      "name": "model intelligence v3 enforces required vision capability",
+      "status": "PASS"
+    },
+    {
+      "name": "model intelligence v3 rejects insufficient context",
+      "status": "PASS"
+    },
+    {
+      "name": "model intelligence v3 decays old failures instead of poisoning health forever",
+      "status": "PASS"
+    },
+    {
+      "name": "model intelligence v3 respects provider-wide cooldown",
+      "status": "PASS"
+    },
+    {
+      "name": "model intelligence v3 hysteresis keeps healthy near-ties but not clear losses",
+      "status": "PASS"
+    },
+    {
+      "name": "model picker v3 is ranked by the same scoring primitive and explanations stay bounded",
+      "status": "PASS"
+    },
+    {
+      "name": "provider health v2 lazily normalizes legacy health records",
+      "status": "PASS"
+    },
+    {
+      "name": "provider health v2 records bounded EWMA latency samples",
+      "status": "PASS"
+    },
+    {
+      "name": "provider health v2 classifies failure families",
+      "status": "PASS"
+    },
+    {
+      "name": "provider health v2 cancellation does not damage route health",
+      "status": "PASS"
+    },
+    {
+      "name": "provider health v2 failure streak increases cooldown and retry-after is bounded",
+      "status": "PASS"
+    },
+    {
+      "name": "provider health v2 keeps 404 model-local",
+      "status": "PASS"
+    },
+    {
+      "name": "provider health v2 opens provider circuit for 429 and honors retry-after",
+      "status": "PASS"
+    },
+    {
+      "name": "provider health v2 opens provider circuit only after repeated server failures",
+      "status": "PASS"
+    },
+    {
+      "name": "provider health v2 success heals failure streak and cooldown",
+      "status": "PASS"
+    },
+    {
+      "name": "provider health v2 exposes deterministic quota pressure",
+      "status": "PASS"
+    },
+    {
+      "name": "provider health v2 diagnostics are bounded and contain no secrets or content",
+      "status": "PASS"
+    },
+    {
+      "name": "model intelligence v3 delegates health truth to provider health v2",
+      "status": "PASS"
+    },
+    {
+      "name": "memory scope hardening writes ordinary memory as explicit global private",
+      "status": "PASS"
+    },
+    {
+      "name": "memory scope hardening isolates room memories",
+      "status": "PASS"
+    },
+    {
+      "name": "memory scope hardening isolates project and RPG memories",
+      "status": "PASS"
+    },
+    {
+      "name": "memory scope hardening permits same content in isolated scopes",
+      "status": "PASS"
+    },
+    {
+      "name": "memory scope hardening excludes restricted memory by default",
+      "status": "PASS"
+    },
+    {
+      "name": "memory scope hardening keeps legacy unscoped canonical memory globally compatible",
+      "status": "PASS"
+    },
+    {
+      "name": "memory scope hardening blocks relation expansion across rooms",
+      "status": "PASS"
+    },
+    {
+      "name": "memory scope hardening blocks evidence expansion across rooms",
+      "status": "PASS"
+    },
+    {
+      "name": "memory scope hardening active chat context binds current room",
+      "status": "PASS"
+    },
+    {
+      "name": "memory scope metadata survives update and canonical backup validation",
+      "status": "PASS"
+    },
+    {
+      "name": "ui simplification removes manual credentials and keeps core controls",
+      "status": "PASS"
+    },
+    {
+      "name": "ui simplification route status is semantic and reflects runtime health",
+      "status": "PASS"
+    },
+    {
+      "name": "ui simplification settings fit 320px without horizontal overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "ui simplification RTL sections remain usable at 320px",
+      "status": "PASS"
+    },
+    {
+      "name": "performance polish bounds 500-message chat DOM without mutating canonical history",
+      "status": "PASS"
+    },
+    {
+      "name": "performance polish show-earlier expands projection without changing history",
+      "status": "PASS"
+    },
+    {
+      "name": "performance polish streaming UI coalesces bursts and preserves latest text",
+      "status": "PASS"
+    },
+    {
+      "name": "performance polish background state does not cancel active generation",
+      "status": "PASS"
+    },
+    {
+      "name": "performance polish network projection is advisory and deterministic",
+      "status": "PASS"
+    },
+    {
+      "name": "integration diagnostics normalize errors and bound trace data",
+      "status": "PASS"
+    },
+    {
+      "name": "provider discovery failure enters health and success heals it",
+      "status": "PASS"
+    },
+    {
+      "name": "performance polish visual viewport and diagnostics initialize safely",
+      "status": "PASS"
+    },
+    {
+      "name": "performance polish 320px chat and settings avoid horizontal overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "performance polish RTL remains bounded at 320px",
+      "status": "PASS"
+    },
+    {
+      "name": "deep think speed policy adaptively budgets hidden output",
+      "status": "PASS"
+    },
+    {
+      "name": "deep think latency priority becomes an explicit routing signal",
+      "status": "PASS"
+    },
+    {
+      "name": "main token estimator is conservative for Arabic and compatible with ASCII estimate",
+      "status": "PASS"
+    },
+    {
+      "name": "fallback budget enforces one bounded wall-clock envelope",
+      "status": "PASS"
+    },
+    {
+      "name": "request normalization preserves deep latency and timeout policy without changing final budgets",
+      "status": "PASS"
+    },
+    {
+      "name": "runDeepThink keeps a dedicated hidden pass with compact brief and fast-lane config",
+      "status": "PASS"
+    },
+    {
+      "name": "deep think performance ownership is request scoped",
+      "status": "PASS"
+    },
+    {
+      "name": "deep think diagnostics expose timings and routes but no content or secrets",
+      "status": "PASS"
+    },
+    {
+      "name": "deep think low-complexity fast lane does not allocate full model ceiling when ceiling is larger",
+      "status": "PASS"
+    },
+    {
+      "name": "measured latency v2 keeps bounded valid route samples",
+      "status": "PASS"
+    },
+    {
+      "name": "measured latency v2 percentile and warm-up influence are deterministic",
+      "status": "PASS"
+    },
+    {
+      "name": "measured latency v2 learned timeout uses p90 but obeys complexity bounds",
+      "status": "PASS"
+    },
+    {
+      "name": "adaptive speed router v2 lets measured p90 break only near ties",
+      "status": "PASS"
+    },
+    {
+      "name": "adaptive speed router v2 does not displace a clearly stronger reasoning model",
+      "status": "PASS"
+    },
+    {
+      "name": "measured latency v2 records first-token only when it actually exists",
+      "status": "PASS"
+    },
+    {
+      "name": "request normalization preserves latency tier for route-aware timeouts",
+      "status": "PASS"
+    },
+    {
+      "name": "measured latency v2 diagnostics contain no content or secret material",
+      "status": "PASS"
+    },
+    {
+      "name": "web search v2 recognizes Arabic and current-information intent",
+      "status": "PASS"
+    },
+    {
+      "name": "web search v2 query plan keeps Arabic primary and adds bounded freshness/entity variants",
+      "status": "PASS"
+    },
+    {
+      "name": "web search v2 canonicalizes and deduplicates tracking variants",
+      "status": "PASS"
+    },
+    {
+      "name": "web search v2 aggregates DDG and English/Arabic Wikipedia instead of fallback-only search",
+      "status": "PASS"
+    },
+    {
+      "name": "web search v2 context is bounded and labels snippet versus read evidence",
+      "status": "PASS"
+    },
+    {
+      "name": "web search v2 source UI exposes adapter, read state, and limited capability truth",
+      "status": "PASS"
+    },
+    {
+      "name": "web search v2 diagnostics avoid secrets and full page content",
+      "status": "PASS"
+    },
+    {
+      "name": "web search gateway URL validation requires clean HTTPS",
+      "status": "PASS"
+    },
+    {
+      "name": "web search gateway joins the parallel pool and reader upgrades source state",
+      "status": "PASS"
+    },
+    {
+      "name": "web search gateway failure degrades truthfully to limited capability",
+      "status": "PASS"
+    },
+    {
+      "name": "web search gateway reader failure stays explicit and preserves snippet evidence",
+      "status": "PASS"
+    },
+    {
+      "name": "web search gateway disabled preserves knowledge-sources-only behavior",
+      "status": "PASS"
+    },
+    {
+      "name": "web search gateway is managed automatically with no manual credential controls",
+      "status": "PASS"
+    },
+    {
+      "name": "web search evidence freshness is query-relative",
+      "status": "PASS"
+    },
+    {
+      "name": "web search score parts deterministically sum to final candidate score",
+      "status": "PASS"
+    },
+    {
+      "name": "web search evidence selection prefers independent hosts and stable IDs",
+      "status": "PASS"
+    },
+    {
+      "name": "web search evidence context and system prompt share exact citation IDs",
+      "status": "PASS"
+    },
+    {
+      "name": "inline search citations link only known source IDs and skip code",
+      "status": "PASS"
+    },
+    {
+      "name": "search source cards display stable ID, type, freshness and read state",
+      "status": "PASS"
+    },
+    {
+      "name": "search source metadata survives room normalization and render without storing page bodies",
+      "status": "PASS"
+    },
+    {
+      "name": "web search diagnostics expose freshness/source distributions without evidence bodies",
+      "status": "PASS"
+    },
+    {
+      "name": "web search gap analysis accepts strong diverse read evidence",
+      "status": "PASS"
+    },
+    {
+      "name": "web search gap analysis identifies thin snippet-only evidence",
+      "status": "PASS"
+    },
+    {
+      "name": "web search gap analysis flags stale evidence only for current questions",
+      "status": "PASS"
+    },
+    {
+      "name": "web search follow-up planner is bounded and deduplicates initial query text",
+      "status": "PASS"
+    },
+    {
+      "name": "web search conflict signals flag material numeric disagreement but not near-equal values",
+      "status": "PASS"
+    },
+    {
+      "name": "web search conflict context presents signals as caution, not authority",
+      "status": "PASS"
+    },
+    {
+      "name": "web search insufficient first wave triggers exactly one bounded follow-up wave",
+      "status": "PASS"
+    },
+    {
+      "name": "web search sufficient first wave avoids follow-up latency",
+      "status": "PASS"
+    },
+    {
+      "name": "web search follow-up preserves prior read state and does not reread same successful URL",
+      "status": "PASS"
+    },
+    {
+      "name": "web search empty evidence returns no fabricated context",
+      "status": "PASS"
+    },
+    {
+      "name": "web search Batch 4 diagnostics remain metadata-only",
+      "status": "PASS"
+    },
+    {
+      "name": "web search Batch 5 cache policy keeps current TTL shorter than evergreen TTL",
+      "status": "PASS"
+    },
+    {
+      "name": "web search Batch 5 repeated adapter query hits cache and avoids network",
+      "status": "PASS"
+    },
+    {
+      "name": "web search Batch 5 page cache prevents duplicate reader calls",
+      "status": "PASS"
+    },
+    {
+      "name": "web search Batch 5 cache remains bounded under many unique searches",
+      "status": "PASS"
+    },
+    {
+      "name": "web search Batch 5 sufficient search emits truthful stages without fake reading",
+      "status": "PASS"
+    },
+    {
+      "name": "web search Batch 5 follow-up stage appears only for insufficient evidence",
+      "status": "PASS"
+    },
+    {
+      "name": "web search Batch 5 stage payload never exposes query body source body or gateway key",
+      "status": "PASS"
+    },
+    {
+      "name": "web search Batch 5 cache diagnostics expose counts only",
+      "status": "PASS"
+    },
+    {
+      "name": "web search Batch 4 polish flags explicit polarity disagreement conservatively",
+      "status": "PASS"
+    },
+    {
+      "name": "web search Batch 4 polish exposes bounded follow-up query diagnostics",
+      "status": "PASS"
+    },
+    {
+      "name": "web search batch6 intent taxonomy is deterministic",
+      "status": "PASS"
+    },
+    {
+      "name": "web search batch6 technical plan asks for documentation coverage",
+      "status": "PASS"
+    },
+    {
+      "name": "web search batch6 comparison decomposes into balanced subject coverage",
+      "status": "PASS"
+    },
+    {
+      "name": "web search batch6 ambiguous comparison falls back without inventing subjects",
+      "status": "PASS"
+    },
+    {
+      "name": "web search batch6 current queries add freshness and primary coverage",
+      "status": "PASS"
+    },
+    {
+      "name": "web search batch6 preserves Arabic primary and useful English technical entity query",
+      "status": "PASS"
+    },
+    {
+      "name": "web search batch6 source classifier is conservative",
+      "status": "PASS"
+    },
+    {
+      "name": "web search batch6 technical scoring favors documentation in near ties",
+      "status": "PASS"
+    },
+    {
+      "name": "web search batch6 authority cannot rescue irrelevant documentation",
+      "status": "PASS"
+    },
+    {
+      "name": "web search batch6 sends sourceTypeHint and domainHint to gateway payload",
+      "status": "PASS"
+    },
+    {
+      "name": "web search batch6 coverage metadata reaches evidence units",
+      "status": "PASS"
+    },
+    {
+      "name": "web search batch6 diagnostics expose coverage metadata without raw query text",
+      "status": "PASS"
+    },
+    {
+      "name": "mode change cancels work started under the previous mode",
+      "status": "PASS"
+    },
+    {
+      "name": "mode state keeps picker and runtime semantics identical",
+      "status": "PASS"
+    },
+    {
+      "name": "deep research toggle is independent while controller implies web and Deep Think",
+      "status": "PASS"
+    },
+    {
+      "name": "deep research planner is deterministic complementary and bounded",
+      "status": "PASS"
+    },
+    {
+      "name": "deep research aggregates duplicate sources while preserving subquestion provenance",
+      "status": "PASS"
+    },
+    {
+      "name": "deep research execution builds bounded R-citation evidence and checkpoint",
+      "status": "PASS"
+    },
+    {
+      "name": "deep research resume rejects room or question mismatch",
+      "status": "PASS"
+    },
+    {
+      "name": "deep research citations R# become links and source cards preserve R IDs",
+      "status": "PASS"
+    },
+    {
+      "name": "deep research toggle stays usable at 320px RTL",
+      "status": "PASS"
+    },
+    {
+      "name": "deep research citation audit allows known R ids and rejects invented R ids",
+      "status": "PASS"
+    },
+    {
+      "name": "deep research verification gate fails unknown citations and warns missing citations",
+      "status": "PASS"
+    },
+    {
+      "name": "deep research bridge exposes citation lock without source bodies or secrets",
+      "status": "PASS"
+    },
+    {
+      "name": "deep research history serialization preserves run metadata for later export",
+      "status": "PASS"
+    },
+    {
+      "name": "deep research source UI renders evidence header and export control",
+      "status": "PASS"
+    },
+    {
+      "name": "deep research export emits bounded safe bundle through canonical JSON downloader",
+      "status": "PASS"
+    },
+    {
+      "name": "deep research aggregate follow-up is targeted and keeps total questions bounded",
+      "status": "PASS"
+    },
+    {
+      "name": "deep research enforces aggregate page-read ceiling across subquestions and follow-up",
+      "status": "PASS"
+    },
+    {
+      "name": "deep research weak aggregate evidence can trigger one bounded follow-up round",
+      "status": "PASS"
+    }
+  ],
+  "liveProviderCalls": false
+}

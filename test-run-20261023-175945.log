@@ -1,0 +1,2689 @@
+running: eval\harness.cjs
+eval corpus: PASS (27 tasks, 13 categories, Arabic 7/27, d4a736156ad5)
+running: eval\search-v2-eval.cjs
+search v2 quality corpus: PASS (12 required categories, 13 fixtures)
+running: memory.cjs
+PASS create + ledger consistency
+PASS update preserves metadata and appends immutable history
+PASS write failure keeps exact snapshot
+PASS corruption cannot be replaced with empty data
+PASS corrupt bundle update/delete fail closed
+PASS metadata never authorizes actions
+PASS delete commits ledger with canonical removal
+PASS legacy keys remain unchanged
+PASS failed v2 migration write preserves exact legacy records
+PASS legacy noncanonical update/delete compatibility
+PASS duplicate ledger IDs cannot overwrite history
+running: runtime-smoke.cjs
+PASS runtime version
+PASS memory create commit
+PASS memory read preserves exact content
+PASS duplicate memory create is rejected
+PASS scoped permission grant is valid
+PASS tampered grant is rejected
+PASS authorized side effect passes schema and permission gate
+PASS missing required tool argument is rejected
+PASS wrong tool argument type is rejected
+PASS unknown tool argument is rejected
+PASS revoked grant is rejected
+PASS context compression records original
+PASS context expand reconstructs original
+PASS unpinned context can be evicted
+PASS context reconstruct accepts supplied source
+PASS tool registry aliases duplicate capabilities to canonical id
+PASS context dedupe keeps pin and lineage
+PASS run ledger appends events
+PASS corrupt run ledger fails closed
+PASS corrupt run read is rejected
+PASS local outcome is recorded
+PASS corrupt outcome record fails closed
+PASS corrupt outcome read is rejected
+PASS local embedding is deterministic
+PASS classifier requests evidence for fresh claims
+PASS research envelope locks valid citations
+PASS coding map rejects unsafe path
+PASS coding map fingerprints safe file
+runtime smoke: PASS (28 assertions)
+running: verify.cjs
+PASS initial IDB migration and UI boot
+PASS auto context budget is bounded by the controller model window
+PASS composer IME composition blocks Enter send until composition ends
+PASS room commit/reload and untouched legacy keys
+PASS room switch cancels only the originating active generation
+PASS structured RPG context is room-scoped and absent from normal chat
+PASS room persistence stages WAL before async commit and clears it after commit
+PASS room persistence replays a newer crash WAL exactly once
+PASS queued snapshots maintain order
+PASS stale tab fails rather than overwrite
+PASS storage startup failure restores interactive recovery UI
+PASS atomic memory create update delete and history
+PASS failed memory write leaves state and ledger unchanged
+PASS memory metadata never grants action permission
+PASS corrupt bundle cannot be overwritten
+PASS legacy room migration preserves ID title text and original
+PASS room audit and state commit revisions agree
+PASS free-only model catalog and credential-free backup
+PASS awesome free api pack is zero-key by default
+PASS model intelligence v3 detects multi-intent requests with confidence
+PASS model intelligence v3 lowers confidence for ambiguous short requests
+PASS model intelligence v3 enforces required vision capability
+PASS model intelligence v3 rejects insufficient context
+PASS model intelligence v3 decays old failures instead of poisoning health forever
+PASS model intelligence v3 respects provider-wide cooldown
+PASS model intelligence v3 hysteresis keeps healthy near-ties but not clear losses
+PASS model picker v3 is ranked by the same scoring primitive and explanations stay bounded
+PASS provider health v2 lazily normalizes legacy health records
+PASS provider health v2 records bounded EWMA latency samples
+PASS provider health v2 classifies failure families
+PASS provider health v2 cancellation does not damage route health
+PASS provider health v2 failure streak increases cooldown and retry-after is bounded
+PASS provider health v2 keeps 404 model-local
+PASS provider health v2 opens provider circuit for 429 and honors retry-after
+PASS provider health v2 opens provider circuit only after repeated server failures
+PASS provider health v2 success heals failure streak and cooldown
+PASS provider health v2 exposes deterministic quota pressure
+PASS provider health v2 diagnostics are bounded and contain no secrets or content
+PASS model intelligence v3 delegates health truth to provider health v2
+PASS memory scope hardening writes ordinary memory as explicit global private
+PASS memory scope hardening isolates room memories
+PASS memory scope hardening isolates project and RPG memories
+PASS memory scope hardening permits same content in isolated scopes
+PASS memory scope hardening excludes restricted memory by default
+PASS memory scope hardening keeps legacy unscoped canonical memory globally compatible
+PASS memory scope hardening blocks relation expansion across rooms
+PASS memory scope hardening blocks evidence expansion across rooms
+PASS memory scope hardening active chat context binds current room
+PASS memory scope metadata survives update and canonical backup validation
+PASS ui simplification removes manual credentials and keeps core controls
+PASS ui simplification route status is semantic and reflects runtime health
+PASS ui simplification settings fit 320px without horizontal overflow
+PASS ui simplification RTL sections remain usable at 320px
+PASS performance polish bounds 500-message chat DOM without mutating canonical history
+PASS performance polish show-earlier expands projection without changing history
+PASS performance polish streaming UI coalesces bursts and preserves latest text
+PASS performance polish background state does not cancel active generation
+PASS performance polish network projection is advisory and deterministic
+PASS integration diagnostics normalize errors and bound trace data
+PASS provider discovery failure enters health and success heals it
+PASS performance polish visual viewport and diagnostics initialize safely
+PASS performance polish 320px chat and settings avoid horizontal overflow
+PASS performance polish RTL remains bounded at 320px
+PASS deep think speed policy adaptively budgets hidden output
+PASS deep think latency priority becomes an explicit routing signal
+PASS main token estimator is conservative for Arabic and compatible with ASCII estimate
+PASS fallback budget enforces one bounded wall-clock envelope
+PASS request normalization preserves deep latency and timeout policy without changing final budgets
+PASS runDeepThink keeps a dedicated hidden pass with compact brief and fast-lane config
+PASS deep think performance ownership is request scoped
+PASS deep think diagnostics expose timings and routes but no content or secrets
+PASS deep think low-complexity fast lane does not allocate full model ceiling when ceiling is larger
+PASS measured latency v2 keeps bounded valid route samples
+PASS measured latency v2 percentile and warm-up influence are deterministic
+PASS measured latency v2 learned timeout uses p90 but obeys complexity bounds
+PASS adaptive speed router v2 lets measured p90 break only near ties
+PASS adaptive speed router v2 does not displace a clearly stronger reasoning model
+PASS measured latency v2 records first-token only when it actually exists
+PASS request normalization preserves latency tier for route-aware timeouts
+PASS measured latency v2 diagnostics contain no content or secret material
+PASS web search v2 recognizes Arabic and current-information intent
+PASS web search v2 query plan keeps Arabic primary and adds bounded freshness/entity variants
+PASS web search v2 canonicalizes and deduplicates tracking variants
+PASS web search v2 aggregates DDG and English/Arabic Wikipedia instead of fallback-only search
+PASS web search v2 context is bounded and labels snippet versus read evidence
+PASS web search v2 source UI exposes adapter, read state, and limited capability truth
+PASS web search v2 diagnostics avoid secrets and full page content
+PASS web search gateway URL validation requires clean HTTPS
+PASS web search gateway joins the parallel pool and reader upgrades source state
+PASS web search gateway failure degrades truthfully to limited capability
+PASS web search gateway reader failure stays explicit and preserves snippet evidence
+PASS web search gateway disabled preserves knowledge-sources-only behavior
+PASS web search gateway is managed automatically with no manual credential controls
+PASS web search evidence freshness is query-relative
+PASS web search score parts deterministically sum to final candidate score
+PASS web search evidence selection prefers independent hosts and stable IDs
+PASS web search evidence context and system prompt share exact citation IDs
+PASS inline search citations link only known source IDs and skip code
+PASS search source cards display stable ID, type, freshness and read state
+PASS search source metadata survives room normalization and render without storing page bodies
+PASS web search diagnostics expose freshness/source distributions without evidence bodies
+PASS web search gap analysis accepts strong diverse read evidence
+PASS web search gap analysis identifies thin snippet-only evidence
+PASS web search gap analysis flags stale evidence only for current questions
+PASS web search follow-up planner is bounded and deduplicates initial query text
+PASS web search conflict signals flag material numeric disagreement but not near-equal values
+PASS web search conflict context presents signals as caution, not authority
+PASS web search insufficient first wave triggers exactly one bounded follow-up wave
+PASS web search sufficient first wave avoids follow-up latency
+PASS web search follow-up preserves prior read state and does not reread same successful URL
+PASS web search empty evidence returns no fabricated context
+PASS web search Batch 4 diagnostics remain metadata-only
+PASS web search Batch 5 cache policy keeps current TTL shorter than evergreen TTL
+PASS web search Batch 5 repeated adapter query hits cache and avoids network
+PASS web search Batch 5 page cache prevents duplicate reader calls
+PASS web search Batch 5 cache remains bounded under many unique searches
+PASS web search Batch 5 sufficient search emits truthful stages without fake reading
+PASS web search Batch 5 follow-up stage appears only for insufficient evidence
+PASS web search Batch 5 stage payload never exposes query body source body or gateway key
+PASS web search Batch 5 cache diagnostics expose counts only
+PASS web search Batch 4 polish flags explicit polarity disagreement conservatively
+PASS web search Batch 4 polish exposes bounded follow-up query diagnostics
+PASS web search batch6 intent taxonomy is deterministic
+PASS web search batch6 technical plan asks for documentation coverage
+PASS web search batch6 comparison decomposes into balanced subject coverage
+PASS web search batch6 ambiguous comparison falls back without inventing subjects
+PASS web search batch6 current queries add freshness and primary coverage
+PASS web search batch6 preserves Arabic primary and useful English technical entity query
+PASS web search batch6 source classifier is conservative
+PASS web search batch6 technical scoring favors documentation in near ties
+PASS web search batch6 authority cannot rescue irrelevant documentation
+PASS web search batch6 sends sourceTypeHint and domainHint to gateway payload
+PASS web search batch6 coverage metadata reaches evidence units
+PASS web search batch6 diagnostics expose coverage metadata without raw query text
+PASS mode change cancels work started under the previous mode
+PASS mode state keeps picker and runtime semantics identical
+PASS deep research toggle is independent while controller implies web and Deep Think
+PASS deep research planner is deterministic complementary and bounded
+PASS deep research aggregates duplicate sources while preserving subquestion provenance
+PASS deep research execution builds bounded R-citation evidence and checkpoint
+PASS deep research resume rejects room or question mismatch
+PASS deep research citations R# become links and source cards preserve R IDs
+PASS deep research toggle stays usable at 320px RTL
+PASS deep research citation audit allows known R ids and rejects invented R ids
+PASS deep research verification gate fails unknown citations and warns missing citations
+PASS deep research bridge exposes citation lock without source bodies or secrets
+PASS deep research history serialization preserves run metadata for later export
+PASS deep research source UI renders evidence header and export control
+PASS deep research export emits bounded safe bundle through canonical JSON downloader
+PASS deep research aggregate follow-up is targeted and keeps total questions bounded
+PASS deep research enforces aggregate page-read ceiling across subquestions and follow-up
+PASS deep research weak aggregate evidence can trigger one bounded follow-up round
+running: cloudflare\search-gateway\search-gateway.test.mjs
+PASS reader blocks private IPv4
+PASS reader blocks localhost and local domains
+PASS reader rejects non HTTPS and credentialed URLs
+PASS reader accepts public HTTPS URL
+PASS HTML extraction removes executable/navigation noise
+PASS prompt injection suspicion is metadata only
+PASS redirect target is revalidated
+PASS oversized reader response is blocked
+PASS PDF is truthfully unsupported in Batch 2
+PASS gateway client key is enforced when configured
+PASS search backend preference is deterministic
+PASS DuckDuckGo HTML parser decodes result redirects
+PASS health response never echoes configured secrets
+PASS configured search backend falls back without losing the request
+PASS Brave search endpoint returns normalized results without secret echo
+search gateway tests: PASS (15 tests)
+running: apk\android-wal-fixture.test.cjs
+Android WAL fixture: PASS empty/existing lexical rooms, durable base, failed flush refusal
+running: apk\binary-verification.test.cjs
+APK binary gate: PASS (identity, wrong package/version, malformed data, unsigned APK, missing SDK tool, Windows-suffixed build tools)
+running: apk\build-provenance.test.cjs
+APK build provenance: PASS (7 cases: current payload, stale bytes, wrong SHA, dirty source, old format, duplicate, traversal)
+running: apk\gateway-client-keys.test.cjs
+gateway client keys loader: PASS
+running: apk\patch-production-signing.test.cjs
+production signing patch: PASS
+running: apk\zip-read.test.cjs
+APK zip reader: PASS (stored + deflate round-trip, nested paths, listing, missing entry, non-zip, truncated, 1MB binary, unsupported method)
+running: release\static-audit.cjs
+static audit: PASS (99176 hot release-layer bytes, 15248 lazy attachment bytes, 630599 lazy workspace bytes, 4513568/8388608 static APK bytes, lazy-local PDF/attachments/workspaces, 0 warnings)
+running: release\agent-workflow-isolation.test.cjs
+agent workflow isolation: PASS {"workflows":10,"branches":20}
+running: release\android-lifecycle-contracts.test.cjs
+android lifecycle contracts: PASS
+running: release\beta-packaging.test.cjs
+Packaged beta startup: PASS (14 theme/system/legacy preference cases and public API)
+running: release\canon-simulator.test.cjs
+canon simulator: PASS
+running: release\contrast.test.cjs
+PASS light accent action 4.89:1
+PASS light danger action 4.78:1
+PASS light muted text 4.52:1
+PASS dark accent action 6.12:1
+PASS dark danger action 4.76:1
+PASS dark muted text 7.22:1
+contrast gate: PASS
+running: release\control-bridge-retry.test.cjs
+control bridge retry: PASS
+running: release\embedded-credentials.test.cjs
+embedded credential packaging: PASS
+running: release\github-self-dev.test.cjs
+PASS stale CI success cannot verify a new commit
+PASS same SHA from another branch cannot satisfy the gate
+PASS timeout cannot return an unfinished CI run
+PASS exact failing CI is returned as failure
+PASS multi-file changes publish once and preserve executable modes
+PASS concurrent ref updates fail without overwriting the branch
+PASS all paths validate before any remote mutation
+PASS autonomous edits cannot weaken measured acceptance gates
+PASS repository read failures are not mistaken for missing files
+PASS merge is bound to the verified commit
+github self-development failure hunt: PASS (11 cases)
+running: release\integration-contracts.test.cjs
+PASS control/runtime/execution boot contract
+PASS release stop shim aborts instead of Android controller nulling
+PASS tool call crosses control -> runtime permission gate
+PASS task file scope blocks cross-system escape
+PASS verification gate allows commit only after tool evidence
+PASS execution lifecycle reaches terminal completion
+PASS cancellation rejects late events
+PASS checkpoint restore preserves run identity
+PASS checkpoint integrity rejects tampering
+PASS context compiler isolates chat and mode state
+PASS context token estimator is conservative for Arabic
+PASS Arabic mandatory context overflow fails closed
+PASS research evidence -> citation lock contract
+PASS world runtime accepts in-order user-authored beat
+PASS world runtime preserves player agency lock
+PASS canon audit detects chronology regression
+integration contracts: PASS (16 assertions)
+running: release\research-runtime.test.cjs
+research runtime: PASS
+running: release\resilience-contracts.test.cjs
+resilience contracts: PASS
+network resilience contracts: PASS
+GitHub native path/log contracts: PASS
+attachment and token convergence contracts: PASS
+running: release\rpg-acceptance.test.cjs
+RPG acceptance deterministic gate: PASS (restart, ledger, user agency, canon, knowledge)
+running: release\rpg-advanced.test.cjs
+Testing RPG Advanced Features System...
+
+1. registerPlugin + getPlugin + hasCapability (RPG-15-03)...
+  PASS
+
+2. sandboxCall - capability denied + limit enforcement...
+  PASS
+
+3. listPlugins + unregisterPlugin...
+  PASS
+
+4. createScenarioPack + installScenarioPack (RPG-15-08)...
+  PASS
+
+5. listScenarioPacks + uninstall...
+  PASS
+
+6. seedRumor + spreadRumor + believeRumor + resolveRumor (RPG-15-10)...
+  PASS
+
+7. getRumors filter...
+  PASS
+
+8. simulateNpcOffscreen (RPG-15-11)...
+  PASS
+
+9. simulateNpcOffscreen determinism (same seed + same inputs)...
+  PASS
+
+10. createQuestNode + linkQuestNodes + evaluateQuestGraph (RPG-15-12)...
+  PASS
+
+11. addAtlasEntry + getAtlas + getTimelineChronology (RPG-15-13)...
+  PASS
+
+12. linkAtlasEntries...
+  PASS
+
+13. recordAnalytics + getAnalyticsSummary (RPG-15-14)...
+  PASS
+
+14. getEngagementMetrics...
+  PASS
+
+15. registerVoice + findVoices + getNarratorVoice (RPG-15-15)...
+  PASS
+
+16. setVoiceAvailability...
+  PASS
+
+17. Edge cases...
+  PASS
+
+✅ All RPG Advanced Features System tests passed!
+
+Coverage:
+  RPG-15-03 (modular plugins sandboxed): registerPlugin, hasCapability, sandboxCall with limits/violations
+  RPG-15-08 (scenario packs): createScenarioPack, install/uninstall, list with filters
+  RPG-15-10 (emergent rumors): seedRumor, spreadRumor (deterministic), believeRumor, resolveRumor
+  RPG-15-11 (NPC offscreen simulation): simulateNpcOffscreen with schedules + determinism
+  RPG-15-12 (dynamic quest graph): createQuestNode, linkQuestNodes, evaluateQuestGraph
+  RPG-15-13 (world history atlas): addAtlasEntry, getAtlas, getTimelineChronology, linkAtlasEntries
+  RPG-15-14 (campaign analytics): recordAnalytics, getAnalyticsSummary, getEngagementMetrics
+  RPG-15-15 (localized narrator voices optional): registerVoice, findVoices, getNarratorVoice, availability
+running: release\rpg-assets.test.cjs
+Testing RPG Assets/Media System...
+
+1. registerAsset + getAsset...
+  PASS
+
+2. listAssets - filter by type/tag...
+  PASS
+
+3. deleteAsset...
+  PASS
+
+4. generateArtPrompt...
+  PASS
+
+5. generateCharacterPortraitPrompt...
+  PASS
+
+6. createSoundscape + getSoundscape...
+  PASS
+
+7. updateSoundscape...
+  PASS
+
+8. getActiveSoundscapeTracks...
+  PASS
+
+9. createMusicMapping + getMusicForMood...
+  PASS
+
+10. updateMusicMapping...
+  PASS
+
+11. registerSoundEffect + playSoundEffect...
+  PASS
+
+12. playSoundEffect - cooldown...
+  PASS
+
+13. stopSoundEffect...
+  PASS
+
+14. getVoiceSettings + setVoiceSetting...
+  PASS
+
+15. setCharacterVoice + getCharacterVoice...
+  PASS
+
+16. createPortrait + findPortrait...
+  PASS
+
+17. listPortraits...
+  PASS
+
+18. createSceneBackground + findSceneBackground...
+  PASS
+
+19. createIconSet + findIcon...
+  PASS
+
+20. registerFont + listFonts + getFontStack...
+  PASS
+
+21. createColorPalette + getPalette...
+  PASS
+
+22. cacheAsset + recordCacheHit/Miss + getCacheStats...
+  PASS
+
+23. evictCache...
+  PASS
+
+24. markOfflineAvailable + listOfflineAssets...
+  PASS
+
+25. getStorageInfo + setStorageQuota + checkQuotaAvailable...
+  PASS
+
+26. setAltText + getAltText...
+  PASS
+
+27. setAudioDescription + getAudioDescription...
+  PASS
+
+28. setCaption + getCaption...
+  PASS
+
+29. getAccessibilityMediaReport...
+  PASS
+
+30. Edge cases...
+  PASS
+
+✅ All RPG Assets/Media System tests passed!
+
+Coverage:
+  RPG-12-01 (image asset manager): registerAsset, getAsset, listAssets, deleteAsset
+  RPG-12-02 (procedural art prompts): generateArtPrompt, generateCharacterPortraitPrompt
+  RPG-12-03 (ambient soundscape): createSoundscape, getActiveSoundscapeTracks with conditions
+  RPG-12-04 (music mood mapping): createMusicMapping, getMusicForMood with priority sort
+  RPG-12-05 (sound effect library): registerSoundEffect, play/stop with cooldown/concurrent
+  RPG-12-06 (voice output settings): get/setVoiceSetting, setCharacterVoice, getCharacterVoice
+  RPG-12-07 (portrait generation): createPortrait, findPortrait with variant matching
+  RPG-12-08 (scene background art): createSceneBackground, findSceneBackground with context
+  RPG-12-09 (icon set): createIconSet, findIcon by name/tag
+  RPG-12-10 (font management): registerFont, listFonts, getFontStack with Arabic support
+  RPG-12-11 (color palette themes): createColorPalette with rarity colors, RTL-safe
+  RPG-12-12 (asset caching): cacheAsset, recordCacheHit/Miss, getCacheStats, evictCache
+  RPG-12-13 (offline assets): markOfflineAvailable, listOfflineAssets, removeOfflineAsset
+  RPG-12-14 (storage quota): getStorageInfo, setStorageQuota, checkQuotaAvailable
+  RPG-12-15 (accessibility media): setAltText, setAudioDescription, setCaption, report
+running: release\rpg-atomic-import.test.cjs
+Testing atomic world+Canon import...
+
+1. Atomic validation - both packs valid...
+  PASS: Both engines created successfully
+
+2. Atomic validation - rollback on invalid canon (duplicate IDs)...
+  PASS: Invalid canon pack rejected with validation error
+
+3. Atomic validation - rollback on invalid world...
+  PASS: Invalid world pack rejected with validation error
+
+4. Atomic import with sync - complete snapshot...
+  PASS: Complete snapshot synced atomically
+
+5. Persistence after restart...
+  PASS: Complete snapshot restored after restart
+
+6. Rollback on sync failure (storage failure)...
+  PASS: Rollback on storage failure
+
+7. Oversized payload (size limit enforced at UI layer)...
+  PASS: Oversized payload accepted at sync layer (UI enforces 2MB limit)
+
+8. Cross-world isolation...
+  PASS: Cross-world isolation maintained
+
+9. Integrity checksum validation...
+  PASS: Integrity checksum detects corruption
+
+10. Stale session detection...
+  PASS: Stale session (concurrent change) detected
+
+11. Incompatible version rejected...
+  PASS: Version handling documented (SevenCanon validates structure, not version)
+
+12. Prototype pollution protection...
+  PASS: Prototype pollution protection (normalizeWork creates fresh object)
+
+✅ All atomic import tests passed!
+
+Summary of RPG-01-01 to RPG-01-05 coverage:
+  RPG-01-01 (atomic world canon restore): Tested via loadSnapshot + sync
+  RPG-01-02 (backup rollback failed write): Tested via storage failure rollback
+  RPG-01-03 (backup schema validation): Tested via SevenWorld/SevenCanon createEngine
+  RPG-01-04 (backup migrations): Documented - version handled by pack structure
+  RPG-01-05 (backup integrity checksum): Tested via Session integrity verification
+running: release\rpg-campaign.test.cjs
+Testing RPG Campaign/Session Manager...
+
+1. createCampaign...
+  PASS
+
+2. createCampaign with settings...
+  PASS
+
+3. getCampaign...
+  PASS
+
+4. getAllCampaigns filter...
+  PASS
+
+5. updateCampaign...
+  PASS
+
+6. deleteCampaign...
+  PASS
+
+7. createSession...
+  PASS
+
+7b. createSession - multiple sessions...
+  PASS
+
+8. getSession...
+  PASS
+
+8b. getSessionByCampaign...
+  PASS
+
+9. updateSession...
+  PASS
+
+10. startSession...
+  PASS
+
+11. endSession...
+  PASS
+
+12. createCheckpoint...
+  PASS
+
+12b. createCheckpoint - auto...
+  PASS
+
+13. getCheckpoint...
+  PASS
+
+14. getCheckpointsBySession...
+  PASS
+
+15. loadCheckpoint...
+  PASS
+
+16. deleteCheckpoint...
+  PASS
+
+17. addTimelineEvent...
+  PASS
+
+18. getTimeline...
+  PASS
+
+18b. getTimeline with range...
+  PASS
+
+19. replaySession...
+  PASS
+
+20. exportSession...
+  PASS
+
+21. importSession...
+  PASS
+
+22. getCampaignStats...
+  PASS
+
+22b. getSessionStats...
+  PASS
+
+23. setOfflineMode...
+  PASS
+
+24. createBranch - session branching...
+  PASS
+
+25. getBranchTree...
+  PASS
+
+26. mergeBranch - timeline merge...
+  PASS
+
+27. mergeBranch - different campaigns...
+  PASS
+
+✅ All RPG Campaign/Session Manager tests passed!
+
+Coverage: RPG-02-08 to RPG-02-15 (Campaign/Session Management)
+Coverage: RPG-02-11 (Session Branching)
+running: release\rpg-canon-continuity.test.cjs
+Testing RPG Canon Continuity...
+
+1. createEntry - basic...
+  PASS
+
+2. createEntry - soft canon...
+  PASS
+
+3. getEntry...
+  PASS
+
+4. getAllEntries filter...
+  PASS
+
+5. updateEntry - soft canon...
+  PASS
+
+6. updateEntry - hard canon immutable...
+  PASS
+
+7. updateEntry - hard canon level downgrade...
+  PASS
+
+8. deleteEntry - soft canon...
+  PASS
+
+9. deleteEntry - hard canon blocked...
+  PASS
+
+10. getHistory...
+  PASS
+
+11. checkConflict - no conflict...
+  PASS
+
+12. checkConflict - entity conflict...
+  PASS
+
+13. checkConflict - hard canon conflict...
+  PASS
+
+13b. getConflicts filter...
+  PASS
+
+13c. suggestResolution...
+  PASS
+
+14. resolveConflict...
+  PASS
+
+14b. getConflicts after resolution...
+  PASS
+
+15. addProvenance...
+  PASS
+
+15b. getProvenance...
+  PASS
+
+16. auditCanon...
+  PASS
+
+3b. place links + timeline links + spoiler boundaries (RPG-03-08/09/10)...
+  PASS
+
+17. getDiff - canon diff viewer (RPG-03-06)...
+  PASS
+
+18. diffEntries - field-level diff...
+  PASS
+
+19. mergePreview - canon merge preview (RPG-03-13)...
+  PASS
+
+20. restoreEntry - canon recovery (RPG-03-15)...
+  PASS
+
+21. exportCanon + importCanon - canon import mapping (RPG-03-12)...
+  PASS
+
+✅ All RPG Canon Continuity tests passed!
+
+Coverage:
+  RPG-03-01 (canon authority tiers): CANON_LEVELS enum with HARD/ACTIVE/SOFT/RUMOR
+  RPG-03-02 (immutable hard canon): Hard canon immutable, cannot downgrade/delete
+  RPG-03-03 (canon conflict suggestions): suggestResolution provides strategies
+  RPG-03-04 (canon audit journal): auditCanon validates consistency
+  RPG-03-05 (canon revision history): getHistory tracks all changes
+  RPG-03-06 (canon diff viewer): Implicit in history
+  RPG-03-07 (canon character links): entityIds linking
+  RPG-03-08 (canon place links): entityIds for locations
+  RPG-03-09 (canon timeline links): availableAtTick
+  RPG-03-10 (canon spoiler boundaries): public flag + availableAtTick
+  RPG-03-11 (canon provenance): provenance tracking
+  RPG-03-12 (canon import mapping): import/export via entry structure
+  RPG-03-13 (canon merge preview): suggestResolution provides strategies
+  RPG-03-14 (canon contradiction reports): getConflicts + checkConflict
+  RPG-03-15 (canon recovery): history + deleteEntry (soft only)
+running: release\rpg-character.test.cjs
+Testing RPG Character System...
+
+1. createCharacter - basic...
+  PASS
+
+2. createCharacter - NPC...
+  PASS
+
+3. addTraits...
+  PASS
+
+4. setDrives...
+  PASS
+
+5. evolveMotivation...
+  PASS
+
+6. updateGoalProgress...
+  PASS
+
+7. addMemory / getMemories...
+  PASS
+
+8. setRelationship / getRelationship...
+  PASS
+
+9. getAllRelationships...
+  PASS
+
+10. getTrustMetric...
+  PASS
+
+11. updateReputation...
+  PASS
+
+12. setFactionAffinity / getFactionAffinity...
+  PASS
+
+13. setKnowledgeBoundary / checkKnowledgeAccess...
+  PASS
+
+14. setSecretRevealRule / checkSecretReveal...
+  PASS
+
+15. setPortrait / getPortrait...
+  PASS
+
+16. setDialogueStyle / getDialogueStyle / formatDialogue...
+  PASS
+
+17. exportCharacter / importCharacter...
+  PASS
+
+18. getCharacterSummary...
+  PASS
+
+19. normalizeVoice...
+  PASS
+
+20. Edge cases - clamped values...
+  PASS
+
+16. exportCharacter/importCharacter round-trip preserves relationships...
+  PASS
+
+✅ All RPG Character System tests passed!
+
+Coverage:
+  RPG-04-01 (character sheets): createCharacter with full data
+  RPG-04-02 (NPC profiles): createCharacter with type npc
+  RPG-04-03 (traits and drives): addTraits, setDrives
+  RPG-04-04 (goals and fears): goals array, fears array, updateGoalProgress
+  RPG-04-05 (motivation evolution): evolveMotivation, motivationHistory
+  RPG-04-06 (character memory): addMemory, getMemories, history
+  RPG-04-07 (relationship graph): setRelationship, getAllRelationships
+  RPG-04-08 (relationship history): relationship events in setRelationship
+  RPG-04-09 (trust metrics): getTrustMetric, trust dimension
+  RPG-04-10 (reputation): updateReputation, reputation levels
+  RPG-04-11 (faction affinity): setFactionAffinity, getFactionAffinity
+  RPG-04-12 (knowledge boundaries): setKnowledgeBoundary, checkKnowledgeAccess
+  RPG-04-13 (secret reveal rules): setSecretRevealRule, checkSecretReveal
+  RPG-04-14 (character portrait support): setPortrait, getPortrait
+  RPG-04-15 (character dialogue styles): setDialogueStyle, formatDialogue
+running: release\rpg-combat.test.cjs
+Testing RPG Combat System...
+
+1. createEncounter...
+  PASS
+
+2. addCombatant - player...
+  PASS
+
+3. addCombatant - enemy...
+  PASS
+
+4. rollInitiative + getTurnOrder...
+  PASS
+
+5. getCurrentTurn...
+  PASS
+
+6. performAttack - hit...
+  PASS
+
+7. performAttack - action points...
+  PASS
+
+8. damageCombatant + healCombatant...
+  PASS
+
+9. applyCombatEffect + tickCombatStatusEffects...
+  PASS
+
+10. setEnemyIntent + getEnemyIntents...
+  PASS
+
+11. logCombatAction + getCombatLog...
+  PASS
+
+12. advanceTurn...
+  PASS
+
+13. attemptRetreat...
+  PASS
+
+14. attemptSurrender...
+  PASS
+
+15. attemptNonviolentResolution...
+  PASS
+
+16. createBalanceProfile + applyBalanceProfile...
+  PASS
+
+17. getDifficultyModifiers...
+  PASS
+
+18. replayAction - deterministic...
+  PASS
+
+19. getReplayState...
+  PASS
+
+20. generateCombatNarration...
+  PASS
+
+21. checkEncounterEnd + endEncounter...
+  PASS
+
+22. Edge cases...
+  PASS
+
+✅ All RPG Combat System tests passed!
+
+Coverage:
+  RPG-10-01 (optional turn based combat): createEncounter with status tracking
+  RPG-10-02 (combat narration): generateCombatNarration from combat log
+  RPG-10-03 (initiative): addCombatant, rollInitiative with dexterity bonus
+  RPG-10-04 (turn order UI): getTurnOrder, getCurrentTurn, advanceTurn
+  RPG-10-05 (action points): spendActionPoints with validation
+  RPG-10-06 (health and resources): damageCombatant, healCombatant with resistances
+  RPG-10-07 (skill resolution): performAttack with d20, critical, fumble
+  RPG-10-08 (status effects): applyCombatEffect, tickCombatStatusEffects
+  RPG-10-09 (enemy intent): setEnemyIntent, getEnemyIntents
+  RPG-10-10 (combat log): logCombatAction, getCombatLog with filters
+  RPG-10-11 (retreat and surrender): attemptRetreat, attemptSurrender
+  RPG-10-12 (nonviolent alternatives): attemptNonviolentResolution
+  RPG-10-13 (balance profiles): createBalanceProfile, applyBalanceProfile
+  RPG-10-14 (difficulty modifiers): getDifficultyModifiers for 4 difficulties
+  RPG-10-15 (deterministic replays): replayAction with seed, getReplayState
+running: release\rpg-context.test.cjs
+rpg context views: PASS {"aCanon":12,"bCanon":8,"aChars":5365,"bChars":3324}
+running: release\rpg-event-scheduler.test.cjs
+Testing RPG Event Scheduler...
+
+1. createEvent - basic...
+  PASS
+
+2. createEvent - one-time...
+  PASS
+
+3. getEvent...
+  PASS
+
+4. updateEvent...
+  PASS
+
+4b. getEvents filter...
+  PASS
+
+5. deleteEvent...
+  PASS
+
+6. getUpcomingEvents...
+  PASS
+
+7. evaluateCondition...
+  PASS
+
+8. executeAction - notify...
+  PASS
+
+8b. executeAction - spawn_npc...
+  PASS
+
+8c. executeAction - modify_world...
+  PASS
+
+9. triggerEvent...
+  PASS
+
+10. triggerEvent with recurrence...
+  PASS
+
+11. processEvents...
+  PASS
+
+12. createSchedule...
+  PASS
+
+13. getEventStats...
+  PASS
+
+14. createCalendarView...
+  PASS
+
+15. calculateNextOccurrence...
+  PASS
+
+✅ All RPG Event Scheduler tests passed!
+
+Coverage: RPG-15-09 (event scheduler)
+running: release\rpg-gm-tools.test.cjs
+Testing RPG GM Tools...
+
+1. createNote...
+  PASS
+
+2. updateNote...
+  PASS
+
+3. getNote...
+  PASS
+
+4. getNotes filter...
+  PASS
+
+5. deleteNote...
+  PASS
+
+6. createTimelineEvent...
+  PASS
+
+6b. getTimeline...
+  PASS
+
+6c. getTimelineRange...
+  PASS
+
+7. registerNpc...
+  PASS
+
+7b. updateNpc...
+  PASS
+
+7b. getNpc...
+  PASS
+
+7c. getNpcsAtLocation...
+  PASS
+
+7d. getNpcsByDisposition...
+  PASS
+
+8. generateSessionPlan...
+  PASS
+
+9. trackInitiative...
+  PASS
+
+10. nextTurn...
+  PASS
+
+11. applyDamage...
+  PASS
+
+12. addCondition...
+  PASS
+
+13. generateLoot...
+  PASS
+
+14. generateStoryHook...
+  PASS: A royal succession crisis threatens civil war.
+
+✅ All RPG GM Tools tests passed!
+
+Coverage: RPG-15-07 (GM tools)
+running: release\rpg-ledger.test.cjs
+Testing RPG Roadmap Ledger...
+
+1. Ledger format and metadata...
+  PASS
+
+2. Total item count...
+  PASS
+
+3. Summary consistency...
+  PASS
+
+4. Item structure...
+  PASS
+
+5. ID uniqueness...
+  PASS
+
+6. Priority coverage...
+  PASS
+
+✅ All RPG Roadmap Ledger tests passed!
+
+Summary: 224 VERIFIED, 0 IMPLEMENTED, 3 BLOCKED, 0 TODO
+Priorities: P0=15, P1=90, P2=107, P3=15
+running: release\rpg-live-durability.test.cjs
+RPG live force-stop durability recovery: PASS
+running: release\rpg-live-integration.test.cjs
+rpg live integration: PASS
+running: release\rpg-llm-runtime.test.cjs
+Testing RPG LLM Runtime System...
+
+1. registerProvider + getProviderStatus...
+  PASS
+
+2. updateProviderStatus...
+  PASS
+
+3. checkProviderHealth - circuit breaker...
+  PASS
+
+4. saveModelConfig + getDefaultModelConfig...
+  PASS
+
+5. updateModelConfig...
+  PASS
+
+6. configureFallback - consent required...
+  PASS
+
+7. shouldFallback...
+  PASS
+
+8. revokeFallbackConsent...
+  PASS
+
+9. startStreaming + appendStreamChunk + completeStream...
+  PASS
+
+10. cancelStream...
+  PASS
+
+11. getActiveStreams...
+  PASS
+
+12. configureRetry + calculateRetryDelay...
+  PASS
+
+13. canRetry...
+  PASS
+
+14. setTimeoutConfig + checkTimeout...
+  PASS
+
+15. checkRateLimit + recordRequest...
+  PASS
+
+16. getRateLimitStatus...
+  PASS
+
+17. buildContext...
+  PASS
+
+18. parseStructuredResponse...
+  PASS
+
+19. recoverJson...
+  PASS
+
+20. detectInjection + sanitizeInput...
+  PASS
+
+21. registerLocalModel + listLocalModels...
+  PASS
+
+22. toggleLocalModel...
+  PASS
+
+23. recordUsage + getUsageStats...
+  PASS
+
+24. getRecentUsage...
+  PASS
+
+25. checkInferenceReadiness...
+  PASS
+
+26. estimateTokens...
+  PASS
+
+27. Edge cases...
+  PASS
+
+28. exportState must never emit provider credentials...
+  PASS
+
+✅ All RPG LLM Runtime System tests passed!
+
+Coverage:
+  RPG-07-01 (provider status): registerProvider, updateProviderStatus, checkProviderHealth
+  RPG-07-02 (model picker persistence): saveModelConfig, getDefaultModelConfig, updateModelConfig
+  RPG-07-03 (fallback with explicit consent): configureFallback, shouldFallback, revokeFallbackConsent
+  RPG-07-04 (streaming generation): startStreaming, appendStreamChunk, completeStream
+  RPG-07-05 (cancel streaming): cancelStream, getActiveStreams
+  RPG-07-06 (retry idempotency): configureRetry, calculateRetryDelay, canRetry
+  RPG-07-07 (timeouts): setTimeoutConfig, checkTimeout with read/total limits
+  RPG-07-08 (rate limit UX): checkRateLimit, recordRequest, getRateLimitStatus
+  RPG-07-09 (context injection contract): buildContext with token budgeting
+  RPG-07-10 (structured response parser): parseStructuredResponse with JSON/text/markdown
+  RPG-07-11 (invalid JSON recovery): recoverJson with code fence/substring/comma fixes
+  RPG-07-12 (prompt injection defenses): detectInjection, sanitizeInput with 10 patterns
+  RPG-07-13 (local model support optional): registerLocalModel, listLocalModels, toggleLocalModel
+  RPG-07-14 (usage and token transparency): recordUsage, getUsageStats, getRecentUsage
+  RPG-07-15 (real inference acceptance): checkInferenceReadiness (BLOCKED without credentials)
+  secret hygiene: exportState() redacts provider apiKey; importState() cannot revive it
+running: release\rpg-longstory.test.cjs
+rpg long story benchmark: PASS {"committedEvents":1006,"revision":1006,"tick":82,"bridgeDestroyed":true,"quest":"completed","ariaContextChars":7788,"spyContextChars":1593,"invalidCanonBlocked":true,"playerAgencyBlocked":true}
+running: release\rpg-manager-seams-a.test.cjs
+Testing RPG manager persistence seams (set A)...
+
+1. exportState() on a fresh manager exposes every closure map...
+  PASS assets (9 maps)
+  PASS progression (10 maps)
+  PASS llm-runtime (9 maps)
+  PASS narration (7 maps)
+  PASS player-tools (2 maps)
+
+2. export -> JSON round-trip -> importState into a FRESH manager...
+  PASS assets (seam-asset-1)
+  PASS progression (seam-char-1)
+  PASS llm-runtime (seam-prov-1)
+  PASS narration (seam-scene-1)
+  PASS player-tools (seam-note-1)
+
+3. importState({}) clears the maps and reports restored 0...
+  PASS assets
+  PASS progression
+  PASS llm-runtime
+  PASS narration
+  PASS player-tools
+
+4. ids minted after a restore do not collide with pre-restore ids...
+  PASS assets (asset-000001,asset-000002 -> asset-000003)
+  PASS progression (charprog-000001,charprog-000002 -> charprog-000003)
+  PASS llm-runtime (provider-000001,provider-000002 -> provider-000003)
+  PASS narration (scene-000001,scene-000002 -> scene-000003)
+  PASS player-tools (note-000001,note-000002 -> note-000003)
+
+5. importState never moves the id counter backwards...
+  PASS assets (stale counter 2 < 3)
+  PASS progression (stale counter 2 < 3)
+  PASS llm-runtime (stale counter 2 < 3)
+  PASS narration (stale counter 2 < 3)
+  PASS player-tools (stale counter 2 < 3)
+
+6. nested Maps (Maps held inside a plain object) round-trip...
+  PASS assets accessibilityMedia
+
+7. other closure maps carry data through the seam...
+  PASS attachments + notes
+
+All RPG manager persistence seam (set A) tests passed!
+
+Coverage:
+  Fresh export: every closure map present, version + counters
+  Round-trip: export -> JSON -> importState on a fresh manager -> public getter
+  Clearing: importState({} | null | undefined) -> {ok:true, restored:0}
+  Ids: no collision after restore, counter never rewinds
+  Nested: Maps inside plain objects round-trip and clear
+running: release\rpg-manager-seams-b.test.cjs
+Testing RPG manager persistence seams (set B)...
+
+1. exportState() on a fresh manager exposes every closure map...
+  PASS advanced (6 maps, state: analyticsEvents,rngState)
+  PASS combat (5 maps, state: rngState)
+  PASS gm-tools (4 maps, state: gmState)
+  PASS event-scheduler (3 maps)
+  PASS memory (1 maps)
+
+2. export -> JSON round-trip -> importState into a FRESH manager...
+  PASS advanced (seam-plugin-1, restored=1)
+  PASS combat (seam-enc-1, restored=1)
+  PASS gm-tools (seam-note-1, restored=1)
+  PASS event-scheduler (seam-evt-1, restored=1)
+
+2b. rpg-memory: runtime-backed data survives the seam...
+  PASS memory (3 committed memories, runtime untouched, memoryStore round-trips)
+
+3. importState({}) clears the maps and reports restored 0...
+  PASS advanced
+  PASS combat
+  PASS gm-tools
+  PASS event-scheduler
+  PASS memory
+
+4. ids minted after a restore do not collide with pre-restore ids...
+  PASS advanced (plugin-000001,plugin-000002 -> plugin-000003)
+  PASS combat (enc-000001,enc-000002 -> enc-000003)
+  PASS gm-tools (note-1792767754300,note-1792767754301 -> note-1792767754302)
+  PASS event-scheduler (evt-1792767754301,evt-1792767754302 -> evt-1792767754303)
+  PASS memory (counter-only manager)
+
+5. importState never moves the id counter backwards...
+  PASS advanced (stale counter 2 < 3)
+  PASS combat (stale counter 2 < 3)
+  PASS gm-tools (stale counter 1792767754307 < 1792767754308)
+  PASS event-scheduler (stale counter 1792767754309 < 1792767754310)
+  PASS memory (counter 9 held)
+
+6. non-primary maps and array-valued maps carry data through the seam...
+  PASS advanced + combat + gm-tools + event-scheduler
+
+7. exportState() output is a copy: callers cannot reach internal state...
+  PASS advanced
+  PASS combat
+  PASS gm-tools
+  PASS event-scheduler
+
+All RPG manager persistence seam (set B) tests passed!
+
+Coverage:
+  Fresh export: every closure map present, version + counters, state fields
+  Round-trip: export -> JSON -> importState on a fresh manager -> public getter
+  Clearing: importState({} | null | undefined) -> {ok:true, restored:0}
+  Ids: no collision after restore, counter never rewinds
+  Non-primary maps: rumors/packs/atlas/voices/analytics, combatLog, timelines, timers
+  Isolation: exportState() returns a copy, not internal references
+running: release\rpg-manager-seams-c.test.cjs
+Testing RPG manager persistence seams (exportState/importState)...
+
+1. campaign - exportState exposes every closure map...
+  PASS
+
+2. campaign - round-trip through a DB preserves campaigns/sessions/checkpoints...
+  PASS
+
+3. campaign - importState({}) clears and reports restored 0...
+  PASS
+
+4. campaign - ids minted after a restore never collide...
+  PASS
+
+5. character - exportState exposes every closure map...
+  PASS
+
+6. character - round-trip through a DB preserves portraits and dialogue styles...
+  PASS
+
+7. character - importState({}) clears and reports restored 0...
+  PASS
+
+8. character - the per-manager id counter is restored, never rewound...
+  PASS
+
+9. canon-continuity - exportState exposes every closure map and the policy object...
+  PASS
+
+10. canon-continuity - round-trip through a DB preserves entries, conflicts, history and provenance...
+  PASS
+
+11. canon-continuity - the non-Map policy state round-trips and resets on {}...
+  PASS
+
+12. canon-continuity - ids minted after a restore never collide...
+  PASS
+
+13. party - exportState exposes the only closure map...
+  PASS
+
+14. party - round-trip through a DB keeps the id allocator monotonic...
+  PASS
+
+15. party - importState({}) clears and reports restored 0...
+  PASS
+
+16. session - exportState reports the storage namespace...
+  PASS
+
+17. session - a cold manager reads back state a warm manager persisted...
+  PASS
+
+18. session - importState({}) is a safe no-op and never throws...
+  PASS
+
+19. story-generator - exportState exposes every closure map...
+  PASS
+
+20. story-generator - round-trip through a DB preserves templates...
+  PASS
+
+21. story-generator - importState({}) clears and reports restored 0...
+  PASS
+
+22. story-generator - ids minted after a restore never collide...
+  PASS
+
+All RPG manager persistence seam tests passed!
+Coverage: exportState/importState round-trip for campaign, character, canon-continuity, party, session, story-generator
+running: release\rpg-memory.test.cjs
+Testing RPG Memory Module...
+
+1. createEpisodicMemory...
+  PASS
+
+2. createSemanticMemory...
+  PASS
+
+3. createWorkingMemory...
+  PASS
+
+4. createLongTermMemory...
+  PASS
+
+5. createRelationshipMemory...
+  PASS
+
+6. createLocationMemory...
+  PASS
+
+7. createQuestMemory...
+  PASS
+
+8. createCharacterMemory...
+  PASS
+
+9. deduplicate...
+  PASS
+
+10. applyForgettingPolicy...
+  PASS (filtered from 250 to 200)
+
+11. extractMemoriesFromEvent - character.move...
+  PASS (3 memories)
+
+12. extractMemoriesFromEvent - knowledge.learn...
+  PASS (4 memories)
+
+13. extractMemoriesFromEvent - relationship.change...
+  PASS (5 memories)
+
+14. extractMemoriesFromEvent - quest.update...
+  PASS (1 memories)
+
+15. extractMemoriesFromEvent - character.set...
+  PASS (3 memories)
+
+16. buildContextFromMemories...
+  PASS (tokens: 366, count: 8)
+
+17. estimateArabicTokens...
+  PASS (ar: 25, en: 9, mixed: 19)
+
+18. estimateTokens...
+  PASS
+
+19. recordMemoriesFromEvent (integration)...
+  PASS (committed 3 memories, total in store: 3)
+
+20. getMemoryStats...
+  PASS (total: 0, tokens: 0)
+
+21. runMaintenance...
+  PASS (pruned: 0, remaining: 0)
+
+✅ All RPG Memory tests passed!
+
+Coverage:
+  RPG-06-01 (episodic memory): createEpisodicMemory, extractMemoriesFromEvent
+  RPG-06-02 (semantic memory): createSemanticMemory, extractMemoriesFromEvent (knowledge.learn)
+  RPG-06-03 (working memory): createWorkingMemory, extractMemoriesFromEvent
+  RPG-06-04 (long term memory): createLongTermMemory, extractMemoriesFromEvent
+  RPG-06-05 (character scoped memories): metadata.characterId, getCharacterMemories
+  RPG-06-06 (relationship memories): createRelationshipMemory, extractMemoriesFromEvent
+  RPG-06-07 (location memories): createLocationMemory, extractMemoriesFromEvent
+  RPG-06-08 (event salience scoring): computeSalience, SALIENCE_THRESHOLDS
+  RPG-06-09 (retrieval evidence): buildContextFromMemories, metadata.sourceEventId
+  RPG-06-10 (memory deduplication): deduplicate
+  RPG-06-11 (memory compaction): applyForgettingPolicy, runMaintenance
+  RPG-06-12 (context window budgeting): buildContextFromMemories with maxTokens
+  RPG-06-13 (Arabic token estimates): estimateArabicTokens
+  RPG-06-14 (memory correction workflow): deduplicate keeps higher confidence
+  RPG-06-15 (memory forgetting policy): applyForgettingPolicy, FORGETTING_POLICY constants
+running: release\rpg-narration.test.cjs
+Testing RPG Narration System...
+
+1. createNarrationEntry - narrator styling...
+  PASS
+
+2. createNarrationEntry - character dialogue...
+  PASS
+
+3. attributeSpeaker...
+  PASS
+
+4. Player agency - lock/unlock...
+  PASS
+
+5. createScene - scene card...
+  PASS
+
+6. updateScene - start scene...
+  PASS
+
+7. addSceneEntry...
+  PASS
+
+8. createChapter + getChapters...
+  PASS
+
+9. createArc + getArcProgress...
+  PASS
+
+10. addSceneObjective / completeSceneObjective...
+  PASS
+
+11. setScenePacing + getPacingRecommendation...
+  PASS
+
+12. generateRecap...
+  PASS
+
+13. createChoice / resolveChoice...
+  PASS
+
+14. createDialogueVariant / selectDialogueVariant...
+  PASS
+
+15. setNpcInitiative / getNpcInitiativeOrder / shouldNpcAct...
+  PASS
+
+16. createConsequence / applyConsequence...
+  PASS
+
+17. addForeshadowing / resolveForeshadowing...
+  PASS
+
+18. recordTone / getToneConsistency...
+  PASS
+
+19. getToneHistory...
+  PASS
+
+20. Edge cases...
+  PASS
+
+✅ All RPG Narration System tests passed!
+
+Coverage:
+  RPG-05-01 (narrator vs dialogue styling): createNarrationEntry with narrator style
+  RPG-05-02 (character speaker attribution): attributeSpeaker with characterMap
+  RPG-05-03 (player agency hard lock): lockPlayerAgency, unlockPlayerAgency, assertPlayerAgency
+  RPG-05-04 (scene cards): createScene with location, characters, objectives
+  RPG-05-05 (chapter titles): createChapter with title, subtitle, order
+  RPG-05-06 (episode arcs): createArc with plannedChapters, themes; getArcProgress
+  RPG-05-07 (scene objectives): addSceneObjective, completeSceneObjective
+  RPG-05-08 (pacing controls): setScenePacing, getPacingRecommendation
+  RPG-05-09 (recap on return): generateRecap with scenes, chapters, arcs
+  RPG-05-10 (story choices optional): createChoice, resolveChoice with options
+  RPG-05-11 (dialogue variants): createDialogueVariant, selectDialogueVariant by tags
+  RPG-05-12 (NPC initiative): setNpcInitiative, getNpcInitiativeOrder, shouldNpcAct
+  RPG-05-13 (narrative consequences): createConsequence, applyConsequence
+  RPG-05-14 (foreshadowing tracker): addForeshadowing, resolveForeshadowing
+  RPG-05-15 (tone consistency): recordTone, getToneConsistency, getToneHistory
+running: release\rpg-packaging.test.cjs
+rpg state kernel: PASS {"turn":1010,"revision":1010,"ledger":1010,"packetChars":5227}
+rpg session manager: PASS {"rooms":3,"atomicRollback":true,"staleWriteBlocked":true,"corruptQuarantined":true,"schemaMigration":true,"futureSavePreserved":true}
+rpg context views: PASS {"aCanon":12,"bCanon":8,"aChars":5365,"bChars":3324}
+rpg live integration: PASS
+Packaged RPG kernels: PASS (state, session, context, live failure/restart gates)
+running: release\rpg-party.test.cjs
+Testing RPG Party System...
+
+1. createParty - basic...
+  PASS
+
+2. createParty - with roles and resources...
+  PASS
+
+3. validateParty - valid party...
+  PASS
+
+4. validateParty - empty party...
+  PASS
+
+5. validateParty - oversized party...
+  PASS
+
+6. validateParty - missing character...
+  PASS
+
+7. validateParty - invalid role...
+Validation result: {
+  "valid": false,
+  "issues": [
+    {
+      "code": "invalid-formation",
+      "severity": "warn"
+    },
+    {
+      "code": "invalid-role",
+      "severity": "error",
+      "characterId": "hero",
+      "role": "invalid-role"
+    }
+  ]
+}
+  PASS
+
+8. addMember - success...
+  PASS
+
+9. addMember - party full...
+  PASS
+
+10. addMember - already member...
+  PASS
+
+11. removeMember...
+  PASS
+
+12. setFormation...
+  PASS
+
+13. assignRole...
+  PASS
+
+14. shareResource / consumeResource...
+  PASS
+
+15. addTactic...
+  PASS
+
+16. evaluateTactics...
+  PASS
+
+17. getPartyStats...
+  PASS
+
+18. canPartyAct...
+  PASS
+
+✅ All RPG Party tests passed!
+
+Coverage: RPG-15-01 (multi-character parties)
+running: release\rpg-player-tools.test.cjs
+Testing RPG Player Tools System...
+
+1. createSaveSlot...
+  PASS
+
+2. listSaveSlots...
+  PASS
+
+3. updateSaveSlot...
+  PASS
+
+4. createQuickSave + createCheckpoint...
+  PASS
+
+5. getLatestSave...
+  PASS
+
+6. searchStory...
+  PASS
+
+7. searchStory - speaker search...
+  PASS
+
+8. createBookmark + getBookmarks...
+  PASS
+
+9. highlightQuote + getHighlights...
+  PASS
+
+10. exportTranscript - text...
+  PASS
+
+11. exportTranscript - json...
+  PASS
+
+12. exportTranscript - markdown...
+  PASS
+
+13. generateSpoilerFreeRecap...
+  PASS
+
+14. createNote + getNotes...
+  PASS
+
+15. updateNote...
+  PASS
+
+16. createCanonRequest + respondToCanonRequest...
+  PASS
+
+17. getCanonRequests...
+  PASS
+
+18. addGlossaryEntry + searchGlossary...
+  PASS
+
+19. searchGlossary - spoiler filter...
+  PASS
+
+20. getNpcDirectory...
+  PASS
+
+21. getRelationshipOverview...
+  PASS
+
+22. getStrongestRelationships...
+  PASS
+
+23. getTimeline + getTimelineSummary...
+  PASS
+
+24. compareSessions...
+  PASS
+
+25. recordUndoableAction + undoAction...
+  PASS
+
+26. commitAction...
+  PASS
+
+27. getUndoableActions...
+  PASS
+
+28. deleteSaveSlot / deleteBookmark / deleteNote...
+  PASS
+
+29. Edge cases...
+  PASS
+
+30. createReplaySession + getReplayState (RPG-02-12)...
+  PASS
+
+31. getReplayState partial (uptoIndex)...
+  PASS
+
+32. stepReplay + seekReplay...
+  PASS
+
+33. mutateReplayState read-only guard...
+  PASS
+
+34. Replay edge cases...
+  PASS
+
+✅ All RPG Player Tools System tests passed!
+
+Coverage:
+  RPG-13-01 (save slots): createSaveSlot, listSaveSlots, updateSaveSlot, deleteSaveSlot
+  RPG-13-02 (quick save checkpoint): createQuickSave, createCheckpoint, getLatestSave
+  RPG-13-03 (story search): searchStory with content/speaker search and context
+  RPG-13-04 (bookmark scenes): createBookmark with types, tags, pinning
+  RPG-13-05 (highlight quotes): highlightQuote, getHighlights
+  RPG-13-06 (export transcript): exportTranscript in text/json/markdown
+  RPG-13-07 (share spoiler free recap): generateSpoilerFreeRecap with keyword filtering
+  RPG-13-08 (notes journal): createNote, updateNote, getNotes with filters
+  RPG-13-09 (player authored canon requests): createCanonRequest, respondToCanonRequest
+  RPG-13-10 (world glossary): addGlossaryEntry, searchGlossary with spoiler levels
+  RPG-13-11 (NPC directory): getNpcDirectory from character glossary entries
+  RPG-13-12 (relationship viewer): getRelationshipOverview, getStrongestRelationships
+  RPG-13-13 (timeline explorer): getTimeline with filters, getTimelineSummary
+  RPG-13-14 (session comparison): compareSessions with overlap calculation
+  RPG-13-15 (undo uncommitted action): recordUndoableAction, undoAction, commitAction
+  RPG-02-12 (replay read-only): createReplaySession, getReplayState, stepReplay, seekReplay, mutateReplayState guard
+running: release\rpg-progression.test.cjs
+Testing RPG Progression System...
+
+1. createRuleset...
+  PASS
+
+2. updateRuleset...
+  PASS
+
+3. listRulesets...
+  PASS
+
+4. createCharacterProgression...
+  PASS
+
+5. addXp + level up...
+  PASS
+
+6. getLevelProgress...
+  PASS
+
+7. performSkillCheck...
+  PASS
+
+8. createSkillTree + unlockSkillNode...
+  PASS
+
+9. unlockSkillNode - prerequisite not met...
+  PASS
+
+10. grantAbility + useAbility...
+  PASS
+
+11. tickCooldowns...
+  PASS
+
+12. applyStatusEffect + tickStatusEffects...
+  PASS
+
+13. removeStatusEffect - dispel...
+  PASS
+
+14. createQuest + acceptQuest + completeQuest...
+  PASS
+
+15. getQuestJournal...
+  PASS
+
+16. createAchievement + unlockAchievement...
+  PASS
+
+17. getUnlockedAchievements...
+  PASS
+
+18. grantTitle + activateTitle...
+  PASS
+
+19. createItem + addToInventory...
+  PASS
+
+20. removeFromInventory...
+  PASS
+
+21. equipItem + unequipItem...
+  PASS
+
+22. createLootTable + generateLoot...
+  PASS
+
+23. createCraftingRecipe + craftItem...
+  PASS
+
+24. craftItem - insufficient ingredients...
+  PASS
+
+25. getAvailableRecipes...
+  PASS
+
+26. Edge cases...
+  PASS
+
+27. getMilestones - RPG-08-11...
+  PASS
+
+✅ All RPG Progression System tests passed!
+
+Coverage:
+  RPG-08-01 (optional rulesets): createRuleset, updateRuleset, listRulesets
+  RPG-08-02 (character levels): createCharacterProgression, calculateXpForLevel
+  RPG-08-03 (experience): addXp with level-up detection
+  RPG-08-04 (skill checks): performSkillCheck with d20, DC, critical/fumble
+  RPG-08-05 (skill tree): createSkillTree, unlockSkillNode with prerequisites
+  RPG-08-06 (abilities): grantAbility, useAbility with costs
+  RPG-08-07 (cooldowns): tickCooldowns, cooldown tracking
+  RPG-08-08 (status conditions): applyStatusEffect, tickStatusEffects, removeStatusEffect
+  RPG-08-09 (quest journal): createQuest, acceptQuest, completeQuest, getQuestJournal
+  RPG-08-10 (achievements): createAchievement, unlockAchievement
+  RPG-08-11 (milestones): getMilestones
+  RPG-08-12 (titles): grantTitle, activateTitle with deactivation
+  RPG-08-13 (inventory): createItem, addToInventory, removeFromInventory, getInventory
+  RPG-08-14 (equipment): equipItem, unequipItem, getEquipment with slot validation
+  RPG-08-15 (loot and rewards): createLootTable, generateLoot with weighted selection
+  RPG-08-16 (crafting): createCraftingRecipe, craftItem with ingredients/skill checks
+running: release\rpg-roadmap-coverage.test.cjs
+Testing RPG Roadmap Coverage (canonical IDs)...
+
+RPG-01-06 (cross-world isolation)...
+  PASS: separate worlds do not interfere
+
+RPG-01-07 (restart persistence)...
+  PASS: state reloaded by a fresh runtime instance
+
+RPG-01-08 (force-stop persistence)...
+  PASS: emulator force-stop gate wired to real appId (ai.seven.rpg)
+
+RPG-02-02 (world templates)...
+  PASS: createFromTemplate seeds a world from a registered template
+
+RPG-02-03 (multi world library)...
+  PASS: getAllWorlds + getWorldStats provide the library view
+
+RPG-02-04 (world rename and archive)...
+  PASS: rename + archive + restore all mutate world state
+
+RPG-02-05 (world delete with confirmation)...
+  PASS: two-phase token confirmation gates deletion
+
+RPG-02-06 (world export preview)...
+  PASS: previewWorldExport reports contents/size/exclusions before export
+
+RPG-02-07 (world import preview)...
+  PASS: previewWorldImport validates + detects conflicts before import
+
+RPG-02-09 (session timeline)...
+  PASS: addTimelineEvent + getTimeline record session history
+
+RPG-02-10 (session checkpoints)...
+  PASS: create + load + delete checkpoints
+
+RPG-02-13 (world rules schema)...
+  PASS: declarative JSON-Schema + per-rule validation
+
+RPG-02-14 (difficulty and tone profiles)...
+  PASS: setWorldDifficulty/setWorldTone apply named profiles
+
+RPG-11-01 (RPG-only app shell)...
+  PASS: standalone RPG-only shell contract (module + shell generator)
+
+RPG-11-02 (mobile portrait layout)...
+  PASS: setLayout mobile/portrait breakpoints
+
+RPG-11-03 (landscape layout)...
+  PASS: landscape/portrait orientation drives sidebar density
+
+RPG-11-04 (RTL localization)...
+  PASS: setRtl flips getTextDirection between ltr and rtl
+
+RPG-11-05 (Arabic UI)...
+  PASS: setLanguage("ar") switches locale + auto-enables RTL
+
+RPG-11-06 (accessible controls)...
+  PASS: five accessibility modes with focus + keyboard guarantees
+
+RPG-11-07 (keyboard focus)...
+  PASS: roving focus + modal focus trap
+
+RPG-11-08 (screen reader labels)...
+  PASS: screen-reader label registry (set/list/clear/refuse)
+
+RPG-11-09 (reduced motion)...
+  PASS: animation speed + prefers-reduced-motion honored
+
+RPG-11-10 (light dark themes)...
+  PASS: setTheme/getTheme across light/dark/auto + extra themes
+
+RPG-11-11 (custom typography)...
+  PASS: custom font family/scale with range validation
+
+RPG-11-12 (story typography)...
+  PASS: story typography presets + clamped overrides
+
+RPG-11-13 (character cards)...
+  PASS: renderCharacterCard projection with HP percent
+
+RPG-11-14 (world dashboard)...
+  PASS: renderWorldDashboard aggregates world overview
+
+RPG-11-15 (contextual command palette)...
+  PASS: register + contextual query + execute + unregister
+
+RPG-11-16 (loading and offline states)...
+  PASS: loading label + connection/offline state machine
+
+RPG-12-01 (character portraits)...
+  PASS: createPortrait + getPortrait + listPortraits + prompt
+
+RPG-12-02 (world illustrations opt in)...
+  PASS: opt-in gate + generateWorldIllustration + list
+
+RPG-12-03 (asset library)...
+  PASS: registerAsset + getAsset + listAssets + deleteAsset
+
+RPG-12-04 (image attachment)...
+  PASS: attachImage + getPrimaryImage + getAttachedImages + detachImage
+
+RPG-12-05 (scene backgrounds)...
+  PASS: createSceneBackground + findSceneBackground
+
+RPG-12-06 (music optional)...
+  PASS: createMusicMapping + getMusicForMood (optional by mood)
+
+RPG-12-07 (sfx optional)...
+  PASS: registerSoundEffect + playSoundEffect + stopSoundEffect
+
+RPG-12-08 (performance aware animations)...
+  PASS: detectTier adapts animation tier to device capability
+
+RPG-12-09 (content filters)...
+  PASS: setContentFilter + passesContentFilter + isAssetBlocked
+
+RPG-12-10 (asset backup manifests)...
+  PASS: createAssetBackupManifest + verifyAssetBackupManifest
+
+RPG-12-11 (placeholder fallback)...
+  PASS: getPlaceholder + resolveAssetOrPlaceholder graceful fallback
+
+RPG-12-12 (copyright safe sourcing)...
+  PASS: evaluateSourcing provenance + registerSafeAsset
+
+RPG-12-13 (image caching)...
+  PASS: cacheAsset + getCacheStats + evictCache
+
+RPG-12-14 (offline asset access)...
+  PASS: markOfflineAvailable + listOfflineAssets + removeOfflineAsset
+
+RPG-12-15 (media accessibility)...
+  PASS: setAltText + getAltText + accessibility report
+
+RPG-14-01 (1000-event campaigns)...
+  PASS: real campaign timeline + 1000-event long-story suite contract
+
+RPG-14-02 (500-message UI regression)...
+  PASS: runMessageRenderRegression over 500 messages
+
+RPG-14-03 (10k-event stress test)...
+  PASS: runEventStressTest 10k events, 0 errors
+
+RPG-14-04 (low memory recovery)...
+  PASS: runLowMemoryRecovery evicts caches and reports tier
+
+RPG-14-05 (large backup rejection)...
+  PASS: PACK_TOO_LARGE oversized-backup rejection contract
+
+RPG-14-06 (corrupt storage quarantine)...
+  PASS: corrupt session quarantined (integrity-mismatch)
+
+RPG-14-07 (Android upgrade retention)...
+  PASS: verifyUpgradeRetention migrates schema without data loss
+
+RPG-14-08 (battery use)...
+  PASS: recordBatterySample + getBatteryReport drain tracking
+
+RPG-14-09 (startup speed)...
+  PASS: startup measured against performance budget
+
+RPG-14-10 (render latency)...
+  PASS: render latency measured and bounded
+
+RPG-14-11 (memory leaks)...
+  PASS: takeMemorySnapshot + detectMemoryLeak verdict
+
+RPG-14-12 (storage growth)...
+  PASS: recordStorageCheckpoint + getStorageGrowthReport
+
+RPG-14-13 (CI diagnostics)...
+  PASS: all.cjs emits running/FAILED diagnostics for CI triage
+
+RPG-14-14 (visual screenshots)...
+  PASS: committed Playwright visual-regression capture mechanism
+
+RPG-14-15 (release smoke matrix)...
+  PASS: Android release smoke matrix + summary
+
+RPG-15-05 (canon policy editor)...
+  PASS: getPolicySchema + setCanonPolicy + resetCanonPolicy
+
+RPG roadmap coverage: PASS (60 canonical IDs exercised)
+running: release\rpg-security-regression.test.cjs
+RPG security regression: PASS (prototype paths, authority spoofing, forbidden knowledge, player control, authorized writes)
+running: release\rpg-session.test.cjs
+rpg session manager: PASS {"rooms":3,"atomicRollback":true,"staleWriteBlocked":true,"corruptQuarantined":true,"schemaMigration":true,"futureSavePreserved":true}
+running: release\rpg-state.test.cjs
+rpg state kernel: PASS {"turn":1010,"revision":1010,"ledger":1010,"packetChars":5227}
+running: release\rpg-story-generator.test.cjs
+Testing RPG Story Generator...
+
+1. registerTemplate...
+  PASS
+
+2. getTemplate...
+  PASS
+
+3. getTemplatesByType...
+  PASS
+
+4. getTemplatesByTag...
+  PASS
+
+5. renderTemplate - success...
+  PASS
+
+6. renderTemplate - missing context...
+  PASS
+
+7. renderTemplate - missing template...
+  PASS
+
+7b. renderTemplate - missing variables...
+  PASS
+
+8. generateStoryHook...
+  PASS: An ancient prophecy names the party as the world's only hope.
+
+9. generateEncounter...
+  PASS
+
+10. generatePlotTwist...
+  PASS
+
+11. generateNarrativeBeat...
+  PASS: climax
+
+12. generateSceneCard...
+  PASS
+
+13. registerTemplate validation...
+  PASS
+
+✅ All RPG Story Generator tests passed!
+
+Coverage: RPG-15-06 (story generator templates)
+running: release\rpg-testing.test.cjs
+Testing RPG Testing/Performance System...
+
+1. registerTestSuite + getTestSuite...
+  PASS
+
+2. recordTestCaseResult...
+  PASS
+
+3. recordTestCaseResult - failure...
+  PASS
+
+4. getCoverageReport...
+  PASS
+
+5. createBenchmark + recordBenchmarkSample + computeBenchmarkStats...
+  PASS
+
+6. runBenchmark...
+  PASS
+
+7. takeMemorySnapshot + detectMemoryLeak...
+  PASS
+
+8. createOfflineScenario + evaluateOfflineScenario...
+  PASS
+
+9. evaluateOfflineScenario - degradation failure...
+  PASS
+
+10. runStressTest...
+  PASS
+
+11. injectProviderFailure + shouldInjectFailure...
+  PASS
+
+12. clearFailureInjection...
+  PASS
+
+13. runConcurrencyTest...
+  PASS
+
+14. createCorruptionTest - truncated...
+  PASS
+
+15. evaluateCorruptionTest...
+  PASS
+
+16. createNetworkInterruptionTest + evaluate...
+  PASS
+
+17. createApkSmokeTest + recordApkCheck...
+  PASS
+
+18. getAndroidMatrix + updateMatrixEntry + getMatrixSummary...
+  PASS
+
+19. recordCrash + getCrashLogs...
+  PASS
+
+20. resolveCrash + getCrashSummary...
+  PASS
+
+21. setPerformanceBudget + measureAgainstBudget...
+  PASS
+
+22. getBudgetReport...
+  PASS
+
+23. setContextBaseline + checkContextRegression...
+  PASS
+
+24. runRegressionSuite...
+  PASS
+
+25. Edge cases...
+  PASS
+
+✅ All RPG Testing/Performance System tests passed!
+
+Coverage:
+  RPG-14-01 (integration test coverage): registerTestSuite, recordTestCaseResult, getCoverageReport
+  RPG-14-02 (performance benchmark): createBenchmark, recordBenchmarkSample, computeBenchmarkStats, runBenchmark
+  RPG-14-03 (memory leak detection): takeMemorySnapshot, detectMemoryLeak, getMemorySnapshots
+  RPG-14-04 (offline degradation test): createOfflineScenario, evaluateOfflineScenario
+  RPG-14-05 (randomized stress test): runStressTest with seeded RNG for reproducibility
+  RPG-14-06 (provider failure injection): injectProviderFailure, shouldInjectFailure, clearFailureInjection
+  RPG-14-07 (concurrency test): runConcurrencyTest with race window detection
+  RPG-14-08 (storage corruption test): createCorruptionTest, evaluateCorruptionTest
+  RPG-14-09 (network interruption test): createNetworkInterruptionTest, evaluateNetworkInterruption
+  RPG-14-10 (APK smoke test): createApkSmokeTest, recordApkCheck, getApkSmokeTest
+  RPG-14-11 (Android version matrix): getAndroidMatrix, updateMatrixEntry, getMatrixSummary
+  RPG-14-12 (crash analytics): recordCrash, getCrashLogs, resolveCrash, getCrashSummary
+  RPG-14-13 (startup time budget): setPerformanceBudget, measureAgainstBudget, getBudgetReport
+  RPG-14-14 (context size regression): setContextBaseline, checkContextRegression with tolerance
+  RPG-14-15 (full regression suite): runRegressionSuite combining all dimensions
+running: release\rpg-ui.test.cjs
+Testing RPG UI System...
+
+1. setLayout + getLayout...
+  PASS
+
+2. setRtl + setLanguage + getTextDirection...
+  PASS
+
+3. getLocalizedText...
+  PASS
+
+4. createSceneCard + getSceneCard...
+  PASS
+
+5. updateSceneCard...
+  PASS
+
+6. renderTurnOrder...
+  PASS
+
+7. createDialoguePanel + addDialogueEntry...
+  PASS
+
+8. createChoicesPanel + selectChoice...
+  PASS
+
+9. rollDice...
+  PASS
+
+10. getDiceHistory...
+  PASS
+
+11. renderCharacterSheet...
+  PASS
+
+12. renderInventoryGrid...
+  PASS
+
+13. renderMapViewer + panMap + zoomMap...
+  PASS
+
+14. renderJournalView...
+  PASS
+
+15. getSetting + setSetting...
+  PASS
+
+16. resetSettings...
+  PASS
+
+17. createTutorialStep + getTutorialSteps...
+  PASS
+
+18. completeTutorialStep + skipTutorialStep + getTutorialProgress...
+  PASS
+
+19. getAccessibilityConfig + setAccessibilityMode...
+  PASS
+
+20. getAnimationConfig + setAnimationSpeed...
+  PASS
+
+21. setSoundSetting + getSoundSetting + toggleMute + getEffectiveVolume...
+  PASS
+
+22. notify + getNotifications + markNotificationRead...
+  PASS
+
+23. setTheme + getTheme...
+  PASS
+
+24. openModal + closeModal + getUiState...
+  PASS
+
+25. Edge cases...
+  PASS
+
+✅ All RPG UI System tests passed!
+
+Coverage:
+  RPG-11-01 (responsive layout): setLayout, getLayout with breakpoints
+  RPG-11-02 (Arabic RTL support): setRtl, setLanguage, getTextDirection, getLocalizedText
+  RPG-11-03 (scene card UI): createSceneCard, updateSceneCard with characters/objectives
+  RPG-11-04 (turn order display): renderTurnOrder with sorting and health percent
+  RPG-11-05 (dialogue panel): createDialoguePanel, addDialogueEntry, getDialoguePanel
+  RPG-11-06 (choices panel): createChoicesPanel, selectChoice with skill checks
+  RPG-11-07 (dice roller widget): rollDice with 7 dice types, getDiceHistory
+  RPG-11-08 (character sheet): renderCharacterSheet with modifiers and percent bars
+  RPG-11-09 (inventory grid): renderInventoryGrid with column layout and padding
+  RPG-11-10 (map viewer): renderMapViewer with viewport culling, panMap, zoomMap
+  RPG-11-11 (journal view): renderJournalView with sections, search, pin sort
+  RPG-11-12 (settings panel): getSetting, setSetting, getAllSettings, resetSettings
+  RPG-11-13 (tutorial overlay): createTutorialStep, complete/skip, getTutorialProgress
+  RPG-11-14 (accessibility): getAccessibilityConfig, setAccessibilityMode (5 modes)
+  RPG-11-15 (animations): getAnimationConfig, setAnimationSpeed (4 speeds)
+  RPG-11-16 (sound controls): setSoundSetting, toggleMute, getEffectiveVolume
+running: release\rpg-world-manager.test.cjs
+Testing RPG World Manager...
+
+1. createWorld - basic...
+  PASS
+
+2. createWorld - from template (fantasy)...
+  PASS
+
+3. createWorld - scifi template...
+  PASS
+
+4. createWorld - horror template...
+  PASS
+
+5. createWorld - cyberpunk template...
+  PASS
+
+6. createWorld - postapoc template...
+  PASS
+
+7. createWorld - invalid template...
+  PASS
+
+8. getWorld...
+  PASS
+
+9. getAllWorlds...
+World count: 6
+World IDs: [
+  'world-000001',
+  'world-000002',
+  'world-000005',
+  'world-000008',
+  'world-000011',
+  'world-000014'
+]
+World names: [
+  'Test World',
+  'Fantasy Realm',
+  'Star Empire',
+  'Dark Realm',
+  'Neon City',
+  'Wasteland'
+]
+  PASS
+
+10. updateWorld...
+  PASS
+
+11. archiveWorld...
+  PASS
+
+12. restoreWorld...
+  PASS
+
+13. deleteWorld...
+  PASS
+
+14. exportWorld...
+  PASS
+
+15. importWorld...
+  PASS
+
+16. importWorld - conflict without overwrite...
+  PASS
+
+17. getWorldSummary...
+  PASS
+
+18. getWorldStats...
+  PASS
+
+19. registerTemplate...
+  PASS
+
+20. getTemplate...
+  PASS
+
+21. getAllTemplates...
+  PASS
+
+21b. getDifficultyProfile...
+  PASS
+
+21c. getToneProfile...
+  PASS
+
+22. setWorldDifficulty...
+  PASS
+
+23. setWorldTone...
+  PASS
+
+27. setWorldDifficulty/setWorldTone must NOT clobber world name/description...
+  PASS
+
+16. importWorld rejects hostile or oversized input...
+  PASS
+
+17. import preview is browser-safe and agrees with the import...
+  PASS
+
+✅ All RPG World Manager tests passed!
+
+Coverage: RPG-02-01 to RPG-02-15 (World Management)
+running: release\rpg-world-rules.test.cjs
+Testing RPG World Rules System...
+
+1. createRule - basic...
+  PASS
+
+2. createRule - scoped rule...
+  PASS
+
+3. validateRule - valid rule...
+  PASS
+
+4. validateRule - missing scopeRef...
+  PASS
+
+5. validateRule - invalid scopeRef...
+  PASS
+
+6. validateRule - valid scopeRef...
+  PASS
+
+6b. validateRule - character scopeRef...
+  PASS
+
+7. evaluateCondition...
+Evaluating: 1 > 0 with sandbox keys: [ 'state' ]
+Evaluating: tick > 10 with sandbox keys: [ 'state', 'tick' ]
+tick > 10 with tick=15: true
+Evaluating: tick > 10 with sandbox keys: [ 'state', 'tick' ]
+tick > 10 with tick=5: false
+Evaluating: character.hp > 50 with sandbox keys: [ 'state', 'character' ]
+character.hp > 50 with hp=60: true
+  PASS
+
+8. applyEffect - modify...
+  PASS
+
+8b. applyEffect - set...
+  PASS
+
+8c. applyEffect - add to array...
+  PASS
+
+9. getApplicableRules...
+  PASS
+
+10. resolveConflicts - highest-priority...
+  PASS
+
+11. resolveConflicts - most-specific...
+  PASS
+
+12. resolveConflicts - merge...
+  PASS
+
+13. createRuleset...
+  PASS
+
+14. compileRuleset...
+  PASS
+
+15. conditionIsValid...
+  PASS
+
+16. effectIsValid...
+  PASS
+
+17. checkScopeRefExists...
+  PASS
+
+✅ All RPG World Rules tests passed!
+
+Coverage: RPG-15-04 (custom world rule editor)
+running: release\rpg-world-simulation.test.cjs
+Testing RPG World Simulation System...
+
+1. createLocation - city...
+  PASS
+
+2. createLocation - dungeon with parent...
+  PASS
+
+3. getLocations - filter by type...
+  PASS
+
+4. updateLocation...
+  PASS
+
+5. getConnectedLocations...
+  PASS
+
+6. getWorldMap...
+  PASS
+
+7. findPath...
+  PASS
+
+8. recordTravel + getTravelHistory...
+  PASS
+
+9. setWeather + getWeather...
+  PASS
+
+10. advanceWeather...
+  PASS
+
+11. createCalendar + getCurrentDate...
+  PASS
+
+12. advanceCalendar...
+  PASS
+
+13. getTimeOfDay + getLightLevel...
+  PASS
+
+14. createNpcSchedule + getNpcActivityAtTime...
+  PASS
+
+15. addScheduleOverride...
+  PASS
+
+16. createEconomyLedger + addTransaction...
+  PASS
+
+17. getTransactions - filter...
+  PASS
+
+18. createShop + buyItem...
+  PASS
+
+19. sellItem...
+  PASS
+
+20. haggle...
+  PASS
+
+21. createFaction + updateFactionRelation...
+  PASS
+
+22. getFactionRelations...
+  PASS
+
+23. createKingdom + updateKingdomStability...
+  PASS
+
+24. createDiplomaticRelation + updateDiplomacy...
+  PASS
+
+25. createTerritory + addTerritoryInfluence + getTerritoryControl...
+  PASS
+
+26. recordWorldConsequence + applyWorldConsequence...
+  PASS
+
+27. getWorldConsequences - filter...
+  PASS
+
+28. Edge cases...
+  PASS
+
+✅ All RPG World Simulation System tests passed!
+
+Coverage:
+  RPG-09-01 (locations directory): createLocation with type/parent/connections
+  RPG-09-02 (interactive world map): getWorldMap, findPath with BFS
+  RPG-09-03 (travel ledger): recordTravel, getTravelHistory
+  RPG-09-04 (weather fiction state): setWeather, getWeather, advanceWeather
+  RPG-09-05 (calendar): createCalendar, advanceCalendar, getCurrentDate
+  RPG-09-06 (day night cycle): getTimeOfDay, getLightLevel
+  RPG-09-07 (NPC schedules): createNpcSchedule, getNpcActivityAtTime, overrides
+  RPG-09-08 (economy ledger): createEconomyLedger, addTransaction, getTransactions
+  RPG-09-09 (shops and barter): createShop, buyItem, sellItem, haggle
+  RPG-09-10 (politics): covered by kingdoms/diplomacy
+  RPG-09-11 (factions): createFaction, updateFactionRelation
+  RPG-09-12 (kingdoms): createKingdom, updateKingdomStability
+  RPG-09-13 (diplomacy): createDiplomaticRelation, updateDiplomacy with auto-type
+  RPG-09-14 (territory influence): createTerritory, addTerritoryInfluence, getTerritoryControl
+  RPG-09-15 (persistent consequences): recordWorldConsequence, applyWorldConsequence
+running: release\shell-ownership.test.cjs
+shell ownership contract: PASS
+running: release\ui-polish-loader.test.cjs
+UI lazy loader: PASS (network failure, absent registration, retry recovery, concurrent deduplication)
+running: release\workspace-open-race.test.cjs
+workspace concurrent-open ownership: PASS
+running: release\world-runtime.test.cjs
+world runtime: PASS
+running: release\zero-room-transform.test.cjs
+Zero-room transform: PASS (last-room deletion, change event, active-generation guard, repeat transform, changed anchor)
+running: release\release-verify.cjs
+PASS release boots
+PASS modern night theme and RTL sidebar are functional
+PASS zero-key settings expose no manual credential controls
+PASS settings tabs map every control to the correct modern section
+PASS Arabic settings localization is complete and RTL-safe
+PASS search settings require no manual API key
+PASS legacy Brave search preference migrates to zero-key Auto
+PASS responsive UI matrix stays bounded on phone widths themes and directions
+PASS landscape large-text and keyboard-height surfaces stay usable
+PASS fresh install stays zero-room with no legacy name modal
+PASS expanded settings sections remain bounded on smallest phone
+PASS long messages code and URLs cannot widen the mobile viewport
+PASS all specialist workspaces remain viewport-safe on mobile RTL night
+PASS live RPG workspace persists Memory and restores structured Context after reload
+PASS Arabic workspace picker and specialist surfaces are fully localized
+PASS mode and depth dialogs stay usable on smallest RTL night phone
+PASS modern dialogs inherit Seven theme and isolate background interaction
+PASS modern model and workspace menus stay inside viewport
+PASS GitHub Self Dev panel inherits theme localizes and isolates background
+PASS Arabic sidebar room search model picker and final nav are localized
+PASS settings expose no manual credential entry points
+PASS long-chat jump control is themed localized and rooted correctly
+PASS attachment menu is localized themed and bounded on mobile
+PASS workspace assets are lazy and loadable
+release verification: PASS (24 checks, 99176 startup bytes; frontier=z-ai/glm-5-3; PDF/attachments/workspaces lazy-local)
+running: evolution\advanced.test.cjs
+PASS multi-candidate eval ignores stronger-looking unsafe candidate
+PASS multi-run aggregation is deterministic
+PASS repair cycle enforces reproduce repair review regression order
+PASS failed review consumes bounded retry instead of looping forever
+advanced evolution test suite: PASS
+running: evolution\coding-candidate.test.cjs
+PASS safe isolated coding candidate completes without touching stable
+PASS scope violation discards candidate before finalization
+PASS stable mutation during repair is restored then candidate is rejected
+PASS failed stable restoration halts instead of continuing
+PASS review failure can retry within bounded attempts
+PASS invalid isolation proof rejects before reproduction
+PASS candidate SHA must differ from baseline and look commit-like
+coding candidate pipeline test suite: PASS
+running: evolution\coding-evolution.test.cjs
+PASS full coding evolution path reaches committed durable state
+PASS untrusted eval bundle is rejected before stable promotion
+PASS candidate/eval SHA mismatch is rejected
+PASS evals touching stable branch is restored and rejected
+PASS failed shadow evaluation rejects candidate and cleans workspace
+PASS high risk remains pending and keeps workspace for later approval
+PASS post-apply regression rolls back and cleans isolated workspace
+coding evolution integration test suite: PASS
+running: evolution\cognitive-boost.test.cjs
+PASS adaptive compute keeps trivial tasks fast
+PASS adaptive compute escalates difficult risky long-horizon tasks
+PASS fresh claims request more than one verified source
+PASS truth engine surfaces direct contradiction instead of averaging it away
+PASS mission planner exposes only dependency-ready work
+PASS mission planner cannot skip dependencies
+PASS mission planner unlocks the next task after checkpoint
+PASS mission planner rejects dependency cycles
+PASS skill distillation rejects under-evaluated experience
+PASS skill cannot activate with regression
+PASS verified skill can activate after all gates
+PASS router ignores unverified outcomes
+PASS adaptive router learns from verified outcomes
+PASS derived content cannot raise authority above its weakest source
+PASS tainted external content cannot authorize user-level side effects
+PASS sufficiently trusted flow can influence authority
+PASS adversarial arena passes only verified clean candidate
+PASS critical finding overrides a permissive judge
+PASS cognitive decision combines compute truth planning routing and trust
+cognitive boost test suite: PASS (19 assertions)
+running: evolution\cognitive-gate.test.cjs
+PASS low-risk task can pass without arena
+PASS high-risk task fails closed when arena is unavailable
+PASS high-risk task can pass only through verified clean arena
+PASS contested truth blocks preflight
+PASS external taint cannot authorize authority-sensitive action
+cognitive gate test suite: PASS (5 assertions)
+running: evolution\durable-engine.test.cjs
+PASS durable run checkpoints the full lifecycle and ends COMPLETE
+PASS unfinished durable state blocks a second evolution run
+PASS persisted interrupted APPLIED transaction recovers by restoring baseline
+PASS terminal completed state permits the next evolution run
+durable evolution engine test suite: PASS
+running: evolution\engine.test.cjs
+PASS untrusted risk label cannot auto-approve
+PASS trusted low-risk candidate completes the full automatic path
+PASS risk above policy remains pending instead of silently promoting
+PASS manual approval can authorize a high-risk candidate after all gates
+PASS failed shadow rejects before update transaction exists
+PASS post-apply verification failure rolls back both transaction and candidate
+PASS base drift aborts deployment and rolls back logical candidate state
+PASS post-release critical health signal rolls committed update back
+PASS healthy post-release samples do not roll back
+PASS approval policy rejects invalid risk vocabulary
+evolution engine test suite: PASS
+running: evolution\evolution.test.cjs
+PASS weighted score remains bounded
+PASS core rejects failed tests even with strong metrics
+PASS candidate requires every hard safety gate
+PASS eligible candidate enters shadow only after complete evaluation
+PASS ledger detects tampering
+PASS full lifecycle cannot skip stages and supports rollback
+PASS failed shadow is terminally rejected
+evolution test suite: PASS
+running: evolution\experiment-transaction.test.cjs
+PASS experiment cannot grant itself access to evaluator or CI paths
+PASS path traversal and undeclared files fail scope validation
+PASS unexpected evaluator modification rejects otherwise strong candidate
+PASS in-scope stronger candidate can reach shadow eligibility
+PASS update validation rejects base drift and missing exact rollback checkpoint
+PASS transaction cannot apply a different candidate SHA
+PASS failed post-apply verification forces rollback to exact baseline
+PASS verified update commits only after exact SHA and regression gates
+PASS ledger tampering blocks commit
+PASS verified candidate may still be rolled back before commit
+experiment and update transaction test suite: PASS
+running: evolution\model-promotion.test.cjs
+PASS verified model cannot activate before evolution promotion
+PASS promotion candidate must be bound to the exact model
+PASS fully promoted and verified model can become active
+PASS tampered candidate ledger blocks activation even after promotion
+model promotion test suite: PASS
+running: evolution\promotion-runner.test.cjs
+PASS happy path commits only after adapter verification
+PASS missing eval lock blocks before repository inspection or mutation
+PASS tampered eval corpus lock blocks before mutation
+PASS base drift blocks apply entirely
+PASS verification failure automatically restores baseline
+PASS verification exception automatically restores baseline
+PASS uncertain apply exception triggers rollback even before applied state is confirmed
+PASS rollback failure never gets misreported as success
+PASS failed experiment gate blocks apply before any mutation
+promotion runner test suite: PASS
+running: evolution\recovery.test.cjs
+PASS state envelope detects corruption before restore
+PASS failed atomic commit cannot replace the last committed state
+PASS successful atomic persistence round-trips verified state
+PASS crash after apply but before commit conservatively rolls back
+PASS candidate visible from merely validated state is treated as uncertain apply and rolled back
+PASS prepared state with unexpected candidate head halts instead of guessing
+PASS committed transaction at candidate head resumes as stable
+PASS committed transaction with unknown or reverted head halts for explicit inspection
+PASS corrupted transaction ledger always halts recovery
+evolution recovery test suite: PASS
+running: evolution\registry.test.cjs
+PASS stable model id is deterministic
+PASS observatory discovery cannot self-promote to verified or active
+PASS observatory requires explicit provenance
+PASS deduplication keeps the newest observation deterministically
+PASS open weights require a license and verified evidence
+PASS unknown free-proof classes fail closed
+PASS verified proof requires an official source and explicit verifier
+PASS verified proof transition preserves verifier lineage but does not activate model
+PASS active registry exposes only models with valid free proof
+PASS model eval rejects unverified candidate even with perfect benchmark scores
+PASS comparison selects verified safe model over unverified higher scorer
+model registry and observatory test suite: PASS
+all test suites: PASS (78 suites)
