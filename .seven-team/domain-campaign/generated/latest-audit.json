@@ -1,12 +1,10 @@
 {
   "schemaVersion": 1,
   "domains": 30,
-  "ready": 0,
+  "ready": 7,
   "missing": [],
   "insufficient": [
     "D01_CHAT_CORE",
-    "D02_MEMORY_CONTEXT",
-    "D03_TOOLS_CAPABILITY",
     "D04_CODING_SYSTEM",
     "D05_SELF_DEVELOPMENT",
     "D06_RPG_WORLD",
@@ -15,25 +13,20 @@
     "D09_DEEP_THINK",
     "D10_FILES_MULTIMODAL",
     "D11_ANDROID_NATIVE",
-    "D12_UI_DESIGN_SYSTEM",
     "D13_ARABIC_RTL_A11Y",
     "D14_SECURITY_PRIVACY",
     "D15_PERSISTENCE_RECOVERY",
     "D16_NETWORK_RESILIENCE",
     "D17_PERFORMANCE_CONCURRENCY",
     "D18_TESTING_EVALS",
-    "D19_AGENT_ORCHESTRATION",
-    "D20_PRODUCT_QUALITY",
     "D21_OBSERVABILITY_WORLD_MODEL",
     "D22_PROTOCOLS_INTEROP",
     "D23_IMPORT_EXPORT_BACKUP",
     "D24_RELEASE_APK",
     "D25_HISTORY_ROOMS",
     "D26_SETTINGS_CONTROLS",
-    "D27_ERROR_RECOVERY_UX",
     "D28_LOCAL_INTELLIGENCE",
-    "D29_REAL_WORKS_CANON",
-    "D30_AUTONOMOUS_QUALITY"
+    "D29_REAL_WORKS_CANON"
   ],
   "results": [
     {
@@ -49,7 +42,7 @@
     },
     {
       "id": "D02_MEMORY_CONTEXT",
-      "status": "INSUFFICIENT",
+      "status": "READY",
       "urls": 137,
       "primaryTagged": 339,
       "target": 20,
@@ -64,7 +57,7 @@
     },
     {
       "id": "D03_TOOLS_CAPABILITY",
-      "status": "INSUFFICIENT",
+      "status": "READY",
       "urls": 130,
       "primaryTagged": 348,
       "target": 20,
@@ -91,7 +84,7 @@
     {
       "id": "D05_SELF_DEVELOPMENT",
       "status": "INSUFFICIENT",
-      "urls": 46,
+      "urls": 44,
       "primaryTagged": 90,
       "target": 12,
       "owners": [
@@ -124,7 +117,7 @@
     {
       "id": "D08_MODEL_ROUTING",
       "status": "INSUFFICIENT",
-      "urls": 49,
+      "urls": 48,
       "primaryTagged": 67,
       "target": 10,
       "owners": [
@@ -167,7 +160,7 @@
     },
     {
       "id": "D12_UI_DESIGN_SYSTEM",
-      "status": "INSUFFICIENT",
+      "status": "READY",
       "urls": 89,
       "primaryTagged": 122,
       "target": 10,
@@ -190,7 +183,7 @@
     {
       "id": "D14_SECURITY_PRIVACY",
       "status": "INSUFFICIENT",
-      "urls": 70,
+      "urls": 68,
       "primaryTagged": 92,
       "target": 12,
       "owners": [
@@ -212,7 +205,7 @@
     {
       "id": "D16_NETWORK_RESILIENCE",
       "status": "INSUFFICIENT",
-      "urls": 58,
+      "urls": 57,
       "primaryTagged": 66,
       "target": 8,
       "owners": [
@@ -234,7 +227,7 @@
     {
       "id": "D18_TESTING_EVALS",
       "status": "INSUFFICIENT",
-      "urls": 96,
+      "urls": 94,
       "primaryTagged": 128,
       "target": 12,
       "owners": [
@@ -244,7 +237,7 @@
     },
     {
       "id": "D19_AGENT_ORCHESTRATION",
-      "status": "INSUFFICIENT",
+      "status": "READY",
       "urls": 96,
       "primaryTagged": 148,
       "target": 10,
@@ -255,7 +248,7 @@
     },
     {
       "id": "D20_PRODUCT_QUALITY",
-      "status": "INSUFFICIENT",
+      "status": "READY",
       "urls": 89,
       "primaryTagged": 122,
       "target": 8,
@@ -322,7 +315,7 @@
     {
       "id": "D26_SETTINGS_CONTROLS",
       "status": "INSUFFICIENT",
-      "urls": 44,
+      "urls": 43,
       "primaryTagged": 69,
       "target": 6,
       "owners": [
@@ -332,7 +325,7 @@
     },
     {
       "id": "D27_ERROR_RECOVERY_UX",
-      "status": "INSUFFICIENT",
+      "status": "READY",
       "urls": 89,
       "primaryTagged": 119,
       "target": 8,
@@ -344,7 +337,7 @@
     {
       "id": "D28_LOCAL_INTELLIGENCE",
       "status": "INSUFFICIENT",
-      "urls": 49,
+      "urls": 48,
       "primaryTagged": 67,
       "target": 8,
       "owners": [
@@ -365,8 +358,8 @@
     },
     {
       "id": "D30_AUTONOMOUS_QUALITY",
-      "status": "INSUFFICIENT",
-      "urls": 103,
+      "status": "READY",
+      "urls": 101,
       "primaryTagged": 212,
       "target": 12,
       "owners": [
