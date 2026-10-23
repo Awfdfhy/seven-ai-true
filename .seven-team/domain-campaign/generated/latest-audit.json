@@ -146,7 +146,7 @@
     {
       "id": "D10_FILES_MULTIMODAL",
       "status": "INSUFFICIENT",
-      "urls": 44,
+      "urls": 45,
       "primaryTagged": 60,
       "target": 8,
       "owners": [
@@ -157,7 +157,7 @@
     {
       "id": "D11_ANDROID_NATIVE",
       "status": "INSUFFICIENT",
-      "urls": 30,
+      "urls": 31,
       "primaryTagged": 46,
       "target": 10,
       "owners": [
@@ -179,7 +179,7 @@
     {
       "id": "D13_ARABIC_RTL_A11Y",
       "status": "INSUFFICIENT",
-      "urls": 30,
+      "urls": 31,
       "primaryTagged": 61,
       "target": 8,
       "owners": [
@@ -289,7 +289,7 @@
     {
       "id": "D23_IMPORT_EXPORT_BACKUP",
       "status": "INSUFFICIENT",
-      "urls": 45,
+      "urls": 46,
       "primaryTagged": 60,
       "target": 6,
       "owners": [
