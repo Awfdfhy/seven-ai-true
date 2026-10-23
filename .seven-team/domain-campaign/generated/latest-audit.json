@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "domains": 30,
-  "ready": 0,
+  "ready": 2,
   "missing": [],
   "insufficient": [
     "D01_CHAT_CORE",
@@ -14,7 +14,6 @@
     "D08_MODEL_ROUTING",
     "D09_DEEP_THINK",
     "D10_FILES_MULTIMODAL",
-    "D11_ANDROID_NATIVE",
     "D12_UI_DESIGN_SYSTEM",
     "D13_ARABIC_RTL_A11Y",
     "D14_SECURITY_PRIVACY",
@@ -27,7 +26,6 @@
     "D21_OBSERVABILITY_WORLD_MODEL",
     "D22_PROTOCOLS_INTEROP",
     "D23_IMPORT_EXPORT_BACKUP",
-    "D24_RELEASE_APK",
     "D25_HISTORY_ROOMS",
     "D26_SETTINGS_CONTROLS",
     "D27_ERROR_RECOVERY_UX",
@@ -156,7 +154,7 @@
     },
     {
       "id": "D11_ANDROID_NATIVE",
-      "status": "INSUFFICIENT",
+      "status": "READY",
       "urls": 30,
       "primaryTagged": 46,
       "target": 10,
@@ -299,7 +297,7 @@
     },
     {
       "id": "D24_RELEASE_APK",
-      "status": "INSUFFICIENT",
+      "status": "READY",
       "urls": 100,
       "primaryTagged": 100,
       "target": 8,
