@@ -14233,6 +14233,285 @@
             deferredPrompt = null;
         });
 
+        // ===== RPG Backend Integration Layer =====
+        // Bridges UI components to backend data structures
+        // Falls back to demo data if RPG modules not loaded
+        const SevenRpgBackendBridge = (function() {
+            'use strict';
+
+            // Demo character data for fallback
+            const demoCharacter = {
+                id: 'char-000001',
+                name: 'Adventurer',
+                type: 'player',
+                level: 5,
+                hp: 80,
+                maxHp: 100,
+                mp: 45,
+                maxMp: 60,
+                xp: 340,
+                nextLevelXp: 500,
+                inventory: [
+                    { id: 'item-001', name: 'Steel Sword', icon: '⚔️', rarity: 'rare', quantity: 1 },
+                    { id: 'item-002', name: 'Health Potion', icon: '🧪', rarity: 'uncommon', quantity: 5 },
+                    { id: 'item-003', name: 'Crown of Wisdom', icon: '👑', rarity: 'legendary', quantity: 1 },
+                    { id: 'item-004', name: 'Bread', icon: '🍞', rarity: 'common', quantity: 12 },
+                    { id: 'item-005', name: 'Dragon Shield', icon: '🛡️', rarity: 'epic', quantity: 1 }
+                ],
+                abilities: ['Attack', 'Defend', 'Heal'],
+                stats: {
+                    strength: 14,
+                    dexterity: 12,
+                    constitution: 16,
+                    intelligence: 10,
+                    wisdom: 8,
+                    charisma: 13
+                }
+            };
+
+            const demoQuests = [
+                {
+                    id: 'quest-001',
+                    title: 'The Lost Artifact',
+                    description: 'Find the ancient artifact hidden in the Whispering Caves.',
+                    status: 'active',
+                    objectives: [
+                        { text: 'Travel to Whispering Caves', completed: true },
+                        { text: 'Defeat the Cave Guardian', completed: true },
+                        { text: 'Locate the artifact chamber', completed: false }
+                    ],
+                    xpReward: 500,
+                    rewards: ['Mystic Amulet']
+                },
+                {
+                    id: 'quest-002',
+                    title: 'Bandits on the Road',
+                    description: 'Clear the northern road of bandit camps.',
+                    status: 'active',
+                    objectives: [
+                        { text: 'Scout bandit locations (3/3)', completed: true },
+                        { text: 'Defeat bandits (2/5)', completed: false },
+                        { text: 'Report to town guard', completed: false }
+                    ],
+                    xpReward: 300,
+                    rewards: ['250 Gold']
+                }
+            ];
+
+            // Check if backend modules are loaded
+            function isBackendLoaded() {
+                return typeof window.SevenRpgState !== 'undefined' &&
+                       typeof window.SevenRpgCharacter !== 'undefined';
+            }
+
+            // Load character data from backend or fallback
+            async function loadCharacterData(characterId) {
+                if (isBackendLoaded()) {
+                    try {
+                        const state = window.SevenRpgState.character(null, characterId);
+                        if (state) return state;
+                    } catch (e) {
+                        console.warn('[RPG Bridge] Backend load failed, using demo data:', e);
+                    }
+                }
+                return demoCharacter;
+            }
+
+            // Update character sheet UI with data
+            async function updateCharacterSheet(characterId) {
+                const char = await loadCharacterData(characterId);
+                if (!char) return;
+
+                // Update name and type
+                const nameEl = document.getElementById('charName');
+                const typeEl = document.getElementById('charType');
+                if (nameEl) nameEl.textContent = char.name || 'Unknown';
+                if (typeEl) typeEl.textContent = char.type || 'NPC';
+
+                // Update HP bar
+                const hp = char.hp ?? 80;
+                const maxHp = char.maxHp ?? 100;
+                const hpPercent = (hp / maxHp) * 100;
+                const hpValueEl = document.getElementById('hpValue');
+                const hpFillEl = document.getElementById('hpFill');
+                if (hpValueEl) hpValueEl.textContent = `${hp} / ${maxHp}`;
+                if (hpFillEl) hpFillEl.style.width = `${hpPercent}%`;
+
+                // Update MP bar
+                const mp = char.mp ?? 45;
+                const maxMp = char.maxMp ?? 60;
+                const mpPercent = (mp / maxMp) * 100;
+                const mpValueEl = document.getElementById('mpValue');
+                const mpFillEl = document.getElementById('mpFill');
+                if (mpValueEl) mpValueEl.textContent = `${mp} / ${maxMp}`;
+                if (mpFillEl) mpFillEl.style.width = `${mpPercent}%`;
+
+                // Update XP bar
+                const xp = char.xp ?? 340;
+                const nextXp = char.nextLevelXp ?? 500;
+                const xpPercent = (xp / nextXp) * 100;
+                const xpValueEl = document.getElementById('xpValue');
+                const xpFillEl = document.getElementById('xpFill');
+                if (xpValueEl) xpValueEl.textContent = `${xp} / ${nextXp} XP`;
+                if (xpFillEl) xpFillEl.style.width = `${xpPercent}%`;
+
+                console.log('[RPG Bridge] Character sheet updated:', char.name);
+            }
+
+            // Load inventory data
+            async function loadInventory(characterId) {
+                const char = await loadCharacterData(characterId);
+                return char.inventory || [];
+            }
+
+            // Render inventory grid
+            async function renderInventory(characterId) {
+                const items = await loadInventory(characterId);
+                const gridEl = document.getElementById('inventoryGrid');
+                if (!gridEl) return;
+
+                if (items.length === 0) {
+                    gridEl.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">No items in inventory</p>';
+                    return;
+                }
+
+                gridEl.innerHTML = items.map((item, index) => `
+                    <div class="item-card rarity-${item.rarity || 'common'}" style="animation-delay: ${index * 40}ms">
+                        ${item.quantity > 1 ? `<span class="item-quantity">${item.quantity}</span>` : ''}
+                        <div class="item-icon">${item.icon || '📦'}</div>
+                        <div class="item-name">${item.name || 'Unknown Item'}</div>
+                    </div>
+                `).join('');
+
+                console.log('[RPG Bridge] Inventory rendered:', items.length, 'items');
+            }
+
+            // Load quests data
+            async function loadQuests(characterId) {
+                if (isBackendLoaded()) {
+                    try {
+                        const state = window.SevenRpgState.getState();
+                        if (state && state.quests) {
+                            return Object.values(state.quests).filter(q =>
+                                q.ownerIds && q.ownerIds.includes(characterId)
+                            );
+                        }
+                    } catch (e) {
+                        console.warn('[RPG Bridge] Quest load failed, using demo data:', e);
+                    }
+                }
+                return demoQuests;
+            }
+
+            // Render quest log
+            async function renderQuests(characterId) {
+                const quests = await loadQuests(characterId);
+                const listEl = document.getElementById('questList');
+                if (!listEl) return;
+
+                if (quests.length === 0) {
+                    listEl.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No active quests</p>';
+                    return;
+                }
+
+                listEl.innerHTML = quests.map((quest, index) => {
+                    const completed = quest.objectives.filter(o => o.completed).length;
+                    const total = quest.objectives.length;
+                    const progress = total > 0 ? (completed / total) * 100 : 0;
+                    const statusIcon = quest.status === 'completed' ? '✓' : '📍';
+
+                    return `
+                        <div class="quest-card ${quest.status}" style="animation-delay: ${index * 60}ms">
+                            <div class="quest-title">
+                                <span class="quest-status-icon">${statusIcon}</span>
+                                <span>${quest.title}</span>
+                            </div>
+                            <div class="quest-description">${quest.description || ''}</div>
+                            <div class="quest-progress">
+                                <div class="quest-progress-fill" style="width: ${progress}%"></div>
+                            </div>
+                            <div class="quest-objectives">
+                                ${quest.objectives.map(obj => `
+                                    <div class="quest-objective">
+                                        <div class="objective-checkbox ${obj.completed ? 'completed' : ''}">
+                                            ${obj.completed ? '✓' : ''}
+                                        </div>
+                                        <span>${obj.text}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="quest-reward">
+                                🏆 Reward: ${quest.xpReward || 0} XP${quest.rewards && quest.rewards.length ? ' + ' + quest.rewards.join(', ') : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                console.log('[RPG Bridge] Quest log rendered:', quests.length, 'quests');
+            }
+
+            // Initialize integration
+            function init() {
+                console.log('[RPG Bridge] Initializing backend integration');
+                console.log('[RPG Bridge] Backend loaded:', isBackendLoaded());
+
+                // Hook into SevenRpgUI if it exists
+                if (typeof SevenRpgUI !== 'undefined') {
+                    // Override loadCharacterData
+                    SevenRpgUI.loadCharacterData = function() {
+                        const charId = this.activeCharacter || 'char-000001';
+                        updateCharacterSheet(charId);
+                    };
+
+                    // Override loadInventoryData
+                    SevenRpgUI.loadInventoryData = function() {
+                        const charId = this.activeCharacter || 'char-000001';
+                        renderInventory(charId);
+                    };
+
+                    // Hook character sheet open
+                    const originalShowCharacter = SevenRpgUI.showCharacterSheet;
+                    SevenRpgUI.showCharacterSheet = function(characterId) {
+                        originalShowCharacter.call(this, characterId);
+                        setTimeout(() => updateCharacterSheet(characterId || 'char-000001'), 100);
+                    };
+
+                    // Hook inventory open
+                    const originalShowInventory = SevenRpgUI.showInventory;
+                    SevenRpgUI.showInventory = function() {
+                        originalShowInventory.call(this);
+                        setTimeout(() => renderInventory('char-000001'), 100);
+                    };
+
+                    // Hook quest log open
+                    const originalShowQuestLog = SevenRpgUI.showQuestLog;
+                    SevenRpgUI.showQuestLog = function() {
+                        originalShowQuestLog.call(this);
+                        setTimeout(() => renderQuests('char-000001'), 100);
+                    };
+
+                    console.log('[RPG Bridge] Successfully integrated with SevenRpgUI');
+                }
+            }
+
+            // Auto-initialize when DOM is ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+
+            return {
+                loadCharacterData,
+                updateCharacterSheet,
+                loadInventory,
+                renderInventory,
+                loadQuests,
+                renderQuests,
+                isBackendLoaded
+            };
+        })();
+
         // Last-resort UI containment: an unexpected callback must not leave
         // the composer permanently disabled or crash the whole page. The
         // error is surfaced as a normal system bubble without exposing keys,
