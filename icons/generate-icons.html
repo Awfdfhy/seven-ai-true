@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Seven RPG Icon Generator</title>
+</head>
+<body>
+    <canvas id="canvas192" width="192" height="192"></canvas>
+    <canvas id="canvas512" width="512" height="512"></canvas>
+    <script>
+        function generateIcon(canvas) {
+            const ctx = canvas.getContext('2d');
+            const size = canvas.width;
+
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#4B3F9E');
+            gradient.addColorStop(1, '#6B5FD8');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, size, size);
+
+            // Draw dice icon
+            ctx.fillStyle = 'white';
+            ctx.font = `bold ${size * 0.6}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🎲', size / 2, size / 2);
+        }
+
+        generateIcon(document.getElementById('canvas192'));
+        generateIcon(document.getElementById('canvas512'));
+
+        console.log('Icons generated. Right-click each canvas and "Save image as..."');
+        console.log('Save as icon-192.png and icon-512.png');
+    </script>
+</body>
+</html>
