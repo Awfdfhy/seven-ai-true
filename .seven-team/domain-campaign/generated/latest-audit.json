@@ -113,7 +113,7 @@
     {
       "id": "D07_RESEARCH_WEB",
       "status": "INSUFFICIENT",
-      "urls": 91,
+      "urls": 101,
       "primaryTagged": 80,
       "target": 12,
       "owners": [
@@ -157,7 +157,7 @@
     {
       "id": "D11_ANDROID_NATIVE",
       "status": "INSUFFICIENT",
-      "urls": 32,
+      "urls": 30,
       "primaryTagged": 46,
       "target": 10,
       "owners": [
@@ -179,7 +179,7 @@
     {
       "id": "D13_ARABIC_RTL_A11Y",
       "status": "INSUFFICIENT",
-      "urls": 32,
+      "urls": 30,
       "primaryTagged": 61,
       "target": 8,
       "owners": [
@@ -355,7 +355,7 @@
     {
       "id": "D29_REAL_WORKS_CANON",
       "status": "INSUFFICIENT",
-      "urls": 22,
+      "urls": 32,
       "primaryTagged": 19,
       "target": 8,
       "owners": [
