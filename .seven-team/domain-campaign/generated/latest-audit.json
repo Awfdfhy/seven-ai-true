@@ -113,7 +113,7 @@
     {
       "id": "D07_RESEARCH_WEB",
       "status": "INSUFFICIENT",
-      "urls": 101,
+      "urls": 91,
       "primaryTagged": 80,
       "target": 12,
       "owners": [
@@ -355,7 +355,7 @@
     {
       "id": "D29_REAL_WORKS_CANON",
       "status": "INSUFFICIENT",
-      "urls": 32,
+      "urls": 22,
       "primaryTagged": 19,
       "target": 8,
       "owners": [
