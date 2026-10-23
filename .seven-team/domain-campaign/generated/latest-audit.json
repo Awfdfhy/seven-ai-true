@@ -66,7 +66,7 @@
       "id": "D03_TOOLS_CAPABILITY",
       "status": "INSUFFICIENT",
       "urls": 131,
-      "primaryTagged": 347,
+      "primaryTagged": 348,
       "target": 20,
       "owners": [
         "A04",
@@ -91,8 +91,8 @@
     {
       "id": "D05_SELF_DEVELOPMENT",
       "status": "INSUFFICIENT",
-      "urls": 45,
-      "primaryTagged": 89,
+      "urls": 44,
+      "primaryTagged": 90,
       "target": 12,
       "owners": [
         "B06",
@@ -146,8 +146,8 @@
     {
       "id": "D10_FILES_MULTIMODAL",
       "status": "INSUFFICIENT",
-      "urls": 43,
-      "primaryTagged": 59,
+      "urls": 44,
+      "primaryTagged": 60,
       "target": 8,
       "owners": [
         "B02",
@@ -190,8 +190,8 @@
     {
       "id": "D14_SECURITY_PRIVACY",
       "status": "INSUFFICIENT",
-      "urls": 69,
-      "primaryTagged": 90,
+      "urls": 68,
+      "primaryTagged": 92,
       "target": 12,
       "owners": [
         "A07",
@@ -212,7 +212,7 @@
     {
       "id": "D16_NETWORK_RESILIENCE",
       "status": "INSUFFICIENT",
-      "urls": 57,
+      "urls": 58,
       "primaryTagged": 66,
       "target": 8,
       "owners": [
@@ -234,8 +234,8 @@
     {
       "id": "D18_TESTING_EVALS",
       "status": "INSUFFICIENT",
-      "urls": 95,
-      "primaryTagged": 127,
+      "urls": 94,
+      "primaryTagged": 128,
       "target": 12,
       "owners": [
         "A08",
@@ -333,7 +333,7 @@
     {
       "id": "D27_ERROR_RECOVERY_UX",
       "status": "INSUFFICIENT",
-      "urls": 89,
+      "urls": 90,
       "primaryTagged": 119,
       "target": 8,
       "owners": [
@@ -366,8 +366,8 @@
     {
       "id": "D30_AUTONOMOUS_QUALITY",
       "status": "INSUFFICIENT",
-      "urls": 102,
-      "primaryTagged": 211,
+      "urls": 101,
+      "primaryTagged": 212,
       "target": 12,
       "owners": [
         "A08",
