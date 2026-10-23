@@ -1,22 +1,8 @@
 # D02_MEMORY_CONTEXT — Long-Term Memory / Context Fabric
 
-Research audit: READY
+Research audit: INSUFFICIENT
 
 DOMAIN_ID=D02_MEMORY_CONTEXT
-SOURCE_ANALYSIS=Harvested sources converge on production long-term memory: temporal knowledge graphs (Zep/Graphiti) with bi-temporal facts/episodes, pluggable memory blocks (Letta), scalable extract+retrieve (Mem0), local-first options (MemX), personalized frameworks (Memoria), multimodal (TeleMem), and retrieval benchmarks (LongMemEval, UTILMEM, "When Users Don't Ask"). Common themes: separate working/episodic/semantic/procedural, explicit scope (user/session/task), point-in-time queries, evidence utilization, context-driven retrieval (not just "ask to recall"), token/latency/cost tradeoffs. Disagreements: centralized cloud graph vs local-first IndexedDB; how aggressively to auto-summarize vs preserve raw episodes; retrieval trigger (explicit vs proactive). Freshness: many 2025–2026 papers/docs; IndexedDB is mature baseline. Limitation: few evaluate UX of memory surfacing/revision/deletion in a single mobile/web app.
-CURRENT=Repo inspection evidence:
-- `seven_ai-final.html` (large monolith) contains memory-related UI/logic references (searches show "memory", "context", "recall" patterns) but as a single HTML bundle it's hard to see modular boundaries from quick grep alone.
-- `memory.cjs` exists (3261 bytes) - Node script for memory-related operations/results.
-- `memory-results.json` exists (137 bytes) - small results artifact.
-- No obvious standalone `src/memory/` or `remake/` memory service modules surfaced in top-level listing; architecture truth is in `remake/ARCHITECTURE.md` and `remake/MILESTONES.md` (must read fully). No IndexedDB schema visible at root; storage ownership not obvious from listing.
-- Product intelligence corpus exists at `.seven-team/product-intelligence/` (team requirement) but I need to inspect index/quality rubric to judge cohesion claims.
-Evidence level: browser/mock-ish (HTML bundle) + CLI scripts. No installed-device/Android runtime memory persistence proof observed in files inspected.
-TARGET=Seven should treat memory as a first-class context fabric: explicit memory blocks/scope, temporal facts with provenance/timestamps, retrieval that can be proactive (context-driven) without over-surfacing, local-first where possible with clear sync boundaries, user-visible revision/deletion, and measurable recall/evidence-utilization. Must not create duplicate ownership with shell/tasks/storage/bridge/routing/kernel (constitution constraint).
-NOW=Map actual memory implementation: read `remake/ARCHITECTURE.md`, `remake/MILESTONES.md`, grep `seven_ai-final.html` for memory APIs/storage/IndexedDB, read `memory.cjs` and `memory-results.json`, inspect `.seven-team/product-intelligence/` index. Determine if memory is in HTML monolith vs planned modules.
-NEXT=Define memory scope model (working/episodic/semantic/procedural) matching Seven's architecture; add provenance (source/turn/time) and bi-temporal fields if temporal needed; implement local-first store (IndexedDB) with migration/versioning; add user controls (view/edit/delete) and retrieval explainability.
-LATER=Graph-based retrieval (entities/relations) if justified, multimodal episodes, point-in-time queries, cross-session summarization with evidence links, memory eval integration (LongMemEval-style) against Seven journeys.
-TESTS=Deterministic: unit tests for extract/retrieve/scope; integration for persistence/revision/deletion. E2E: long multi-turn journey testing recall. Adversarial: prompt injection into memory, stale facts, scope leakage. Eval: evidence-utilization/retrieval precision on curated Seven dialogues. Android: persistence across app restarts/offline. Missing proof: no memory-specific eval harness visible.
-RISKS=Privacy (PII in memory), scope leakage between users/sessions, over-retrieval polluting context, token bloat, sync conflicts, IndexedDB quota, duplicate ownership with existing storage. Security: memory poisoning/injection.
-FIRST_SLICE=Inventory actual memory code paths (HTML + memory.cjs) + storage keys; document current vs target in report with evidence; identify single owner per storage concern; add a minimal memory inventory test/check (deterministic) if gaps found. No production edits in RESEARCH.
-KNOWN_UNKNOWNS=Whether memory is implemented in monolith vs planned, actual persistence mechanism (localStorage/IndexedDB/remote), eviction policy, user visibility.
 DOMAIN_VERDICT=RESEARCH_INSUFFICIENT
+CURRENT=No trustworthy plan block was produced in this cycle.
+KNOWN_UNKNOWNS=Research agent output missing or timed out.
