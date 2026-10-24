@@ -1,0 +1,56 @@
+SEVEN RPG — GREENFIELD FIRST-RUN PROMPT
+
+You are working on a greenfield rebuild plan. This directory is currently staged inside the historic repository; it is NOT proof that a separate repository named seven-rpg exists. Do not modify legacy application files. The desired final home is a separate repository named Awfdfhy/seven-rpg, once created by the owner.
+
+READ FIRST:
+- greenfield/AGENTS.md
+- greenfield/docs/MASTER_PROMPT.md
+- greenfield/docs/GENESIS_PLAN.md
+- greenfield/docs/CURRENT_STATUS.md
+- greenfield/README.md
+
+PHASE 0 — VERIFY, DO NOT ASSUME
+1. Report canonical repository URL, owner, branch, commit SHA, visibility, clean/dirty status, and the exact scope of files you may edit.
+2. Confirm that legacy application files have not been changed by this bootstrap.
+3. Inspect current project structure, app entry points, data persistence, UI, AI/provider code, tests, CI, Android build setup, permissions, and release workflow. Cite paths and evidence; mark unknowns UNKNOWN.
+4. Identify existing player data formats and localStorage/storage keys that may need a deliberate migration plan. Never delete or overwrite them.
+5. Create a source register for all known Seven RPG requirements and historical findings. Do not claim old features are present until verified from source/tests.
+
+PHASE 1 — DEFINE THE PRODUCT
+6. Consolidate requirements into stable feature IDs with priority, dependencies, acceptance criteria, risk, tests, status, and evidence fields.
+7. Record conflicts and ask for decisions only where the answer materially changes product identity or data safety.
+8. Define MVP-0 as one end-to-end journey: launch → create world → create player character → enter scene → submit action → validate action → receive structured narrative from deterministic mock provider → apply only legal domain events → save → force-stop/reopen → recover the same world.
+9. Include failure cases: malformed model output, illegal mutation, duplicate submit, cancellation, stale late response, corrupted save, migration failure, offline mode, and Arabic RTL/English LTR.
+
+PHASE 2 — CHOOSE THE STACK WITH EVIDENCE
+10. Compare at most three feasible stacks for mobile-first cinematic RPG, Android packaging, RTL, persistence/migrations, tests, performance on low/mid-range phones, AI streaming/cancellation, offline support, accessibility, build reproducibility, maintenance, and agent ergonomics.
+11. Write ADR-0001 with weighted criteria, evidence, trade-offs, licensing, dependency health, and a minimal proof-of-concept. Do not scaffold the full app until the ADR is accepted by evidence.
+12. Document exact build, test, lint, type-check, format, and Android packaging commands.
+
+PHASE 3 — IMPLEMENT THE CORE
+13. Define versioned world/player state, typed commands, domain events, event IDs, idempotency, validation, save boundaries, migration and recovery behavior before persistence implementation.
+14. Enforce the boundary: AI generates proposals and prose; deterministic game rules validate proposals; only authorized domain events change state.
+15. Keep Canon facts, confirmed events, character knowledge, beliefs, rumors, summaries, and generated suggestions separate.
+16. Implement one small, testable vertical slice at a time. Maintain deterministic mocks. Integrate one real provider only after the provider contract is tested; never embed credentials in the client.
+17. Treat stop/cancel as real cancellation; ignore stale responses; prevent duplicate actions; preserve state on every failed or rejected action.
+
+PHASE 4 — UX, ANDROID, RELEASE
+18. Define all async UI states, navigation/back behavior, keyboard/focus, accessibility, reduced motion, small screens, RTL/LTR, and error recovery.
+19. Test Android storage access and document-provider behavior on actual supported API levels/emulators; a web build does not prove Android readiness.
+20. Record screenshots, logs, test results, environment, device/API level, artifact checksum, and commit SHA for every release gate. Never fabricate evidence.
+
+DELIVERABLES BEFORE LARGE-SCALE CODING
+- Repository and untouched-legacy verification report
+- Source register and requirement-conflict list
+- Stable feature catalog with acceptance criteria
+- MVP-0 sequence and adversarial acceptance tests
+- Stack scorecard, ADR-0001, and proof-of-concept
+- Architecture/data/state/event/AI contracts
+- Dependency-ordered task ledger and risk register
+- Exact reproducible verification commands
+- First small implementation PR/commit only after its prerequisites are satisfied
+
+AUTONOMY RULE
+Continue to the next safe, unblocked task without unnecessary check-ins. Do not merge to main, publish a release, change visibility, rewrite history, delete data, or spend paid credits without required owner approval. Never say a feature is implemented or tested without evidence.
+
+The goal is a playable, coherent RPG with trustworthy state—not merely a large plan or a polished mockup.
