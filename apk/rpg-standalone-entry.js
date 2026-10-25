@@ -19,7 +19,7 @@
   }
   doc.addEventListener('seven:roomchange', keepRpgTitle);
   // Let the RPG workspace finish room hydration before checking whether a world exists.
-  doc.addEventListener('seven:roomchange', function () { if (ready) win.setTimeout(starterPanel, 0); });
+  doc.addEventListener('seven:roomchange', function () { if (ready) win.setTimeout(function(){ starterPanel(); mountSystemTabs(); }, 0); });
   var busy = false;
   var ready = false;
   var tries = 0;
@@ -34,6 +34,93 @@
       (doc.body || doc.documentElement).appendChild(el);
     }
     el.textContent = 'RPG failed to start: ' + message;
+  }
+  function mountSystemTabs() {
+    var bar = doc.querySelector('.seven-rpg-chat-actions');
+    if (!bar || doc.getElementById('seven-rpg-system-tabs')) return;
+    var tabs = doc.createElement('div');
+    tabs.id = 'seven-rpg-system-tabs';
+    tabs.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;';
+    var tabsData = [
+      { id: 'seven-rpg-tab-character', label: 'Hero · البطل' },
+      { id: 'seven-rpg-tab-inventory', label: 'Bag · الحقيبة' },
+      { id: 'seven-rpg-tab-combat', label: 'Combat · قتال' }
+    ];
+    tabsData.forEach(function(t) {
+      var btn = doc.createElement('button');
+      btn.type = 'button';
+      btn.id = t.id;
+      btn.textContent = t.label;
+      btn.setAttribute('aria-controls', t.id + '-panel');
+      btn.setAttribute('aria-expanded', 'false');
+      btn.className = 'seven-rpg-mini';
+      btn.style.cssText = 'min-height:42px;padding-inline:14px;white-space:nowrap;cursor:pointer';
+      tabs.appendChild(btn);
+    });
+    bar.parentNode.insertBefore(tabs, bar.nextSibling);
+    var bridge = win.SevenRpgBridge;
+    var api = win.SevenRpgWorkspace;
+    function renderCharacter() {
+      var modal = doc.getElementById('seven-rpg-system-modal');
+      if (!modal) {
+        modal = doc.createElement('section');
+        modal.id = 'seven-rpg-system-modal';
+        modal.hidden = true;
+        doc.body.appendChild(modal);
+      }
+      modal.hidden = false;
+      if (bridge && typeof bridge.getPlayerSummary === 'function') {
+        try {
+          var summary = bridge.getPlayerSummary() || {};
+          modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Character · الشخصية</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body"><div><strong>Level</strong> ' + String(summary.level || 1) + '</div><div><strong>HP</strong> ' + String(summary.health && summary.health.current != null ? summary.health.current : '?') + '/' + String(summary.health && summary.health.max != null ? summary.health.max : '?') + '</div><div><strong>Mana</strong> ' + String(summary.mana && summary.mana.current != null ? summary.mana.current : '?') + '/' + String(summary.mana && summary.mana.max != null ? summary.mana.max : '?') + '</div><div><strong>Equipment</strong> ' + JSON.stringify(summary.equipment || {}) + '</div></div></div>';
+        } catch (_) { modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Character · الشخصية</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body">Bridge not ready</div></div>'; }
+      } else {
+        modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Character · الشخصية</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body">Engine not loaded</div></div>';
+      }
+      doc.getElementById('seven-rpg-close-modal').addEventListener('click', function(){ modal.hidden = true; });
+    }
+    function renderInventory() {
+      var modal = doc.getElementById('seven-rpg-system-modal');
+      if (!modal) {
+        modal = doc.createElement('section');
+        modal.id = 'seven-rpg-system-modal';
+        modal.hidden = true;
+        doc.body.appendChild(modal);
+      }
+      modal.hidden = false;
+      if (bridge && typeof bridge.getPlayerSummary === 'function') {
+        try {
+          var summary = bridge.getPlayerSummary() || {};
+          var items = summary.inventory || [];
+          modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Inventory · الحقيبة</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body"><div class="seven-rpg-item-card">Items: ' + String(items.length) + '</div>' + items.map(function(i){return '<div class="seven-rpg-item-card"><div>' + String(i.name || i.id) + '</div><div>x' + String(i.quantity || 1) + '</div></div>';}).join('') + '</div></div>';
+        } catch (_) { modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Inventory · الحقيبة</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body">Bridge not ready</div></div>'; }
+      } else {
+        modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Inventory · الحقيبة</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body">Engine not loaded</div></div>';
+      }
+      doc.getElementById('seven-rpg-close-modal').addEventListener('click', function(){ modal.hidden = true; });
+    }
+    function renderCombat() {
+      var modal = doc.getElementById('seven-rpg-system-modal');
+      if (!modal) {
+        modal = doc.createElement('section');
+        modal.id = 'seven-rpg-system-modal';
+        modal.hidden = true;
+        doc.body.appendChild(modal);
+      }
+      modal.hidden = false;
+      if (bridge && typeof bridge.getCombatState === 'function') {
+        try {
+          var combat = bridge.getCombatState() || {};
+          modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Combat · قتال</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body"><div>Status: ' + String(combat.status || 'idle') + '</div><div>Enemies: ' + String((combat.enemies || []).length) + '</div><div>Turn: ' + String(combat.turn || '?') + '</div></div></div>';
+        } catch (_) { modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Combat · قتال</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body">Bridge not ready</div></div>'; }
+      } else {
+        modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Combat · قتال</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body">Engine not loaded</div></div>';
+      }
+      doc.getElementById('seven-rpg-close-modal').addEventListener('click', function(){ modal.hidden = true; });
+    }
+    tabs.querySelector('#seven-rpg-tab-character').addEventListener('click', renderCharacter);
+    tabs.querySelector('#seven-rpg-tab-inventory').addEventListener('click', renderInventory);
+    tabs.querySelector('#seven-rpg-tab-combat').addEventListener('click', renderCombat);
   }
   // Fresh-install RPG experience. The world is committed through the existing
   // transactional RPG bridge; no model output is treated as authoritative state.
