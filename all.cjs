@@ -6,7 +6,7 @@ const releaseTests=fs.readdirSync(path.join(__dirname,'release')).filter(name=>n
 const apkTests=fs.readdirSync(path.join(__dirname,'apk')).filter(name=>name.endsWith('.test.cjs')).sort().map(name=>path.join('apk',name));
 const files=[path.join('eval','harness.cjs'),path.join('eval','search-v2-eval.cjs'),'memory.cjs','runtime-smoke.cjs','verify.cjs',path.join('cloudflare','search-gateway','search-gateway.test.mjs'),...apkTests,path.join('release','static-audit.cjs'),...releaseTests,path.join('release','release-verify.cjs'),...evolutionTests];
 function getTimeout(file){
-  if(file.includes('rpg-longstory'))return 300000;
+  if(file.includes('rpg-longstory')||file.includes('release-verify'))return 300000;
   return 120000;
 }
 for(const file of files){

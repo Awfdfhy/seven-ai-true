@@ -69,6 +69,25 @@ if(profile.appId==='ai.seven.rpg'){
   // engines remain because RPG narration depends on them.
   const remove=['coding.js','research.js','research-v2.js','generated-ui.js','generated-ui.css'];
   for(const name of remove)fs.rmSync(path.join(WWW,'workspaces',name),{force:true});
+
+  // Inject RPG engine scripts so the bridge and UI can bind to real state.
+  const engineLoadOrder=[
+    './workspaces/rpg-state.js',
+    './workspaces/rpg-progression.js',
+    './workspaces/rpg-combat.js',
+    './workspaces/rpg-character.js',
+    './workspaces/rpg-party.js',
+    './workspaces/rpg-world-simulation.js',
+    './workspaces/rpg-memory.js',
+    './workspaces/rpg-canon-continuity.js',
+    './workspaces/rpg-session.js',
+    './workspaces/rpg-narration.js',
+    './workspaces/rpg-player-tools.js',
+    './workspaces/rpg-bridge.js'
+  ];
+  const scriptTags=engineLoadOrder.map(src=>'<script src="'+src+'"></script>').join('\n');
+  page=page.replace('</head>',scriptTags+'</head>');
+
   fs.writeFileSync(index,page);
   console.log('Seven RPG dedicated Android profile: PASS (ai.seven.rpg; boot in RPG; hide unrelated navigation)');
 }

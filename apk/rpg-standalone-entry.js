@@ -40,6 +40,7 @@
   function starterPanel() {
     var host = doc.querySelector('.seven-rpg-chatbar');
     var api = win.SevenRpgWorkspace;
+    var bridge = win.SevenRpgBridge;
     if (!host || !api || !api.state) return;
     var existing = doc.getElementById('seven-rpg-first-run');
     if (existing) existing.remove();
@@ -90,7 +91,9 @@
           sources: []
         };
         api.loadWork(world);
-        // Do not send text automatically. The user controls their first action.
+        if (bridge && typeof bridge.initManagers === 'function') {
+          try { bridge.initManagers(); } catch (_) {}
+        }
         var input = doc.getElementById('userInput');
         if (input && !input.value.trim()) {
           input.value = 'We are beginning a new RPG story in "' + title + '". ' +
@@ -132,8 +135,16 @@
       var api=win.SevenRpgWorkspace;
       var state=api&&api.state;
       var work=state&&state.worldEngine&&state.worldEngine.work;
-      doc.getElementById('seven-rpg-world-heading').textContent=work?String(work.title||'Unnamed World'):'No active world · لا يوجد عالم';
-      doc.getElementById('seven-rpg-world-summary').textContent=work?'World ID: '+String(work.id||'local')+' · Player actions remain under your control.':'Create a world first to enable backup.';
+      var bridge=win.SevenRpgBridge;
+      var playerSummary=null;
+      try { playerSummary=bridge&&typeof bridge.getPlayerSummary==='function'?bridge.getPlayerSummary():null; } catch(_){}
+      var summary=playerSummary||{};
+      var title=work?String(work.title||'Unnamed World'):'No active world · لا يوجد عالم';
+      doc.getElementById('seven-rpg-world-heading').textContent=title;
+      var meta=work?'World ID: '+String(work.id||'local'):'';
+      if(summary.level) meta+=(meta?' · ':'')+'Level '+String(summary.level);
+      if(summary.health&&summary.health.current!=null) meta+=(meta?' · ':'')+'HP '+String(summary.health.current)+'/'+String(summary.health.max);
+      doc.getElementById('seven-rpg-world-summary').textContent=meta||'Create a world first to enable backup.';
       doc.getElementById('seven-rpg-export-world').disabled=!work;
     }
     button.addEventListener('click',function(){
