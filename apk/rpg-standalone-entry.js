@@ -108,10 +108,37 @@
         doc.body.appendChild(modal);
       }
       modal.hidden = false;
-      if (bridge && typeof bridge.getCombatState === 'function') {
+      var actionsHtml = '';
+      if (bridge && typeof bridge.getCombatState === 'function' && typeof bridge.performCombatAction === 'function') {
         try {
           var combat = bridge.getCombatState() || {};
-          modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Combat · قتال</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body"><div>Status: ' + String(combat.status || 'idle') + '</div><div>Enemies: ' + String((combat.enemies || []).length) + '</div><div>Turn: ' + String(combat.turn || '?') + '</div></div></div>';
+          if (combat.status !== 'idle') {
+            actionsHtml = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="seven-rpg-mini" id="seven-rpg-combat-attack">Attack · هجوم</button><button class="seven-rpg-mini" id="seven-rpg-combat-defend">Defend · دفاع</button></div>';
+          }
+          modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Combat · قتال</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body"><div>Status: ' + String(combat.status || 'idle') + '</div><div>Enemies: ' + String((combat.enemies || []).length) + '</div><div>Turn: ' + String(combat.turn || '?') + '</div>' + actionsHtml + '</div></div>';
+          if (actionsHtml) {
+            setTimeout(function(){
+              var attackBtn = doc.getElementById('seven-rpg-combat-attack');
+              var defendBtn = doc.getElementById('seven-rpg-combat-defend');
+              if (attackBtn) {
+                attackBtn.addEventListener('click', function(){
+                  try {
+                    var res = bridge.performCombatAction('attack');
+                    if (res && res.status === 'victory') { alert('Victory! · فوز!'); }
+                    renderCombat();
+                  } catch (_) { alert('Combat action failed'); }
+                });
+              }
+              if (defendBtn) {
+                defendBtn.addEventListener('click', function(){
+                  try {
+                    bridge.performCombatAction('defend');
+                    renderCombat();
+                  } catch (_) { alert('Combat action failed'); }
+                });
+              }
+            }, 0);
+          }
         } catch (_) { modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Combat · قتال</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body">Bridge not ready</div></div>'; }
       } else {
         modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Combat · قتال</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body">Engine not loaded</div></div>';
