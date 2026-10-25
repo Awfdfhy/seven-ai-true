@@ -164,3 +164,359 @@ html[data-seven-standalone-profile="rpg"] .seven-rpg-combat-log {
   max-height: 120px; overflow-y: auto; background: #0b0d18; border-radius: 10px;
   padding: 8px 10px; font-size: 0.78rem; color: var(--rpg-muted); display: grid; gap: 4px;
 }
+
+/* ===== COMPLETE UI REDESIGN v2.5.0 ===== */
+
+/* RPG Brand Colors */
+:root {
+  --seven-primary: #a78bfa;
+  --seven-primary-dark: #8b5cf6;
+  --seven-secondary: #f5f3ff;
+  --seven-accent: #ff6b35;
+  --seven-success: #4ade80;
+  --seven-warning: #fbbf24;
+  --seven-danger: #ef4444;
+  --seven-info: #60a5fa;
+  
+  --rpg-wilderness: #2d5016;
+  --rpg-town: #cd853f;
+  --rpg-dungeon: #1c1c1c;
+  --rpg-castle: #716c69;
+  
+  --seven-text: #f3f4fb;
+  --seven-text-secondary: #aab4cb;
+  --seven-text-inverse: #ffffff;
+  --seven-bg: #0b0d18;
+  --seven-surface: #141827;
+  --seven-surface-elevated: #1c2236;
+  --seven-border: #303750;
+  
+  --seven-spacing-xs: 4px;
+  --seven-spacing-sm: 8px;
+  --seven-spacing-md: 12px;
+  --seven-spacing-lg: 16px;
+  --seven-spacing-xl: 24px;
+  --seven-spacing-2xl: 32px;
+  
+  --seven-radius-sm: 6px;
+  --seven-radius-md: 10px;
+  --seven-radius-lg: 14px;
+  --seven-radius-xl: 20px;
+  
+  --seven-shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --seven-shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+  --seven-shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+  --seven-shadow-xl: 0 20px 25px rgba(0,0,0,0.15);
+}
+
+/* Character Grid */
+.seven-rpg-character-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--seven-spacing-md);
+  margin-top: var(--seven-spacing-md);
+}
+
+.seven-rpg-character-card {
+  background: var(--seven-surface-elevated);
+  border: 1px solid var(--seven-border);
+  border-radius: var(--seven-radius-lg);
+  padding: var(--seven-spacing-md);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.seven-rpg-character-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--seven-shadow-md);
+  border-color: var(--seven-primary);
+}
+
+.seven-rpg-character-portrait {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  margin: 0 auto var(--seven-spacing-sm);
+  background: linear-gradient(135deg, var(--seven-primary) 0%, var(--seven-primary-dark) 100%);
+  border: 2px solid var(--seven-primary);
+}
+
+.seven-rpg-character-level {
+  font-size: var(--seven-font-sm);
+  color: var(--seven-text-secondary);
+  margin-bottom: var(--seven-spacing-xs);
+}
+
+.seven-rpg-character-name {
+  font-weight: 600;
+  font-size: var(--seven-font-md);
+  color: var(--seven-text);
+  margin-bottom: var(--seven-spacing-xs);
+}
+
+.seven-rpg-character-class {
+  font-size: var(--seven-font-xs);
+  color: var(--seven-text-secondary);
+}
+
+/* Inventory Grid */
+.seven-rpg-inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: var(--seven-spacing-sm);
+  margin-top: var(--seven-spacing-md);
+}
+
+.seven-rpg-item-card {
+  background: var(--seven-surface);
+  border: 1px solid var(--seven-border);
+  border-radius: var(--seven-radius-md);
+  padding: var(--seven-spacing-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.seven-rpg-item-card:hover {
+  border-color: var(--seven-primary);
+  background: var(--seven-surface-elevated);
+}
+
+.seven-rpg-item-icon {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto;
+  background: var(--seven-primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--seven-text-inverse);
+  font-size: var(--seven-font-sm);
+}
+
+.seven-rpg-item-name {
+  font-size: var(--seven-font-xs);
+  color: var(--seven-text);
+  margin-top: var(--seven-spacing-xs);
+  word-break: break-word;
+}
+
+.seven-rpg-item-quantity {
+  font-size: var(--seven-font-xs);
+  color: var(--seven-text-secondary);
+  margin-top: 2px;
+}
+
+/* Combat UI */
+.seven-rpg-combat-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--seven-spacing-md);
+  padding: var(--seven-spacing-md);
+  background: var(--seven-surface-elevated);
+  border-radius: var(--seven-radius-md);
+  border: 1px solid var(--seven-border);
+}
+
+.seven-rpg-combat-info {
+  display: flex;
+  gap: var(--seven-spacing-lg);
+}
+
+.seven-rpg-combat-info div {
+  text-align: center;
+}
+
+.seven-rpg-combat-info .label {
+  font-size: var(--seven-font-xs);
+  color: var(--seven-text-secondary);
+  margin-bottom: 2px;
+}
+
+.seven-rpg-combat-info .value {
+  font-size: var(--seven-font-lg);
+  font-weight: 600;
+  color: var(--seven-text);
+}
+
+.seven-rpg-combat-actions {
+  display: flex;
+  gap: var(--seven-spacing-md);
+  margin-top: var(--seven-spacing-md);
+}
+
+.seven-rpg-combat-btn {
+  flex: 1;
+  padding: var(--seven-spacing-md);
+  border: none;
+  border-radius: var(--seven-radius-lg);
+  font-size: var(--seven-font-lg);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.seven-rpg-combat-btn.attack {
+  background: var(--seven-danger);
+  color: var(--seven-text-inverse);
+}
+
+.seven-rpg-combat-btn.defend {
+  background: var(--rpg-wilderness);
+  color: var(--seven-text-inverse);
+}
+
+.seven-rpg-combat-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* World Dashboard */
+.seven-rpg-world-dashboard {
+  padding: var(--seven-spacing-lg);
+}
+
+.seven-rpg-world-header {
+  display: flex;
+  align-items: center;
+  gap: var(--seven-spacing-md);
+  margin-bottom: var(--seven-spacing-lg);
+}
+
+.seven-rpg-world-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, var(--seven-primary) 0%, var(--seven-primary-dark) 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--seven-text-inverse);
+  font-size: var(--seven-font-lg);
+}
+
+.seven-rpg-world-title {
+  font-size: var(--seven-font-2xl);
+  font-weight: 700;
+  color: var(--seven-text);
+}
+
+/* Loading States */
+.seven-rpg-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--seven-spacing-xl);
+  text-align: center;
+}
+
+.seven-rpg-loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--seven-border);
+  border-top-color: var(--seven-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: var(--seven-spacing-md);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.seven-rpg-loading-text {
+  font-size: var(--seven-font-lg);
+  color: var(--seven-text-secondary);
+}
+
+/* Quest Journal */
+.seven-rpg-quest-journal {
+  padding: var(--seven-spacing-md);
+}
+
+.seven-rpg-quest-item {
+  background: var(--seven-surface);
+  border-left: 3px solid var(--seven-primary);
+  border-radius: var(--seven-radius-md);
+  padding: var(--seven-spacing-md);
+  margin-bottom: var(--seven-spacing-md);
+  box-shadow: var(--seven-shadow-sm);
+}
+
+.seven-rpg-quest-title {
+  font-weight: 600;
+  color: var(--seven-text);
+  margin-bottom: var(--seven-spacing-xs);
+}
+
+.seven-rpg-quest-description {
+  font-size: var(--seven-font-sm);
+  color: var(--seven-text-secondary);
+}
+
+.seven-rpg-quest-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--seven-radius-sm);
+  font-size: var(--seven-font-xs);
+  font-weight: 500;
+  margin-top: var(--seven-spacing-sm);
+}
+
+.seven-rpg-quest-status.pending {
+  background: var(--seven-warning);
+  color: var(--seven-text);
+}
+
+.seven-rpg-quest-status.active {
+  background: var(--seven-primary);
+  color: var(--seven-text-inverse);
+}
+
+.seven-rpg-quest-status.completed {
+  background: var(--seven-success);
+  color: var(--seven-text);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  :root {
+    --seven-font-xl: 18px;
+    --seven-font-2xl: 24px;
+    --seven-spacing-lg: 12px;
+    --seven-spacing-xl: 16px;
+  }
+  
+  .seven-rpg-modal-card {
+    max-width: 100%;
+    height: 100%;
+    max-height: none;
+  }
+}
+
+/* Dark Theme */
+[data-theme="dark"] .seven-rpg-base {
+  --seven-bg: #0c0c0c;
+  --seven-surface: #1a1a1a;
+  --seven-surface-elevated: #262626;
+  --seven-text: #e0e0e0;
+  --seven-text-secondary: #a0a0a0;
+  --seven-border: #333333;
+}
+
+/* RTL Override */
+[dir="rtl"] .seven-rpg-modal-header {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .seven-rpg-combat-actions {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .seven-rpg-character-grid {
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+}

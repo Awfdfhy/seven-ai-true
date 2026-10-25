@@ -45,7 +45,8 @@
     var tabsData = [
       { id: 'seven-rpg-tab-character', label: 'Hero · البطل' },
       { id: 'seven-rpg-tab-inventory', label: 'Bag · الحقيبة' },
-      { id: 'seven-rpg-tab-combat', label: 'Combat · قتال' }
+      { id: 'seven-rpg-tab-combat', label: 'Combat · قتال' },
+      { id: 'seven-rpg-tab-quests', label: 'Quests · المهام' }
     ];
     tabsData.forEach(function(t) {
       var btn = doc.createElement('button');
@@ -54,7 +55,7 @@
       btn.textContent = t.label;
       btn.setAttribute('aria-controls', t.id + '-panel');
       btn.setAttribute('aria-expanded', 'false');
-      btn.className = 'seven-rpg-mini';
+      btn.className = 'seven-rpg-system-tab';
       btn.style.cssText = 'min-height:42px;padding-inline:14px;white-space:nowrap;cursor:pointer';
       tabs.appendChild(btn);
     });
@@ -73,7 +74,7 @@
       if (bridge && typeof bridge.getPlayerSummary === 'function') {
         try {
           var summary = bridge.getPlayerSummary() || {};
-          modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Character · الشخصية</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body"><div><strong>Level</strong> ' + String(summary.level || 1) + '</div><div><strong>HP</strong> ' + String(summary.health && summary.health.current != null ? summary.health.current : '?') + '/' + String(summary.health && summary.health.max != null ? summary.health.max : '?') + '</div><div><strong>Mana</strong> ' + String(summary.mana && summary.mana.current != null ? summary.mana.current : '?') + '/' + String(summary.mana && summary.mana.max != null ? summary.mana.max : '?') + '</div><div><strong>Equipment</strong> ' + esc(JSON.stringify(summary.equipment || {})) + '</div></div></div>';
+          modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Character · الشخصية</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body"><div class="seven-rpg-character-grid"><div class="seven-rpg-character-card"><div class="seven-rpg-character-portrait"></div><div class="seven-rpg-character-level">Level ' + esc(String(summary.level || 1)) + '</div><div class="seven-rpg-character-name">' + esc(String(summary.name || 'Hero')) + '</div><div class="seven-rpg-character-class">HP: ' + String(summary.health && summary.health.current != null ? summary.health.current : '?') + '/' + String(summary.health && summary.health.max != null ? summary.health.max : '?') + '</div></div></div></div></div>';
         } catch (_) { modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Character · الشخصية</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body">Bridge not ready</div></div>'; }
       } else {
         modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Character · الشخصية</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body">Engine not loaded</div></div>';
@@ -93,7 +94,8 @@
         try {
           var summary = bridge.getPlayerSummary() || {};
           var items = summary.inventory || [];
-          modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Inventory · الحقيبة</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body"><div class="seven-rpg-item-card">Items: ' + String(items.length) + '</div>' + items.map(function(i){return '<div class="seven-rpg-item-card"><div>' + esc(String(i.name || i.id)) + '</div><div>x' + String(i.quantity || 1) + '</div></div>';}).join('') + '</div></div>';
+          var itemsHtml = items.length === 0 ? '<div class="seven-rpg-item-card"><div class="seven-rpg-item-name">No items yet</div></div>' : items.map(function(i){return '<div class="seven-rpg-item-card"><div class="seven-rpg-item-icon">' + esc(String(i.name || i.id).charAt(0).toUpperCase()) + '</div><div class="seven-rpg-item-name">' + esc(String(i.name || i.id)) + '</div><div class="seven-rpg-item-quantity">x' + String(i.quantity || 1) + '</div></div>';}).join('');
+          modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Inventory · الحقيبة</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body"><div class="seven-rpg-inventory-grid">' + itemsHtml + '</div></div></div>';
         } catch (_) { modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Inventory · الحقيبة</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body">Bridge not ready</div></div>'; }
       } else {
         modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Inventory · الحقيبة</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body">Engine not loaded</div></div>';
@@ -114,9 +116,9 @@
         try {
           var combat = bridge.getCombatState() || {};
           if (combat.status !== 'idle') {
-            actionsHtml = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="seven-rpg-mini" id="seven-rpg-combat-attack">Attack · هجوم</button><button class="seven-rpg-mini" id="seven-rpg-combat-defend">Defend · دفاع</button></div>';
+            actionsHtml = '<div class="seven-rpg-combat-actions"><button class="seven-rpg-combat-btn attack" id="seven-rpg-combat-attack">Attack · هجوم</button><button class="seven-rpg-combat-btn defend" id="seven-rpg-combat-defend">Defend · دفاع</button></div>';
           }
-          modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Combat · قتال</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body"><div>Status: ' + String(combat.status || 'idle') + '</div><div>Enemies: ' + String((combat.enemies || []).length) + '</div><div>Turn: ' + String(combat.turn || '?') + '</div>' + actionsHtml + '</div></div>';
+          modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Combat · قتال</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body"><div class="seven-rpg-combat-status"><div class="seven-rpg-combat-info"><div><div class="label">Status</div><div class="value">' + esc(String(combat.status || 'idle')) + '</div></div><div><div class="label">Enemies</div><div class="value">' + String((combat.enemies || []).length) + '</div></div><div><div class="label">Turn</div><div class="value">' + String(combat.turn || '?') + '</div></div></div>' + actionsHtml + '</div></div>';
           if (actionsHtml) {
             setTimeout(function(){
               var attackBtn = doc.getElementById('seven-rpg-combat-attack');
@@ -146,9 +148,22 @@
       }
       doc.getElementById('seven-rpg-close-modal').addEventListener('click', function(){ modal.hidden = true; });
     }
+    function renderQuests() {
+      var modal = doc.getElementById('seven-rpg-system-modal');
+      if (!modal) {
+        modal = doc.createElement('section');
+        modal.id = 'seven-rpg-system-modal';
+        modal.hidden = true;
+        doc.body.appendChild(modal);
+      }
+      modal.hidden = false;
+      modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Quests · المهام</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body"><div class="seven-rpg-quest-journal"><div class="seven-rpg-quest-item"><div class="seven-rpg-quest-title">Welcome to Seven RPG</div><div class="seven-rpg-quest-description">Begin your adventure by creating a world and exploring the unknown.</div><span class="seven-rpg-quest-status active">Active</span></div><div class="seven-rpg-quest-item"><div class="seven-rpg-quest-title">First Steps</div><div class="seven-rpg-quest-description">Create your character and start your journey.</div><span class="seven-rpg-quest-status pending">Pending</span></div></div></div></div>';
+      doc.getElementById('seven-rpg-close-modal').addEventListener('click', function(){ modal.hidden = true; });
+    }
     tabs.querySelector('#seven-rpg-tab-character').addEventListener('click', renderCharacter);
     tabs.querySelector('#seven-rpg-tab-inventory').addEventListener('click', renderInventory);
     tabs.querySelector('#seven-rpg-tab-combat').addEventListener('click', renderCombat);
+    tabs.querySelector('#seven-rpg-tab-quests').addEventListener('click', renderQuests);
   }
   // Fresh-install RPG experience. The world is committed through the existing
   // transactional RPG bridge; no model output is treated as authoritative state.
