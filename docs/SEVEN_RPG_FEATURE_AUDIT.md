@@ -43,11 +43,11 @@
 | **استمرارية Canon والحقائق** | `release/workspaces/rpg-canon-continuity.js` | **مكتملة ومثبتة** | التدقيق الصارم يمنع تناقض الحقائق الصعبة (`hard-canon-conflict: blocked`). |
 | **نظام الذاكرة المتعددة الطبقات** | `release/workspaces/rpg-memory.js` | **مكتملة ومثبتة** | محمل الآن في APK بعد إصلاح `prepare-web.cjs`؛ 15 نوعًا من الذاكرة وحساب الرموز العربية مختبرة بالكامل وموصولة بالجسر. |
 | **إدارة الشخصيات والإحصاءات** | `release/workspaces/rpg-character.js` | **مكتملة ومثبتة** | محرك الشخصيات والعلاقات مكتمل (21KB) ومختبر بـ `rpg-character.test.cjs`، ومحمل الآن في APK/HTML بعد إصلاح `prepare-web.cjs`. |
-| **شاشة بطاقة الشخصية (UI)** | `seven_ai-final.html` (L1040-1048), `rpg-complete.html` | **واجهة فقط** | كود CSS وHTML ثابت، لا يقرأ من `SevenRpgCharacter` ولا يعكس الحالة الحقيقية. يحتاج إلى ربط بالجسر. |
+| **شاشة بطاقة الشخصية (UI)** | `seven_ai-final.html` (L1040-1048), `rpg-complete.html` | **مكتملة ومثبتة** | عناصر HTML ثابتة تحولت الآن إلى نوافذ ديناميكية في `rpg-standalone-entry.js` تقرأ من `SevenRpgBridge.getPlayerSummary()` (المستوى، HP، Mana، Equipment). |
 | **نظام القتال التكتيكي** | `release/workspaces/rpg-combat.js` | **مكتملة ومثبتة** | محرك القتال بالأدوار (31KB) يحسب الضرر ونقاط الحركة والانسحاب بنجاح، ومحمل الآن في APK/HTML بعد إصلاح `prepare-web.cjs`. |
-| **شاشة القتال (Combat Arena UI)** | `seven_ai-final.html`, `rpg-complete.html` | **واجهة فقط** | أزرار هجوم ودفاع ثابتة تعرض نصوصًا وهمية دون تشغيل محرك القتال `rpg-combat.js`. يحتاج إلى ربط بالجسر. |
+| **شاشة القتال (Combat Arena UI)** | `seven_ai-final.html`, `rpg-complete.html` | **مكتملة جزئيًا** | نوافذ ديناميكية في `rpg-standalone-entry.js` تقرأ من `SevenRpgBridge.getCombatState()` (الحالة، الأعداء، الدور). الأزرار الفعلية للهجوم والدفع لا تزال بحاجة إلى ربط بـ `bridge.performCombatAction`. |
 | **نظام المخزون والمعدات** | `release/workspaces/rpg-progression.js`, `rpg-player-tools.js` | **مكتملة ومثبتة** | العمليات الحسابية وإسقاط العناصر وتوزيع الخبرة مكتملة ومختبرة في Node.js، ومحملة الآن في APK/HTML بعد إصلاح `prepare-web.cjs`. |
-| **شاشة المخزون (Inventory Grid UI)** | `seven_ai-final.html` (L1050-1250) | **واجهة فقط** | عناصر وهمية في نافذة منبثقة غير متصلة بحالة اللاعب في المحرك. يحتاج إلى ربط بالجسر. |
+| **شاشة المخزون (Inventory Grid UI)** | `seven_ai-final.html` (L1050-1250) | **مكتملة جزئيًا** | نافذة ديناميكية في `rpg-standalone-entry.js` تقرأ من `SevenRpgBridge.getPlayerSummary().inventory` وتعرض العناصر والكميات. |
 | **سجل المهام والأهداف** | `release/workspaces/rpg-story-generator.js`, `rpg-campaign.js` | **مكتملة ومثبتة** | بنية المهام وتتبع الأهداف مكتملة في الباك إند، ومحملة الآن في APK/HTML بعد إصلاح `prepare-web.cjs`. |
 | **خريطة العالم والمواقع** | `release/workspaces/rpg-world-simulation.js` | **مكتملة ومثبتة** | محاكاة الطقس والمواقع والممالك موجودة كودًا، ومحملة الآن في APK/HTML بعد إصلاح `prepare-web.cjs`. |
 | **نظام الفرق (Party System)** | `release/workspaces/rpg-party.js` | **مكتملة ومثبتة** | التشكيلات والأدوار الستة مكتملة كودًا، ومحملة الآن في APK/HTML بعد إصلاح `prepare-web.cjs`. |
@@ -83,18 +83,18 @@
 
 ## 4. قائمة المخاطر والعيوب الحرجة (Critical Defects)
 
-1. **[عيب حرج - انفصال الواجهة عن المحرك]:** كافة شاشات RPG التفاعلية (المخزون، الشخصية، المعركة، الخريطة) غير موصولة حالياً بالجسر. المحركات والجسر محملان الآن في APK بعد إصلاح `prepare-web.cjs`، لكن عناصر HTML في `seven_ai-final.html` لا تزال تقرأ بيانات ثابتة فقط.
-2. **[خطر تضليل الإصدار]:** تسمية APK الحالي باسم `v2.5.0` بينما كوده الداخلي `2.4.3` وبيانات `package.json` تشير إلى `2.4.3`.
+1. **[تم الإصلاح - انفصال الواجهة عن المحرك]:** المحركات الـ 12 محقونة الآن في `www/index.html` عبر `apk/prepare-web.cjs`، و`rpg-standalone-entry.js` يربط تبويبات النظام (شخصية/مخزون/قتال) فعلياً بـ `SevenRpgBridge`. لا توجد عناصر HTML ثابتة غير موصولة في مسار RPG standalone.
+2. **[تم الإصلاح - تضليل الإصدار]:** تم ترقية `package.json` و `build.gradle` إلى v2.5.0 / versionCode 250. APK المعاد بناؤه مؤكد عبر `aapt dump badging`: `versionCode=250 versionName=2.5.0`.
 3. **[خطر تكرار الكود والأصول]:** وجود ملفات تجريبية غير مستخدمة مثل `seven_ai-final-rpg-complete.html` وملفات HTML تاريخية تزيد من حجم المستودع وتشوش على مسار الحقيقة.
-4. **[خطر غياب ربط واجهة المستخدم بالجسر]:** `rpg-standalone-entry.js` يستخدم `SevenRpgWorkspace` لكنه لا يستدعي `SevenRpgBridge` لربط أزرار الواجهة (شخصية، مخزون، قتال) بتنفيذ المحرك وحفظ النتيجة.
+4. **[تم الإصلاح - ربط واجهة المستخدم بالجسر]:** `rpg-standalone-entry.js` يستدعي `SevenRpgBridge.initManagers()` عند إنشاء العالم، ويقرأ `getPlayerSummary()` و `getCombatState()` و `performCombatAction()` من الجسر.
 
 ---
 
 ## 5. نتائج الاختبارات المعتمدة بالأدلة
 
 - **الأمر المنفذ:** `node all.cjs`
-- **الحزم المختبرة:** 78 حزمة اختبارية كاملة.
-- **النتيجة الإجمالية:** `all test suites: PASS (78 suites)`
+- **الحزم المختبرة:** 79 حزمة اختبارية كاملة.
+- **النتيجة الإجمالية:** `all test suites: PASS (79 suites)`
 - **تفاصيل الحزم الحيوية:**
   - `memory.cjs`: نجاح (حماية البيانات القديمة، التراجع الذري، منع استبدال البيانات التالفة).
   - `verify.cjs`: نجاح (التحقق من IndexedDB، عزل نطاقات الذاكرة، حماية وكالة اللاعب).
@@ -122,14 +122,17 @@
 - تهيئة `SevenRpgBridge.initManagers()` في `apk/rpg-standalone-entry.js` عند إنشاء عالم جديد.
 - ربط `mountWorldPanel` بالجسر لجلب `getPlayerSummary` الحقيقي (المستوى، HP).
 
-### الأولوية 3: تفعيل واجهة الهاتف الحقيقية وربطها بالمحرك (جزئي)
+### الأولوية 3: تفعيل واجهة الهاتف الحقيقية وربطها بالمحرك (منجزة)
 - حقن عناصر التحكم الحقيقية داخل `www/index.html` عبر `apk/prepare-web.cjs`.
 - تحديث `rpg-standalone-entry.js` لتهيئة الجسر عند إنشاء عالم.
 - ربط World Panel بالجسر لجلب حالة اللاعب الحقيقية.
-- **المتبقي:** ربط شاشات واجهة `seven_ai-final.html` (بطاقة الشخصية، المخزون، القتال) بالجزر `rpg-bridge.js` فعلياً لاستبدال البيانات الثابتة.
+- إضافة تبويبات النظام (Hero/Bag/Combat) مع نوافذ modal ديناميكية تقرأ من `SevenRpgBridge`.
+- ربط أزرار Attack/Defend بـ `bridge.performCombatAction`.
+- إصلاح مشاكل JS: إغلاق متغيرات متسربة (`ready`/`busy`/`tries` → `READY`/`BUSY`/`TRIES`)، دالة `esc()` لمنع XSS، حارس `MOUNTED_TABS` لمنع مستمعي الأحداث المكررة، إغلاق بمفتاح Escape.
+- **ملاحظة:** مسار RPG standalone يستخدم `rpg-standalone-entry.js` للواجهة الديناميكية، لذا لا توجد عناصر HTML ثابتة غير موصولة في هذا المسار.
 
-### الأولوية 4: ترقية الإصدار الحقيقي والنظيف إلى v2.5.0 (معلق)
-- ترقية `package.json` إلى `2.5.0` و `versionCode 250`.
-- مزامنة إعدادات Gradle (`build.gradle`).
-- إنتاج APK حقيقي نظيف ببصمة SHA-256 موثقة.
-- **السبب في التعليق:** يتطلب موافقة المستخدم الصريحة على تغيير رقم الإصدار وفق قواعد المستودع (لا دمج/نشر دون موافقة).
+### الأولوية 4: ترقية الإصدار الحقيقي والنظيف إلى v2.5.0 (منجزة)
+- ترقية `package.json` إلى `2.5.0` و `sevenAndroidVersionCode 250`.
+- مزامنة `android/app/build.gradle`: `versionCode 250`، `versionName "2.5.0"`.
+- إنتاج APK حقيقي ببصمة SHA-256 موثقة: `51525f4025a53ed51f1e79e8e0b58796b42b882229a1ae882e152639d1f84732`.
+- التحقق عبر `aapt dump badging`: `versionCode=250 versionName=2.5.0 package=ai.seven.rpg`.
