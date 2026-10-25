@@ -1,43 +1,39 @@
-# Seven RPG Skill Pack
+# Seven RPG Agent Skills
 
-This is a project-local, first-party skill pack for coding agents. It consolidates the agreed workflows into reusable `SKILL.md` instructions. It does **not** copy upstream repositories or claim their official skills are installed.
+## Canonical project plan
+Read [`docs/SEVEN_RPG_MASTER_PLAN_AR.md`](../../docs/SEVEN_RPG_MASTER_PLAN_AR.md) before planning or executing work. It is the full development blueprint, not this skill index.
 
-## Usage
-1. Read `AGENTS.md` and the relevant skill's `SKILL.md`.
-2. Use a skill when its trigger matches the task; combine skills when necessary.
-3. Keep the project-specific safety rules and existing product contracts authoritative.
-4. A file existing here proves the instruction pack is in Git. It does not prove a given agent host has loaded or executed it.
-5. Some host-specific tools require separate installation/authentication. Never fake those integrations.
+## Two separate layers
+1. **Project-specific workflows:** the local `seven-*` skills below and `.agents/skills/SEVEN_RPG_SKILL_PACK.md`. These are authored for Seven RPG and are not claimed to be upstream copies.
+2. **Real upstream skills:** use `docs/SEVEN_RPG_AGENT_SKILLS_SOURCES.md` for canonical repositories, compatibility notes and install status. Run `scripts/install-agreed-agent-skills.sh` from the project root on a feature branch to request selected upstream installs. Inspect the resulting diff and host discovery; do not claim installation until verified.
 
-## Skills
-- `seven-planning`: planning, task decomposition, acceptance criteria, progress tracking.
-- `seven-superpowers-workflow`: disciplined design-first implementation, tests, review, finish.
-- `seven-duel-review`: adversarial second-agent critique and rebuttal.
-- `seven-context-engineering`: bounded context, source-of-truth hierarchy, summaries.
-- `seven-multi-agent-orchestration`: safe parallel agent delegation and integration.
-- `seven-autonomous-repair`: bounded bug-fix loops with stop conditions.
-- `seven-testing-qa`: test strategy, regression testing, CI repair.
-- `seven-rpg-canon-integrity`: canon, character knowledge, agency, continuity.
-- `seven-save-integrity`: persistence, migration, corruption prevention.
-- `seven-ui-ux-pro-max`: mobile-first visual system, accessibility, consistency.
-- `seven-rtl-arabic-qa`: Arabic RTL and bidirectional layout validation.
-- `seven-android-release-gates`: Android/API/SAF lifecycle and release evidence.
-- `seven-security-audit`: secrets, permissions, dependency and input safety.
-- `seven-model-routing`: provider fallback, capability routing, cost/rate limits.
-- `seven-evals-observability`: measurable evaluations, traces, truthful reporting.
-- `seven-architecture-impact`: blast-radius analysis and minimal-change design.
-- `seven-research-source-check`: trustworthy source research and freshness checks.
-- `seven-performance-efficiency`: latency, memory, mobile performance and budgets.
+## Local project-specific workflows
+- `seven-planning`: planning, task decomposition and acceptance criteria.
+- `seven-superpowers-workflow`: disciplined design-first implementation, tests and review.
+- `seven-duel-review`: adversarial independent review.
+- `seven-context-engineering`: source hierarchy and bounded context.
+- `seven-multi-agent-orchestration`: safe delegation and integration.
+- `seven-autonomous-repair`: bounded bug-fix loops.
+- `seven-testing-qa`: regression, integration and CI validation.
+- `seven-rpg-canon-integrity`: canon, character knowledge, agency and continuity.
+- `seven-save-integrity`: persistence, migrations and corruption prevention.
+- `seven-ui-ux-pro-max`: mobile-first design quality.
+- `seven-rtl-arabic-qa`: Arabic RTL and bidirectional layout.
+- `seven-android-release-gates`: Android/API/SAF and release evidence.
+- `seven-security-audit`: secrets, permissions, dependencies and input safety.
+- `seven-model-routing`: provider fallback, capabilities, rate limits and secrets.
+- `seven-evals-observability`: repeatable evaluations and truthful diagnostics.
+- `seven-architecture-impact`: architecture boundaries and blast-radius analysis.
+- `seven-research-source-check`: authoritative research, freshness and licenses.
+- `seven-performance-efficiency`: measured mobile performance.
 - `seven-accessibility-qa`: keyboard, contrast, reduced motion and touch targets.
-- `seven-game-studio`: narrative systems, gameplay loops, worldbuilding and player agency.
-- `seven-files-planning`: durable task plans and decision logs in files.
-- `seven-visual-reference`: screenshot inventories, golden references and visual comparison.
-- `seven-vercel-web-quality`: web runtime, loading, responsive and performance checks where applicable.
-- `seven-github-workflow`: branch hygiene, PR review, CI evidence and safe repository changes.
-- `seven-openai-agent-patterns`: tool-use discipline, verification, structured handoffs and human approval.
-- `seven-android-security`: Android storage, exported components, permissions and lifecycle risks.
+- `seven-game-studio`: RPG systems, narrative loops and player agency.
+- `seven-files-planning`: durable plans and decision logs.
+- `seven-visual-reference`: screenshot inventory and visual comparison.
+- `seven-vercel-web-quality`: stack-compatible web runtime and responsive quality.
+- `seven-github-workflow`: branch hygiene, PR review and CI evidence.
+- `seven-openai-agent-patterns`: tool-use verification, handoffs and approvals.
+- `seven-android-security`: storage, exported components and Android permissions.
 
-## Relationship to upstream projects
-The names below are inspiration/compatibility references only, not a claim that their upstream source was copied or installed: Superpowers; Anthropic Skills; UI UX Pro Max; Duel-style review; Everything Claude Code; Graphify; Android skills; Cloudflare security audit; context-engineering skills; OpenAI skills; Awesome Agent Skills; Matt Pocock / Addy Osmani agent skills; Impeccable; Planning with Files; Understand Anything; Claude Code Game Studios; Vercel Agent Skills; Code Architecture & Impact Analysis; GitHub Awesome Copilot; QA and cybersecurity skill collections.
-
-Where upstream projects are needed, obtain them from their canonical repository, inspect license and dependencies, and install only into the intended agent host. Do not vendor unknown code blindly.
+## Safety and verification
+A `SKILL.md` file in Git proves only that instructions exist in the repository. It does not prove that OpenCode, Claude Code, Hermes or another host discovered, loaded or executed the skill. Record host/version, installed path, upstream revision/license and a harmless activation test in `docs/SEVEN_RPG_SKILL_INSTALLATION_REPORT.md` before reporting host-level installation complete.
