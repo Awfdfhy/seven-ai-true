@@ -19,10 +19,11 @@
   }
   doc.addEventListener('seven:roomchange', keepRpgTitle);
   // Let the RPG workspace finish room hydration before checking whether a world exists.
-  doc.addEventListener('seven:roomchange', function () { if (ready) win.setTimeout(function(){ starterPanel(); mountSystemTabs(); }, 0); });
-  var busy = false;
-  var ready = false;
-  var tries = 0;
+  doc.addEventListener('seven:roomchange', function () { if (READY) win.setTimeout(function(){ starterPanel(); mountSystemTabs(); }, 0); });
+  var MOUNTED_TABS = false;
+  var READY = false;
+  var TRIES = 0;
+  function esc(str) { return String(str || '').replace(/[<>&'"]/g, function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;',"'":'&#39;','"':'&quot;'}[c];}); }
   function report(message) {
     doc.documentElement.dataset.sevenStandaloneError = String(message || 'unknown').slice(0, 120);
     var el = doc.getElementById('seven-rpg-standalone-status');
@@ -72,7 +73,7 @@
       if (bridge && typeof bridge.getPlayerSummary === 'function') {
         try {
           var summary = bridge.getPlayerSummary() || {};
-          modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Character · الشخصية</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body"><div><strong>Level</strong> ' + String(summary.level || 1) + '</div><div><strong>HP</strong> ' + String(summary.health && summary.health.current != null ? summary.health.current : '?') + '/' + String(summary.health && summary.health.max != null ? summary.health.max : '?') + '</div><div><strong>Mana</strong> ' + String(summary.mana && summary.mana.current != null ? summary.mana.current : '?') + '/' + String(summary.mana && summary.mana.max != null ? summary.mana.max : '?') + '</div><div><strong>Equipment</strong> ' + JSON.stringify(summary.equipment || {}) + '</div></div></div>';
+          modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Character · الشخصية</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body"><div><strong>Level</strong> ' + String(summary.level || 1) + '</div><div><strong>HP</strong> ' + String(summary.health && summary.health.current != null ? summary.health.current : '?') + '/' + String(summary.health && summary.health.max != null ? summary.health.max : '?') + '</div><div><strong>Mana</strong> ' + String(summary.mana && summary.mana.current != null ? summary.mana.current : '?') + '/' + String(summary.mana && summary.mana.max != null ? summary.mana.max : '?') + '</div><div><strong>Equipment</strong> ' + esc(JSON.stringify(summary.equipment || {})) + '</div></div></div>';
         } catch (_) { modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Character · الشخصية</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body">Bridge not ready</div></div>'; }
       } else {
         modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Character · الشخصية</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body">Engine not loaded</div></div>';
@@ -92,7 +93,7 @@
         try {
           var summary = bridge.getPlayerSummary() || {};
           var items = summary.inventory || [];
-          modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Inventory · الحقيبة</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body"><div class="seven-rpg-item-card">Items: ' + String(items.length) + '</div>' + items.map(function(i){return '<div class="seven-rpg-item-card"><div>' + String(i.name || i.id) + '</div><div>x' + String(i.quantity || 1) + '</div></div>';}).join('') + '</div></div>';
+          modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Inventory · الحقيبة</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body"><div class="seven-rpg-item-card">Items: ' + String(items.length) + '</div>' + items.map(function(i){return '<div class="seven-rpg-item-card"><div>' + esc(String(i.name || i.id)) + '</div><div>x' + String(i.quantity || 1) + '</div></div>';}).join('') + '</div></div>';
         } catch (_) { modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Inventory · الحقيبة</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body">Bridge not ready</div></div>'; }
       } else {
         modal.innerHTML = '<div class="seven-rpg-modal-card"><div class="seven-rpg-modal-header"><h2 class="seven-rpg-modal-title">Inventory · الحقيبة</h2><button class="seven-rpg-modal-close" id="seven-rpg-close-modal">✕</button></div><div class="seven-rpg-modal-body">Engine not loaded</div></div>';
@@ -358,18 +359,18 @@
     bar.insertBefore(button, bar.firstChild);
   }
   function boot() {
-    if (busy || ready) return;
+    if (BUSY || READY) return;
     var shell = win.SevenShellFinal;
     if (!shell || typeof shell.openWorkspace !== 'function') {
-      if (++tries < 160) win.setTimeout(boot, 250);
+      if (++TRIES < 160) win.setTimeout(boot, 250);
       else report('shell-unavailable');
       return;
     }
-    busy = true;
+    BUSY = true;
     Promise.resolve(shell.openWorkspace('rpg')).then(function () {
       var workspaces = win.SevenWorkspaces;
       if (workspaces && workspaces.active() === 'rpg' && win.SevenRpgWorkspace) {
-        ready = true;
+        READY = true;
         doc.documentElement.dataset.sevenStandaloneReady = '1';
         // Close sidebar on mobile to avoid intercepting clicks
         var side = doc.querySelector('.sidebar');
@@ -382,14 +383,15 @@
         mountRpgModelControl();
         mountWorldPanel();
       } else {
-        busy = false;
+        BUSY = false;
         report('rpg-workspace-unavailable');
       }
     }).catch(function (error) {
-      busy = false;
+      BUSY = false;
       report(error && error.message || 'rpg-start-error');
     });
   }
+  doc.addEventListener('keydown', function(e) { if (e.key === 'Escape') { var m=doc.getElementById('seven-rpg-system-modal'); if(m&&!m.hidden){m.hidden=true;e.preventDefault();} } });
   doc.addEventListener('seven:shellfinalready', boot);
   if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', boot, { once: true });
   else boot();

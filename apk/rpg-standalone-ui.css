@@ -21,6 +21,26 @@ html[data-seven-standalone-profile="rpg"] .seven-rpg-brand strong{color:var(--rp
 html[data-seven-standalone-profile="rpg"] .seven-rpg-brand span{color:var(--rpg-muted)}
 html[data-seven-standalone-profile="rpg"] .seven-rpg-mini{background:var(--rpg-panel2)!important;border-color:var(--rpg-line)!important;color:var(--rpg-text)!important;border-radius:12px!important}
 html[data-seven-standalone-profile="rpg"] #seven-rpg-first-run{background:linear-gradient(155deg,#20263f,#121623)!important;border:1px solid #40486b!important;padding:22px!important;border-radius:22px!important;box-shadow:0 12px 32px #0003}
+html[data-seven-standalone-profile="rpg"] #seven-rpg-first-run.seven-rpg-first-run{display:grid;gap:10px;margin:12px}
+html[data-seven-standalone-profile="rpg"] #seven-rpg-first-run-heading{font-size:1.1rem;color:var(--rpg-text)}
+html[data-seven-standalone-profile="rpg"] #seven-rpg-first-run-hint{margin:0;font-size:.85rem;opacity:.83;color:var(--rpg-muted)}
+html[data-seven-standalone-profile="rpg"] #seven-rpg-first-run .seven-rpg-input,
+html[data-seven-standalone-profile="rpg"] #seven-rpg-world-name,
+html[data-seven-standalone-profile="rpg"] #seven-rpg-opening-scene{background:#101523!important;color:var(--rpg-text)!important;border:1px solid #434967!important;border-radius:12px!important;font-size:16px!important;width:100%;padding:8px}
+html[data-seven-standalone-profile="rpg"] #seven-rpg-create-world{background:linear-gradient(115deg,#7c3aed,#6366f1)!important;min-height:50px!important;border-radius:14px!important;color:white!important;border:0!important;padding:10px 16px!important;font:inherit!important;font-weight:700!important}
+html[data-seven-standalone-profile="rpg"] #seven-rpg-first-run-error{margin:0;font-size:.8rem;min-height:1em;color:#ffb6b6}
+
+/* System tabs bar */
+html[data-seven-standalone-profile="rpg"] .seven-rpg-system-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+
+/* World panel */
+html[data-seven-standalone-profile="rpg"] #seven-rpg-world-panel.seven-rpg-world-panel{margin:0 12px 12px;padding:18px;display:grid;gap:10px;background:var(--rpg-panel);border:1px solid var(--rpg-line);border-radius:18px;box-shadow:0 12px 24px #0003;color:var(--rpg-text)}
+
+/* Combat action buttons inside modal */
+html[data-seven-standalone-profile="rpg"] .seven-rpg-combat-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+
+/* Item card in inventory modal */
+html[data-seven-standalone-profile="rpg"] .seven-rpg-item-count{margin:0 0 6px;font-weight:600;color:var(--rpg-text)}
 html[data-seven-standalone-profile="rpg"] #seven-rpg-first-run input,
 html[data-seven-standalone-profile="rpg"] #seven-rpg-first-run textarea{background:#101523!important;color:var(--rpg-text)!important;border:1px solid #434967!important;border-radius:12px!important;font-size:16px!important}
 html[data-seven-standalone-profile="rpg"] #seven-rpg-create-world{background:linear-gradient(115deg,#7c3aed,#6366f1)!important;min-height:50px!important;border-radius:14px!important}
